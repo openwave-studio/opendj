@@ -339,6 +339,32 @@ pub fn mixer_names() -> Vec<String> {
     names
 }
 
+/// The Mixer's channel colors, by aux input from 0: a place in the
+/// strips' 16-color palette, or -1 for the channel's own by its number.
+pub fn mixer_colors() -> Vec<i32> {
+    let v = load();
+    let mut colors: Vec<i32> = v["mixer_colors"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .map(|c| c.as_i64().map_or(-1, |c| c as i32))
+                .collect()
+        })
+        .unwrap_or_default();
+    colors.resize(8, -1);
+    colors
+}
+
+/// Colors the Mixer's channel `n` (from 0) with palette color `color`;
+/// -1 goes back to its own.
+pub fn set_mixer_color(n: usize, color: i32) {
+    let mut colors = mixer_colors();
+    if let Some(slot) = colors.get_mut(n) {
+        *slot = if (0..16).contains(&color) { color } else { -1 };
+    }
+    set("mixer_colors", json!(colors));
+}
+
 /// Names the Mixer's channel `n` (from 0); "" goes back to "Ch N".
 pub fn set_mixer_name(n: usize, name: &str) {
     let mut names = mixer_names();
