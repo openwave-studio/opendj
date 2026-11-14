@@ -1581,7 +1581,7 @@ impl Prefs {
                     switch(
                         crate::wave_look::VOCALS_KEY,
                         "Show vocals",
-                        "Tints the sung parts of the waveforms green, as on VirtualDJ. \
+                        "Marks the sung parts with a thin cyan strip along the top of the waveforms. \
                          Each track is checked once, in the background, the first time \
                          it is loaded.",
                         settings::flag(crate::wave_look::VOCALS_KEY, false),

@@ -864,7 +864,8 @@ fn draws_half_overview_from_the_bottom() {
     }
 }
 
-/// Show vocals tints the sung half of a track green, and only while on.
+/// Show vocals marks the sung half of a track with a cyan strip along the
+/// top, and only while on; the waveform keeps its colours.
 #[test]
 fn tints_the_sung_parts() {
     let Some((device, queue)) = gpu() else {
@@ -891,8 +892,10 @@ fn tints_the_sung_parts() {
         },
     ));
     let (w, h) = (256u32, 60u32);
-    let green = |px: &[u8], x: u32| {
-        let i = ((h / 2 * w + x) * 4) as usize;
+    // How cyan (green over red) a pixel is, on the strip along the top edge (row 1) or
+    // in the middle of the waveform.
+    let green = |px: &[u8], x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
         px[i + 1] as i32 - px[i] as i32
     };
     for (show, style) in [
@@ -920,12 +923,18 @@ fn tints_the_sung_parts() {
         };
         view.render(&device, &queue, &renderer, Some(&frame), 1.0);
         let px = read_back(&device, &queue, &view);
-        let (sung, not) = (green(&px, w * 3 / 4), green(&px, w / 4));
+        let (sung, not) = (green(&px, w * 3 / 4, 1), green(&px, w / 4, 1));
         if show {
             assert!(sung > not + 40, "{style:?}: sung {sung}, not {not}");
         } else {
             assert!((sung - not).abs() < 5, "off: sung {sung}, not {not}");
         }
+        // The waveform itself keeps its colours: the strip is all there is.
+        let (mid_sung, mid_not) = (green(&px, w * 3 / 4, h / 2), green(&px, w / 4, h / 2));
+        assert!(
+            (mid_sung - mid_not).abs() < 5,
+            "{style:?}: middle {mid_sung} vs {mid_not}"
+        );
     }
 }
 
