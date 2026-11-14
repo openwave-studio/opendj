@@ -1359,7 +1359,7 @@ impl Prefs {
                         switch(
                             "pfl_on_load",
                             "Headphones follow the loaded deck",
-                            "Loading a track cues its deck in the headphones and takes the other decks out of the cue, like VirtualDJ. What the room hears doesn't change, and automix leaves the cue alone.",
+                            "Loading a track cues its deck in the headphones and takes the other decks out of the cue. What the room hears doesn't change, and automix leaves the cue alone.",
                             settings::flag("pfl_on_load", true),
                         ),
                         item("auto_reset", HEADING, "AUTO RESET ON LOAD", ""),
@@ -1517,81 +1517,24 @@ impl Prefs {
             KEYBOARD => self.keyboard_page(),
             LAYOUTS => {
                 let mut items = Vec::new();
-                items.extend([
-                    PrefItem {
-                        choices: strings(&crate::appearance::LABELS),
-                        chosen: crate::appearance::mode() as i32,
-                        ..item(
-                            crate::appearance::KEY,
-                            SEGMENTED,
-                            "Appearance",
-                            "Light is easier to read in daylight and at outdoor gigs; the \
+                items.extend([PrefItem {
+                    choices: strings(&crate::appearance::LABELS),
+                    chosen: crate::appearance::mode() as i32,
+                    ..item(
+                        crate::appearance::KEY,
+                        SEGMENTED,
+                        "Appearance",
+                        "Light is easier to read in daylight and at outdoor gigs; the \
                              waveforms stay on black in both. Match system follows your \
                              computer's light or dark setting.",
-                        )
-                    },
-                    PrefItem {
-                        choices: strings(&crate::wave_look::COLOR_LABELS),
-                        chosen: crate::wave_look::color() as i32,
-                        ..item(
-                            crate::wave_look::COLOR_KEY,
-                            MENU,
-                            "Waveform color",
-                            "How the decks' waveforms are colored. RGB: one shape, red where \
-                             the bass is loudest, amber for the mids, blue for the highs. \
-                             3-Band: bass, mids and highs stacked in their own colors, as on \
-                             rekordbox. Blue: one blue shape, lighter where the highs are loud. \
-                             Stems: each stem in its pad color once a track has stems, RGB \
-                             until then.",
-                        )
-                    },
-                ]);
-                if crate::wave_look::color() == 1 {
-                    items.push(PrefItem {
-                        choices: strings(&crate::wave_look::PALETTE_LABELS),
-                        chosen: crate::wave_look::palette_index() as i32,
-                        ..item(
-                            crate::wave_look::PALETTE_KEY,
-                            MENU,
-                            "Palette",
-                            "3-Band's colors for the bass, mids and highs.",
-                        )
-                    });
-                }
+                    )
+                }]);
                 items.extend([
-                    PrefItem {
-                        choices: strings(&crate::wave_look::SHAPE_LABELS),
-                        chosen: crate::wave_look::half() as i32,
-                        ..item(
-                            crate::wave_look::HALF_KEY,
-                            SEGMENTED,
-                            "Overview",
-                            "The whole-track waveform under each deck: mirrored about its \
-                             middle, or half, growing from the bottom edge as on rekordbox. \
-                             The big scrolling waveform is always whole.",
-                        )
-                    },
                     switch(
                         crate::wave_look::GAIN_KEY,
                         "Size follows gain",
-                        "A deck's gain knob makes its waveforms taller or shorter, as on \
-                         VirtualDJ.",
-                        settings::flag(crate::wave_look::GAIN_KEY, false),
-                    ),
-                    switch(
-                        crate::wave_look::VOCALS_KEY,
-                        "Show vocals",
-                        "Tints the sung parts of the waveforms green, as on VirtualDJ. \
-                         Each track is checked once, in the background, the first time \
-                         it is loaded.",
-                        settings::flag(crate::wave_look::VOCALS_KEY, false),
-                    ),
-                    switch(
-                        crate::browser::WAVE_LYRICS,
-                        "Lyrics on waveforms",
-                        "A track's timed lyrics run along the bottom of its big waveform, \
-                         lilac as far as they have been sung.",
-                        settings::flag(crate::browser::WAVE_LYRICS, true),
+                        "A deck's gain knob makes its large waveform taller or shorter.",
+                        settings::flag(crate::wave_look::GAIN_KEY, true),
                     ),
                     PrefItem {
                         choices: strings(&["Dot", "Strip", "Tint", "Off"]),
@@ -2784,9 +2727,7 @@ impl Prefs {
             "pfl_on_load" => self.set("[Controls]", "pfl_on_load", f(on)),
             "auto_gain" => self.set("[ReplayGain]", "ReplayGainEnabled", f(on)),
             "stems_on_load" => separation::set_on_load(on),
-            crate::browser::WAVE_LYRICS => crate::browser::set_wave_lyrics(on),
             crate::wave_look::GAIN_KEY => crate::wave_look::set_follows_gain(on),
-            crate::wave_look::VOCALS_KEY => crate::wave_look::set_show_vocals(on),
             "auto_reset_fx" | "auto_reset_eq" | "auto_reset_gain" => {
                 self.set("[Controls]", id, f(on))
             }
@@ -3013,18 +2954,6 @@ impl Prefs {
             crate::appearance::KEY => {
                 if let Some(app) = self.app.upgrade() {
                     crate::appearance::choose(&app, index);
-                }
-            }
-            crate::wave_look::COLOR_KEY
-            | crate::wave_look::PALETTE_KEY
-            | crate::wave_look::HALF_KEY => {
-                match id {
-                    crate::wave_look::COLOR_KEY => crate::wave_look::choose_color(index),
-                    crate::wave_look::PALETTE_KEY => crate::wave_look::choose_palette(index),
-                    _ => crate::wave_look::choose_half(index),
-                }
-                if let Some(app) = self.app.upgrade() {
-                    app.window().request_redraw();
                 }
             }
             crate::track_end::STYLE_KEY => crate::track_end::choose_style(index),

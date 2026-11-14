@@ -37,33 +37,43 @@ cover has **Unload deck** too, and <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> 
 <kbd>→</kbd> unload decks 1 and 2. If it was a mistake, click
 **↺ Put back** on the empty deck: a track comes back where it was.
 
-### Waveform colors
+### Waveform look
 
-**Settings › Appearance › Waveform color** picks how the waveforms are colored:
+Click the arrow on the right of the waveforms button in the top bar. Under
+the height slider, three rows set how the waveforms look:
 
-- **RGB** (the default): one shape, red where the bass is loudest, amber for
-  the mids and blue for the highs.
-- **3-Band**: the bass, mids and highs stacked in their own colors, the bass
-  widest, as on rekordbox. **Palette** picks **Blue-Orange-White** (rekordbox's
-  colors) or **Lilac-Cyan-White**.
-- **Blue**: one blue shape, lighter where the highs are loud.
-- **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
-  color of its stem pad, the loudest at the back, so you can see where the
-  vocals come in or the bass drops out. A track shows RGB until its stems
-  are ready.
+- **Type**: **Full** (the default) mirrors the waveforms about their middle;
+  **Half** grows them from the bottom edge, as on rekordbox. It applies to
+  the large waveforms and the overviews under the decks alike.
+- **Color**:
+  - **RGB** (the default): one shape, red where the bass is loudest, amber
+    for the mids and blue for the highs.
+  - **3-Band**: the bass, mids and highs stacked in their own colors, the
+    bass widest, as on rekordbox. A second row picks **Blue-Orange**
+    (rekordbox's colors) or **Lilac-Cyan**.
+  - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
+    color of its stem pad, the loudest at the back, so you can see where
+    the vocals come in or the bass drops out. A track shows RGB until its
+    stems are ready.
+- **Needle**: where the play line sits on the large waveforms. **Center**
+  (the default) shows as much of what has played as what is coming;
+  **Left** puts it a quarter of the way in, so three quarters of the
+  waveform shows what is coming next.
+- **Show vocals** (under Color, off at first) marks the sung parts with a
+  thin cyan strip along the top of the waveforms. openDJ checks each track for vocals the
+  first time you load it (or when it's analyzed), in the background, so the
+  strip shows up a few seconds after the waveform; after that it's there
+  straight away. Tracks with HQ stems use their vocal stem instead. It
+  hides with **Stems**, which already draws the vocals in their own color.
+- **Show lyrics** (under Needle, on at first) runs a track's timed lyrics
+  along the bottom of its large waveform.
 
-**Overview** draws the overview under each deck **Full**, mirrored about its
-middle, or **Half**, growing from the bottom edge as on rekordbox. The big
-scrolling waveform is always whole.
+The changes show straight away and the menu stays open, so you can try them
+out.
 
-**Show vocals**, off at first, tints the sung parts of the waveforms green,
-as on VirtualDJ. openDJ checks each track for vocals the first time you load
-it (or when it's analyzed), in the background, so the green shows up a few
-seconds after the waveform; after that it's there straight away. Tracks with
-HQ stems use their vocal stem instead.
-
-**Size follows gain**, off at first, makes a deck's waveforms taller or
-shorter as you turn its gain knob, as on VirtualDJ.
+**Settings › Appearance › Size follows gain**, on at first, makes a deck's
+large waveform taller or shorter as you turn its gain knob.
+The overview keeps its height.
 
 ### Waveform zoom
 
@@ -101,7 +111,9 @@ make 4-Deck taller.
   height when you let go, with the number in the middle. Double-click the
   line to go back to 3.
 - Click the arrow on the right of the waveforms button in the top bar and
-  pick a number.
+  drag the **Waveform height** slider: the waveforms resize as you drag and
+  settle on the nearest height when you let go. The arrow keys move it a
+  height at a time.
 - Right-click a large waveform and use **−** and **+** under Height.
 - **⌥⌘↑** and **⌥⌘↓** (**Ctrl+Alt** on Windows and Linux) make them taller
   or shorter. They are also in **View**.
