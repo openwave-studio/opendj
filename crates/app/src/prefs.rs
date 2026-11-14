@@ -392,7 +392,7 @@ pub fn remember_levels(registry: Arc<ControlRegistry>) -> slint::Timer {
 
 /// What loading a track puts back to normal on its deck, as settings and
 /// `[Controls]` keys of the same name, with their titles and help.
-const AUTO_RESETS: [(&str, &str, &str); 3] = [
+const AUTO_RESETS: [(&str, &str, &str); 4] = [
     (
         "auto_reset_fx",
         "Effects",
@@ -407,6 +407,11 @@ const AUTO_RESETS: [(&str, &str, &str); 3] = [
         "auto_reset_gain",
         "Gain",
         "The gain knob goes back to 0 dB; auto gain still levels each track.",
+    ),
+    (
+        "auto_reset_tempo",
+        "Tempo",
+        "The tempo fader goes back to 0%. A synced deck still takes the tempo it follows.",
     ),
 ];
 
@@ -1540,6 +1545,18 @@ impl Prefs {
                         choices: strings(&["Dot", "Strip", "Tint", "Off"]),
                         chosen: settings::track_color().unwrap_or(0) as i32,
                         ..item("track_color", TRACK_COLOR, "Track color", "")
+                    },
+                    PrefItem {
+                        choices: strings(&crate::waves::STYLES),
+                        chosen: crate::waves::style() as i32,
+                        ..item(
+                            crate::waves::STYLE_KEY,
+                            MENU,
+                            "List waveforms",
+                            "The small waveforms in the track list: shades of lilac, \
+                             or the full color of the deck waveforms (red lows, amber \
+                             mids, blue highs).",
+                        )
                     },
                 ]);
                 items
@@ -2728,7 +2745,7 @@ impl Prefs {
             "auto_gain" => self.set("[ReplayGain]", "ReplayGainEnabled", f(on)),
             "stems_on_load" => separation::set_on_load(on),
             crate::wave_look::GAIN_KEY => crate::wave_look::set_follows_gain(on),
-            "auto_reset_fx" | "auto_reset_eq" | "auto_reset_gain" => {
+            "auto_reset_fx" | "auto_reset_eq" | "auto_reset_gain" | "auto_reset_tempo" => {
                 self.set("[Controls]", id, f(on))
             }
             _ => {}
@@ -2967,6 +2984,7 @@ impl Prefs {
                 settings::set("key_match_on_load", json!(index.min(2)));
                 self.set("[Controls]", "key_match_on_load", index.min(2) as f64);
             }
+            crate::waves::STYLE_KEY => crate::waves::choose_style(index),
             "track_color" => {
                 if let Some(app) = self.app.upgrade() {
                     app.global::<crate::ColumnUi>()
