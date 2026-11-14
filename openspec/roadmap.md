@@ -108,6 +108,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [improve-filter-bar](changes/improve-filter-bar/proposal.md) (filter chips that narrow each other, values ordered by tracks, reorder and remove chips, per-chip Key and BPM options, Core and More fields, a finder in the search bar; issue #468, 2026-11-07; rest moved to v0.8 2026-11-12)
 - [add-stem-fx-and-acapella](changes/add-stem-fx-and-acapella/proposal.md) (moved from v0.5 at the 0.5.0 release; rest moved to v0.8 2026-11-12)
 - [add-rekordbox-xml-export](changes/add-rekordbox-xml-export/proposal.md) (collection and lists out as rekordbox XML for rekordbox and library tools; 2026-11-02; moved from v0.5 at the 0.5.0 release, not started; rest moved to v0.8 2026-11-12)
+- [add-serato-onelibrary-import](changes/add-serato-onelibrary-import/proposal.md) (Serato DJ libraries from their file tags and crates, and OneLibrary sticks from any app that writes them; a user request in issue #602, 2026-11-14)
 
 ## v0.9 · In the club
 
@@ -145,6 +146,5 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 ## Decided against, or dropped for now
 
 - Streaming playback of any kind, partner deals and DRM workarounds.
-- OneLibrary import (dropped 2026-10-19; rekordbox import is back in v0.5, 2026-10-29).
 - Mobile and iPad apps.
 - Video mixing (karaoke and lyrics only).
