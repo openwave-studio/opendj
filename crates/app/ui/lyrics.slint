@@ -4,6 +4,7 @@
 // and a click on a line plays from there. Find looks the track up on
 // LRCLIB. PlayerLyrics shows the same lyrics large in Player mode.
 import { Theme } from "theme.slint";
+import { WaveLook } from "wave_look.slint";
 import { ListView } from "scroll.slint";
 
 export struct LyricLine {
@@ -102,7 +103,7 @@ export struct DeckLines {
 
 // The lyrics along the bottom of each deck's big waveform.
 export global WaveLyrics {
-    // Settings › Appearance › Lyrics on waveforms.
+    // Show lyrics, in the waveforms button's drop-down.
     in property <bool> shown: true;
     // Deck 1 first; a deck with no timed lyrics has no lines.
     in property <[DeckLines]> decks;
@@ -133,7 +134,7 @@ export component LyricsLane inherits Rectangle {
     in property <float> visible-seconds: 10;
     // Pixels per second, and where second 0 of the track is, in whole pixels.
     property <float> per-second: self.width / 1px / max(visible-seconds, 0.1);
-    property <float> origin: round(self.width / 2px) - round(now * per-second * scale) / scale;
+    property <float> origin: round(self.width * WaveLook.needle / 1px) - round(now * per-second * scale) / scale;
     // Physical pixels per logical pixel: positions round to screen pixels.
     property <float> scale: 1px / 1phx;
     height: 16px;

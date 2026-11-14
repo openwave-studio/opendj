@@ -743,6 +743,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         counter.set_mode(beat_counter_mode());
         track_end::load();
         wave_look::load();
+        wave_look::install(&app);
         let app_weak = app.as_weak();
         vocal_pass::start(move || {
             let _ = app_weak.upgrade_in_event_loop(|app| app.window().request_redraw());
@@ -2698,16 +2699,18 @@ impl Gpu {
         tracks: &[Option<Arc<Track>>; NUM_DECKS],
         visual: &VisualPositions,
     ) {
-        // Settings › Appearance › Waveform color and Overview, when they change.
+        // The waveforms button's look choices, when they change.
         if self.look != wave_look::version() {
             self.look = wave_look::version();
             let (style, palette, half) =
                 (wave_look::style(), wave_look::palette(), wave_look::half());
             let vocals = wave_look::show_vocals();
+            let needle = wave_look::needle();
             for v in self.scrolling.iter_mut().chain(self.overview.iter_mut()) {
                 v.set_style(style);
                 v.set_palette(palette);
                 v.set_half(half);
+                v.set_needle(needle);
                 v.set_show_vocals(vocals);
             }
         }
@@ -2910,7 +2913,7 @@ impl Gpu {
                 if let (true, Some(steps)) = (groove[d], self.steps.as_mut()) {
                     let state = self.grooves[d].state();
                     let start = w.clock - w.play_seconds;
-                    let ahead = VISIBLE_SECONDS / 2.0;
+                    let ahead = VISIBLE_SECONDS * (1.0 - wave_look::needle() as f64);
                     w.lanes = Some(steps.lanes(d, &state, start, w.clock, ahead, DECK_COLORS[d]));
                 }
                 w
@@ -2925,7 +2928,7 @@ impl Gpu {
                     let values = self.knobs.values(page);
                     self.macros.note(d, page, w.clock, values);
                     let start = w.clock - w.play_seconds;
-                    let back = VISIBLE_SECONDS / 2.0;
+                    let back = VISIBLE_SECONDS * wave_look::needle() as f64;
                     let (lanes, moved) = self.macros.lanes(d, start, w.clock, back, DECK_COLORS[d]);
                     if moved != self.knobs_moved {
                         self.knobs_moved = moved;
@@ -2959,9 +2962,15 @@ impl Gpu {
                 phrases: flags,
                 ..f.clone()
             });
+            // Size follows gain sizes the large waveform only: the overview
+            // keeps its height.
+            let overview_frame = frame.as_ref().map(|f| Frame {
+                gain: 1.0,
+                ..f.clone()
+            });
             for (view, frame) in [
                 (&mut self.scrolling[d], scrolling_frame.as_ref()),
-                (&mut self.overview[d], frame.as_ref()),
+                (&mut self.overview[d], overview_frame.as_ref()),
             ] {
                 view.set_track(&self.device, &self.renderer, gpu_track.as_ref());
                 view.render(&self.device, &self.queue, &self.renderer, frame, scale);

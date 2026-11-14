@@ -1,0 +1,22 @@
+// How the large waveforms and the overviews look, picked in the waveforms
+// button's drop-down; the app keeps the choices (wave_look.rs).
+export global WaveLook {
+    // 0 RGB, 1 3-Band, 2 Stems.
+    in property <int> color;
+    // 3-Band's palette: 0 Blue-Orange-White, 1 Lilac-Cyan-White.
+    in property <int> palette;
+    // Drawn from the bottom edge up rather than mirrored about the middle.
+    in property <bool> half;
+    // Where the play line is on the large waveforms, as a fraction of their
+    // width: 0.5 in the middle, 0.25 a quarter in from the left.
+    in property <float> needle: 0.5;
+    // Show vocals (tints the sung parts; not with Stems) and Show lyrics.
+    in property <bool> vocals;
+    in property <bool> lyrics: true;
+    callback pick-color(index: int);
+    callback pick-palette(index: int);
+    callback pick-half(half: bool);
+    callback pick-needle-left(left: bool);
+    callback pick-vocals(on: bool);
+    callback pick-lyrics(on: bool);
+}

@@ -47,8 +47,9 @@ struct Params {
     mark_count: u32,
     atlas_w: f32,                      // the text atlas's width and height
     atlas_h: f32,
-    half: u32,                         // 1: drawn from the bottom edge up (overview only)
+    half: u32,                         // 1: drawn from the bottom edge up
     grid_edit: u32,                    // 1: the grid is being edited: drawn louder, over the waveform too
+    needle: f32,                       // scrolling: where the play line is, as a fraction of the width
     lane_tint: vec4<u32>,              // bit n: row n tinted (a scale note)
     mark_color: vec4<f32>,
     lit_color: vec4<f32>,
@@ -324,7 +325,7 @@ fn columns(bin: f32) -> Columns {
 
 fn column_bin(x: f32) -> f32 {
     if (p.mode == 0u) {
-        return p.play_bin + (x - p.size.x * 0.5) * p.bins_per_pixel;
+        return p.play_bin + (x - p.size.x * p.needle) * p.bins_per_pixel;
     }
     return x * p.bins_per_pixel;
 }
@@ -364,7 +365,7 @@ fn gap_before(x: f32, at: f32, w: f32) -> f32 {
 // The x pixel of a slice position.
 fn bin_x(bin: f32) -> f32 {
     if (p.mode == 0u) {
-        return (bin - p.play_bin) / p.bins_per_pixel + p.size.x * 0.5;
+        return (bin - p.play_bin) / p.bins_per_pixel + p.size.x * p.needle;
     }
     return bin / p.bins_per_pixel;
 }
@@ -834,7 +835,7 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
     if (p.mode == 1u) {
         color = over(color, vec3<f32>(1.0), line(x, bin_x(p.play_bin), 0.75 * k));
     } else {
-        let cx = p.size.x * 0.5;
+        let cx = p.size.x * p.needle;
         // White with a soft shadow either side, readable over any colour.
         color = over(color, vec3<f32>(0.0), clamp(1.0 - (abs(x - cx) - k) / (3.0 * k), 0.0, 1.0) * 0.35);
         color = over(color, vec3<f32>(1.0), line(x, cx, 1.0 * k));
