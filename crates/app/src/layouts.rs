@@ -51,9 +51,12 @@ const ALL: [(i32, &str, &str); 5] = [
 /// Prep. 2-Deck Basic starts off.
 const START: [i32; 4] = [1, 0, 2, 3];
 
-/// Whether layout `l` exists and is offered (Prep only once it is).
+/// Whether layout `l` exists and is offered (Prep and 2-Deck Basic only
+/// while they are).
 fn offered(l: i32) -> bool {
-    ALL.iter().any(|&(n, _, _)| n == l) && (l != crate::PREP_LAYOUT || crate::PREP_OFFERED)
+    ALL.iter().any(|&(n, _, _)| n == l)
+        && (l != crate::PREP_LAYOUT || crate::PREP_OFFERED)
+        && (l != crate::LITE_LAYOUT || crate::LITE_OFFERED)
 }
 
 /// Every offered layout once, each with its switch: the saved order first
@@ -197,7 +200,7 @@ pub fn refresh(app: &AppWindow) {
     // The menu also shows the layout in use when it isn't one of the DJ's
     // (the tour, or a mapping that sets a layout by number), at the end.
     let mut shown = on_of(&list);
-    if !shown.contains(&current) && ALL.iter().any(|&(n, _, _)| n == current) {
+    if !shown.contains(&current) && offered(current) {
         shown.push(current);
     }
     ui.set_menu(model(shown.into_iter().map(|l| entry(l, true, false))));
@@ -267,6 +270,17 @@ mod tests {
         assert_eq!(ons(&list), vec![1, 0, 2, 3]);
         assert_eq!(list.last(), Some(&(4, false)));
         assert_eq!(ons(&clean(Some(vec![]), None, all)), vec![1, 0, 2, 3]);
+    }
+
+    #[test]
+    fn hides_2deck_basic_while_not_offered() {
+        // A DJ who had 2-Deck Basic switched on gets the rest, without it.
+        let list = clean(Some(vec![1, 4, 0]), Some(vec![1, 4, 0, 2, 3]), offered);
+        assert_eq!(offered(4), crate::LITE_OFFERED);
+        if !crate::LITE_OFFERED {
+            assert_eq!(ons(&list), vec![1, 0]);
+            assert!(!list.iter().any(|t| t.0 == 4));
+        }
     }
 
     #[test]
