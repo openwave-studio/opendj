@@ -239,13 +239,51 @@ export component ControlKnob inherits Rectangle {
         double-clicked => {
             Controls.reset(index);
         }
+        // Up and down turn it; a mostly sideways swipe goes on to what's
+        // behind (the Mixer's strips scroll sideways).
         scroll-event(e) => {
+            if e.delta-y == 0 || abs(e.delta-x / 1px) >= abs(e.delta-y / 1px) {
+                return reject;
+            }
             Controls.set-parameter(index, max(0, min(1, param + (e.delta-y > 0 ? 0.02 : -0.02))));
             accept
         }
     }
     TourMark { id: root.tour-id; }
     MapMark { key: root.group + "," + root.key; }
+}
+
+// The headphone icon, openDJ's own: a round headband with two cups
+// tilted outward. Drawn on a 24-unit grid; strokes scale with `size`.
+export component HeadphoneIcon inherits Rectangle {
+    in property <length> size: 16px;
+    in property <color> tint: Theme.text;
+    property <float> k: size / 24px;
+    width: size;
+    height: size;
+    Path {
+        width: root.size;
+        height: root.size;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        stroke: root.tint;
+        stroke-width: 1.6px * k;
+        stroke-line-cap: round;
+        fill: transparent;
+        commands: "M 4.2 19 A 10 10 0 1 1 19.8 19";
+    }
+    // Each cup a rounded bar 3.55 wide and 10 tall, tilted 14°.
+    Path {
+        width: root.size;
+        height: root.size;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        stroke: root.tint;
+        stroke-width: 3.55px * k;
+        stroke-line-cap: round;
+        fill: transparent;
+        commands: "M 5.87 14.37 L 7.43 20.63 M 18.13 14.37 L 16.57 20.63";
+    }
 }
 
 // Flat dark button with a thin border. When its light is on, the label and
@@ -329,25 +367,7 @@ export component ControlButton inherits Rectangle {
         fill: label-color;
         commands: lit-icon;
     }
-    // Headband and ear cups.
-    if headphones: Path {
-        width: 18px;
-        height: 18px;
-        viewbox-width: 20;
-        viewbox-height: 20;
-        stroke: label-color;
-        stroke-width: 1.8px;
-        fill: transparent;
-        commands: "M 4 13 L 4 10 A 6 6 0 0 1 16 10 L 16 13";
-    }
-    if headphones: Path {
-        width: 18px;
-        height: 18px;
-        viewbox-width: 20;
-        viewbox-height: 20;
-        fill: label-color;
-        commands: "M 1.6 14 A 2.9 2.9 0 1 0 7.4 14 A 2.9 2.9 0 1 0 1.6 14 Z M 12.6 14 A 2.9 2.9 0 1 0 18.4 14 A 2.9 2.9 0 1 0 12.6 14 Z";
-    }
+    if headphones: HeadphoneIcon { size: min(16px, root.height - 4px); tint: label-color; }
 
     touch := TouchArea {
         pointer-event(e) => {
@@ -645,26 +665,7 @@ export component CueHeadphones inherits Rectangle {
     border-width: 1px;
     border-color: lit ? root.tint : Theme.border;
     background: lit ? root.tint : touch.pressed ? Theme.control-pressed : Theme.control;
-    // Headband, mirrored about x = 10.
-    Path {
-        width: 16px;
-        height: 16px;
-        viewbox-width: 20;
-        viewbox-height: 20;
-        stroke: icon-color;
-        stroke-width: 1.6px;
-        fill: transparent;
-        commands: "M 4.5 12 L 4.5 10 A 5.5 5.5 0 0 1 15.5 10 L 15.5 12";
-    }
-    // Round ear cups.
-    Path {
-        width: 16px;
-        height: 16px;
-        viewbox-width: 20;
-        viewbox-height: 20;
-        fill: icon-color;
-        commands: "M 1.6 14 A 2.9 2.9 0 1 0 7.4 14 A 2.9 2.9 0 1 0 1.6 14 Z M 12.6 14 A 2.9 2.9 0 1 0 18.4 14 A 2.9 2.9 0 1 0 12.6 14 Z";
-    }
+    HeadphoneIcon { size: 16px; tint: icon-color; }
     touch := TouchArea {
         mouse-cursor: pointer;
         clicked => { Controls.set-value(index, lit ? 0 : 1); }

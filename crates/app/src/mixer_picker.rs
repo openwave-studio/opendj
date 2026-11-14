@@ -156,6 +156,18 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>) {
             }
         });
     }
+    {
+        let (engine, weak) = (engine.clone(), app.as_weak());
+        ui.on_color_strip(move |number, color| {
+            let Some(n) = usize::try_from(number).ok().filter(|n| (1..=8).contains(n)) else {
+                return;
+            };
+            settings::set_mixer_color(n - 1, color);
+            if let Some(app) = weak.upgrade() {
+                instruments::show_routes(&app, &engine.input_status(), &engine.status());
+            }
+        });
+    }
     // The popup closed: stop metering the interface for it.
     let timer = slint::Timer::default();
     timer.start(
