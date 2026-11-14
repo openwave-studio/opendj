@@ -1,6 +1,6 @@
 # Proposal
 
-Planned for: **v0.8 · From the booth to the studio** (from a user request, issue #730, 2026-11-14)
+Planned for: **v0.7 · Your library, everywhere** (from a user request, issue #730, 2026-11-14; moved from v0.8 at a user request)
 
 ## Why
 
