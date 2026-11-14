@@ -15,6 +15,8 @@ import { WaveZoom, ZoomBar, ZoomReadout } from "zoom.slint";
 export { WaveZoom }
 import { WaveHeight, WaveHeightList, WaveHeightGrip } from "wave_height.slint";
 export { WaveHeight }
+import { WaveLook } from "wave_look.slint";
+export { WaveLook }
 import { LayoutsUi, LayoutEntry } from "layouts.slint";
 export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
@@ -254,8 +256,8 @@ component Waveform inherits Rectangle {
     // instrument's knobs on the page its deck shows, or the Groove Box's
     // tracks' levels.
     if macros: Rectangle {
-        x: parent.width / 2 + 6px;
-        width: parent.width / 2 - 40px;
+        x: parent.width * WaveLook.needle + 6px;
+        width: parent.width * (1 - WaveLook.needle) - 40px;
         for i in 8: MacroLabel {
             y: i * parent.height / 8;
             height: parent.height / 8;
@@ -1261,7 +1263,7 @@ component WaveformsButton inherits Rectangle {
     sizes := PopupWindow {
         x: 0px;
         y: root.height + 6px;
-        width: 270px;
+        width: 300px;
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.panel-raised;
@@ -1273,13 +1275,13 @@ component WaveformsButton inherits Rectangle {
         }
         WaveHeightList {
             fits: root.fits;
+            // Stays open, so the look can be tried out; a choice shows the
+            // waveforms if they were hidden.
             picked => {
-                // Picking a height shows the waveforms if they were hidden.
                 if !root.on {
                     root.on = true;
                     root.changed-to(true);
                 }
-                sizes.close();
             }
         }
     }
@@ -1563,6 +1565,11 @@ export component AppWindow inherits Window {
     // root.height here would tie the window's own size to the waveforms'.
     property <length> strip-room: LibraryEdit.window-height - other-rows - library-floor;
     property <int> wave-fits: strip-heights[9] <= strip-room ? 10 : strip-heights[8] <= strip-room ? 9 : strip-heights[7] <= strip-room ? 8 : strip-heights[6] <= strip-room ? 7 : strip-heights[5] <= strip-room ? 6 : strip-heights[4] <= strip-room ? 5 : strip-heights[3] <= strip-room ? 4 : strip-heights[2] <= strip-room ? 3 : strip-heights[1] <= strip-room ? 2 : 1;
+    // While the drop-down's slider is dragged: the strip's height between
+    // the two steps either side of it, up to the highest that fits.
+    property <float> slide-at: clamp(WaveHeight.slide, 1, max(wave-fits, 1));
+    property <int> slide-low: floor(slide-at);
+    property <length> slide-height: strip-heights[slide-low - 1] + (strip-heights[min(slide-low, 9)] - strip-heights[slide-low - 1]) * (slide-at - slide-low);
     property <int> wave-level: min(WaveHeight.level, max(wave-fits, min(WaveHeight.level, WaveHeight.default-level)));
     // From whichever layout's deck A is showing.
     // 2-Deck measures the overviews on deck 1, or on deck 2 while deck 1
@@ -2039,7 +2046,7 @@ export component AppWindow inherits Window {
                 // would freeze the GPU-updated waveform images. Folded away while
                 // the library is expanded or the top bar button hides them
                 // (Prep has no such button: its waveform always shows).
-                height: library-expanded || !(waveforms-visible || prep) || player ? 0px : wave-grip.dragging ? wave-grip.drag-height : strip-heights[wave-level - 1];
+                height: library-expanded || !(waveforms-visible || prep) || player ? 0px : wave-grip.dragging ? wave-grip.drag-height : WaveHeight.sliding ? slide-height : strip-heights[wave-level - 1];
                 visible: !library-expanded && (waveforms-visible || prep) && !player;
                 background: Theme.well;
                 // Thin grey lines above, between and below the waveforms.

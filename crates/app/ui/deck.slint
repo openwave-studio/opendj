@@ -5230,6 +5230,8 @@ component MixerStrip inherits Rectangle {
     background: Theme.panel-raised;
     clip: true;
     property <bool> renaming;
+    // The name and its buttons on the color bar: white on every color.
+    property <color> name-color: #ffffff;
     // Buttons at the end of the color bar: the panel's, and × off the Mixer.
     property <int> side-buttons: (info.view > 0 ? 1 : 0) + (info.aux ? 0 : 1);
     VerticalLayout {
@@ -5245,7 +5247,9 @@ component MixerStrip inherits Rectangle {
                 width: parent.width - 12px - (root.side-buttons * 18px);
                 height: parent.height;
                 text: info.name;
-                color: #101112;
+                // White on a dark color, or while the channel is off and
+                // its bar dimmed.
+                color: root.name-color;
                 font-size: 11px;
                 font-weight: 700;
                 vertical-alignment: center;
@@ -5268,8 +5272,8 @@ component MixerStrip inherits Rectangle {
                 width: 16px;
                 height: 16px;
                 border-radius: 3px;
-                background: open-view.has-hover ? #10111266 : #10111226;
-                LiveIcon { x: 2px; y: 2px; kind: info.view == 2 ? 1 : 2; size: 12px; tint: #101112; }
+                background: root.name-color.with-alpha(open-view.has-hover ? 0.4 : 0.15);
+                LiveIcon { x: 2px; y: 2px; kind: info.view == 2 ? 1 : 2; size: 12px; tint: root.name-color; }
                 open-view := TouchArea { clicked => { InstrumentsUi.mixer-view = info.view; } }
             }
             if !root.renaming && !info.aux: Rectangle {
@@ -5278,10 +5282,10 @@ component MixerStrip inherits Rectangle {
                 width: 16px;
                 height: 16px;
                 border-radius: 3px;
-                background: out.has-hover ? #10111266 : #10111226;
+                background: root.name-color.with-alpha(out.has-hover ? 0.4 : 0.15);
                 Text {
                     text: "×";
-                    color: #101112;
+                    color: root.name-color;
                     font-size: 12px;
                     font-weight: 700;
                     horizontal-alignment: center;

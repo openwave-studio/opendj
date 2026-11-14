@@ -208,12 +208,14 @@ struct Params {
     mark_count: u32,
     /// The text atlas's width and height, in atlas pixels.
     atlas: [f32; 2],
-    /// 1: drawn from the bottom edge up (overview only).
+    /// 1: drawn from the bottom edge up.
     half: u32,
     /// 1: the grid is being edited: beats and bar lines drawn louder, over
     /// the waveform too (scrolling only).
     grid_edit: u32,
-    _pad: [u32; 3],
+    /// Scrolling: where the play line is, as a fraction of the width.
+    needle: f32,
+    _pad: [u32; 2],
     /// Bit `n` set: lane `n` (from the bottom) is tinted.
     lane_tint: [u32; 4],
     mark_color: [f32; 4],
@@ -692,6 +694,8 @@ pub struct WaveformView {
     palette: Palette,
     /// Drawn from the bottom up (see [`WaveformView::set_half`]).
     half: bool,
+    /// Where the play line is (see [`WaveformView::set_needle`]).
+    needle: f32,
     /// Tints the sung parts (see [`WaveformView::set_show_vocals`]).
     show_vocals: bool,
     /// The next mix, as fractions of the track (Mono style).
@@ -723,6 +727,7 @@ impl WaveformView {
             style: Style::default(),
             palette: Palette::default(),
             half: false,
+            needle: 0.5,
             show_vocals: false,
             mix: None,
             texture: create_texture(device, width, height),
@@ -749,9 +754,17 @@ impl WaveformView {
     }
 
     /// Draws the waveform from the bottom edge up instead of mirrored about
-    /// the middle, as rekordbox's half overview does. Overviews only.
+    /// the middle, as rekordbox does. A scrolling view showing lanes of
+    /// marks stays whole.
     pub fn set_half(&mut self, half: bool) {
         self.half = half;
+    }
+
+    /// Where a scrolling view's play line is, as a fraction of its width
+    /// from the left: 0.5 in the middle (the default), 0.25 a quarter in so
+    /// more of what is coming shows.
+    pub fn set_needle(&mut self, at: f32) {
+        self.needle = at.clamp(0.1, 0.9);
     }
 
     /// Tints the parts of the track where someone sings green, from the
@@ -889,9 +902,14 @@ impl WaveformView {
             lane_count: 0,
             mark_count: 0,
             atlas: renderer.digits.size,
-            half: (self.half && self.mode == Mode::Overview) as u32,
+            half: (self.half && (self.mode == Mode::Overview || self.lanes.is_none())) as u32,
             grid_edit: (self.grid_edit && self.mode == Mode::Scrolling) as u32,
-            _pad: [0; 3],
+            needle: if self.mode == Mode::Scrolling {
+                self.needle
+            } else {
+                0.5
+            },
+            _pad: [0; 2],
             lane_tint: [0; 4],
             mark_color: [0.0; 4],
             lit_color: [0.0; 4],

@@ -65,8 +65,10 @@ mod usb;
 mod views;
 mod wanted;
 
-pub use filters::DEFAULT_PINNED;
-pub use lyrics::wave::{set_shown as set_wave_lyrics, SHOWN as WAVE_LYRICS};
+pub use filters::{with_crates, DEFAULT_PINNED};
+pub use lyrics::wave::{
+    set_shown as set_wave_lyrics, shown as wave_lyrics_shown, SHOWN as WAVE_LYRICS,
+};
 
 use crate::analysis_queue::AnalysisQueue;
 use crate::art::Art;
