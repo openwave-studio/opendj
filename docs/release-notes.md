@@ -22,7 +22,7 @@ openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more 
 
 **Waveforms**
 
-- **Waveform color**: RGB, 3-Band with two palettes, or Stems in each stem's pad color, with a full or half overview.
+- **Waveform color**: RGB, 3-Band with two palettes (layered as rekordbox does), or Stems in each stem's pad color, with a full or half overview.
 - **Show vocals** marks the sung parts with a thin cyan strip along the top (off at first).
 - **Zoom** the big waveforms together with the mouse wheel, trackpad, keys or controllers, and **resize** them with a grip under them or a height slider in the waveforms menu, which also holds Full or Half, Color and the needle.
 - **Size follows gain**: a deck's gain knob sizes its waveforms.
