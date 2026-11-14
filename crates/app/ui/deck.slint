@@ -4892,7 +4892,7 @@ component StripMeter inherits Rectangle {
     property <float> fader-db: volume <= 0.0001 ? -100 : 20 * log(volume, 10);
     property <length> top: 12px;
     property <length> scale-height: self.height - top - 2px;
-    property <length> bars-x: 15px;
+    in property <length> bars-x: 15px;
     property <length> bar: stereo ? 5px : 8px;
     // The fader's level, over the bars: "-inf" when it is right down.
     Text {
@@ -4957,7 +4957,11 @@ component StripMeter inherits Rectangle {
         }
         moved => { set-at(self.mouse-y); }
         double-clicked => { Controls.set-value(volume-index, 1); }
+        // Up and down move it; a mostly sideways swipe scrolls the strips.
         scroll-event(e) => {
+            if e.delta-y == 0 || abs(e.delta-x / 1px) >= abs(e.delta-y / 1px) {
+                return reject;
+            }
             let db = max(-range, fader-db) + (e.delta-y > 0 ? 1 : -1);
             Controls.set-value(volume-index, db <= -range ? 0 : min(1, pow(10, db / 20)));
             accept
@@ -5128,8 +5132,19 @@ component ClockMark inherits Path {
 
 // Each Mixer channel's own color, by its number.
 global StripColors {
+    // A channel's own color: the palette in order, Ch 1 the first.
     pure public function of(number: int) -> color {
-        [Theme.c-ff6b5e, Theme.c-64d2ff, Theme.c-30d158, Theme.c-bf5af2, Theme.c-ff9f0a, Theme.c-5e5ce6, Theme.c-ff375f, Theme.c-ffd60a][Math.mod(number - 1, 8)]
+        palette(number - 1)
+    }
+    // The 16 a channel can take from its menu: 8 by hue, then 8 softer
+    // ones (lilac among them).
+    pure public function palette(index: int) -> color {
+        [#ff6b5e, #ff9f0a, #ffd60a, #30d158, #64d2ff, #5e5ce6, #bf5af2, #ff375f,
+         #ff8fab, #c9a27e, #b4e05a, #63e6be, #7cc4ff, #b69cff, #ff7ae1, #98989d][Math.mod(index, 16)]
+    }
+    // A strip's color: the one picked for it, else its own by number.
+    pure public function of-strip(number: int, picked: int) -> color {
+        picked >= 0 ? palette(picked) : of(number)
     }
 }
 
@@ -5193,12 +5208,13 @@ component StripSolo inherits Rectangle {
     MapMark { key: root.group + ",solo"; }
 }
 
-// One strip of the Mixer deck (2-Deck Basic), at almost the deck's full height:
-// a color bar, its name and the input box (its channels, a click opens
-// Settings › Audio); then a column with the peak readout (red over 0 dB),
-// TRIM, PAN and FX, and at its foot the number square (on, lilac, or off,
-// grey), S (solo, Cmd/Ctrl solos it alone) and the headphone cue, beside
-// a tall meter with the fader as an arrow on its scale.
+// One strip of the Mixer deck (2-Deck), at almost the deck's full height:
+// its color bar with its name (double-click renames it; right-click for
+// Rename and its color), the input box under it (its channels, "Groove
+// Box"; a click picks another); then, centered, a column with the peak
+// readout (red over 0 dB), TRIM, PAN and FX, and at its foot the number
+// square (on, lilac, or off, grey), S (solo, Cmd/Ctrl solos it alone) and
+// the headphone cue, beside a meter with the fader as an arrow on its scale.
 component MixerStrip inherits Rectangle {
     in property <MixerStripInfo> info;
     in property <color> tint;
@@ -5206,142 +5222,167 @@ component MixerStrip inherits Rectangle {
     property <int> on-index: Controls.resolve(group, info.on-key);
     property <bool> on: Controls.value(on-index, Controls.tick) > 0;
     property <float> peak-db: Controls.value(Controls.resolve(group, "peak_db"), Controls.tick);
-    property <color> strip-color: StripColors.of(info.number);
-    width: 104px;
+    property <color> strip-color: StripColors.of-strip(info.number, info.color);
+    // The buttons' width: the number square is as tall.
+    property <length> column: 31px;
+    width: 78px;
     border-radius: 6px;
     background: Theme.panel-raised;
     clip: true;
     property <bool> renaming;
+    // Buttons at the end of the color bar: the panel's, and × off the Mixer.
+    property <int> side-buttons: (info.view > 0 ? 1 : 0) + (info.aux ? 0 : 1);
     VerticalLayout {
         spacing: 0px;
-        Rectangle { height: 3px; background: on ? strip-color : strip-color.with-alpha(0.35); }
-        VerticalLayout {
-            padding: 5px;
-            padding-bottom: 0px;
-            spacing: 3px;
-            // The strip's name, then ▼ to pick its input.
-            HorizontalLayout {
-                height: 18px;
-                spacing: 4px;
-                // Double-click to rename; Return keeps it, Esc or a click
-                // elsewhere leaves it as it was.
-                Rectangle {
-                    if !root.renaming: Text {
-                        width: parent.width;
-                        height: parent.height;
-                        text: info.name;
-                        // Dim while its input is missing.
-                        color: info.problem != "" ? Theme.text-dim : Theme.text;
-                        font-size: 11px;
-                        font-weight: 600;
-                        vertical-alignment: center;
-                        overflow: elide;
-                        TouchArea { double-clicked => { root.renaming = info.aux; } }
-                    }
-                    if root.renaming: Rectangle {
-                        border-radius: 3px;
-                        background: Theme.control;
-                        border-width: 1px;
-                        border-color: Theme.accent;
-                        name-input := TextInput {
-                            x: 3px;
-                            width: parent.width - 6px;
-                            text: info.name;
-                            color: Theme.text;
-                            font-size: 11px;
-                            font-weight: 600;
-                            vertical-alignment: center;
-                            single-line: true;
-                            init => { self.focus(); self.select-all(); }
-                            accepted => {
-                                InstrumentsUi.rename-strip(info.number, self.text);
-                                root.renaming = false;
-                            }
-                            key-pressed(e) => {
-                                if e.text == Key.Escape {
-                                    root.renaming = false;
-                                    return accept;
-                                }
-                                reject
-                            }
-                            changed has-focus => {
-                                if !self.has-focus { root.renaming = false; }
-                            }
-                        }
+        // The color bar with the name: double-click to rename (Return
+        // keeps it, Esc or a click elsewhere leaves it as it was),
+        // right-click for the menu.
+        Rectangle {
+            height: 20px;
+            background: on ? strip-color : strip-color.with-alpha(0.45);
+            if !root.renaming: Text {
+                x: 6px;
+                width: parent.width - 12px - (root.side-buttons * 18px);
+                height: parent.height;
+                text: info.name;
+                color: #101112;
+                font-size: 11px;
+                font-weight: 700;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            if !root.renaming: TouchArea {
+                double-clicked => { root.renaming = info.aux; }
+                pointer-event(e) => {
+                    if info.aux && e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                        strip-menu.show();
                     }
                 }
-                if info.own-clock: VerticalLayout { alignment: center; ClockMark { } }
-                // The Groove Box or the instrument: its panel, in the Mixer
-                // deck (MIXER in the title comes back).
-                if info.view > 0: Rectangle {
-                    width: 20px;
-                    horizontal-stretch: 0;
-                    border-radius: 4px;
-                    background: open-view.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.control;
-                    LiveIcon { x: 3px; y: 2px; kind: info.view == 2 ? 1 : 2; size: 14px; tint: open-view.has-hover ? Theme.text : Theme.accent; }
-                    open-view := TouchArea { clicked => { InstrumentsUi.mixer-view = info.view; } }
+            }
+            // At the bar's end: the button for its panel (the Groove
+            // Box's or the instrument's), and × for the mic and the
+            // instrument to leave the Mixer.
+            if !root.renaming && info.view > 0: Rectangle {
+                x: parent.width - 18px - (info.aux ? 0px : 18px);
+                y: 2px;
+                width: 16px;
+                height: 16px;
+                border-radius: 3px;
+                background: open-view.has-hover ? #10111266 : #10111226;
+                LiveIcon { x: 2px; y: 2px; kind: info.view == 2 ? 1 : 2; size: 12px; tint: #101112; }
+                open-view := TouchArea { clicked => { InstrumentsUi.mixer-view = info.view; } }
+            }
+            if !root.renaming && !info.aux: Rectangle {
+                x: parent.width - 18px;
+                y: 2px;
+                width: 16px;
+                height: 16px;
+                border-radius: 3px;
+                background: out.has-hover ? #10111266 : #10111226;
+                Text {
+                    text: "×";
+                    color: #101112;
+                    font-size: 12px;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
                 }
-                // The mic and the instrument: × takes it out of the Mixer.
-                if !info.aux: Rectangle {
-                    width: 20px;
-                    horizontal-stretch: 0;
-                    border-radius: 4px;
-                    background: out.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.control;
-                    Text {
-                        text: "×";
-                        color: out.has-hover ? Theme.text : Theme.text-dim;
-                        font-size: 12px;
-                        horizontal-alignment: center;
-                        vertical-alignment: center;
+                out := TouchArea { clicked => { Controls.set-value(Controls.resolve(group, "mixer"), 0); } }
+            }
+            if root.renaming: Rectangle {
+                x: 3px;
+                y: 2px;
+                width: parent.width - 6px;
+                height: parent.height - 4px;
+                border-radius: 3px;
+                background: #ffffff;
+                border-width: 1px;
+                border-color: #101112;
+                name-input := TextInput {
+                    x: 3px;
+                    width: parent.width - 6px;
+                    text: info.name;
+                    color: #101112;
+                    font-size: 11px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                    single-line: true;
+                    init => { self.focus(); self.select-all(); }
+                    accepted => {
+                        InstrumentsUi.rename-strip(info.number, self.text);
+                        root.renaming = false;
                     }
-                    out := TouchArea { clicked => { Controls.set-value(Controls.resolve(group, "mixer"), 0); } }
-                }
-                // The channel's input ("1/2", "3"), then ▼ to pick another.
-                Rectangle {
-                    visible: info.aux;
-                    width: !info.aux ? 0px : info.channels == "" ? 20px : input-text.preferred-width + 20px;
-                    horizontal-stretch: 0;
-                    border-radius: 4px;
-                    background: box.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.control;
-                    HorizontalLayout {
-                        padding-left: info.channels == "" ? 0px : 5px;
-                        padding-right: 0px;
-                        input-text := Text {
-                            text: info.channels;
-                            color: box.has-hover ? Theme.text : Theme.text-dim;
-                            font-size: 10px;
-                            font-weight: 600;
-                            vertical-alignment: center;
+                    key-pressed(e) => {
+                        if e.text == Key.Escape {
+                            root.renaming = false;
+                            return accept;
                         }
-                        Text {
-                            width: info.channels == "" ? parent.width : 15px;
-                            text: "▼";
-                            color: box.has-hover ? Theme.text : Theme.text-dim;
-                            font-size: 8px;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                        }
+                        reject
                     }
-                    box := TouchArea {
-                        clicked => {
-                            InstrumentsUi.open-picker(info.number);
-                            picker.show();
-                        }
+                    changed has-focus => {
+                        if !self.has-focus { root.renaming = false; }
                     }
-                    picker := InputPicker { x: parent.width - 190px; y: parent.height + 2px; }
                 }
             }
         }
+        // Its input under the name.
         HorizontalLayout {
-            padding: 5px;
+            padding: 4px;
+            padding-bottom: 0px;
             spacing: 3px;
+            height: 22px;
+            Rectangle {
+                horizontal-stretch: 1;
+                border-radius: 4px;
+                background: info.aux && box.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.control;
+                HorizontalLayout {
+                    padding-left: 4px;
+                    padding-right: 3px;
+                    spacing: 3px;
+                    if info.own-clock: VerticalLayout { alignment: center; ClockMark { width: 9px; height: 9px; } }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: !info.aux ? (info.view == 1 ? "Plugin" : "Mic")
+                            : info.view == 2 ? "Groove Box"
+                            : info.channels == "" ? "Input" : info.channels;
+                        // Dim while its input is missing.
+                        color: info.problem != "" ? Theme.text-dim : Theme.text;
+                        // Smaller for a long one, so "Groove Box" fits.
+                        font-size: self.text.character-count > 8 ? 9px : 10px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    if info.aux: Text {
+                        text: "▼";
+                        color: box.has-hover ? Theme.text : Theme.text-dim;
+                        font-size: 7px;
+                        vertical-alignment: center;
+                    }
+                }
+                box := TouchArea {
+                    enabled: info.aux;
+                    clicked => {
+                        InstrumentsUi.open-picker(info.number);
+                        picker.show();
+                    }
+                }
+                picker := InputPicker { x: 0; y: parent.height + 2px; }
+            }
+        }
+        // The buttons and the meter as one group, centered.
+        HorizontalLayout {
+            padding-top: 5px;
+            padding-bottom: 5px;
+            spacing: 4px;
+            alignment: center;
             vertical-stretch: 1;
             VerticalLayout {
-                width: 40px;
+                width: column;
                 spacing: 2px;
                 // The peak lately, in dB: red past full scale.
                 Rectangle {
-                    height: 15px;
+                    height: 14px;
                     border-radius: 7px;
                     background: peak-db > 0 ? #ff453a : Theme.control;
                     border-width: peak-db > 0 ? 0px : 1px;
@@ -5349,7 +5390,7 @@ component MixerStrip inherits Rectangle {
                     Text {
                         text: peak-db <= -59.9 ? "-inf" : (peak-db > 0 ? "+" : "") + (round(peak-db * 10) / 10);
                         color: peak-db > 0 ? Theme.n-101112 : Theme.text;
-                        font-size: 9px;
+                        font-size: 8.5px;
                         font-weight: peak-db > 0 ? 700 : 400;
                         horizontal-alignment: center;
                         vertical-alignment: center;
@@ -5359,11 +5400,51 @@ component MixerStrip inherits Rectangle {
                 HorizontalLayout { alignment: center; ControlKnob { group: group; key: "pan"; label: "PAN"; size: 18px; bipolar: true; } }
                 ControlButton { group: group; key: "fx"; text: "FX"; tint: Theme.accent; height: 18px; font-size: 9px; fill-when-lit: true; }
                 Rectangle { vertical-stretch: 1; }
-                StripOn { group: group; number: info.number; badge: info.badge; on-key: info.on-key; height: 26px; }
+                StripOn { group: group; number: info.number; badge: info.badge; on-key: info.on-key; height: column; }
                 StripSolo { group: group; number: info.number; height: 18px; }
                 ControlButton { group: group; key: "pfl"; headphones: true; tint: Theme.accent; fill-when-lit: true; height: 18px; }
             }
-            StripMeter { group: group; stereo: info.stereo; tint: tint; horizontal-stretch: 1; }
+            StripMeter { group: group; stereo: info.stereo; tint: tint; width: 34px; bars-x: 12px; }
+        }
+    }
+    strip-menu := PopupWindow {
+        x: 12px;
+        y: 18px;
+        width: 204px;
+        GrooveMenuBackground { }
+        VerticalLayout {
+            padding: 4px;
+            spacing: 2px;
+            GrooveMenuItem {
+                text: "Rename…";
+                clicked => { root.renaming = true; }
+            }
+            Rectangle { height: 1px; background: Theme.border; }
+            Text { x: 10px; text: "Color"; color: Theme.text-dim; font-size: 10px; font-weight: 600; height: 20px; vertical-alignment: center; }
+            for row in 2: HorizontalLayout {
+                padding-left: 10px;
+                padding-bottom: 4px;
+                spacing: 4px;
+                for i in 8: Rectangle {
+                    property <int> index: row * 8 + i;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 4px;
+                    background: StripColors.palette(index);
+                    border-width: info.color == index ? 2px : 0px;
+                    border-color: Theme.text;
+                    TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { InstrumentsUi.color-strip(info.number, index); }
+                    }
+                }
+            }
+            Rectangle { height: 1px; background: Theme.border; }
+            GrooveMenuItem {
+                text: "Default color";
+                checked: info.color < 0;
+                clicked => { InstrumentsUi.color-strip(info.number, -1); }
+            }
         }
     }
 }
@@ -5501,8 +5582,8 @@ component GrooveTitle inherits Rectangle {
 }
 
 // A Mixer deck's slim title in place of the deck header: MIXER with its
-// interfaces and count on the left; CLEAR SOLO, +, the Audio settings
-// cog and ⏏ (unload the deck) on the right.
+// interfaces and count on the left; CLEAR SOLO and ⏏ (unload the deck)
+// on the right. A channel is added with + after the strips.
 component MixerTitle inherits Rectangle {
     in property <int> deck;
     // Showing a channel's panel (see InstrumentsUi.mixer-view): the title
@@ -5513,7 +5594,6 @@ component MixerTitle inherits Rectangle {
     property <int> instrument: InstrumentsUi.instrument();
     property <string> view-name: view == 2 ? "GROOVE BOX"
         : instrument > 0 && instrument <= EffectList.instruments.length ? EffectList.instruments[instrument - 1].to-uppercase() : "INSTRUMENT";
-    title-picker := InputPicker { x: root.width - self.width - 8px; y: root.height; }
     property <bool> any-solo: Controls.value(Controls.resolve("[Auxiliary1]", "solo"), Controls.tick) > 0
         || Controls.value(Controls.resolve("[Auxiliary2]", "solo"), Controls.tick) > 0
         || Controls.value(Controls.resolve("[Auxiliary3]", "solo"), Controls.tick) > 0
@@ -5549,23 +5629,6 @@ component MixerTitle inherits Rectangle {
         if root.in-view: Text { text: root.view-name; color: Theme.text; font-size: 12px; font-weight: 700; letter-spacing: 1px; vertical-alignment: center; overflow: elide; }
         Rectangle { horizontal-stretch: 1; }
         if any-solo: VerticalLayout { alignment: center; TitleButton { text: "CLEAR SOLO"; clicked => { InstrumentsUi.solo-alone(0); } } }
-        VerticalLayout {
-            alignment: center;
-            plus := TitleButton {
-                text: "+";
-                clicked => {
-                    InstrumentsUi.open-picker(0);
-                    title-picker.show();
-                }
-            }
-        }
-        VerticalLayout {
-            alignment: center;
-            TitleButton {
-                icon: "M 12 8 A 4 4 0 0 1 12 16 A 4 4 0 0 1 12 8 Z M 12 2 L 12 5 M 12 19 L 12 22 M 2 12 L 5 12 M 19 12 L 22 12 M 5 5 L 7 7 M 17 17 L 19 19 M 5 19 L 7 17 M 17 7 L 19 5";
-                clicked => { InstrumentsUi.open-settings(InstrumentsUi.audio-page, 0); }
-            }
-        }
         // Last, where the cover's ⏏ would be: the Mixer has no cover.
         VerticalLayout {
             alignment: center;
