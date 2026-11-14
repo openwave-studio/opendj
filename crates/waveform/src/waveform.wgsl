@@ -90,8 +90,8 @@ const MONO_GREY = vec3<f32>(0.40, 0.40, 0.44);
 // Blue style: the body, and what it lightens towards where the highs are loud.
 const BLUE_BODY = vec3<f32>(0.173, 0.482, 0.898);   // #2C7BE5
 const BLUE_HIGHS = vec3<f32>(0.863, 0.922, 1.0);    // #DCEBFF
-// Show vocals: the sung parts lean towards this green.
-const VOCAL_GREEN = vec3<f32>(0.231, 0.890, 0.541); // #3BE38A
+// Show vocals: the strip over the sung parts.
+const VOCAL_CYAN = vec3<f32>(0.247, 0.831, 0.933); // #3FD4EE
 // Phrase colours, in PhraseKind order: intro, build (up), drop (peak),
 // breakdown (break or bridge), outro, chorus (main), verse.
 const PHRASE_COLORS = array<vec3<f32>, 7>(
@@ -602,19 +602,22 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
         } else {
             color = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
         }
-        // Show vocals: the shape leans green where someone sings, lightly,
-        // so the band colours still read through (the Stems look shows the
-        // vocals in their own colour already).
-        if (p.vocal.w > 0.5 && p.style != 2u && !stems) {
-            let v = vocal_at(bin);
-            if (v > 0.0) {
-                let reach = height(mix(body(cols.a.rms.w, cols.a.peak.w), body(cols.b.rms.w, cols.b.peak.w), cols.t)) * span;
-                color = over(color, VOCAL_GREEN, v * 0.45 * fill(reach, d));
-            }
-        }
     }
 
     color = mix(under_wave, color, p.trace_alpha);
+
+    // Show vocals: a thin cyan strip along the top edge where someone
+    // sings, so the waveform keeps its own colours (the Stems look shows
+    // the vocals in their own colour already).
+    if (has_track && p.vocal.w > 0.5 && p.style != 2u && !(p.style == 4u && p.stems.w > 0.5)) {
+        let strip = 3.0 * k;
+        if (y < strip + 0.5) {
+            let v = vocal_at(bin);
+            if (v > 0.0) {
+                color = over(color, VOCAL_CYAN, v * clamp(strip - y + 0.5, 0.0, 1.0));
+            }
+        }
+    }
 
     // Lanes of marks (a live deck's notes or drum hits), in rows from the
     // bottom: tinted rows, then each mark on this pixel's row.
