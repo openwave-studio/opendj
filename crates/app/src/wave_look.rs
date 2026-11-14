@@ -106,7 +106,7 @@ pub fn set_show_vocals(on: bool) {
     VERSION.fetch_add(1, Ordering::Relaxed);
 }
 
-/// Whether the waveforms tint the sung parts green.
+/// Whether the waveforms mark the sung parts with a cyan strip.
 pub fn show_vocals() -> bool {
     VOCALS.load(Ordering::Relaxed) == 1
 }

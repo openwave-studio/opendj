@@ -40,7 +40,7 @@ cover has **Unload deck** too, and <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> 
 ### Waveform look
 
 Click the arrow on the right of the waveforms button in the top bar. Under
-the height slider, three rows set how the waveforms look:
+the height slider, these set how the waveforms look:
 
 - **Type**: **Full** (the default) mirrors the waveforms about their middle;
   **Half** grows them from the bottom edge, as on rekordbox. It applies to
@@ -60,8 +60,8 @@ the height slider, three rows set how the waveforms look:
   **Left** puts it a quarter of the way in, so three quarters of the
   waveform shows what is coming next.
 - **Show vocals** (under Color, off at first) marks the sung parts with a
-  thin cyan strip along the top of the waveforms. openDJ checks each track for vocals the
-  first time you load it (or when it's analyzed), in the background, so the
+  thin cyan strip along the top of the waveforms, leaving their colors as
+  they are. openDJ checks each track for vocals the first time you load it (or when it's analyzed), in the background, so the
   strip shows up a few seconds after the waveform; after that it's there
   straight away. Tracks with HQ stems use their vocal stem instead. It
   hides with **Stems**, which already draws the vocals in their own color.
