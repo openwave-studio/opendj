@@ -2000,7 +2000,7 @@ export component AppWindow inherits Window {
                     // so neither button is offered there.
                     if !player && layout != 3: WaveformsButton { on <=> root.waveforms-visible; fits: wave-fits; changed-to(on) => { waveforms-visible-changed(on); } }
                     if !player && layout != 3: FxButton { on <=> root.fx-bar-visible; changed-to(on) => { fx-bar-visible-changed(on); } }
-                    if layout == 2 || layout == 4: PadsButton { on <=> root.pads-visible; changed-to(on) => { pads-visible-changed(on); } }
+                    if layout == 0 || layout == 2 || layout == 4: PadsButton { on <=> root.pads-visible; changed-to(on) => { pads-visible-changed(on); } }
                     if layout == 4: JogsButton { on <=> root.jogs-visible; changed-to(on) => { jogs-visible-changed(on); } }
                     if !player: Rectangle { horizontal-stretch: 1; }
                     // Between the pills, centred on the window (as the

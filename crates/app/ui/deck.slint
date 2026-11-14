@@ -341,7 +341,7 @@ export component Jog inherits Rectangle {
     // is centred; the app's font has digits all one width (SF on macOS,
     // Inter Tabular elsewhere), so the numbers don't jitter as they change.
     if !plain: Text {
-        y: parent.height / 2 - 27px * scale;
+        y: parent.height / 2 + 13px * scale;
         height: 9px * scale;
         width: parent.width;
         text: info.rate;
@@ -354,12 +354,12 @@ export component Jog inherits Rectangle {
     // Click the tempo to edit the beat grid. A grid whose tempo changes
     // within the track shows a small dot beside it.
     if !plain: Text {
-        y: parent.height / 2 - 19px * scale;
-        height: 20px * scale;
+        y: parent.height / 2 - 16px * scale;
+        height: 28px * scale;
         width: parent.width;
         text: info.loaded ? info.bpm : "--";
         color: bta.has-hover && info.loaded ? Theme.lilac-text : Theme.text;
-        font-size: 16px * scale;
+        font-size: 23px * scale;
         font-weight: 600;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -381,38 +381,6 @@ export component Jog inherits Rectangle {
         background: tint;
     }
     grid-menu := GridMenu { group: group; info: info; x: (parent.width - 240px) / 2; y: parent.height / 2; }
-    if !plain: Rectangle {
-        x: (parent.width - 44px * scale) / 2;
-        y: parent.height / 2 + 3px * scale;
-        width: 44px * scale;
-        height: 1px;
-        background: Theme.n-48484c;
-    }
-    // Elapsed over remaining, right-aligned to each other so the digits
-    // line up, and centred in the jog as one block.
-    if !plain: VerticalLayout {
-        x: (parent.width - self.preferred-width) / 2;
-        y: parent.height / 2 + 5px * scale;
-        width: self.preferred-width;
-        Text {
-            height: 10px * scale;
-            text: info.loaded ? info.elapsed : "00:00.0";
-            color: Theme.n-9e9ea3;
-            font-size: 8.5px * scale;
-            font-weight: 500;
-            horizontal-alignment: right;
-            vertical-alignment: center;
-        }
-        Text {
-            height: 10px * scale;
-            text: "-" + (info.loaded ? info.remaining : "00:00.0");
-            color: Theme.text;
-            font-size: 8.5px * scale;
-            font-weight: 600;
-            horizontal-alignment: right;
-            vertical-alignment: center;
-        }
-    }
     MapMark { key: root.group + ",jog"; }
     TourMark { id: plain ? "" : root.group + ",jog"; }
 }
@@ -826,7 +794,7 @@ component TimeKey inherits HorizontalLayout {
     if show-time: VerticalLayout {
         alignment: center;
         Text { text: info.loaded ? "-" + info.remaining-seconds : "-0:00"; color: info.end-flash-time ? Theme.danger : Theme.text; font-size: 23px; font-weight: 500; horizontal-alignment: right; }
-        Text { text: info.loaded ? info.total : ""; color: Theme.text-dim; font-size: 11px; horizontal-alignment: right; }
+        Text { text: info.loaded ? "+" + info.elapsed : ""; color: Theme.text-dim; font-size: 11px; horizontal-alignment: right; }
     }
     if show-time: EdgeVLine { top: 6px; bottom: 6px; line-color: Theme.n-2c2c2f; }
     KeyBox { group: group; info: info; tint: tint; compact: !show-time; }
@@ -3021,19 +2989,19 @@ component Pitch inherits VerticalLayout {
     // Deck B: pitch reset goes on the fader's right, its outer side.
     in property <bool> mirrored;
     property <int> keylock-index: Controls.resolve(group, "keylock");
-    width: 64px;
-    spacing: 5px;
-    SyncButton { group: group; tint: tint; font-size: 13px; height: 30px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
+    width: 72px;
+    spacing: 3px;
+    SyncButton { group: group; tint: tint; font-size: 13px; height: 26px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
     VerticalLayout {
         spacing: 1px;
-        Text { text: info.loaded ? info.bpm : "--"; color: Theme.text; font-size: 15px; font-weight: 600; font-family: "Inter Tabular"; horizontal-alignment: center; height: 18px; vertical-alignment: center; }
+        Text { text: info.loaded ? info.bpm : "--"; color: Theme.text; font-size: 12px; font-weight: 600; font-family: "Inter Tabular"; horizontal-alignment: center; height: 14px; vertical-alignment: center; }
         TempoPanelMenu { group: group; info: info; tint: tint; mirrored: mirrored; }
     }
     Rectangle {
         vertical-stretch: 1;
         ControlFader {
             x: (parent.width - self.width) / 2;
-            width: 32px;
+            width: 48px;
             height: parent.height;
             group: group;
             key: "rate";
@@ -6057,15 +6025,18 @@ export component Deck inherits Rectangle {
                 spacing: 0px;
                 if mirrored: JogSection { group: group; info: info; tint: tint; spin: spin; mirrored: true; }
                 if mirrored: Rectangle { width: 10px; }
-                if mirrored: LoopSection { group: group; info: info; tint: tint; mirrored: true; }
-                if mirrored: VDivider { }
+                if mirrored && PadsUi.visible: LoopSection { group: group; info: info; tint: tint; mirrored: true; }
+                if mirrored && PadsUi.visible: VDivider { }
                 if !mirrored: Pitch { group: group; info: info; tint: tint; }
                 if !mirrored: Rectangle { width: 12px; }
                 // 2-Deck always shows the pads (PADS is for 2-Deck Basic and
                 // 4-Deck).
-                Pads { deck: deck; group: group; info: info; horizontal-stretch: 1; }
-                if !mirrored: VDivider { }
-                if !mirrored: LoopSection { group: group; info: info; tint: tint; }
+                if PadsUi.visible: Pads { deck: deck; group: group; info: info; horizontal-stretch: 1; }
+                if !PadsUi.visible: Rectangle { horizontal-stretch: 1; }
+                if !PadsUi.visible: LoopSection { group: group; info: info; tint: tint; mirrored: mirrored; }
+                if !PadsUi.visible: Rectangle { horizontal-stretch: 1; }
+                if !mirrored && PadsUi.visible: VDivider { }
+                if !mirrored && PadsUi.visible: LoopSection { group: group; info: info; tint: tint; }
                 if !mirrored: Rectangle { width: 10px; }
                 if !mirrored: JogSection { group: group; info: info; tint: tint; spin: spin; }
                 if mirrored: Rectangle { width: 12px; }
