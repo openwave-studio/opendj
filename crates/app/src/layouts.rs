@@ -347,7 +347,13 @@ mod tests {
 
     #[test]
     fn reset_keeps_the_layout_in_use() {
-        assert!(reset(4).contains(&(4, true)));
-        assert!(reset(1).contains(&(4, false)));
+        if crate::LITE_OFFERED {
+            assert!(reset(4).contains(&(4, true)));
+            assert!(reset(1).contains(&(4, false)));
+        } else {
+            // 2-Deck Basic, hidden, isn't in the chooser at all.
+            assert!(reset(0).contains(&(0, true)));
+            assert!(!reset(1).iter().any(|t| t.0 == 4));
+        }
     }
 }
