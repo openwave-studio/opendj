@@ -23,19 +23,19 @@ openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more 
 **Waveforms**
 
 - **Waveform color**: RGB, 3-Band with two palettes (layered as rekordbox does), or Stems in each stem's pad color, with a full or half overview.
-- **Show vocals** marks the sung parts with a thin cyan strip along the top (off at first).
+- **Vocals** in the waveforms menu: Off, a cyan Bar where someone sings, or the Lyrics lane. **Phrases** show on the overview, the waveform or both.
 - **Zoom** the big waveforms together with the mouse wheel, trackpad, keys or controllers, and **resize** them with a grip under them or a height slider in the waveforms menu, which also holds Full or Half, Color and the needle.
 - **Size follows gain**: a deck's gain knob sizes its waveforms.
 - **Edit the grid** from a pencil on each big waveform, and **Tap tempo** in the beat grid menu.
 - Detected tempo is read in the octave the track's genre is known by.
-- Waveforms draw as one solid shape, without the peak outline.
+- Waveforms draw as one solid shape, without the peak outline. Track list waveforms are shaded in lilac by sound, or in full color (Settings › Appearance).
 
 **Look and layout**
 
 - **Light mode**: Dark, Light or Auto (follows the system), with the waveforms kept on black.
 - **Settings regrouped** into tabs, with Appearance and Player pages, help behind ⓘ and a Help menu.
 - A **layout chooser** under the pencil in the layout menu: switch layouts on and off, reorder and rename them.
-- **Tempo panel** with a Range picker that keeps the tempo when the range changes.
+- **Tempo panel** with a Range picker that keeps the tempo when the range changes, and a larger 2-Deck tempo fader.
 - **Unload a deck** with ⏏ on its cover, and Put back.
 - Reorder the rail's sources and the side panel's tabs by dragging.
 - Each library list keeps its scroll and selected track.
