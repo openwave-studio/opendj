@@ -37,3 +37,5 @@ None.
 ## Impact
 
 `crates/export/src/engine/` (writer, schema and performance blobs; adds rusqlite, flate2, sha1, base64 and getrandom to the crate, all already in the workspace). App: `browser/usb.rs`, `ui/usb_export.slint`. Guide page `usb-export.md`. NOTICE credits EngineX-OS.
+
+Tasks 3.1 to 3.3 (trying a stick on an Engine OS player) moved to v0.8 on 2026-11-14; the export itself ships in 0.7.0 marked experimental.
