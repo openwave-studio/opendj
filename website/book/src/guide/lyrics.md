@@ -53,8 +53,8 @@ and what comes next while you mix. Each word sits at the moment it is sung,
 on a faint strip for its line. The word being sung is lit and fills with
 lilac, and words already sung stay lilac. Lyrics timed only by line have
 their words spread over the line by length; [Time words](#time-words)
-places them exactly. Turn this off in Settings › Appearance › **Lyrics on
-waveforms**.
+places them exactly. Turn this off with **Show lyrics** in the drop-down on
+the waveforms button in the top bar.
 
 ![Lyrics on a deck's waveform](../images/waveform-lyrics.png)
 
