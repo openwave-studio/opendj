@@ -137,10 +137,15 @@ fn image(overview: &[OverviewSlice]) -> slint::Image {
     let buf = pixels.make_mut_slice();
     let half = HEIGHT as f32 / 2.0;
     for x in 0..WIDTH {
-        // One solid shape, as on the deck waveforms: the body (RMS)
-        // doubled, never past the peaks, without a fainter peak outline.
+        // One solid shape, sized as on the deck waveforms: the body (RMS)
+        // doubled, never past the peaks, on the same gentle curve. Slices
+        // hold square roots of the levels, so they're squared first;
+        // doubling the stored value instead would fill loud tracks to the
+        // edges as flat blocks.
         let [peak, rms] = overview[x * overview.len() / WIDTH];
-        let rms = (2.0 * rms as f32).min(peak as f32) / 255.0 * half;
+        let linear = |b: u8| (b as f32 / 255.0).powi(2);
+        let body = (2.0 * linear(rms)).min(linear(peak));
+        let rms = body.powf(0.8) * 0.94 * half;
         for y in 0..HEIGHT {
             // How far this pixel's middle is from the centre line, and how
             // much of it each part covers, for soft edges.
@@ -189,7 +194,7 @@ mod tests {
     #[test]
     fn draws_the_body_about_the_middle() {
         let quiet = [[0u8, 0]; 4];
-        let loud = [[255u8, 64]; 4];
+        let loud = [[255u8, 128]; 4];
         let alpha = |o: &[OverviewSlice], y: usize| {
             let img = image(o);
             let buf = img.to_rgba8().unwrap();
@@ -202,5 +207,9 @@ mod tests {
         assert_eq!(alpha(&loud, HEIGHT / 2), 255);
         assert_eq!(alpha(&loud, 0), 0);
         assert_eq!(alpha(&loud, 1), alpha(&loud, HEIGHT - 2));
+        // Even a track as loud as can be keeps a margin: no flat blocks.
+        let loudest = [[255u8, 255]; 4];
+        assert_eq!(alpha(&loudest, 0), 0);
+        assert_eq!(alpha(&loudest, HEIGHT - 1), 0);
     }
 }
