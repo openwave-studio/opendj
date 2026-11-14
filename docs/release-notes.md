@@ -16,15 +16,15 @@ openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more 
 - A **Mixer** item in Jam replaces Aux 1 to 3: up to eight thin channels on one deck, each with its input picker, live meters, trim, pan, mute, solo, cue and an FX switch that sends it through the deck's effects.
 - The **mic**, the **instrument plugin** and the **Groove Box** can be channels too, with a view button to open their own deck view.
 - Each audio interface opens once and its channels fan out, so inputs stay in step and come back after the interface resets. A channel shows how far behind its input is heard, and marks inputs on another interface's clock.
-- Slim channels on 4-Deck and 2-Deck, renamable channels with their own colors, a sideways swipe scrolls the strips, and the Xone:K2 drives channels 1 to 4 from its columns.
+- Slim channels on 4-Deck and 2-Deck, renamable channels with their own colors, a sideways swipe scrolls the strips, each channel keeps its settings across launches, and the Xone:K2 drives channels 1 to 4 from its columns.
 - The Mixer title shows MIXER › GROOVE BOX or the instrument while its panel is open; click MIXER to go back.
 - The Groove Box deck gets the same slim title bar.
 
 **Waveforms**
 
-- **Waveform color**: RGB, 3-Band with two palettes, Blue, or Stems in each stem's pad color, with a full or half overview.
+- **Waveform color**: RGB, 3-Band with two palettes, or Stems in each stem's pad color, with a full or half overview.
 - **Show vocals** marks the sung parts with a thin cyan strip along the top (off at first).
-- **Zoom** the big waveforms together with the mouse wheel, trackpad, keys or controllers, and **resize** them in ten height steps with a grip under them or the WAVE menu.
+- **Zoom** the big waveforms together with the mouse wheel, trackpad, keys or controllers, and **resize** them with a grip under them or a height slider in the waveforms menu, which also holds Full or Half, Color and the needle.
 - **Size follows gain**: a deck's gain knob sizes its waveforms.
 - **Edit the grid** from a pencil on each big waveform, and **Tap tempo** in the beat grid menu.
 - Detected tempo is read in the octave the track's genre is known by.
@@ -39,6 +39,7 @@ openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more 
 - **Unload a deck** with ⏏ on its cover, and Put back.
 - Reorder the rail's sources and the side panel's tabs by dragging.
 - Each library list keeps its scroll and selected track.
+- A **Crates** chip on the filter bar narrows the library to one or more crates.
 - Add-on sources search from a bar at the top, with options under a cog.
 - Player search scrolls through all results, and a click plays from the track's album.
 
