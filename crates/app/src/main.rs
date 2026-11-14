@@ -78,6 +78,7 @@ mod midi_clock;
 mod mini_player;
 mod mixcloud;
 mod mixcloud_upload;
+mod mixer_keeper;
 mod mixer_picker;
 mod now_playing;
 mod now_playing_view;
@@ -717,6 +718,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());
     let groove_keeper = RefCell::new(groove_box::Keeper::new(&registry));
+    // The Mixer's channels as they were left, saved again as they change.
+    let mixer_keeper = RefCell::new(mixer_keeper::Keeper::new(&registry));
     // The large waveforms' zoom, from the window and controllers.
     let _zoom_timer = waveform_zoom::install(&app, &registry);
     // How tall they are, per layout, likewise.
@@ -729,6 +732,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Duration::from_millis(500),
             move || {
                 groove_keeper.borrow_mut().tick();
+                mixer_keeper.borrow_mut().tick();
                 // Each deck's preset name, as decks change what they play.
                 if let Some(app) = app.upgrade() {
                     presets::show(&app);
