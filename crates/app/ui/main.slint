@@ -1607,6 +1607,7 @@ export component AppWindow inherits Window {
     callback spotify-refresh();
     callback select-folder(index: int);
     callback toggle-folder(index: int);
+    callback navigate-folders(direction: int);
     callback sort(column: int);
     callback search(text: string);
     callback activate-track(row: int);
@@ -2259,6 +2260,7 @@ export component AppWindow inherits Window {
                 list-clicked => { keys.focus(); }
                 select-folder(i) => { select-folder(i); }
                 toggle-folder(i) => { toggle-folder(i); }
+                navigate-folders(d) => { root.navigate-folders(d); }
                 sort(c) => { sort(c); }
                 search(t) => { search(t); }
                 activate(r) => { activate-track(r); }

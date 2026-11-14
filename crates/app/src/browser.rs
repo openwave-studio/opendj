@@ -76,6 +76,7 @@ use crate::inbox::Inbox;
 use crate::settings::show_key;
 use crate::spotify::{self, open_in_browser, Event, Request, Service, StreamTrack};
 use crate::stores::{self, Stores};
+use crate::tree_navigation::{self, Action, Direction, Row};
 use crate::waves::Waves;
 use crate::{
     fmt_time, AppWindow, ColumnUi, FilesUi, Folder, HealthUi, KeyNotation, LibraryEdit, SideRow,
@@ -1391,42 +1392,21 @@ impl Browser {
         let w = with.clone();
         app.on_select_folder(move |i| {
             w(Box::new(move |b| {
-                if let Some(&n) = b.visible_nodes.get(i as usize) {
-                    b.park_view();
-                    b.current_node = n;
-                    // An artist opens to show their albums too.
-                    if b.nodes[n].kind == KIND_ARTIST {
-                        b.nodes[n].expanded = true;
-                    }
-                    if let Some(app) = b.app.upgrade() {
-                        app.global::<LibraryEdit>().set_making_smart(false);
-                    }
-                    b.health_status.clear();
-                    b.close_cleanup();
-                    b.close_page();
-                    if let Some(app) = b.app.upgrade() {
-                        app.set_current_track(-1);
-                    }
-                    b.refresh_tree();
-                    b.refresh_rows();
-                    b.fetch_current_playlist();
+                if let Ok(row) = usize::try_from(i) {
+                    b.select_folder_row(row, true);
                 }
             }))
         });
         let w = with.clone();
         app.on_toggle_folder(move |i| {
             w(Box::new(move |b| {
-                if let Some(&n) = b.visible_nodes.get(i as usize) {
-                    if b.nodes[n].lazy {
-                        open_dir(&mut b.nodes, n);
-                    } else {
-                        b.nodes[n].expanded = !b.nodes[n].expanded;
-                        b.save_open_folders();
-                    }
-                    b.refresh_tree();
+                if let Ok(row) = usize::try_from(i) {
+                    b.toggle_folder_row(row);
                 }
             }))
         });
+        let w = with.clone();
+        app.on_navigate_folders(move |code| w(Box::new(move |b| b.navigate_folders(code))));
         let w = with.clone();
         app.on_sort(move |c| {
             w(Box::new(move |b| {
@@ -4632,6 +4612,99 @@ impl Browser {
         }
     }
 
+    fn select_folder_row(&mut self, row: usize, open_artist: bool) {
+        let Some(&n) = self.visible_nodes.get(row) else {
+            return;
+        };
+        self.park_view();
+        self.current_node = n;
+        // Clicking an artist opens it; navigating through artists does not.
+        if open_artist && self.nodes[n].kind == KIND_ARTIST {
+            self.nodes[n].expanded = true;
+        }
+        if let Some(app) = self.app.upgrade() {
+            app.global::<LibraryEdit>().set_making_smart(false);
+            app.set_folders_focused(true);
+            app.set_current_track(-1);
+        }
+        self.health_status.clear();
+        self.close_cleanup();
+        self.close_page();
+        self.refresh_tree();
+        self.refresh_rows();
+        self.fetch_current_playlist();
+    }
+
+    fn toggle_folder_row(&mut self, row: usize) {
+        let Some(&n) = self.visible_nodes.get(row) else {
+            return;
+        };
+        if !self.nodes[n].lazy && !self.has_children(n) {
+            return;
+        }
+        if self.nodes[n].lazy {
+            let old_len = self.nodes.len();
+            open_dir(&mut self.nodes, n);
+            if self.current_node > n {
+                self.current_node += self.nodes.len() - old_len;
+            }
+        } else {
+            self.nodes[n].expanded = !self.nodes[n].expanded;
+            self.save_open_folders();
+            if !self.nodes[n].expanded && self.current_node > n {
+                let depth = self.nodes[n].depth;
+                let hidden = self.nodes[n + 1..]
+                    .iter()
+                    .take_while(|node| node.depth > depth)
+                    .count();
+                if self.current_node - n <= hidden {
+                    self.select_folder_row(row, false);
+                    return;
+                }
+            }
+        }
+        self.refresh_tree();
+    }
+
+    fn navigate_folders(&mut self, code: i32) {
+        let Some(direction) = Direction::from_code(code) else {
+            return;
+        };
+        let rows: Vec<Row> = self
+            .visible_nodes
+            .iter()
+            .map(|&i| self.navigation_row(i))
+            .collect();
+        let current = self
+            .visible_nodes
+            .iter()
+            .position(|&n| n == self.current_node);
+        if let Some(app) = self.app.upgrade() {
+            app.set_folders_focused(true);
+        }
+        match tree_navigation::navigate(&rows, current, direction) {
+            Some(Action::Select(row)) => self.select_folder_row(row, false),
+            Some(Action::Toggle(row)) => self.toggle_folder_row(row),
+            None => {}
+        }
+    }
+
+    fn navigation_row(&self, i: usize) -> Row {
+        let n = &self.nodes[i];
+        Row {
+            depth: n.depth,
+            children: if n.lazy {
+                1
+            } else if !self.has_children(i) {
+                0
+            } else if n.expanded {
+                2
+            } else {
+                1
+            },
+        }
+    }
+
     fn refresh_tree(&mut self) {
         self.visible_nodes.clear();
         let mut hidden_below: Option<i32> = None;
@@ -4650,23 +4723,19 @@ impl Browser {
                 hidden_below = Some(n.depth);
             }
         }
+        let mut top = 0.0;
         let folders: Vec<Folder> = self
             .visible_nodes
             .iter()
             .map(|&i| {
                 let n = &self.nodes[i];
+                let row_top = top;
+                top += if n.separator { 45.0 } else { 34.0 };
                 Folder {
                     name: n.name.clone().into(),
                     depth: n.depth,
-                    children: if n.lazy {
-                        1
-                    } else if !self.has_children(i) {
-                        0
-                    } else if n.expanded {
-                        2
-                    } else {
-                        1
-                    },
+                    children: self.navigation_row(i).children,
+                    top: row_top,
                     kind: n.kind,
                     editable: n.playlist.is_some() && !n.history && !n.locked,
                     locked: n.locked,
