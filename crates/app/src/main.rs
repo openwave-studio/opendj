@@ -504,14 +504,20 @@ const PLAYER_OVERVIEW_BACKGROUND: [f32; 4] = [0.102, 0.102, 0.110, 1.0];
 pub(crate) const PREP_OFFERED: bool = true;
 /// 2-Deck Basic, the lighter two-deck layout (lite.slint): no jogs or tempo
 /// faders, the pads and loop in a bar under the decks.
-const LITE_LAYOUT: i32 = 4;
+pub(crate) const LITE_LAYOUT: i32 = 4;
+/// Whether 2-Deck Basic is offered. Hidden for now while the two-deck
+/// layouts are redone: the code stays, the menu, its chooser and
+/// controllers leave it out, and a saved 2-Deck Basic opens 2-Deck.
+pub(crate) const LITE_OFFERED: bool = false;
 /// The last layout the menu and controllers can pick.
 const LAST_LAYOUT: i32 = LITE_LAYOUT;
 
-/// Whether `layout` is one the menu and controllers offer: Prep only
-/// while it is offered.
+/// Whether `layout` is one the menu and controllers offer: Prep and
+/// 2-Deck Basic only while they are offered.
 fn layout_offered(layout: i32) -> bool {
-    (0..=LAST_LAYOUT).contains(&layout) && (layout != PREP_LAYOUT || PREP_OFFERED)
+    (0..=LAST_LAYOUT).contains(&layout)
+        && (layout != PREP_LAYOUT || PREP_OFFERED)
+        && (layout != LITE_LAYOUT || LITE_OFFERED)
 }
 
 /// `[ChannelN],live_input` for a deck playing the instrument plugin.
@@ -668,7 +674,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // 2-Deck, Player, 4-Deck, Prep or 2-Deck Basic, as last picked.
     app.global::<PrepUi>().set_offered(PREP_OFFERED);
-    // A layout no longer offered (Prep, while hidden) opens 2-Deck.
+    // A layout no longer offered (Prep or 2-Deck Basic, while hidden) opens
+    // 2-Deck.
     let layout = settings::number("layout", 0.0) as i32;
     app.set_layout(if layout_offered(layout) { layout } else { 0 });
     // `[Skin],layout` lets controllers and the tour set it by number: 0
@@ -760,27 +767,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             BeatCount::default();
             NUM_DECKS
         ])));
-    }
-    // Phrase bars on the deck overviews and phrase flags on the scrolling
-    // waveforms, each shown or hidden from its own right-click menu.
-    let phrase_view = app.global::<PhraseView>();
-    phrase_view.set_visible(settings::flag("phrases_visible", true));
-    phrase_view.set_waveform_visible(settings::flag("phrase_flags_visible", true));
-    {
-        let app_weak = app.as_weak();
-        phrase_view.on_changed(move |on| {
-            settings::set("phrases_visible", serde_json::json!(on));
-            if let Some(app) = app_weak.upgrade() {
-                app.window().request_redraw();
-            }
-        });
-        let app_weak = app.as_weak();
-        phrase_view.on_waveform_changed(move |on| {
-            settings::set("phrase_flags_visible", serde_json::json!(on));
-            if let Some(app) = app_weak.upgrade() {
-                app.window().request_redraw();
-            }
-        });
     }
     {
         use slint::winit_030::WinitWindowAccessor;
@@ -2787,14 +2773,14 @@ impl Gpu {
             let show_vocals = wave_look::show_vocals();
             let stems_look = wave_look::style() == opendj_waveform::Style::Stems;
             // The stems' levels once they are complete: for the Stems look,
-            // and for Show vocals from high-quality stems' vocal stem.
+            // and for Vocals › Bar from high-quality stems' vocal stem.
             let found = track
                 .and_then(|t| t.audio.as_ref()?.stems())
                 .filter(|s| {
                     stems_look || (show_vocals && s.current().quality == stems::Quality::High)
                 })
                 .and_then(stem_levels::levels);
-            // Show vocals: the vocal stem's level, else the vocal pass's
+            // Vocals › Bar: the vocal stem's level, else the vocal pass's
             // once it has the file.
             let hq_vocals = found
                 .as_ref()
@@ -2810,7 +2796,7 @@ impl Gpu {
             let same_vocals = |v: &Option<Arc<Levels>>| match (v, &vocals) {
                 (Some(a), Some(b)) => Arc::ptr_eq(a, b),
                 (None, None) => true,
-                // Kept on the GPU when Show vocals is off: the view hides them.
+                // Kept on the GPU when Vocals › Bar is off: the view hides them.
                 (Some(_), None) => !show_vocals,
                 _ => false,
             };

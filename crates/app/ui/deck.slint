@@ -1302,9 +1302,6 @@ export component Header inherits Rectangle {
     // Where a press on the overview started, and whether it became a drag.
     property <length> press-x;
     property <bool> scrubbing;
-    // Where the overview's right-click menu opens.
-    property <length> menu-x;
-    property <length> menu-y;
     // The phrase under the pointer, named in a tooltip below the overview
     // while the pointer rests there.
     property <PhraseTip> phrase-tip: PhraseView.visible && info.loaded && ota.has-hover
@@ -1505,12 +1502,6 @@ export component Header inherits Rectangle {
                         if e.kind == PointerEventKind.down {
                             hide-tip();
                         }
-                        if e.button == PointerEventButton.right && e.kind == PointerEventKind.down {
-                            menu-x = self.mouse-x;
-                            menu-y = self.mouse-y;
-                            phrase-menu.show();
-                            return;
-                        }
                         if e.button != PointerEventButton.left && e.kind != PointerEventKind.cancel {
                             return;
                         }
@@ -1548,41 +1539,6 @@ export component Header inherits Rectangle {
                         show-tip();
                     }
                 }
-                phrase-menu := PopupWindow {
-                    x: min(menu-x, ov.width - 130px);
-                    y: menu-y;
-                    width: 130px;
-                    Rectangle {
-                        background: Theme.panel-raised;
-                        border-radius: Theme.radius;
-                        border-width: 1px;
-                        border-color: Theme.border;
-                        drop-shadow-blur: 8px;
-                        drop-shadow-color: Theme.s-00000080;
-                    }
-                    VerticalLayout {
-                        padding: 4px;
-                        Rectangle {
-                            height: 24px;
-                            background: pta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
-                            border-radius: 4px;
-                            Text {
-                                x: 10px;
-                                text: PhraseView.visible ? "Hide phrases" : "Show phrases";
-                                color: Theme.text;
-                                font-size: 11px;
-                                font-weight: 600;
-                                vertical-alignment: center;
-                            }
-                            pta := TouchArea {
-                                clicked => {
-                                    PhraseView.visible = !PhraseView.visible;
-                                    PhraseView.changed(PhraseView.visible);
-                                }
-                            }
-                        }
-                    }
-                }
             }
             if compact: Text {
                 text: info.loaded ? "-" + info.remaining-seconds : "-0:00";
@@ -1604,15 +1560,12 @@ export component Header inherits Rectangle {
 
 // The effects every slot can hold, in loaded_effect order (1 = the first);
 // set once from the engine's list.
-// Phrase bars on the deck overviews: shown or hidden from an overview's
-// right-click menu, for every deck at once.
+// Phrase bars on the deck overviews and phrase flags on the large
+// waveforms (a line and a name at each phrase start), for every deck at
+// once; picked with Phrases in the waveforms button's drop-down.
 export global PhraseView {
-    in-out property <bool> visible: true;
-    callback changed(on: bool);
-    // Phrase flags on the scrolling waveforms (a line and a name at each
-    // phrase start), switched from a scrolling waveform's right-click menu.
-    in-out property <bool> waveform-visible: true;
-    callback waveform-changed(on: bool);
+    in property <bool> visible: true;
+    in property <bool> waveform-visible: true;
     // The phrase at `seconds` into the track on `deck`, for the overview's
     // tooltip; an empty title where there is none.
     pure callback describe(deck: int, seconds: float) -> PhraseTip;
@@ -3021,20 +2974,23 @@ component Pitch inherits VerticalLayout {
     // Deck B: pitch reset goes on the fader's right, its outer side.
     in property <bool> mirrored;
     property <int> keylock-index: Controls.resolve(group, "keylock");
-    width: 64px;
-    spacing: 5px;
-    SyncButton { group: group; tint: tint; font-size: 13px; height: 30px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
+    width: 72px;
+    spacing: 3px;
+    SyncButton { group: group; tint: tint; font-size: 13px; height: 26px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
     VerticalLayout {
         spacing: 1px;
-        Text { text: info.loaded ? info.bpm : "--"; color: Theme.text; font-size: 15px; font-weight: 600; font-family: "Inter Tabular"; horizontal-alignment: center; height: 18px; vertical-alignment: center; }
+        Text { text: info.loaded ? info.bpm : "--"; color: Theme.text; font-size: 12px; font-weight: 600; font-family: "Inter Tabular"; horizontal-alignment: center; height: 14px; vertical-alignment: center; }
         TempoPanelMenu { group: group; info: info; tint: tint; mirrored: mirrored; }
     }
     Rectangle {
         vertical-stretch: 1;
+        // The handle's half at each end reaches into the gaps above and
+        // below, so the fader runs as far up and down as the column allows.
         ControlFader {
             x: (parent.width - self.width) / 2;
-            width: 32px;
-            height: parent.height;
+            y: -6px;
+            width: 48px;
+            height: parent.height + 12px;
             group: group;
             key: "rate";
             center-mark: true;
@@ -3054,8 +3010,9 @@ component Pitch inherits VerticalLayout {
     // The fine − and + under the fader.
     HorizontalLayout {
         alignment: space-around;
-        TempoStep { group: group; key: "rate_perm_down_small"; text: "−"; tint: tint; }
-        TempoStep { group: group; key: "rate_perm_up_small"; text: "+"; tint: tint; }
+        height: 16px;
+        TempoStep { group: group; key: "rate_perm_down_small"; text: "−"; tint: tint; height: 16px; }
+        TempoStep { group: group; key: "rate_perm_up_small"; text: "+"; tint: tint; height: 16px; }
     }
 }
 
@@ -5449,6 +5406,11 @@ component MixerStrip inherits Rectangle {
                 checked: info.color < 0;
                 clicked => { InstrumentsUi.color-strip(info.number, -1); }
             }
+            Rectangle { height: 1px; background: Theme.border; }
+            GrooveMenuItem {
+                text: "Delete";
+                clicked => { InstrumentsUi.delete-strip(info.number); }
+            }
         }
     }
 }
@@ -5481,12 +5443,30 @@ component AddStrip inherits Rectangle {
 }
 
 // The Mixer deck's strips side by side, scrolling sideways when they don't
-// fit, then + to pick another input.
+// fit, then + to pick another input. Not a Flickable: a Flickable takes a
+// press that moves a few pixels as its own drag, so the knobs and faders
+// stopped turning once the strips overflowed. Only a scroll (a trackpad
+// swipe, or the wheel over the strips' gaps) moves them; the knobs and
+// faders pass sideways scrolls on to here.
 component MixerStrips inherits Rectangle {
     in property <color> tint;
-    flick := Flickable {
-        content-width: max(self.width, row.preferred-width);
+    clip: true;
+    // How far the strips are scrolled, 0 or less.
+    property <length> offset: 0;
+    property <length> min-offset: min(0px, self.width - row.preferred-width);
+    property <length> shown: max(min-offset, offset);
+    TouchArea {
+        scroll-event(e) => {
+            if min-offset == 0 {
+                return reject;
+            }
+            offset = max(min-offset, min(0px, shown + (abs(e.delta-x / 1px) >= abs(e.delta-y / 1px) ? e.delta-x : e.delta-y)));
+            accept
+        }
         row := HorizontalLayout {
+            x: shown;
+            width: self.preferred-width;
+            height: parent.height;
             spacing: 4px;
             alignment: start;
             for strip in InstrumentsUi.strips: MixerStrip { info: strip; tint: tint; }
@@ -5885,11 +5865,25 @@ component SlimMixerStrip inherits Rectangle {
 
 // The Mixer's channels in a 4-Deck strip, side by side, scrolling sideways
 // when they don't fit, then + to pick another input.
+// Scrolls as MixerStrips does, not as a Flickable.
 component SlimMixerStrips inherits Rectangle {
     in property <color> tint;
-    Flickable {
-        content-width: max(self.width, row.preferred-width);
+    clip: true;
+    property <length> offset: 0;
+    property <length> min-offset: min(0px, self.width - row.preferred-width);
+    property <length> shown: max(min-offset, offset);
+    TouchArea {
+        scroll-event(e) => {
+            if min-offset == 0 {
+                return reject;
+            }
+            offset = max(min-offset, min(0px, shown + (abs(e.delta-x / 1px) >= abs(e.delta-y / 1px) ? e.delta-x : e.delta-y)));
+            accept
+        }
         row := HorizontalLayout {
+            x: shown;
+            width: self.preferred-width;
+            height: parent.height;
             spacing: 3px;
             alignment: start;
             for strip in InstrumentsUi.strips: SlimMixerStrip { info: strip; tint: tint; }

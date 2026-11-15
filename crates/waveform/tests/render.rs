@@ -193,14 +193,15 @@ fn draws_beat_grid() {
     let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
     view.set_track(&device, &renderer, Some(&track));
     let frame = Frame {
-        // A quarter beat past a bar, so the playhead doesn't cover a bar line,
-        // less half a pixel so the lines fall on pixel centres (scrolling,
-        // lines are not snapped to pixels).
-        play_seconds: 40.25 - 0.5 * 8.0 / 640.0,
+        // A quarter beat past a bar, so the playhead doesn't cover a bar line.
+        play_seconds: 40.25,
         visible_seconds: 8.0,
         duration: 200.0,
         first_bar_beat: 0.0,
-        grid: steady_grid(120.0, 0.0),
+        // The grid half a pixel late, so its lines fall on pixel centres (the
+        // scrolling picture moves in whole pixels; lines between two pixels
+        // light both half).
+        grid: steady_grid(120.0, 0.5 * 8.0 / 640.0),
         cue: None,
         loop_range: None,
         loop_marking: None,
@@ -864,8 +865,8 @@ fn draws_half_overview_from_the_bottom() {
     }
 }
 
-/// Show vocals marks the sung half of a track with a cyan strip along the
-/// top, and only while on; the waveform keeps its colours.
+/// Vocals › Bar marks the sung half of a track with a cyan bar along the
+/// bottom of the large waveform, and only while on; the overview has none.
 #[test]
 fn tints_the_sung_parts() {
     let Some((device, queue)) = gpu() else {
@@ -892,24 +893,27 @@ fn tints_the_sung_parts() {
         },
     ));
     let (w, h) = (256u32, 60u32);
-    // How cyan (green over red) a pixel is, on the strip along the top edge (row 1) or
-    // in the middle of the waveform.
+    // How cyan (green over red) a pixel is: on the bar along the bottom
+    // edge or in the middle of the waveform.
     let green = |px: &[u8], x: u32, y: u32| {
         let i = ((y * w + x) * 4) as usize;
         px[i + 1] as i32 - px[i] as i32
     };
-    for (show, style) in [
-        (false, Style::Rgb),
-        (true, Style::Rgb),
-        (true, Style::Bands),
+    for (show, style, mode) in [
+        (false, Style::Rgb, Mode::Scrolling),
+        (true, Style::Rgb, Mode::Scrolling),
+        (true, Style::Bands, Mode::Scrolling),
+        (true, Style::Stems, Mode::Scrolling),
+        (true, Style::Rgb, Mode::Overview),
     ] {
-        let mut view = WaveformView::new(&device, Mode::Overview, w, h);
+        let mut view = WaveformView::new(&device, mode, w, h);
         view.set_style(style);
         view.set_show_vocals(show);
         view.set_track(&device, &renderer, Some(&track));
+        // The scrolling view shows 0..10 s with the play line at 5 s.
         let frame = Frame {
-            play_seconds: 0.0,
-            visible_seconds: 8.0,
+            play_seconds: if mode == Mode::Scrolling { 5.0 } else { 0.0 },
+            visible_seconds: 10.0,
             duration: 10.0,
             first_bar_beat: 0.0,
             grid: steady_grid(0.0, 0.0),
@@ -923,18 +927,20 @@ fn tints_the_sung_parts() {
         };
         view.render(&device, &queue, &renderer, Some(&frame), 1.0);
         let px = read_back(&device, &queue, &view);
-        let (sung, not) = (green(&px, w * 3 / 4, 1), green(&px, w / 4, 1));
-        if show {
+        let (sung, not) = (green(&px, w * 7 / 8, h - 2), green(&px, w / 8, h - 2));
+        if show && mode == Mode::Scrolling {
             assert!(sung > not + 40, "{style:?}: sung {sung}, not {not}");
         } else {
-            assert!((sung - not).abs() < 5, "off: sung {sung}, not {not}");
+            assert!(
+                (sung - not).abs() < 5,
+                "{style:?} {mode:?}: sung {sung}, not {not}"
+            );
         }
-        // The waveform itself keeps its colours: the strip is all there is.
-        let (mid_sung, mid_not) = (green(&px, w * 3 / 4, h / 2), green(&px, w / 4, h / 2));
-        assert!(
-            (mid_sung - mid_not).abs() < 5,
-            "{style:?}: middle {mid_sung} vs {mid_not}"
-        );
+        // Nothing along the top any more, and the waveform keeps its colours.
+        for y in [1, h / 2] {
+            let (a, b) = (green(&px, w * 7 / 8, y), green(&px, w / 8, y));
+            assert!((a - b).abs() < 5, "{style:?} {mode:?} row {y}: {a} vs {b}");
+        }
     }
 }
 
@@ -1085,4 +1091,120 @@ fn three_band_keeps_the_highs_small() {
         "highs a small core: {highs} of {}",
         rows.len()
     );
+}
+
+/// Scrolling by part of a pixel draws, in every look, one of the frames a
+/// whole pixel either side, crisp: nothing about the shapes bobs up and
+/// down or goes soft between pixels. (Stems once sampled each pixel around
+/// its own position, so their outlines changed as they scrolled; and
+/// blending two frames kept the shapes' size but softened their outline
+/// halfway between pixels, a shimmer in loud passages.)
+#[test]
+fn scrolling_stays_crisp_in_every_look() {
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    // Busy music: a loud hit every beat over a noisy bed, and noisy stems.
+    let mut seed = 12345u32;
+    let mut noise = move || {
+        seed ^= seed << 13;
+        seed ^= seed >> 17;
+        seed ^= seed << 5;
+        (seed % 1000) as f32 / 1000.0
+    };
+    let base: Vec<[u8; 8]> = (0..60_000)
+        .map(|i| {
+            let beat = if i % 469 < 30 { 1.0 } else { 0.45 };
+            let mut s = [0u8; 8];
+            for k in 0..4 {
+                s[k] = (255.0 * beat * (0.5 + 0.5 * noise())) as u8;
+                s[k + 4] = (s[k] as f32 * 0.7) as u8;
+            }
+            s
+        })
+        .collect();
+    let stems: Vec<[u8; opendj_waveform::MAX_STEMS]> = (0..6000)
+        .map(|_| std::array::from_fn(|_| (255.0 * noise()) as u8))
+        .collect();
+    let colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00];
+    let track = Arc::new(GpuTrack::with_extras(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(base),
+        1000.0,
+        Extras {
+            stems: &stems,
+            stem_rate: 100.0,
+            stem_colors: &colors,
+            ..Extras::default()
+        },
+    ));
+    // 10 s across 1408 pixels (rows a multiple of 256 bytes, for reading back).
+    let (w, h) = (1408u32, 200u32);
+    let visible = 10.0;
+    for (style, half) in [
+        (Style::Rgb, false),
+        (Style::Rgb, true),
+        (Style::Bands, false),
+        (Style::Blue, false),
+        (Style::Stems, false),
+    ] {
+        let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+        view.set_style(style);
+        view.set_half(half);
+        view.set_track(&device, &renderer, Some(&track));
+        // How much each column right of the play line differs from the
+        // background, summed down the column, `pixels` on from 30 s.
+        let mut ink = |pixels: f64| -> Vec<f64> {
+            let frame = Frame {
+                play_seconds: 30.0 + pixels * visible / w as f64,
+                visible_seconds: visible,
+                duration: 60.0,
+                first_bar_beat: 0.0,
+                grid: steady_grid(0.0, 0.0),
+                cue: None,
+                loop_range: None,
+                loop_marking: None,
+                hotcues: [None; 8],
+                slip: None,
+                gain: 1.0,
+                phrases: Vec::new(),
+            };
+            view.render(&device, &queue, &renderer, Some(&frame), 1.0);
+            let px = read_back(&device, &queue, &view);
+            (760..w - 30)
+                .map(|x| {
+                    (0..h)
+                        .map(|y| {
+                            let i = ((y * w + x) * 4) as usize;
+                            (0..3)
+                                .map(|c| px[i + c].abs_diff(px[c]) as f64)
+                                .sum::<f64>()
+                        })
+                        .sum()
+                })
+                .collect()
+        };
+        let (before, after) = (ink(0.0), ink(1.0));
+        for k in 1..8 {
+            let t = k as f64 / 8.0;
+            let between = ink(t);
+            let off = |frame: &[f64]| {
+                let diff: f64 = (0..frame.len())
+                    .map(|x| (between[x] - frame[x]).abs())
+                    .sum();
+                diff / frame.iter().sum::<f64>()
+            };
+            let nearest = off(&before).min(off(&after));
+            assert!(
+                nearest < 0.01,
+                "{style:?} (half {half}) {t} px on: {:.1}% off a whole-pixel frame",
+                100.0 * nearest
+            );
+        }
+    }
 }
