@@ -15,7 +15,7 @@
 //! the drift built up to tens of milliseconds and was then pulled or
 //! snapped back: a sideways tug every few seconds.
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Bigger differences from the engine are jumps, followed at once (seconds).
 const JUMP: f64 = 0.04;
@@ -50,10 +50,101 @@ impl SmoothClock {
     }
 }
 
+/// When frames are shown, steadier than when they are drawn.
+///
+/// A frame is drawn a little early or late (later still when two decks
+/// scroll or the machine is busy) but shown at the display's next refresh.
+/// Positions are worked out for the time this gives: it advances by whole
+/// frame intervals and eases 15% of the way towards the real time each
+/// frame, so it never drifts off. Frames too far from that pattern (extra
+/// frames drawn in between, a refresh-rate change) take the real time.
+#[derive(Default)]
+pub struct FrameTimer {
+    /// The last frame's time.
+    last: Option<Instant>,
+    /// The frame interval in seconds, once known.
+    frame: Option<f64>,
+    /// The first frames' intervals, which start the estimate.
+    first: Vec<f64>,
+    /// Recent frames off the pattern.
+    missed: u32,
+}
+
+/// Frames counted before the interval is known.
+const FIRST_FRAMES: usize = 24;
+
+impl FrameTimer {
+    /// The time to draw a frame drawn at `now` for.
+    pub fn next(&mut self, now: Instant) -> Instant {
+        let at = match (self.last, self.frame) {
+            (Some(last), Some(f)) => {
+                let dt = signed_secs(now, last);
+                let n = (dt / f).round().max(1.0);
+                let error = dt - n * f;
+                if error.abs() > 0.35 * f {
+                    // Off the pattern. Many in a row: the refresh rate changed,
+                    // so learn the interval again.
+                    self.missed += 1;
+                    if self.missed >= FIRST_FRAMES as u32 {
+                        (self.frame, self.missed) = (None, 0);
+                        self.first.clear();
+                    }
+                    now
+                } else {
+                    self.missed = self.missed.saturating_sub(1);
+                    self.frame = Some(f + 0.01 * error / n);
+                    shift(last, n * f + 0.15 * error)
+                }
+            }
+            (Some(last), None) => {
+                let dt = signed_secs(now, last);
+                if dt > 0.002 && dt < 0.1 {
+                    self.first.push(dt);
+                }
+                if self.first.len() >= FIRST_FRAMES {
+                    // Their whole span over how many intervals it holds: one
+                    // frame drawn late makes the next early, so their errors
+                    // cancel. A skipped frame counts as more, in medians.
+                    let mut sorted = self.first.clone();
+                    sorted.sort_by(f64::total_cmp);
+                    let median = sorted[sorted.len() / 2];
+                    let span: f64 = self.first.iter().sum();
+                    let count: f64 = self
+                        .first
+                        .iter()
+                        .map(|d| (d / median).round().max(1.0))
+                        .sum();
+                    self.frame = Some(span / count);
+                }
+                now
+            }
+            _ => now,
+        };
+        self.last = Some(at);
+        at
+    }
+}
+
+/// `a - b` in seconds, negative if `a` is earlier.
+fn signed_secs(a: Instant, b: Instant) -> f64 {
+    match a.checked_duration_since(b) {
+        Some(d) => d.as_secs_f64(),
+        None => -b.duration_since(a).as_secs_f64(),
+    }
+}
+
+/// `t` moved by `secs`, either way.
+fn shift(t: Instant, secs: f64) -> Instant {
+    if secs >= 0.0 {
+        t + Duration::from_secs_f64(secs)
+    } else {
+        t - Duration::from_secs_f64(-secs)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     /// Plays at 1x, drawing at `times` (seconds) while the engine's answer
     /// is off by up to 1 ms; returns the worst gap between a frame's step
@@ -114,6 +205,82 @@ mod tests {
         let (step_off, lag) = play(&times);
         assert!(step_off < 0.0003, "steps off by {step_off}");
         assert!(lag < 0.001, "lags by {lag}");
+    }
+
+    /// Draws at `times` (seconds), shown at refreshes `vsyncs` apart;
+    /// returns how far the gap between the timer's time and the refresh
+    /// each frame is shown at varies, after the first 30 frames.
+    fn shown_spread(times: &[f64], vsync: f64) -> f64 {
+        let mut timer = FrameTimer::default();
+        let start = Instant::now();
+        let (mut lo, mut hi) = (f64::MAX, f64::MIN);
+        for (i, &t) in times.iter().enumerate() {
+            let at = timer.next(start + Duration::from_secs_f64(t));
+            let gap = signed_secs(at, start) - (t / vsync).ceil() * vsync;
+            if i > 30 {
+                (lo, hi) = (lo.min(gap), hi.max(gap));
+            }
+        }
+        hi - lo
+    }
+
+    #[test]
+    fn frame_times_follow_the_refresh_not_the_drawing() {
+        // 120 Hz, each frame drawn 1-5 ms before the refresh it shows at.
+        let vsync = 1.0 / 120.0;
+        let early = [0.001, 0.005, 0.002, 0.004, 0.003, 0.001, 0.005];
+        let times: Vec<f64> = (1..1200)
+            .map(|i| i as f64 * vsync - early[i % early.len()])
+            .collect();
+        // The drawing times wander 4 ms against the refresh; the timer's
+        // much less.
+        let spread = shown_spread(&times, vsync);
+        assert!(spread < 0.001, "{spread}");
+        let mut timer = FrameTimer::default();
+        let start = Instant::now();
+        let ats: Vec<f64> = times
+            .iter()
+            .map(|&t| signed_secs(timer.next(start + Duration::from_secs_f64(t)), start))
+            .collect();
+        for (i, w) in ats.windows(2).enumerate().skip(30) {
+            let step = w[1] - w[0];
+            assert!((step - vsync).abs() < 0.0005, "frame {i}: step {step}");
+        }
+    }
+
+    #[test]
+    fn frame_times_never_drift_off() {
+        // A slow first frame, refresh switching between 120 and 60 Hz,
+        // frames drawn up to 2 ms early or late and extra frames between.
+        let mut seed = 3u64;
+        let mut random = move || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let mut timer = FrameTimer::default();
+        let start = Instant::now();
+        let mut vsync = 0.05;
+        for i in 0..3000 {
+            vsync += if (i / 200) % 2 == 0 {
+                1.0 / 120.0
+            } else {
+                1.0 / 60.0
+            };
+            let mut times = vec![vsync + (random() - 0.5) * 0.004];
+            if random() < 0.2 {
+                times.push(vsync + 0.003 + random() * 0.003);
+            }
+            for t in times {
+                let at = signed_secs(timer.next(start + Duration::from_secs_f64(t)), start);
+                assert!(
+                    (at - t).abs() < 0.004,
+                    "frame {i}: {} ms off",
+                    (at - t) * 1e3
+                );
+            }
+        }
     }
 
     #[test]
