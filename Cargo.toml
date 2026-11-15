@@ -55,6 +55,31 @@ opt-level = 2
 [profile.dev.package.rubato]
 opt-level = 2
 
+# Quick rebuilds that still play smoothly: `cargo run --profile fast --bin opendj`.
+# Dependencies are built once at full speed and cached; openDJ's own crates
+# are built incrementally at a light optimisation level, so a change to one
+# file rebuilds in a fraction of the time `--release` takes.
+[profile.fast]
+inherits = "release"
+opt-level = 1
+incremental = true
+codegen-units = 256
+debug = false
+
+[profile.fast.package."*"]
+opt-level = 3
+codegen-units = 16
+incremental = false
+
+[profile.fast.package.opendj-engine]
+opt-level = 2
+
+[profile.fast.package.opendj-waveform]
+opt-level = 2
+
+[profile.fast.package.opendj-separation]
+opt-level = 2
+
 # femtovg (Slint's renderer) with a fix for its pipeline cache, which threw
 # away pipelines each flush and rebuilt them every frame. See
 # third_party/femtovg/OPENDJ.md.
