@@ -208,12 +208,14 @@ struct Params {
     mark_count: u32,
     /// The text atlas's width and height, in atlas pixels.
     atlas: [f32; 2],
-    /// 1: drawn from the bottom edge up (overview only).
+    /// 1: drawn from the bottom edge up.
     half: u32,
     /// 1: the grid is being edited: beats and bar lines drawn louder, over
     /// the waveform too (scrolling only).
     grid_edit: u32,
-    _pad: [u32; 3],
+    /// Scrolling: where the play line is, as a fraction of the width.
+    needle: f32,
+    _pad: [u32; 2],
     /// Bit `n` set: lane `n` (from the bottom) is tinted.
     lane_tint: [u32; 4],
     mark_color: [f32; 4],
@@ -345,7 +347,7 @@ const fn rgb(hex: u32) -> [f32; 4] {
 /// and high: blue, orange and white as on rekordbox; and lilac (openDJ's
 /// accent), cyan and white.
 pub const BAND_PALETTES: [[[f32; 4]; 3]; 2] = [
-    [rgb(0x1F6BFF), rgb(0xE8902A), rgb(0xF5EEDD)],
+    [rgb(0x0050E0), rgb(0xF8A000), rgb(0xF0E8D0)],
     [rgb(0xB69CFF), rgb(0x22C7E0), rgb(0xF4FBFF)],
 ];
 
@@ -483,7 +485,7 @@ pub struct GpuTrack {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Extras<'a> {
     /// Vocal levels, 0 to 255, `vocal_rate` a second, that
-    /// [`WaveformView::set_show_vocals`] tints the sung parts with.
+    /// [`WaveformView::set_show_vocals`] marks the sung parts with.
     pub vocals: &'a [u8],
     pub vocal_rate: f64,
     /// Each stem's peak along the track, `stem_rate` a second, as the
@@ -692,7 +694,9 @@ pub struct WaveformView {
     palette: Palette,
     /// Drawn from the bottom up (see [`WaveformView::set_half`]).
     half: bool,
-    /// Tints the sung parts (see [`WaveformView::set_show_vocals`]).
+    /// Where the play line is (see [`WaveformView::set_needle`]).
+    needle: f32,
+    /// Marks the sung parts (see [`WaveformView::set_show_vocals`]).
     show_vocals: bool,
     /// The next mix, as fractions of the track (Mono style).
     mix: Option<(f32, f32)>,
@@ -723,6 +727,7 @@ impl WaveformView {
             style: Style::default(),
             palette: Palette::default(),
             half: false,
+            needle: 0.5,
             show_vocals: false,
             mix: None,
             texture: create_texture(device, width, height),
@@ -749,13 +754,22 @@ impl WaveformView {
     }
 
     /// Draws the waveform from the bottom edge up instead of mirrored about
-    /// the middle, as rekordbox's half overview does. Overviews only.
+    /// the middle, as rekordbox does. A scrolling view showing lanes of
+    /// marks stays whole.
     pub fn set_half(&mut self, half: bool) {
         self.half = half;
     }
 
-    /// Tints the parts of the track where someone sings green, from the
-    /// vocal levels its [`GpuTrack::with_extras`] has. Not in the Mono style.
+    /// Where a scrolling view's play line is, as a fraction of its width
+    /// from the left: 0.5 in the middle (the default), 0.25 a quarter in so
+    /// more of what is coming shows.
+    pub fn set_needle(&mut self, at: f32) {
+        self.needle = at.clamp(0.1, 0.9);
+    }
+
+    /// Marks where someone sings with a cyan bar along the bottom of a
+    /// scrolling view, from the vocal levels its [`GpuTrack::with_extras`]
+    /// has. Not on overviews, nor in the Mono style.
     pub fn set_show_vocals(&mut self, show: bool) {
         self.show_vocals = show;
     }
@@ -889,9 +903,14 @@ impl WaveformView {
             lane_count: 0,
             mark_count: 0,
             atlas: renderer.digits.size,
-            half: (self.half && self.mode == Mode::Overview) as u32,
+            half: (self.half && (self.mode == Mode::Overview || self.lanes.is_none())) as u32,
             grid_edit: (self.grid_edit && self.mode == Mode::Scrolling) as u32,
-            _pad: [0; 3],
+            needle: if self.mode == Mode::Scrolling {
+                self.needle
+            } else {
+                0.5
+            },
+            _pad: [0; 2],
             lane_tint: [0; 4],
             mark_color: [0.0; 4],
             lit_color: [0.0; 4],

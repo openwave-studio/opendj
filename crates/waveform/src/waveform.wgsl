@@ -47,8 +47,9 @@ struct Params {
     mark_count: u32,
     atlas_w: f32,                      // the text atlas's width and height
     atlas_h: f32,
-    half: u32,                         // 1: drawn from the bottom edge up (overview only)
+    half: u32,                         // 1: drawn from the bottom edge up
     grid_edit: u32,                    // 1: the grid is being edited: drawn louder, over the waveform too
+    needle: f32,                       // scrolling: where the play line is, as a fraction of the width
     lane_tint: vec4<u32>,              // bit n: row n tinted (a scale note)
     mark_color: vec4<f32>,
     lit_color: vec4<f32>,
@@ -88,10 +89,17 @@ const MONO_LILAC = vec3<f32>(0.714, 0.612, 1.0);
 const MONO_MIX = vec3<f32>(0.357, 0.298, 0.541);
 const MONO_GREY = vec3<f32>(0.40, 0.40, 0.44);
 // Blue style: the body, and what it lightens towards where the highs are loud.
+// 3-Band weights (see three_band): the mids and highs against the lows,
+// the highs' extra share when the overview stacks the bands, and how much
+// darker the mid colour is where the low and the mids overlap.
+const BAND_MID: f32 = 0.75;
+const BAND_HIGH: f32 = 0.2;
+const BAND_HIGH_STACKED: f32 = 2.5;
+const BAND_BOTH = vec3<f32>(0.7, 0.6, 0.6);
 const BLUE_BODY = vec3<f32>(0.173, 0.482, 0.898);   // #2C7BE5
 const BLUE_HIGHS = vec3<f32>(0.863, 0.922, 1.0);    // #DCEBFF
-// Show vocals: the sung parts lean towards this green.
-const VOCAL_GREEN = vec3<f32>(0.231, 0.890, 0.541); // #3BE38A
+// Show vocals: the strip over the sung parts.
+const VOCAL_CYAN = vec3<f32>(0.247, 0.831, 0.933); // #3FD4EE
 // Phrase colours, in PhraseKind order: intro, build (up), drop (peak),
 // breakdown (break or bridge), outro, chorus (main), verse.
 const PHRASE_COLORS = array<vec3<f32>, 7>(
@@ -175,30 +183,44 @@ fn stem_level(j: u32) -> array<f32, 5> {
     return array<f32, 5>(a.x, a.y, a.z, a.w, b.x);
 }
 
-// Each stem's peak around `bin`, as a linear level: interpolated between
-// levels, and on the overview the most over the column.
-fn stems_at(bin: f32) -> array<f32, 5> {
+// Each stem's peak over the slice range [a, b) (in finest-level slices), as
+// a linear level: the loudest level the range covers, weighted by how much
+// of it it covers (as the waveform's columns are, so the shapes stay put as
+// they scroll), or zoomed in past one level a pixel, interpolated between
+// levels.
+fn stems_range(a: f32, b: f32) -> array<f32, 5> {
     var most = array<f32, 5>(0.0, 0.0, 0.0, 0.0, 0.0);
     let count = u32(p.stems.y);
-    if (count == 0u || p.stems.z <= 0.0 || bin < 0.0) {
+    let per = p.stems.z;
+    if (count == 0u || per <= 0.0 || b <= 0.0) {
         return most;
     }
-    let per = p.stems.z;
-    let span = max(p.bins_per_pixel / per, 1.0);
-    let steps = min(u32(ceil(span)), 16u);
-    for (var i = 0u; i < steps; i = i + 1u) {
-        let x = bin / per - 0.5 * span + (f32(i) + 0.5) * span / f32(steps);
-        if (x > f32(count)) {
-            break;
+    let la = max(a, 0.0) / per;
+    let lb = b / per;
+    if (lb - la <= 1.0) {
+        let c = (la + lb) * 0.5 - 0.5;
+        if (c > f32(count)) {
+            return most;
         }
-        let j = u32(clamp(floor(x), 0.0, f32(count - 1u)));
+        let j = u32(clamp(floor(c), 0.0, f32(count - 1u)));
         let k = min(j + 1u, count - 1u);
-        let a = stem_level(j);
-        let b = stem_level(k);
-        let t = clamp(fract(x), 0.0, 1.0);
+        let lo = stem_level(j);
+        let hi = stem_level(k);
+        let t = clamp(c - floor(c), 0.0, 1.0);
         for (var s = 0u; s < 5u; s = s + 1u) {
-            let v = mix(a[s], b[s], t);
-            most[s] = max(most[s], v * v);
+            let v = mix(lo[s], hi[s], t);
+            most[s] = v * v;
+        }
+        return most;
+    }
+    let first = i32(floor(la));
+    let last = min(min(i32(ceil(lb)) - 1, first + 63), i32(count) - 1);
+    for (var i = first; i <= last; i = i + 1) {
+        let cover = clamp(min(lb, f32(i + 1)) - max(la, f32(i)), 0.0, 1.0);
+        let w = smoothstep(0.0, 0.5, cover);
+        let l = stem_level(u32(i));
+        for (var s = 0u; s < 5u; s = s + 1u) {
+            most[s] = max(most[s], l[s] * l[s] * w);
         }
     }
     return most;
@@ -206,9 +228,9 @@ fn stems_at(bin: f32) -> array<f32, 5> {
 
 // The Stems look: each stem's shape in its colour, the tallest at the
 // back so every stem shows where it is louder than the ones in front.
-fn stems_wave(base: vec3<f32>, bin: f32, d: f32, span: f32) -> vec3<f32> {
+fn stems_wave(base: vec3<f32>, levels: array<f32, 5>, d: f32, span: f32) -> vec3<f32> {
     var color = base;
-    var h = stems_at(bin);
+    let h = levels;
     let n = min(u32(p.stems.w), 5u);
     var done = array<bool, 5>(false, false, false, false, false);
     for (var round = 0u; round < n; round = round + 1u) {
@@ -307,24 +329,40 @@ struct Columns {
     a: Slice,
     b: Slice,
     t: f32,
+    // Where column a starts and how wide a column is, in slices.
+    start: f32,
+    width: f32,
 };
 
 fn columns(bin: f32) -> Columns {
     let w = p.bins_per_pixel;
     if (p.mode != 0u) {
         let s = sample_range(bin - 0.5 * w, bin + 0.5 * w);
-        return Columns(s, s, 0.0);
+        return Columns(s, s, 0.0, bin - 0.5 * w, w);
     }
     let c = bin / w - 0.5;
     let i = floor(c);
     let a = sample_range(i * w, (i + 1.0) * w);
     let b = sample_range((i + 1.0) * w, (i + 2.0) * w);
-    return Columns(a, b, c - i);
+    return Columns(a, b, c - i, i * w, w);
+}
+
+// The play position the scrolling picture is drawn at: snapped so the
+// columns land on whole screen pixels. Gliding between pixels by blending
+// two columns kept the shape's size, but its outline went soft halfway
+// between pixels and sharp again on them, every frame or two: in loud busy
+// passages the top edge seemed to shimmer up and down. Snapped, each frame
+// is crisp and the waveform moves a whole screen pixel at a time. The play
+// line, the marks and the grid all move with it.
+fn view_bin() -> f32 {
+    let w = p.bins_per_pixel;
+    let cx = p.size.x * p.needle;
+    return (round(p.play_bin / w - cx) + cx) * w;
 }
 
 fn column_bin(x: f32) -> f32 {
     if (p.mode == 0u) {
-        return p.play_bin + (x - p.size.x * 0.5) * p.bins_per_pixel;
+        return view_bin() + (x - p.size.x * p.needle) * p.bins_per_pixel;
     }
     return x * p.bins_per_pixel;
 }
@@ -364,7 +402,7 @@ fn gap_before(x: f32, at: f32, w: f32) -> f32 {
 // The x pixel of a slice position.
 fn bin_x(bin: f32) -> f32 {
     if (p.mode == 0u) {
-        return (bin - p.play_bin) / p.bins_per_pixel + p.size.x * 0.5;
+        return (bin - view_bin()) / p.bins_per_pixel + p.size.x * p.needle;
     }
     return bin / p.bins_per_pixel;
 }
@@ -470,6 +508,41 @@ fn phrase_color(kind: u32) -> vec3<f32> {
     return PHRASE_COLORS[min(kind, 6u)];
 }
 
+// 3-Band, layered as rekordbox does it. Each band is its RMS body, solid
+// (no peak outlines), weighted so the highs stay a highlight on top rather
+// than the whole shape: the analysis lifts the mids and highs (by 1.4 and 2)
+// so the RGB colours read, which is undone here, and the highs are drawn
+// smaller again, as rekordbox does.
+//
+// Scrolling: the louder of low and mid at the back in its own colour, the
+// part where both sound (the quieter one's height) in a darker mid, and the
+// highs on top. The overview stacks the bands instead, as rekordbox's
+// overview does: low from the line, the mids on it and the highs on top, so
+// the highs are a thin edge along the outside.
+fn three_band(base: vec3<f32>, s: Slice, d: f32, span: f32) -> vec3<f32> {
+    let low = body(s.rms.x, s.peak.x);
+    let mid = body(s.rms.y, s.peak.y) * BAND_MID;
+    let high = body(s.rms.z, s.peak.z) * BAND_HIGH;
+    var color = base;
+    if (p.mode == 1u) {
+        let lr = height(low) * span;
+        let mr = height(low + mid) * span;
+        let hr = height(low + mid + high * BAND_HIGH_STACKED) * span;
+        color = over(color, p.high_color.rgb, fill(hr, d));
+        color = over(color, p.mid_color.rgb, fill(mr, d));
+        color = over(color, p.low_color.rgb, fill(lr, d));
+        return color;
+    }
+    let lr = height(low) * span;
+    let mr = height(mid) * span;
+    let hr = height(high) * span;
+    let back = select(p.mid_color.rgb, p.low_color.rgb, lr > mr);
+    color = over(color, back, fill(max(lr, mr), d));
+    color = over(color, p.mid_color.rgb * BAND_BOTH, fill(min(lr, mr), d));
+    color = over(color, p.high_color.rgb, fill(hr, d));
+    return color;
+}
+
 // Column `s`'s waveform over `base`, at `d` pixels from the centre line.
 fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
     var color = base;
@@ -499,14 +572,7 @@ fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
         let shade = 0.82 + 0.18 * clamp(1.0 - d / max(rms_h, 1.0), 0.0, 1.0);
         color = over(color, c * shade, fill(rms_h, d));
     } else {
-        // Stacked bands: low widest at the back, each its RMS body, solid
-        // (no peak outlines).
-        let lr = height(body(s.rms.x, s.peak.x)) * span;
-        let mr = height(body(s.rms.y, s.peak.y)) * span * 0.85;
-        let hr = height(body(s.rms.z, s.peak.z)) * span * 0.7;
-        color = over(color, p.low_color.rgb, fill(lr, d) * 0.95);
-        color = over(color, p.mid_color.rgb, fill(mr, d) * 0.9);
-        color = over(color, p.high_color.rgb, fill(hr, d) * 0.9);
+        color = three_band(color, s, d, span);
     }
     return color;
 }
@@ -598,23 +664,30 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
         let cols = columns(bin);
         let stems = p.style == 4u && p.stems.w > 0.5;
         if (stems) {
-            color = stems_wave(color, bin, d, span);
+            // Each stem's shapes per column too, blended like the others.
+            let ha = stems_range(cols.start, cols.start + cols.width);
+            let hb = stems_range(cols.start + cols.width, cols.start + 2.0 * cols.width);
+            color = mix(stems_wave(color, ha, d, span), stems_wave(color, hb, d, span), cols.t);
         } else {
             color = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
-        }
-        // Show vocals: the shape leans green where someone sings, lightly,
-        // so the band colours still read through (the Stems look shows the
-        // vocals in their own colour already).
-        if (p.vocal.w > 0.5 && p.style != 2u && !stems) {
-            let v = vocal_at(bin);
-            if (v > 0.0) {
-                let reach = height(mix(body(cols.a.rms.w, cols.a.peak.w), body(cols.b.rms.w, cols.b.peak.w), cols.t)) * span;
-                color = over(color, VOCAL_GREEN, v * 0.45 * fill(reach, d));
-            }
         }
     }
 
     color = mix(under_wave, color, p.trace_alpha);
+
+    // Vocals › Bar: a cyan bar along the bottom of the large waveform
+    // where someone sings, where the lyrics run when they show instead, so
+    // the waveform keeps its own colours.
+    if (has_track && p.mode == 0u && p.vocal.w > 0.5 && p.style != 2u) {
+        let bar = 4.0 * k;
+        let from_bottom = p.size.y - y;
+        if (from_bottom < bar + 0.5) {
+            let v = vocal_at(bin);
+            if (v > 0.0) {
+                color = over(color, VOCAL_CYAN, 0.9 * v * clamp(bar - from_bottom + 0.5, 0.0, 1.0));
+            }
+        }
+    }
 
     // Lanes of marks (a live deck's notes or drum hits), in rows from the
     // bottom: tinted rows, then each mark on this pixel's row.
@@ -831,7 +904,7 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
     if (p.mode == 1u) {
         color = over(color, vec3<f32>(1.0), line(x, bin_x(p.play_bin), 0.75 * k));
     } else {
-        let cx = p.size.x * 0.5;
+        let cx = p.size.x * p.needle;
         // White with a soft shadow either side, readable over any colour.
         color = over(color, vec3<f32>(0.0), clamp(1.0 - (abs(x - cx) - k) / (3.0 * k), 0.0, 1.0) * 0.35);
         color = over(color, vec3<f32>(1.0), line(x, cx, 1.0 * k));
