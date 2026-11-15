@@ -134,6 +134,8 @@ const INPUTS: [(i32, i32, usize, &str); 2] =
 
 pub fn install(app: &AppWindow) {
     let ui = app.global::<InstrumentsUi>();
+    ui.set_audio_page(crate::prefs::AUDIO_PAGE);
+    ui.set_plugins_page(crate::prefs::PLUGINS_PAGE);
     ui.on_payload(|kind, index| DataTransfer::from(SharedString::from(payload(kind, index))));
     ui.on_item(|data| data.plain_text().ok().and_then(|t| parse(&t)).unwrap_or(-1));
     let weak = app.as_weak();
@@ -639,6 +641,7 @@ pub fn show_routes(app: &AppWindow, status: &[String], clock: &str) {
     ui.set_strips(ModelRc::new(VecModel::from(strips(
         status,
         &settings::mixer_names(),
+        &settings::mixer_colors(),
         clock_device(clock),
     ))));
     ui.set_mixer_groove(
@@ -654,7 +657,7 @@ pub fn show_routes(app: &AppWindow, status: &[String], clock: &str) {
 /// that has a device, working or not, under the name given it ("Ch N"
 /// until renamed), marked when its interface isn't `clock`'s (the main
 /// output's device, "" when there is none).
-fn strips(status: &[String], names: &[String], clock: &str) -> Vec<MixerStripInfo> {
+fn strips(status: &[String], names: &[String], colors: &[i32], clock: &str) -> Vec<MixerStripInfo> {
     inputs::AUXILIARIES
         .iter()
         .enumerate()
@@ -690,6 +693,7 @@ fn strips(status: &[String], names: &[String], clock: &str) -> Vec<MixerStripInf
                 badge: (n + 1).to_string().into(),
                 on_key: "main_mix".into(),
                 aux: true,
+                color: colors.get(n).copied().unwrap_or(-1),
                 view: if groove { 2 } else { 0 },
                 problem: if route.is_empty() {
                     status.as_str()
@@ -871,7 +875,7 @@ mod tests {
         let mut names = vec![String::new(); 8];
         names[4] = "Vocals".into();
         let clock = clock_device("M4 · 48 kHz · 256 samples (5.3 ms)");
-        let shown: Vec<(i32, String, String, bool, String)> = strips(&status, &names, clock)
+        let shown: Vec<(i32, String, String, bool, String)> = strips(&status, &names, &[], clock)
             .into_iter()
             .map(|s| {
                 let (name, channels, problem) =
@@ -897,9 +901,11 @@ mod tests {
             ]
         );
         // No main output: nothing to drift from.
-        assert!(strips(&status, &names, clock_device("No audio output"))
-            .iter()
-            .all(|s| !s.own_clock));
+        assert!(
+            strips(&status, &names, &[], clock_device("No audio output"))
+                .iter()
+                .all(|s| !s.own_clock)
+        );
     }
 
     #[test]

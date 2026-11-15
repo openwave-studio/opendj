@@ -15,6 +15,8 @@ import { WaveZoom, ZoomBar, ZoomReadout } from "zoom.slint";
 export { WaveZoom }
 import { WaveHeight, WaveHeightList, WaveHeightGrip } from "wave_height.slint";
 export { WaveHeight }
+import { WaveLook } from "wave_look.slint";
+export { WaveLook }
 import { LayoutsUi, LayoutEntry } from "layouts.slint";
 export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
@@ -25,7 +27,7 @@ import { DeckStrip, FourDeckBar } from "fourdeck.slint";
 import { LiteDeck, LiteMixer, LiteUi, PadBarHalf } from "lite.slint";
 import { FxBar } from "fxbar.slint";
 import { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi } from "instruments.slint";
-import { Browser, Folder, TrackRow, SideRow, SideTab, SideTabs, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow } from "library.slint";
+import { Browser, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow } from "library.slint";
 import { Preferences, PreferencesOverlay, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart } from "preferences.slint";
 import { UsbExport, UsbExportDialog } from "usb_export.slint";
 import { Tour, TourSetup, TourSetupDialog, TourTip, TourOffer } from "tour.slint";
@@ -51,7 +53,7 @@ export { KaraokeWindow } from "karaoke.slint";
 export { RemoteUi, RemoteDevice }
 export { MixerMode, InputSettings, InputRow }
 export { BroadcastState, BroadcastStation }
-export { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
+export { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
 
 // Macro lanes: an instrument deck's knobs drawn as lines on its scrolling
 // waveform instead of its note roll (2-Deck Basic only), a colour each.
@@ -119,7 +121,7 @@ component EditGridButton inherits Rectangle {
 // right to move through it, hearing what passes, to set cues and grids by
 // ear. Letting go carries on as before, playing or paused.
 //
-// The dimmed pencil in its bottom outer corner edits the beat grid: it
+// The dimmed pencil in its bottom right corner edits the beat grid: it
 // turns on the deck's grid edit mode (`beats_edit`) and opens the Edit Grid
 // popover. While editing, the grid is drawn louder and dragging moves an
 // unlocked grid with the audio (Alt-drag still scrubs). The pencil again,
@@ -173,8 +175,6 @@ component Waveform inherits Rectangle {
     property <bool> editing: drag-grid || Controls.value(edit-index, Controls.tick) > 0;
     property <bool> grid-open: editing && !locked;
     property <bool> loaded: Controls.value(duration-index, Controls.tick) > 0;
-    // Decks on the right (2 and 4) keep the pencil in the right corner.
-    property <bool> pencil-right: group == "[Channel2]" || group == "[Channel4]";
     property <float> press-position;
     property <bool> holding;
     // While the grid is dragged: whether it is, and how far it has moved.
@@ -256,8 +256,8 @@ component Waveform inherits Rectangle {
     // instrument's knobs on the page its deck shows, or the Groove Box's
     // tracks' levels.
     if macros: Rectangle {
-        x: parent.width / 2 + 6px;
-        width: parent.width / 2 - 40px;
+        x: parent.width * WaveLook.needle + 6px;
+        width: parent.width * (1 - WaveLook.needle) - 40px;
         for i in 8: MacroLabel {
             y: i * parent.height / 8;
             height: parent.height / 8;
@@ -278,11 +278,12 @@ component Waveform inherits Rectangle {
         now: WaveLyrics.now(lyrics-deck);
         visible-seconds: root.visible-seconds;
     }
-    // The zoom's bar at the left edge while the pointer is over this
-    // waveform, and its step a moment after it changes: on this waveform
-    // when the pointer is on it, else on the layout's top one, so it shows
+    // The pointer over this waveform shows the zoom's bar (at the left
+    // edge of the whole strip, beside every deck's waveform) and puts the
+    // zoom's step on this one a moment after it changes; with the pointer
+    // elsewhere, the step shows on the layout's top waveform, so it shows
     // once whatever the number of decks.
-    property <bool> pointer-here: wave-touch.has-hover || zoom-bar.active;
+    property <bool> pointer-here: wave-touch.has-hover;
     changed pointer-here => {
         if pointer-here {
             WaveZoom.hovered = group;
@@ -290,24 +291,15 @@ component Waveform inherits Rectangle {
             WaveZoom.hovered = "";
         }
     }
-    // At the outer edge away from the grid pencil, so it has the whole
-    // height even on short waveforms.
-    zoom-bar := ZoomBar {
-        x: pencil-right ? 0 : parent.width - self.width;
-        y: 0;
-        height: parent.height;
-        shown: wave-touch.has-hover;
-    }
     ZoomReadout {
         x: 28px;
         y: 6px;
         shown: zoom-flash && (WaveZoom.hovered == group || (WaveZoom.hovered == "" && first));
     }
-    // Right-click: show or hide the phrase flags on every scrolling
-    // waveform, and zoom them all.
+    // Right-click: zoom every scrolling waveform.
     wave-menu := PopupWindow {
         x: min(menu-x, root.width - 130px);
-        y: min(menu-y, root.height - 158px);
+        y: min(menu-y, root.height - 134px);
         width: 130px;
         Rectangle {
             background: Theme.panel-raised;
@@ -319,25 +311,6 @@ component Waveform inherits Rectangle {
         }
         VerticalLayout {
             padding: 4px;
-            Rectangle {
-                height: 24px;
-                background: wpa.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
-                border-radius: 4px;
-                Text {
-                    x: 10px;
-                    text: PhraseView.waveform-visible ? "Hide phrases" : "Show phrases";
-                    color: Theme.text;
-                    font-size: 11px;
-                    font-weight: 600;
-                    vertical-alignment: center;
-                }
-                wpa := TouchArea {
-                    clicked => {
-                        PhraseView.waveform-visible = !PhraseView.waveform-visible;
-                        PhraseView.waveform-changed(PhraseView.waveform-visible);
-                    }
-                }
-            }
             for item[i] in [
                 { text: "Zoom in", enabled: WaveZoom.level < WaveZoom.steps, by: 1 },
                 { text: "Zoom out", enabled: WaveZoom.level > 1, by: -1 },
@@ -413,7 +386,7 @@ component Waveform inherits Rectangle {
     }
     // The pencil: dimmed until hovered, lit while editing.
     if loaded: Rectangle {
-        x: pencil-right ? parent.width - self.width - 5px : 5px;
+        x: parent.width - self.width - 5px;
         y: parent.height - self.height - 5px;
         width: 24px;
         height: 22px;
@@ -448,7 +421,7 @@ component Waveform inherits Rectangle {
     // Edit Grid: bar 1 at the play line, nudges, the rest of the grid tools
     // (More…), back to the detected grid, lock, and Done.
     edit-popup := PopupWindow {
-        x: pencil-right ? root.width - self.width - 5px : 5px;
+        x: root.width - self.width - 5px;
         y: root.height - 2px;
         width: 232px;
         close-policy: close-on-click-outside;
@@ -519,7 +492,7 @@ component Waveform inherits Rectangle {
     grid-menu := GridMenu {
         group: group;
         info: info;
-        x: pencil-right ? root.width - 245px : 5px;
+        x: root.width - 245px;
         y: root.height - 2px;
     }
     // The switch between the note roll and the macro lanes.
@@ -997,7 +970,8 @@ component LayoutSwitch inherits Rectangle {
         width: 16px;
         height: 16px;
         border-radius: 8px;
-        background: Theme.n-ffffff;
+        // The knob stays white in Light too, as macOS draws it.
+        background: #ffffff;
     }
     TouchArea { mouse-cursor: pointer; clicked => { toggled(); } }
 }
@@ -1054,8 +1028,8 @@ component LayoutChooser inherits Rectangle {
                     padding-right: 6px;
                     spacing: 8px;
                     Rectangle {
-                        width: 16px;
-                        Text { text: "⋮⋮"; color: grip.has-hover ? Theme.text : Theme.text-dim; font-size: 13px; }
+                        width: 14px;
+                        DragGrip { dot-color: grip.has-hover ? Theme.text : Theme.text-dim; }
                         grip := TouchArea {
                             mouse-cursor: drag-from >= 0 ? MouseCursor.grabbing : MouseCursor.grab;
                             pointer-event(ev) => {
@@ -1109,10 +1083,7 @@ component LayoutChooser inherits Rectangle {
                     padding-left: 4px;
                     padding-right: 6px;
                     spacing: 8px;
-                    Rectangle {
-                        width: 16px;
-                        Text { text: "⋮⋮"; color: Theme.text; font-size: 13px; }
-                    }
+                    Rectangle { width: 14px; DragGrip { dot-color: Theme.text; } }
                     VerticalLayout { alignment: center; LayoutIcon { kind: dragged.layout == 3 ? 4 : dragged.layout == 4 ? 5 : dragged.layout; } }
                     Text { text: dragged.name; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
                     VerticalLayout { alignment: center; LayoutSwitch { on: dragged.on; } }
@@ -1180,7 +1151,7 @@ component LayoutPill inherits Rectangle {
                     }
                 }
             }
-            // The DJ's layouts (Settings › Layouts), in their order.
+            // The DJ's layouts (switched on in the menu's chooser), in their order.
             for e in LayoutsUi.menu: LayoutItem {
                 kind: e.layout == 3 ? 4 : e.layout == 4 ? 5 : e.layout;
                 text: e.name;
@@ -1191,7 +1162,7 @@ component LayoutPill inherits Rectangle {
                 }
             }
             Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
-            // Dark, Light or Auto (Match system), as in Settings › Layouts.
+            // Dark, Light or Auto (Match system), as in Settings › Appearance.
             AppearanceRow {}
         }
     }
@@ -1272,7 +1243,7 @@ component WaveformsButton inherits Rectangle {
     sizes := PopupWindow {
         x: 0px;
         y: root.height + 6px;
-        width: 270px;
+        width: 300px;
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.panel-raised;
@@ -1284,13 +1255,13 @@ component WaveformsButton inherits Rectangle {
         }
         WaveHeightList {
             fits: root.fits;
+            // Stays open, so the look can be tried out; a choice shows the
+            // waveforms if they were hidden.
             picked => {
-                // Picking a height shows the waveforms if they were hidden.
                 if !root.on {
                     root.on = true;
                     root.changed-to(true);
                 }
-                sizes.close();
             }
         }
     }
@@ -1574,6 +1545,11 @@ export component AppWindow inherits Window {
     // root.height here would tie the window's own size to the waveforms'.
     property <length> strip-room: LibraryEdit.window-height - other-rows - library-floor;
     property <int> wave-fits: strip-heights[9] <= strip-room ? 10 : strip-heights[8] <= strip-room ? 9 : strip-heights[7] <= strip-room ? 8 : strip-heights[6] <= strip-room ? 7 : strip-heights[5] <= strip-room ? 6 : strip-heights[4] <= strip-room ? 5 : strip-heights[3] <= strip-room ? 4 : strip-heights[2] <= strip-room ? 3 : strip-heights[1] <= strip-room ? 2 : 1;
+    // While the drop-down's slider is dragged: the strip's height between
+    // the two steps either side of it, up to the highest that fits.
+    property <float> slide-at: clamp(WaveHeight.slide, 1, max(wave-fits, 1));
+    property <int> slide-low: floor(slide-at);
+    property <length> slide-height: strip-heights[slide-low - 1] + (strip-heights[min(slide-low, 9)] - strip-heights[slide-low - 1]) * (slide-at - slide-low);
     property <int> wave-level: min(WaveHeight.level, max(wave-fits, min(WaveHeight.level, WaveHeight.default-level)));
     // From whichever layout's deck A is showing.
     // 2-Deck measures the overviews on deck 1, or on deck 2 while deck 1
@@ -2050,7 +2026,7 @@ export component AppWindow inherits Window {
                 // would freeze the GPU-updated waveform images. Folded away while
                 // the library is expanded or the top bar button hides them
                 // (Prep has no such button: its waveform always shows).
-                height: library-expanded || !(waveforms-visible || prep) || player ? 0px : wave-grip.dragging ? wave-grip.drag-height : strip-heights[wave-level - 1];
+                height: library-expanded || !(waveforms-visible || prep) || player ? 0px : wave-grip.dragging ? wave-grip.drag-height : WaveHeight.sliding ? slide-height : strip-heights[wave-level - 1];
                 visible: !library-expanded && (waveforms-visible || prep) && !player;
                 background: Theme.well;
                 // Thin grey lines above, between and below the waveforms.
@@ -2105,6 +2081,15 @@ export component AppWindow inherits Window {
                     Rectangle { height: 1px; background: Theme.border; }
                     Waveform { source: waveform-4; group: "[Channel4]"; info: decks[3]; vertical-stretch: 1; lyrics-deck: 3; }
                     Rectangle { height: 1px; background: Theme.border; }
+                }
+                // The zoom's bar, down the left edge of all the waveforms at
+                // once (Prep's one, not its key hints), while the pointer is
+                // over any of them or on the bar.
+                ZoomBar {
+                    x: 0;
+                    y: 0;
+                    height: prep ? max(0px, parent.height - 26px) : parent.height;
+                    shown: WaveZoom.hovered != "";
                 }
             }
 

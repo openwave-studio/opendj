@@ -382,6 +382,28 @@ impl Deck {
             .unwrap_or_else(|| 1.0 + self.c.rate.get() * self.c.rate_range.get() * self.rate_dir())
     }
 
+    /// Applies a `rate_range_set` request: the new range, with the fader
+    /// moved so the speed stays the same (or to the fader's end when it
+    /// doesn't fit). On the audio thread, so no buffer hears the new range
+    /// with the old fader position. Raw `rateRange` writes keep their
+    /// Mixxx meaning for existing controller scripts.
+    fn change_rate_range(&mut self) {
+        let range = take_value(&self.c.rate_range_set);
+        if !range.is_finite()
+            || !(0.01..=1.0).contains(&range)
+            || self.c.rate.is_locked()
+            || self.c.rate_range.is_locked()
+        {
+            return;
+        }
+        let position = (self.c.rate.get() * self.c.rate_range.get() / range).clamp(-1.0, 1.0);
+        self.c.rate_range.set(range);
+        self.c.rate.set(position);
+        // Rescaling a synced follower is not a manual tempo change: it
+        // must not pull its leader along.
+        self.rate_written = self.c.rate.get();
+    }
+
     /// -1 or 1; see `rate_dir`.
     fn rate_dir(&self) -> f64 {
         if self.c.rate_dir.get() < 0.0 {
@@ -2053,7 +2075,7 @@ impl Engine {
                         h.end_position.set(-1.0);
                     }
                     d.c.hotcue_focus.set(-1.0);
-                    let [reset_fx, reset_eq, reset_gain] =
+                    let [reset_fx, reset_eq, reset_gain, reset_tempo] =
                         self.master.auto_reset.each_ref().map(|c| c.get_bool());
                     // The track's own gain, set in its info; auto gain levels
                     // it on top.
@@ -2129,6 +2151,12 @@ impl Engine {
                         let _ = self.returned.push(Returned::Done(old));
                     }
                     d.set_seconds(track.first_beat);
+                    // The tempo fader back to 0%, unless it holds the tempo a
+                    // playing deck follows (below).
+                    if reset_tempo && !d.c.rate.is_locked() {
+                        d.c.rate_reset.set_bool(false);
+                        d.c.rate.set(0.0);
+                    }
                     if let Some(held) = held_bpm.filter(|_| track.bpm > 0.0) {
                         // At the held tempo, or half or double it, whichever
                         // is nearest the track's own.
@@ -2938,6 +2966,9 @@ impl Engine {
         self.apply_commands();
         self.eject();
         self.live_inputs();
+        for d in &mut self.decks {
+            d.change_rate_range();
+        }
         let link = self.link.begin(frames, self.sample_rate);
         self.sync(link);
         let mut moved = [Move::None; NUM_DECKS];
@@ -4846,7 +4877,7 @@ mod tests {
     }
 
     #[test]
-    fn loading_a_track_resets_fx_eq_and_gain() {
+    fn loading_a_track_resets_fx_eq_gain_and_tempo() {
         let (reg, mut engine, mut input) = setup();
         load(&mut input, 0, short_track(120.0, 4.0));
         load(&mut input, 1, short_track(120.0, 4.0));
@@ -4856,6 +4887,7 @@ mod tests {
         let eq = |k: &str| c("[EqualizerRack1_[Channel1]_Effect1]", k);
         let slot = |u: usize, k: &str| c(&format!("[EffectRack1_EffectUnit{u}_Effect1]"), k);
         deck1("pregain").set(2.0);
+        deck1("rate").set(0.4);
         eq("parameter1").set(0.2);
         eq("button_parameter3").set_bool(true);
         c("[QuickEffectRack1_[Channel1]]", "super1").set(0.8);
@@ -4874,6 +4906,7 @@ mod tests {
         load(&mut input, 0, short_track(124.0, 4.0));
         run(&mut engine, 0.02);
         assert_eq!(deck1("pregain").get(), 1.0);
+        assert_eq!(deck1("rate").get(), 0.0);
         assert_eq!(eq("parameter1").get(), 1.0);
         assert!(!eq("button_parameter3").get_bool());
         assert_eq!(c("[QuickEffectRack1_[Channel1]]", "super1").get(), 0.5);
@@ -4886,15 +4919,17 @@ mod tests {
         assert!(slot(5, "enabled").get_bool());
 
         // Switched off, loading leaves them as they are.
-        for k in ["fx", "eq", "gain"] {
+        for k in ["fx", "eq", "gain", "tempo"] {
             c("[Controls]", &format!("auto_reset_{k}")).set_bool(false);
         }
         deck1("pregain").set(2.0);
+        deck1("rate").set(0.4);
         eq("parameter1").set(0.2);
         slot(1, "enabled").set_bool(true);
         load(&mut input, 0, short_track(126.0, 4.0));
         run(&mut engine, 0.02);
         assert_eq!(deck1("pregain").get(), 2.0);
+        assert_eq!(deck1("rate").get(), 0.4);
         assert_eq!(eq("parameter1").get(), 0.2);
         assert!(slot(1, "enabled").get_bool());
     }
@@ -5593,6 +5628,87 @@ mod tests {
         press(&reg, "[Channel2]", "hotcue_3_activate");
         run(&mut engine, 0.05);
         assert!(phase_gap(&engine) < 0.01, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn tempo_range_requests_preserve_speed_and_only_change_the_selected_deck() {
+        let (reg, mut engine, _input) = setup();
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        let ranges = [0.04, 0.06, 0.08, 0.10, 0.16, 0.24, 0.50, 1.0];
+        for dir in [-1.0, 1.0] {
+            c("rate_dir").set(dir);
+            for old in ranges {
+                for new in ranges {
+                    for rate in [-1.0, -0.25, 0.0, 0.25, 1.0] {
+                        c("rateRange").set(old);
+                        c("rate").set(rate);
+                        let speed = 1.0 + (rate * old).clamp(-new, new) * dir;
+                        c("rate_range_set").set(new);
+                        // Only the audio thread applies the request.
+                        assert_eq!(c("rateRange").get(), old);
+                        engine.process(&mut [0.0; 128], 2);
+                        assert_eq!(c("rateRange").get(), new);
+                        assert!((engine.decks[0].speed() - speed).abs() < 1e-12);
+                        assert_eq!(c("rate_range_set").get(), 0.0);
+                        assert_eq!(reg.get("[Channel2]", "rateRange").unwrap().get(), 0.08);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn tempo_range_requests_respect_locks_and_reject_invalid_values() {
+        let (reg, mut engine, _input) = setup();
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        c("rate").set(0.5);
+        for locked in ["rate", "rateRange"] {
+            c(locked).lock(true);
+            c("rate_range_set").set(0.16);
+            engine.process(&mut [0.0; 128], 2);
+            assert_eq!(c("rateRange").get(), 0.08);
+            assert_eq!(c("rate").get(), 0.5);
+            c(locked).lock(false);
+        }
+        for value in [0.001, f64::NAN] {
+            c("rate_range_set").set(value);
+            engine.process(&mut [0.0; 128], 2);
+            assert_eq!(c("rateRange").get(), 0.08);
+            assert_eq!(c("rate").get(), 0.5);
+        }
+    }
+
+    #[test]
+    fn tempo_range_on_a_synced_follower_does_not_move_the_leader() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(128.0, 30.0));
+        load(&mut input, 1, short_track(120.0, 30.0));
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+        c("[Channel1]", "sync_leader").set(2.0);
+        for d in ["[Channel1]", "[Channel2]"] {
+            c(d, "play").set_bool(true);
+            c(d, "sync_enabled").set_bool(true);
+        }
+        run(&mut engine, 0.05);
+        for range in [0.16, 0.04, 1.0, 0.08] {
+            c("[Channel2]", "rate_range_set").set(range);
+            run(&mut engine, 0.05);
+            assert_eq!(c("[Channel2]", "rateRange").get(), range);
+            for d in ["[Channel1]", "[Channel2]"] {
+                assert!((c(d, "bpm").get() - 128.0).abs() < 0.01);
+            }
+        }
+        // The leader's range also changes without changing the mix tempo.
+        c("[Channel1]", "rate_range_set").set(0.16);
+        run(&mut engine, 0.05);
+        for d in ["[Channel1]", "[Channel2]"] {
+            assert!((c(d, "bpm").get() - 128.0).abs() < 0.01);
+        }
+        // A real fader move still controls both decks after the rescale.
+        c("[Channel2]", "rate").set(0.0);
+        run(&mut engine, 0.05);
+        assert!((c("[Channel1]", "bpm").get() - 120.0).abs() < 0.01);
     }
 
     #[test]

@@ -13,6 +13,7 @@ import { LyricsPanel } from "lyrics.slint";
 import { NowPlayingView } from "nowplaying.slint";
 import { PageView, PageUi } from "pages.slint";
 import { FilterBar, FilterUi, SuggestionList } from "filters.slint";
+import { CrateIcon, CrateColors } from "crate_icon.slint";
 import { TourMark } from "tourmark.slint";
 
 export struct Folder {
@@ -135,12 +136,21 @@ export global ColumnUi {
     // The rows in view, so Rust gives just those their mini waveforms.
     in-out property <int> first-shown;
     in-out property <int> shown-count;
-    // How track colors show (Settings › Library › Track Color): 0 a dot
+    // How track colors show (Settings › Appearance › Track color): 0 a dot
     // in the Color column, 1 a strip at the row's left edge, 2 the row
     // tinted, 3 not at all.
     in property <int> color-mode;
     // Settings picked a way to show them.
     callback set-color-mode(mode: int);
+}
+
+// The order of the rail's sources after Collection, by source number:
+// openDJ's own, then the services and add-ons. Dragged in the "•••" menu.
+export global RailOrder {
+    in property <[int]> built-in: [1, 9, 10, 12];
+    in property <[int]> external: [2, 3, 4, 8, 11];
+    // Moves source `source` this many places along its section.
+    callback moved(source: int, steps: int);
 }
 
 // One side panel tab in the chooser that its titles' right-click opens.
@@ -281,9 +291,8 @@ export struct MenuTag {
 }
 
 export global LibraryEdit {
-    // Colors a crate can have, as the track menu offers for tracks: red,
-    // orange, yellow, green, cyan, blue, purple, pink.
-    out property <[color]> list-colors: [#ff3b30, #ff9500, #ffcc00, #34c759, #5ac8fa, #007aff, #af52de, #ff2d55];
+    // Colors a crate can have (see CrateColors).
+    out property <[color]> list-colors: CrateColors.colors;
     // Gives the crate at a sidebar row a color (-1 for none) or an icon.
     callback set-list-color(index: int, color: int);
     callback set-list-icon(index: int, icon: int);
@@ -1823,23 +1832,7 @@ component FolderIcon inherits Rectangle {
     }
     // Crate: an open box seen from the front, with its slats, or the icon
     // the DJ picked for it, in its color.
-    if kind == 17: Path {
-        width: 18px;
-        height: 18px;
-        viewbox-width: 18;
-        viewbox-height: 18;
-        stroke: tint >= 0 ? LibraryEdit.list-colors[tint] : Theme.text;
-        stroke-width: 1.5px;
-        fill: transparent;
-        commands: icon == 1 ? "M 9 2 L 11.1 6.6 L 16 7.1 L 12.3 10.4 L 13.4 15.3 L 9 12.8 L 4.6 15.3 L 5.7 10.4 L 2 7.1 L 6.9 6.6 Z"
-            : icon == 2 ? "M 9 15.5 C 3 11.5 1.5 8.5 2.5 5.8 C 3.5 3.2 7 2.8 9 5.5 C 11 2.8 14.5 3.2 15.5 5.8 C 16.5 8.5 15 11.5 9 15.5 Z"
-            : icon == 3 ? "M 9 16 C 5.5 16 3.5 13.5 3.8 10.5 C 4.1 7.8 6.5 6.5 7 2.5 C 9.5 4.5 10 7 9.5 8.5 C 10.8 7.8 11.5 6.8 11.7 5.6 C 13.6 7.3 14.6 9.3 14.3 11.4 C 13.9 14.2 12 16 9 16 Z"
-            : icon == 4 ? "M 10.5 1.5 L 3.5 10 L 8.5 10 L 7.5 16.5 L 14.5 8 L 9.5 8 Z"
-            : icon == 5 ? "M 14.5 11.5 A 6.5 6.5 0 1 1 7 2.8 A 5 5 0 0 0 14.5 11.5 Z"
-            : icon == 6 ? "M 9 6 A 3 3 0 1 1 8.99 6 Z M 9 1.5 L 9 3.5 M 9 14.5 L 9 16.5 M 1.5 9 L 3.5 9 M 14.5 9 L 16.5 9 M 3.7 3.7 L 5.1 5.1 M 12.9 12.9 L 14.3 14.3 M 3.7 14.3 L 5.1 12.9 M 12.9 5.1 L 14.3 3.7"
-            : icon == 7 ? "M 3 15 C 3 8 7 3 15.5 2.5 C 15.5 10 11 15 3 15 Z M 3 15 L 10 8"
-            : "M 2 5 L 16 5 L 16 15 L 2 15 Z M 2 8.5 L 16 8.5 M 2 11.8 L 16 11.8";
-    }
+    if kind == 17: CrateIcon { icon: icon; tint: tint; }
     // Playlist: lines of a running order with a note, so it reads apart
     // from a folder and from a crate's slatted box. Always this icon.
     if kind == 2: Rectangle {
@@ -2099,6 +2092,21 @@ component RefreshButton inherits Rectangle {
     }
 }
 
+// A drag handle: two columns of three dots, as in macOS lists.
+export component DragGrip inherits Rectangle {
+    in property <color> dot-color: Theme.text-dim;
+    width: 8px;
+    height: 13px;
+    for k in 6: Rectangle {
+        x: mod(k, 2) * 5px;
+        y: floor(k / 2) * 5px;
+        width: 3px;
+        height: 3px;
+        border-radius: 1.5px;
+        background: root.dot-color;
+    }
+}
+
 // An on/off switch, as in macOS.
 component Switch inherits Rectangle {
     in property <bool> on;
@@ -2112,7 +2120,8 @@ component Switch inherits Rectangle {
         width: 16px;
         height: 16px;
         border-radius: 8px;
-        background: Theme.n-ffffff;
+        // The knob stays white in Light too, as macOS draws it.
+        background: #ffffff;
     }
     TouchArea { mouse-cursor: pointer; clicked => { toggled(); } }
 }
@@ -2131,23 +2140,106 @@ component SourceMenuTitle inherits Rectangle {
     }
 }
 
-// One source in the rail's "..." menu, with its switch.
-component SourceMenuRow inherits HorizontalLayout {
+// A source's icon in the rail and its menu: openDJ's own drawing, or an
+// add-on's picture (sources numbered from `built-ins`).
+component RailIcon inherits Rectangle {
     in property <int> kind;
-    in property <string> name;
-    in property <bool> on;
-    callback toggled();
-    height: 40px;
-    padding-left: 6px;
-    padding-right: 6px;
-    spacing: 10px;
-    VerticalLayout { alignment: center; SourceIcon { kind: root.kind; } }
-    Text { text: root.name; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
-    VerticalLayout {
-        alignment: center;
-        Switch {
-            on: root.on;
-            toggled => { root.toggled(); }
+    in property <int> built-ins;
+    width: 30px;
+    height: 30px;
+    if kind < built-ins: SourceIcon { kind: root.kind; }
+    if kind >= built-ins: Image { width: 30px; height: 30px; source: SourceUi.sources[root.kind - root.built-ins].icon; }
+}
+
+// One section of the rail's "•••" menu: a row per source with a grip to
+// drag it up or down and a switch to show it.
+component SourceDragList inherits Rectangle {
+    in property <[int]> items;
+    in property <[string]> names;
+    in property <[bool]> shown;
+    callback toggled(source: int);
+    property <length> row-h: 40px;
+    property <int> drag-from: -1;
+    property <length> drag-dy;
+    property <length> drag-start;
+    property <int> drag-to: drag-from < 0 ? -1 : max(0, min(items.length - 1, drag-from + round(drag-dy / row-h)));
+    property <int> drag-kind;
+    function name-of(i: int) -> string {
+        i < names.length ? names[i] : SourceUi.sources[i - names.length].name
+    }
+    height: items.length * row-h;
+    for i[pos] in items: Rectangle {
+        // Rows between where the dragged one was and where it would go
+        // step aside for it.
+        property <length> shift: drag-from < 0 || pos == drag-from ? 0px
+            : drag-from < drag-to && pos > drag-from && pos <= drag-to ? -row-h
+            : drag-from > drag-to && pos < drag-from && pos >= drag-to ? row-h : 0px;
+        // The dragged row stays put, unseen, so its grip keeps the mouse.
+        opacity: pos == drag-from ? 0 : 1;
+        x: 0;
+        y: pos * row-h + shift;
+        width: parent.width;
+        height: row-h;
+        animate y { duration: 100ms; }
+        HorizontalLayout {
+            padding-left: 2px;
+            padding-right: 6px;
+            spacing: 8px;
+            Rectangle {
+                width: 14px;
+                DragGrip { dot-color: grip.has-hover ? Theme.text : Theme.text-dim; }
+                grip := TouchArea {
+                    mouse-cursor: drag-from >= 0 ? MouseCursor.grabbing : MouseCursor.grab;
+                    pointer-event(e) => {
+                        if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                            drag-from = pos;
+                            drag-kind = i;
+                            drag-start = self.absolute-position.y + self.mouse-y;
+                            drag-dy = 0px;
+                        }
+                        if e.button == PointerEventButton.left && e.kind == PointerEventKind.up && drag-from >= 0 {
+                            if drag-to != drag-from {
+                                RailOrder.moved(i, drag-to - drag-from);
+                            }
+                            drag-from = -1;
+                            drag-dy = 0px;
+                        }
+                    }
+                    moved => {
+                        if drag-from >= 0 {
+                            drag-dy = self.absolute-position.y + self.mouse-y - drag-start;
+                        }
+                    }
+                }
+            }
+            VerticalLayout { alignment: center; RailIcon { kind: i; built-ins: names.length; } }
+            Text { text: name-of(i); color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
+            VerticalLayout {
+                alignment: center;
+                Switch {
+                    on: shown[i];
+                    toggled => { root.toggled(i); }
+                }
+            }
+        }
+    }
+    // The row being dragged, over the others.
+    if drag-from >= 0: Rectangle {
+        y: max(0px, min(parent.height - row-h, drag-from * row-h + drag-dy));
+        width: parent.width;
+        height: row-h;
+        border-radius: 8px;
+        background: Theme.n-36363b;
+        drop-shadow-blur: 10px;
+        drop-shadow-color: Theme.s-00000080;
+        HorizontalLayout {
+            padding-left: 2px;
+            padding-right: 6px;
+            spacing: 8px;
+            Rectangle { width: 14px; DragGrip { dot-color: Theme.text; } }
+            VerticalLayout { alignment: center; RailIcon { kind: drag-kind; built-ins: names.length; } }
+            Text { text: name-of(drag-kind); color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
+            VerticalLayout { alignment: center; Switch { on: shown[drag-kind]; } }
         }
     }
 }
@@ -2161,15 +2253,10 @@ component SourceRail inherits Rectangle {
     callback health-picked();
     callback shown-changed(source: int, on: bool);
     property <[string]> names: ["Collection", "Files", "Spotify", "TIDAL", "Apple Music", "Bandcamp", "Beatport", "OneLibrary", "SoundCloud", "Albums", "Recordings", "Mixcloud", "Jam"];
-    // The order the rail shows them in: the built-in sources (Albums,
-    // Recordings and Jam after Files), then the external ones. OneLibrary (7) isn't a source: openDJ writes it when
-    // exporting to a USB stick. Bandcamp (5) and Beatport (6) wait for the
-    // stores, later.
-    property <[int]> order: [0, 1, 9, 10, 12, 2, 3, 4, 8, 11];
-    // The "..." menu splits them the same way, under a title each: openDJ's
-    // own sources, then the services, servers and add-ons outside it.
-    property <[int]> built-in: [1, 9, 10, 12];
-    property <[int]> external: [2, 3, 4, 8, 11];
+    // The rail shows Collection, then RailOrder's sections in the DJ's
+    // order. OneLibrary (7) isn't a source: openDJ writes it when exporting
+    // to a USB stick. Bandcamp (5) and Beatport (6) wait for the stores.
+
     // What each source is, for its tooltip.
     property <[string]> tips: [
         "Every track in your library.",
@@ -2205,18 +2292,18 @@ component SourceRail inherits Rectangle {
                 // Hidden sources fold to nothing; each shown one carries its own gap.
                 // Collection Health sits under the collection, with how many checks
                 // find something.
-                for i in order: Rectangle {
-                    height: shown[i] ? (i == 0 && HealthUi.rail-shown ? 96px : 48px) : 0px;
-                    visible: shown[i];
+                // Collection, always first, with Collection Health under it.
+                Rectangle {
+                    height: HealthUi.rail-shown ? 96px : 48px;
                     RailButton {
                         y: 0;
-                        selected: i == source && !(i == 0 && HealthUi.view);
-                        tip: names[i];
-                        tip-body: tips[i];
-                        SourceIcon { kind: i; }
-                        clicked => { source = i; picked(i); }
+                        selected: 0 == source && !HealthUi.view;
+                        tip: names[0];
+                        tip-body: tips[0];
+                        SourceIcon { kind: 0; }
+                        clicked => { source = 0; picked(0); }
                     }
-                    if i == 0 && HealthUi.rail-shown: RailButton {
+                    if HealthUi.rail-shown: RailButton {
                         y: 48px;
                         selected: source == 0 && HealthUi.view;
                         tip: "Collection Health";
@@ -2225,17 +2312,29 @@ component SourceRail inherits Rectangle {
                         clicked => { source = 0; health-picked(); }
                     }
                 }
-                // Sources from add-ons, numbered on from the built-in ones.
-                for p[j] in SourceUi.sources: Rectangle {
-                    property <int> i: names.length + j;
+                // The rest in the DJ's order; add-ons' sources are numbered
+                // on from the built-in ones.
+                for i in RailOrder.built-in: Rectangle {
                     height: shown[i] ? 48px : 0px;
                     visible: shown[i];
                     RailButton {
                         y: 0;
                         selected: i == source;
-                        tip: p.name;
-                        tip-body: "From an add-on.";
-                        Image { width: 30px; height: 30px; source: p.icon; }
+                        tip: i < names.length ? names[i] : SourceUi.sources[i - names.length].name;
+                        tip-body: i < names.length ? tips[i] : "From an add-on.";
+                        RailIcon { kind: i; built-ins: names.length; }
+                        clicked => { source = i; picked(i); }
+                    }
+                }
+                for i in RailOrder.external: Rectangle {
+                    height: shown[i] ? 48px : 0px;
+                    visible: shown[i];
+                    RailButton {
+                        y: 0;
+                        selected: i == source;
+                        tip: i < names.length ? names[i] : SourceUi.sources[i - names.length].name;
+                        tip-body: i < names.length ? tips[i] : "From an add-on.";
+                        RailIcon { kind: i; built-ins: names.length; }
                         clicked => { source = i; picked(i); }
                     }
                 }
@@ -2252,7 +2351,7 @@ component SourceRail inherits Rectangle {
     menu := PopupWindow {
         x: root.width + 4px;
         y: max(4px, column.y + more.y + more.height - self.height);
-        width: 240px;
+        width: 264px;
         height: list.preferred-height;
         close-policy: close-on-click-outside;
         Rectangle {
@@ -2267,12 +2366,13 @@ component SourceRail inherits Rectangle {
             padding: 8px;
             spacing: 2px;
             SourceMenuTitle { text: "Built-in"; }
-            // Collection Health, which sits under the collection.
+            // Collection Health, which sits under the collection and stays
+            // there: no grip, its icon lined up with the rows below.
             HorizontalLayout {
                 height: 40px;
-                padding-left: 6px;
+                padding-left: 24px;
                 padding-right: 6px;
-                spacing: 10px;
+                spacing: 8px;
                 VerticalLayout { alignment: center; HealthIcon {} }
                 Text { text: "Collection Health"; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
                 VerticalLayout {
@@ -2286,42 +2386,23 @@ component SourceRail inherits Rectangle {
                     }
                 }
             }
-            for i in built-in: SourceMenuRow {
-                kind: i;
-                name: names[i];
-                on: shown[i];
-                toggled => {
+            SourceDragList {
+                items: RailOrder.built-in;
+                names: names;
+                shown: shown;
+                toggled(i) => {
                     shown[i] = !shown[i];
                     shown-changed(i, shown[i]);
                 }
             }
             SourceMenuTitle { text: "External"; }
-            for i in external: SourceMenuRow {
-                kind: i;
-                name: names[i];
-                on: shown[i];
-                toggled => {
+            SourceDragList {
+                items: RailOrder.external;
+                names: names;
+                shown: shown;
+                toggled(i) => {
                     shown[i] = !shown[i];
                     shown-changed(i, shown[i]);
-                }
-            }
-            for p[j] in SourceUi.sources: HorizontalLayout {
-                property <int> i: names.length + j;
-                height: 40px;
-                padding-left: 6px;
-                padding-right: 6px;
-                spacing: 10px;
-                VerticalLayout { alignment: center; Image { width: 30px; height: 30px; source: p.icon; } }
-                Text { text: p.name; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
-                VerticalLayout {
-                    alignment: center;
-                    Switch {
-                        on: shown[i];
-                        toggled => {
-                            shown[i] = !shown[i];
-                            shown-changed(i, shown[i]);
-                        }
-                    }
                 }
             }
         }
@@ -4371,7 +4452,7 @@ component TrackList inherits Rectangle {
         // window, in line with the mixer and the FX bar (moved over when
         // the panel is too narrow, or the buttons on the right need the
         // room), Save and Filter on the right.
-        Rectangle {
+        search-row := Rectangle {
             height: 32px;
             property <length> search-w: clamp(self.width * 0.4, 240px, 520px);
             property <length> centred: LibraryEdit.window-width / 2 - self.absolute-position.x - search-w / 2;
@@ -4505,35 +4586,6 @@ component TrackList inherits Rectangle {
                         return accept;
                     }
                     reject
-                }
-            }
-            // Values of any field that match what's typed, to add as filters.
-            // Shown while there's text, not only with focus, so a click on
-            // a value lands before the field lets go of the keys.
-            if search-text != "" && FilterUi.suggestions.length > 0: Rectangle {
-                x: search-x;
-                y: parent.height + 4px;
-                z: 100;
-                width: max(search-w, 280px);
-                height: suggestions.preferred-height + 12px;
-                background: Theme.n-232326;
-                border-radius: 8px;
-                border-width: 1px;
-                border-color: Theme.border;
-                drop-shadow-blur: 16px;
-                drop-shadow-color: Theme.s-00000080;
-                suggestions := SuggestionList {
-                    x: 6px;
-                    y: 6px;
-                    width: parent.width - 12px;
-                    items: FilterUi.suggestions;
-                    highlight: FilterUi.highlight;
-                    picked(i) => {
-                        FilterUi.pick-suggestion(i);
-                        FilterUi.highlight = -1;
-                        search-text = "";
-                        search("");
-                    }
                 }
             }
             buttons := HorizontalLayout {
@@ -4873,7 +4925,9 @@ component TrackList inherits Rectangle {
                             height: row-height - 8px;
                             source: r.wave;
                             image-fit: fill;
-                            colorize: selected ? Theme.on-row-selection : (r.available && !r.missing && !r.fade) ? Theme.lilac : Theme.text-dim;
+                            // Its own colors (lilac shades or full color), except as a mask in one color on the
+                            // selection and for tracks that can't play.
+                            colorize: selected ? Theme.on-row-selection : (r.available && !r.missing && !r.fade) ? transparent : Theme.text-dim;
                         }
                         if col.kind == 0 || col.kind == 4 || col.kind == 5: Text {
                             width: 100%;
@@ -4905,6 +4959,37 @@ component TrackList inherits Rectangle {
             border-radius: 4px;
             border-width: list-drop.has-drag ? 2px : 0px;
             border-color: Theme.accent;
+        }
+    }
+
+    // Values of any field that match what's typed, to add as filters.
+    // Shown while there's text, not only with focus, so a click on
+    // a value lands before the field lets go of the keys. It sits here,
+    // after the list, so it paints over the column headers and rows
+    // (z only orders siblings, and inside the top row it was covered).
+    if search-text != "" && FilterUi.suggestions.length > 0: Rectangle {
+        x: search-row.x + search-row.search-x;
+        y: search-row.y + search-row.height + 4px;
+        width: max(search-row.search-w, 280px);
+        height: suggestions.preferred-height + 12px;
+        background: Theme.n-232326;
+        border-radius: 8px;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 16px;
+        drop-shadow-color: Theme.s-00000080;
+        suggestions := SuggestionList {
+            x: 6px;
+            y: 6px;
+            width: parent.width - 12px;
+            items: FilterUi.suggestions;
+            highlight: FilterUi.highlight;
+            picked(i) => {
+                FilterUi.pick-suggestion(i);
+                FilterUi.highlight = -1;
+                search-text = "";
+                search("");
+            }
         }
     }
 
@@ -5635,7 +5720,7 @@ component SidePanel inherits Rectangle {
                         spacing: 8px;
                         Rectangle {
                             width: 16px;
-                            Text { text: "⋮⋮"; color: grip.has-hover ? Theme.text : Theme.text-dim; font-size: 13px; }
+                            DragGrip { dot-color: grip.has-hover ? Theme.text : Theme.text-dim; }
                             grip := TouchArea {
                                 mouse-cursor: drag-from >= 0 ? MouseCursor.grabbing : MouseCursor.grab;
                                 pointer-event(e) => {
@@ -5692,7 +5777,7 @@ component SidePanel inherits Rectangle {
                         spacing: 8px;
                         Rectangle {
                             width: 16px;
-                            Text { text: "⋮⋮"; color: Theme.text; font-size: 13px; }
+                            DragGrip { dot-color: Theme.text; }
                         }
                         Text { text: drag-name; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
                         VerticalLayout { alignment: center; Switch { on: drag-on; } }

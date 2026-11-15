@@ -51,6 +51,7 @@ mod pages;
 mod picks;
 mod playlist_files;
 mod prep;
+mod rail_order;
 mod rekordbox_xml;
 mod sets;
 mod side_tabs;
@@ -64,8 +65,8 @@ mod usb;
 mod views;
 mod wanted;
 
-pub use filters::DEFAULT_PINNED;
-pub use lyrics::wave::{set_shown as set_wave_lyrics, SHOWN as WAVE_LYRICS};
+pub use filters::{with_crates, DEFAULT_PINNED};
+pub use lyrics::wave::set_shown as set_wave_lyrics;
 
 use crate::analysis_queue::AnalysisQueue;
 use crate::art::Art;
@@ -1596,6 +1597,7 @@ impl Browser {
             .collect();
         app.set_sources_shown(std::rc::Rc::new(slint::VecModel::from(shown)).into());
         side_tabs::install(app);
+        rail_order::install(app);
         // Collection Health's rail button hides the same way.
         app.global::<HealthUi>()
             .set_rail_shown(!hidden.iter().any(|h| h == HEALTH_RAIL_NAME));
@@ -2995,7 +2997,18 @@ impl Browser {
     /// into the rows showing them. Called every frame; does nothing while
     /// the list is still and nothing has arrived.
     pub fn poll_waves(&mut self) {
-        let arrived = self.waves.poll();
+        let restyled = crate::waves::take_restyled();
+        if restyled {
+            // Drawn again in the new style.
+            for i in std::mem::take(&mut self.wave_rows) {
+                if let Some(mut row) = self.list.row_data(i) {
+                    row.wave = Default::default();
+                    row.has_wave = false;
+                    self.list.set_row_data(i, row);
+                }
+            }
+        }
+        let arrived = self.waves.poll() || restyled;
         let Some(app) = self.app.upgrade() else {
             return;
         };
@@ -3005,7 +3018,7 @@ impl Browser {
             self.shown_rows = shown;
             self.fill_waves();
         }
-        if arrived && !app.global::<TrackInfo>().get_has_wave() {
+        if restyled || arrived && !app.global::<TrackInfo>().get_has_wave() {
             self.fill_info_wave(&app);
         }
     }

@@ -225,7 +225,7 @@ tempo and beat grid, and its key when the tags don't have one. It plays
 while that happens, and the waveform fills in as it goes. The result is
 saved, so the track loads at once next time.
 
-**Storage** at the bottom of **Settings › Collection › General** shows how
+**Settings › Collection › Storage** shows how
 the disk with your music is used: your music, the analysis results, high
 quality stems, tracks played from your servers, everything else, and how
 much is free. **Manage** clears the analysis results, the stems or the
@@ -262,9 +262,10 @@ To check a grid by ear, turn on **Metronome** in the same menu: the deck
 clicks on every beat of the grid, higher on bar 1, through the deck's
 fader and cue like the music. If the clicks drift off the music, fix the
 grid while it plays: **Bar 1 here** on a downbeat puts bar 1 there,
-**Move grid** ‹ › nudges it, **Tempo here** − + changes the tempo, and
-**New tempo section from here** starts a new tempo where a live track
-speeds up or slows down.
+**Move grid** ‹ › nudges it, **Tempo here** − + changes the tempo,
+**Tempo × ½ / × 2** fixes a tempo read at half or double, **Tap tempo**
+sets it from your taps, and **New tempo section
+from here** starts a new tempo where a live track speeds up or slows down.
 
 ### Edit Grid
 
@@ -325,9 +326,9 @@ phrase's color and a small tab with its name (INTRO, BUILD, DROP and so on)
 just under the bar numbers. Between flags the waveform is left as it is. In
 4-Deck, where the waveforms are thin, only the lines show.
 
-Right-click a deck's overview and choose **Hide phrases** (or **Show
-phrases**) to turn the bars off or on for every deck. Right-click a
-scrolling waveform to do the same for the flags; the two are separate.
+Pick which show with **Phrases** in the drop-down on the waveforms button
+in the top bar: **Overview** for the bars, **Waveform** for the flags,
+**Both** or **Off**. It applies to every deck.
 
 ## Bringing in a VirtualDJ library
 

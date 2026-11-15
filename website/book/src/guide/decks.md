@@ -10,10 +10,12 @@ doesn't pass file drops to openDJ yet.)
 
 In 2-Deck each deck runs, from the outer edge in:
 
-- **The tempo column**: **SYNC** on top, the tempo fader, and **−** and **+**
-  under it for small steps. The triangle beside the fader puts the tempo
-  back to the track's own. A lilac line down the fader means
-  [key lock](#keys) is on; right-click the fader to switch it.
+- **The tempo column**, as in djay Pro: **SYNC** on top, the BPM, the
+  tempo % (click it for the [tempo panel](#tempo-panel-and-range)), the
+  tempo fader, and **−** and **+** under it for small steps. The triangle
+  beside the fader puts the tempo back to the track's own. A lilac line
+  down the fader means [key lock](#keys) is on; right-click the fader to
+  switch it.
 - **The pads**, with their tabs on top (see [Pads](pads.md)).
 - **The LOOP column** (see [Looping](looping.md)).
 - **The jog wheel**, with **CUE** and **PLAY** under it, next to the mixer.
@@ -35,33 +37,46 @@ cover has **Unload deck** too, and <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> 
 <kbd>→</kbd> unload decks 1 and 2. If it was a mistake, click
 **↺ Put back** on the empty deck: a track comes back where it was.
 
-### Waveform colors
+### Waveform look
 
-**Settings › Decks › Waveform color** picks how the waveforms are colored:
+Click the arrow on the right of the waveforms button in the top bar. Under
+the height slider, these set how the waveforms look:
 
-- **RGB** (the default): one shape, red where the bass is loudest, amber for
-  the mids and blue for the highs.
-- **3-Band**: the bass, mids and highs stacked in their own colors, the bass
-  widest, as on rekordbox. **Palette** picks **Blue-Orange-White** (rekordbox's
-  colors) or **Lilac-Cyan-White**.
-- **Blue**: one blue shape, lighter where the highs are loud.
-- **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
-  color of its stem pad, the loudest at the back, so you can see where the
-  vocals come in or the bass drops out. A track shows RGB until its stems
-  are ready.
+- **Type**: **Full** (the default) mirrors the waveforms about their middle;
+  **Half** grows them from the bottom edge, as on rekordbox. It applies to
+  the large waveforms and the overviews under the decks alike.
+- **Color**:
+  - **RGB** (the default): one shape, red where the bass is loudest, amber
+    for the mids and blue for the highs.
+  - **3-Band**: the bass, mids and highs stacked in their own colors, the
+    bass widest, as on rekordbox. A second row picks **Blue-Orange**
+    (rekordbox's colors) or **Lilac-Cyan**.
+  - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
+    color of its stem pad, the loudest at the back, so you can see where
+    the vocals come in or the bass drops out. A track shows RGB until its
+    stems are ready.
+- **Needle**: where the play line sits on the large waveforms. **Center**
+  (the default) shows as much of what has played as what is coming;
+  **Left** puts it a quarter of the way in, so three quarters of the
+  waveform shows what is coming next.
+- **Vocals**: what runs along the bottom of the large waveforms, one at a
+  time. **Lyrics** (the default) shows a track's timed lyrics in cyan.
+  **Bar** draws a cyan bar wherever someone sings, leaving the waveform's
+  colors as they are. openDJ checks each track for vocals the first time
+  you load it (or when it's analyzed), in the background, so the bar shows
+  up a few seconds after the waveform; after that it's there straight
+  away. Tracks with HQ stems use their vocal stem instead. **Off** shows
+  neither.
+- **Phrases**: the colored phrase bar along the bottom of the overviews
+  (**Overview**), the phrase flags on the large waveforms (**Waveform**),
+  **Both** (the default) or neither (**Off**).
 
-**Overview** draws the overview under each deck **Full**, mirrored about its
-middle, or **Half**, growing from the bottom edge as on rekordbox. The big
-scrolling waveform is always whole.
+The changes show straight away and the menu stays open, so you can try them
+out.
 
-**Show vocals**, off at first, tints the sung parts of the waveforms green,
-as on VirtualDJ. openDJ checks each track for vocals the first time you load
-it (or when it's analyzed), in the background, so the green shows up a few
-seconds after the waveform; after that it's there straight away. Tracks with
-HQ stems use their vocal stem instead.
-
-**Size follows gain**, off at first, makes a deck's waveforms taller or
-shorter as you turn its gain knob, as on VirtualDJ.
+**Settings › Appearance › Size follows gain**, on at first, makes a deck's
+large waveform taller or shorter as you turn its gain knob.
+The overview keeps its height.
 
 ### Waveform zoom
 
@@ -99,7 +114,9 @@ make 4-Deck taller.
   height when you let go, with the number in the middle. Double-click the
   line to go back to 3.
 - Click the arrow on the right of the waveforms button in the top bar and
-  pick a number.
+  drag the **Waveform height** slider: the waveforms resize as you drag and
+  settle on the nearest height when you let go. The arrow keys move it a
+  height at a time.
 - Right-click a large waveform and use **−** and **+** under Height.
 - **⌥⌘↑** and **⌥⌘↓** (**Ctrl+Alt** on Windows and Linux) make them taller
   or shorter. They are also in **View**.
@@ -263,6 +280,25 @@ bend the deck you started last, the one you're mixing in.
 it had played forwards, to bleep a word. Shift-click and hold PLAY while the
 deck plays, or hold SHIFT and PLAY on the DDJ-FLX4.
 
+## Tempo panel and range
+
+Click a deck's tempo % (under the BPM in 2-Deck and 2-Deck Basic, under
+the BPM in a 4-Deck strip) for its tempo menu. In 2-Deck and 2-Deck Basic
+it has a short tempo slider with fine **−** and **+**, **KEY LOCK**,
+**QUANTIZE** and **RESET**; in 4-Deck, **KEY LOCK**, **QUANTIZE** and
+**RESET**. **RESET** puts the tempo back to the track's own.
+
+**Range** at the bottom shows how far the tempo fader goes either way, and a
+click lists the ranges: **4%**, **6%**, **8%**, **10%**, **16%**, **24%**,
+**50%** and **100%**, the current one ticked. The new range applies to that
+deck straight away and the tempo stays where it is: the fader moves to
+match, or goes to its end when the tempo doesn't fit the new range.
+**Settings › Decks › Tempo fader range** sets the range every deck starts
+with, and changing it there also changes every deck's range the same way.
+Custom controller mappings can set a deck's range the same way with
+**rate_range_set** (for example `0.16` for 16%); **rateRange** stays Mixxx's
+raw range control.
+
 ## Sync and quantize
 
 **SYNC** sits over the tempo fader. It stays on while it's lit: the deck
@@ -318,6 +354,8 @@ of these can be switched off (all are on to start):
 - **EQ and filter**: EQ, kills, filter and sculpt go back to the middle.
 - **Gain**: the gain knob goes back to 0 dB (or the track's own gain, if its
   info sets one). Auto gain still levels each track.
+- **Tempo**: the tempo fader goes back to 0%, so the track starts at its own
+  BPM. A synced deck still takes the tempo it follows.
 
 ## Mixer
 

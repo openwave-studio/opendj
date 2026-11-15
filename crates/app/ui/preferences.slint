@@ -4,8 +4,8 @@
 // box above them finds an option on any page. Changes apply and are saved at
 // once: there is no OK or Apply.
 import { Theme, CloseIcon } from "theme.slint";
-import { LayoutsPage } from "layouts.slint";
-import { ControlKnob } from "controls.slint";
+import { ControlKnob, Switch } from "controls.slint";
+export { Switch }
 import { AudioSettings, MenuField, OutputsTable, ExternalOutputsTable, InputsTable } from "mixer.slint";
 
 // One row of a settings page. The app builds the rows for the page shown,
@@ -67,12 +67,17 @@ export global Preferences {
     in-out property <bool> open;
     in-out property <int> page;
     in-out property <string> query;
-    // The page's tabs (Library has General, Stages, Tags and Import);
-    // most pages have none.
+    // The page's tabs (Collection has General, Stages, Tags, Import,
+    // Health and Storage); some pages have none.
     in property <[string]> tabs;
     in-out property <int> tab;
     in property <[PrefItem]> items;
-    in-out property <[string]> pages: ["Audio", "Controllers", "Collection", "Analysis", "Decks", "Mixer", "Sources", "Plugins", "Broadcast", "Keyboard", "Layouts", "Help"];
+    // The page list, filled by the app (PAGE_NAMES in prefs.rs).
+    in-out property <[string]> pages;
+    // Pages opened from elsewhere, by their number in `pages`.
+    in property <int> audio-page;
+    in property <int> plugins-page;
+    in property <int> broadcast-page;
     // The page or the search changed: the app fills `items` again.
     callback changed();
     callback toggled(id: string, on: bool);
@@ -148,7 +153,7 @@ export struct StoragePart {
     tint: color,
 }
 
-// Settings › Collection › General › Storage: how the disk with the music is
+// Settings › Collection › Storage: how the disk with the music is
 // used, and the Manage menu's clean-ups. Picking one asks first: `confirm`
 // is its question, `warning` what it costs, `confirm-label` its button.
 // The menu picks "storage_manage"; the buttons press "storage_confirm" and
@@ -197,31 +202,6 @@ component PageIcon inherits Path {
         : "M 6 3 L 6 12 M 6 16 L 6 21 M 12 3 L 12 6 M 12 10 L 12 21 M 18 3 L 18 9 M 18 13 L 18 21 M 4 12 L 8 12 L 8 16 L 4 16 Z M 10 6 L 14 6 L 14 10 L 10 10 Z M 16 9 L 20 9 L 20 13 L 16 13 Z";
 }
 
-// A switch.
-export component Switch inherits Rectangle {
-    in property <bool> on;
-    callback toggled(on: bool);
-    width: 38px;
-    height: 22px;
-    border-radius: 11px;
-    background: on ? Theme.accent : Theme.n-3a3a3e;
-    animate background { duration: 120ms; }
-    Rectangle {
-        x: on ? parent.width - self.width - 2px : 2px;
-        y: 2px;
-        width: 18px;
-        height: 18px;
-        border-radius: 9px;
-        background: Theme.n-f2f2f7;
-        drop-shadow-blur: 2px;
-        drop-shadow-color: Theme.s-00000060;
-        animate x { duration: 120ms; easing: ease-out; }
-    }
-    TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.toggled(!on); }
-    }
-}
 
 export component Button inherits Rectangle {
     in property <string> text;
@@ -880,6 +860,11 @@ export component PrefRow inherits Rectangle {
     in property <bool> searching;
     // Larger, lighter words, for the tour's setup dialog.
     in property <bool> bright;
+    // A switch's, menu's, choice's or text field's help longer than its one
+    // line holds goes in an ⓘ beside the name instead of being cut short or
+    // wrapping into the rows below (not in the tour's dialog).
+    property <bool> info: !bright && item.detail.character-count > 64
+        && (item.kind == 0 || item.kind == 1 || item.kind == 8 || item.kind == 9);
     min-height: item.kind == 7 ? 34px : item.kind == 12 ? 30px : item.kind == 16 || item.kind == 17 ? 44px : 52px;
     // A source with settings opens and closes with a click on its row;
     // its switch, drawn over this, still works.
@@ -1087,8 +1072,6 @@ export component PrefRow inherits Rectangle {
             }
         }
         if item.kind == 21: FolderList { item: item; bright: bright; }
-        // Settings › Layouts (layouts.slint).
-        if item.kind == 24: LayoutsPage {}
         if item.kind == 23: StorageView { item: item; searching: searching; }
         if item.kind == 22: VerticalLayout {
             spacing: 8px;
@@ -1130,10 +1113,16 @@ export component PrefRow inherits Rectangle {
                 alignment: center;
                 spacing: 3px;
                 if searching: Text { text: item.page-name; color: Theme.lilac-text; font-size: 10px; font-weight: 600; letter-spacing: 0.4px; }
-                if item.title != "": Text { text: item.title; color: Theme.text; font-size: 14px; font-weight: 500; overflow: elide; }
+                if item.title != "" && !info: Text { text: item.title; color: Theme.text; font-size: 14px; font-weight: 500; overflow: elide; }
+                if item.title != "" && info: HorizontalLayout {
+                    alignment: start;
+                    spacing: 6px;
+                    Text { text: item.title; color: Theme.text; font-size: 14px; font-weight: 500; overflow: elide; vertical-alignment: center; }
+                    VerticalLayout { alignment: center; InfoButton { text: item.detail; } }
+                }
                 // Add-on pages (notes and text fields) wrap: their help is longer.
-                if item.detail != "" && item.kind != 6 && item.kind != 9: Text { text: item.detail; color: bright ? Theme.n-c8c8cd : Theme.text-dim; font-size: bright ? 13px : 12px; overflow: elide; }
-                if item.detail != "" && (item.kind == 6 || item.kind == 9): Text { text: item.detail; color: bright ? Theme.n-c8c8cd : Theme.text-dim; font-size: bright ? 13px : 12px; wrap: word-wrap; }
+                if item.detail != "" && !info && item.kind != 6 && item.kind != 9: Text { text: item.detail; color: bright ? Theme.n-c8c8cd : Theme.text-dim; font-size: bright ? 13px : 12px; overflow: elide; }
+                if item.detail != "" && !info && (item.kind == 6 || item.kind == 9): Text { text: item.detail; color: bright ? Theme.n-c8c8cd : Theme.text-dim; font-size: bright ? 13px : 12px; wrap: word-wrap; }
             }
             if item.kind == 0: VerticalLayout {
                 alignment: center;

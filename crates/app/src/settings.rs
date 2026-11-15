@@ -64,6 +64,20 @@ pub fn set_key_notation(n: Notation) {
     save(|v| v["key_notation"] = json!(n.id()));
 }
 
+/// The rail's sources after Collection, by name, in the DJ's order;
+/// `None` until one is dragged.
+pub fn rail_order() -> Option<Vec<String>> {
+    load()["rail_order"].as_array().map(|a| {
+        a.iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect()
+    })
+}
+
+pub fn set_rail_order(names: &[String]) {
+    save(|v| v["rail_order"] = json!(names));
+}
+
 /// The side panel's tabs in the DJ's order, by name, with whether each
 /// shows; `None` until a choice is saved.
 pub fn side_tabs() -> Option<Vec<(String, bool)>> {
@@ -323,6 +337,32 @@ pub fn mixer_names() -> Vec<String> {
         .unwrap_or_default();
     names.resize(8, String::new());
     names
+}
+
+/// The Mixer's channel colors, by aux input from 0: a place in the
+/// strips' 16-color palette, or -1 for the channel's own by its number.
+pub fn mixer_colors() -> Vec<i32> {
+    let v = load();
+    let mut colors: Vec<i32> = v["mixer_colors"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .map(|c| c.as_i64().map_or(-1, |c| c as i32))
+                .collect()
+        })
+        .unwrap_or_default();
+    colors.resize(8, -1);
+    colors
+}
+
+/// Colors the Mixer's channel `n` (from 0) with palette color `color`;
+/// -1 goes back to its own.
+pub fn set_mixer_color(n: usize, color: i32) {
+    let mut colors = mixer_colors();
+    if let Some(slot) = colors.get_mut(n) {
+        *slot = if (0..16).contains(&color) { color } else { -1 };
+    }
+    set("mixer_colors", json!(colors));
 }
 
 /// Names the Mixer's channel `n` (from 0); "" goes back to "Ch N".
@@ -969,18 +1009,32 @@ pub fn tags_changed() {
     opendj_library::query::set_field_names(names);
 }
 
-/// The filter chips kept on the bar, by field.
+/// The filter chips kept on the bar, by field. A bar saved before the
+/// Crates chip existed gets it once.
 pub fn filter_pinned() -> Vec<String> {
-    strings(&load()["filter_pinned"]).unwrap_or_else(|| {
-        crate::browser::DEFAULT_PINNED
+    let v = load();
+    match strings(&v["filter_pinned"]) {
+        Some(pinned) if !v["filter_crates_added"].as_bool().unwrap_or(false) => {
+            let pinned = crate::browser::with_crates(pinned);
+            save(|v| {
+                v["filter_pinned"] = json!(pinned);
+                v["filter_crates_added"] = json!(true);
+            });
+            pinned
+        }
+        Some(pinned) => pinned,
+        None => crate::browser::DEFAULT_PINNED
             .iter()
             .map(|s| s.to_string())
-            .collect()
-    })
+            .collect(),
+    }
 }
 
 pub fn set_filter_pinned(pinned: &[String]) {
-    save(|v| v["filter_pinned"] = json!(pinned));
+    save(|v| {
+        v["filter_pinned"] = json!(pinned);
+        v["filter_crates_added"] = json!(true);
+    });
 }
 
 /// How close a tempo must be when the BPM chip follows the playing track,
