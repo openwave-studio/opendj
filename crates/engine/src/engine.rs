@@ -19,8 +19,7 @@ use crate::controls::{
 };
 use crate::dsp::{soft_clip, Isolator, Limiter, Sculpt};
 use crate::effects::{
-    fade, fade_step, input_target, ColorFx, EffectRack, StemFx, BLOCK, COLOR_FX, MAIN, TAPS,
-    TAP_GAP, TARGETS,
+    fade, fade_step, input_target, ColorFx, EffectRack, StemFx, BLOCK, COLOR_FX, MAIN, TARGETS,
 };
 use crate::groove::{pick_source, GrooveBox};
 use crate::inputs::{
@@ -35,6 +34,7 @@ use crate::preview::{Preview, PreviewInput};
 use crate::recorder::{self, Feed, RecordTap};
 use crate::sampler::{SamplerInput, Samplers};
 use crate::stems::{Stems, MAX_STEMS};
+use crate::tap_tempo::{tap_time, TapTempo};
 use crate::track::{Audio, Track};
 use crate::visual::VisualPositions;
 use crate::{NUM_DECKS, NUM_HOTCUES};
@@ -165,31 +165,6 @@ pub(crate) fn xfader_gains(x: f32, shape: u8, cut_in: f32) -> [f32; 2] {
     }
 }
 
-/// Tap tempo: taps in time give a tempo, averaged over the last few.
-#[derive(Default)]
-struct TapTempo {
-    last: Option<f64>,
-    intervals: [f64; TAPS],
-    taps: usize,
-}
-
-impl TapTempo {
-    /// A tap at `now` seconds; the tapped BPM once there are two in time.
-    fn tap(&mut self, now: f64) -> Option<f64> {
-        let gap = self.last.map_or(f64::INFINITY, |last| now - last);
-        self.last = Some(now);
-        if gap > TAP_GAP || gap <= 0.0 {
-            self.taps = 0;
-            return None;
-        }
-        self.intervals.rotate_right(1);
-        self.intervals[0] = gap;
-        self.taps = (self.taps + 1).min(TAPS);
-        let mean = self.intervals[..self.taps].iter().sum::<f64>() / self.taps as f64;
-        Some(60.0 / mean)
-    }
-}
-
 struct Deck {
     c: DeckControls,
     track: Option<Arc<Track>>,
@@ -209,6 +184,11 @@ struct Deck {
     /// `clock` at the last buffer's controls.
     last_clock: f64,
     taps: TapTempo,
+    /// When this buffer's `bpm_tap` press came, on the engine clock.
+    tap_at: f64,
+    /// The track tempo the taps last set, so a tap that changes nothing
+    /// leaves the grid (and its undo) alone.
+    tapped: Option<f64>,
     /// The `bpmlock` version last seen, so the DJ turning it is told apart
     /// from the engine showing a loaded track's lock.
     bpmlock_seen: u32,
@@ -736,6 +716,9 @@ impl Deck {
         let mut n = 0;
         for p in self.c.pushes.iter_mut() {
             if p.edge.pressed(&p.control) && n < actions.len() {
+                if matches!(p.action, Action::BpmTap) {
+                    self.tap_at = tap_time(self.clock, &p.control);
+                }
                 actions[n] = Some(p.action);
                 n += 1;
             }
@@ -861,15 +844,21 @@ impl Deck {
                 }
                 Action::Grid(edit) => self.grid_edit = Some((edit, now)),
                 // Taps come at the playing speed; the grid is at the track's.
-                Action::BpmTap => {
-                    if let Some(bpm) = self.taps.tap(self.clock) {
+                // Taps are good to about half a BPM, so the track's tempo
+                // goes to the nearest whole one.
+                Action::BpmTap => match self.taps.tap(self.tap_at) {
+                    Some(bpm) => {
                         let speed = self.speed().abs();
                         if speed > 0.0 {
-                            let bpm = (bpm / speed).clamp(40.0, 300.0);
-                            self.grid_edit = Some((GridEdit::SetTempo(bpm), now));
+                            let bpm = (bpm / speed).clamp(40.0, 300.0).round();
+                            if self.tapped != Some(bpm) {
+                                self.tapped = Some(bpm);
+                                self.grid_edit = Some((GridEdit::SetTempo(bpm), now));
+                            }
                         }
                     }
-                }
+                    None => self.tapped = None,
+                },
                 Action::KeyStep(n) => {
                     let p = (self.c.pitch.get() + n).clamp(-6.0, 6.0);
                     // Whole steps land on whole semitones.
@@ -1804,6 +1793,8 @@ impl Engine {
             clock: 0.0,
             last_clock: 0.0,
             taps: TapTempo::default(),
+            tap_at: 0.0,
+            tapped: None,
             bpmlock_seen: 0,
             metronome_beat: f64::NAN,
             click: None,
@@ -6001,11 +5992,9 @@ mod tests {
                 _ => None,
             })
             .collect();
-        // The first tap only starts the count.
-        assert_eq!(taps.len(), 3, "{taps:?}");
-        for bpm in taps {
-            assert!((bpm - 96.0).abs() < 1.0, "{bpm}");
-        }
+        // The third tap gives the tempo, rounded to a whole BPM; the fourth
+        // agrees, so changes nothing.
+        assert_eq!(taps, [96.0]);
 
         // reloop_exit is Mixxx's old name for reloop_toggle.
         ctl("beatloop_2_activate").set_bool(true);

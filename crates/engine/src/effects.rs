@@ -25,6 +25,7 @@ use crate::controls::{
 };
 use crate::dsp::Svf;
 use crate::inputs::{input_group, MICROPHONE, NUM_INPUTS};
+use crate::tap_tempo::{tap_time, TapTempo};
 
 /// Mixxx's built-in effects that this engine implements, in `loaded_effect` order.
 pub const AVAILABLE_EFFECTS: [&str; 18] = [
@@ -69,10 +70,6 @@ pub const DEFAULT_EFFECTS: [[usize; EFFECTS_PER_UNIT]; NUM_EFFECT_UNITS] = [
 
 /// How long a released effect's tail rings on, in beats (see `release`).
 const RELEASE_BEATS: f32 = 8.0;
-/// Taps further apart than this, in seconds, start a new tap tempo.
-pub(crate) const TAP_GAP: f64 = 2.0;
-/// Tap intervals averaged into the tapped tempo.
-pub(crate) const TAPS: usize = 4;
 
 /// `loaded_effect` values from here on are plugins: `PLUGIN_BASE + i` is
 /// plugin `i` of the list the app hands the plugin host (see
@@ -681,10 +678,7 @@ struct UnitControls {
     auto: ControlHandle,
     release: ControlHandle,
     edges: [Edge; 3],
-    /// When the last tap came, on the engine clock, and the intervals before it.
-    last_tap: f64,
-    intervals: [f64; TAPS],
-    taps: usize,
+    taps: TapTempo,
 }
 
 impl UnitControls {
@@ -746,9 +740,7 @@ impl UnitControls {
             auto: reg.push(g, "bpm_auto"),
             release: reg.push(g, "release"),
             edges: [Edge::default(); 3],
-            last_tap: f64::NEG_INFINITY,
-            intervals: [0.0; TAPS],
-            taps: 0,
+            taps: TapTempo::default(),
         }
     }
 
@@ -757,20 +749,13 @@ impl UnitControls {
     fn update_tempo(&mut self, now: f64) {
         if self.edges[1].pressed(&self.auto) {
             self.bpm.set(0.0);
-            self.taps = 0;
+            self.taps = TapTempo::default();
         }
         if self.edges[0].pressed(&self.tap) {
-            let gap = now - self.last_tap;
-            self.last_tap = now;
-            if gap > TAP_GAP || gap <= 0.0 {
-                self.taps = 0;
-                return;
+            if let Some(bpm) = self.taps.tap(tap_time(now, &self.tap)) {
+                self.bpm
+                    .set((bpm.clamp(40.0, 300.0) * 100.0).round() / 100.0);
             }
-            self.intervals.rotate_right(1);
-            self.intervals[0] = gap;
-            self.taps = (self.taps + 1).min(TAPS);
-            let mean = self.intervals[..self.taps].iter().sum::<f64>() / self.taps as f64;
-            self.bpm.set((60.0 / mean).clamp(40.0, 300.0));
         }
     }
 }
