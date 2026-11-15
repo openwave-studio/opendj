@@ -29,6 +29,7 @@ openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more 
 - **Edit the grid** from a pencil on each big waveform, and **Tap tempo** in the beat grid menu.
 - Detected tempo is read in the octave the track's genre is known by.
 - Waveforms draw as one solid shape, without the peak outline. Track list waveforms are shaded in lilac by sound, or in full color (Settings › Appearance).
+- Big waveforms scroll smoothly, without the small sideways tugs.
 
 **Look and layout**
 
