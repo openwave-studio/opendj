@@ -1,12 +1,19 @@
 //! Steady waveform motion from play positions that arrive with timing noise.
 //!
 //! The engine's position is exact, but when the UI reads it the answer jumps
-//! a little with audio-callback and frame timing, a millisecond or two each
-//! way, which shows as jitter when the waveform moves hundreds of pixels a
-//! second. Like a video player's clock, this advances the drawn position by
-//! the speed times a steady frame interval, and only eases it towards the
-//! engine's position. Jumps (seeks, loops, cues) and speed changes (scratching,
-//! starting and stopping) are followed at once.
+//! a little with audio-callback timing, a millisecond or so each way, which
+//! shows as jitter when the waveform moves hundreds of pixels a second. This
+//! advances the drawn position by the speed times the real time since the
+//! last frame, and only eases it towards the engine's position. Jumps (seeks,
+//! loops, cues) and speed changes (scratching, starting and stopping) are
+//! followed at once.
+//!
+//! It used to step by a learnt frame interval instead, to hide timing noise
+//! in when frames are drawn. But frames don't come at one steady rate: the
+//! display's refresh changes (ProMotion), and other UI changes draw extra
+//! frames in between. Each such frame stepped too far or not far enough,
+//! the drift built up to tens of milliseconds and was then pulled or
+//! snapped back: a sideways tug every few seconds.
 
 use std::time::Instant;
 
@@ -14,17 +21,11 @@ use std::time::Instant;
 const JUMP: f64 = 0.04;
 /// Share of the remaining difference corrected each frame.
 const CORRECTION: f64 = 0.1;
-/// Frames measured before the frame interval is trusted.
-const SETTLE: u32 = 8;
 
 #[derive(Default)]
 pub struct SmoothClock {
     /// What was drawn last, the speed then, and when.
     last: Option<(f64, f64, Instant)>,
-    /// Running estimate of the time between frames, in seconds, and how
-    /// many frames it has been measured over.
-    frame: Option<f64>,
-    measured: u32,
 }
 
 impl SmoothClock {
@@ -34,7 +35,7 @@ impl SmoothClock {
         let shown = match self.last {
             Some((shown, last_speed, at)) if speed != 0.0 && (speed - last_speed).abs() < 0.02 => {
                 let dt = now.saturating_duration_since(at).as_secs_f64();
-                let predicted = shown + speed * self.step(dt);
+                let predicted = shown + speed * dt;
                 let error = position - predicted;
                 if error.abs() > JUMP {
                     position
@@ -47,41 +48,6 @@ impl SmoothClock {
         self.last = Some((shown, speed, now));
         shown
     }
-
-    /// How far to advance for a frame `dt` seconds after the last. Frames
-    /// come at the display's rate, but timing a single frame adds noise, so
-    /// the clock steps by whole frame intervals (more than one if frames
-    /// were dropped), once it knows the interval.
-    ///
-    /// The interval is learnt from every frame, as its time divided by the
-    /// whole intervals it spans: quickly over the first frames, then
-    /// slowly. (It used to start from the first frame's time and learn at
-    /// 5% a frame from frames clamped to half to one and a half of it: a
-    /// slow first frame after play started, or a display switching between
-    /// 120 and 60 Hz as ProMotion does, left it wrong for seconds. Each
-    /// step then ran ahead or behind until the drift was pulled back or,
-    /// past 40 ms, snapped to the engine: a sideways tug every few seconds.)
-    fn step(&mut self, dt: f64) -> f64 {
-        let Some(f) = self.frame else {
-            if dt > 0.0 && dt < 0.1 {
-                self.frame = Some(dt);
-                self.measured = 1;
-            }
-            return dt;
-        };
-        let n = (dt / f).round().max(1.0);
-        let one = dt / n;
-        if (one - f).abs() < 0.5 * f {
-            let rate = if self.measured < SETTLE { 0.3 } else { 0.05 };
-            self.frame = Some(f + (one - f) * rate);
-            self.measured = self.measured.saturating_add(1);
-        }
-        if self.measured < SETTLE {
-            dt
-        } else {
-            n * f
-        }
-    }
 }
 
 #[cfg(test)]
@@ -89,36 +55,65 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
-    #[test]
-    fn evens_out_noisy_timing() {
+    /// Plays at 1x, drawing at `times` (seconds) while the engine's answer
+    /// is off by up to 1 ms; returns the worst gap between a frame's step
+    /// and the time since the last, and between the drawn position and the
+    /// engine's, after the first 30 frames.
+    fn play(times: &[f64]) -> (f64, f64) {
         let mut clock = SmoothClock::default();
         let start = Instant::now();
-        let frame = 1.0 / 120.0;
-        let mut previous: Option<f64> = None;
-        for i in 0..600 {
-            // The display shows frame i at a steady `vsync`, but the UI draws
-            // it up to 2 ms early or late, and the engine's answer is off by up
-            // to 1.5 ms: what an audio callback and a busy UI thread give.
-            let vsync = 0.01 + i as f64 * frame;
-            let wobble = [0.0, 0.002, -0.0015, 0.001, -0.002][i % 5];
-            let now = start + Duration::from_secs_f64(vsync + wobble);
-            let noise = [0.0015, -0.001, 0.0005, -0.0015][i % 4];
-            let reported = 10.0 + vsync + wobble + noise;
-            let shown = clock.next(reported, 1.0, now);
-            if i > 120 {
-                // Each frame moves almost exactly one frame's worth...
-                let step = shown - previous.unwrap();
-                assert!((step - frame).abs() < 0.0005, "frame {i}: step {step}");
-                // ...and stays with the engine.
-                let truth = 10.0 + vsync;
-                assert!(
-                    (shown - truth).abs() < 0.004,
-                    "frame {i}: off by {}",
-                    shown - truth
-                );
+        let (mut previous, mut step_off, mut lag): (Option<(f64, f64)>, f64, f64) =
+            (None, 0.0, 0.0);
+        for (i, &t) in times.iter().enumerate() {
+            let noise = [0.001, -0.0005, 0.0, -0.001, 0.0005][i % 5];
+            let shown = clock.next(10.0 + t + noise, 1.0, start + Duration::from_secs_f64(t));
+            if let (true, Some((p, pt))) = (i > 30, previous) {
+                step_off = step_off.max((shown - p - (t - pt)).abs());
+                lag = lag.max((shown - 10.0 - t).abs());
             }
-            previous = Some(shown);
+            previous = Some((shown, t));
         }
+        (step_off, lag)
+    }
+
+    #[test]
+    fn evens_out_noisy_positions() {
+        let times: Vec<f64> = (0..600).map(|i| 0.01 + i as f64 / 120.0).collect();
+        let (step_off, lag) = play(&times);
+        assert!(step_off < 0.0003, "steps off by {step_off}");
+        assert!(lag < 0.001, "lags by {lag}");
+    }
+
+    #[test]
+    fn stays_with_the_engine_when_frames_come_unevenly() {
+        // 120 Hz with a skipped frame now and then, frames drawn up to 2 ms
+        // early or late, and an extra frame drawn in between now and then.
+        // The clock that stepped by a learnt frame interval drifted off the
+        // engine here and was pulled back: a sideways tug.
+        let mut seed = 7u64;
+        let mut random = move || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let mut times = vec![];
+        let mut vsync = 0.0;
+        for _ in 0..1200 {
+            vsync += if random() < 0.1 {
+                1.0 / 60.0
+            } else {
+                1.0 / 120.0
+            };
+            times.push(vsync + (random() - 0.5) * 0.004);
+            if random() < 0.25 {
+                times.push(vsync + 0.002 + random() * 0.004);
+            }
+        }
+        times.sort_by(f64::total_cmp);
+        let (step_off, lag) = play(&times);
+        assert!(step_off < 0.0003, "steps off by {step_off}");
+        assert!(lag < 0.001, "lags by {lag}");
     }
 
     #[test]
@@ -135,48 +130,5 @@ mod tests {
         // Scratching: the speed changes every frame.
         assert_eq!(clock.next(42.4, -1.3, ms(32)), 42.4);
         assert_eq!(clock.next(42.39, -0.4, ms(40)), 42.39);
-    }
-    /// Plays at 1x through frames `dts` seconds apart; returns the worst
-    /// gap between a frame's step and its interval, and between the drawn
-    /// position and the engine's, after the first 30 frames.
-    fn play(dts: &[f64]) -> (f64, f64) {
-        let mut clock = SmoothClock::default();
-        let start = Instant::now();
-        let (mut t, mut previous): (f64, Option<f64>) = (0.0, None);
-        let (mut step_off, mut lag): (f64, f64) = (0.0, 0.0);
-        for (i, dt) in dts.iter().enumerate() {
-            t += dt;
-            let shown = clock.next(10.0 + t, 1.0, start + Duration::from_secs_f64(t));
-            if i > 30 {
-                step_off = step_off.max((shown - previous.unwrap() - dt).abs());
-                lag = lag.max((shown - 10.0 - t).abs());
-            }
-            previous = Some(shown);
-        }
-        (step_off, lag)
-    }
-
-    #[test]
-    fn steady_from_the_start_after_a_slow_first_frame() {
-        // Play starts with two slow frames, then 120 Hz: the clock used to
-        // take the first as the frame interval and drift ~30 ms off the
-        // engine before settling, a tug just after play started.
-        let mut dts = vec![0.05, 0.03];
-        dts.extend([1.0 / 120.0; 600]);
-        let (step_off, lag) = play(&dts);
-        assert!(step_off < 0.0005, "steps off by {step_off}");
-        assert!(lag < 0.002, "lags by {lag}");
-    }
-
-    #[test]
-    fn steady_when_the_display_switches_between_120_and_60_hz() {
-        // ProMotion: some frames come after one interval, some after two.
-        let f = 1.0 / 120.0;
-        let dts: Vec<f64> = (0..1200)
-            .map(|i| if (i * 7) % 3 == 0 { 2.0 * f } else { f })
-            .collect();
-        let (step_off, lag) = play(&dts);
-        assert!(step_off < 0.0005, "steps off by {step_off}");
-        assert!(lag < 0.002, "lags by {lag}");
     }
 }
