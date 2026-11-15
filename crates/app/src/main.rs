@@ -31,7 +31,7 @@ use opendj_waveform::{
     WaveformRenderer, WaveformView, GRID_SECTIONS,
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
-use smooth::SmoothClock;
+use smooth::{FrameStats, FrameTimer, SmoothClock};
 
 slint::include_modules!();
 
@@ -1315,6 +1315,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracks: Default::default(),
                         phrases: Default::default(),
                         clocks: Default::default(),
+                        frame_timer: Default::default(),
+                        frame_stats: Default::default(),
                         live: live.take(),
                         instrument: instrument.clone(),
                         steps: steps.take(),
@@ -1335,7 +1337,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         return;
                     };
                     let tracks = loaded.read().unwrap().clone();
+                    let start = Instant::now();
                     gpu.render(&app, &decks, &tracks, &visual);
+                    let Gpu {
+                        frame_stats,
+                        frame_timer,
+                        clocks,
+                        moving,
+                        ..
+                    } = gpu;
+                    let scale = app.window().scale_factor();
+                    frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
                 }
                 (slint::RenderingState::AfterRendering, _) => {
                     // While a deck moves, draw again as soon as the display
@@ -2589,6 +2601,10 @@ struct Gpu {
     phrases: [Option<(Arc<Track>, Phrases)>; NUM_DECKS],
     /// Each deck's drawn position, steadier than the engine's as read.
     clocks: [SmoothClock; NUM_DECKS],
+    /// When each frame will show, steadier than when it is drawn.
+    frame_timer: FrameTimer,
+    /// How smoothly frames come, for the log.
+    frame_stats: FrameStats,
     /// The sound of decks playing live, and each one's waveform on the GPU.
     live: Option<live_trace::LiveTraces>,
     /// The notes the Instrument input holds, for its deck's note roll.
@@ -2735,9 +2751,19 @@ impl Gpu {
         };
         // Every deck's drawn position first: a live deck draws the leading
         // deck's beats.
+        // Worked out for when the frame will show, not when it is drawn.
+        if self.frame_timer.wants_refresh_rate(now) {
+            use slint::winit_030::WinitWindowAccessor;
+            let hz = app
+                .window()
+                .with_winit_window(|w| w.current_monitor()?.refresh_rate_millihertz());
+            self.frame_timer
+                .set_refresh_rate(hz.flatten().map(|mhz| mhz as f64 / 1000.0));
+        }
+        let shown_at = self.frame_timer.next(now);
         let clocks: [(f64, f64); NUM_DECKS] = std::array::from_fn(|d| {
-            let (position, speed) = visual.position(d, now);
-            (self.clocks[d].next(position, speed, now), speed)
+            let (position, speed) = visual.position(d, shown_at);
+            (self.clocks[d].next(position, speed, shown_at), speed)
         });
         // Decks playing an input, an instrument or the Groove Box.
         let live: [bool; NUM_DECKS] = std::array::from_fn(|d| {
