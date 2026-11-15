@@ -7,7 +7,9 @@
 //! (8 and 16 cost less), so short flickers never become phrases of their
 //! own. The first and last section may be shorter, down to 4 bars, for a
 //! pickup or a tail. Each cut then moves up to 4 bars to where the bass
-//! comes in or drops out, so a kick entering early ends the intro there.
+//! comes in or drops out, so a kick entering early ends the intro there;
+//! where the drums come or go too, the move waits for the kick on the
+//! beat, so a bass swell or riser before them doesn't count.
 //! A section is a drop when its bass and level come close
 //! to the track's strongest section's, and a chorus (main groove) when they
 //! are a little further off; the others are named by where they fall. Neighbours of the same kind merge.
@@ -15,7 +17,7 @@
 //! The method follows the research in the project notes
 //! (phrase-analysis-review.md); it was written for openDJ.
 
-use crate::track::{Chroma, Marker, MarkerKind, Track};
+use crate::track::{Chroma, Marker, MarkerKind, Track, WaveformBin};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PhraseKind {
@@ -95,6 +97,11 @@ const NOT_FOUR: f32 = 0.8;
 /// how big that change must be (in normalised bass level).
 const SNAP_BARS: usize = 4;
 const SNAP_JUMP: f32 = 0.2;
+/// The kick comes in (or drops out) with the bass when the side with drums
+/// has at least this much more kick (normalised, see [`kick`]), and this
+/// many times as much: a build's light drums count, next to a silent intro.
+const KICK_JUMP: f32 = 0.03;
+const KICK_RATIO: f32 = 2.0;
 /// A drop: bass and overall level at least this share of the track's
 /// strongest section's.
 const DROP_SHARE: f32 = 0.85;
@@ -206,6 +213,7 @@ pub fn detect(track: &Track) -> Vec<Phrase> {
     let mut starts = Vec::new();
     let mut ends = Vec::new();
     let mut levels = Vec::new();
+    let mut kicks = Vec::new();
     let slice = |s: f64| ((s * wave.bins_per_second) as usize).min(slices.len());
     loop {
         let beat = first + 4.0 * starts.len() as f64;
@@ -227,16 +235,18 @@ pub fn detect(track: &Track) -> Vec<Phrase> {
         starts.push(a);
         ends.push(b);
         levels.push(sum.map(|s| s / (j - i) as f32));
+        kicks.push(kick(slices, |b| slice(track.seconds_at(beat + b))));
     }
     if levels.len() < MIN_TRACK_BARS {
         return Vec::new();
     }
     normalise(&mut levels);
+    normalise_one(&mut kicks);
     let chroma = bar_chroma(&wave.chroma, &starts, &ends);
     let novelty = chroma
         .as_deref()
         .map_or_else(|| vec![0.0; levels.len()], novelty);
-    let cuts = refine(&levels, &segment(&levels, &novelty));
+    let cuts = refine(&levels, &kicks, &segment(&levels, &novelty));
     let repeats = repeats(&levels, chroma.as_deref(), &cuts);
     let kinds = classify(&levels, &cuts, &repeats);
     let energy = Energy::of(&levels);
@@ -435,6 +445,42 @@ impl Energy {
     }
 }
 
+/// A bar's kick: how much louder the bass is on each beat's first
+/// quarter (a sixteenth note) than over the rest of the beat, averaged over its 4 beats.
+/// A bassline or a riser swelling under the beat has none; drums do.
+/// `at` gives the waveform slice of a beat offset into the bar.
+fn kick(slices: &[WaveformBin], at: impl Fn(f64) -> usize) -> f32 {
+    let low = |i: usize, j: usize| {
+        let n = j.saturating_sub(i);
+        if n == 0 {
+            return 0.0;
+        }
+        slices[i..j]
+            .iter()
+            .map(|b| (b[4] as f32 / 255.0).powi(2))
+            .sum::<f32>()
+            / n as f32
+    };
+    (0..4)
+        .map(|b| {
+            let (s, m, e) = (at(b as f64), at(b as f64 + 0.25), at(b as f64 + 1.0));
+            (low(s, m) - low(m, e)).max(0.0)
+        })
+        .sum::<f32>()
+        / 4.0
+}
+
+/// Scales one measure so the track's loud bars (90th percentile) are 1.
+fn normalise_one(v: &mut [f32]) {
+    let mut s = v.to_vec();
+    if s.is_empty() {
+        return;
+    }
+    s.sort_by(f32::total_cmp);
+    let top = s[(s.len() - 1) * 9 / 10].max(1e-6);
+    v.iter_mut().for_each(|x| *x /= top);
+}
+
 /// Scales each band so the track's loud bars (90th percentile) are 1.
 fn normalise(levels: &mut [[f32; 3]]) {
     for k in 0..3 {
@@ -521,10 +567,14 @@ fn segment(levels: &[[f32; 3]], novelty: &[f32]) -> Vec<usize> {
 /// `SNAP_BARS` either way: the fit above prefers whole 8- and 16-bar
 /// sections, so a kick entering on its own a few bars early would otherwise
 /// end up inside the intro. The bass crosses halfway between the levels on
-/// either side; the earliest crossing in reach wins.
-fn refine(levels: &[[f32; 3]], cuts: &[usize]) -> Vec<usize> {
+/// either side; the earliest crossing in reach wins. Where the kick
+/// (`kicks`, see [`kick`]) changes too, it must cross with the bass, so a
+/// bassline or riser swelling in a bar or two before the drums doesn't
+/// pull the cut early.
+fn refine(levels: &[[f32; 3]], kicks: &[f32], cuts: &[usize]) -> Vec<usize> {
     let n = levels.len();
     let low = |a: usize, b: usize| levels[a..b].iter().map(|l| l[0]).sum::<f32>() / (b - a) as f32;
+    let kick = |a: usize, b: usize| kicks[a..b].iter().sum::<f32>() / (b - a) as f32;
     let mut out = cuts.to_vec();
     for i in 1..cuts.len() {
         let (a, c) = (out[i - 1], cuts[i]);
@@ -535,6 +585,25 @@ fn refine(levels: &[[f32; 3]], cuts: &[usize]) -> Vec<usize> {
         }
         let half = (before + after) / 2.0;
         let rises = after > before;
+        // The kick, where it comes in or drops out with the bass.
+        let (kick_before, kick_after) = (kick(a, c), kick(c, b));
+        let (lo_kick, hi_kick) = if rises {
+            (kick_before, kick_after)
+        } else {
+            (kick_after, kick_before)
+        };
+        let kick_half = (hi_kick - lo_kick >= KICK_JUMP && hi_kick >= KICK_RATIO * lo_kick)
+            .then_some((kick_before + kick_after) / 2.0);
+        let kicked = |x: usize| {
+            kick_half.is_none_or(|h| {
+                let next = [kicks[x], kicks[(x + 1).min(n - 1)]];
+                if rises {
+                    next.iter().all(|&k| k >= h)
+                } else {
+                    next.iter().all(|&k| k < h)
+                }
+            })
+        };
         // Both sides keep their least length.
         let min_left = if i == 1 { MIN_EDGE_BARS } else { MIN_BARS };
         let min_right = if i + 1 == cuts.len() {
@@ -553,7 +622,7 @@ fn refine(levels: &[[f32; 3]], cuts: &[usize]) -> Vec<usize> {
                 levels[x - 1][0] >= half && next.iter().all(|&l| l < half)
             }
         };
-        if let Some(x) = (lo..=hi).find(|&x| crosses(x)) {
+        if let Some(x) = (lo..=hi).find(|&x| crosses(x) && kicked(x)) {
             out[i] = x;
         }
     }
@@ -796,10 +865,42 @@ mod tests {
         levels.extend(vec![[1.0, 1.0, 1.0]; 32]);
         levels.extend(vec![[0.1, 0.6, 0.6]; 16]);
         levels.extend(vec![[1.0, 1.0, 1.0]; 16]);
-        let cuts = refine(&levels, &segment(&levels, &vec![0.0; levels.len()]));
+        let kicks: Vec<f32> = levels.iter().map(|l| l[0]).collect();
+        let cuts = refine(&levels, &kicks, &segment(&levels, &vec![0.0; levels.len()]));
         assert_eq!(cuts.get(1), Some(&12), "{cuts:?}");
         // The others are where the bass changes already.
         assert!(cuts.contains(&48) && cuts.contains(&64), "{cuts:?}");
+    }
+
+    #[test]
+    fn a_riser_before_the_drums_does_not_end_the_intro() {
+        // 14 bars without bass, a bass swell (no kick) for 2, then the
+        // drums: the intro ends where the kick comes in, not on the swell.
+        let mut levels = vec![[0.05, 0.4, 0.4]; 14];
+        levels.extend(vec![[0.6, 0.6, 0.4]; 2]);
+        levels.extend(vec![[1.0, 1.0, 1.0]; 32]);
+        levels.extend(vec![[0.1, 0.6, 0.6]; 16]);
+        levels.extend(vec![[1.0, 1.0, 1.0]; 16]);
+        let mut kicks = vec![0.0; 16];
+        kicks.extend(vec![1.0; 32]);
+        kicks.extend(vec![0.0; 16]);
+        kicks.extend(vec![1.0; 16]);
+        let cuts = refine(&levels, &kicks, &segment(&levels, &vec![0.0; levels.len()]));
+        assert_eq!(cuts.get(1), Some(&16), "{cuts:?}");
+    }
+
+    #[test]
+    fn a_kick_is_a_hit_on_the_beat() {
+        // 100 slices a beat: a hit on each beat's first sixteenth is a
+        // kick; the same bass held through the beat is not.
+        let bin = |low: u8| [0, 0, 0, 0, low, 0, 0, 0];
+        let hits: Vec<WaveformBin> = (0..400)
+            .map(|i| bin(if i % 100 < 25 { 200 } else { 20 }))
+            .collect();
+        let held: Vec<WaveformBin> = (0..400).map(|_| bin(200)).collect();
+        let at = |b: f64| (b * 100.0) as usize;
+        assert!(kick(&hits, at) > 0.5, "{}", kick(&hits, at));
+        assert!(kick(&held, at) < 1e-3);
     }
 
     #[test]
