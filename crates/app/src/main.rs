@@ -60,6 +60,7 @@ mod instrument_art;
 mod instrument_knobs;
 mod instrument_midi;
 mod instruments;
+mod karaoke_look;
 mod keep_going;
 mod lastfm;
 mod layouts;

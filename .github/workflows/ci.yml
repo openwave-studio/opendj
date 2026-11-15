@@ -72,6 +72,8 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo fmt --all --check
+      - name: Karaoke web page regression tests
+        run: node --test crates/remote/tests/*.test.cjs
       - run: cargo clippy --workspace --all-targets -- -D warnings
       # Includes the check that website/book/supported-controls.txt matches
       # `opendj --list-controls` (control_list_tests in crates/app).

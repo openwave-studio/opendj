@@ -10,6 +10,60 @@ component Part inherits Text {
     font-weight: 800;
 }
 
+// Styled runs keep wrapping and row height in one text layout. Color changes
+// never create a second glyph layer or a separately sized lyric prefix.
+component ArtworkLine inherits Rectangle {
+    in property <bool> active;
+    in property <string> text;
+    in property <string> sung;
+    in property <string> word;
+    in property <string> rest;
+    in property <float> part;
+    in property <length> font-size;
+    in property <length> viewport-y;
+    in property <length> viewport-height;
+    // Fade a complete row before it reaches the safety clip. The small
+    // separable 3x3 blur only draws for the rows in these edge zones.
+    property <float> edge: root.active ? 0 : clamp(1 - min(viewport-y, viewport-height - viewport-y - self.height) / max(1px, viewport-height * 0.18), 0, 1);
+    property <float> fade: (1 - edge) * (1 - edge);
+    property <length> blur-radius: edge * 4px;
+    property <color> word-color: #ffffff.mix(#ffffff66, clamp(root.part, 0, 1));
+    callback positioned(length);
+    changed active => { if self.active { self.positioned(self.y); } }
+    changed y => { if self.active { self.positioned(self.y); } }
+    changed height => { if self.active { self.positioned(self.y); } }
+    min-height: base.preferred-height;
+    max-height: base.preferred-height;
+    base := StyledText {
+        x: 0; y: 0;
+        width: parent.width;
+        height: parent.height;
+        vertical-alignment: top;
+        text: root.active
+            ? @markdown("**<font color='white'>\{root.sung}</font><font color='\{root.word-color}'>\{root.word}</font>\{root.rest}**")
+            : @markdown("**\{root.text}**");
+        default-font-size: root.font-size;
+        default-color: root.active ? #ffffff66 : #ffffff40;
+        opacity: root.fade * (1 - root.edge);
+    }
+    if root.edge > 0 && root.edge < 1: Rectangle {
+        x: 0; y: 0;
+        width: parent.width;
+        height: parent.height;
+        for sample in 9: StyledText {
+            x: (mod(sample, 3) - 1) * root.blur-radius;
+            y: (floor(sample / 3) - 1) * root.blur-radius;
+            width: parent.width;
+            height: parent.height;
+            vertical-alignment: top;
+            text: @markdown("**\{root.text}**");
+            default-font-size: root.font-size;
+            default-color: #ffffff40;
+            opacity: root.fade * root.edge * (mod(sample, 3) == 1 ? 2 : 1) * (floor(sample / 3) == 1 ? 2 : 1) / 16;
+        }
+    }
+}
+
 export component KaraokeWindow inherits Window {
     title: "openDJ Karaoke";
     icon: @image-url("icons/opendj.svg");
@@ -27,6 +81,7 @@ export component KaraokeWindow inherits Window {
     // The line before, the line to sing (sung part, the word being sung and
     // how far, the rest), and the two lines after it.
     in property <string> before;
+    in property <string> current-line;
     in property <string> sung;
     in property <string> word;
     in property <float> part;
@@ -41,9 +96,32 @@ export component KaraokeWindow inherits Window {
     callback leave-full-screen();
 
     property <length> big: min(self.height * 0.1, self.width * 1.7 / max(letters, 14));
-    property <color> lilac: Theme.accent;
+    in property <int> style;
+    in property <color> highlight: #b69cff;
+    in property <image> cover;
+    in property <bool> has-cover;
+    property <color> lilac: highlight;
+    // Audience screens stay dark even when the main app uses Light appearance.
+    property <color> text-color: #f2f2f7;
+    property <color> dim-color: #8e8e93;
 
-    Rectangle {
+    in property <[string]> artwork-lines;
+    in property <int> active-line: -1;
+    private property <length> scroll-y;
+    in property <image> backdrop;
+    if style == 1: Rectangle {
+        background: #24282b;
+        if root.has-cover: Image {
+            source: root.backdrop;
+            image-fit: ImageFit.cover;
+            width: parent.width;
+            height: parent.height;
+            opacity: 0.65;
+        }
+        Rectangle { background: @linear-gradient(180deg, #00000025, #000000b0); }
+    }
+
+    if style == 0: Rectangle {
         background: @radial-gradient(circle, lilac.with-alpha(0.10) 0%, #08080a00 70%);
     }
 
@@ -65,25 +143,28 @@ export component KaraokeWindow inherits Window {
     }
 
     // Title and artist, small along the top.
-    if state > 0: Text {
+    if state > 0 && style == 0: Text {
         x: 32px;
         y: 24px;
         width: parent.width - 64px;
         text: root.artist == "" ? root.song : root.song + "  ·  " + root.artist;
-        color: Theme.text-dim.with-alpha(0.8);
+        color: root.dim-color.with-alpha(0.8);
         font-size: max(14px, root.height * 0.028);
         font-weight: 600;
         overflow: elide;
     }
 
     if state < 3: VerticalLayout {
+        x: root.style == 1 && root.state > 0 ? root.width * 0.515 : 0;
+        width: root.style == 1 && root.state > 0 ? root.width * 0.40 : root.width;
+        height: root.height;
         alignment: center;
         spacing: root.height * 0.03;
-        padding: 48px;
+        padding: root.style == 1 && root.state > 0 ? 0px : 48px;
         Text {
             text: root.state == 0 ? "openDJ Karaoke" : root.song;
-            color: Theme.text;
-            font-size: root.height * 0.08;
+            color: root.text-color;
+            font-size: root.height * (root.style == 1 && root.state > 0 ? 0.045 : 0.08);
             font-weight: 800;
             horizontal-alignment: center;
             wrap: word-wrap;
@@ -92,7 +173,7 @@ export component KaraokeWindow inherits Window {
             text: root.state == 0 ? "Lyrics show here for the track playing."
                 : root.state == 1 ? "No lyrics for this track"
                 : "These lyrics aren't timed, so they can't follow the song.";
-            color: root.state == 1 ? lilac : Theme.text-dim;
+            color: root.state == 1 ? lilac : root.dim-color;
             font-size: root.height * 0.04;
             font-weight: 600;
             horizontal-alignment: center;
@@ -100,14 +181,14 @@ export component KaraokeWindow inherits Window {
         }
     }
 
-    if state == 3: VerticalLayout {
+    if state == 3 && style == 0: VerticalLayout {
         alignment: center;
         padding-left: 48px;
         padding-right: 48px;
         spacing: root.height * 0.035;
         Text {
             text: root.before;
-            color: Theme.text-dim.with-alpha(0.45);
+            color: root.dim-color.with-alpha(0.45);
             font-size: root.height * 0.045;
             font-weight: 700;
             horizontal-alignment: center;
@@ -124,27 +205,35 @@ export component KaraokeWindow inherits Window {
                 background: lilac;
             }
         }
-        HorizontalLayout {
-            alignment: center;
+        // Shape the complete line once; the fill only clips a duplicate.
+        // Splitting it into separate text items changes kerning and spacing.
+        Rectangle {
             height: root.big * 1.4;
-            Part { text: root.sung; color: lilac; font-size: root.big; }
-            // The word being sung: white, with lilac drawn over it as far as
-            // it has been sung.
-            Rectangle {
-                width: word-text.preferred-width;
-                word-text := Part { x: 0; width: self.preferred-width; height: parent.height; text: root.word; color: Theme.text; font-size: root.big; }
-                Rectangle {
-                    x: 0;
-                    width: parent.width * root.part;
-                    clip: true;
-                    Part { x: 0; width: word-text.width; height: parent.height; text: root.word; color: lilac; font-size: root.big; }
-                }
+            property <length> line-width: full.preferred-width;
+            full := Part {
+                x: (parent.width - parent.line-width) / 2;
+                y: 0;
+                width: parent.line-width;
+                height: parent.height;
+                text: root.current-line;
+                color: root.highlight == #ffffff ? #ffffff66 : root.text-color;
+                font-size: root.big;
             }
-            Part { text: root.rest; color: Theme.text; font-size: root.big; }
+            prefix := Part { text: root.sung; font-size: root.big; visible: false; }
+            through-word := Part { text: root.sung + root.word; font-size: root.big; visible: false; }
+            Rectangle {
+                x: full.x;
+                y: 0;
+                visible: root.sung != "" || (root.word != "" && root.part > 0);
+                width: min(parent.line-width, prefix.preferred-width + (through-word.preferred-width - prefix.preferred-width) * root.part);
+                height: parent.height;
+                clip: true;
+                Part { x: 0; y: 0; width: full.width; height: parent.height; text: root.current-line; color: root.lilac; font-size: root.big; }
+            }
         }
         Text {
             text: root.next;
-            color: Theme.text.with-alpha(0.72);
+            color: root.text-color.with-alpha(0.72);
             font-size: root.big * 0.62;
             font-weight: 700;
             horizontal-alignment: center;
@@ -152,11 +241,87 @@ export component KaraokeWindow inherits Window {
         }
         Text {
             text: root.after;
-            color: Theme.text-dim.with-alpha(0.6);
+            color: root.dim-color.with-alpha(0.6);
             font-size: root.big * 0.5;
             font-weight: 700;
             horizontal-alignment: center;
             overflow: elide;
+        }
+    }
+
+    // A fixed cover origin and a flowing caption keep metadata below the art.
+    if style == 1 && state > 0: Rectangle {
+        property <length> art-size: min(root.width * 0.30, root.height * 0.44);
+        x: root.width * 0.10 + (root.width * 0.30 - self.art-size) / 2;
+        y: root.height * 0.18;
+        width: self.art-size;
+        height: root.height * 0.72;
+        Rectangle {
+            x: 0; y: 0;
+            width: parent.art-size;
+            height: parent.art-size;
+            border-radius: 10px;
+            clip: true;
+            background: #ffffff08;
+            if root.has-cover: Image {
+                x: 0; y: 0;
+                source: root.cover;
+                width: parent.width;
+                height: parent.height;
+                image-fit: ImageFit.cover;
+            }
+        }
+        VerticalLayout {
+            x: 0;
+            y: parent.art-size + root.height * 0.028;
+            width: parent.width;
+            height: self.preferred-height;
+            spacing: root.height * 0.009;
+            Text {
+                text: root.song;
+                color: #ffffff;
+                font-size: max(20px, root.height * 0.036);
+                font-weight: 700;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+                max-lines: 2;
+                overflow: elide;
+            }
+            Text {
+                text: root.artist;
+                color: #ffffffaa;
+                font-size: max(18px, root.height * 0.028);
+                horizontal-alignment: center;
+                wrap: word-wrap;
+                max-lines: 2;
+                overflow: elide;
+            }
+        }
+    }
+    if style == 1 && state == 3: lyric-viewport := Rectangle {
+        x: root.width * 0.515;
+        y: root.height * 0.10;
+        width: root.width * 0.40;
+        height: root.height * 0.80;
+        clip: true;
+        lyric-column := VerticalLayout {
+            y: root.height * 0.32 - root.scroll-y;
+            width: parent.width;
+            height: self.preferred-height;
+            spacing: root.height * 0.04;
+            animate y { duration: 480ms; easing: ease-in-out; }
+            for line[i] in root.artwork-lines: ArtworkLine {
+                text: line;
+                active: i == root.active-line;
+                viewport-y: self.y + lyric-column.y;
+                viewport-height: lyric-viewport.height;
+                sung: root.sung + root.word == "" && root.rest == "" ? line : root.sung;
+                word: root.word;
+                rest: root.rest;
+                part: root.part;
+                font-size: max(18px, root.height * 0.04);
+                positioned(offset) => { root.scroll-y = offset; }
+            }
         }
     }
 

@@ -9,6 +9,8 @@
 //! level on the deck followed. The level set there carries over to the next
 //! track that deck, or Automix, plays.
 
+mod artwork;
+
 use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
@@ -45,6 +47,16 @@ pub(super) struct Karaoke {
     /// while the screen is open and the DJ turned it on; when it was last
     /// sent, and the lyrics it has.
     page: bool,
+    style: i32,
+    color: u32,
+    cover_track: Option<(usize, usize)>,
+    artwork: artwork::Worker,
+    artwork_request: u64,
+    cover_url: String,
+    backdrop: slint::Image,
+    cover: slint::Image,
+    has_cover: bool,
+    native_generation: Option<u64>,
     page_sent: Option<Instant>,
     page_lines: Option<u64>,
 }
@@ -101,6 +113,16 @@ impl Karaoke {
             followed: None,
             hold_until: None,
             page: false,
+            style: 0,
+            color: 0xb69cff,
+            cover_track: None,
+            artwork: artwork::Worker::new(),
+            artwork_request: 0,
+            cover_url: String::new(),
+            backdrop: slint::Image::default(),
+            cover: slint::Image::default(),
+            has_cover: false,
+            native_generation: None,
             page_sent: None,
             page_lines: None,
         }
@@ -110,6 +132,7 @@ impl Karaoke {
 /// What the screen shows of the lyrics at `seconds`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(super) struct Screen {
+    pub focus: Option<usize>,
     pub before: String,
     pub sung: String,
     pub word: String,
@@ -145,6 +168,7 @@ pub(super) fn screen(lines: &[Line], seconds: f64, beat: f64) -> Screen {
         // All sung: the last line stays up, faded.
         let before = current.and_then(|i| (0..=i).rev().find(|&j| sung(&lines[j])));
         return Screen {
+            focus: before,
             before: before
                 .map(|i| lines[i].text.trim().to_string())
                 .unwrap_or_default(),
@@ -153,6 +177,7 @@ pub(super) fn screen(lines: &[Line], seconds: f64, beat: f64) -> Screen {
     };
     let line = &lines[focus];
     let mut s = Screen {
+        focus: Some(focus),
         before: (0..focus)
             .rev()
             .find(|&j| sung(&lines[j]))
@@ -241,6 +266,14 @@ impl Browser {
             }
             k.guide = None;
             k.followed = None;
+            k.cover_track = None;
+            k.artwork_request = 0;
+            k.cover_url.clear();
+            k.cover = slint::Image::default();
+            k.backdrop = slint::Image::default();
+            k.has_cover = false;
+            opendj_remote::overlay::set_karaoke_cover(Vec::new());
+            opendj_remote::overlay::set_karaoke("{}".into(), None);
             ui.set_vocals(-1.0);
             self.serve_page(false);
             return;
@@ -286,6 +319,7 @@ impl Browser {
                 w.set_fullscreen(Some(Fullscreen::Borderless(Some(display))))
             });
         }
+        k.native_generation = None;
         k.window = Some(window);
         k.followed = None;
         self.serve_page(crate::settings::flag(PAGE, false));
@@ -356,6 +390,9 @@ impl Browser {
             "t": seconds,
             "playing": playing,
             "bpm": bpm,
+            "style": k.style,
+            "color": format!("#{:06x}", k.color),
+            "cover": k.cover_url,
         });
         opendj_remote::overlay::set_karaoke(now.to_string(), lines);
     }
@@ -400,6 +437,51 @@ impl Browser {
         }
         let deck = self.lyrics.deck;
         let track = self.lyrics.shown.as_ref().map(|(i, _)| *i);
+        let k = &mut self.lyrics.karaoke;
+        let look = crate::karaoke_look::current();
+        k.style = look.style as i32;
+        k.color = look.color();
+        let cover_track = self.lyrics.shown.as_ref().map(|(index, t)| (*index, t.id));
+        if cover_track != k.cover_track {
+            k.cover_track = cover_track;
+            k.cover = slint::Image::default();
+            k.has_cover = false;
+            k.backdrop = slint::Image::default();
+            k.cover_url.clear();
+            opendj_remote::overlay::set_karaoke_cover(Vec::new());
+            if let Some((_, t)) = &self.lyrics.shown {
+                k.artwork_request = k.artwork.request(t);
+            } else {
+                k.artwork_request = 0;
+            }
+        }
+        if let Some(prepared) = k.artwork.poll(k.artwork_request) {
+            let to_image = |cover: &opendj_engine::cover::Cover| {
+                slint::Image::from_rgba8(
+                    slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
+                        &cover.rgba,
+                        cover.width,
+                        cover.height,
+                    ),
+                )
+            };
+            k.cover = to_image(&prepared.cover);
+            k.backdrop = to_image(&prepared.backdrop);
+            k.has_cover = true;
+            opendj_remote::overlay::set_karaoke_cover(prepared.png);
+            k.cover_url = format!("/karaoke/cover?track={}", k.artwork_request);
+        }
+        if let Some(window) = &k.window {
+            window.set_style(k.style);
+            window.set_backdrop(k.backdrop.clone());
+            window.set_highlight(slint::Color::from_rgb_u8(
+                (k.color >> 16) as u8,
+                (k.color >> 8) as u8,
+                k.color as u8,
+            ));
+            window.set_has_cover(k.has_cover);
+            window.set_cover(k.cover.clone());
+        }
         // The guide vocal, held on each new track followed.
         let followed = deck.zip(track);
         let stem = deck.map(|d| self.vocal_stem(d));
@@ -429,7 +511,7 @@ impl Browser {
         if self.lyrics.karaoke.page {
             self.publish_page(state, deck);
         }
-        let k = &self.lyrics.karaoke;
+        let k = &mut self.lyrics.karaoke;
         let Some(window) = &k.window else {
             return;
         };
@@ -446,6 +528,26 @@ impl Browser {
         let bpm = k.bpm[d].get();
         let beat = if bpm > 0.0 { 60.0 / bpm } else { 0.5 };
         let s = screen(&l.lines, seconds, beat);
+        if k.native_generation != Some(self.lyrics.generation) {
+            let lines: Vec<SharedString> = l
+                .lines
+                .iter()
+                .filter(|line| sung(line))
+                .map(|line| line.text.trim().into())
+                .collect();
+            window.set_artwork_lines(std::rc::Rc::new(slint::VecModel::from(lines)).into());
+            k.native_generation = Some(self.lyrics.generation);
+        }
+        window.set_active_line(s.focus.map_or(-1, |focus| {
+            l.lines[..focus].iter().filter(|line| sung(line)).count() as i32
+        }));
+        window.set_current_line(
+            s.focus
+                .filter(|_| !s.sung.is_empty() || !s.word.is_empty() || !s.rest.is_empty())
+                .map(|i| l.lines[i].text.trim())
+                .unwrap_or_default()
+                .into(),
+        );
         window.set_before(s.before.into());
         window.set_sung(s.sung.into());
         window.set_word(s.word.into());
@@ -475,6 +577,16 @@ mod tests {
         let plain = parse("Just words").unwrap();
         let v: serde_json::Value = serde_json::from_str(&page_lines(1, &plain)).unwrap();
         assert!(v["lines"][0]["start"].is_null());
+    }
+
+    #[test]
+    fn artwork_focus_tracks_repeated_lines_and_seeks() {
+        let lines =
+            parse("[00:01.00]Repeat\n[00:03.00]\n[00:05.00]Repeat\n[00:08.00]Last").unwrap();
+        assert_eq!(screen(&lines, 0.0, 0.5).focus, Some(0));
+        assert_eq!(screen(&lines, 5.2, 0.5).focus, Some(2));
+        assert_eq!(screen(&lines, 1.2, 0.5).focus, Some(0));
+        assert_eq!(screen(&lines, 30.0, 0.5).focus, Some(3));
     }
 
     #[test]
