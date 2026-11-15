@@ -14,13 +14,17 @@ use std::time::Instant;
 const JUMP: f64 = 0.04;
 /// Share of the remaining difference corrected each frame.
 const CORRECTION: f64 = 0.1;
+/// Frames measured before the frame interval is trusted.
+const SETTLE: u32 = 8;
 
 #[derive(Default)]
 pub struct SmoothClock {
     /// What was drawn last, the speed then, and when.
     last: Option<(f64, f64, Instant)>,
-    /// Running estimate of the time between frames, in seconds.
+    /// Running estimate of the time between frames, in seconds, and how
+    /// many frames it has been measured over.
     frame: Option<f64>,
+    measured: u32,
 }
 
 impl SmoothClock {
@@ -30,14 +34,7 @@ impl SmoothClock {
         let shown = match self.last {
             Some((shown, last_speed, at)) if speed != 0.0 && (speed - last_speed).abs() < 0.02 => {
                 let dt = now.saturating_duration_since(at).as_secs_f64();
-                // Frames come at the display's rate, but timing a single
-                // frame adds noise; step by whole average frame intervals (more
-                // than one if frames were dropped), and let the average follow
-                // the measured intervals slowly.
-                let f = self.frame.unwrap_or(dt).max(1e-4);
-                let step = f * (dt / f).round().max(1.0);
-                self.frame = Some(f + (dt.clamp(0.5 * f, 1.5 * f) - f) * 0.05);
-                let predicted = shown + speed * step;
+                let predicted = shown + speed * self.step(dt);
                 let error = position - predicted;
                 if error.abs() > JUMP {
                     position
@@ -49,6 +46,41 @@ impl SmoothClock {
         };
         self.last = Some((shown, speed, now));
         shown
+    }
+
+    /// How far to advance for a frame `dt` seconds after the last. Frames
+    /// come at the display's rate, but timing a single frame adds noise, so
+    /// the clock steps by whole frame intervals (more than one if frames
+    /// were dropped), once it knows the interval.
+    ///
+    /// The interval is learnt from every frame, as its time divided by the
+    /// whole intervals it spans: quickly over the first frames, then
+    /// slowly. (It used to start from the first frame's time and learn at
+    /// 5% a frame from frames clamped to half to one and a half of it: a
+    /// slow first frame after play started, or a display switching between
+    /// 120 and 60 Hz as ProMotion does, left it wrong for seconds. Each
+    /// step then ran ahead or behind until the drift was pulled back or,
+    /// past 40 ms, snapped to the engine: a sideways tug every few seconds.)
+    fn step(&mut self, dt: f64) -> f64 {
+        let Some(f) = self.frame else {
+            if dt > 0.0 && dt < 0.1 {
+                self.frame = Some(dt);
+                self.measured = 1;
+            }
+            return dt;
+        };
+        let n = (dt / f).round().max(1.0);
+        let one = dt / n;
+        if (one - f).abs() < 0.5 * f {
+            let rate = if self.measured < SETTLE { 0.3 } else { 0.05 };
+            self.frame = Some(f + (one - f) * rate);
+            self.measured = self.measured.saturating_add(1);
+        }
+        if self.measured < SETTLE {
+            dt
+        } else {
+            n * f
+        }
     }
 }
 
@@ -103,5 +135,48 @@ mod tests {
         // Scratching: the speed changes every frame.
         assert_eq!(clock.next(42.4, -1.3, ms(32)), 42.4);
         assert_eq!(clock.next(42.39, -0.4, ms(40)), 42.39);
+    }
+    /// Plays at 1x through frames `dts` seconds apart; returns the worst
+    /// gap between a frame's step and its interval, and between the drawn
+    /// position and the engine's, after the first 30 frames.
+    fn play(dts: &[f64]) -> (f64, f64) {
+        let mut clock = SmoothClock::default();
+        let start = Instant::now();
+        let (mut t, mut previous): (f64, Option<f64>) = (0.0, None);
+        let (mut step_off, mut lag): (f64, f64) = (0.0, 0.0);
+        for (i, dt) in dts.iter().enumerate() {
+            t += dt;
+            let shown = clock.next(10.0 + t, 1.0, start + Duration::from_secs_f64(t));
+            if i > 30 {
+                step_off = step_off.max((shown - previous.unwrap() - dt).abs());
+                lag = lag.max((shown - 10.0 - t).abs());
+            }
+            previous = Some(shown);
+        }
+        (step_off, lag)
+    }
+
+    #[test]
+    fn steady_from_the_start_after_a_slow_first_frame() {
+        // Play starts with two slow frames, then 120 Hz: the clock used to
+        // take the first as the frame interval and drift ~30 ms off the
+        // engine before settling, a tug just after play started.
+        let mut dts = vec![0.05, 0.03];
+        dts.extend([1.0 / 120.0; 600]);
+        let (step_off, lag) = play(&dts);
+        assert!(step_off < 0.0005, "steps off by {step_off}");
+        assert!(lag < 0.002, "lags by {lag}");
+    }
+
+    #[test]
+    fn steady_when_the_display_switches_between_120_and_60_hz() {
+        // ProMotion: some frames come after one interval, some after two.
+        let f = 1.0 / 120.0;
+        let dts: Vec<f64> = (0..1200)
+            .map(|i| if (i * 7) % 3 == 0 { 2.0 * f } else { f })
+            .collect();
+        let (step_off, lag) = play(&dts);
+        assert!(step_off < 0.0005, "steps off by {step_off}");
+        assert!(lag < 0.002, "lags by {lag}");
     }
 }
