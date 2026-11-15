@@ -26,6 +26,10 @@ const CORRECTION: f64 = 0.1;
 pub struct SmoothClock {
     /// What was drawn last, the speed then, and when.
     last: Option<(f64, f64, Instant)>,
+    /// Since the last report: jumps to the engine's position while playing
+    /// steadily, and the biggest difference eased away (seconds).
+    snaps: u32,
+    worst: f64,
 }
 
 impl SmoothClock {
@@ -38,8 +42,10 @@ impl SmoothClock {
                 let predicted = shown + speed * dt;
                 let error = position - predicted;
                 if error.abs() > JUMP {
+                    self.snaps += 1;
                     position
                 } else {
+                    self.worst = self.worst.max(error.abs());
                     predicted + error * CORRECTION
                 }
             }
@@ -47,6 +53,13 @@ impl SmoothClock {
         };
         self.last = Some((shown, speed, now));
         shown
+    }
+
+    /// Jumps and the biggest difference eased away since the last call.
+    fn take_report(&mut self) -> (u32, f64) {
+        let r = (self.snaps, self.worst);
+        (self.snaps, self.worst) = (0, 0.0);
+        r
     }
 }
 
@@ -68,12 +81,37 @@ pub struct FrameTimer {
     first: Vec<f64>,
     /// Recent frames off the pattern.
     missed: u32,
+    /// Frames off the pattern since the last report.
+    off_pattern: u32,
+    /// The display's refresh interval in seconds, when the system says,
+    /// and when it was last asked.
+    refresh: Option<f64>,
+    refresh_asked: Option<Instant>,
 }
 
 /// Frames counted before the interval is known.
 const FIRST_FRAMES: usize = 24;
 
 impl FrameTimer {
+    /// The refresh rate of the display the window is on, in Hz, if the
+    /// system says: reported in the log next to the frame interval, since a
+    /// window on a 60 Hz monitor can be asked to draw at the built-in
+    /// screen's 120 Hz, which would show as uneven motion.
+    pub fn wants_refresh_rate(&mut self, now: Instant) -> bool {
+        let due = self
+            .refresh_asked
+            .is_none_or(|t| now.saturating_duration_since(t) >= Duration::from_secs(2));
+        if due {
+            self.refresh_asked = Some(now);
+        }
+        due
+    }
+
+    /// Sets the display's refresh rate, as `wants_refresh_rate` asks.
+    pub fn set_refresh_rate(&mut self, hz: Option<f64>) {
+        self.refresh = hz.filter(|&h| h > 0.0).map(|h| 1.0 / h);
+    }
+
     /// The time to draw a frame drawn at `now` for.
     pub fn next(&mut self, now: Instant) -> Instant {
         let at = match (self.last, self.frame) {
@@ -85,6 +123,7 @@ impl FrameTimer {
                     // Off the pattern. Many in a row: the refresh rate changed,
                     // so learn the interval again.
                     self.missed += 1;
+                    self.off_pattern += 1;
                     if self.missed >= FIRST_FRAMES as u32 {
                         (self.frame, self.missed) = (None, 0);
                         self.first.clear();
@@ -122,6 +161,87 @@ impl FrameTimer {
         };
         self.last = Some(at);
         at
+    }
+}
+
+/// How smoothly the waveforms are drawn, written to the log every
+/// `REPORT_EVERY` while a deck plays: what's needed to tell a slow or
+/// uneven frame from a clock that drifts, on a machine we can't watch.
+#[derive(Default)]
+pub struct FrameStats {
+    since: Option<Instant>,
+    last: Option<Instant>,
+    frames: u32,
+    /// Frames more than one and a half intervals after the last.
+    late: u32,
+    longest: f64,
+    draw_total: f64,
+    draw_longest: f64,
+}
+
+const REPORT_EVERY: Duration = Duration::from_secs(10);
+
+impl FrameStats {
+    /// A frame started drawing at `start` and took `took`, while `moving`.
+    pub fn frame(
+        &mut self,
+        start: Instant,
+        took: Duration,
+        moving: bool,
+        scale: f32,
+        timer: &mut FrameTimer,
+        clocks: &mut [SmoothClock],
+    ) {
+        if !moving {
+            *self = Self::default();
+            return;
+        }
+        let since = *self.since.get_or_insert(start);
+        if let Some(last) = self.last {
+            let dt = signed_secs(start, last);
+            self.longest = self.longest.max(dt);
+            if timer.frame.is_some_and(|f| dt > 1.5 * f) {
+                self.late += 1;
+            }
+        }
+        self.last = Some(start);
+        self.frames += 1;
+        let took = took.as_secs_f64();
+        self.draw_total += took;
+        self.draw_longest = self.draw_longest.max(took);
+        let elapsed = start.saturating_duration_since(since);
+        if elapsed < REPORT_EVERY {
+            return;
+        }
+        let (mut snaps, mut worst) = (0, 0.0f64);
+        for c in clocks.iter_mut() {
+            let (s, w) = c.take_report();
+            snaps += s;
+            worst = worst.max(w);
+        }
+        eprintln!(
+            "waveform frames at {scale}x: {} in {:.1} s, interval {:.2} ms, late {} (longest {:.1} ms), \
+             off pattern {}, display {}, drawing {:.2} ms avg {:.1} ms max, position jumps {}, eased up to {:.1} ms",
+            self.frames,
+            elapsed.as_secs_f64(),
+            timer.frame.unwrap_or(0.0) * 1e3,
+            self.late,
+            self.longest * 1e3,
+            timer.off_pattern,
+            timer
+                .refresh
+                .map_or("unknown".to_string(), |r| format!("{:.0} Hz", 1.0 / r)),
+            self.draw_total / self.frames as f64 * 1e3,
+            self.draw_longest * 1e3,
+            snaps,
+            worst * 1e3,
+        );
+        timer.off_pattern = 0;
+        *self = Self {
+            since: Some(start),
+            last: Some(start),
+            ..Self::default()
+        };
     }
 }
 
