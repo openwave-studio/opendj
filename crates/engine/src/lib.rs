@@ -35,6 +35,7 @@ pub mod key;
 pub mod keynet;
 mod keyshift;
 pub mod kits;
+pub mod latch;
 pub mod link;
 pub mod live_wave;
 pub mod loader;

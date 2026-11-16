@@ -6088,6 +6088,7 @@ component NoteFxRow inherits HorizontalLayout {
     property <int> arp-mode: Controls.value(Controls.resolve("[Instrument1]", "arp_mode"), Controls.tick);
     property <int> arp-rate: Controls.value(Controls.resolve("[Instrument1]", "arp_rate"), Controls.tick);
     property <int> arp-octaves: Controls.value(Controls.resolve("[Instrument1]", "arp_octaves"), Controls.tick);
+    property <int> hold-index: Controls.resolve("[Instrument1]", "arp_hold");
     spacing: 4px;
     alignment: end;
     NoteFxPill {
@@ -6113,6 +6114,14 @@ component NoteFxRow inherits HorizontalLayout {
         toggled => { Controls.toggle(arp-index); }
         opened => { arp-menu.show(); }
         arp-menu := ArpMenu { x: parent.width - self.width; y: - self.height - 4px; }
+    }
+    // HOLD: notes keep sounding after their keys are let go (the
+    // arpeggiator's hold while ARP is on).
+    NoteFxPill {
+        name: "HOLD";
+        on: Controls.value(hold-index, Controls.tick) > 0;
+        toggled => { Controls.toggle(hold-index); }
+        opened => { Controls.toggle(hold-index); }
     }
 }
 

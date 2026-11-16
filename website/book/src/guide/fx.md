@@ -206,8 +206,8 @@ In 2-Deck the deck shows:
   color. When it has more than eight, tabs above them show the next pages.
   Right-click a knob to pick the setting it turns; **The plugin's own
   choice** puts it back.
-- **OCT ‹ ›** and the **SCALE**, **CHORD** and **ARP** pills. Click a pill's
-  light to switch it on or off, and its name for its settings.
+- **OCT ‹ ›** and the **SCALE**, **CHORD**, **ARP** and **HOLD** pills. Click
+  a pill's light to switch it on or off, and its name for its settings.
 - A keyboard the width of the deck that lights the notes held in lilac, with
   pitch bend and mod wheel strips on its left.
 
@@ -238,6 +238,10 @@ from any key.
 (1 to 4) and **Gate** (how long each note sounds, 25% to 100%). **Hold**
 keeps it playing after you let go, until you play new keys. It plays the
 chords from **Chord** too.
+
+**HOLD** keeps the notes you play sounding after you let go of the keys,
+until you play new ones or switch it off. With **ARP** on it is the
+arpeggiator's **Hold**.
 
 **OCT ‹** and **›** move the **KEYBOARD** pads up or down an
 octave, three at most each way. The pads play the white keys from middle C.

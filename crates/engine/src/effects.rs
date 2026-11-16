@@ -1220,6 +1220,8 @@ pub(crate) struct EffectRack {
     /// The arpeggiator after them, and this buffer's notes on their way
     /// to it.
     arp: Box<crate::arp::Arp>,
+    /// HOLD while the arpeggiator is off.
+    latch: crate::latch::Latch,
     arp_in: Vec<Midi>,
     scale_mask: u16,
     /// What the instrument plays, for its deck to show.
@@ -1503,6 +1505,7 @@ impl EffectRack {
             note_input: Some(NoteInput { tx: notes_tx }),
             scale: Box::default(),
             arp: Box::default(),
+            latch: crate::latch::Latch::default(),
             arp_in: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             scale_mask: 0,
             view: Arc::default(),
@@ -1601,8 +1604,17 @@ impl EffectRack {
         self.scale.set_chord(mode, shape, learn);
     }
 
-    /// The arpeggiator's settings from now on.
+    /// The arpeggiator's settings from now on. Its `hold` is the
+    /// instrument's HOLD: the arpeggiator's own while it is on, otherwise
+    /// [`crate::latch`] keeps the notes played sounding.
     pub(crate) fn set_arp(&mut self, settings: crate::arp::ArpSettings) {
+        if settings.on {
+            // The arpeggiator ends every note as it starts.
+            self.latch.forget();
+            self.latch.set(false, &mut self.notes_waiting);
+        } else {
+            self.latch.set(settings.hold, &mut self.notes_waiting);
+        }
         self.arp.set(settings, &mut self.notes_waiting);
     }
 
@@ -1646,11 +1658,7 @@ impl EffectRack {
                 &mut self.notes_waiting,
             );
         } else {
-            for &m in &self.arp_in {
-                if self.notes_waiting.len() < self.notes_waiting.capacity() {
-                    self.notes_waiting.push(m);
-                }
-            }
+            self.latch.process(&self.arp_in, &mut self.notes_waiting);
         }
         self.arp_in.clear();
         let Some(a) = self.instrument.as_deref_mut() else {
