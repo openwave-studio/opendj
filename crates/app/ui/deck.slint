@@ -4423,10 +4423,87 @@ component InstrumentKeyboard inherits Rectangle {
     }
 }
 
+// Note FX editors: small popups with a lit title and rows of segmented
+// choices, opened from the Note FX pills and the 4-Deck buttons.
+component NoteSeg inherits Rectangle {
+    in property <[string]> options;
+    in property <int> picked: -1;
+    callback chose(index: int);
+    height: 20px;
+    border-radius: 5px;
+    background: Theme.n-111114;
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for o[i] in root.options: Rectangle {
+            border-radius: 3px;
+            background: i == root.picked ? Theme.accent : sta.has-hover ? Theme.n-2a2a2d : transparent;
+            Text {
+                text: o;
+                color: i == root.picked ? #1b1230 : Theme.text-dim;
+                font-size: 10px;
+                font-weight: 600;
+            }
+            sta := TouchArea { mouse-cursor: pointer; clicked => { root.chose(i); } }
+        }
+    }
+}
+
+component NoteStepper inherits Rectangle {
+    in property <string> text;
+    callback step(by: int);
+    height: 20px;
+    border-radius: 5px;
+    background: Theme.n-111114;
+    HorizontalLayout {
+        Rectangle {
+            width: 22px;
+            Text { text: "‹"; color: lta.has-hover ? Theme.text : Theme.text-dim; font-size: 13px; }
+            lta := TouchArea { mouse-cursor: pointer; clicked => { root.step(-1); } }
+        }
+        Text { text: root.text; color: Theme.text; font-size: 10px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; horizontal-stretch: 1; }
+        Rectangle {
+            width: 22px;
+            Text { text: "›"; color: rta.has-hover ? Theme.text : Theme.text-dim; font-size: 13px; }
+            rta := TouchArea { mouse-cursor: pointer; clicked => { root.step(1); } }
+        }
+    }
+}
+
+// The editor's title: a light that switches the mode on and off, and its name.
+component NoteFxHead inherits HorizontalLayout {
+    in property <string> text;
+    in property <string> state;
+    in property <bool> on;
+    callback toggled();
+    height: 22px;
+    spacing: 7px;
+    Rectangle {
+        width: 14px;
+        Rectangle {
+            width: 8px;
+            height: 8px;
+            border-radius: 4px;
+            background: root.on ? Theme.accent : Theme.n-3a3a3d;
+            drop-shadow-blur: root.on ? 6px : 0px;
+            drop-shadow-color: Theme.accent;
+        }
+        TouchArea { mouse-cursor: pointer; clicked => { root.toggled(); } }
+    }
+    Text { text: root.text; color: Theme.text; font-size: 10px; font-weight: 700; letter-spacing: 0.6px; vertical-alignment: center; }
+    Text { text: root.state; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; horizontal-stretch: 1; horizontal-alignment: right; }
+}
+
+component NoteFxLabel inherits Text {
+    width: 48px;
+    color: Theme.text-dim;
+    font-size: 9px;
+    font-weight: 600;
+    vertical-alignment: center;
+}
+
 // Scale mode: Off, Auto (the master deck's key) or a root and scale
 // picked. Notes played move to the scale's nearest note.
-// ScaleButton's choices, as a popup: also opened from the instrument deck's
-// Note FX pills.
 component ScaleMenu inherits PopupWindow {
     property <int> mode-index: Controls.resolve("[Instrument1]", "scale_mode");
     property <int> root-index: Controls.resolve("[Instrument1]", "scale_root");
@@ -4438,49 +4515,192 @@ component ScaleMenu inherits PopupWindow {
     property <[string]> notes: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     property <[string]> kinds: ["", "m", " pent", "m pent"];
     property <string> now-name: now == 0 ? "" : notes[Math.mod(now - 1, 12)] + kinds[floor((now - 1) / 12)];
-    width: 236px;
-    height: 3 * 24px + 2 * 26px + 4 * 24px + 40px;
+    width: 250px;
+    height: 18px + 22px + 3 * 20px + 3 * 6px + 6px;
+    close-policy: close-on-click-outside;
     GrooveMenuBackground { }
     VerticalLayout {
-        padding: 4px;
-        GrooveMenuItem { text: "Off"; detail: ""; checked: mode == 0; clicked => { Controls.set-value(mode-index, 0); } }
-        GrooveMenuItem { text: "Auto: the master deck's key"; checked: mode == 1; clicked => { Controls.set-value(mode-index, 1); } }
-        Rectangle { height: 1px; background: Theme.border; }
-        for row in 2: HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            padding-top: 4px;
-            spacing: 3px;
-            height: 26px;
-            for k in 6: Rectangle {
-                property <int> r: row * 6 + k;
-                property <bool> on: mode == 2 && picked-root == r;
-                border-radius: 4px;
-                background: on ? Theme.accent.with-alpha(0.25) : rta.has-hover ? Theme.n-3a3a3d : Theme.control;
-                border-width: 1px;
-                border-color: on ? Theme.accent : transparent;
-                Text { text: notes[r]; color: Theme.text; font-size: 11px; }
-                rta := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        Controls.set-value(root-index, r);
-                        Controls.set-value(mode-index, 2);
+        padding: 9px;
+        spacing: 6px;
+        NoteFxHead {
+            text: "SCALE";
+            state: mode == 0 ? "Off" : now-name != "" ? now-name : mode == 1 ? "Auto" : "";
+            on: mode != 0;
+            toggled => { Controls.set-value(mode-index, mode == 0 ? 1 : 0); }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Key"; }
+            NoteSeg {
+                options: ["Auto", "Pick"];
+                picked: mode == 0 ? -1 : mode - 1;
+                chose(i) => { Controls.set-value(mode-index, i + 1); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Root"; }
+            HorizontalLayout {
+                spacing: 1px;
+                for n[r] in notes: Rectangle {
+                    property <bool> on: mode == 2 && picked-root == r;
+                    height: 20px;
+                    border-radius: 3px;
+                    background: on ? Theme.accent : nta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
+                    Text { text: n; color: on ? #1b1230 : Theme.text-dim; font-size: 8px; font-weight: 600; }
+                    nta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            Controls.set-value(root-index, r);
+                            Controls.set-value(mode-index, 2);
+                        }
                     }
                 }
             }
         }
-        Rectangle { height: 4px; }
-        for name[i] in ["Major", "Minor", "Major pentatonic", "Minor pentatonic"]: GrooveMenuItem {
-            text: name;
-            checked: mode == 2 && picked-type == i;
-            clicked => {
-                Controls.set-value(type-index, i);
-                Controls.set-value(mode-index, 2);
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Scale"; }
+            NoteSeg {
+                options: ["Maj", "Min", "Pent", "mPent"];
+                picked: mode == 2 ? picked-type : -1;
+                chose(i) => {
+                    Controls.set-value(type-index, i);
+                    Controls.set-value(mode-index, 2);
+                }
             }
         }
     }
 }
 
+// Chord mode: each key plays a chord built on the scale. Learn takes
+// the next chord held, and Mine plays it from any key.
+component ChordMenu inherits PopupWindow {
+    property <int> mode-index: Controls.resolve("[Instrument1]", "chord_mode");
+    property <int> learn-index: Controls.resolve("[Instrument1]", "chord_learn");
+    property <int> mode: Controls.value(mode-index, Controls.tick);
+    property <bool> learning: Controls.value(learn-index, Controls.tick) > 0;
+    property <[string]> names: ["Off", "Triad", "Seventh", "Power", "Mine"];
+    width: 250px;
+    height: 18px + 22px + 2 * 20px + 2 * 6px + 6px;
+    close-policy: close-on-click-outside;
+    GrooveMenuBackground { }
+    VerticalLayout {
+        padding: 9px;
+        spacing: 6px;
+        NoteFxHead {
+            text: "CHORD";
+            state: learning ? "Hold a chord, let go" : names[mode];
+            on: mode != 0 || learning;
+            toggled => {
+                Controls.set-value(learn-index, 0);
+                Controls.set-value(mode-index, mode == 0 ? 1 : 0);
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Shape"; }
+            NoteSeg {
+                options: ["Triad", "7th", "Power", "Mine"];
+                picked: learning ? -1 : mode - 1;
+                chose(i) => {
+                    Controls.set-value(learn-index, 0);
+                    Controls.set-value(mode-index, i + 1);
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Mine"; }
+            NoteSeg {
+                options: [learning ? "Learning…" : "Learn a chord"];
+                picked: learning ? 0 : -1;
+                chose(i) => { Controls.set-value(learn-index, learning ? 0 : 1); }
+            }
+        }
+    }
+}
+
+// The arpeggiator: the notes held play one at a time on the mix's beat.
+component ArpMenu inherits PopupWindow {
+    property <int> on-index: Controls.resolve("[Instrument1]", "arp");
+    property <int> mode-index: Controls.resolve("[Instrument1]", "arp_mode");
+    property <int> rate-index: Controls.resolve("[Instrument1]", "arp_rate");
+    property <int> gate-index: Controls.resolve("[Instrument1]", "arp_gate");
+    property <int> octaves-index: Controls.resolve("[Instrument1]", "arp_octaves");
+    property <int> hold-index: Controls.resolve("[Instrument1]", "arp_hold");
+    property <bool> on: Controls.value(on-index, Controls.tick) > 0;
+    property <int> mode: Controls.value(mode-index, Controls.tick);
+    property <int> rate: Controls.value(rate-index, Controls.tick);
+    property <float> gate: Controls.value(gate-index, Controls.tick);
+    property <int> octaves: Controls.value(octaves-index, Controls.tick);
+    property <bool> hold: Controls.value(hold-index, Controls.tick) > 0;
+    property <[string]> rates: ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"];
+    property <[float]> gates: [0.25, 0.5, 0.75, 1.0];
+    width: 250px;
+    height: 18px + 22px + 5 * 20px + 5 * 6px + 6px;
+    close-policy: close-on-click-outside;
+    GrooveMenuBackground { }
+    VerticalLayout {
+        padding: 9px;
+        spacing: 6px;
+        NoteFxHead {
+            text: "ARP";
+            state: on ? ["Up", "Down", "Up and down", "Random", "Order played"][mode] + " · " + rates[rate] : "Off";
+            on: on;
+            toggled => { Controls.set-value(on-index, on ? 0 : 1); }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Order"; }
+            NoteSeg {
+                options: ["Up", "Down", "Up/Dn", "Rand", "Played"];
+                picked: mode;
+                chose(i) => {
+                    Controls.set-value(mode-index, i);
+                    Controls.set-value(on-index, 1);
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Rate"; }
+            NoteStepper {
+                text: rates[rate];
+                step(by) => { Controls.set-value(rate-index, max(0, min(5, rate + by))); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Octaves"; }
+            NoteSeg {
+                options: ["1", "2", "3", "4"];
+                picked: octaves - 1;
+                chose(i) => { Controls.set-value(octaves-index, i + 1); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Gate"; }
+            NoteSeg {
+                options: ["25%", "50%", "75%", "100%"];
+                picked: abs(gate - 0.25) < 0.01 ? 0 : abs(gate - 0.5) < 0.01 ? 1 : abs(gate - 0.75) < 0.01 ? 2 : abs(gate - 1.0) < 0.01 ? 3 : -1;
+                chose(i) => { Controls.set-value(gate-index, gates[i]); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Hold"; }
+            NoteSeg {
+                options: ["Off", "On"];
+                picked: hold ? 1 : 0;
+                chose(i) => { Controls.set-value(hold-index, i); }
+            }
+        }
+    }
+}
+
+// The Scale mode as a button, with its editor.
 component ScaleButton inherits GrooveButton {
     property <int> mode-index: Controls.resolve("[Instrument1]", "scale_mode");
     property <int> root-index: Controls.resolve("[Instrument1]", "scale_root");
@@ -4501,48 +4721,7 @@ component ScaleButton inherits GrooveButton {
     }
 }
 
-// Chord mode: each key plays a chord built on the scale. Learn takes
-// the next chord held, and Mine plays it from any key.
-// ChordButton's choices, as a popup: also opened from the instrument deck's
-// Note FX pills.
-component ChordMenu inherits PopupWindow {
-    property <int> mode-index: Controls.resolve("[Instrument1]", "chord_mode");
-    property <int> learn-index: Controls.resolve("[Instrument1]", "chord_learn");
-    property <int> mode: Controls.value(mode-index, Controls.tick);
-    property <bool> learning: Controls.value(learn-index, Controls.tick) > 0;
-    property <[string]> names: ["Off", "Triad", "7th", "Power", "Mine"];
-    width: 220px;
-    height: 4 * 24px + 2 * 36px + 1px + 8px;
-    GrooveMenuBackground { }
-    VerticalLayout {
-        padding: 4px;
-        for name[i] in ["Off", "Triad", "Seventh", "Power: root, fifth, octave"]: GrooveMenuItem {
-            text: name;
-            checked: mode == i && !learning;
-            clicked => {
-                Controls.set-value(learn-index, 0);
-                Controls.set-value(mode-index, i);
-            }
-        }
-        GrooveMenuItem {
-            text: "Mine";
-            detail: "The chord you learned";
-            checked: mode == 4 && !learning;
-            clicked => {
-                Controls.set-value(learn-index, 0);
-                Controls.set-value(mode-index, 4);
-            }
-        }
-        Rectangle { height: 1px; background: Theme.border; }
-        GrooveMenuItem {
-            text: "Learn a chord";
-            detail: "Hold its keys, then let go";
-            checked: learning;
-            clicked => { Controls.set-value(learn-index, learning ? 0 : 1); }
-        }
-    }
-}
-
+// The Chord mode as a button, with its editor.
 component ChordButton inherits GrooveButton {
     property <int> mode-index: Controls.resolve("[Instrument1]", "chord_mode");
     property <int> learn-index: Controls.resolve("[Instrument1]", "chord_learn");
@@ -4572,90 +4751,7 @@ component ChoiceChip inherits Rectangle {
     ccta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-// The arpeggiator: the notes held play one at a time on the mix's beat.
-// ArpButton's choices, as a popup: also opened from the instrument deck's
-// Note FX pills.
-component ArpMenu inherits PopupWindow {
-    property <int> on-index: Controls.resolve("[Instrument1]", "arp");
-    property <int> mode-index: Controls.resolve("[Instrument1]", "arp_mode");
-    property <int> rate-index: Controls.resolve("[Instrument1]", "arp_rate");
-    property <int> gate-index: Controls.resolve("[Instrument1]", "arp_gate");
-    property <int> octaves-index: Controls.resolve("[Instrument1]", "arp_octaves");
-    property <int> hold-index: Controls.resolve("[Instrument1]", "arp_hold");
-    property <bool> on: Controls.value(on-index, Controls.tick) > 0;
-    property <int> mode: Controls.value(mode-index, Controls.tick);
-    property <int> rate: Controls.value(rate-index, Controls.tick);
-    property <float> gate: Controls.value(gate-index, Controls.tick);
-    property <int> octaves: Controls.value(octaves-index, Controls.tick);
-    property <bool> hold: Controls.value(hold-index, Controls.tick) > 0;
-    property <[string]> rates: ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"];
-    width: 236px;
-    height: 2 * 24px + 5 * 24px + 4 * 18px + 3 * 26px + 3px + 8px;
-    close-policy: close-on-click-outside;
-    GrooveMenuBackground { }
-    VerticalLayout {
-        padding: 4px;
-        GrooveMenuItem { text: "Arpeggiator on"; checked: on; clicked => { Controls.set-value(on-index, on ? 0 : 1); } }
-        Rectangle { height: 1px; background: Theme.border; }
-        for name[i] in ["Up", "Down", "Up and down", "Random", "Order played"]: GrooveMenuItem {
-            text: name;
-            checked: mode == i;
-            clicked => {
-                Controls.set-value(mode-index, i);
-                Controls.set-value(on-index, 1);
-            }
-        }
-        Rectangle { height: 1px; background: Theme.border; }
-        HorizontalLayout {
-            padding-left: 8px;
-            Text { text: "RATE"; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: bottom; }
-        }
-        HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            spacing: 3px;
-            height: 26px;
-            for r[i] in rates: ChoiceChip {
-                text: r;
-                picked: rate == i;
-                clicked => { Controls.set-value(rate-index, i); }
-            }
-        }
-        HorizontalLayout {
-            padding-left: 8px;
-            Text { text: "GATE"; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: bottom; }
-        }
-        HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            spacing: 3px;
-            height: 26px;
-            for g in [0.25, 0.5, 0.75, 1.0]: ChoiceChip {
-                text: round(g * 100) + "%";
-                picked: abs(gate - g) < 0.01;
-                clicked => { Controls.set-value(gate-index, g); }
-            }
-        }
-        HorizontalLayout {
-            padding-left: 8px;
-            Text { text: "OCTAVES"; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: bottom; }
-        }
-        HorizontalLayout {
-            padding-left: 8px;
-            padding-right: 8px;
-            spacing: 3px;
-            height: 26px;
-            for o in 4: ChoiceChip {
-                text: o + 1;
-                picked: octaves == o + 1;
-                clicked => { Controls.set-value(octaves-index, o + 1); }
-            }
-        }
-        Rectangle { height: 1px; background: Theme.border; }
-        GrooveMenuItem { text: "Hold: keep playing after letting go"; checked: hold; clicked => { Controls.set-value(hold-index, hold ? 0 : 1); } }
-    }
-}
-
+// The arpeggiator as a button, with its editor.
 component ArpButton inherits GrooveButton {
     property <int> on-index: Controls.resolve("[Instrument1]", "arp");
     property <int> mode-index: Controls.resolve("[Instrument1]", "arp_mode");
@@ -6000,7 +6096,7 @@ component NoteFxRow inherits HorizontalLayout {
         state: scale-mode == 0 ? "Off" : scale-mode == 1 ? (scale-name != "" ? scale-name + " auto" : "Auto") : scale-name;
         toggled => { Controls.set-value(scale-mode-index, scale-mode == 0 ? 1 : 0); }
         opened => { scale-menu.show(); }
-        scale-menu := ScaleMenu { y: - self.height - 4px; }
+        scale-menu := ScaleMenu { x: parent.width - self.width; y: - self.height - 4px; }
     }
     NoteFxPill {
         name: "CHORD";
@@ -6008,7 +6104,7 @@ component NoteFxRow inherits HorizontalLayout {
         state: learning ? "Play one" : ["Off", "Triad", "7th", "Power", "Mine"][chord];
         toggled => { Controls.set-value(chord-index, chord == 0 ? last-chord : 0); }
         opened => { chord-menu.show(); }
-        chord-menu := ChordMenu { y: - self.height - 4px; }
+        chord-menu := ChordMenu { x: parent.width - self.width; y: - self.height - 4px; }
     }
     NoteFxPill {
         name: "ARP";
@@ -6016,7 +6112,7 @@ component NoteFxRow inherits HorizontalLayout {
         state: arp ? ["↗", "↘", "⇅", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + " ×" + arp-octaves : "Off";
         toggled => { Controls.toggle(arp-index); }
         opened => { arp-menu.show(); }
-        arp-menu := ArpMenu { x: - 120px; y: - self.height - 4px; }
+        arp-menu := ArpMenu { x: parent.width - self.width; y: - self.height - 4px; }
     }
 }
 

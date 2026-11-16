@@ -15,6 +15,6 @@
 
 ## 3. Controls
 
-- [ ] 3.1 Smaller Scale, Chord and Arp editors
+- [x] 3.1 Smaller Scale, Chord and Arp editors
 - [ ] 3.2 HOLD pill: latches notes on any instrument and is the arpeggiator's hold when ARP is on
 - [ ] 3.3 Knob page names from the plugin (CLAP remote-control pages, VST3 units)

@@ -218,24 +218,26 @@ picks the instrument's color; each plugin starts with its own.
 A 4-Deck strip shows the scope, **OPEN**, the first four knobs and
 **TRIM**, with the preset in its header.
 
+Each of the three opens a small editor with the same light at its top:
+switched off, notes play as they are.
+
 **Scale** moves each note you play to the nearest note of a scale, so
-every key sounds in key with the mix. **Off** plays notes as they are.
-**Auto** takes the master deck's key. Or pick a root (C to B) and **Major**,
-**Minor**, **Major pentatonic** or **Minor pentatonic**. The keyboard on the
-deck marks the scale's keys and dims the rest.
+every key sounds in key with the mix. **Key › Auto** takes the master
+deck's key; **Pick** uses the **Root** (C to B) and **Scale** (**Maj**,
+**Min**, **Pent** or **mPent**) you choose. The keyboard on the deck marks
+the scale's keys and dims the rest.
 
 **Chord** plays a chord built on the scale from each key: **Triad**,
-**Seventh**, or **Power** (root, fifth and octave). For a chord of your
-own, choose **Learn a chord**, hold its keys and let go; **Mine** then
-plays it from any key. **Off** plays one note per key.
+**7th**, or **Power** (root, fifth and octave). For a chord of your own,
+press **Learn a chord**, hold its keys and let go; **Mine** then plays it
+from any key.
 
-**Arp** plays the notes you hold one at a time, on the mix's beat. Pick
-**Up**, **Down**, **Up and down**, **Random** or **Order played** to turn it
-on (**Arpeggiator on** turns it off and on), then
-**RATE** (1/4 to 1/32, with triplets), **GATE** (how long each note
-sounds, 25% to 100%) and **OCTAVES** (1 to 4). **Hold** keeps it playing
-after you let go, until you play new keys. It plays the chords from
-**Chord** too.
+**Arp** plays the notes you hold one at a time, on the mix's beat. Pick its
+**Order** (**Up**, **Down**, **Up/Dn**, **Rand** or **Played**), step the
+**Rate** with **‹ ›** (1/4 to 1/32, with triplets), and set **Octaves**
+(1 to 4) and **Gate** (how long each note sounds, 25% to 100%). **Hold**
+keeps it playing after you let go, until you play new keys. It plays the
+chords from **Chord** too.
 
 **OCT ‹** and **›** move the **KEYBOARD** pads up or down an
 octave, three at most each way. The pads play the white keys from middle C.
