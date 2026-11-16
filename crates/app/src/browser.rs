@@ -82,6 +82,7 @@ use crate::{
     fmt_time, AppWindow, ColumnUi, FilesUi, Folder, HealthUi, KeyNotation, LibraryEdit, SideRow,
     StoreUi, StreamMatch, TrackDrag, TrackInfo, TrackRow, WantedUi,
 };
+use crate::{BrowserFocus, BrowserPane};
 
 /// Sources in the rail that have a tree of their own.
 const COLLECTION: i32 = 0;
@@ -4245,11 +4246,22 @@ impl Browser {
             app.set_side_tab(LINKED_TAB as i32);
         }
         let mut steps: f64 = self.lib.steps.iter().map(|(c, sign)| take(c) * sign).sum();
+        if steps != 0.0 && app.global::<BrowserFocus>().get_pane() == BrowserPane::Sources {
+            app.set_folders_focused(true);
+            app.global::<BrowserFocus>()
+                .invoke_focus(BrowserPane::Folders);
+        }
         // Clicking a folder or a track moves the focus too.
         self.folders_focused = app.get_folders_focused();
         if self.lib.focus.iter().map(take).sum::<f64>() != 0.0 {
             self.folders_focused = !self.folders_focused;
             app.set_folders_focused(self.folders_focused);
+            app.global::<BrowserFocus>()
+                .invoke_focus(if self.folders_focused {
+                    BrowserPane::Folders
+                } else {
+                    BrowserPane::Content
+                });
         }
         let folder_steps: f64 = self.lib.folder_steps.iter().map(|(c, s)| take(c) * s).sum();
         let mut folder_steps = folder_steps.round() as i64;
@@ -4695,7 +4707,37 @@ impl Browser {
         }
         match tree_navigation::navigate(&rows, current, direction) {
             Some(Action::Select(row)) => self.select_folder_row(row, false),
-            Some(Action::Toggle(row)) => self.toggle_folder_row(row),
+            Some(Action::Toggle(row)) => {
+                let was_lazy = self
+                    .visible_nodes
+                    .get(row)
+                    .is_some_and(|&i| self.nodes[i].lazy);
+                self.toggle_folder_row(row);
+                if matches!(direction, Direction::Right)
+                    && was_lazy
+                    && self
+                        .visible_nodes
+                        .get(row)
+                        .is_some_and(|&i| self.navigation_row(i).children == 0)
+                {
+                    if let Some(app) = self.app.upgrade() {
+                        app.global::<BrowserFocus>()
+                            .invoke_focus(BrowserPane::Content);
+                    }
+                }
+            }
+            Some(Action::EnterContent) => {
+                if let Some(app) = self.app.upgrade() {
+                    app.global::<BrowserFocus>()
+                        .invoke_focus(BrowserPane::Content);
+                }
+            }
+            Some(Action::ExitToSources) => {
+                if let Some(app) = self.app.upgrade() {
+                    app.global::<BrowserFocus>()
+                        .invoke_focus(BrowserPane::Sources);
+                }
+            }
             None => {}
         }
     }

@@ -11,6 +11,19 @@ on (see [Stages](#stages-inbox-in-prep-and-play-ready)).
 the rail. Together with Files and the streaming services it makes up the
 **browser**, the lower half of the screen.
 
+## Keyboard browsing
+
+Click a folder to focus its tree. Up and Down select visible folders. Right
+expands a folder, enters its first child, or moves from a leaf to its tracks.
+Left collapses an open folder, selects its parent, or returns from a root
+to the source rail. On the rail, Up and Down switch between visible sources
+in their displayed order, and Right enters the tree.
+
+In the track list, Up and Down select tracks, Left returns to the folder,
+and Right leaves the selection in place. Empty lists also accept Left.
+Jam uses the same navigation between its tree and instruments. Search fields
+and folder names retain their text-editing keys.
+
 ## Sources
 
 The rail at the far left picks where the tree and the track list come from:

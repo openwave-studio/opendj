@@ -18,6 +18,7 @@ use crate::tree_navigation::{self, Action, Direction, Row};
 use crate::{
     settings, AppWindow, InstrumentNode, InstrumentsUi, LiveItem, MixerStripInfo, Preferences,
 };
+use crate::{BrowserFocus, BrowserPane};
 
 /// What dragging an item carries: `opendj-live:<kind>:<index>`.
 const LIVE_PAYLOAD: &str = "opendj-live:";
@@ -185,6 +186,12 @@ fn navigate_nodes(app: &AppWindow, code: i32) {
     match tree_navigation::navigate(&rows, current, direction) {
         Some(Action::Select(row)) => select_node(app, row as i32),
         Some(Action::Toggle(row)) => toggle_node(app, row as i32),
+        Some(Action::EnterContent) => app
+            .global::<BrowserFocus>()
+            .invoke_focus(BrowserPane::Content),
+        Some(Action::ExitToSources) => app
+            .global::<BrowserFocus>()
+            .invoke_focus(BrowserPane::Sources),
         None => {}
     }
 }

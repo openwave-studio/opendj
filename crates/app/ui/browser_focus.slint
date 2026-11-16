@@ -1,0 +1,19 @@
+// UI focus requests are applied on the next event turn. This keeps focus
+// callbacks out of the Rust browser's active RefCell borrow.
+export enum BrowserPane { sources, folders, content }
+export global BrowserFocus {
+    in-out property <BrowserPane> pane: content;
+    in-out property <int> request;
+    in-out property <bool> folders-available;
+    in-out property <bool> content-available;
+    public function focus(target: BrowserPane) {
+        if target == BrowserPane.folders && !folders-available {
+            pane = BrowserPane.sources;
+            request += 1;
+            return;
+        }
+        if target == BrowserPane.content && !content-available { return; }
+        pane = target;
+        request += 1;
+    }
+}

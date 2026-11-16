@@ -29,11 +29,13 @@ impl Direction {
 pub enum Action {
     Select(usize),
     Toggle(usize),
+    EnterContent,
+    ExitToSources,
 }
 
 pub fn navigate(rows: &[Row], current: Option<usize>, direction: Direction) -> Option<Action> {
     if rows.is_empty() {
-        return None;
+        return matches!(direction, Direction::Left).then_some(Action::ExitToSources);
     }
     let Some(at) = current.filter(|&i| i < rows.len()) else {
         return Some(Action::Select(0));
@@ -49,12 +51,15 @@ pub fn navigate(rows: &[Row], current: Option<usize>, direction: Direction) -> O
             .get(at + 1)
             .filter(|row| row.depth > depth)
             .map(|_| Action::Select(at + 1)),
+        Direction::Right => Some(Action::EnterContent),
         Direction::Left if children == 2 => Some(Action::Toggle(at)),
-        Direction::Left => (0..at)
-            .rev()
-            .find(|&i| rows[i].depth < depth)
-            .map(Action::Select),
-        _ => None,
+        Direction::Left => Some(
+            (0..at)
+                .rev()
+                .find(|&i| rows[i].depth < depth)
+                .map(Action::Select)
+                .unwrap_or(Action::ExitToSources),
+        ),
     }
 }
 
@@ -76,6 +81,22 @@ mod tests {
         assert_eq!(
             navigate(&[row(0, 0)], Some(8), Direction::Up),
             Some(Action::Select(0))
+        );
+    }
+
+    #[test]
+    fn empty_tree_and_nonzero_depth_root_can_return_to_sources() {
+        assert_eq!(
+            navigate(&[], None, Direction::Left),
+            Some(Action::ExitToSources)
+        );
+        assert_eq!(
+            navigate(&[row(2, 0)], Some(0), Direction::Left),
+            Some(Action::ExitToSources)
+        );
+        assert_eq!(
+            navigate(&[row(2, 0)], Some(0), Direction::Right),
+            Some(Action::EnterContent)
         );
     }
 
@@ -109,7 +130,10 @@ mod tests {
             navigate(&rows, Some(0), Direction::Right),
             Some(Action::Select(1))
         );
-        assert_eq!(navigate(&rows, Some(1), Direction::Right), None);
+        assert_eq!(
+            navigate(&rows, Some(1), Direction::Right),
+            Some(Action::EnterContent)
+        );
         assert_eq!(
             navigate(&[row(0, 2), row(0, 0)], Some(0), Direction::Right),
             None
@@ -136,6 +160,9 @@ mod tests {
             navigate(&rows, Some(2), Direction::Left),
             Some(Action::Select(0))
         );
-        assert_eq!(navigate(&rows, Some(3), Direction::Left), None);
+        assert_eq!(
+            navigate(&rows, Some(3), Direction::Left),
+            Some(Action::ExitToSources)
+        );
     }
 }
