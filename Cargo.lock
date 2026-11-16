@@ -6759,6 +6759,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "opendj-karaoke-render"
+version = "0.7.0"
+dependencies = [
+ "image",
+ "slint",
+]
+
+[[package]]
 name = "opendj-library"
 version = "0.7.0"
 dependencies = [

@@ -8,7 +8,7 @@ use slint::platform::{Platform, PlatformError, WindowAdapter, WindowEvent};
 use slint::{ComponentHandle, ModelRc, PhysicalSize, Rgb8Pixel, SharedString, VecModel};
 
 slint::slint! {
-    export { KaraokeWindow } from "../ui/karaoke.slint";
+    export { KaraokeWindow } from "../../app/ui/karaoke.slint";
 }
 
 struct RenderPlatform {
