@@ -21,7 +21,10 @@ in their displayed order, and Right enters the tree.
 
 In the track list, Up and Down select tracks, Left returns to the folder,
 and Right leaves the selection in place. Empty lists also accept Left.
-Jam uses the same navigation between its tree and instruments. Search fields
+Jam uses the same navigation between its tree and instruments. The inactive
+selection stays dim while the focused pane has the bright selection.
+On the DDJ-400, turn BROWSE to move through the focused pane, press it
+to navigate right, and hold SHIFT while pressing it to navigate left. Search fields
 and folder names retain their text-editing keys.
 
 ## Sources

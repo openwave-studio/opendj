@@ -47,6 +47,7 @@ mod info;
 mod keep_going;
 mod lyrics;
 mod mix_export;
+mod navigation;
 mod pages;
 mod picks;
 mod playlist_files;
@@ -1406,6 +1407,11 @@ impl Browser {
                 }
             }))
         });
+        let w = with.clone();
+        app.global::<BrowserFocus>()
+            .on_navigate(move |code, steps| {
+                w(Box::new(move |b| b.navigate_browser(code, steps)));
+            });
         let w = with.clone();
         app.on_navigate_folders(move |code| w(Box::new(move |b| b.navigate_folders(code))));
         let w = with.clone();
@@ -4245,84 +4251,79 @@ impl Browser {
             app.set_side_panel_visible(true);
             app.set_side_tab(LINKED_TAB as i32);
         }
-        let mut steps: f64 = self.lib.steps.iter().map(|(c, sign)| take(c) * sign).sum();
-        if steps != 0.0 && app.global::<BrowserFocus>().get_pane() == BrowserPane::Sources {
-            app.set_folders_focused(true);
+        // Preserve direction: forward and backward have the same meaning as
+        // Right and Left in the keyboard scopes, including leaf-to-content.
+        let forward = take(&self.lib.focus[0]).round() as i32;
+        let backward = take(&self.lib.focus[1]).round() as i32;
+        let relative = take(&self.lib.focus[2]).round() as i32;
+        for _ in 0..forward.max(0) {
+            self.navigate_browser(3, 1);
+        }
+        for _ in 0..backward.max(0) {
+            self.navigate_browser(2, 1);
+        }
+        for _ in 0..relative.saturating_abs() {
+            self.navigate_browser(if relative > 0 { 3 } else { 2 }, 1);
+        }
+        let steps = self
+            .lib
+            .steps
+            .iter()
+            .map(|(c, sign)| take(c) * sign)
+            .sum::<f64>()
+            .round() as i32;
+        if steps != 0 {
+            self.navigate_browser(if steps > 0 { 1 } else { 0 }, steps.saturating_abs());
+        }
+        let folder_steps = self
+            .lib
+            .folder_steps
+            .iter()
+            .map(|(c, sign)| take(c) * sign)
+            .sum::<f64>()
+            .round() as i32;
+        if folder_steps != 0 {
             app.global::<BrowserFocus>()
                 .invoke_focus(BrowserPane::Folders);
+            self.navigate_browser(
+                if folder_steps > 0 { 1 } else { 0 },
+                folder_steps.saturating_abs(),
+            );
         }
-        // Clicking a folder or a track moves the focus too.
-        self.folders_focused = app.get_folders_focused();
-        if self.lib.focus.iter().map(take).sum::<f64>() != 0.0 {
-            self.folders_focused = !self.folders_focused;
-            app.set_folders_focused(self.folders_focused);
-            app.global::<BrowserFocus>()
-                .invoke_focus(if self.folders_focused {
-                    BrowserPane::Folders
-                } else {
-                    BrowserPane::Content
-                });
-        }
-        let folder_steps: f64 = self.lib.folder_steps.iter().map(|(c, s)| take(c) * s).sum();
-        let mut folder_steps = folder_steps.round() as i64;
-        if self.folders_focused {
-            folder_steps += steps.round() as i64;
-            steps = 0.0;
-        }
-        if folder_steps != 0 && !self.visible_nodes.is_empty() {
-            let at = self
-                .visible_nodes
-                .iter()
-                .position(|&n| n == self.current_node)
-                .unwrap_or(0) as i64;
-            let to = (at + folder_steps).clamp(0, self.visible_nodes.len() as i64 - 1) as usize;
-            self.park_view();
-            self.current_node = self.visible_nodes[to];
-            app.set_current_track(-1);
-            self.refresh_tree();
-            self.refresh_rows();
-            self.fetch_current_playlist();
-        }
-        let steps = steps.round() as i64;
-        if steps != 0 && !self.rows.is_empty() {
-            // Moving the selection picks one track again.
-            self.clear_picks();
-            let current = app.get_current_track() as i64;
-            let to = if current < 0 {
-                if steps > 0 {
-                    steps - 1
-                } else {
-                    self.rows.len() as i64 + steps
-                }
-            } else {
-                current + steps
-            };
-            app.set_current_track(to.clamp(0, self.rows.len() as i64 - 1) as i32);
-        }
+        self.folders_focused = app.global::<BrowserFocus>().get_pane() == BrowserPane::Folders;
+        app.set_folders_focused(self.folders_focused);
 
         let selected = usize::try_from(app.get_current_track())
             .ok()
             .and_then(|r| self.rows.get(r).copied().flatten());
-        let widget = if self.folders_focused { 2.0 } else { 3.0 };
-        if self.lib.focused_widget.get() != widget {
-            self.lib.focused_widget.set(widget);
+        let pane = app.global::<BrowserFocus>().get_pane();
+        if pane != BrowserPane::Sources {
+            let widget = if pane == BrowserPane::Folders {
+                2.0
+            } else {
+                3.0
+            };
+            if self.lib.focused_widget.get() != widget {
+                self.lib.focused_widget.set(widget);
+            }
         }
         let go = take(&self.lib.go_to_item) > 0.0;
         if take(&self.lib.toggle_folder) > 0.0 {
-            if let Some(n) = self.nodes.get_mut(self.current_node) {
-                n.expanded = !n.expanded;
-                self.save_open_folders();
-                self.refresh_tree();
+            if app.global::<StoreUi>().get_source() == INSTRUMENTS {
+                let ui = app.global::<crate::InstrumentsUi>();
+                ui.invoke_toggle_node(ui.get_current_node());
+            } else if let Some(row) = self
+                .visible_nodes
+                .iter()
+                .position(|&n| n == self.current_node)
+            {
+                self.toggle_folder_row(row);
             }
         }
-        if go && self.folders_focused {
-            // Like pressing the browse knob on a folder: open or close it.
-            if let Some(n) = self.nodes.get_mut(self.current_node) {
-                n.expanded = !n.expanded;
-                self.save_open_folders();
-                self.refresh_tree();
-            }
-        } else if (go || take(&self.lib.load_first_stopped) > 0.0) && selected.is_some() {
+        let load_first = take(&self.lib.load_first_stopped) > 0.0;
+        if go && pane != BrowserPane::Content {
+            self.navigate_browser(3, 1);
+        } else if (go || load_first) && selected.is_some() {
             self.adopt(&[selected.unwrap()]);
             self.load_to_free_deck(selected.unwrap());
         }

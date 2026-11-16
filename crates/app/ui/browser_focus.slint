@@ -2,6 +2,8 @@
 // callbacks out of the Rust browser's active RefCell borrow.
 export enum BrowserPane { sources, folders, content }
 export global BrowserFocus {
+    // Keyboard and controller commands share the Rust browser dispatcher.
+    callback navigate(direction: int, steps: int);
     in-out property <BrowserPane> pane: content;
     in-out property <int> request;
     in-out property <bool> folders-available;

@@ -138,6 +138,7 @@ export global InstrumentsUi {
     in property <[InstrumentNode]> nodes;
     in property <int> current-node;
     in property <[LiveItem]> rows;
+    in-out property <int> current-item: -1;
     // Text for an empty list, and the Settings page that fills it: 7 Plugins,
     // 0 Audio, -1 none.
     in property <string> empty-text;
@@ -610,10 +611,10 @@ component InstrumentTree inherits Rectangle {
                 if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
                     return reject;
                 }
-                if e.text == Key.UpArrow { InstrumentsUi.navigate-node(0); }
-                else if e.text == Key.DownArrow { InstrumentsUi.navigate-node(1); }
-                else if e.text == Key.LeftArrow { InstrumentsUi.navigate-node(2); }
-                else if e.text == Key.RightArrow { InstrumentsUi.navigate-node(3); }
+                if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+                else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+                else if e.text == Key.LeftArrow { BrowserFocus.navigate(2, 1); }
+                else if e.text == Key.RightArrow { BrowserFocus.navigate(3, 1); }
                 else { return reject; }
                 root.reveal-pending = true;
                 accept
@@ -627,7 +628,7 @@ component InstrumentTree inherits Rectangle {
                     for n[i] in InstrumentsUi.nodes: Rectangle {
                         height: 34px;
                         border-radius: Theme.radius;
-                        background: i == InstrumentsUi.current-node ? Theme.selection : ta.has-hover ? Theme.n-232326 : transparent;
+                        background: i == InstrumentsUi.current-node ? (tree-keys.has-focus ? Theme.selection : Theme.selection-idle) : ta.has-hover ? Theme.n-232326 : transparent;
                         ta := TouchArea {
                             clicked => { tree-keys.focus(); InstrumentsUi.select-node(i); }
                             double-clicked => { tree-keys.focus(); InstrumentsUi.toggle-node(i); }
@@ -706,6 +707,7 @@ component InstrumentRow inherits Rectangle {
     in property <LiveItem> item;
     in property <int> line;
     in property <bool> selected;
+    in property <bool> focused;
     in property <length> type-width;
     in property <length> maker-width;
     in property <length> format-width;
@@ -713,7 +715,7 @@ component InstrumentRow inherits Rectangle {
     callback load();
     property <string> decks: InstrumentsUi.decks-of(item.kind, item.index);
     height: 32px;
-    background: selected ? Theme.selection : Math.mod(line, 2) == 0 ? Theme.row : Theme.row-alt;
+    background: selected ? (focused ? Theme.selection : Theme.selection-idle) : Math.mod(line, 2) == 0 ? Theme.row : Theme.row-alt;
     drag := DragArea {
         data: InstrumentsUi.payload(item.kind, item.index);
         allow-copy: true;
@@ -817,12 +819,11 @@ component InstrumentList inherits Rectangle {
         }
         key-pressed(e) => {
             if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift { return reject; }
-            if e.text == Key.UpArrow || e.text == Key.DownArrow {
-                if InstrumentsUi.rows.length > 0 {
-                    root.current = root.current < 0 ? 0 : clamp(root.current + (e.text == Key.UpArrow ? -1 : 1), 0, InstrumentsUi.rows.length - 1);
-                }
-            } else if e.text == Key.LeftArrow { BrowserFocus.focus(BrowserPane.folders); }
-            else if e.text != Key.RightArrow { return reject; }
+            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+            else if e.text == Key.LeftArrow { BrowserFocus.navigate(2, 1); }
+            else if e.text == Key.RightArrow { BrowserFocus.navigate(3, 1); }
+            else { return reject; }
             accept
         }
     }
@@ -843,7 +844,7 @@ component InstrumentList inherits Rectangle {
 
     // How many decks are shown, for double-click.
     in property <int> decks;
-    property <int> current: -1;
+    property <int> current <=> InstrumentsUi.current-item;
     property <length> type-width: 110px;
     property <length> maker-width: 200px;
     property <length> format-width: 70px;
@@ -911,11 +912,13 @@ component InstrumentList inherits Rectangle {
                     item: it;
                     line: i;
                     selected: i == current;
+                    focused: item-keys.has-focus;
                     type-width: type-width;
                     maker-width: maker-width;
                     format-width: format-width;
                     select => { item-keys.focus(); current = i; }
                     load => {
+                        item-keys.focus();
                         current = i;
                         if InstrumentsUi.free-deck(decks) >= 0 {
                             InstrumentsUi.drop(InstrumentsUi.free-deck(decks), it.kind * 1000 + it.index);

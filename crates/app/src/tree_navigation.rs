@@ -33,6 +33,18 @@ pub enum Action {
     ExitToSources,
 }
 
+/// Moves a selection by signed encoder steps, clamped to the visible rows.
+pub fn step_row(current: Option<usize>, len: usize, steps: i32) -> Option<usize> {
+    if len == 0 || steps == 0 {
+        return None;
+    }
+    let target = match current.filter(|&at| at < len) {
+        Some(at) => at as i64 + i64::from(steps),
+        None => i64::from(steps.saturating_sub(1)).max(0),
+    };
+    Some(target.clamp(0, len as i64 - 1) as usize)
+}
+
 pub fn navigate(rows: &[Row], current: Option<usize>, direction: Direction) -> Option<Action> {
     if rows.is_empty() {
         return matches!(direction, Direction::Left).then_some(Action::ExitToSources);
@@ -69,6 +81,18 @@ mod tests {
 
     fn row(depth: i32, children: i32) -> Row {
         Row { depth, children }
+    }
+
+    #[test]
+    fn encoder_steps_and_keyboard_steps_share_boundaries() {
+        assert_eq!(step_row(None, 0, 1), None);
+        assert_eq!(step_row(None, 5, 1), Some(0));
+        assert_eq!(step_row(None, 5, -1), Some(0));
+        assert_eq!(step_row(None, 5, 3), Some(2));
+        assert_eq!(step_row(Some(1), 5, 3), Some(4));
+        assert_eq!(step_row(Some(1), 5, -3), Some(0));
+        assert_eq!(step_row(Some(4), 5, i32::MAX), Some(4));
+        assert_eq!(step_row(Some(2), 5, 0), None);
     }
 
     #[test]

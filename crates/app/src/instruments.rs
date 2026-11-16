@@ -169,7 +169,7 @@ fn toggle_node(app: &AppWindow, row: i32) {
     refresh(app);
 }
 
-fn navigate_nodes(app: &AppWindow, code: i32) {
+pub(crate) fn navigate_nodes(app: &AppWindow, code: i32) {
     let Some(direction) = Direction::from_code(code) else {
         return;
     };
