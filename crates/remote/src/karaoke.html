@@ -9,14 +9,10 @@
   html, body { margin: 0; height: 100%; background: #08080a; overflow: hidden; }
   body { font-family: Inter, "Helvetica Neue", Arial, sans-serif; color: var(--text);
     background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, rgba(8,8,10,0) 70%), #08080a; }
-  /* body.cover: the cover beside the lyrics; body.cover-only: the cover on its own.
+  /* body.cover: the cover beside the lyrics.
      The background is one flat color from the cover (--bg). */
   #art-header { display: none; }
-  body.cover.has-art, body.cover-only.has-art { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, transparent 70%), var(--bg, #08080a); }
-  body.cover-only:not(.idle) #art-header { position: fixed; display: flex; flex-direction: column; align-items: center; gap: 2.8vh; left: 0; right: 0; top: 10vh; text-align: center; }
-  body.cover-only #art-header img { width: min(50vw, 60vh); height: min(50vw, 60vh); }
-  body.cover-only #art-header div { width: 80vw; }
-  body.cover-only:not(.idle) #top, body.cover-only:not(.idle) #main { display: none; }
+  body.cover.has-art { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, transparent 70%), var(--bg, #08080a); }
   body.cover:not(.idle) #art-header { position: fixed; display: flex; flex-direction: column; align-items: center; gap: 2.8vh; left: 10vw; top: 18vh; width: 30vw; text-align: center; }
   #art-header img { width: min(30vw, 44vh); height: min(30vw, 44vh); object-fit: cover; border-radius: 10px; }
   #art-header div { min-width: 0; width: min(30vw, 44vh); }
@@ -33,7 +29,7 @@
   #art-dots { display: none; }
   body.cover:not(.message) #art-dots { display: flex; position: fixed; left: 51.5vw; top: 39vh; gap: 1.8vh; height: 2vh; }
   #art-dots i { width: 2vh; height: 2vh; border-radius: 50%; background: var(--lilac); }
-  /* Cover, Lyrics and Full screen: shown while the pointer moves, or after a tap. */
+  /* Cover and Full screen: shown while the pointer moves, or after a tap. */
   #controls { position: fixed; top: 20px; right: 24px; display: flex; gap: 12px; opacity: 0; transition: opacity 250ms; pointer-events: none; z-index: 2; }
   body.poked #controls, #controls:hover { opacity: 1; pointer-events: auto; }
   #controls button { width: 44px; height: 44px; border-radius: 22px; border: 0; padding: 0; background: #ffffff10; color: #ffffffb0; cursor: pointer; display: grid; place-items: center; position: relative; }
@@ -66,7 +62,6 @@
 <div id="top"></div>
 <div id="controls">
   <button id="cover-button" title="Cover" aria-label="Cover"><svg viewBox="0 0 24 24"><path d="M 3 3 L 21 3 L 21 21 L 3 21 Z M 3 16 L 9 10 L 14 15 L 17 12 L 21 16"/></svg></button>
-  <button id="lyrics-button" title="Lyrics" aria-label="Lyrics"><svg viewBox="0 0 24 24"><path d="M 4 6 L 20 6 M 4 11 L 20 11 M 4 16 L 14 16"/></svg></button>
   <button id="screen-button" title="Full screen" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M 3 9 L 3 3 L 9 3 M 15 3 L 21 3 L 21 9 M 21 15 L 21 21 L 15 21 M 9 21 L 3 21 L 3 15"/></svg></button>
 </div>
 <div id="art-dots"></div>
@@ -234,7 +229,7 @@
     const t = base + (now.playing ? (performance.now() - baseWall) / 1000 : 0);
     const s = screen(t, now.bpm > 0 ? 60 / now.bpm : 0.5);
     const v = view();
-    if (v.cover && v.lyrics) {
+    if (v.cover) {
       const dots = '<i></i>'.repeat(s.count);
       if ($('art-dots').innerHTML !== dots) $('art-dots').innerHTML = dots;
       drawArtwork(s, t);
@@ -295,33 +290,21 @@
     }
   }
   // What this page shows: openDJ's choice, until a viewer taps a button here.
-  // Cover and Lyrics are never both off.
-  const mine = { cover: null, lyrics: null };
+  const mine = { cover: null };
   function view() {
-    const cover = mine.cover ?? !!now.cover_on;
-    const lyrics = mine.lyrics ?? (now.lyrics_on !== false);
-    return { cover, lyrics: lyrics || !cover };
+    return { cover: mine.cover ?? !!now.cover_on };
   }
   function layout() {
     const v = view();
-    document.body.classList.toggle('cover', v.cover && v.lyrics);
-    document.body.classList.toggle('cover-only', v.cover && !v.lyrics);
+    document.body.classList.toggle('cover', v.cover);
     document.body.classList.toggle('idle', !(now.state > 0));
     $('cover-button').classList.toggle('on', v.cover);
-    $('lyrics-button').classList.toggle('on', v.lyrics);
     shown = '';
     artworkSize = '';
   }
   $('cover-button').onclick = () => {
     const v = view();
     mine.cover = !v.cover;
-    if (!mine.cover) mine.lyrics = true;
-    layout();
-  };
-  $('lyrics-button').onclick = () => {
-    const v = view();
-    mine.lyrics = !v.lyrics;
-    if (!mine.lyrics) mine.cover = true;
     layout();
   };
   $('screen-button').onclick = () => {

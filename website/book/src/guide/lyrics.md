@@ -95,17 +95,15 @@ window opens full screen there. Double-click it, or press F, to switch full
 screen on or off; Esc leaves full screen. Close it with Karaoke again, or
 its window's close button.
 
-Move the mouse over the karaoke screen and three buttons show at the top
-right: **Cover**, **Lyrics** and **Full screen**. They fade out again after
-a few seconds, so the room doesn't see them. The keys do the same: **C** for
-Cover, **L** for Lyrics and **F** for full screen.
+Move the mouse over the karaoke screen and two buttons show at the top
+right: **Cover** and **Full screen**. They fade out again after a few
+seconds, so the room doesn't see them. The keys do the same: **C** for
+Cover and **F** for full screen.
 
-- **Cover** puts the cover, with the title and artist under it, on the left
-  and the lyrics on the right. The lyrics glide from line to line and fade
-  out at the top and bottom of the screen. The background takes one color
-  from the cover.
-- **Lyrics** off shows only the cover, large in the middle. Cover and Lyrics
-  can't both be off.
+**Cover** puts the cover, with the title and artist under it, on the left
+and the lyrics on the right. The lyrics glide from line to line and fade
+out at the top and bottom of the screen. The background takes one color
+from the cover. Press it again for the lyrics on their own.
 
 openDJ remembers what you chose. The web page starts with the same choice,
 and has the same buttons for whoever is watching it, which change only that

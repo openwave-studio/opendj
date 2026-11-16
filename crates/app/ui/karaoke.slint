@@ -139,17 +139,14 @@ export component KaraokeWindow inherits Window {
     callback leave-full-screen();
 
     property <length> big: min(self.height * 0.1, self.width * 1.7 / max(letters, 14));
-    // What the screen shows: the cover beside the lyrics, the lyrics on
-    // their own, or the cover on its own. Never both off.
+    // The cover beside the lyrics, or the lyrics on their own.
     in property <bool> cover-on;
-    in property <bool> lyrics-on: true;
-    // 0 lyrics only, 1 cover beside lyrics, 2 cover only.
-    property <int> view: !cover-on ? 0 : lyrics-on ? 1 : 2;
-    // The Cover, Lyrics and Full screen buttons, shown while the mouse moves.
+    // 0 lyrics only, 1 cover beside lyrics.
+    property <int> view: cover-on ? 1 : 0;
+    // The Cover and Full screen buttons, shown while the mouse moves.
     in property <bool> show-controls;
     in property <bool> is-full-screen;
     callback toggle-cover();
-    callback toggle-lyrics();
     // The mouse moved over the screen: show the buttons for a while.
     callback poked();
     in property <color> highlight: #b69cff;
@@ -165,7 +162,7 @@ export component KaraokeWindow inherits Window {
     private property <length> scroll-y;
     // One flat color from the cover, dark enough for white text.
     in property <color> base-color: #08080a;
-    if view != 0 && has-cover && state > 0: Rectangle { background: root.base-color; }
+    if view == 1 && has-cover && state > 0: Rectangle { background: root.base-color; }
 
     Rectangle {
         background: @radial-gradient(circle, lilac.with-alpha(0.10) 0%, #08080a00 70%);
@@ -183,10 +180,6 @@ export component KaraokeWindow inherits Window {
             }
             if e.text == "c" || e.text == "C" {
                 root.toggle-cover();
-                return accept;
-            }
-            if e.text == "l" || e.text == "L" {
-                root.toggle-lyrics();
                 return accept;
             }
             reject
@@ -210,7 +203,7 @@ export component KaraokeWindow inherits Window {
         overflow: elide;
     }
 
-    if state < 3 && (view != 2 || state == 0): VerticalLayout {
+    if state < 3: VerticalLayout {
         x: root.view == 1 && root.state > 0 ? root.width * 0.515 : 0;
         width: root.view == 1 && root.state > 0 ? root.width * 0.40 : root.width;
         height: root.height;
@@ -306,15 +299,11 @@ export component KaraokeWindow inherits Window {
     }
 
     // A fixed cover origin and a flowing caption keep metadata below the art.
-    // The cover beside the lyrics (view 1), or large on its own (view 2).
-    if view != 0 && state > 0: Rectangle {
-        property <length> art-size: root.view == 1
-            ? min(root.width * 0.30, root.height * 0.44)
-            : min(root.width * 0.50, root.height * 0.60);
-        x: root.view == 1
-            ? root.width * 0.10 + (root.width * 0.30 - self.art-size) / 2
-            : (root.width - self.art-size) / 2;
-        y: root.height * (root.view == 1 ? 0.18 : 0.10);
+    // The cover beside the lyrics.
+    if view == 1 && state > 0: Rectangle {
+        property <length> art-size: min(root.width * 0.30, root.height * 0.44);
+        x: root.width * 0.10 + (root.width * 0.30 - self.art-size) / 2;
+        y: root.height * 0.18;
         width: self.art-size;
         height: root.height * 0.72;
         Rectangle {
@@ -333,9 +322,9 @@ export component KaraokeWindow inherits Window {
             }
         }
         VerticalLayout {
-            x: root.view == 1 ? 0 : (parent.art-size - self.width) / 2;
+            x: 0;
             y: parent.art-size + root.height * 0.028;
-            width: root.view == 1 ? parent.width : root.width * 0.8;
+            width: parent.width;
             height: self.preferred-height;
             spacing: root.height * 0.009;
             Text {
@@ -402,7 +391,7 @@ export component KaraokeWindow inherits Window {
         }
     }
 
-    // Cover, Lyrics and Full screen, top right. Shown while the mouse moves,
+    // Cover and Full screen, top right. Shown while the mouse moves,
     // so the audience normally sees none of them.
     controls := HorizontalLayout {
         x: root.width - self.preferred-width - 24px;
@@ -410,7 +399,7 @@ export component KaraokeWindow inherits Window {
         height: 44px;
         spacing: 12px;
         // Kept up while the pointer rests on a button.
-        opacity: root.show-controls || cover-button.hovered || lyrics-button.hovered || screen-button.hovered ? 1 : 0;
+        opacity: root.show-controls || cover-button.hovered || screen-button.hovered ? 1 : 0;
         visible: self.opacity > 0;
         animate opacity { duration: 250ms; }
         cover-button := ScreenButton {
@@ -418,12 +407,6 @@ export component KaraokeWindow inherits Window {
             tip: "Cover  C";
             icon: "M 3 3 L 21 3 L 21 21 L 3 21 Z M 3 16 L 9 10 L 14 15 L 17 12 L 21 16";
             clicked => { root.toggle-cover(); }
-        }
-        lyrics-button := ScreenButton {
-            on: root.lyrics-on;
-            tip: "Lyrics  L";
-            icon: "M 4 6 L 20 6 M 4 11 L 20 11 M 4 16 L 14 16";
-            clicked => { root.toggle-lyrics(); }
         }
         screen-button := ScreenButton {
             on: false;

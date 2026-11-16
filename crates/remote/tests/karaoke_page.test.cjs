@@ -105,22 +105,18 @@ test('network failures still schedule a retry', async () => {
   await next;
 });
 
-test('the page follows openDJ until a viewer picks, and keeps a view on', async () => {
+test('the page follows openDJ until a viewer picks', async () => {
   const p = page();
-  p.requests[0].resolve({ ...idle, state: 1, cover_on: true, lyrics_on: false });
+  p.requests[0].resolve({ ...idle, state: 1, cover_on: true });
   await flush();
-  assert.ok(p.body.classList.contains('cover-only'));
-  assert.ok(!p.body.classList.contains('cover'));
-  // Turning the cover off here brings the lyrics back on this page.
+  assert.ok(p.body.classList.contains('cover'));
+  assert.ok(p.button('cover-button').classList.contains('on'));
+  // Turning the cover off here leaves the lyrics on their own.
   p.button('cover-button').onclick();
-  assert.ok(!p.body.classList.contains('cover-only'));
+  assert.ok(!p.body.classList.contains('cover'));
   assert.ok(!p.button('cover-button').classList.contains('on'));
-  assert.ok(p.button('lyrics-button').classList.contains('on'));
-  // Then lyrics off brings the cover in.
-  p.button('lyrics-button').onclick();
-  assert.ok(p.body.classList.contains('cover-only'));
   const next = p.retry();
-  p.requests[1].resolve({ ...idle, state: 1, cover_on: false, lyrics_on: true });
+  p.requests[1].resolve({ ...idle, state: 1, cover_on: true });
   await next;
-  assert.ok(p.body.classList.contains('cover-only'), "the viewer's own pick stays");
+  assert.ok(!p.body.classList.contains('cover'), "the viewer's own pick stays");
 });

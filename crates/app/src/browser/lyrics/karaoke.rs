@@ -311,7 +311,6 @@ impl Browser {
             }
         });
         window.on_toggle_cover(crate::karaoke_look::toggle_cover);
-        window.on_toggle_lyrics(crate::karaoke_look::toggle_lyrics);
         window.on_poked({
             let poked = k.poked.clone();
             move || poked.set(Some(Instant::now()))
@@ -406,7 +405,6 @@ impl Browser {
             "playing": playing,
             "bpm": bpm,
             "cover_on": k.look.cover,
-            "lyrics_on": k.look.lyrics,
             "color": format!("#{:06x}", k.look.color()),
             "background": format!("#{:06x}", k.background),
             "cover": k.cover_url,
@@ -488,7 +486,6 @@ impl Browser {
         if let Some(window) = &k.window {
             let rgb = |c: u32| slint::Color::from_rgb_u8((c >> 16) as u8, (c >> 8) as u8, c as u8);
             window.set_cover_on(look.cover);
-            window.set_lyrics_on(look.lyrics);
             window.set_highlight(rgb(look.color()));
             window.set_base_color(if k.has_cover {
                 rgb(k.background)

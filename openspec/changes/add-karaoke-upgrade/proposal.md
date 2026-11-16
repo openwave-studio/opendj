@@ -9,9 +9,9 @@ The karaoke screen (`add-karaoke-screen`, v0.6) shows only the words on a dark b
 ## What Changes
 
 - **Highlight color**: Settings › Appearance › Karaoke › Sung words picks the color the sung words and count-in dots fill with: Lilac (default), Ocean, Mint, Amber, Rose or White. It applies live to the window and the web page.
-- **On-screen buttons**: Cover, Lyrics and Full screen buttons at the top right of the karaoke window and the `/karaoke` page. They appear while the mouse moves over the screen (or on a tap on the page) and fade out after about three seconds, so the audience normally sees none of them. Keys on the window: C for Cover, L for Lyrics, F for full screen, Esc leaves full screen. The window's choices are remembered and the page starts from them; a viewer's own picks on the page change only that page.
+- **On-screen buttons**: Cover and Full screen buttons at the top right of the karaoke window and the `/karaoke` page. They appear while the mouse moves over the screen (or on a tap on the page) and fade out after about three seconds, so the audience normally sees none of them. Keys on the window: C for Cover, F for full screen, Esc leaves full screen. The window's choice is remembered and the page starts from it; a viewer's own picks on the page change only that page.
 - **Cover shown**: the cover with the title and artist under it on the left, the lyrics on the right in a column that glides from line to line, sung words filling with the highlight color, count-in dots kept. The background is one flat color taken from the cover and darkened so white text keeps its contrast; with no cover it is the usual dark background.
-- **Lyrics hidden**: only the cover, large in the middle, with title and artist. Cover and Lyrics can't both be off. Cover hidden is the current screen.
+- **Cover hidden**: the current lyrics-only screen. The lyrics always show; there is no cover-only view.
 - **Cover for the page**: the page gets the cover as a JPEG at most 1000 pixels wide, for TV browsers on Wi-Fi.
 
 ## Capabilities

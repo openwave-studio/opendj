@@ -105,7 +105,6 @@ fn karaoke_text_stays_aligned_while_filling_and_restoring() {
     }
 
     scene.ui.set_cover_on(true);
-    scene.ui.set_lyrics_on(true);
     scene.ui.set_song("4 Pory Roku".into());
     scene.ui.set_artist("Qbik".into());
     scene.ui.set_has_cover(true);
@@ -267,21 +266,6 @@ fn karaoke_text_stays_aligned_while_filling_and_restoring() {
     scene.render(1);
     scene.render(1000);
 
-    // Lyrics off: the cover alone, large in the middle.
-    scene.ui.set_lyrics_on(false);
-    scene.render(1);
-    let cover_only = scene.render(1000);
-    let blue = |p: &Rgb8Pixel| p.b > 150 && p.r < 60;
-    assert!(
-        blue(&cover_only[360 * 1280 + 640]),
-        "the cover sits in the middle"
-    );
-    assert!(
-        !blue(&cover_only[360 * 1280 + 300]),
-        "and nowhere near the lyrics side"
-    );
-    scene.ui.set_lyrics_on(true);
-
     if let Ok(dir) = std::env::var("OPENDJ_KARAOKE_RENDER_DIR") {
         std::fs::create_dir_all(&dir).unwrap();
         for (name, pixels) in [
@@ -289,7 +273,6 @@ fn karaoke_text_stays_aligned_while_filling_and_restoring() {
             ("artwork", bright),
             ("edges", edges),
             ("buttons", poked),
-            ("cover-only", cover_only),
         ] {
             let bytes: Vec<u8> = pixels.iter().flat_map(|p| [p.r, p.g, p.b]).collect();
             image::save_buffer(
