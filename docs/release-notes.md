@@ -1,6 +1,12 @@
-openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more players. Import djay Pro and the Music app, export USB sticks for Engine DJ players, and play Pioneer DDJ-SX, RX, 800, FLX10 and XDJ-AZ controllers. A new Mixer deck holds up to eight input channels with the mic, an instrument and the Groove Box beside them. openDJ gets a Light mode, a regrouped Settings, and big waveforms you can colour, zoom and resize.
+openDJ 0.7.1 fixes plugins on Windows: picking an effect or instrument plugin no longer opens console windows that cover openDJ and take its focus. Everything from 0.7.0 is below.
 
-## What's new
+## Fixed in 0.7.1
+
+- **Windows**: plugin effects, instruments and the plugin scan start without a console window, and openDJ keeps the focus.
+
+## New in 0.7.0
+
+openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more players. Import djay Pro and the Music app, export USB sticks for Engine DJ players, and play Pioneer DDJ-SX, RX, 800, FLX10 and XDJ-AZ controllers. A new Mixer deck holds up to eight input channels with the mic, an instrument and the Groove Box beside them. openDJ gets a Light mode, a regrouped Settings, and big waveforms you can colour, zoom and resize.
 
 **Your library, everywhere**
 
