@@ -200,20 +200,20 @@ the plugin's state, so the sound comes back next time.
 
 In 2-Deck the deck shows:
 
-- A scope of what the instrument plays, and its level.
-- **TRIM** and **PAN**. A safety limiter keeps the deck from clipping
-  whatever the trim.
-- Eight knobs for the plugin's settings. When it has more than eight, the
-  page buttons **1** to **4** beside them show the next ones. Right-click a
-  knob to pick the setting it turns; **The plugin's own choice** puts it
-  back.
-- **OPEN** in the title, which opens the plugin's own window for every
-  setting.
-- **☰ › Keys on pads**, which makes the decks' **KEYBOARD** pads, on screen
-  and on your controller, play the instrument instead of the deck's hot cue
-  (see [Keyboard and key shift](pads.md#keyboard-and-key-shift)).
-- A row under them with **Scale**, **Chord**, **Arp**, **OCT −** and **+**,
-  and a keyboard that lights the notes held.
+- A box with a scope of what the instrument plays, its level, **TRIM** and
+  **PAN**. A safety limiter keeps the deck from clipping whatever the trim.
+- Eight knobs for the plugin's settings, on a backdrop in the instrument's
+  color. When it has more than eight, tabs above them show the next pages.
+  Right-click a knob to pick the setting it turns; **The plugin's own
+  choice** puts it back.
+- **OCT ‹ ›** and the **SCALE**, **CHORD** and **ARP** pills. Click a pill's
+  light to switch it on or off, and its name for its settings.
+- A keyboard the width of the deck that lights the notes held in lilac, with
+  pitch bend and mod wheel strips on its left.
+
+**☰ › Keyboard** makes the keyboard **Full**, **Slim** (a thin strip) or
+**Hidden**; Slim and Hidden show two pages of knobs at once. **☰ › Color**
+picks the instrument's color; each plugin starts with its own.
 
 A 4-Deck strip shows the scope, **OPEN**, the first four knobs and
 **TRIM**, with the preset in its header.
@@ -237,8 +237,8 @@ sounds, 25% to 100%) and **OCTAVES** (1 to 4). **Hold** keeps it playing
 after you let go, until you play new keys. It plays the chords from
 **Chord** too.
 
-**OCT −** and **+** move the **KEYBOARD** pads up or down an octave, three
-at most each way. The pads play the white keys from middle C.
+**OCT ‹** and **›** move the **KEYBOARD** pads up or down an
+octave, three at most each way. The pads play the white keys from middle C.
 
 Any MIDI keyboard without a mapping plays the instrument. The keyboard
 button in the deck's header picks which one (**Any keyboard** or one by

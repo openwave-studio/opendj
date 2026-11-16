@@ -261,6 +261,18 @@ export global InstrumentsUi {
     in property <[bool]> plugin-own-art;
     // Each ticked plugin's format, in the picker's order: CLAP, VST3 or AU.
     in property <[string]> plugin-formats;
+    // Each ticked plugin's color on its deck, as a place in the Mixer
+    // strips' palette: the DJ's pick, else one from its name.
+    in property <[int]> plugin-colors;
+    // Picks plugin `instrument`'s (from 1) color; -1 goes back to its own.
+    callback set-color(instrument: int, color: int);
+    // The instrument deck's keyboard: 0 full, 1 a slim strip, 2 hidden.
+    in-out property <int> keyboard-size;
+    callback keyboard-size-changed(size: int);
+    // The pitch bend (-1 to 1) and mod wheel (0 to 1) strips, sent to the
+    // instrument as MIDI.
+    callback bend(value: float);
+    callback modwheel(value: float);
     in property <[image]> input-art;
     in property <[bool]> input-has-art;
     // Files dropped on deck `deck` playing `live`: an image becomes its art,
@@ -344,6 +356,11 @@ export global InstrumentsUi {
     // The instrument plugin picked, from 1; 0 none.
     public pure function instrument() -> int {
         Controls.value(Controls.resolve("[Instrument1]", "instrument"), Controls.tick)
+    }
+
+    // The picked instrument's color, as a place in the strips' palette.
+    public pure function color-index() -> int {
+        instrument() > 0 && instrument() <= plugin-colors.length ? plugin-colors[instrument() - 1] : 13
     }
 
     // The picked instrument's format (CLAP, VST3, AU); empty for none.

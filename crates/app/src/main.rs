@@ -1038,6 +1038,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         })));
     }
+    // The instrument deck's pitch bend and mod wheel strips.
+    {
+        let ui = app.global::<InstrumentsUi>();
+        let notes = engine.note_input();
+        ui.on_bend(move |v| {
+            if let Ok(mut n) = notes.lock() {
+                n.send(instruments::bend_message(v));
+            }
+        });
+        let notes = engine.note_input();
+        ui.on_modwheel(move |v| {
+            if let Ok(mut n) = notes.lock() {
+                n.send(instruments::modwheel_message(v));
+            }
+        });
+    }
 
     // Start with two sample tracks loaded so the screen is not empty, but
     // leave a deck kept as a Groove Box as it is.
