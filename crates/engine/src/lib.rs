@@ -51,10 +51,12 @@ pub mod plugins;
 pub mod preview;
 pub mod process;
 pub mod recorder;
+pub mod room_eq;
 pub mod sampler;
 pub mod scale;
 pub mod scan;
 pub mod separation;
+pub mod set_timeline;
 pub mod stems;
 pub mod synth;
 pub mod tags;
@@ -78,9 +80,9 @@ pub use controls::{
     NUM_EFFECT_UNITS, NUM_HOTCUES, XFADER_CUT_IN,
 };
 pub use effects::{
-    color_fx_name, effect_name, parameter_names, plugin_index, InstrumentView, NoteInput,
-    PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, MAX_BUTTON_PARAMETERS,
-    MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    color_fx_name, effect_name, parameter_names, plugin_index, step_effect, InstrumentView,
+    NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
+    MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
 };
 pub use output::{
     channel_names, deck_outputs_split, default_output_device, input_devices, output_devices,

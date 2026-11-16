@@ -80,6 +80,53 @@ impl Biquad {
         );
     }
 
+    /// A shelf lifting or cutting everything below `freq` by `db`; `q`
+    /// sets the slope (0.707 is the gentlest without a bump).
+    pub fn set_low_shelf(&mut self, sample_rate: f64, freq: f64, q: f64, db: f64) {
+        let (cos, alpha) = Self::prewarp(sample_rate, freq, q);
+        let a = 10f64.powf(db / 40.0);
+        let k = 2.0 * a.sqrt() * alpha;
+        self.set(
+            a * ((a + 1.0) - (a - 1.0) * cos + k),
+            2.0 * a * ((a - 1.0) - (a + 1.0) * cos),
+            a * ((a + 1.0) - (a - 1.0) * cos - k),
+            (a + 1.0) + (a - 1.0) * cos + k,
+            -2.0 * ((a - 1.0) + (a + 1.0) * cos),
+            (a + 1.0) + (a - 1.0) * cos - k,
+        );
+    }
+
+    /// A shelf lifting or cutting everything above `freq` by `db`.
+    pub fn set_high_shelf(&mut self, sample_rate: f64, freq: f64, q: f64, db: f64) {
+        let (cos, alpha) = Self::prewarp(sample_rate, freq, q);
+        let a = 10f64.powf(db / 40.0);
+        let k = 2.0 * a.sqrt() * alpha;
+        self.set(
+            a * ((a + 1.0) + (a - 1.0) * cos + k),
+            -2.0 * a * ((a - 1.0) + (a + 1.0) * cos),
+            a * ((a + 1.0) + (a - 1.0) * cos - k),
+            (a + 1.0) - (a - 1.0) * cos + k,
+            2.0 * ((a - 1.0) - (a + 1.0) * cos),
+            (a + 1.0) - (a - 1.0) * cos - k,
+        );
+    }
+
+    /// The filter's gain at `freq`, in dB, from its coefficients.
+    pub fn magnitude_db(&self, sample_rate: f64, freq: f64) -> f64 {
+        let w = 2.0 * PI * freq / sample_rate;
+        let (c1, s1, c2, s2) = (w.cos(), w.sin(), (2.0 * w).cos(), (2.0 * w).sin());
+        let [b0, b1, b2, a1, a2] = [self.b0, self.b1, self.b2, self.a1, self.a2].map(f64::from);
+        let num = (b0 + b1 * c1 + b2 * c2).hypot(b1 * s1 + b2 * s2);
+        let den = (1.0 + a1 * c1 + a2 * c2).hypot(a1 * s1 + a2 * s2);
+        20.0 * (num / den).log10()
+    }
+
+    /// Forgets the audio it has seen, keeping the coefficients.
+    pub fn reset(&mut self) {
+        self.z1 = [0.0; 2];
+        self.z2 = [0.0; 2];
+    }
+
     fn prewarp(sample_rate: f64, freq: f64, q: f64) -> (f64, f64) {
         let w = 2.0 * PI * freq.clamp(10.0, sample_rate * 0.45) / sample_rate;
         (w.cos(), w.sin() / (2.0 * q))
@@ -509,6 +556,21 @@ impl Limiter {
             gain: 1.0,
             release: (1.0 - (-1.0 / (Self::RELEASE * sample_rate)).exp()) as f32,
         }
+    }
+
+    /// Takes over `other`'s state, as if it had limited the same audio:
+    /// both must have been made at the same sample rate. Allocates nothing,
+    /// so the audio thread can switch between two limiters seamlessly.
+    pub fn copy_state_from(&mut self, other: &Limiter) {
+        self.ceiling = other.ceiling;
+        self.true_peak = other.true_peak.clone();
+        self.needed.copy_from_slice(&other.needed);
+        self.released.copy_from_slice(&other.released);
+        self.sum = other.sum;
+        self.delay.copy_from_slice(&other.delay);
+        self.at = other.at;
+        self.delay_at = other.delay_at;
+        self.gain = other.gain;
     }
 
     /// Frames between a sample going in and coming out.

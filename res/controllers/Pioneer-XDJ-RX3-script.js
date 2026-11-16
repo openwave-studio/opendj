@@ -444,11 +444,12 @@ PioneerXDJRX3.beatFxLevelDepthRotate = function(_channel, _control, value) {
     engine.setParameter(PioneerXDJRX3.beatFxSlot, "meta", value / 0x7F);
 };
 
+// Halves (-1) or doubles (+1) the effect's length, within the effect's
+// own limits; effects without a length stay as they are.
 PioneerXDJRX3.changeBeatFxBeats = function(direction) {
-    const beats = engine.getValue(PioneerXDJRX3.beatFxSlot, "beats");
-    if (beats <= 0) { return; }
-    const next = Math.min(4, Math.max(1 / 16, direction > 0 ? beats * 2 : beats / 2));
-    engine.setValue(PioneerXDJRX3.beatFxSlot, "beats", next);
+    const key = direction > 0 ? "beats_double" : "beats_halve";
+    engine.setValue(PioneerXDJRX3.beatFxSlot, key, 1);
+    engine.setValue(PioneerXDJRX3.beatFxSlot, key, 0);
 };
 
 PioneerXDJRX3.pushBeatFxUnit = function(key) {
@@ -486,14 +487,20 @@ PioneerXDJRX3.beatFxLight = function(value) {
 
 // CH SELECT, by the CC each position sends, to the decks it sends the Beat
 // FX: CH1 the left channel (decks 1 and 3), CH2 the right (2 and 4), CF.A
-// and CF.B the same sides, MASTER all four, MIC and AUX none.
+// and CF.B the same sides, MIC and AUX none. MASTER (0x29) is the main mix.
 PioneerXDJRX3.beatFxChannels = {
-    0x22: [1, 3], 0x23: [2, 4], 0x27: [1, 3], 0x28: [2, 4], 0x29: [1, 2, 3, 4], 0x1C: [], 0x20: [],
+    0x22: [1, 3], 0x23: [2, 4], 0x27: [1, 3], 0x28: [2, 4], 0x1C: [], 0x20: [],
 };
 
 PioneerXDJRX3.beatFxChannelSelect = function(_channel, control, value) {
     if (value !== 0x7F) { return; }
+    if (control === 0x29) {
+        engine.setValue(PioneerXDJRX3.beatFxUnit, "route", 6);
+        return;
+    }
     const decks = PioneerXDJRX3.beatFxChannels[control];
+    if (decks === undefined) { return; }
+    engine.setValue(PioneerXDJRX3.beatFxUnit, "group_[Master]_enable", 0);
     PioneerXDJRX3.decks.forEach(function(group, i) {
         engine.setValue(PioneerXDJRX3.beatFxUnit, "group_" + group + "_enable", decks.indexOf(i + 1) >= 0 ? 1 : 0);
     });

@@ -2,7 +2,7 @@
 
 ## 1. Reading a set
 
-- [ ] 1.1 Control-log reader and timeline model: clips, lanes, transitions with style found, loops, hard moves (unit tests on recorded logs)
+- [x] 1.1 Control-log reader and timeline model: clips, lanes, transitions with style found, loops, hard moves (unit tests on recorded logs)
 - [ ] 1.2 Fallback for recordings without a log: waveform and cue-sheet tracklist
 
 ## 2. Mixed Set Editor

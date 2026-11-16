@@ -39,14 +39,15 @@ PioneerDDJ800.beatFxEffects = {
     0x2D: 15, // MOBIUS TRI
 };
 
-// CH SELECT positions and the group each sends the Beat FX to.
-PioneerDDJ800.beatFxChannels = {
-    0x1C: "[Channel1]",
-    0x1D: "[Channel2]",
-    0x1E: "[Channel3]",
-    0x1F: "[Channel4]",
-    0x14: "[Master]",
-    0x16: "[Master]",
+// CH SELECT positions and the Beat FX unit's route each picks: a deck (1 to
+// 4) or the main mix (6).
+PioneerDDJ800.beatFxRoutes = {
+    0x1C: 1,
+    0x1D: 2,
+    0x1E: 3,
+    0x1F: 4,
+    0x14: 6,
+    0x16: 6,
 };
 
 PioneerDDJ800.connections = [];
@@ -162,10 +163,10 @@ PioneerDDJ800.beatFxChannel = function(_channel, control, value) {
     if (!value) {
         return;
     }
-    const target = PioneerDDJ800.beatFxChannels[control];
-    ["[Channel1]", "[Channel2]", "[Channel3]", "[Channel4]", "[Master]"].forEach(function(g) {
-        engine.setValue(PioneerDDJ800.beatFxUnit, "group_" + g + "_enable", g === target ? 1 : 0);
-    });
+    const route = PioneerDDJ800.beatFxRoutes[control];
+    if (route !== undefined) {
+        engine.setValue(PioneerDDJ800.beatFxUnit, "route", route);
+    }
 };
 
 PioneerDDJ800.beatFxSelect = function(_channel, control, value) {
