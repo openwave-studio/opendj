@@ -91,6 +91,7 @@ mod put_back;
 mod quality;
 mod quick_search;
 mod remote;
+mod room_eq;
 mod sampler;
 mod scrobble;
 mod settings;
@@ -1059,6 +1060,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let controller_editor = controller_editor::Editor::install(&app, controllers.clone());
     let map_mode = map_mode::Mapper::install(&app, controllers.clone());
     prefs::apply_saved(&registry);
+    room_eq::apply_saved(&registry);
+    room_eq::install(&app, registry.clone());
     let _levels = prefs::remember_levels(registry.clone());
     if let Some(note) = restored {
         engine.alert(note);

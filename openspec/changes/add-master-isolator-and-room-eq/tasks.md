@@ -14,7 +14,7 @@
 
 ## 3. Room EQ
 
-- [ ] 3.1 Settings › Audio › Room EQ: Main and Booth tabs, On switch, the curve widget with draggable dots, scroll for width, double-click reset, band cards; saved in settings; screenshot
+- [x] 3.1 Settings › Audio › Room EQ: Main and Booth tabs, On switch, the curve widget with draggable dots, scroll for width, double-click reset, band cards; saved in settings; screenshot
 - [ ] 3.2 Presets: Flat, Muddy room, Harsh highs, Small speakers, own presets by name, modified mark
 - [ ] 3.3 Spectrum behind the curve while the page is open
 

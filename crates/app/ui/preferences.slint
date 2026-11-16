@@ -7,6 +7,7 @@ import { Theme, CloseIcon } from "theme.slint";
 import { ControlKnob, Switch } from "controls.slint";
 export { Switch }
 import { AudioSettings, MenuField, OutputsTable, ExternalOutputsTable, InputsTable } from "mixer.slint";
+import { RoomEqEditor } from "room_eq.slint";
 
 // One row of a settings page. The app builds the rows for the page shown,
 // or for a search.
@@ -36,7 +37,8 @@ export struct PrefItem {
     // holds one folder only (+ replaces it), `action` "fixed" can't be changed. It presses
     // id + "#add", id + "#remove:" + index and id + "#reveal:" + path, 22
     // how track colors show: the title, then `choices` as segmented
-    // buttons with a small preview of the `chosen` one beside them.
+    // buttons with a small preview of the `chosen` one beside them, 24
+    // the Room EQ editor (room_eq.slint).
     // (18 is a tag group: ↑ (id + "#up", hidden when `action` is
     // "first"), its name to edit in `value` (typing sends id), Several or
     // One tag per track (`choices`, `chosen`), Tags (id + "#open"; `on`
@@ -1330,6 +1332,7 @@ export component PrefRow inherits Rectangle {
         if item.kind == 4 && !AudioSettings.external: OutputsTable { roomy: true; bright: bright; }
         if item.kind == 4 && AudioSettings.external: ExternalOutputsTable { bright: bright; }
         if item.kind == 13: InputsTable { }
+        if item.kind == 24: RoomEqEditor { }
         if item.kind == 5: HorizontalLayout {
             alignment: start;
             spacing: 36px;
