@@ -698,8 +698,10 @@ mod tests {
         .unwrap();
         db.execute_batch(crate::cleanup::CHANGES_SCHEMA).unwrap();
         setup(&db).unwrap();
-        let mut info = LibraryInfo::default();
-        info.imported_tags = vec![("User 2".into(), "#synth".into())];
+        let info = LibraryInfo {
+            imported_tags: vec![("User 2".into(), "#synth".into())],
+            ..Default::default()
+        };
         import_track_tags(&db, VDJ, 1, &info, true).unwrap();
         let groups: i64 = db
             .query_row("SELECT COUNT(*) FROM tag_groups", [], |r| r.get(0))
