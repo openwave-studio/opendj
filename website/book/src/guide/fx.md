@@ -27,7 +27,9 @@ Each effect has:
 - **ON** to switch it on and off.
 - **Its length in beats**, with ◀ and ▶ to halve and double it, up to 64
   beats. Some effects have their own range: flanger and phaser 1/2 to 64
-  beats, gate 1/16 to 16. Switching to another effect with a
+  beats, gate 1/16 to 16. Echo and filter echo go up to 4 beats on a deck
+  and 16 on the Beat FX; rolls up to a beat on a deck and 16 on the Beat FX.
+  Switching to another effect with a
   length keeps it as near as that effect allows. Effects
   that have no length show a slider instead, for their main setting:
   reverb's decay, the filter's resonance, the bitcrusher's bit depth, the

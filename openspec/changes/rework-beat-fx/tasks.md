@@ -6,7 +6,7 @@
 - [x] 1.2 Beat FX unit controls `beats_halve`, `beats_double` and `route` (0 off, 1-4 a deck, 5 decks 1&2, 6 MST); tests
 - [x] 1.3 Beat limits per effect: `beats` range up to 64; flanger and phaser 1/2 to 64, gate 1/16 to 16; halving and doubling stop at the limits; a newly loaded effect keeps the length as near as it allows; tests
 - [x] 1.4 LEVEL/DEPTH curve per effect on the Beat FX meta knob (echo-type full wet at the centre, more feedback past it; filter-type dry only fully left); tests
-- [ ] 1.5 Echo, filter echo and roll up to 16 beats: a longer delay memory for the Beat FX (today 2 s, which is 4 beats at 120 BPM)
+- [x] 1.5 Echo, filter echo and roll up to 16 beats: a longer delay memory for the Beat FX (today 2 s, which is 4 beats at 120 BPM)
 
 ## 2. On screen
 

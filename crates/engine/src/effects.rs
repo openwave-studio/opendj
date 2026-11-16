@@ -198,14 +198,21 @@ pub(crate) fn instance_indices() -> (Indices, usize) {
 
 /// Longest echo, in seconds; it sizes the pool's long buffers.
 const ECHO_MAX_SECONDS: f32 = 2.0;
+/// Longest Beat FX echo or roll, in seconds: 16 beats down to about 70 BPM.
+/// It sizes the pool's huge buffers.
+const BEAT_FX_ECHO_SECONDS: f32 = 14.0;
 const FLANGER_MAX_SECONDS: f32 = 0.02;
 
 /// Buffers in the rack's pool, of each size. More effects than this sounding
 /// at once (each on each of its targets) is far beyond any real set: four
 /// decks with three echoes each, plus the Beat FX on two decks and pad FX,
 /// is about 20. An effect that finds the pool empty stays off.
-const LONG_BUFFERS: usize = 32;
+const LONG_BUFFERS: usize = 30;
 const SHORT_BUFFERS: usize = 32;
+/// The Beat FX's echoes and rolls: on two decks at once, plus one tail
+/// ringing out after a change of route. With none left they use a long
+/// buffer, up to its two seconds.
+const HUGE_BUFFERS: usize = 3;
 
 /// The delay memory an effect needs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -215,12 +222,20 @@ enum Memory {
     Short,
     /// Two seconds of stereo: [`long_size`].
     Long,
+    /// The Beat FX's echoes and rolls, up to 16 beats: [`huge_size`].
+    Huge,
 }
 
 /// Floats in a long buffer: Echo's stereo delay line, which Roll, Brake,
 /// Echo Out and Spiral use too.
 fn long_size(sample_rate: f32) -> usize {
     2 * Echo::new(sample_rate).len
+}
+
+/// Floats in a huge buffer: a stereo delay line of
+/// [`BEAT_FX_ECHO_SECONDS`].
+fn huge_size(sample_rate: f32) -> usize {
+    2 * ((BEAT_FX_ECHO_SECONDS * sample_rate) as usize + 4)
 }
 
 /// Floats in a short buffer: the reverb's tank, or the flanger's lines.
@@ -234,24 +249,29 @@ fn short_size(sample_rate: f32) -> usize {
 /// Delay buffers waiting to be lent to an instance. Both stacks are created
 /// with room for every buffer, so giving one back never allocates.
 struct Pool {
+    huge: Vec<Box<[f32]>>,
     long: Vec<Box<[f32]>>,
     short: Vec<Box<[f32]>>,
+    huge_size: usize,
     long_size: usize,
     short_size: usize,
 }
 
 impl Pool {
-    fn new(sample_rate: f32, long: usize, short: usize) -> Self {
+    fn new(sample_rate: f32, huge: usize, long: usize, short: usize) -> Self {
+        let huge_size = huge_size(sample_rate);
         let long_size = long_size(sample_rate);
         let short_size = short_size(sample_rate);
         let make = |n: usize, size: usize| {
-            let mut v = Vec::with_capacity(long + short);
+            let mut v = Vec::with_capacity(huge + long + short);
             v.extend((0..n).map(|_| vec![0.0f32; size].into_boxed_slice()));
             v
         };
         Self {
+            huge: make(huge, huge_size),
             long: make(long, long_size),
             short: make(short, short_size),
+            huge_size,
             long_size,
             short_size,
         }
@@ -264,6 +284,7 @@ impl Pool {
             Memory::None => None,
             Memory::Short => self.short.pop().or_else(|| self.long.pop()),
             Memory::Long => self.long.pop(),
+            Memory::Huge => self.huge.pop().or_else(|| self.long.pop()),
         }
     }
 
@@ -271,7 +292,9 @@ impl Pool {
         if buf.is_empty() {
             return;
         }
-        if buf.len() >= self.long_size {
+        if buf.len() >= self.huge_size {
+            self.huge.push(buf);
+        } else if buf.len() >= self.long_size {
             self.long.push(buf);
         } else {
             self.short.push(buf);
@@ -284,6 +307,7 @@ impl Pool {
             Memory::None => true,
             Memory::Short => buf.len() >= self.short_size,
             Memory::Long => buf.len() >= self.long_size,
+            Memory::Huge => buf.len() >= self.huge_size,
         }
     }
 }
@@ -369,7 +393,8 @@ struct Manifest {
 const MANIFESTS: [Manifest; 18] = [
     Manifest {
         names: &["Time", "Feedback", "Ping Pong", "Send"],
-        defaults: &[0.5, 0.5, 0.0, 1.0],
+        // Time: 1/2 beat.
+        defaults: &[0.375, 0.5, 0.0, 1.0],
     },
     Manifest {
         names: &["Decay", "Bandwidth", "Damping", "Send"],
@@ -397,7 +422,8 @@ const MANIFESTS: [Manifest; 18] = [
     },
     Manifest {
         names: &["Rate"],
-        defaults: &[0.25],
+        // Rate: 1/2 beat slices.
+        defaults: &[0.625],
     },
     Manifest {
         names: &["Time", "Feedback", "Length"],
@@ -433,11 +459,13 @@ const MANIFESTS: [Manifest; 18] = [
     },
     Manifest {
         names: &["Rate"],
-        defaults: &[0.25],
+        // Rate: 1/2 beat slices.
+        defaults: &[0.625],
     },
     Manifest {
         names: &["Time", "Feedback", "Filter", "Send"],
-        defaults: &[0.5, 0.6, 0.75, 1.0],
+        // Time: 1/2 beat.
+        defaults: &[0.375, 0.6, 0.75, 1.0],
     },
 ];
 
@@ -453,10 +481,10 @@ const DEFAULT_BEATS: f64 = 0.25;
 /// how its `process` reads it with [`beats`].
 fn time_parameter(kind: Kind) -> Option<(usize, i32, i32, bool)> {
     match kind {
-        Kind::Echo | Kind::FilterEcho => Some((0, -4, 2, false)),
+        Kind::Echo | Kind::FilterEcho => Some((0, -4, 4, false)),
         Kind::Flanger | Kind::Phaser => Some((0, -1, 6, true)),
         Kind::Gate => Some((0, -4, 4, false)),
-        Kind::Roll | Kind::RevRoll => Some((0, -4, 0, true)),
+        Kind::Roll | Kind::RevRoll => Some((0, -4, 4, true)),
         Kind::EchoOut | Kind::Spiral => Some((0, -2, 0, false)),
         Kind::Brake => Some((0, 0, 3, false)),
         Kind::Chorus => Some((0, 0, 2, false)),
@@ -467,6 +495,18 @@ fn time_parameter(kind: Kind) -> Option<(usize, i32, i32, bool)> {
         | Kind::Drive
         | Kind::Ladder
         | Kind::Hall => None,
+    }
+}
+
+/// The longest length, as a power of two, a slot lets an effect have: deck
+/// FX echoes stop at 4 beats and rolls at 1 (their delay memory is two
+/// seconds); the Beat FX takes them to 16.
+fn beat_limit(kind: Option<Kind>, hi: i32, beat_fx: bool) -> i32 {
+    match kind {
+        _ if beat_fx => hi,
+        Some(Kind::Echo | Kind::FilterEcho) => hi.min(2),
+        Some(Kind::Roll | Kind::RevRoll) => hi.min(0),
+        _ => hi,
     }
 }
 
@@ -729,7 +769,10 @@ impl SlotControls {
                     } else {
                         0
                     }
-                    .clamp(lo.max(BEATS_MIN), hi.min(BEATS_MAX));
+                    .clamp(
+                        lo.max(BEATS_MIN),
+                        beat_limit(kind, hi, self.beat_fx).min(BEATS_MAX),
+                    );
                     let p = (power - lo) as f64 / (hi - lo) as f64;
                     self.params[i].set(if inverted { 1.0 - p } else { p });
                     self.beats.set(2f64.powi(power));
@@ -1056,7 +1099,10 @@ impl Instance {
             Some(Kind::Bitcrusher) => self.crusher = Bitcrusher::default(),
             Some(Kind::Phaser) => self.phaser = Phaser::default(),
             Some(Kind::Gate) => self.gate = Gate::default(),
-            Some(Kind::Roll | Kind::RevRoll) => self.roll.reset(),
+            Some(Kind::Roll | Kind::RevRoll) => {
+                self.roll.len = self.mem.len() / 2;
+                self.roll.reset()
+            }
             Some(Kind::EchoOut) => self.echo_out.reset(&mut self.mem),
             Some(Kind::Brake) => self.brake.reset(&mut self.mem),
             Some(Kind::Noise) => self.noise.reset(),
@@ -1403,11 +1449,17 @@ pub(crate) const PARALLEL: usize = NUM_DECKS;
 
 impl EffectRack {
     pub(crate) fn new(reg: &ControlRegistry, sample_rate: f64) -> Self {
-        Self::with_pool(reg, sample_rate, LONG_BUFFERS, SHORT_BUFFERS)
+        Self::with_pool(reg, sample_rate, HUGE_BUFFERS, LONG_BUFFERS, SHORT_BUFFERS)
     }
 
-    /// A rack whose pool holds `long` and `short` buffers.
-    fn with_pool(reg: &ControlRegistry, sample_rate: f64, long: usize, short: usize) -> Self {
+    /// A rack whose pool holds `huge`, `long` and `short` buffers.
+    fn with_pool(
+        reg: &ControlRegistry,
+        sample_rate: f64,
+        huge: usize,
+        long: usize,
+        short: usize,
+    ) -> Self {
         let sample_rate = sample_rate as f32;
         let (index, n) = instance_indices();
         let (to_engine, from_host) = rtrb::RingBuffer::new(2 * n);
@@ -1428,7 +1480,7 @@ impl EffectRack {
                 std::array::from_fn(|s| SlotControls::create(reg, u, s))
             }),
             instances: (0..n).map(|_| Instance::new(sample_rate)).collect(),
-            pool: Pool::new(sample_rate, long, short),
+            pool: Pool::new(sample_rate, huge, long, short),
             index,
             active: [[false; TARGETS]; NUM_EFFECT_UNITS],
             beats: [None; TARGETS],
@@ -1512,8 +1564,9 @@ impl EffectRack {
     fn memory_bytes(&self) -> usize {
         let pooled: usize = self
             .pool
-            .long
+            .huge
             .iter()
+            .chain(&self.pool.long)
             .chain(&self.pool.short)
             .map(|b| b.len())
             .sum();
@@ -1780,7 +1833,11 @@ impl EffectRack {
                         // Starting afresh: borrow delay memory if the effect
                         // needs it. With the pool empty it stays off, and
                         // tries again next buffer.
-                        let need = kind.map_or(Memory::None, Kind::memory);
+                        let need = match kind.map_or(Memory::None, Kind::memory) {
+                            // The Beat FX's delays reach 16 beats.
+                            Memory::Long if u == BEAT_FX_UNIT => Memory::Huge,
+                            need => need,
+                        };
                         if !self.pool.fits(&inst.mem, need) {
                             let old = std::mem::take(&mut inst.mem);
                             self.pool.give(old);
@@ -2214,6 +2271,8 @@ impl Echo {
     }
 
     fn reset(&mut self, mem: &mut [f32]) {
+        // As long as the memory lent: two seconds, or more on the Beat FX.
+        self.len = mem.len() / 2;
         mem[..2 * self.len].fill(0.0);
         self.write = 0;
         self.delay = -1.0;
@@ -2241,8 +2300,9 @@ impl Echo {
     }
 
     fn prepare(&mut self, p: &[f32; MAX_PARAMETERS], ctx: Ctx) {
-        // Time: 1/16 to 4 beats (as long as the buffer allows at slow tempos).
-        self.set_time(beats(p[0], -4, 2), ctx);
+        // Time: 1/16 to 16 beats, as long as the buffer allows (deck FX stop
+        // at 4 beats; see [`beat_limit`]).
+        self.set_time(beats(p[0], -4, 4), ctx);
         self.feedback_target = p[1] * 0.9;
         self.pingpong_target = p[2];
         self.send_target = p[3];
@@ -2923,8 +2983,9 @@ impl Roll {
     }
 
     fn prepare(&mut self, p: &[f32; MAX_PARAMETERS], ctx: Ctx) {
-        // Rate: 0 rolls whole beats, 1 rolls 1/16 beats.
-        let b = beats(1.0 - p[0], -4, 0);
+        // Rate: 0 rolls 16 beats, 1 rolls 1/16 beats (deck FX stop at a
+        // whole beat; see [`beat_limit`]).
+        let b = beats(1.0 - p[0], -4, 4);
         self.slice = ((b * ctx.beat_seconds * ctx.sample_rate) as usize).clamp(64, self.len - 1);
         self.fade = 0.003 * ctx.sample_rate;
         if !self.waiting_set {
@@ -3473,11 +3534,13 @@ mod tests {
         slot.update();
         c("beats").set(2.0);
         slot.update();
-        press(&mut slot, "beats_double");
-        assert_eq!(c("beats").get(), 4.0);
-        // Echo stops at 4 beats.
-        press(&mut slot, "beats_double");
-        assert_eq!(c("beats").get(), 4.0);
+        // The Beat FX echo goes on to 16 beats, and stops there.
+        for want in [4.0, 8.0, 16.0, 16.0] {
+            press(&mut slot, "beats_double");
+            assert_eq!(c("beats").get(), want);
+        }
+        c("beats").set(4.0);
+        slot.update();
         // Flanger goes on to 64.
         c("loaded_effect").set(4.0);
         slot.update();
@@ -3665,7 +3728,7 @@ mod tests {
                 .unwrap()
                 .get()
         };
-        // Echo: 1/16 to 4 beats, all of them.
+        // Echo on a deck: 1/16 to 4 beats, all of them.
         set("loaded_effect", 1.0);
         slot.update();
         // A new effect starts at 1/4 beat.
@@ -3674,8 +3737,12 @@ mod tests {
             set("beats", want);
             slot.update();
             assert_eq!(get("beats"), want);
-            assert_eq!(beats(get("parameter1") as f32, -4, 2) as f64, want);
+            assert_eq!(beats(get("parameter1") as f32, -4, 4) as f64, want);
         }
+        // Its delay memory stops it at 4 beats.
+        set("beats", 16.0);
+        slot.update();
+        assert_eq!(get("beats"), 4.0);
         // Flanger sweeps 1/2 beat at the shortest; the switch stops there.
         set("loaded_effect", 4.0);
         slot.update();
