@@ -3,6 +3,7 @@
 // preview player for the headphones and a cover art search.
 import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { HoverTip } from "controls.slint";
+import { CrateIcon } from "crate_icon.slint";
 
 // A tag in a tag field, and how many of the tracks shown have it.
 export struct TagChip {
@@ -11,6 +12,10 @@ export struct TagChip {
     // The color the DJ gave the tag, when `has-color`.
     tint: color,
     has-color: bool,
+    // A crate's icon (see CrateIcon) and its color as a CrateColors index;
+    // -1 for a tag.
+    icon: int,
+    icon-tint: int,
 }
 
 // One line of the info list.
@@ -297,6 +302,9 @@ component Chip inherits Rectangle {
     // The tag's color, as a dot before its name.
     in property <color> tint;
     in property <bool> has-color;
+    // A crate's icon and its color (-1 for a tag), drawn before its name.
+    in property <int> icon: -1;
+    in property <int> icon-tint: -1;
     // A suggestion to add, not a tag the tracks have.
     in property <bool> offer;
     callback add();
@@ -318,7 +326,11 @@ component Chip inherits Rectangle {
         padding-left: 8px;
         padding-right: offer ? 8px : 2px;
         spacing: 4px;
-        if has-color: VerticalLayout {
+        if icon >= 0: VerticalLayout {
+            alignment: center;
+            CrateIcon { icon: root.icon; tint: root.icon-tint; width: 14px; height: 14px; }
+        }
+        if has-color && icon < 0: VerticalLayout {
             alignment: center;
             Rectangle { width: 8px; height: 8px; border-radius: 4px; background: root.tint; }
         }
@@ -369,6 +381,8 @@ component TagField inherits VerticalLayout {
             count: c.count;
             tint: c.tint;
             has-color: c.has-color;
+            icon: c.icon;
+            icon-tint: c.icon-tint;
             enabled: editable;
             add => { TrackInfo.tag-add(field.id, c.tag); }
             remove => { TrackInfo.tag-remove(field.id, c.tag); }

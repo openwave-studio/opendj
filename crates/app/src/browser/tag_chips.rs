@@ -159,6 +159,8 @@ pub(super) fn chip_model(tracks: &[&Track], group: i64) -> ModelRc<TagChip> {
                 count: count as i32,
                 tint: slint::Color::from_argb_encoded(0xff00_0000 | color.unwrap_or(0)),
                 has_color: color.is_some(),
+                icon: -1,
+                icon_tint: -1,
                 tag: tag.into(),
             }
         })

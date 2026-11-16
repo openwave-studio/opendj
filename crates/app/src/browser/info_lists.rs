@@ -4,6 +4,7 @@
 
 use std::collections::BTreeMap;
 
+use opendj_library::query::COLOR_NAMES;
 use opendj_library::stages::Stage;
 use slint::{ComponentHandle, ModelRc, VecModel};
 
@@ -108,12 +109,18 @@ impl Browser {
             .shown_crates()
             .into_iter()
             .map(|(name, count)| {
-                let color = looks.get(&name.to_lowercase()).and_then(|l| l.color);
+                // The crate's icon in its color, as the sidebar draws it.
+                let look = looks.get(&name.to_lowercase());
+                let color = look.and_then(|l| l.color);
                 TagChip {
                     tag: name.into(),
                     count: count as i32,
                     tint: slint::Color::from_argb_encoded(0xff00_0000 | color.unwrap_or(0)),
                     has_color: color.is_some(),
+                    icon: look.map_or(0, |l| l.icon as i32),
+                    icon_tint: color
+                        .and_then(|rgb| COLOR_NAMES.iter().position(|&(_, c)| c == rgb))
+                        .map_or(-1, |i| i as i32),
                 }
             })
             .collect();
