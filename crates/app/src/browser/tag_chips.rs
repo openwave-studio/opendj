@@ -9,6 +9,7 @@ use opendj_engine::{hashtags, same_tag as same, split_tags};
 use opendj_library::cleanup::Field;
 use slint::{ComponentHandle, ModelRc, VecModel};
 
+use super::info::{CRATES_ID, STAGE_ID};
 use super::Browser;
 use crate::{LibraryEdit, MenuTag, TagChip, TrackInfo, ValueChoice};
 use opendj_engine::Track;
@@ -171,15 +172,31 @@ impl Browser {
         with: impl Fn(&dyn Fn(&mut Browser)) + Clone + 'static,
     ) {
         let w = with.clone();
-        ui.on_tag_add(move |id, typed| w(&|b| b.change_tag(&id, &typed, true)));
+        ui.on_tag_add(move |id, typed| {
+            w(&|b| {
+                if id == CRATES_ID {
+                    b.change_crate(&typed, true);
+                } else {
+                    b.change_tag(&id, &typed, true);
+                }
+            })
+        });
         let w = with.clone();
-        ui.on_tag_remove(move |id, tag| w(&|b| b.change_tag(&id, &tag, false)));
+        ui.on_tag_remove(move |id, tag| {
+            w(&|b| {
+                if id == CRATES_ID {
+                    b.change_crate(&tag, false);
+                } else {
+                    b.change_tag(&id, &tag, false);
+                }
+            })
+        });
         let w = with;
         ui.on_tag_find(move |id, typed| w(&|b| b.find_tags(&id, &typed)));
     }
 
     /// The tracks the Info tab shows: the picked ones, or the one.
-    fn info_tracks(&self) -> Vec<(usize, std::sync::Arc<Track>)> {
+    pub(super) fn info_tracks(&self) -> Vec<(usize, std::sync::Arc<Track>)> {
         if !self.info.many.is_empty() {
             self.info.many.clone()
         } else {
@@ -314,6 +331,10 @@ impl Browser {
     /// collection that contain `typed`, most used first, but those the
     /// tracks shown all have.
     fn find_tags(&mut self, id: &str, typed: &str) {
+        if id == CRATES_ID || id == STAGE_ID {
+            self.set_choices(self.list_choices(id, typed));
+            return;
+        }
         let Some(Field::Tag(group)) = Field::from_name(id) else {
             return;
         };

@@ -44,6 +44,7 @@ mod history;
 mod home;
 mod inbox_albums;
 mod info;
+mod info_lists;
 mod keep_going;
 mod lyrics;
 mod mix_export;
