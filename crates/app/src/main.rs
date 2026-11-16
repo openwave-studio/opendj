@@ -1371,7 +1371,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .as_ref()
                 .and_then(|g| g.as_ref()?.phrases.get(d as usize)?.as_ref());
             cached
-                .and_then(|(t, p)| phrase_tip(p, t.duration, t.bpm, seconds as f64))
+                .and_then(|(t, p)| phrase_tip(p, t, seconds as f64))
                 .unwrap_or_default()
         });
     }
@@ -2132,6 +2132,42 @@ mod control_list_tests {
             "website/book/supported-controls.txt is out of date; regenerate it with \
              `cargo run -q -p opendj -- --list-controls > website/book/supported-controls.txt`"
         );
+    }
+}
+
+#[cfg(test)]
+mod phrase_tip_tests {
+    use super::{phrase_bars, Source, Track};
+    use std::sync::Arc;
+
+    fn track(bpm: f64, first_beat: f64) -> Track {
+        Track {
+            id: 0,
+            artist: String::new(),
+            title: String::new(),
+            album: String::new(),
+            genre: String::new(),
+            rating: 0,
+            bpm,
+            key: String::new(),
+            duration: 240.0,
+            first_beat,
+            grid: Default::default(),
+            source: Source::Synth { seed: 0 },
+            waveform: Arc::default(),
+            audio: None,
+            cover: None,
+            info: Default::default(),
+        }
+    }
+
+    #[test]
+    fn the_intro_counts_from_bar_one() {
+        // Bar 1 half a second in: the intro runs from 0:00 to bar 17.
+        let t = track(96.57, 0.5);
+        let bar = 240.0 / 96.57;
+        assert_eq!(phrase_bars(&t, 0.0, 0.5 + 16.0 * bar), 16.0);
+        assert_eq!(phrase_bars(&t, 0.5 + 16.0 * bar, 0.5 + 48.0 * bar), 32.0);
     }
 }
 
@@ -3077,10 +3113,10 @@ impl Gpu {
 
 /// The tooltip for the phrase at `seconds`: its kind, then its length in
 /// bars and where it starts and ends.
-fn phrase_tip(phrases: &Phrases, duration: f64, bpm: f64, seconds: f64) -> Option<PhraseTip> {
+fn phrase_tip(phrases: &Phrases, track: &Track, seconds: f64) -> Option<PhraseTip> {
     let i = phrases.iter().rposition(|(start, _)| *start <= seconds)?;
     let (start, kind) = phrases[i];
-    let end = phrases.get(i + 1).map_or(duration, |(s, _)| *s);
+    let end = phrases.get(i + 1).map_or(track.duration, |(s, _)| *s);
     let title = match kind {
         PhraseKind::Intro => "INTRO",
         PhraseKind::Build => "BUILD-UP",
@@ -3095,8 +3131,8 @@ fn phrase_tip(phrases: &Phrases, duration: f64, bpm: f64, seconds: f64) -> Optio
         format!("{}:{:02}", s / 60, s % 60)
     };
     let range = format!("{} – {}", mmss(start), mmss(end));
-    let bars = ((end - start) * bpm / 240.0).round();
-    let body = if bpm > 0.0 && bars >= 1.0 {
+    let bars = phrase_bars(track, start, end);
+    let body = if track.bpm > 0.0 && bars >= 1.0 {
         format!("{bars} bars · {range}")
     } else {
         range
@@ -3105,6 +3141,18 @@ fn phrase_tip(phrases: &Phrases, duration: f64, bpm: f64, seconds: f64) -> Optio
         title: title.into(),
         body: body.into(),
     })
+}
+
+/// How many bars a phrase from `start` to `end` (seconds) spans, counted
+/// on the track's grid from bar 1: the first phrase starts at 0:00, so the
+/// beats before bar 1's line (a pickup) don't make it a bar longer.
+fn phrase_bars(track: &Track, start: f64, end: f64) -> f64 {
+    if track.bpm <= 0.0 {
+        return 0.0;
+    }
+    let bar_one = (track.beat_at(0.0) / 4.0 - 1e-6).ceil() * 4.0;
+    let from = track.beat_at(start).max(bar_one);
+    ((track.beat_at(end) - from) / 4.0).round().max(0.0)
 }
 
 /// Where a track's grid came from, as the grid menu says it.
