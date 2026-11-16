@@ -110,6 +110,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-serato-onelibrary-import](changes/add-serato-onelibrary-import/proposal.md) (Serato DJ libraries from their file tags and crates, and OneLibrary sticks from any app that writes them; a user request in issue #602, 2026-11-14)
 - [add-itunes-library-import](changes/add-itunes-library-import/proposal.md) (iTunes and Music app library import: tracks with tags, stars, play counts and dates, and playlists in their folders from the Library XML; a user request, issue #630, 2026-11-11; real-library check moved to v0.8 2026-11-14)
 - [add-engine-dj-usb-export](changes/add-engine-dj-usb-export/proposal.md) (USB export for Denon DJ, Numark and Rane players: Engine DJ's m.db with grids, cues, loops, overview waveforms and lists, sharing the stick's music with the Pioneer export; learnt from EngineX-OS; issue #578, 2026-11-10; hardware check moved to v0.8 2026-11-14)
+- [add-karaoke-upgrade](changes/add-karaoke-upgrade/proposal.md) (Karaoke Upgrade: the karaoke screen with the cover beside the lyrics or on its own, hover-only Cover, Lyrics and Full screen buttons, a flat background from the cover and a choice of sung-word colors; a user request after community PR #773, issue #772, 2026-11-15)
 
 ## v0.9 · In the club
 

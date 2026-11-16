@@ -19,6 +19,8 @@ component ArtworkLine inherits Rectangle {
     in property <string> word;
     in property <string> rest;
     in property <float> part;
+    // The highlight color the sung words fill with.
+    in property <color> accent;
     in property <length> font-size;
     in property <length> viewport-y;
     in property <length> viewport-height;
@@ -27,7 +29,7 @@ component ArtworkLine inherits Rectangle {
     property <float> edge: root.active ? 0 : clamp(1 - min(viewport-y, viewport-height - viewport-y - self.height) / max(1px, viewport-height * 0.18), 0, 1);
     property <float> fade: (1 - edge) * (1 - edge);
     property <length> blur-radius: edge * 4px;
-    property <color> word-color: #ffffff.mix(#ffffff66, clamp(root.part, 0, 1));
+    property <color> word-color: root.accent.mix(#ffffff80, clamp(root.part, 0, 1));
     callback positioned(length);
     changed active => { if self.active { self.positioned(self.y); } }
     changed y => { if self.active { self.positioned(self.y); } }
@@ -40,10 +42,10 @@ component ArtworkLine inherits Rectangle {
         height: parent.height;
         vertical-alignment: top;
         text: root.active
-            ? @markdown("**<font color='white'>\{root.sung}</font><font color='\{root.word-color}'>\{root.word}</font>\{root.rest}**")
+            ? @markdown("**<font color='\{root.accent}'>\{root.sung}</font><font color='\{root.word-color}'>\{root.word}</font>\{root.rest}**")
             : @markdown("**\{root.text}**");
         default-font-size: root.font-size;
-        default-color: root.active ? #ffffff66 : #ffffff40;
+        default-color: root.active ? #ffffff80 : #ffffff59;
         opacity: root.fade * (1 - root.edge);
     }
     if root.edge > 0 && root.edge < 1: Rectangle {
@@ -58,10 +60,51 @@ component ArtworkLine inherits Rectangle {
             vertical-alignment: top;
             text: @markdown("**\{root.text}**");
             default-font-size: root.font-size;
-            default-color: #ffffff40;
+            default-color: #ffffff59;
             opacity: root.fade * root.edge * (mod(sample, 3) == 1 ? 2 : 1) * (floor(sample / 3) == 1 ? 2 : 1) / 16;
         }
     }
+}
+
+// A round button on the karaoke screen, with its key in a tip under it.
+component ScreenButton inherits Rectangle {
+    in property <bool> on;
+    in property <string> tip;
+    in property <string> icon;
+    callback clicked();
+    out property <bool> hovered: touch.has-hover;
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background: touch.has-hover ? #ffffff33 : root.on ? #ffffff24 : #ffffff10;
+    Path {
+        width: 20px;
+        height: 20px;
+        viewbox-width: 24;
+        viewbox-height: 24;
+        commands: root.icon;
+        stroke: root.on || touch.has-hover ? #ffffff : #ffffffb0;
+        stroke-width: 2px;
+        fill: transparent;
+    }
+    // A dot under a view that is on.
+    if root.on: Rectangle {
+        y: parent.height - 7px;
+        width: 4px;
+        height: 4px;
+        border-radius: 2px;
+        background: #ffffff;
+    }
+    if touch.has-hover: Rectangle {
+        y: parent.height + 8px;
+        width: tip-text.preferred-width + 16px;
+        x: parent.width - self.width;
+        height: 26px;
+        border-radius: 5px;
+        background: #000000d9;
+        tip-text := Text { text: root.tip; color: #ffffffe0; font-size: 13px; }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
 }
 
 export component KaraokeWindow inherits Window {
@@ -96,7 +139,19 @@ export component KaraokeWindow inherits Window {
     callback leave-full-screen();
 
     property <length> big: min(self.height * 0.1, self.width * 1.7 / max(letters, 14));
-    in property <int> style;
+    // What the screen shows: the cover beside the lyrics, the lyrics on
+    // their own, or the cover on its own. Never both off.
+    in property <bool> cover-on;
+    in property <bool> lyrics-on: true;
+    // 0 lyrics only, 1 cover beside lyrics, 2 cover only.
+    property <int> view: !cover-on ? 0 : lyrics-on ? 1 : 2;
+    // The Cover, Lyrics and Full screen buttons, shown while the mouse moves.
+    in property <bool> show-controls;
+    in property <bool> is-full-screen;
+    callback toggle-cover();
+    callback toggle-lyrics();
+    // The mouse moved over the screen: show the buttons for a while.
+    callback poked();
     in property <color> highlight: #b69cff;
     in property <image> cover;
     in property <bool> has-cover;
@@ -108,20 +163,11 @@ export component KaraokeWindow inherits Window {
     in property <[string]> artwork-lines;
     in property <int> active-line: -1;
     private property <length> scroll-y;
-    in property <image> backdrop;
-    if style == 1: Rectangle {
-        background: #24282b;
-        if root.has-cover: Image {
-            source: root.backdrop;
-            image-fit: ImageFit.cover;
-            width: parent.width;
-            height: parent.height;
-            opacity: 0.65;
-        }
-        Rectangle { background: @linear-gradient(180deg, #00000025, #000000b0); }
-    }
+    // One flat color from the cover, dark enough for white text.
+    in property <color> base-color: #08080a;
+    if view != 0 && has-cover && state > 0: Rectangle { background: root.base-color; }
 
-    if style == 0: Rectangle {
+    Rectangle {
         background: @radial-gradient(circle, lilac.with-alpha(0.10) 0%, #08080a00 70%);
     }
 
@@ -135,15 +181,25 @@ export component KaraokeWindow inherits Window {
                 root.toggle-full-screen();
                 return accept;
             }
+            if e.text == "c" || e.text == "C" {
+                root.toggle-cover();
+                return accept;
+            }
+            if e.text == "l" || e.text == "L" {
+                root.toggle-lyrics();
+                return accept;
+            }
             reject
         }
         TouchArea {
             double-clicked => { root.toggle-full-screen(); }
+            changed mouse-x => { root.poked(); }
+            changed mouse-y => { root.poked(); }
         }
     }
 
     // Title and artist, small along the top.
-    if state > 0 && style == 0: Text {
+    if state > 0 && view == 0: Text {
         x: 32px;
         y: 24px;
         width: parent.width - 64px;
@@ -154,17 +210,17 @@ export component KaraokeWindow inherits Window {
         overflow: elide;
     }
 
-    if state < 3: VerticalLayout {
-        x: root.style == 1 && root.state > 0 ? root.width * 0.515 : 0;
-        width: root.style == 1 && root.state > 0 ? root.width * 0.40 : root.width;
+    if state < 3 && (view != 2 || state == 0): VerticalLayout {
+        x: root.view == 1 && root.state > 0 ? root.width * 0.515 : 0;
+        width: root.view == 1 && root.state > 0 ? root.width * 0.40 : root.width;
         height: root.height;
         alignment: center;
         spacing: root.height * 0.03;
-        padding: root.style == 1 && root.state > 0 ? 0px : 48px;
+        padding: root.view == 1 && root.state > 0 ? 0px : 48px;
         Text {
             text: root.state == 0 ? "openDJ Karaoke" : root.song;
             color: root.text-color;
-            font-size: root.height * (root.style == 1 && root.state > 0 ? 0.045 : 0.08);
+            font-size: root.height * (root.view == 1 && root.state > 0 ? 0.045 : 0.08);
             font-weight: 800;
             horizontal-alignment: center;
             wrap: word-wrap;
@@ -181,7 +237,7 @@ export component KaraokeWindow inherits Window {
         }
     }
 
-    if state == 3 && style == 0: VerticalLayout {
+    if state == 3 && view == 0: VerticalLayout {
         alignment: center;
         padding-left: 48px;
         padding-right: 48px;
@@ -250,10 +306,15 @@ export component KaraokeWindow inherits Window {
     }
 
     // A fixed cover origin and a flowing caption keep metadata below the art.
-    if style == 1 && state > 0: Rectangle {
-        property <length> art-size: min(root.width * 0.30, root.height * 0.44);
-        x: root.width * 0.10 + (root.width * 0.30 - self.art-size) / 2;
-        y: root.height * 0.18;
+    // The cover beside the lyrics (view 1), or large on its own (view 2).
+    if view != 0 && state > 0: Rectangle {
+        property <length> art-size: root.view == 1
+            ? min(root.width * 0.30, root.height * 0.44)
+            : min(root.width * 0.50, root.height * 0.60);
+        x: root.view == 1
+            ? root.width * 0.10 + (root.width * 0.30 - self.art-size) / 2
+            : (root.width - self.art-size) / 2;
+        y: root.height * (root.view == 1 ? 0.18 : 0.10);
         width: self.art-size;
         height: root.height * 0.72;
         Rectangle {
@@ -272,9 +333,9 @@ export component KaraokeWindow inherits Window {
             }
         }
         VerticalLayout {
-            x: 0;
+            x: root.view == 1 ? 0 : (parent.art-size - self.width) / 2;
             y: parent.art-size + root.height * 0.028;
-            width: parent.width;
+            width: root.view == 1 ? parent.width : root.width * 0.8;
             height: self.preferred-height;
             spacing: root.height * 0.009;
             Text {
@@ -298,7 +359,7 @@ export component KaraokeWindow inherits Window {
             }
         }
     }
-    if style == 1 && state == 3: lyric-viewport := Rectangle {
+    if view == 1 && state == 3: lyric-viewport := Rectangle {
         x: root.width * 0.515;
         y: root.height * 0.10;
         width: root.width * 0.40;
@@ -319,9 +380,58 @@ export component KaraokeWindow inherits Window {
                 word: root.word;
                 rest: root.rest;
                 part: root.part;
-                font-size: max(18px, root.height * 0.04);
+                accent: root.lilac;
+                font-size: max(18px, root.height * 0.06);
                 positioned(offset) => { root.scroll-y = offset; }
             }
+        }
+    }
+
+    // The count-in beside the cover: a dot a beat, in the gap above the
+    // line to sing (the column keeps it at 42% of the height).
+    if view == 1 && state == 3 && count-in > 0: HorizontalLayout {
+        x: root.width * 0.515;
+        y: root.height * 0.39;
+        height: root.height * 0.02;
+        spacing: root.height * 0.018;
+        alignment: start;
+        for i in root.count-in: Rectangle {
+            width: root.height * 0.02;
+            border-radius: self.width / 2;
+            background: lilac;
+        }
+    }
+
+    // Cover, Lyrics and Full screen, top right. Shown while the mouse moves,
+    // so the audience normally sees none of them.
+    controls := HorizontalLayout {
+        x: root.width - self.preferred-width - 24px;
+        y: 20px;
+        height: 44px;
+        spacing: 12px;
+        // Kept up while the pointer rests on a button.
+        opacity: root.show-controls || cover-button.hovered || lyrics-button.hovered || screen-button.hovered ? 1 : 0;
+        visible: self.opacity > 0;
+        animate opacity { duration: 250ms; }
+        cover-button := ScreenButton {
+            on: root.cover-on;
+            tip: "Cover  C";
+            icon: "M 3 3 L 21 3 L 21 21 L 3 21 Z M 3 16 L 9 10 L 14 15 L 17 12 L 21 16";
+            clicked => { root.toggle-cover(); }
+        }
+        lyrics-button := ScreenButton {
+            on: root.lyrics-on;
+            tip: "Lyrics  L";
+            icon: "M 4 6 L 20 6 M 4 11 L 20 11 M 4 16 L 14 16";
+            clicked => { root.toggle-lyrics(); }
+        }
+        screen-button := ScreenButton {
+            on: false;
+            tip: root.is-full-screen ? "Exit full screen  Esc" : "Full screen  F";
+            icon: root.is-full-screen
+                ? "M 9 3 L 9 9 L 3 9 M 15 3 L 15 9 L 21 9 M 15 21 L 15 15 L 21 15 M 9 21 L 9 15 L 3 15"
+                : "M 3 9 L 3 3 L 9 3 M 15 3 L 21 3 L 21 9 M 21 15 L 21 21 L 15 21 M 9 21 L 3 21 L 3 15";
+            clicked => { root.toggle-full-screen(); }
         }
     }
 

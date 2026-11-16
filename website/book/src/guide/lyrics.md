@@ -95,23 +95,28 @@ window opens full screen there. Double-click it, or press F, to switch full
 screen on or off; Esc leaves full screen. Close it with Karaoke again, or
 its window's close button.
 
-Choose the audience screen’s look in **Settings → Appearance → Karaoke**.
-**Original** keeps the centered screen with word-by-word highlighting.
-**Artwork lyrics** uses a softly blurred cover background, sharp cover art
-(up to 1600 pixels) with a larger title and artist beneath it on the left,
-and a scrolling lyric column
-on the right. Unsung words stay dim; each word gradually brightens to white
-over its timed duration. Surrounding lines are dimmed. Lyrics
-glide smoothly into place as the song advances, and long lines wrap.
-At the top and bottom, lyrics soften and fade away before leaving the screen. When artwork is missing, a
-neutral dark background keeps the lyrics readable.
-For **Original**, choose **Sung words** to change the highlight from lilac to ocean, mint, amber,
-rose, or white. Choices are saved and apply live to the window and web page;
-there are no style controls on the audience screen.
+Move the mouse over the karaoke screen and three buttons show at the top
+right: **Cover**, **Lyrics** and **Full screen**. They fade out again after
+a few seconds, so the room doesn't see them. The keys do the same: **C** for
+Cover, **L** for Lyrics and **F** for full screen.
+
+- **Cover** puts the cover, with the title and artist under it, on the left
+  and the lyrics on the right. The lyrics glide from line to line and fade
+  out at the top and bottom of the screen. The background takes one color
+  from the cover.
+- **Lyrics** off shows only the cover, large in the middle. Cover and Lyrics
+  can't both be off.
+
+openDJ remembers what you chose. The web page starts with the same choice,
+and has the same buttons for whoever is watching it, which change only that
+page.
+
+To change the color the words fill with, go to **Settings → Appearance →
+Karaoke → Sung words**: Lilac, Ocean, Mint, Amber, Rose or White.
 
 ![The karaoke screen](../images/karaoke-screen.png)
 
-In **Original**, the line to sing is big in the middle, with the line before it faded above
+With the cover off, the line to sing is big in the middle, with the line before it faded above
 and the next two lines below. The word being sung fills with lilac as it is
 sung. Lyrics timed only by line have their words spread over the line by
 length, so the fill is close but not exact; lyrics timed by word fill word

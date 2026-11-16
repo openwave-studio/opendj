@@ -9,23 +9,38 @@
   html, body { margin: 0; height: 100%; background: #08080a; overflow: hidden; }
   body { font-family: Inter, "Helvetica Neue", Arial, sans-serif; color: var(--text);
     background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, rgba(8,8,10,0) 70%), #08080a; }
-  #backdrop { position: fixed; inset: 0; background-position: center; background-size: cover; opacity: .25; pointer-events: none; }
+  /* body.cover: the cover beside the lyrics; body.cover-only: the cover on its own.
+     The background is one flat color from the cover (--bg). */
   #art-header { display: none; }
-  body.artwork { background: #24282b; }
-  body.artwork #backdrop { inset: -10%; opacity: .65; filter: blur(60px) brightness(.65); }
-  body.artwork #art-header { position: fixed; display: flex; flex-direction: column; align-items: center; gap: 2.8vh; left: 10vw; top: 18vh; width: 30vw; text-align: center; }
+  body.cover.has-art, body.cover-only.has-art { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, transparent 70%), var(--bg, #08080a); }
+  body.cover-only:not(.idle) #art-header { position: fixed; display: flex; flex-direction: column; align-items: center; gap: 2.8vh; left: 0; right: 0; top: 10vh; text-align: center; }
+  body.cover-only #art-header img { width: min(50vw, 60vh); height: min(50vw, 60vh); }
+  body.cover-only #art-header div { width: 80vw; }
+  body.cover-only:not(.idle) #top, body.cover-only:not(.idle) #main { display: none; }
+  body.cover:not(.idle) #art-header { position: fixed; display: flex; flex-direction: column; align-items: center; gap: 2.8vh; left: 10vw; top: 18vh; width: 30vw; text-align: center; }
   #art-header img { width: min(30vw, 44vh); height: min(30vw, 44vh); object-fit: cover; border-radius: 10px; }
   #art-header div { min-width: 0; width: min(30vw, 44vh); }
   #art-title, #art-artist { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
   #art-title { font-size: max(20px, 3.6vh); font-weight: 700; }
   #art-artist { font-size: max(18px, 2.8vh); color: #ffffffaa; margin-top: .9vh; }
-  body.artwork #top, body.artwork #lyrics { display: none; }
-  body.artwork #main { inset: 10vh 8.5vw 10vh 51.5vw; padding: 0; text-align: left; }
+  body.cover:not(.idle) #top, body.cover #lyrics { display: none; }
+  body.cover:not(.idle) #main { inset: 10vh 8.5vw 10vh 51.5vw; padding: 0; text-align: left; }
   #art-viewport { display: none; }
-  body.artwork:not(.message) #art-viewport { display: block; position: fixed; inset: 10vh 8.5vw 10vh 51.5vw; overflow: hidden; mask-image: linear-gradient(transparent, black 15%, black 80%, transparent); }
+  body.cover:not(.message) #art-viewport { display: block; position: fixed; inset: 10vh 8.5vw 10vh 51.5vw; overflow: hidden; mask-image: linear-gradient(transparent, black 15%, black 80%, transparent); }
   #art-lines { position: absolute; top: 32vh; width: 100%; transition: transform 480ms ease-in-out; }
-  .art-line { font-size: max(18px, 4vh); line-height: 1.3; font-weight: 750; color: #ffffff50; margin: 0 0 4vh; transition: color 420ms ease-in-out, filter 480ms ease-in-out; overflow-wrap: anywhere; }
-  .art-line.active { color: #ffffff66; }
+  .art-line { font-size: max(18px, 6vh); line-height: 1.3; font-weight: 750; color: #ffffff59; margin: 0 0 4vh; transition: color 420ms ease-in-out, filter 480ms ease-in-out; overflow-wrap: anywhere; }
+  .art-line.active { color: #ffffff80; }
+  #art-dots { display: none; }
+  body.cover:not(.message) #art-dots { display: flex; position: fixed; left: 51.5vw; top: 39vh; gap: 1.8vh; height: 2vh; }
+  #art-dots i { width: 2vh; height: 2vh; border-radius: 50%; background: var(--lilac); }
+  /* Cover, Lyrics and Full screen: shown while the pointer moves, or after a tap. */
+  #controls { position: fixed; top: 20px; right: 24px; display: flex; gap: 12px; opacity: 0; transition: opacity 250ms; pointer-events: none; z-index: 2; }
+  body.poked #controls, #controls:hover { opacity: 1; pointer-events: auto; }
+  #controls button { width: 44px; height: 44px; border-radius: 22px; border: 0; padding: 0; background: #ffffff10; color: #ffffffb0; cursor: pointer; display: grid; place-items: center; position: relative; }
+  #controls button:hover { background: #ffffff33; color: #fff; }
+  #controls button.on { background: #ffffff24; color: #fff; }
+  #controls button.on::after { content: ''; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 2px; background: #fff; }
+  #controls svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
   @media (prefers-reduced-motion: reduce) { #art-lines, .art-line { transition: none; } }
   #top { position: fixed; left: 32px; top: 24px; right: 32px; font-size: max(14px, 2.8vh); font-weight: 600;
     color: rgba(142,142,147,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -48,8 +63,13 @@
 </style>
 </head>
 <body class="message">
-<div id="backdrop"></div>
 <div id="top"></div>
+<div id="controls">
+  <button id="cover-button" title="Cover" aria-label="Cover"><svg viewBox="0 0 24 24"><path d="M 3 3 L 21 3 L 21 21 L 3 21 Z M 3 16 L 9 10 L 14 15 L 17 12 L 21 16"/></svg></button>
+  <button id="lyrics-button" title="Lyrics" aria-label="Lyrics"><svg viewBox="0 0 24 24"><path d="M 4 6 L 20 6 M 4 11 L 20 11 M 4 16 L 14 16"/></svg></button>
+  <button id="screen-button" title="Full screen" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M 3 9 L 3 3 L 9 3 M 15 3 L 21 3 L 21 9 M 21 15 L 21 21 L 15 21 M 9 21 L 3 21 L 3 15"/></svg></button>
+</div>
+<div id="art-dots"></div>
 <div id="art-header"><img id="art-cover" alt=""><div><div id="art-title"></div><div id="art-artist"></div></div></div>
 <div id="art-viewport"><div id="art-lines"></div></div>
 <div id="main">
@@ -175,8 +195,9 @@
       for (let i = 0; i < words.length; i++) {
         const [start, end] = words[i];
         const part = t < start ? 0 : end <= start ? 1 : Math.max(0, Math.min(1, (t - start) / (end - start)));
-        // Smoothly reveal the current word over its own timed duration.
-        row.children[i].style.color = 'rgba(255,255,255,' + (0.4 + 0.6 * part) + ')';
+        // Sung words take the highlight color; the word being sung fades into it.
+        row.children[i].style.color = part >= 1 ? 'var(--lilac)'
+          : 'color-mix(in srgb, var(--lilac) ' + Math.round(part * 100) + '%, #ffffff80)';
       }
     }
     const viewport = $('art-viewport');
@@ -212,8 +233,14 @@
     if (linesId !== now.id) return;
     const t = base + (now.playing ? (performance.now() - baseWall) / 1000 : 0);
     const s = screen(t, now.bpm > 0 ? 60 / now.bpm : 0.5);
-    if (now.style === 1) { drawArtwork(s, t); return; }
-    const key = JSON.stringify([s, now.style]);
+    const v = view();
+    if (v.cover && v.lyrics) {
+      const dots = '<i></i>'.repeat(s.count);
+      if ($('art-dots').innerHTML !== dots) $('art-dots').innerHTML = dots;
+      drawArtwork(s, t);
+      return;
+    }
+    const key = JSON.stringify([s, v]);
     if (key === shown) return;
     shown = key;
     const text = s.focus >= 0 && (s.sung + s.word + s.rest) ? lines[s.focus].text.trim() : '';
@@ -247,13 +274,14 @@
       now = j;
       document.documentElement.style.setProperty('--lilac', /^#[0-9a-f]{6}$/i.test(j.color) ? j.color : '#b69cff');
       document.documentElement.style.setProperty('--unsung', j.color === '#ffffff' ? '#ffffff66' : '#f5f5f7');
-      document.body.classList.toggle('artwork', j.style === 1);
+      if (/^#[0-9a-f]{6}$/i.test(j.background)) document.documentElement.style.setProperty('--bg', j.background);
+      layout();
       $('art-title').textContent = j.state > 0 ? j.title || '' : '';
       $('art-artist').textContent = j.state > 0 ? j.artist || '' : '';
       const cover = typeof j.cover === 'string' && j.cover.startsWith('/karaoke/cover?track=') ? j.cover : '';
       $('art-cover').hidden = !cover || !j.state;
+      document.body.classList.toggle('has-art', !!cover && j.state > 0);
       if (cover && $('art-cover').getAttribute('src') !== cover) $('art-cover').src = cover;
-      $('backdrop').style.backgroundImage = j.style === 1 && typeof j.cover === 'string' && j.cover.startsWith('/karaoke/cover?track=') ? 'url("' + j.cover + '")' : 'none';
       base = j.t || 0;
       baseWall = performance.now();
       if (j.state === 3 && j.id !== null && j.id !== undefined && j.id !== linesId) {
@@ -266,6 +294,48 @@
       setTimeout(poll, 250);
     }
   }
+  // What this page shows: openDJ's choice, until a viewer taps a button here.
+  // Cover and Lyrics are never both off.
+  const mine = { cover: null, lyrics: null };
+  function view() {
+    const cover = mine.cover ?? !!now.cover_on;
+    const lyrics = mine.lyrics ?? (now.lyrics_on !== false);
+    return { cover, lyrics: lyrics || !cover };
+  }
+  function layout() {
+    const v = view();
+    document.body.classList.toggle('cover', v.cover && v.lyrics);
+    document.body.classList.toggle('cover-only', v.cover && !v.lyrics);
+    document.body.classList.toggle('idle', !(now.state > 0));
+    $('cover-button').classList.toggle('on', v.cover);
+    $('lyrics-button').classList.toggle('on', v.lyrics);
+    shown = '';
+    artworkSize = '';
+  }
+  $('cover-button').onclick = () => {
+    const v = view();
+    mine.cover = !v.cover;
+    if (!mine.cover) mine.lyrics = true;
+    layout();
+  };
+  $('lyrics-button').onclick = () => {
+    const v = view();
+    mine.lyrics = !v.lyrics;
+    if (!mine.lyrics) mine.cover = true;
+    layout();
+  };
+  $('screen-button').onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.().catch(() => {});
+  };
+  let hide = null;
+  function poke() {
+    document.body.classList.add('poked');
+    clearTimeout(hide);
+    hide = setTimeout(() => document.body.classList.remove('poked'), 3000);
+  }
+  addEventListener('pointermove', poke);
+  addEventListener('pointerdown', poke);
   poll();
   requestAnimationFrame(draw);
 </script>

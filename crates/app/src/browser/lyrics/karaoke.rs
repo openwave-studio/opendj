@@ -1,5 +1,5 @@
 //! The karaoke screen: a window of its own showing the line to sing big,
-//! the word being sung filling with lilac (spread over the line by length
+//! the word being sung filling with the highlight color (spread over the line by length
 //! when the lyrics are timed only by line), the next lines under it, and a
 //! count-in of dots, one a beat, before a line after a break. It opens full
 //! screen on another display when there is one, and follows the track
@@ -11,6 +11,8 @@
 
 mod artwork;
 
+use std::cell::Cell;
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
@@ -32,6 +34,8 @@ const LINGER: f64 = 1.5;
 /// How long the guide vocal level is held on a newly followed track, so a
 /// reset on load doesn't undo it.
 const HOLD_GUIDE: Duration = Duration::from_millis(1500);
+/// How long the screen's buttons stay up after the mouse stops.
+const SHOW_BUTTONS: Duration = Duration::from_secs(3);
 
 pub(super) struct Karaoke {
     window: Option<KaraokeWindow>,
@@ -47,13 +51,19 @@ pub(super) struct Karaoke {
     /// while the screen is open and the DJ turned it on; when it was last
     /// sent, and the lyrics it has.
     page: bool,
-    style: i32,
-    color: u32,
+    /// What the screen shows and the sung-word color, from
+    /// [`crate::karaoke_look`].
+    look: crate::karaoke_look::Look,
+    /// When the mouse last moved over the screen, to show its buttons.
+    poked: Rc<Cell<Option<Instant>>>,
+    /// The followed track's cover: which track, the worker preparing it,
+    /// the request wanted, the page's address for it, and the window's
+    /// image and flat background color.
     cover_track: Option<(usize, usize)>,
     artwork: artwork::Worker,
     artwork_request: u64,
     cover_url: String,
-    backdrop: slint::Image,
+    background: u32,
     cover: slint::Image,
     has_cover: bool,
     native_generation: Option<u64>,
@@ -113,13 +123,13 @@ impl Karaoke {
             followed: None,
             hold_until: None,
             page: false,
-            style: 0,
-            color: 0xb69cff,
+            look: Default::default(),
+            poked: Rc::new(Cell::new(None)),
             cover_track: None,
             artwork: artwork::Worker::new(),
             artwork_request: 0,
             cover_url: String::new(),
-            backdrop: slint::Image::default(),
+            background: 0,
             cover: slint::Image::default(),
             has_cover: false,
             native_generation: None,
@@ -270,7 +280,6 @@ impl Browser {
             k.artwork_request = 0;
             k.cover_url.clear();
             k.cover = slint::Image::default();
-            k.backdrop = slint::Image::default();
             k.has_cover = false;
             opendj_remote::overlay::set_karaoke_cover(Vec::new());
             opendj_remote::overlay::set_karaoke("{}".into(), None);
@@ -300,6 +309,12 @@ impl Browser {
                     k.window().with_winit_window(|w| w.set_fullscreen(None));
                 }
             }
+        });
+        window.on_toggle_cover(crate::karaoke_look::toggle_cover);
+        window.on_toggle_lyrics(crate::karaoke_look::toggle_lyrics);
+        window.on_poked({
+            let poked = k.poked.clone();
+            move || poked.set(Some(Instant::now()))
         });
         let weak_app = app.as_weak();
         window.window().on_close_requested(move || {
@@ -390,8 +405,10 @@ impl Browser {
             "t": seconds,
             "playing": playing,
             "bpm": bpm,
-            "style": k.style,
-            "color": format!("#{:06x}", k.color),
+            "cover_on": k.look.cover,
+            "lyrics_on": k.look.lyrics,
+            "color": format!("#{:06x}", k.look.color()),
+            "background": format!("#{:06x}", k.background),
             "cover": k.cover_url,
         });
         opendj_remote::overlay::set_karaoke(now.to_string(), lines);
@@ -439,14 +456,13 @@ impl Browser {
         let track = self.lyrics.shown.as_ref().map(|(i, _)| *i);
         let k = &mut self.lyrics.karaoke;
         let look = crate::karaoke_look::current();
-        k.style = look.style as i32;
-        k.color = look.color();
+        k.look = look;
         let cover_track = self.lyrics.shown.as_ref().map(|(index, t)| (*index, t.id));
         if cover_track != k.cover_track {
             k.cover_track = cover_track;
             k.cover = slint::Image::default();
             k.has_cover = false;
-            k.backdrop = slint::Image::default();
+            k.background = 0;
             k.cover_url.clear();
             opendj_remote::overlay::set_karaoke_cover(Vec::new());
             if let Some((_, t)) = &self.lyrics.shown {
@@ -466,19 +482,28 @@ impl Browser {
                 )
             };
             k.cover = to_image(&prepared.cover);
-            k.backdrop = to_image(&prepared.backdrop);
+            k.background = prepared.background;
             k.has_cover = true;
-            opendj_remote::overlay::set_karaoke_cover(prepared.png);
+            opendj_remote::overlay::set_karaoke_cover(prepared.jpeg);
             k.cover_url = format!("/karaoke/cover?track={}", k.artwork_request);
         }
         if let Some(window) = &k.window {
-            window.set_style(k.style);
-            window.set_backdrop(k.backdrop.clone());
-            window.set_highlight(slint::Color::from_rgb_u8(
-                (k.color >> 16) as u8,
-                (k.color >> 8) as u8,
-                k.color as u8,
-            ));
+            let rgb = |c: u32| slint::Color::from_rgb_u8((c >> 16) as u8, (c >> 8) as u8, c as u8);
+            window.set_cover_on(look.cover);
+            window.set_lyrics_on(look.lyrics);
+            window.set_highlight(rgb(look.color()));
+            window.set_base_color(if k.has_cover {
+                rgb(k.background)
+            } else {
+                rgb(0x08080a)
+            });
+            window.set_show_controls(k.poked.get().is_some_and(|at| at.elapsed() < SHOW_BUTTONS));
+            window.set_is_full_screen(
+                window
+                    .window()
+                    .with_winit_window(|w| w.fullscreen().is_some())
+                    .unwrap_or(false),
+            );
             window.set_has_cover(k.has_cover);
             window.set_cover(k.cover.clone());
         }

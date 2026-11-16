@@ -12,14 +12,24 @@ function page() {
   const timers = new Map();
   const requests = [];
   let sequence = 0;
-  const element = () => ({
-    style: { setProperty() {} }, classList: { toggle() {} },
-    getAttribute() { return null; },
-  });
+  const element = () => {
+    const classes = new Set();
+    return {
+      style: { setProperty() {} },
+      classList: {
+        toggle(name, on) { if (on) classes.add(name); else classes.delete(name); },
+        add(name) { classes.add(name); },
+        remove(name) { classes.delete(name); },
+        contains: name => classes.has(name),
+      },
+      getAttribute() { return null; },
+    };
+  };
+  const body = element();
   const context = vm.createContext({
     AbortController,
     document: {
-      documentElement: element(), body: element(),
+      documentElement: element(), body,
       createElement: () => ({ getContext: () => ({}) }),
       getElementById: id => {
         if (!elements.has(id)) elements.set(id, element());
@@ -27,6 +37,7 @@ function page() {
       },
     },
     performance: { now: () => 0 },
+    addEventListener() {},
     requestAnimationFrame() {},
     setTimeout(fn, delay) {
       const id = ++sequence;
@@ -43,7 +54,8 @@ function page() {
   });
   vm.runInContext(script, context);
   return {
-    requests, timers,
+    requests, timers, body,
+    button: id => elements.get(id),
     retry() {
       const entry = [...timers.entries()].find(([, timer]) => timer.delay === 250);
       assert.ok(entry, 'a completed request must schedule the next update');
@@ -91,4 +103,24 @@ test('network failures still schedule a retry', async () => {
   const next = p.retry();
   p.requests[1].resolve(idle);
   await next;
+});
+
+test('the page follows openDJ until a viewer picks, and keeps a view on', async () => {
+  const p = page();
+  p.requests[0].resolve({ ...idle, state: 1, cover_on: true, lyrics_on: false });
+  await flush();
+  assert.ok(p.body.classList.contains('cover-only'));
+  assert.ok(!p.body.classList.contains('cover'));
+  // Turning the cover off here brings the lyrics back on this page.
+  p.button('cover-button').onclick();
+  assert.ok(!p.body.classList.contains('cover-only'));
+  assert.ok(!p.button('cover-button').classList.contains('on'));
+  assert.ok(p.button('lyrics-button').classList.contains('on'));
+  // Then lyrics off brings the cover in.
+  p.button('lyrics-button').onclick();
+  assert.ok(p.body.classList.contains('cover-only'));
+  const next = p.retry();
+  p.requests[1].resolve({ ...idle, state: 1, cover_on: false, lyrics_on: true });
+  await next;
+  assert.ok(p.body.classList.contains('cover-only'), "the viewer's own pick stays");
 });

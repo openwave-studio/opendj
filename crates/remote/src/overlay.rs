@@ -234,7 +234,7 @@ fn serve(mut stream: TcpStream, shown: &Mutex<Shown>) {
                 .unwrap_or_else(|e| e.into_inner())
                 .clone();
             match bytes {
-                Some(bytes) => http::respond(&mut stream, "200 OK", "image/png", &bytes),
+                Some(bytes) => http::respond(&mut stream, "200 OK", "image/jpeg", &bytes),
                 None => http::respond(&mut stream, "404 Not Found", "text/plain", b"No cover"),
             }
         }

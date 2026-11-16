@@ -1,6 +1,7 @@
-//! Karaoke presentation choices, kept off the audience screen.
+//! The karaoke screen's sung-word color. What the screen shows (cover,
+//! lyrics) is chosen on the screen itself.
 use super::*;
-use crate::karaoke_look::{self, Look, COLORS, STYLES};
+use crate::karaoke_look::{self, Look, COLORS};
 
 impl Prefs {
     pub(super) fn karaoke_items(&self) -> Vec<PrefItem> {
@@ -8,14 +9,9 @@ impl Prefs {
         vec![
             item("", HEADING, "KARAOKE", ""),
             PrefItem {
-                choices: strings(&STYLES),
-                chosen: look.style as i32,
-                ..item(karaoke_look::STYLE_KEY, MENU, "Screen style", "Original keeps the centered karaoke screen. Artwork lyrics uses a soft cover background and large, left-aligned lyrics. Applies live to the window and web page.")
-            },
-            PrefItem {
                 choices: strings(&COLORS.map(|(name, _)| name)),
                 chosen: look.color_index() as i32,
-                ..item(karaoke_look::COLOR_KEY, MENU, "Sung words", "Original style’s highlight color for sung words and count-in dots.")
+                ..item(karaoke_look::COLOR_KEY, MENU, "Sung words", "The color the words fill with as they are sung, and the count-in dots, on the karaoke screen and its web page.")
             },
         ]
     }
