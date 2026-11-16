@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Instrument deck
-A deck playing an instrument plugin SHALL show a slim title bar (a ☰ deck menu, the plugin's name, its format, the preset with ‹ › and a save heart, MIDI from, a button to open the plugin's window, and unload) and under it an in/out box (scope, level meter, TRIM, PAN), the plugin's knobs 8 to a page under named page tabs, the Note FX controls (Scale, Chord, Arp, Hold) and a full-width on-screen keyboard that lights the notes being played. The keyboard SHALL come in three sizes (Full, Slim, Hidden); with Slim or Hidden the deck SHALL show a second page of knobs. The deck SHALL show no artwork and no hint text. In the 4-Deck layout it SHALL show 4 knobs and no keyboard. Instrument and input decks SHALL default to Thru on the crossfader.
+A deck playing an instrument plugin SHALL show a slim title bar (a ☰ deck menu, the plugin's name, its format, the preset with ‹ › and a save heart, MIDI from, a button to open the plugin's window, and unload) and under it an in/out box (scope, level meter, TRIM, PAN), the plugin's knobs 8 to a page under named page tabs, the Note FX controls (Scale, Chord, Arp, Hold) and a full-width on-screen keyboard that lights the notes being played. The keyboard SHALL show or hide (Full, Hidden); hidden, the deck SHALL show a second page of knobs. The deck SHALL show no artwork and no hint text. In the 4-Deck layout it SHALL show 4 knobs and no keyboard. Instrument and input decks SHALL default to Thru on the crossfader.
 
 #### Scenario: Save the sound with the heart
 - **WHEN** a deck plays Acid V with an unsaved sound and the user clicks the empty heart and names the sound "Squelch Bass"
@@ -15,9 +15,9 @@ A deck playing an instrument plugin SHALL show a slim title bar (a ☰ deck menu
 - **WHEN** a deck plays one of the plugin's own presets, a knob is turned and the heart is clicked
 - **THEN** openDJ asks a name and saves the sound as a new preset of the user's, leaving the plugin's preset as it was
 
-#### Scenario: Slim keyboard shows more knobs
-- **WHEN** the user picks ☰ › Keyboard › Slim on a deck playing a plugin with 16 or more knobs
-- **THEN** the keyboard shrinks to a strip that still lights played notes and the deck shows two pages of knobs
+#### Scenario: Hiding the keyboard shows more knobs
+- **WHEN** the user picks ☰ › Keyboard › Hidden on a deck playing a plugin with 16 or more knobs
+- **THEN** the keyboard goes and the deck shows two pages of knobs
 
 ## ADDED Requirements
 

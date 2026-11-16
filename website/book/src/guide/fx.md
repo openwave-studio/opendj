@@ -212,8 +212,8 @@ In 2-Deck the deck shows:
 - A keyboard the width of the deck that lights the notes held in lilac, with
   pitch bend and mod wheel strips on its left.
 
-**☰ › Keyboard** makes the keyboard **Full**, **Slim** (a thin strip) or
-**Hidden**; Slim and Hidden show two pages of knobs at once. **☰ › Color**
+**☰ › Keyboard** shows the keyboard (**Full**) or hides it (**Hidden**),
+which shows two pages of knobs at once. **☰ › Color**
 picks the instrument's color; each plugin starts with its own.
 
 A 4-Deck strip shows the scope, **OPEN**, the first four knobs and

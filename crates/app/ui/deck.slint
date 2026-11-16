@@ -5740,14 +5740,15 @@ component DeckMenuButton inherits Rectangle {
                 height: 26px;
                 spacing: 3px;
                 Text { text: "Keyboard"; color: Theme.text; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; }
-                for name[i] in ["Full", "Slim", "Hidden"]: ChoiceChip {
-                    width: 50px;
+                // Keyboard sizes: 0 full, 2 hidden (1 was a slim strip, now hidden).
+                for name[i] in ["Full", "Hidden"]: ChoiceChip {
+                    width: 56px;
                     y: 2px;
                     text: name;
-                    picked: InstrumentsUi.keyboard-size == i;
+                    picked: i == 0 ? InstrumentsUi.keyboard-size == 0 : InstrumentsUi.keyboard-size != 0;
                     clicked => {
-                        InstrumentsUi.keyboard-size = i;
-                        InstrumentsUi.keyboard-size-changed(i);
+                        InstrumentsUi.keyboard-size = i * 2;
+                        InstrumentsUi.keyboard-size-changed(i * 2);
                     }
                 }
             }
@@ -6182,9 +6183,8 @@ component WheelStrip inherits Rectangle {
 
 // Four octaves of shaded keys, C2 to B5, as on a keyboard: played keys
 // light lilac; in scale mode the keys outside the scale are a shade
-// darker. Slim, it is a strip that still lights the notes played.
+// darker.
 component Keybed inherits Rectangle {
-    in property <bool> slim;
     property <length> key-width: self.width / 28;
     property <int> mask: Controls.value(Controls.resolve("[Instrument1]", "scale_mask"), Controls.tick);
     border-radius: 3px;
@@ -6200,7 +6200,7 @@ component Keybed inherits Rectangle {
         background: InstrumentsUi.held[note] ? @linear-gradient(180deg, #cdb9ff 0%, #a78bfa 100%)
             : out ? @linear-gradient(180deg, #b5b5ba 0%, #9d9da3 100%)
             : @linear-gradient(180deg, #d4d4d8 0%, #f2f2f4 70%, #e2e2e6 100%);
-        if !root.slim && Math.mod(w, 7) == 0: Text {
+        if Math.mod(w, 7) == 0: Text {
             y: parent.height - 14px;
             width: parent.width;
             text: "C" + (floor(w / 7) + 2);
@@ -6233,7 +6233,7 @@ component KnobTabs inherits HorizontalLayout {
     in property <int> pages;
     in property <int> page;
     callback picked(page: int);
-    // How many pages show at once (two under a slim keyboard).
+    // How many pages show at once (two with the keyboard hidden).
     in property <int> shown: 1;
     spacing: 4px;
     alignment: start;
@@ -6260,14 +6260,25 @@ component InstrumentRack inherits Rectangle {
     property <int> size: InstrumentsUi.keyboard-size;
     property <int> count: Controls.value(Controls.resolve("[Instrument1]", "num_parameters"), Controls.tick);
     property <int> pages: max(1, ceil(count / 8));
-    // Two pages show at once when the keyboard is slim or hidden.
+    // Two pages show at once when the keyboard is hidden.
     property <int> shown: size == 0 || pages < 2 ? 1 : 2;
     property <int> page: min(InstrumentsUi.knob-page, max(0, pages - shown));
     property <int> octave-index: Controls.resolve("[Instrument1]", "octave");
     property <int> octave: Controls.value(octave-index, Controls.tick);
     property <float> left: Controls.value(Controls.resolve(group, "vu_meter_left"), Controls.tick);
     property <float> right: Controls.value(Controls.resolve(group, "vu_meter_right"), Controls.tick);
+    // One panel on the instrument's color, from the knobs to under the keys;
+    // hairlines part the zones.
+    border-radius: 8px;
+    background: Theme.well;
+    border-width: 1px;
+    border-color: Theme.n-1c1c1e;
+    clip: true;
+    Rectangle {
+        background: @radial-gradient(circle, root.hue.with-alpha(0.24) 0%, root.hue.with-alpha(0.11) 45%, root.hue.with-alpha(0.04) 100%);
+    }
     VerticalLayout {
+        padding: 6px;
         spacing: 6px;
         HorizontalLayout {
             vertical-stretch: 1;
@@ -6275,11 +6286,7 @@ component InstrumentRack inherits Rectangle {
             spacing: 6px;
             // In and out.
             Rectangle {
-                width: 178px;
-                border-radius: 8px;
-                background: Theme.well;
-                border-width: 1px;
-                border-color: Theme.n-1c1c1e;
+                width: 172px;
                 HorizontalLayout {
                     padding: 8px;
                     spacing: 8px;
@@ -6320,17 +6327,10 @@ component InstrumentRack inherits Rectangle {
                     }
                 }
             }
-            // The plugin's knobs, on its color.
+            Rectangle { width: 1px; background: Theme.border.with-alpha(0.6); }
+            // The plugin's knobs.
             Rectangle {
                 horizontal-stretch: 1;
-                border-radius: 8px;
-                background: Theme.well;
-                border-width: 1px;
-                border-color: Theme.n-1c1c1e;
-                clip: true;
-                Rectangle {
-                    background: @radial-gradient(circle, root.hue.with-alpha(0.26) 0%, root.hue.with-alpha(0.08) 55%, transparent 100%);
-                }
                 VerticalLayout {
                     padding: 6px;
                     spacing: 2px;
@@ -6351,6 +6351,7 @@ component InstrumentRack inherits Rectangle {
                 }
             }
         }
+        Rectangle { height: 1px; background: Theme.border.with-alpha(0.6); }
         HorizontalLayout {
             height: 22px;
             spacing: 6px;
@@ -6376,7 +6377,6 @@ component InstrumentRack inherits Rectangle {
             WheelStrip { kind: 1; }
             Keybed { horizontal-stretch: 1; }
         }
-        if root.size == 1: Keybed { height: 14px; slim: true; }
     }
 }
 

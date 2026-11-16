@@ -11,7 +11,7 @@
 - [x] 2.2 Note FX pills (SCALE, CHORD, ARP) and the octave stepper; full-width keyboard
 - [x] 2.3 Instrument color: diffused backdrop, chip and knob arcs; picked from the plugin's name; ☰ › Color
 - [x] 2.4 Shaded keybed lit lilac with subtle scale marks; pitch bend and mod wheel strips
-- [x] 2.5 Keyboard sizes Full, Slim and Hidden, kept as a setting; Slim and Hidden show a second knob page
+- [x] 2.5 Keyboard Full or Hidden, kept as a setting; Hidden shows a second knob page
 
 ## 3. Controls
 
