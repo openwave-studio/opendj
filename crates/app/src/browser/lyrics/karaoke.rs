@@ -472,16 +472,14 @@ impl Browser {
             }
         }
         if let Some(prepared) = k.artwork.poll(k.artwork_request) {
-            let to_image = |cover: &opendj_engine::cover::Cover| {
-                slint::Image::from_rgba8(
-                    slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
-                        &cover.rgba,
-                        cover.width,
-                        cover.height,
-                    ),
-                )
-            };
-            k.cover = to_image(&prepared.cover);
+            let cover = &prepared.cover;
+            k.cover = slint::Image::from_rgba8(
+                slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(
+                    &cover.rgba,
+                    cover.width,
+                    cover.height,
+                ),
+            );
             k.background = prepared.background;
             k.has_cover = true;
             opendj_remote::overlay::set_karaoke_cover(prepared.jpeg);
