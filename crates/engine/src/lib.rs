@@ -55,6 +55,7 @@ pub mod sampler;
 pub mod scale;
 pub mod scan;
 pub mod separation;
+pub mod set_timeline;
 pub mod stems;
 pub mod synth;
 pub mod tags;
