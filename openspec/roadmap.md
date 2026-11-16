@@ -128,6 +128,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 
 ## v1.x · after 1.0
 
+- [add-instrument-sequencer](changes/add-instrument-sequencer/proposal.md) (a Pigments-style step sequencer in the instrument deck when its keyboard is hidden: pitch, octave, velocity, gate and chance lanes with their own lengths, accent and slide, slots A-D, on the mix's beat and in key; issue #819, a user request, 2026-11-16)
 - [add-karaoke](changes/add-karaoke/proposal.md)
 - [add-library-cloud-sync](changes/add-library-cloud-sync/proposal.md)
 - [add-track-suggestions](changes/add-track-suggestions/proposal.md)
