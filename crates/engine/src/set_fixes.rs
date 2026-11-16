@@ -524,9 +524,7 @@ pub fn render(
                 let mut chunk = Vec::with_capacity(WRITE_BLOCK);
                 let r = crate::decode::Decoder::open(&path).and_then(|d| {
                     d.stream(|_, samples| {
-                        for f in samples.chunks_exact(2) {
-                            chunk.push([f[0], f[1]]);
-                        }
+                        chunk.extend_from_slice(samples.as_chunks::<2>().0);
                         if chunk.len() >= WRITE_BLOCK {
                             let full =
                                 std::mem::replace(&mut chunk, Vec::with_capacity(WRITE_BLOCK));
