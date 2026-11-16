@@ -140,6 +140,9 @@ pub struct Info {
     /// Every parameter a DJ could turn, (id, name) in the plugin's order,
     /// to pick from for a knob (up to [`ALL_PARAMS`]).
     pub all: Vec<(u32, String)>,
+    /// A name for each page of 8 knobs, from its maker's remote controls
+    /// pages ("" where none fits); empty when it has none.
+    pub pages: Vec<String>,
     /// Frames the plugin delays its output by.
     pub latency: u32,
 }
@@ -243,6 +246,27 @@ pub fn arrange<T>(
     // A pick past the plugin's last knob leaves gaps: close them up.
     params.extend(slots.into_iter().flatten());
     all
+}
+
+/// A name for each page of 8 knobs of `params` (ids, in knob order): the
+/// name of its maker's page (name, ids) holding the page's first knob, or
+/// "" where none does. Empty when no page has a name.
+pub fn page_names(params: &[u32], pages: &[(String, Vec<u32>)]) -> Vec<String> {
+    let names: Vec<String> = params
+        .chunks(8)
+        .map(|knobs| {
+            pages
+                .iter()
+                .find(|(name, ids)| !name.is_empty() && ids.contains(&knobs[0]))
+                .map(|(name, _)| name.clone())
+                .unwrap_or_default()
+        })
+        .collect();
+    if names.iter().all(String::is_empty) {
+        Vec::new()
+    } else {
+        names
+    }
 }
 
 /// Ids of the test effects.
@@ -461,6 +485,18 @@ mod tests {
 
     fn names(p: &[((), Param)]) -> Vec<&str> {
         p.iter().map(|(_, p)| p.name.as_str()).collect()
+    }
+
+    #[test]
+    fn knob_pages_take_the_makers_page_names() {
+        let pages = [
+            ("Osc".to_string(), vec![1, 2, 3]),
+            ("Filter".to_string(), vec![9, 10]),
+        ];
+        let knobs: Vec<u32> = (1..=20).collect();
+        // Knobs 1-8 start on "Osc", 9-16 on "Filter", 17-20 on no page.
+        assert_eq!(page_names(&knobs, &pages), ["Osc", "Filter", ""]);
+        assert!(page_names(&knobs, &[]).is_empty());
     }
 
     #[test]

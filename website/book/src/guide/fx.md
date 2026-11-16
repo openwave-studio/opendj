@@ -203,7 +203,8 @@ In 2-Deck the deck shows:
 - A box with a scope of what the instrument plays, its level, **TRIM** and
   **PAN**. A safety limiter keeps the deck from clipping whatever the trim.
 - Eight knobs for the plugin's settings, on a backdrop in the instrument's
-  color. When it has more than eight, tabs above them show the next pages.
+  color. When it has more than eight, tabs above them show the next pages,
+  named after the plugin's own pages where a CLAP plugin names them.
   Right-click a knob to pick the setting it turns; **The plugin's own
   choice** puts it back.
 - **OCT ‹ ›** and the **SCALE**, **CHORD**, **ARP** and **HOLD** pills. Click

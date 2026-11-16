@@ -1103,6 +1103,7 @@ pub fn load(
                 name,
                 params: params.into_iter().map(|(_, p)| p).collect(),
                 all: listed,
+                pages: Vec::new(),
                 latency: (latency * sample_rate as f64).round() as u32,
             },
         })

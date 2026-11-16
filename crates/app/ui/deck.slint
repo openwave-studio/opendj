@@ -6245,7 +6245,7 @@ component KnobTabs inherits HorizontalLayout {
         border-width: 1px;
         border-color: on ? Theme.n-3a3a3d : transparent;
         background: on ? Theme.n-141416 : tta.has-hover ? Theme.control : transparent;
-        label := Text { text: "PAGE " + (p + 1); color: on ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; }
+        label := Text { text: InstrumentsUi.page-names[p] != "" ? InstrumentsUi.page-names[p] : "PAGE " + (p + 1); color: on ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; }
         tta := TouchArea { mouse-cursor: pointer; clicked => { root.picked(min(p, max(0, root.pages - root.shown))); } }
     }
 }
@@ -6334,7 +6334,7 @@ component InstrumentRack inherits Rectangle {
                 VerticalLayout {
                     padding: 6px;
                     spacing: 2px;
-                    if root.pages > 1: KnobTabs {
+                    if root.pages > 1 || InstrumentsUi.page-names[0] != "": KnobTabs {
                         pages: root.pages;
                         shown: root.shown;
                         page: root.page;

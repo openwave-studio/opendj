@@ -1121,6 +1121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let (weak, engine) = (app.as_weak(), engine.clone());
         let mut param_names: Vec<String> = Vec::new();
+        let mut page_names: Vec<String> = Vec::new();
         let mut knobs = Default::default();
         players_timer.start(
             slint::TimerMode::Repeated,
@@ -1148,6 +1149,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         names.iter().map(|n| n.as_str().into()).collect();
                     ui.set_param_names(slint::ModelRc::from(model.as_slice()));
                     param_names = names;
+                }
+                let pages = engine.instrument_pages();
+                if pages != page_names {
+                    let model: Vec<slint::SharedString> =
+                        pages.iter().map(|n| n.as_str().into()).collect();
+                    ui.set_page_names(slint::ModelRc::from(model.as_slice()));
+                    page_names = pages;
                 }
                 instrument_knobs::show(&app, &engine, &mut knobs);
             },

@@ -152,6 +152,7 @@ fn read_info(info: &mut Info, line: &str) {
                 value,
             });
         }
+        Some("page") => info.pages.push(f.next().unwrap_or_default().to_string()),
         Some("all") => {
             if let (Some(id), Some(name)) = (f.next().and_then(|v| v.parse().ok()), f.next()) {
                 info.all.push((id, name.to_string()));

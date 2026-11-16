@@ -189,6 +189,9 @@ export global InstrumentsUi {
     // The instrument's parameter names, for its knobs
     // (`[Instrument1],parameterN` is the N-th). Set by the app.
     in property <[string]> param-names;
+    // A name for each page of 8 knobs, from the plugin's maker ("" for
+    // none: the tab says PAGE n). Set by the app.
+    in property <[string]> page-names;
     // The instrument's knobs the DJ picked a parameter for (knob order),
     // and the parameters to pick from that match `search-params`' text.
     in property <[bool]> knob-picked;
