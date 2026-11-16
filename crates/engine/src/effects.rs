@@ -48,6 +48,36 @@ pub const AVAILABLE_EFFECTS: [&str; 18] = [
     "Filter Echo",
 ];
 
+/// The built-in effects' `loaded_effect` numbers in the order the effect
+/// list shows them: by kind (delay and echo, reverb, filter, modulation,
+/// distortion, rhythm), then A to Z. `next_effect`, `prev_effect` and
+/// `effect_selector` step through them in this order, then through the
+/// plugins; the numbers themselves never change.
+pub const EFFECT_MENU_ORDER: [usize; 18] = [
+    1, 9, 18, 12, 16, 17, 2, 3, 15, 14, 4, 6, 5, 13, 11, 10, 7, 8,
+];
+
+/// The effect `step` places from `current` in list order, over the built-in
+/// effects and then `plugins` plugins, wrapping at either end. An empty slot
+/// (or an unknown number) steps to the first or the last.
+fn step_effect(current: usize, step: i32, plugins: usize) -> usize {
+    let n = EFFECT_MENU_ORDER.len() + plugins;
+    let position = EFFECT_MENU_ORDER
+        .iter()
+        .position(|&id| id == current)
+        .or_else(|| (current > EFFECT_MENU_ORDER.len() && current <= n).then(|| current - 1));
+    let next = match position {
+        Some(position) => (position as i32 + step).rem_euclid(n as i32) as usize,
+        None if step > 0 => 0,
+        None => n - 1,
+    };
+    if next < EFFECT_MENU_ORDER.len() {
+        EFFECT_MENU_ORDER[next]
+    } else {
+        next + 1
+    }
+}
+
 /// Parameter knobs (`parameterK`) and buttons (`button_parameterK`) per slot.
 pub const MAX_PARAMETERS: usize = 4;
 pub const MAX_BUTTON_PARAMETERS: usize = 2;
@@ -363,7 +393,7 @@ const MANIFESTS: [Manifest; 18] = [
     },
     Manifest {
         names: &["Length", "Depth", "Width"],
-        defaults: &[0.5, 0.8, 0.5],
+        defaults: &[0.25, 0.8, 0.5],
     },
     Manifest {
         names: &["Rate"],
@@ -411,9 +441,10 @@ const MANIFESTS: [Manifest; 18] = [
     },
 ];
 
-/// The beat switch's range: 1/16 to 4 beats, as powers of two.
+/// The beat switch's range: 1/16 to 64 beats, as powers of two. Each effect
+/// allows part of it (see [`time_parameter`]), as on Pioneer mixers.
 const BEATS_MIN: i32 = -4;
-const BEATS_MAX: i32 = 2;
+const BEATS_MAX: i32 = 6;
 /// Where a slot's beat switch starts.
 const DEFAULT_BEATS: f64 = 0.25;
 
@@ -423,8 +454,8 @@ const DEFAULT_BEATS: f64 = 0.25;
 fn time_parameter(kind: Kind) -> Option<(usize, i32, i32, bool)> {
     match kind {
         Kind::Echo | Kind::FilterEcho => Some((0, -4, 2, false)),
-        Kind::Flanger | Kind::Phaser => Some((0, -1, 5, true)),
-        Kind::Gate => Some((0, -4, 0, false)),
+        Kind::Flanger | Kind::Phaser => Some((0, -1, 6, true)),
+        Kind::Gate => Some((0, -4, 4, false)),
         Kind::Roll | Kind::RevRoll => Some((0, -4, 0, true)),
         Kind::EchoOut | Kind::Spiral => Some((0, -2, 0, false)),
         Kind::Brake => Some((0, 0, 3, false)),
@@ -466,12 +497,50 @@ fn link(kind: Kind, meta: f64) -> [Option<f64>; MAX_PARAMETERS] {
     }
 }
 
+/// The Beat FX's LEVEL/DEPTH, as on Pioneer mixers: echoes are fully wet
+/// by the centre of the knob and repeat longer past it; the rest follow
+/// [`link`].
+fn link_beat_fx(kind: Kind, meta: f64) -> [Option<f64>; MAX_PARAMETERS] {
+    let wet = (2.0 * meta).min(1.0);
+    let more = (meta - 0.5).max(0.0);
+    match kind {
+        // Time, Feedback, Ping Pong, Send.
+        Kind::Echo => [None, Some(0.5 + 0.7 * more), None, Some(wet)],
+        // Time, Feedback, Send.
+        Kind::Spiral => [None, Some(0.6 + 0.5 * more), Some(wet), None],
+        // Time, Feedback, Filter, Send.
+        Kind::FilterEcho => [
+            None,
+            Some(0.6 + 0.5 * more),
+            Some(0.5 + 0.5 * meta),
+            Some(wet),
+        ],
+        _ => link(kind, meta),
+    }
+}
+
+/// How much of the Beat FX is heard for its LEVEL/DEPTH: sweeps (flanger,
+/// phaser, chorus) are dry fully left and fade in over the first eighth of
+/// the knob, as on Pioneer mixers; other effects always play fully.
+fn beat_fx_wet(kind: Option<Kind>, meta: f64) -> f64 {
+    match kind {
+        Some(Kind::Flanger | Kind::Phaser | Kind::Chorus) => (meta * 8.0).clamp(0.0, 1.0),
+        _ => 1.0,
+    }
+}
+
 struct SlotControls {
+    /// In the Beat FX unit: meta follows Pioneer's LEVEL/DEPTH curve
+    /// (see [`link_beat_fx`]).
+    beat_fx: bool,
     enabled: ControlHandle,
     meta: ControlHandle,
-    /// Length in beats, 1/16 to 4 (0 for effects without one), as the
-    /// slot's beat switch shows it.
+    /// Length in beats, 1/16 to 64 within the effect's own range (0 for
+    /// effects without one), as the slot's beat switch shows it.
     beats: ControlHandle,
+    /// Pushes that halve and double `beats` within the effect's range.
+    halve: ControlHandle,
+    double: ControlHandle,
     beats_seen: f64,
     params: [ControlHandle; MAX_PARAMETERS],
     loaded_effect: ControlHandle,
@@ -483,7 +552,7 @@ struct SlotControls {
     next: ControlHandle,
     prev: ControlHandle,
     clear: ControlHandle,
-    edges: [Edge; 3],
+    edges: [Edge; 5],
     /// The effect the parameters are set up for.
     kind: Option<Kind>,
     /// Or the plugin, by its place in the plugin list.
@@ -503,6 +572,7 @@ impl SlotControls {
         }
         reg.indicator(g, "num_button_parameters", MAX_BUTTON_PARAMETERS as f64);
         let mut s = Self {
+            beat_fx: unit == BEAT_FX_UNIT,
             enabled: reg.toggle(g, "enabled"),
             // The Beat FX and the mic's effects start half way, so turning
             // them on is heard at once.
@@ -518,7 +588,9 @@ impl SlotControls {
                 1.0,
                 Behavior::Linear,
             ),
-            beats: reg.create(g, "beats", 1.0, 0.0, 4.0, Behavior::Linear),
+            beats: reg.create(g, "beats", 1.0, 0.0, 64.0, Behavior::Linear),
+            halve: reg.push(g, "beats_halve"),
+            double: reg.push(g, "beats_double"),
             beats_seen: f64::NAN,
             params: std::array::from_fn(|k| {
                 reg.create(
@@ -547,7 +619,7 @@ impl SlotControls {
             next: reg.push(g, "next_effect"),
             prev: reg.push(g, "prev_effect"),
             clear: reg.push(g, "clear"),
-            edges: [Edge::default(); 3],
+            edges: [Edge::default(); 5],
             kind: None,
             plugin: None,
             num_plugins: reg.indicator("[Master]", "num_plugins", MAX_PLUGINS as f64),
@@ -575,21 +647,12 @@ impl SlotControls {
             self.loaded_effect.set(0.0);
         }
         if step != 0 {
-            // Cycles through the effects, then the plugins; an empty slot
-            // steps to either end.
+            // Steps through the list as it is shown: the effects by kind,
+            // then the plugins; an empty slot steps to either end.
             let plugins = (self.num_plugins.get().round() as usize).min(MAX_PLUGINS);
-            let n = (KINDS.len() + plugins) as i32;
-            let cur = self.loaded_effect.get().round() as i32;
-            let next = if cur == 0 {
-                if step > 0 {
-                    1
-                } else {
-                    n
-                }
-            } else {
-                (cur - 1 + step).rem_euclid(n) + 1
-            };
-            self.loaded_effect.set(next as f64);
+            let cur = self.loaded_effect.get().round().max(0.0) as usize;
+            self.loaded_effect
+                .set(step_effect(cur, step, plugins) as f64);
         }
 
         let kind = Kind::from_loaded(self.loaded_effect.get());
@@ -609,6 +672,9 @@ impl SlotControls {
             }
         }
         if kind != self.kind || (kind.is_none() && plugin.is_none() && self.loaded.get_bool()) {
+            // Switching between effects that both have a length keeps it, as
+            // near as the new effect allows.
+            let had_length = self.kind.and_then(time_parameter).is_some() && self.beats.get() > 0.0;
             self.kind = kind;
             // A newly loaded effect starts from its defaults, then follows meta.
             let defaults = kind.map_or(&[][..], |k| MANIFESTS[k as usize].defaults);
@@ -618,13 +684,13 @@ impl SlotControls {
             self.loaded.set_bool(kind.is_some() || plugin.is_some());
             if plugin.is_none() {
                 self.num_parameters.set(defaults.len() as f64);
-                // The beat switch starts at 1/4 beat, or the nearest length
-                // the effect allows.
-                self.beats.set(if kind.and_then(time_parameter).is_some() {
-                    DEFAULT_BEATS
-                } else {
-                    0.0
-                });
+                // The beat switch starts at 1/4 beat (or keeps the last
+                // effect's length), or the nearest length the effect allows.
+                if kind.and_then(time_parameter).is_none() {
+                    self.beats.set(0.0);
+                } else if !had_length {
+                    self.beats.set(DEFAULT_BEATS);
+                }
                 self.beats_seen = f64::NAN;
             }
             self.meta_seen = f64::NAN;
@@ -633,12 +699,25 @@ impl SlotControls {
         if meta != self.meta_seen {
             self.meta_seen = meta;
             if let Some(k) = kind {
-                for (p, v) in self.params.iter().zip(link(k, meta)) {
+                let linked = if self.beat_fx {
+                    link_beat_fx(k, meta)
+                } else {
+                    link(k, meta)
+                };
+                for (p, v) in self.params.iter().zip(linked) {
                     if let Some(v) = v {
                         p.set(v);
                     }
                 }
             }
+        }
+        // Halving and doubling go through the switch, which keeps the
+        // length within what the effect allows.
+        let halve = self.edges[3].pressed(&self.halve);
+        let double = self.edges[4].pressed(&self.double);
+        let now = self.beats.get();
+        if now > 0.0 && halve != double {
+            self.beats.set(if double { now * 2.0 } else { now / 2.0 });
         }
         let wanted = self.beats.get();
         if wanted != self.beats_seen {
@@ -671,6 +750,10 @@ struct UnitControls {
     /// group_[Microphone]_enable and the other inputs' (see
     /// [`crate::inputs::input_group`]).
     routes: [ControlHandle; TARGETS],
+    /// The Beat FX's `route`, one control for its CH SELECT (see
+    /// [`route_targets`]), and its version last applied.
+    route: Option<ControlHandle>,
+    route_seen: u32,
     super_seen: u32,
     /// The unit's own tempo, from `bpm_tap`; 0 follows each target's tempo.
     bpm: ControlHandle,
@@ -731,7 +814,11 @@ impl UnitControls {
             }
         });
         let super1 = reg.create(g, "super1", 0.0, 0.0, 1.0, Behavior::Linear);
+        let route = (unit == BEAT_FX_UNIT)
+            .then(|| reg.create(g, "route", ROUTE_DECKS_1_2, 0.0, ROUTE_MAIN, Behavior::Free));
         Self {
+            route_seen: route.as_ref().map_or(0, |r| r.version()),
+            route,
             enabled: {
                 let e = reg.toggle(g, "enabled");
                 e.set_bool(true);
@@ -750,6 +837,32 @@ impl UnitControls {
             intervals: [0.0; TAPS],
             taps: 0,
         }
+    }
+
+    /// Applies a new `route` to the routes, or shows the routes in `route`
+    /// when they were changed one by one (by the on-screen buttons).
+    fn update_route(&mut self) {
+        let Some(route) = &self.route else {
+            return;
+        };
+        if route.version() != self.route_seen {
+            if let Some(on) = route_targets(route.get()) {
+                for (t, r) in self.routes.iter().enumerate().take(MAIN + 1) {
+                    r.set_bool(on[t]);
+                }
+            }
+        } else {
+            let on: [bool; MAIN + 1] = std::array::from_fn(|t| self.routes[t].get_bool());
+            if let Some(v) = (0..=ROUTE_MAIN as usize)
+                .map(|v| v as f64)
+                .find(|&v| route_targets(v) == Some(on))
+            {
+                if route.get() != v {
+                    route.set(v);
+                }
+            }
+        }
+        self.route_seen = route.version();
     }
 
     /// Takes in `bpm_tap` and `bpm_auto` presses; `now` is the engine clock
@@ -773,6 +886,27 @@ impl UnitControls {
             self.bpm.set((60.0 / mean).clamp(40.0, 300.0));
         }
     }
+}
+
+/// The Beat FX's `route` values: 0 off, 1 to 4 one deck, 5 decks 1 and 2,
+/// 6 the main mix (MST).
+const ROUTE_DECKS_1_2: f64 = 5.0;
+const ROUTE_MAIN: f64 = 6.0;
+
+/// The decks and the main mix (by target, `MAIN` last) a `route` value
+/// sends the Beat FX to, or `None` for a value that isn't one.
+fn route_targets(route: f64) -> Option<[bool; MAIN + 1]> {
+    let r = route.round();
+    if !(0.0..=ROUTE_MAIN).contains(&r) {
+        return None;
+    }
+    let r = r as usize;
+    Some(std::array::from_fn(|t| match r {
+        0 => false,
+        5 => t < 2,
+        6 => t == MAIN,
+        deck => t + 1 == deck,
+    }))
 }
 
 /// Per-buffer values an effect needs besides its parameters.
@@ -1595,6 +1729,7 @@ impl EffectRack {
         for u in 0..NUM_EFFECT_UNITS {
             let unit = &mut self.units[u];
             unit.update_tempo(now);
+            unit.update_route();
             let bpm = unit.bpm.get();
             let beat_seconds = beat_seconds.map(|b| if bpm > 0.0 { 60.0 / bpm } else { b });
             let release = unit.edges[2].pressed(&unit.release);
@@ -1682,6 +1817,10 @@ impl EffectRack {
                         self.active[u][t] = true;
                     }
                 }
+            }
+            if u == BEAT_FX_UNIT {
+                let slot = &self.slots[u][0];
+                self.mix[u].1 *= beat_fx_wet(slot.kind, slot.meta.get()) as f32;
             }
         }
     }
@@ -2453,10 +2592,10 @@ impl Flanger {
     }
 
     fn prepare(&mut self, p: &[f32; MAX_PARAMETERS], ctx: Ctx) {
-        // Speed: one sweep every 32 beats down to every half beat, in time
+        // Speed: one sweep every 64 beats down to every half beat, in time
         // with the track and starting on a beat of it. Manual: 0.5..8 ms
         // centre delay.
-        let cycle = beats(1.0 - p[0], -1, 5);
+        let cycle = beats(1.0 - p[0], -1, 6);
         self.step = 1.0 / (cycle * ctx.beat_seconds * ctx.sample_rate);
         lock_to_beat(
             &mut self.phase,
@@ -2589,9 +2728,9 @@ struct Phaser {
 
 impl Phaser {
     fn prepare(&mut self, p: &[f32; MAX_PARAMETERS], ctx: Ctx) {
-        // Speed: one sweep every 32 beats down to every half beat, in time
+        // Speed: one sweep every 64 beats down to every half beat, in time
         // with the track and starting on a beat of it. Stages: 2..12.
-        let cycle = beats(1.0 - p[0], -1, 5);
+        let cycle = beats(1.0 - p[0], -1, 6);
         self.step = 1.0 / (cycle * ctx.beat_seconds * ctx.sample_rate);
         let mut unlocked = !self.locked;
         lock_to_beat(
@@ -2711,8 +2850,8 @@ impl Default for Gate {
 
 impl Gate {
     fn prepare(&mut self, p: &[f32; MAX_PARAMETERS], ctx: Ctx) {
-        // Length: 1/16 to 1 beat per open-and-close.
-        let cycle = beats(p[0], -4, 0);
+        // Length: 1/16 to 16 beats per open-and-close.
+        let cycle = beats(p[0], -4, 4);
         self.step = 1.0 / (cycle * ctx.beat_seconds * ctx.sample_rate);
         lock_to_beat(
             &mut self.phase,
@@ -3294,6 +3433,124 @@ mod tests {
     use super::*;
 
     #[test]
+    fn effects_step_in_list_order_and_wrap() {
+        for plugins in [0, 3] {
+            let order: Vec<_> = EFFECT_MENU_ORDER
+                .into_iter()
+                .chain(19..19 + plugins)
+                .collect();
+            assert_eq!(step_effect(0, 1, plugins), order[0]);
+            assert_eq!(step_effect(0, -1, plugins), *order.last().unwrap());
+            for (i, &id) in order.iter().enumerate() {
+                assert_eq!(step_effect(id, 1, plugins), order[(i + 1) % order.len()]);
+                assert_eq!(
+                    step_effect(id, -1, plugins),
+                    order[(i + order.len() - 1) % order.len()]
+                );
+            }
+        }
+        // Every built-in effect once.
+        let mut sorted = EFFECT_MENU_ORDER;
+        sorted.sort();
+        assert_eq!(
+            sorted.to_vec(),
+            (1..=AVAILABLE_EFFECTS.len()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn halving_and_doubling_stop_at_the_effects_limits() {
+        let reg = ControlRegistry::new();
+        let mut slot = SlotControls::create(&reg, BEAT_FX_UNIT, 0);
+        let c = |k: &str| reg.get("[EffectRack1_EffectUnit5_Effect1]", k).unwrap();
+        let press = |slot: &mut SlotControls, k: &str| {
+            c(k).set_bool(true);
+            slot.update();
+            c(k).set_bool(false);
+            slot.update();
+        };
+        c("loaded_effect").set(1.0);
+        slot.update();
+        c("beats").set(2.0);
+        slot.update();
+        press(&mut slot, "beats_double");
+        assert_eq!(c("beats").get(), 4.0);
+        // Echo stops at 4 beats.
+        press(&mut slot, "beats_double");
+        assert_eq!(c("beats").get(), 4.0);
+        // Flanger goes on to 64.
+        c("loaded_effect").set(4.0);
+        slot.update();
+        for want in [8.0, 16.0, 32.0, 64.0, 64.0] {
+            press(&mut slot, "beats_double");
+            assert_eq!(c("beats").get(), want);
+        }
+        // And down to 1/2 beat.
+        for _ in 0..10 {
+            press(&mut slot, "beats_halve");
+        }
+        assert_eq!(c("beats").get(), 0.5);
+        // Reverb has no length: nothing to halve.
+        c("loaded_effect").set(2.0);
+        slot.update();
+        press(&mut slot, "beats_halve");
+        assert_eq!(c("beats").get(), 0.0);
+    }
+
+    #[test]
+    fn the_beat_fx_route_sets_its_routes_and_follows_them() {
+        let reg = ControlRegistry::new();
+        let mut unit = UnitControls::create(&reg, BEAT_FX_UNIT);
+        let c = |k: &str| reg.get("[EffectRack1_EffectUnit5]", k).unwrap();
+        let routes = || {
+            [
+                "[Channel1]",
+                "[Channel2]",
+                "[Channel3]",
+                "[Channel4]",
+                "[Master]",
+            ]
+            .map(|g| c(&format!("group_{g}_enable")).get_bool())
+        };
+        unit.update_route();
+        // It starts on decks 1 and 2.
+        assert_eq!(c("route").get(), 5.0);
+        assert_eq!(routes(), [true, true, false, false, false]);
+        c("route").set(6.0);
+        unit.update_route();
+        assert_eq!(routes(), [false, false, false, false, true]);
+        c("route").set(2.0);
+        unit.update_route();
+        assert_eq!(routes(), [false, true, false, false, false]);
+        c("route").set(0.0);
+        unit.update_route();
+        assert_eq!(routes(), [false; 5]);
+        // A route button pressed on screen shows in `route`.
+        c("group_[Channel3]_enable").set_bool(true);
+        unit.update_route();
+        assert_eq!(c("route").get(), 3.0);
+        // Deck units have no route.
+        let _deck = UnitControls::create(&reg, 0);
+        assert!(reg.get("[EffectRack1_EffectUnit1]", "route").is_none());
+    }
+
+    #[test]
+    fn the_beat_fx_depth_follows_pioneers_curve() {
+        // Echo is fully wet at the centre and repeats longer past it.
+        let at = |meta| link_beat_fx(Kind::Echo, meta);
+        assert_eq!(at(0.0)[3], Some(0.0));
+        assert_eq!(at(0.5)[3], Some(1.0));
+        assert_eq!(at(1.0)[3], Some(1.0));
+        assert!(at(1.0)[1].unwrap() > at(0.5)[1].unwrap());
+        // Deck FX stay linear.
+        assert_eq!(link(Kind::Echo, 0.5)[3], Some(0.5));
+        // Sweeps are dry fully left and fully wet soon after.
+        assert_eq!(beat_fx_wet(Some(Kind::Flanger), 0.0), 0.0);
+        assert_eq!(beat_fx_wet(Some(Kind::Flanger), 0.25), 1.0);
+        assert_eq!(beat_fx_wet(Some(Kind::Echo), 0.0), 1.0);
+    }
+
+    #[test]
     fn held_notes_follow_note_ons_offs_and_all_notes_off() {
         let on = |k| Midi::note_on(0, 0, k, 100);
         let held = held_after(0, &[on(60), on(64), Midi::note_off(0, 3, 60)]);
@@ -3425,7 +3682,16 @@ mod tests {
         set("beats", 0.125);
         slot.update();
         assert_eq!(get("beats"), 0.5);
-        assert_eq!(beats(1.0 - get("parameter1") as f32, -1, 5), 0.5);
+        assert_eq!(beats(1.0 - get("parameter1") as f32, -1, 6), 0.5);
+        // ...and sweeps up to 64 beats.
+        set("beats", 64.0);
+        slot.update();
+        assert_eq!(get("beats"), 64.0);
+        assert_eq!(beats(1.0 - get("parameter1") as f32, -1, 6), 64.0);
+        // Echo after it keeps the length as near as it allows: 4 beats.
+        set("loaded_effect", 1.0);
+        slot.update();
+        assert_eq!(get("beats"), 4.0);
         // Reverb has no length.
         set("loaded_effect", 2.0);
         slot.update();

@@ -84,7 +84,8 @@ fn ddj_400_beat_fx() {
     assert_eq!(get(&reg, slot, "meta"), 1.0);
     // Each press must select another effect, including after an engine tick.
     assert_eq!(get(&reg, slot, "loaded_effect"), 1.0);
-    for expected in [2.0, 3.0] {
+    // In the list's order: Echo, Echo Out, Filter Echo.
+    for expected in [9.0, 18.0] {
         c.receive(&[0x94, 0x63, 0x7f]);
         c.receive(&[0x94, 0x63, 0x00]);
         engine.process(&mut [0.0; 128], 2);
@@ -93,7 +94,7 @@ fn ddj_400_beat_fx() {
     c.receive(&[0x94, 0x64, 0x7f]);
     c.receive(&[0x94, 0x64, 0x00]);
     engine.process(&mut [0.0; 128], 2);
-    assert_eq!(get(&reg, slot, "loaded_effect"), 2.0);
+    assert_eq!(get(&reg, slot, "loaded_effect"), 9.0);
     c.receive(&[0x94, 0x47, 0x7f]);
     c.receive(&[0x94, 0x47, 0x00]);
     c.receive(&[0x94, 0x63, 0x7f]);

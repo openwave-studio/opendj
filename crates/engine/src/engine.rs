@@ -6159,16 +6159,18 @@ mod tests {
         assert_eq!(slot(1, "loaded_effect").get(), 1.0);
         slot(1, "effect_selector").set(1.0);
         run(&mut engine, 0.01);
-        assert_eq!(slot(1, "loaded_effect").get(), 2.0);
+        // The list's order: Echo Out follows Echo.
+        assert_eq!(
+            crate::effect_name(slot(1, "loaded_effect").get()),
+            "Echo Out"
+        );
         assert_eq!(slot(1, "effect_selector").get(), 0.0);
         slot(1, "effect_selector").set(-1.0);
         run(&mut engine, 0.01);
         slot(1, "effect_selector").set(-1.0);
         run(&mut engine, 0.01);
-        assert_eq!(
-            slot(1, "loaded_effect").get(),
-            AVAILABLE_EFFECTS.len() as f64
-        );
+        // Back past the first effect to the last: Roll.
+        assert_eq!(crate::effect_name(slot(1, "loaded_effect").get()), "Roll");
         slot(1, "next_effect").set_bool(true);
         run(&mut engine, 0.01);
         assert_eq!(crate::effect_name(slot(1, "loaded_effect").get()), "Echo");

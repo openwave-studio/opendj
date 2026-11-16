@@ -79,8 +79,8 @@ pub use controls::{
 };
 pub use effects::{
     color_fx_name, effect_name, parameter_names, plugin_index, InstrumentView, NoteInput,
-    PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, MAX_BUTTON_PARAMETERS,
-    MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
+    MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
 };
 pub use output::{
     channel_names, deck_outputs_split, default_output_device, input_devices, output_devices,
