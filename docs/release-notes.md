@@ -1,8 +1,9 @@
-openDJ 0.7.1 fixes plugins on Windows: picking an effect or instrument plugin no longer opens console windows that cover openDJ and take its focus. Everything from 0.7.0 is below.
+openDJ 0.7.1 fixes plugins on Windows: picking an effect or instrument plugin no longer opens console windows that cover openDJ and take its focus. Tap tempo also holds steady now. Everything from 0.7.0 is below.
 
 ## Fixed in 0.7.1
 
 - **Windows**: plugin effects, instruments and the plugin scan start without a console window, and openDJ keeps the focus.
+- **Tap tempo** no longer jumps around with steady taps: taps are timed when you press them, the tempo settles over up to 16 taps to a whole BPM, a slipped tap is skipped, and a two second pause starts over.
 
 ## New in 0.7.0
 
