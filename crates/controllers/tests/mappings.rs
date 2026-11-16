@@ -66,9 +66,16 @@ fn ddj_400_beat_fx() {
     c.receive(&[0x94, 0x47, 0x00]);
     assert_eq!(get(&reg, slot, "enabled"), 0.0);
 
-    for (note, target) in [(0x10, "Channel1"), (0x11, "Channel2"), (0x14, "Master")] {
+    // CH SELECT sets the unit's route: deck 1, deck 2, the main mix.
+    for (note, route, target) in [
+        (0x10, 1.0, "Channel1"),
+        (0x11, 2.0, "Channel2"),
+        (0x14, 6.0, "Master"),
+    ] {
         c.receive(&[0x94, note, 0x7f]);
         c.receive(&[0x94, note, 0x00]);
+        engine.process(&mut [0.0; 128], 2);
+        assert_eq!(get(&reg, unit, "route"), route);
         for route in ["Channel1", "Channel2", "Master"] {
             assert_eq!(
                 get(&reg, unit, &format!("group_[{route}]_enable")),
@@ -104,9 +111,22 @@ fn ddj_400_beat_fx() {
     reg.get(slot, "beats").unwrap().set(0.5);
     c.receive(&[0x94, 0x4a, 0x7f]);
     c.receive(&[0x94, 0x4a, 0x00]);
+    engine.process(&mut [0.0; 128], 2);
     assert_eq!(get(&reg, slot, "beats"), 0.25);
     c.receive(&[0x94, 0x4b, 0x7f]);
+    engine.process(&mut [0.0; 128], 2);
     assert_eq!(get(&reg, slot, "beats"), 0.5);
+    // Doubling stops at the effect's own limit.
+    let mut limit = 0.0;
+    for _ in 0..10 {
+        c.receive(&[0x94, 0x4b, 0x00]);
+        c.receive(&[0x94, 0x4b, 0x7f]);
+        engine.process(&mut [0.0; 128], 2);
+        let beats = get(&reg, slot, "beats");
+        assert!(beats >= limit, "{beats} after {limit}");
+        limit = beats;
+    }
+    assert!((1.0..=64.0).contains(&limit), "limit {limit}");
     // Leave the deck's separate FX controls alone.
     assert_eq!(
         get(&reg, "[EffectRack1_EffectUnit1_Effect1]", "enabled"),
@@ -659,12 +679,14 @@ fn ddj_flx4_mixer_pads_and_eq_modes() {
         pushed.version() > 0 && !pushed.get_bool(),
         "next_effect pressed: {first}"
     );
-    reg.get(fx, "beats").unwrap().set(0.25);
+    // BEAT < > push the slot's beats_halve / beats_double, which keep the
+    // length within the effect's limits.
     c.receive(&[0x94, 0x4B, 0x7F]);
-    assert_eq!(get(&reg, fx, "beats"), 0.5);
+    let double = reg.get(fx, "beats_double").unwrap();
+    assert!(double.version() > 0 && !double.get_bool());
     c.receive(&[0x94, 0x4A, 0x7F]);
-    c.receive(&[0x94, 0x4A, 0x7F]);
-    assert_eq!(get(&reg, fx, "beats"), 0.125);
+    let halve = reg.get(fx, "beats_halve").unwrap();
+    assert!(halve.version() > 0 && !halve.get_bool());
     for v in 0..=0x40 {
         c.receive(&[0xB4, 0x02, v]);
     }
@@ -1017,21 +1039,15 @@ fn ddj_flx6_four_decks_and_mixer() {
     assert_eq!(get(&reg, "[Channel2]", "sync_leader"), 0.0);
 
     // BEAT FX: FX2's slots drive the Beat FX too; CH SELECT picks a deck
-    // or, on MST, all four.
+    // or, on MST, the main mix.
     let unit = "[EffectRack1_EffectUnit5]";
     let fx = "[EffectRack1_EffectUnit5_Effect1]";
     c.receive(&[0x95, 0x48, 0x7F]);
     assert_eq!(get(&reg, fx, "enabled"), 1.0);
     c.receive(&[0x94, 0x1E, 0x7F]);
-    assert_eq!(get(&reg, unit, "group_[Channel3]_enable"), 1.0);
-    assert_eq!(get(&reg, unit, "group_[Channel1]_enable"), 0.0);
+    assert_eq!(get(&reg, unit, "route"), 3.0);
     c.receive(&[0x94, 0x14, 0x7F]);
-    for deck in 1..=4 {
-        assert_eq!(
-            get(&reg, unit, &format!("group_[Channel{deck}]_enable")),
-            1.0
-        );
-    }
+    assert_eq!(get(&reg, unit, "route"), 6.0);
 
     // MERGE FX follows the deck the side plays: after DECK 3, the left
     // knob drives deck 3's FX unit.
@@ -1103,21 +1119,19 @@ fn xdj_rx3_decks_mixer_and_pads() {
     c.receive(&[0x90, 0x1E, 0x7F]);
     assert_eq!(get(&reg, "[Channel1]", "sync_leader"), 2.0);
 
-    // BEAT FX: ON/OFF, CH SELECT on MASTER sends it to all four decks.
+    // BEAT FX: ON/OFF, CH SELECT on MASTER sends it to the main mix, on CH1
+    // to the left channel (decks 1 and 3).
     let unit = "[EffectRack1_EffectUnit5]";
     let fx = "[EffectRack1_EffectUnit5_Effect1]";
     c.receive(&[0xB4, 0x72, 0x7F]);
     assert_eq!(get(&reg, fx, "enabled"), 1.0);
     c.receive(&[0xB4, 0x29, 0x7F]);
-    for deck in 1..=4 {
-        assert_eq!(
-            get(&reg, unit, &format!("group_[Channel{deck}]_enable")),
-            1.0
-        );
-    }
+    assert_eq!(get(&reg, unit, "route"), 6.0);
+    reg.get(unit, "group_[Master]_enable").unwrap().set(1.0);
     c.receive(&[0xB4, 0x22, 0x7F]);
     assert_eq!(get(&reg, unit, "group_[Channel3]_enable"), 1.0);
     assert_eq!(get(&reg, unit, "group_[Channel2]_enable"), 0.0);
+    assert_eq!(get(&reg, unit, "group_[Master]_enable"), 0.0);
     // EFFECT SELECT REVERB.
     c.receive(&[0xB4, 0x36, 0x7F]);
     assert_eq!(get(&reg, fx, "loaded_effect"), 2.0);
@@ -1311,11 +1325,9 @@ fn ddj_800_decks_mixer_and_beat_fx() {
     // Beat FX: CH SELECT to CH2, FX SELECT to REVERB, ON.
     c.receive(&[0x94, 0x1D, 0x7F]);
     let unit = "[EffectRack1_EffectUnit5]";
-    assert_eq!(get(&reg, unit, "group_[Channel2]_enable"), 1.0);
-    assert_eq!(get(&reg, unit, "group_[Channel1]_enable"), 0.0);
+    assert_eq!(get(&reg, unit, "route"), 2.0);
     c.receive(&[0x94, 0x14, 0x7F]);
-    assert_eq!(get(&reg, unit, "group_[Master]_enable"), 1.0);
-    assert_eq!(get(&reg, unit, "group_[Channel2]_enable"), 0.0);
+    assert_eq!(get(&reg, unit, "route"), 6.0);
     c.receive(&[0x94, 0x24, 0x7F]);
     let slot = "[EffectRack1_EffectUnit5_Effect1]";
     assert_eq!(
@@ -1405,15 +1417,16 @@ fn xdj_az_decks_mixer_pads_and_beat_fx() {
         "pad 6 lit: {out:x?}"
     );
 
-    // BEAT FX: CH SELECT CH3 sends it to deck 3 only; CF.B follows the
+    // BEAT FX: CH SELECT CH3 sends it to deck 3, MASTER to the main mix; CF.B follows the
     // crossfader assign; EFFECT SELECT REVERB; AUTO/TAP.
     let unit = "[EffectRack1_EffectUnit5]";
     let fx = "[EffectRack1_EffectUnit5_Effect1]";
     c.receive(&[0xB4, 0x72, 0x7F]);
     assert_eq!(get(&reg, fx, "enabled"), 1.0);
     c.receive(&[0xB4, 0x22, 0x7F]);
-    assert_eq!(get(&reg, unit, "group_[Channel3]_enable"), 1.0);
-    assert_eq!(get(&reg, unit, "group_[Channel1]_enable"), 0.0);
+    assert_eq!(get(&reg, unit, "route"), 3.0);
+    c.receive(&[0xB4, 0x29, 0x7F]);
+    assert_eq!(get(&reg, unit, "route"), 6.0);
     c.receive(&[0xB4, 0x28, 0x7F]);
     assert_eq!(get(&reg, unit, "group_[Channel2]_enable"), 1.0);
     assert_eq!(get(&reg, unit, "group_[Channel1]_enable"), 0.0);
@@ -1493,15 +1506,9 @@ fn ddj_flx10_decks_mixer_fx_and_displays() {
     c.receive(&[0x94, 0x24, 0x7F]);
     assert_eq!(get(&reg, fx, "loaded_effect"), 2.0);
     c.receive(&[0x94, 0x12, 0x7F]);
-    assert_eq!(get(&reg, unit, "group_[Channel3]_enable"), 1.0);
-    assert_eq!(get(&reg, unit, "group_[Channel1]_enable"), 0.0);
+    assert_eq!(get(&reg, unit, "route"), 3.0);
     c.receive(&[0x94, 0x14, 0x7F]);
-    for deck in 1..=4 {
-        assert_eq!(
-            get(&reg, unit, &format!("group_[Channel{deck}]_enable")),
-            1.0
-        );
-    }
+    assert_eq!(get(&reg, unit, "route"), 6.0);
 
     // SOUND COLOR FX: NOISE on every deck's COLOR knob, lit.
     c.receive(&[0x96, 0x04, 0x7F]);

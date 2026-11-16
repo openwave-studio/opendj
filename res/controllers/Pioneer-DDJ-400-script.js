@@ -250,13 +250,12 @@ PioneerDDJ400.beatFxSelectShiftPressed = function(_channel, _control, value) {
     engine.setValue(PioneerDDJ400.beatFxSlot, "prev_effect", 0);
 };
 
-// Halves (-1) or doubles (+1) the effect's length, 1/16 to 4 beats; effects
-// without one (beats 0) stay as they are.
+// Halves (-1) or doubles (+1) the effect's length, within the effect's
+// own limits; effects without a length stay as they are.
 PioneerDDJ400.changeBeatFxBeats = function(direction) {
-    const beats = engine.getValue(PioneerDDJ400.beatFxSlot, "beats");
-    if (beats <= 0) { return; }
-    const next = Math.min(4, Math.max(1 / 16, direction > 0 ? beats * 2 : beats / 2));
-    engine.setValue(PioneerDDJ400.beatFxSlot, "beats", next);
+    const key = direction > 0 ? "beats_double" : "beats_halve";
+    engine.setValue(PioneerDDJ400.beatFxSlot, key, 1);
+    engine.setValue(PioneerDDJ400.beatFxSlot, key, 0);
 };
 
 PioneerDDJ400.pushBeatFxUnit = function(key) {
@@ -300,13 +299,12 @@ PioneerDDJ400.beatFxOnOffShiftPressed = function(_channel, _control, value) {
 PioneerDDJ400.beatFxChannel = function(_channel, control, value, _status, _group) {
     if (value === 0x00) { return; }
 
-    const enableChannel1 = control === 0x10 ? 1 : 0,
-        enableChannel2 = control === 0x11 ? 1 : 0,
-        enableMaster = control === 0x14 ? 1 : 0;
-
-    engine.setValue(PioneerDDJ400.beatFxUnit, "group_[Channel1]_enable", enableChannel1);
-    engine.setValue(PioneerDDJ400.beatFxUnit, "group_[Channel2]_enable", enableChannel2);
-    engine.setValue(PioneerDDJ400.beatFxUnit, "group_[Master]_enable", enableMaster);
+    // CH1 (0x10), CH2 (0x11) or MASTER (0x14): the Beat FX unit's route
+    // (1 or 2 a deck, 6 the main mix).
+    const route = {0x10: 1, 0x11: 2, 0x14: 6}[control];
+    if (route !== undefined) {
+        engine.setValue(PioneerDDJ400.beatFxUnit, "route", route);
+    }
 };
 
 //

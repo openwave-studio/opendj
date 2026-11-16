@@ -21,9 +21,14 @@ FX in the middle, under the mixer.
 Each effect has:
 
 - **Its name.** Click it for the list of effects, or step through them with
-  the arrows either side.
+  the arrows either side. The arrows, and a controller's FX SELECT, go
+  through the effects in the list's order, then your plugins, and wrap
+  round at the end.
 - **ON** to switch it on and off.
-- **Its length in beats**, with ◀ and ▶ to halve and double it. Effects
+- **Its length in beats**, with ◀ and ▶ to halve and double it, up to 64
+  beats. Some effects have their own range: flanger and phaser 1/2 to 64
+  beats, gate 1/16 to 16. Switching to another effect with a
+  length keeps it as near as that effect allows. Effects
   that have no length show a slider instead, for their main setting:
   reverb's decay, the filter's resonance, the bitcrusher's bit depth, the
   noise's sweep, the drive's tone, the ladder's resonance, the hall's decay.
@@ -65,9 +70,22 @@ taking in the track, and its echo or reverb rings out for a few beats.
 ## Beat FX
 
 The **BEAT FX** cell under the mixer is one effect on its own. Pick it by
-name, choose where it plays with **1**, **2** or **1&2** (deck 1, deck 2 or
-both), then use **ON**, its beats and **D/W** as on a deck effect. On a
-DDJ-FLX4 the BEAT FX section of the controller plays it.
+name, choose where it plays with **1**, **2**, **1&2** or **MST** (deck 1,
+deck 2, both, or the main mix), then use **ON**, its beats and **D/W** as on
+a deck effect. In 4-Deck the row reads **1 · 2 · 3 · 4 · MST**.
+
+A Pioneer controller's BEAT FX section plays it: DDJ-FLX4, DDJ-FLX6,
+DDJ-FLX10, DDJ-400, DDJ-800, XDJ-RX3 and XDJ-AZ. CH SELECT picks the deck,
+and on **MASTER** (or **MST**) the main mix.
+
+When an effect changes from anywhere but its own list (a controller's FX
+SELECT, the arrows, OSC), its name glows for a moment. On the Beat FX a
+strip also shows the effect before and after it in the list for about two
+seconds, so you can see where you are without looking at the list.
+
+Its **LEVEL/DEPTH** works as on a Pioneer mixer: echoes are fully wet at
+the centre and turning further adds feedback; flanger, phaser and chorus
+are dry only fully left. Deck effects keep a plain dry/wet.
 
 ### Pioneer DDJ-400
 
@@ -76,8 +94,9 @@ The controller’s **BEAT FX** section controls the Beat FX under the mixer:
 - **FX SELECT** steps through the effects; hold **SHIFT** to step backwards.
 - **LEVEL/DEPTH** adjusts the effect’s depth. As with other controller
   knobs, move through the on-screen value to pick it up.
-- **BEAT ◀ / ▶** halve or double the effect’s beat length.
-- **CH SELECT** routes it to deck **1**, deck **2** or **MASTER**.
+- **BEAT ◀ / ▶** halve or double the effect’s beat length, within its range.
+- **CH SELECT** routes it to deck **1**, deck **2** or **MASTER** (the main
+  mix, **MST** on screen).
 - **ON/OFF** toggles the effect; **SHIFT + ON/OFF** releases its tail.
 - **SHIFT + BEAT ◀** returns to automatic tempo; **SHIFT + BEAT ▶** taps
   the effect tempo.

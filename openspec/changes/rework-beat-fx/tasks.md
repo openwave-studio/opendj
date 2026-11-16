@@ -16,8 +16,8 @@
 ## 3. Controllers
 
 - [x] 3.1 DDJ-400 Beat FX on unit 5 (community PR #769, DDJ-400 part only)
-- [ ] 3.2 DDJ-FLX4, DDJ-FLX6, DDJ-FLX10, DDJ-800, DDJ-400, XDJ-RX3 and XDJ-AZ scripts use the shared controls; CH SELECT MASTER selects MST on every one; mapping tests
+- [x] 3.2 DDJ-FLX4, DDJ-FLX6, DDJ-FLX10, DDJ-800, DDJ-400, XDJ-RX3 and XDJ-AZ scripts use the shared controls; CH SELECT MASTER selects MST on every one; mapping tests
 
 ## 4. Docs
 
-- [ ] 4.1 The FX page: list order, the strip, MST; the DDJ-400 section
+- [x] 4.1 The FX page: list order, the strip, MST; the DDJ-400 section

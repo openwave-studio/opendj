@@ -16,8 +16,8 @@
 //  pad tabs and the pads play whatever page is in the tab.
 //
 //  BEAT FX drives openDJ's one Beat FX unit: BEAT FX SELECT picks the
-//  nearest openDJ effect, CH SELECT sends it to one deck or, on MASTER, all
-//  four, LEVEL/DEPTH is its depth, ON/OFF turns it on and off (SHIFT:
+//  nearest openDJ effect, CH SELECT sends it to one deck or, on MASTER, the
+//  main mix, LEVEL/DEPTH is its depth, ON/OFF turns it on and off (SHIFT:
 //  release) and BEAT < > halve and double its length (SHIFT: AUTO and TAP
 //  tempo). The SOUND COLOR FX buttons pick what the COLOR knobs play.
 //
@@ -348,13 +348,12 @@ PioneerDDJFLX10.beatFxSelect = function(_channel, control, value) {
     engine.setValue(PioneerDDJFLX10.beatFxSlot, "loaded_effect", PioneerDDJFLX10.beatFxEffects[control]);
 };
 
-// Halves (-1) or doubles (+1) the effect's length, 1/16 to 4 beats; effects
-// without one (beats 0) stay as they are.
+// Halves (-1) or doubles (+1) the effect's length, within the effect's
+// own limits; effects without a length stay as they are.
 PioneerDDJFLX10.changeBeatFxBeats = function(direction) {
-    const beats = engine.getValue(PioneerDDJFLX10.beatFxSlot, "beats");
-    if (beats <= 0) { return; }
-    const next = Math.min(4, Math.max(1 / 16, direction > 0 ? beats * 2 : beats / 2));
-    engine.setValue(PioneerDDJFLX10.beatFxSlot, "beats", next);
+    const key = direction > 0 ? "beats_double" : "beats_halve";
+    engine.setValue(PioneerDDJFLX10.beatFxSlot, key, 1);
+    engine.setValue(PioneerDDJFLX10.beatFxSlot, key, 0);
 };
 
 PioneerDDJFLX10.pushBeatFxUnit = function(key) {
@@ -396,15 +395,13 @@ PioneerDDJFLX10.beatFxOnOffShiftPressed = function(_channel, _control, value) {
 };
 
 // CH SELECT sends the position it lands on: CH1 to CH4 (notes 0x10 to
-// 0x13), MASTER (0x14), which sends the effect to all four decks, or MIC
-// and SAMPLER (0x15, 0x16), which send it to none.
+// 0x13), the Beat FX unit's route 1 to 4, MASTER (0x14), the main mix
+// (route 6), or MIC and SAMPLER (0x15, 0x16), which send it nowhere (0).
 PioneerDDJFLX10.beatFxChannelSelect = function(_channel, control, value) {
     if (value === 0) { return; }
 
-    PioneerDDJFLX10.decks.forEach(function(group, i) {
-        const on = control === 0x14 || control === 0x10 + i;
-        engine.setValue(PioneerDDJFLX10.beatFxUnit, "group_" + group + "_enable", on ? 1 : 0);
-    });
+    const route = control === 0x14 ? 6 : control >= 0x10 && control <= 0x13 ? control - 0x10 + 1 : 0;
+    engine.setValue(PioneerDDJFLX10.beatFxUnit, "route", route);
 };
 
 // DECK 1/3 and 2/4: the FLX10 says which deck a side now plays with note 0x3C
