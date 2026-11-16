@@ -1496,8 +1496,11 @@ export component Header inherits Rectangle {
                 }
                 // The waveform, a dot at every minute and the phrase bar
                 // are all drawn into the image, stacked so none overlap.
+                // Only over a track: on top of the preset bar it would take
+                // the clicks meant for ‹ › and SAVE.
                 ota := TouchArea {
-                    mouse-cursor: ew-resize;
+                    enabled: info.loaded;
+                    mouse-cursor: info.loaded ? MouseCursor.ew-resize : MouseCursor.default;
                     pointer-event(e) => {
                         if e.kind == PointerEventKind.down {
                             hide-tip();

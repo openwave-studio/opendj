@@ -520,7 +520,7 @@ fn audio_path(base: &Path, part: usize, format: RecordFormat) -> PathBuf {
 
 // ---------------------------------------------------------------- writing audio
 
-trait Sink: Send {
+pub(crate) trait Sink: Send {
     /// Interleaved stereo, -1..1.
     fn write(&mut self, samples: &[f32]) -> io::Result<()>;
     /// Makes the file on disk playable as far as it goes.
@@ -531,8 +531,18 @@ trait Sink: Send {
 }
 
 fn open_sink(path: &Path, s: &RecordSettings, rate: f64) -> io::Result<Box<dyn Sink>> {
-    let bits = if s.bits <= 16 { 16 } else { 24 };
-    Ok(match s.format {
+    audio_sink(path, s.format, s.bits, rate)
+}
+
+/// A WAV or FLAC file being written, 16 or 24 bits.
+pub(crate) fn audio_sink(
+    path: &Path,
+    format: RecordFormat,
+    bits: u16,
+    rate: f64,
+) -> io::Result<Box<dyn Sink>> {
+    let bits = if bits <= 16 { 16 } else { 24 };
+    Ok(match format {
         RecordFormat::Wav => Box::new(WavSink::create(path, rate as u32, bits)?),
         RecordFormat::Flac => Box::new(FlacSink::create(path, rate as u32, bits)?),
     })

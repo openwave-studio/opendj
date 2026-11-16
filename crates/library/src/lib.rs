@@ -28,6 +28,7 @@ pub mod dupes;
 pub mod fix_names;
 pub mod health;
 mod moves;
+pub mod pair_mixes;
 pub mod playlist_files;
 pub mod query;
 pub mod relocate;
@@ -596,6 +597,7 @@ impl Library {
         db.execute_batch(STREAM_MATCHES_SCHEMA)?;
         db.execute_batch(LIST_STREAMS_SCHEMA)?;
         db.execute_batch(WANTED_DISMISSED_SCHEMA)?;
+        db.execute_batch(pair_mixes::PAIR_MIXES_SCHEMA)?;
         // The import that put a wanted track there (its streamed tracks),
         // NULL for tracks the DJ went to buy.
         let has_wanted_source = db

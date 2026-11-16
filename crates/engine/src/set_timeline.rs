@@ -842,7 +842,17 @@ impl SetTimeline {
         runs
     }
 
-    fn track_at(&self, deck: usize, t: f64) -> Option<&Clip> {
+    /// Whether `deck` is heard at `t`: playing, with its fader, crossfader
+    /// and EQ above -30 dB.
+    pub fn audible_at(&self, deck: usize, t: f64) -> bool {
+        self.clips
+            .iter()
+            .any(|c| c.deck == deck && c.start <= t && t < c.end)
+            && self.level(deck, t) > AUDIBLE
+    }
+
+    /// The clip playing on `deck` at `t`.
+    pub fn clip_at(&self, deck: usize, t: f64) -> Option<&Clip> {
         self.clips
             .iter()
             .rfind(|c| c.deck == deck && c.start <= t + 1e-6 && t < c.end + 1e-6)
@@ -865,7 +875,7 @@ impl SetTimeline {
                     .min_by(|a, b| a.1.total_cmp(&b.1));
                 let Some((from, _, end)) = out else { continue };
                 let (Some(out_clip), Some(in_clip)) =
-                    (self.track_at(from, start), self.track_at(to, start))
+                    (self.clip_at(from, start), self.clip_at(to, start))
                 else {
                     continue;
                 };
@@ -1077,4 +1087,4 @@ fn end_loop(loops: &mut Vec<LoopMark>, st: &mut DeckState, t: f64) {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

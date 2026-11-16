@@ -977,6 +977,15 @@ impl crate::automix::Host for AutomixHost<'_> {
     fn load(&mut self, deck: usize, track: Arc<Track>) {
         self.engine.load_track(deck, track);
     }
+
+    fn pair_mix(&self, out: usize, inc: usize) -> Option<crate::automix_phrases::Paired> {
+        let m = self.browser.db.as_ref()?.pair_mix(out, inc).ok()??;
+        Some(crate::automix_phrases::Paired {
+            out_seconds: m.out_seconds,
+            in_seconds: m.in_seconds,
+            bars: m.bars,
+        })
+    }
 }
 
 const ROW_PAYLOAD: &str = "opendj-row:";
