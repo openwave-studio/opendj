@@ -31,7 +31,7 @@ use opendj_waveform::{
     WaveformRenderer, WaveformView, GRID_SECTIONS,
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
-use smooth::SmoothClock;
+use smooth::{FrameStats, FrameTimer, SmoothClock};
 
 slint::include_modules!();
 
@@ -1316,6 +1316,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracks: Default::default(),
                         phrases: Default::default(),
                         clocks: Default::default(),
+                        frame_timer: Default::default(),
+                        frame_stats: Default::default(),
                         live: live.take(),
                         instrument: instrument.clone(),
                         steps: steps.take(),
@@ -1336,7 +1338,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         return;
                     };
                     let tracks = loaded.read().unwrap().clone();
+                    let start = Instant::now();
                     gpu.render(&app, &decks, &tracks, &visual);
+                    let Gpu {
+                        frame_stats,
+                        frame_timer,
+                        clocks,
+                        moving,
+                        ..
+                    } = gpu;
+                    let scale = app.window().scale_factor();
+                    frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
                 }
                 (slint::RenderingState::AfterRendering, _) => {
                     // While a deck moves, draw again as soon as the display
@@ -1360,7 +1372,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .as_ref()
                 .and_then(|g| g.as_ref()?.phrases.get(d as usize)?.as_ref());
             cached
-                .and_then(|(t, p)| phrase_tip(p, t.duration, t.bpm, seconds as f64))
+                .and_then(|(t, p)| phrase_tip(p, t, seconds as f64))
                 .unwrap_or_default()
         });
     }
@@ -2125,6 +2137,42 @@ mod control_list_tests {
 }
 
 #[cfg(test)]
+mod phrase_tip_tests {
+    use super::{phrase_bars, Source, Track};
+    use std::sync::Arc;
+
+    fn track(bpm: f64, first_beat: f64) -> Track {
+        Track {
+            id: 0,
+            artist: String::new(),
+            title: String::new(),
+            album: String::new(),
+            genre: String::new(),
+            rating: 0,
+            bpm,
+            key: String::new(),
+            duration: 240.0,
+            first_beat,
+            grid: Default::default(),
+            source: Source::Synth { seed: 0 },
+            waveform: Arc::default(),
+            audio: None,
+            cover: None,
+            info: Default::default(),
+        }
+    }
+
+    #[test]
+    fn the_intro_counts_from_bar_one() {
+        // Bar 1 half a second in: the intro runs from 0:00 to bar 17.
+        let t = track(96.57, 0.5);
+        let bar = 240.0 / 96.57;
+        assert_eq!(phrase_bars(&t, 0.0, 0.5 + 16.0 * bar), 16.0);
+        assert_eq!(phrase_bars(&t, 0.5 + 16.0 * bar, 0.5 + 48.0 * bar), 32.0);
+    }
+}
+
+#[cfg(test)]
 mod time_tests {
     #[test]
     fn whole_seconds() {
@@ -2590,6 +2638,10 @@ struct Gpu {
     phrases: [Option<(Arc<Track>, Phrases)>; NUM_DECKS],
     /// Each deck's drawn position, steadier than the engine's as read.
     clocks: [SmoothClock; NUM_DECKS],
+    /// When each frame will show, steadier than when it is drawn.
+    frame_timer: FrameTimer,
+    /// How smoothly frames come, for the log.
+    frame_stats: FrameStats,
     /// The sound of decks playing live, and each one's waveform on the GPU.
     live: Option<live_trace::LiveTraces>,
     /// The notes the Instrument input holds, for its deck's note roll.
@@ -2736,9 +2788,19 @@ impl Gpu {
         };
         // Every deck's drawn position first: a live deck draws the leading
         // deck's beats.
+        // Worked out for when the frame will show, not when it is drawn.
+        if self.frame_timer.wants_refresh_rate(now) {
+            use slint::winit_030::WinitWindowAccessor;
+            let hz = app
+                .window()
+                .with_winit_window(|w| w.current_monitor()?.refresh_rate_millihertz());
+            self.frame_timer
+                .set_refresh_rate(hz.flatten().map(|mhz| mhz as f64 / 1000.0));
+        }
+        let shown_at = self.frame_timer.next(now);
         let clocks: [(f64, f64); NUM_DECKS] = std::array::from_fn(|d| {
-            let (position, speed) = visual.position(d, now);
-            (self.clocks[d].next(position, speed, now), speed)
+            let (position, speed) = visual.position(d, shown_at);
+            (self.clocks[d].next(position, speed, shown_at), speed)
         });
         // Decks playing an input, an instrument or the Groove Box.
         let live: [bool; NUM_DECKS] = std::array::from_fn(|d| {
@@ -3052,10 +3114,10 @@ impl Gpu {
 
 /// The tooltip for the phrase at `seconds`: its kind, then its length in
 /// bars and where it starts and ends.
-fn phrase_tip(phrases: &Phrases, duration: f64, bpm: f64, seconds: f64) -> Option<PhraseTip> {
+fn phrase_tip(phrases: &Phrases, track: &Track, seconds: f64) -> Option<PhraseTip> {
     let i = phrases.iter().rposition(|(start, _)| *start <= seconds)?;
     let (start, kind) = phrases[i];
-    let end = phrases.get(i + 1).map_or(duration, |(s, _)| *s);
+    let end = phrases.get(i + 1).map_or(track.duration, |(s, _)| *s);
     let title = match kind {
         PhraseKind::Intro => "INTRO",
         PhraseKind::Build => "BUILD-UP",
@@ -3070,8 +3132,8 @@ fn phrase_tip(phrases: &Phrases, duration: f64, bpm: f64, seconds: f64) -> Optio
         format!("{}:{:02}", s / 60, s % 60)
     };
     let range = format!("{} – {}", mmss(start), mmss(end));
-    let bars = ((end - start) * bpm / 240.0).round();
-    let body = if bpm > 0.0 && bars >= 1.0 {
+    let bars = phrase_bars(track, start, end);
+    let body = if track.bpm > 0.0 && bars >= 1.0 {
         format!("{bars} bars · {range}")
     } else {
         range
@@ -3080,6 +3142,18 @@ fn phrase_tip(phrases: &Phrases, duration: f64, bpm: f64, seconds: f64) -> Optio
         title: title.into(),
         body: body.into(),
     })
+}
+
+/// How many bars a phrase from `start` to `end` (seconds) spans, counted
+/// on the track's grid from bar 1: the first phrase starts at 0:00, so the
+/// beats before bar 1's line (a pickup) don't make it a bar longer.
+fn phrase_bars(track: &Track, start: f64, end: f64) -> f64 {
+    if track.bpm <= 0.0 {
+        return 0.0;
+    }
+    let bar_one = (track.beat_at(0.0) / 4.0 - 1e-6).ceil() * 4.0;
+    let from = track.beat_at(start).max(bar_one);
+    ((track.beat_at(end) - from) / 4.0).round().max(0.0)
 }
 
 /// Where a track's grid came from, as the grid menu says it.

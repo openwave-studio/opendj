@@ -33,3 +33,5 @@ None.
 ## Impact
 
 `crates/plugins/src/itunes_library.rs` (new), the importers list, the wizard's not-found line, the "Your library" guide page.
+
+Task 1.4 (trying it on a real Music app and iTunes for Windows library) moved to v0.8 on 2026-11-14; the importer itself ships in 0.7.0.

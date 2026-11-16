@@ -90,6 +90,8 @@ Then:
 cargo run --release
 ```
 
+Working on openDJ? `cargo run --profile fast --bin opendj` rebuilds much faster after a change and still plays smoothly; see [CONTRIBUTING.md](CONTRIBUTING.md#building-while-you-work).
+
 openDJ reads your `~/Music` folder. Set `OPENDJ_MUSIC=/path/to/music` to use another one.
 
 ## Thanks to Mixxx
