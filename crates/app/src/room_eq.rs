@@ -18,10 +18,12 @@ use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use crate::{settings, AppWindow, RoomBand, RoomDot, RoomEqUi};
 
 /// One output's Room EQ as saved.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Curve {
     pub on: bool,
     pub bands: [Band; BANDS],
+    /// The preset it was loaded from or saved as; empty for none.
+    pub preset: String,
 }
 
 impl Default for Curve {
@@ -29,8 +31,80 @@ impl Default for Curve {
         Curve {
             on: false,
             bands: FLAT,
+            preset: String::new(),
         }
     }
+}
+
+/// A named curve: built in, or saved by the DJ for a venue.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Preset {
+    pub name: String,
+    pub bands: [Band; BANDS],
+}
+
+/// FLAT with some bands changed.
+fn flat_with(changes: &[(usize, f64, f64)]) -> [Band; BANDS] {
+    let mut b = FLAT;
+    for &(i, freq, gain) in changes {
+        b[i].on = true;
+        b[i].freq = freq;
+        b[i].gain = gain;
+    }
+    b
+}
+
+/// The presets that come with openDJ.
+pub fn built_in() -> Vec<Preset> {
+    [
+        ("Flat", FLAT),
+        // Boomy low mids: a little less bass and 250 Hz.
+        (
+            "Muddy room",
+            flat_with(&[(1, 120.0, -3.0), (2, 250.0, -3.0)]),
+        ),
+        // Hard walls and bright horns.
+        (
+            "Harsh highs",
+            flat_with(&[(3, 3000.0, -3.0), (4, 10_000.0, -2.0)]),
+        ),
+        // No deep bass to give: cut under it, a little lift above.
+        (
+            "Small speakers",
+            flat_with(&[(0, 60.0, 0.0), (2, 120.0, 2.0)]),
+        ),
+    ]
+    .into_iter()
+    .map(|(name, bands)| Preset {
+        name: name.into(),
+        bands,
+    })
+    .collect()
+}
+
+/// The DJ's own presets, as saved.
+pub fn own() -> Vec<Preset> {
+    settings::load()["room_eq_presets"]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|p| {
+                    Some(Preset {
+                        name: p["name"].as_str()?.to_string(),
+                        bands: bands_from(&p["bands"]),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn save_own(presets: &[Preset]) {
+    let v: Vec<Value> = presets
+        .iter()
+        .map(|p| json!({ "name": p.name, "bands": bands_json(&p.bands) }))
+        .collect();
+    settings::set("room_eq_presets", json!(v));
 }
 
 /// The settings keys of the two outputs, and their control groups.
@@ -51,15 +125,12 @@ const DRAW_RATE: f64 = 48_000.0;
 /// How near a dot a press must be to grab it, in pixels.
 const GRAB: f32 = 14.0;
 
-fn curve_from(v: &Value) -> Curve {
-    let mut c = Curve {
-        on: v["on"].as_bool().unwrap_or(false),
-        bands: FLAT,
-    };
-    if let Some(bands) = v["bands"].as_array() {
-        for (i, b) in bands.iter().take(BANDS).enumerate() {
+fn bands_from(v: &Value) -> [Band; BANDS] {
+    let mut bands = FLAT;
+    if let Some(a) = v.as_array() {
+        for (i, b) in a.iter().take(BANDS).enumerate() {
             let flat = FLAT[i];
-            c.bands[i] = Band {
+            bands[i] = Band {
                 on: b["on"].as_bool().unwrap_or(flat.on),
                 freq: b["freq"].as_f64().unwrap_or(flat.freq),
                 gain: b["gain"].as_f64().unwrap_or(flat.gain),
@@ -68,15 +139,29 @@ fn curve_from(v: &Value) -> Curve {
             .clamped(KINDS[i]);
         }
     }
-    c
+    bands
+}
+
+fn bands_json(bands: &[Band; BANDS]) -> Value {
+    json!(bands
+        .iter()
+        .map(|b| json!({ "on": b.on, "freq": b.freq, "gain": b.gain, "q": b.q }))
+        .collect::<Vec<_>>())
+}
+
+fn curve_from(v: &Value) -> Curve {
+    Curve {
+        on: v["on"].as_bool().unwrap_or(false),
+        bands: bands_from(&v["bands"]),
+        preset: v["preset"].as_str().unwrap_or("").to_string(),
+    }
 }
 
 fn curve_json(c: &Curve) -> Value {
     json!({
         "on": c.on,
-        "bands": c.bands.iter().map(|b| json!({
-            "on": b.on, "freq": b.freq, "gain": b.gain, "q": b.q,
-        })).collect::<Vec<_>>(),
+        "bands": bands_json(&c.bands),
+        "preset": c.preset,
     })
 }
 
@@ -192,7 +277,79 @@ fn card(i: usize, b: &Band) -> RoomBand {
     }
 }
 
+/// What picking an entry of the preset menu does.
+#[derive(Clone, Debug, PartialEq)]
+enum MenuAction {
+    Load(Box<Preset>),
+    /// Saves the curve over the own preset it came from.
+    Save,
+    SaveAs,
+    /// Back to the preset as saved.
+    Revert,
+    Delete,
+}
+
+/// The preset `curve` came from, if it still exists, and whether it is the
+/// DJ's own.
+fn preset_of(curve: &Curve, own: &[Preset]) -> Option<(Preset, bool)> {
+    if curve.preset.is_empty() {
+        return None;
+    }
+    if let Some(p) = own.iter().find(|p| p.name == curve.preset) {
+        return Some((p.clone(), true));
+    }
+    built_in()
+        .into_iter()
+        .find(|p| p.name == curve.preset)
+        .map(|p| (p, false))
+}
+
+/// The preset menu's entries for `curve`, and which one is in use.
+fn menu(curve: &Curve, own: &[Preset]) -> (Vec<(String, MenuAction)>, Option<usize>) {
+    let mut items: Vec<(String, MenuAction)> = built_in()
+        .into_iter()
+        .chain(own.iter().cloned())
+        .map(|p| (p.name.clone(), MenuAction::Load(Box::new(p))))
+        .collect();
+    let chosen = items.iter().position(|(n, _)| *n == curve.preset);
+    let from = preset_of(curve, own);
+    let modified = from.as_ref().is_some_and(|(p, _)| p.bands != curve.bands);
+    let mine = from.as_ref().is_some_and(|(_, mine)| *mine);
+    if mine && modified {
+        items.push((format!("Save “{}”", curve.preset), MenuAction::Save));
+    }
+    items.push(("Save as…".into(), MenuAction::SaveAs));
+    if modified {
+        items.push(("Revert".into(), MenuAction::Revert));
+    }
+    if mine {
+        items.push((format!("Delete “{}”", curve.preset), MenuAction::Delete));
+    }
+    (items, chosen)
+}
+
+/// The preset in use as the menu shows it: its name, with an asterisk once
+/// changed; Custom for none.
+fn preset_label(curve: &Curve, own: &[Preset]) -> String {
+    match preset_of(curve, own) {
+        Some((p, _)) if p.bands != curve.bands => format!("{} *", p.name),
+        Some((p, _)) => p.name,
+        None => "Custom".into(),
+    }
+}
+
+/// A name for a new preset that isn't taken: "Venue 1", "Venue 2"…
+fn free_name(own: &[Preset]) -> String {
+    (1..)
+        .map(|n| format!("Venue {n}"))
+        .find(|n| !own.iter().any(|p| p.name == *n))
+        .unwrap_or_default()
+}
+
 struct State {
+    /// Shown under the curve until the next change, such as why a name
+    /// can't be used.
+    message: String,
     curves: [Curve; 2],
     target: usize,
     /// The dot being dragged.
@@ -287,7 +444,21 @@ impl State {
             .routes
             .iter()
             .any(|r| r.role == Role::Booth);
-        ui.set_note(if self.target == 1 && !booth {
+        let own = own();
+        let (items, chosen) = menu(c, &own);
+        let names: Vec<SharedString> = items.iter().map(|(n, _)| n.into()).collect();
+        ui.set_preset_menu(ModelRc::new(VecModel::from(names)));
+        ui.set_preset_chosen(chosen.map_or(-1, |i| i as i32));
+        ui.set_preset(preset_label(c, &own).into());
+        let main = &self.curves[0];
+        ui.set_master_text(if main.on {
+            preset_label(main, &own).into()
+        } else {
+            "Off".into()
+        });
+        ui.set_note(if !self.message.is_empty() {
+            self.message.as_str().into()
+        } else if self.target == 1 && !booth {
             "No output is the booth yet: give one the Booth role on the Devices tab.".into()
         } else {
             SharedString::new()
@@ -298,6 +469,7 @@ impl State {
 /// Wires the Room EQ tab to the controls and the saved settings.
 pub fn install(app: &AppWindow, registry: Arc<ControlRegistry>) {
     let state = Rc::new(RefCell::new(State {
+        message: String::new(),
         curves: saved(),
         target: 0,
         grabbed: None,
@@ -335,6 +507,90 @@ pub fn install(app: &AppWindow, registry: Arc<ControlRegistry>) {
                 s.plot = size;
             }
             changed
+        });
+    });
+    let r = run.clone();
+    ui.on_preset_picked(move |i| {
+        r(true, &|s, ui| {
+            s.message.clear();
+            let mut own = own();
+            let (items, _) = menu(&s.curves[s.target], &own);
+            let Some((_, action)) = items.get(i as usize).cloned() else {
+                return false;
+            };
+            let c = s.curve();
+            match action {
+                MenuAction::Load(p) => {
+                    c.bands = p.bands;
+                    c.preset = p.name;
+                    c.on = true;
+                }
+                MenuAction::Save => {
+                    if let Some(p) = own.iter_mut().find(|p| p.name == c.preset) {
+                        p.bands = c.bands;
+                    }
+                    save_own(&own);
+                }
+                MenuAction::SaveAs => {
+                    let mine = own.iter().any(|p| p.name == c.preset);
+                    ui.set_name_hint(
+                        if mine {
+                            c.preset.clone()
+                        } else {
+                            free_name(&own)
+                        }
+                        .into(),
+                    );
+                    ui.set_naming(true);
+                    return false;
+                }
+                MenuAction::Revert => {
+                    if let Some((p, _)) = preset_of(c, &own) {
+                        c.bands = p.bands;
+                    }
+                }
+                MenuAction::Delete => {
+                    let name = c.preset.clone();
+                    own.retain(|p| p.name != name);
+                    save_own(&own);
+                    for c in &mut s.curves {
+                        if c.preset == name {
+                            c.preset.clear();
+                        }
+                    }
+                }
+            }
+            true
+        });
+    });
+    let r = run.clone();
+    ui.on_save_as(move |name| {
+        r(true, &|s, ui| {
+            let name = name.trim().to_string();
+            if name.is_empty() {
+                return false;
+            }
+            if built_in()
+                .iter()
+                .any(|p| p.name.eq_ignore_ascii_case(&name))
+            {
+                s.message = format!("“{name}” is a built-in preset: pick another name.");
+                return true;
+            }
+            s.message.clear();
+            let mut own = own();
+            let bands = s.curves[s.target].bands;
+            match own.iter_mut().find(|p| p.name == name) {
+                Some(p) => p.bands = bands,
+                None => own.push(Preset {
+                    name: name.clone(),
+                    bands,
+                }),
+            }
+            save_own(&own);
+            s.curve().preset = name;
+            ui.set_naming(false);
+            true
         });
     });
     let r = run.clone();
@@ -441,8 +697,11 @@ mod tests {
 
     #[test]
     fn a_curve_survives_saving() {
-        let mut c = Curve::default();
-        c.on = true;
+        let mut c = Curve {
+            on: true,
+            preset: "Main room".into(),
+            ..Curve::default()
+        };
         c.bands[2].gain = -3.0;
         c.bands[5] = Band {
             on: true,
@@ -453,6 +712,58 @@ mod tests {
         assert_eq!(curve_from(&curve_json(&c)), c);
         // Nothing saved: flat and off.
         assert_eq!(curve_from(&Value::Null), Curve::default());
+    }
+
+    #[test]
+    fn the_preset_menu_follows_the_curve() {
+        let names = |c: &Curve, own: &[Preset]| -> Vec<String> {
+            menu(c, own).0.into_iter().map(|(n, _)| n).collect()
+        };
+        // A built-in preset as it is: the four presets and Save as.
+        let mut c = Curve {
+            on: true,
+            bands: built_in()[1].bands,
+            preset: "Muddy room".into(),
+        };
+        assert_eq!(
+            names(&c, &[]),
+            [
+                "Flat",
+                "Muddy room",
+                "Harsh highs",
+                "Small speakers",
+                "Save as…"
+            ]
+        );
+        assert_eq!(menu(&c, &[]).1, Some(1));
+        assert_eq!(preset_label(&c, &[]), "Muddy room");
+        // Changed: marked, and it can go back.
+        c.bands[2].gain = -4.0;
+        assert_eq!(preset_label(&c, &[]), "Muddy room *");
+        assert!(names(&c, &[]).contains(&"Revert".to_string()));
+        // An own preset, changed: it can be saved over, or deleted.
+        let own = vec![Preset {
+            name: "Main room".into(),
+            bands: FLAT,
+        }];
+        c.preset = "Main room".into();
+        let n = names(&c, &own);
+        assert_eq!(n[4], "Main room");
+        assert!(n.contains(&"Save “Main room”".to_string()));
+        assert!(n.contains(&"Delete “Main room”".to_string()));
+        // Gone: Custom.
+        c.preset = "Old club".into();
+        assert_eq!(preset_label(&c, &own), "Custom");
+        assert_eq!(free_name(&own), "Venue 1");
+    }
+
+    #[test]
+    fn built_in_presets_are_in_range() {
+        for p in built_in() {
+            for (i, b) in p.bands.iter().enumerate() {
+                assert_eq!(*b, b.clamped(KINDS[i]), "{} band {i}", p.name);
+            }
+        }
     }
 
     #[test]

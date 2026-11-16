@@ -4,6 +4,7 @@
 // scroll or a double-click is on.
 import { Theme } from "theme.slint";
 import { Switch } from "controls.slint";
+import { MenuField } from "mixer.slint";
 
 // A band's dot, its place on the curve from 0 to 1 (left to right, top to
 // bottom).
@@ -32,6 +33,19 @@ export global RoomEqUi {
     in property <int> selected: 2;
     // Under the curve, such as "No output is the booth yet".
     in property <string> note;
+    // The preset menu: the preset in use ("Muddy room *" once changed),
+    // and the presets and actions to pick from.
+    in property <string> preset;
+    in property <[string]> preset-menu;
+    in property <int> preset-chosen: -1;
+    // Asking for a name to save the curve under.
+    in-out property <bool> naming;
+    in property <string> name-hint;
+    // The main output's Room EQ as the MASTER panel shows it: the preset,
+    // or Off.
+    in property <string> master-text: "Off";
+    callback preset-picked(index: int);
+    callback save-as(name: string);
     callback pick-target(target: int);
     callback toggled(on: bool);
     callback band-toggled(band: int, on: bool);
@@ -77,6 +91,19 @@ component Pick inherits Rectangle {
     }
 }
 
+component NameButton inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    height: 26px;
+    width: label.preferred-width + 20px;
+    border-radius: Theme.radius;
+    background: ta.has-hover ? Theme.n-2a2a2e : Theme.control;
+    border-width: 1px;
+    border-color: Theme.border;
+    label := Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; horizontal-alignment: center; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
 export component RoomEqEditor inherits VerticalLayout {
     spacing: 12px;
     padding-top: 6px;
@@ -86,6 +113,49 @@ export component RoomEqEditor inherits VerticalLayout {
             choices: ["Master", "Booth"];
             chosen: RoomEqUi.target;
             picked(i) => { RoomEqUi.pick-target(i); }
+        }
+        if !RoomEqUi.naming: MenuField {
+            width: 200px;
+            text: RoomEqUi.preset;
+            choices: RoomEqUi.preset-menu;
+            chosen: RoomEqUi.preset-chosen;
+            menu-width: 220px;
+            picked(i) => { RoomEqUi.preset-picked(i); }
+        }
+        // A name for the curve, for a venue: Return saves, Esc gives up.
+        if RoomEqUi.naming: HorizontalLayout {
+            spacing: 6px;
+            Rectangle {
+                width: 200px;
+                height: 26px;
+                border-radius: Theme.radius;
+                background: Theme.well;
+                border-width: 1px;
+                border-color: Theme.accent;
+                name := TextInput {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    text: RoomEqUi.name-hint;
+                    color: Theme.text;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    single-line: true;
+                    init => {
+                        self.select-all();
+                        self.focus();
+                    }
+                    accepted => { RoomEqUi.save-as(self.text); }
+                    key-pressed(e) => {
+                        if e.text == Key.Escape {
+                            RoomEqUi.naming = false;
+                            return accept;
+                        }
+                        reject
+                    }
+                }
+            }
+            NameButton { text: "Save"; clicked => { RoomEqUi.save-as(name.text); } }
+            NameButton { text: "Cancel"; clicked => { RoomEqUi.naming = false; } }
         }
         Rectangle { horizontal-stretch: 1; }
         Text { text: "On"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
