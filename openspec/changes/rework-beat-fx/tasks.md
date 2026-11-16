@@ -10,8 +10,8 @@
 
 ## 2. On screen
 
-- [ ] 2.1 An effect change that doesn't come from the slot's own list makes the name glow and shows the previous / current / next strip for about 2 s (Beat FX); deck FX names glow; screenshot
-- [ ] 2.2 MST in the Beat FX routing row (1 · 2 · 1&2 · MST; 4-Deck 1 · 2 · 3 · 4 · MST); screenshot
+- [x] 2.1 An effect change that doesn't come from the slot's own list makes the name glow and shows the previous / current / next strip for about 2 s (Beat FX); deck FX names glow; screenshot
+- [x] 2.2 MST in the Beat FX routing row (1 · 2 · 1&2 · MST; 4-Deck 1 · 2 · 3 · 4 · MST); screenshot
 
 ## 3. Controllers
 

@@ -60,7 +60,7 @@ pub const EFFECT_MENU_ORDER: [usize; 18] = [
 /// The effect `step` places from `current` in list order, over the built-in
 /// effects and then `plugins` plugins, wrapping at either end. An empty slot
 /// (or an unknown number) steps to the first or the last.
-fn step_effect(current: usize, step: i32, plugins: usize) -> usize {
+pub fn step_effect(current: usize, step: i32, plugins: usize) -> usize {
     let n = EFFECT_MENU_ORDER.len() + plugins;
     let position = EFFECT_MENU_ORDER
         .iter()

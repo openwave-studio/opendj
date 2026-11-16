@@ -208,11 +208,18 @@ component DwKnob inherits Rectangle {
 
 // The effect's name and ▾, opening the list of effects under it. Picking
 // one loads it and turns it on; picking the loaded one turns it on or off.
+// A change from anywhere else (a controller, the ‹ › arrows, OSC) makes the
+// name glow for about 2 s; with `strip`, a strip under it also shows the
+// effects before and after it in the list.
 component EffectPicker inherits Rectangle {
     in property <string> fx;
     in property <color> tint;
     in property <length> font-size: 14px;
     in property <bool> centred: true;
+    in property <bool> strip;
+    // Set by a pick from the list, so that change doesn't glow.
+    property <bool> own-pick;
+    property <bool> glowing: glow-timer.running;
     property <int> loaded-index: Controls.resolve(fx, "loaded_effect");
     property <int> enabled-index: Controls.resolve(fx, "enabled");
     property <int> loaded: Controls.value(loaded-index, Controls.tick);
@@ -225,7 +232,8 @@ component EffectPicker inherits Rectangle {
         Text {
             min-width: 0px;
             text: has-effect ? EffectList.names[loaded - 1] : "No effect";
-            color: !has-effect ? Theme.text-dim : ta.has-hover ? Theme.n-ffffff : Theme.text;
+            color: !has-effect ? Theme.text-dim : glowing ? Theme.lilac-text : ta.has-hover ? Theme.n-ffffff : Theme.text;
+            animate color { duration: 300ms; }
             font-size: root.font-size;
             font-weight: 500;
             vertical-alignment: center;
@@ -245,6 +253,82 @@ component EffectPicker inherits Rectangle {
         }
     }
     property <int> menu-tab;
+    changed loaded => {
+        if own-pick {
+            own-pick = false;
+        } else if has-effect {
+            glow-timer.running = false;
+            glow-timer.running = true;
+            if strip {
+                strip-popup.show();
+            }
+        }
+    }
+    glow-timer := Timer {
+        interval: 2s;
+        running: false;
+        triggered => {
+            self.running = false;
+            strip-popup.close();
+        }
+    }
+    // The effects either side, in list order, while the name glows.
+    property <int> before: loaded >= 1 && loaded <= EffectList.previous.length ? EffectList.previous[loaded - 1] : 0;
+    property <int> after: loaded >= 1 && loaded <= EffectList.following.length ? EffectList.following[loaded - 1] : 0;
+    strip-popup := PopupWindow {
+        x: (root.width - 238px) / 2;
+        y: root.height + 2px;
+        width: 238px;
+        height: 26px;
+        close-policy: no-auto-close;
+        Rectangle {
+            background: Theme.panel-raised;
+            border-radius: Theme.radius;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: Theme.s-000000a0;
+        }
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 6px;
+            Text {
+                horizontal-stretch: 1;
+                min-width: 0px;
+                text: before >= 1 && before <= EffectList.names.length ? "‹ " + EffectList.names[before - 1] : "";
+                color: Theme.text-dim;
+                font-size: 11px;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Rectangle {
+                horizontal-stretch: 0;
+                y: (parent.height - self.height) / 2;
+                height: 18px;
+                width: current-name.preferred-width + 12px;
+                border-radius: 3px;
+                background: tint.with-alpha(0.35);
+                current-name := Text {
+                    text: has-effect ? EffectList.names[loaded - 1] : "";
+                    color: Theme.text;
+                    font-size: 11px;
+                    font-weight: 500;
+                    vertical-alignment: center;
+                }
+            }
+            Text {
+                horizontal-stretch: 1;
+                min-width: 0px;
+                text: after >= 1 && after <= EffectList.names.length ? EffectList.names[after - 1] + " ›" : "";
+                color: Theme.text-dim;
+                font-size: 11px;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+    }
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
@@ -273,6 +357,7 @@ component EffectPicker inherits Rectangle {
                 if loaded == i + 1 {
                     Controls.toggle(enabled-index);
                 } else {
+                    own-pick = true;
                     Controls.set-value(loaded-index, i + 1);
                     Controls.set-value(enabled-index, 1);
                 }
@@ -417,17 +502,17 @@ component TextToggle inherits Text {
 }
 
 // The middle, as wide as the mixer: BEAT FX, the effect (its list under
-// the name) and where it goes (deck 1, deck 2 or both), over ON, its
-// length in beats and LEVEL as D/W. The DDJ-FLX4's BEAT FX section drives
-// the same controls.
+// the name) and where it goes (deck 1, deck 2, both or the main mix; on
+// 4-Deck any one deck or the main mix), over ON, its length in beats and
+// LEVEL as D/W. The BEAT FX sections of Pioneer controllers drive the same
+// controls.
 component BeatFxSection inherits Rectangle {
+    in property <bool> four;
     property <string> unit: "[EffectRack1_EffectUnit5]";
     property <string> fx: "[EffectRack1_EffectUnit5_Effect1]";
-    property <int> ch1-index: Controls.resolve(unit, "group_[Channel1]_enable");
-    property <int> ch2-index: Controls.resolve(unit, "group_[Channel2]_enable");
-    property <int> main-index: Controls.resolve(unit, "group_[Master]_enable");
-    property <bool> ch1: Controls.value(ch1-index, Controls.tick) > 0;
-    property <bool> ch2: Controls.value(ch2-index, Controls.tick) > 0;
+    // 0 off, 1 to 4 a deck, 5 decks 1 and 2, 6 the main mix (MST).
+    property <int> route-index: Controls.resolve(unit, "route");
+    property <int> route: Controls.value(route-index, Controls.tick);
     background: Theme.panel;
     width: 254px;
     VerticalLayout {
@@ -438,16 +523,15 @@ component BeatFxSection inherits Rectangle {
             padding-left: 8px;
             padding-right: 8px;
             spacing: 6px;
-            Text { text: "BEAT FX"; color: Theme.text-dim; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-            EffectPicker { fx: fx; tint: Theme.accent; }
-            // Where it goes: deck 1, deck 2 or both.
-            for c[i] in ["1", "2", "1&2"]: TextToggle {
+            if !four: Text { text: "BEAT FX"; color: Theme.text-dim; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
+            EffectPicker { fx: fx; tint: Theme.accent; strip: true; }
+            // Where it goes, as `route` values.
+            for c[i] in four ? ["1", "2", "3", "4", "MST"] : ["1", "2", "1&2", "MST"]: TextToggle {
+                property <int> value: four ? (i == 4 ? 6 : i + 1) : (i == 2 ? 5 : i == 3 ? 6 : i + 1);
                 text: c;
-                lit: i == 0 ? ch1 && !ch2 : i == 1 ? ch2 && !ch1 : ch1 && ch2;
+                lit: route == value;
                 clicked => {
-                    Controls.set-value(ch1-index, i == 0 || i == 2 ? 1 : 0);
-                    Controls.set-value(ch2-index, i == 1 || i == 2 ? 1 : 0);
-                    Controls.set-value(main-index, 0);
+                    Controls.set-value(route-index, value);
                 }
             }
         }
@@ -486,7 +570,7 @@ export component FxBar inherits Rectangle {
         spacing: 1px;
         FxStack { deck: 2; }
         FxStack { deck: 0; }
-        BeatFxSection { }
+        BeatFxSection { four: true; }
         FxStack { deck: 1; }
         FxStack { deck: 3; }
     }

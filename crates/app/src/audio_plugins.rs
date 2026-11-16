@@ -16,7 +16,7 @@ use std::sync::mpsc::{self, Receiver};
 use std::time::{Duration, UNIX_EPOCH};
 
 use opendj_engine::plugins::{scan, scan_audio_units, Descriptor, Plugin, PluginEntry, ScanError};
-use opendj_engine::{AudioEngine, AVAILABLE_EFFECTS};
+use opendj_engine::{step_effect, AudioEngine, AVAILABLE_EFFECTS};
 use serde_json::{json, Value};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
@@ -332,6 +332,11 @@ impl AudioPlugins {
                 .set_names(ModelRc::new(VecModel::from(names)));
             app.global::<EffectList>()
                 .set_builtin_count(AVAILABLE_EFFECTS.len() as i32);
+            let (previous, following) = neighbours(chosen.len());
+            app.global::<EffectList>()
+                .set_previous(ModelRc::new(VecModel::from(previous)));
+            app.global::<EffectList>()
+                .set_following(ModelRc::new(VecModel::from(following)));
             app.global::<EffectList>()
                 .set_plugin_rows(ModelRc::new(VecModel::from(plugin_rows(
                     &chosen,
@@ -346,6 +351,20 @@ impl AudioPlugins {
             crate::instruments::show_plugins(&app, &instruments, &list_names(&instruments));
         }
     }
+}
+
+/// The effects either side of each one (by `loaded_effect`, from 1) in the
+/// order a controller's next and previous buttons step, with `plugins`
+/// plugins after the built-in effects: for the strip that shows the change.
+fn neighbours(plugins: usize) -> (Vec<i32>, Vec<i32>) {
+    (1..=AVAILABLE_EFFECTS.len() + plugins)
+        .map(|id| {
+            (
+                step_effect(id, -1, plugins) as i32,
+                step_effect(id, 1, plugins) as i32,
+            )
+        })
+        .unzip()
 }
 
 /// The kinds of effect the menu groups by, in its order.
@@ -832,6 +851,18 @@ fn save_catalog(c: &Catalog) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_strip_shows_the_neighbours_in_list_order() {
+        let (previous, following) = neighbours(2);
+        assert_eq!(previous.len(), AVAILABLE_EFFECTS.len() + 2);
+        // Echo (1) is first in the list: its neighbour back is the last
+        // plugin, and Echo Out (9) comes next.
+        assert_eq!(following[0], 9);
+        assert_eq!(previous[0], 20);
+        // The last plugin wraps round to Echo.
+        assert_eq!(following[19], 1);
+    }
 
     #[test]
     fn the_scan_note_names_effects_and_instruments() {

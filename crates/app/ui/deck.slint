@@ -1613,6 +1613,11 @@ export global EffectList {
     // each grouped by kind (delay, reverb, filter...).
     in property <[FxRow]> builtin-rows;
     in property <[FxRow]> plugin-rows;
+    // The effects either side of each one in list order, by `loaded_effect`
+    // (index loaded - 1), as `next_effect` and `prev_effect` step: for the
+    // strip that shows a controller's change.
+    in property <[int]> previous;
+    in property <[int]> following;
     // The instrument plugins ticked in Settings › Plugins, for the
     // Instrument input (`[Instrument1],instrument` 1 and up).
     in property <[string]> instruments;
