@@ -30,3 +30,32 @@ When a slot's effect changes from anywhere other than its own list (a controller
 #### Scenario: FX SELECT on a controller
 - **WHEN** FX SELECT is pressed on a DDJ-FLX4 while the Beat FX holds Echo
 - **THEN** the Beat FX shows Echo Out glowing, with "Echo" before it and "Filter Echo" after it in the strip, and the strip fades after about 2 seconds
+
+### Requirement: Shared Beat FX controls
+The Beat FX unit SHALL have `beats_halve` and `beats_double` (halve or double the loaded effect's length within its limits) and `route` (0 off, 1 to 4 one deck, 5 decks 1 and 2, 6 the main mix), next to `next_effect`, `prev_effect`, `enabled`, `release`, `bpm_tap` and `bpm_auto`. Controller mappings for Beat FX sections SHALL use these controls rather than computing lengths or routes themselves.
+
+#### Scenario: Double at the limit
+- **WHEN** the Beat FX holds Echo at 16 beats and `beats_double` is pressed
+- **THEN** the length stays at 16 beats
+
+#### Scenario: Route to MST
+- **WHEN** `route` is set to 6
+- **THEN** the Beat FX plays on the main mix and every deck route is off
+
+### Requirement: Beat limits per effect
+Each effect SHALL have its own beat range: delay, echo, roll and gate-type effects 1/16 to 16 beats, and filter, flanger, phaser and other sweeps 1/16 to 64 beats. When an effect is loaded whose range doesn't hold the current length, the length SHALL move to the nearest value in range.
+
+#### Scenario: Long flanger sweep
+- **WHEN** the Beat FX holds Flanger at 32 beats and BEAT ▶ is pressed
+- **THEN** the length becomes 64 beats
+
+#### Scenario: Switching to a shorter range
+- **WHEN** the Beat FX holds Flanger at 64 beats and Echo is loaded
+- **THEN** the length becomes 16 beats
+
+### Requirement: Beat FX depth curve
+The Beat FX's LEVEL/DEPTH (its meta knob) SHALL follow a curve per effect, as on Pioneer mixers: for echo and delay effects the wet level SHALL reach full at the centre, with more feedback past it; for filter, flanger and phaser the effect SHALL be dry only fully left. Deck FX SHALL keep a linear D/W.
+
+#### Scenario: Echo at the centre
+- **WHEN** the Beat FX holds Echo and LEVEL/DEPTH is at the centre
+- **THEN** the echo is at full wet level
