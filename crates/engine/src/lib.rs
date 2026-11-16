@@ -65,6 +65,7 @@ pub mod set_timeline;
 pub mod stems;
 pub mod synth;
 pub mod tags;
+mod tap_tempo;
 pub mod track;
 mod visual;
 pub mod vocals;
