@@ -433,11 +433,21 @@ impl AutoMix {
         self.skip_next.control.set(1.0);
     }
 
+    /// Picks the panel's mix length. Picking one while an album plays
+    /// ends the album's gapless play, so the length picked is the one used.
     pub fn set_length(&mut self, i: usize) {
-        if i < LENGTHS.len() {
-            self.length = i;
+        if self.pick_length(i) {
             crate::settings::set_automix_length(i);
         }
+    }
+
+    /// [`Self::set_length`] without saving it; whether `i` is a length.
+    fn pick_length(&mut self, i: usize) -> bool {
+        if i < LENGTHS.len() {
+            self.album = false;
+            self.length = i;
+        }
+        i < LENGTHS.len()
     }
 
     /// Repeat: played tracks go back to the end of the list.
@@ -1613,6 +1623,21 @@ mod tests {
         r.run(12.0);
         assert!(!r.ctl("[AutoDJ]", "enabled").get_bool());
         assert_eq!(r.automix.mix_length(), LENGTHS[1]);
+    }
+
+    #[test]
+    fn picking_a_length_during_an_album_takes_effect() {
+        let mut r = Rig::new(vec![track(0, 20.0), track(1, 20.0)]);
+        // 32 bars chosen earlier; the album plays gaplessly and shows 0 s.
+        r.automix.length = 5;
+        r.automix.play_album();
+        r.run(2.0);
+        assert_eq!(r.automix.shown_length(), 0);
+        // Picking 12 s on the panel shows and uses it.
+        r.automix.pick_length(1);
+        assert_eq!(r.automix.shown_length(), 1);
+        assert_eq!(r.automix.mix_length(), LENGTHS[1]);
+        assert!(r.ctl("[AutoDJ]", "enabled").get_bool(), "Automix keeps going");
     }
 
     #[test]
