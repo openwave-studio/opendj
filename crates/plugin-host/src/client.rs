@@ -272,6 +272,23 @@ fn scan_with(
         .collect())
 }
 
+/// `helper` set up to start: on Windows with no console window of its own.
+/// The helper is a console program and openDJ has no console, so Windows
+/// would otherwise open a terminal for every helper, over openDJ and taking
+/// its focus. The same as `opendj_engine::process::background`, which this
+/// crate doesn't depend on.
+fn helper_command(helper: &Path) -> Command {
+    #[cfg_attr(not(windows), allow(unused_mut))]
+    let mut cmd = Command::new(helper);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    cmd
+}
+
 /// Runs a throwaway helper with `args` and gives the lines it wrote before
 /// `done`, killing it after `timeout`.
 fn lines(
@@ -279,7 +296,7 @@ fn lines(
     args: &[std::ffi::OsString],
     timeout: Duration,
 ) -> Result<Vec<String>, ScanError> {
-    let mut child = Command::new(helper)
+    let mut child = helper_command(helper)
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -376,7 +393,7 @@ pub fn spawn(opts: &Options) -> io::Result<(Connection, Helper)> {
         std::fs::write(&state_path, state)?;
     }
     let shm = Arc::new(Shm::create(&path, opts.max_frames, opts.sample_rate)?);
-    let child = Command::new(&opts.helper)
+    let child = helper_command(&opts.helper)
         .arg("--shm")
         .arg(&path)
         .arg("--state")

@@ -111,6 +111,26 @@ pub(crate) fn setup(db: &Connection) -> Result<(), Error> {
     if !had {
         migrate_fields(db)?;
     }
+    fix_vdj_source(db)?;
+    Ok(())
+}
+
+/// The VirtualDJ importer's source id, which `tag_sources` keys its
+/// fields by.
+const VDJ: &str = "vdj";
+
+/// Libraries migrated before this fix kept VirtualDJ's fields under
+/// 'virtualdj', which the importer never looks up, so the next import made
+/// a "User 1" and "User 2" group beside the DJ's own. Points the
+/// importer's fields at the groups the DJ named. A group the importer made
+/// meanwhile keeps its tags, for the DJ to remove.
+fn fix_vdj_source(db: &Connection) -> Result<(), Error> {
+    db.execute(
+        "INSERT OR REPLACE INTO tag_sources (source, field, group_id)
+         SELECT ?1, field, group_id FROM tag_sources WHERE source = 'virtualdj'",
+        [VDJ],
+    )?;
+    db.execute("DELETE FROM tag_sources WHERE source = 'virtualdj'", [])?;
     Ok(())
 }
 
@@ -145,8 +165,8 @@ fn migrate_fields(db: &Connection) -> Result<(), Error> {
     }
     for (field, &group) in ["User 1", "User 2"].iter().zip(&groups) {
         db.execute(
-            "INSERT INTO tag_sources (source, field, group_id) VALUES ('virtualdj', ?1, ?2)",
-            params![field, group],
+            "INSERT INTO tag_sources (source, field, group_id) VALUES (?1, ?2, ?3)",
+            params![VDJ, field, group],
         )?;
     }
     for (row, fields) in &tracks {
@@ -664,6 +684,56 @@ mod tests {
             })
             .unwrap();
         assert_eq!((field.as_str(), new.as_str()), ("tag:2", "synth"));
+    }
+
+    #[test]
+    fn vdj_import_fills_the_migrated_groups() {
+        let db = Connection::open_in_memory().unwrap();
+        db.execute_batch(
+            "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             CREATE TABLE tracks (id INTEGER PRIMARY KEY, user1 TEXT NOT NULL DEFAULT '',
+                user2 TEXT NOT NULL DEFAULT '', user_more TEXT NOT NULL DEFAULT '');
+             INSERT INTO tracks VALUES (1, '', '', '');",
+        )
+        .unwrap();
+        db.execute_batch(crate::cleanup::CHANGES_SCHEMA).unwrap();
+        setup(&db).unwrap();
+        let info = LibraryInfo {
+            imported_tags: vec![("User 2".into(), "#synth".into())],
+            ..Default::default()
+        };
+        import_track_tags(&db, VDJ, 1, &info, true).unwrap();
+        let groups: i64 = db
+            .query_row("SELECT COUNT(*) FROM tag_groups", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(groups, 2);
+        assert_eq!(track_tags(&db).unwrap()[&1][0].group, 2);
+    }
+
+    #[test]
+    fn old_virtualdj_sources_point_the_importer_at_the_named_groups() {
+        let lib = Library::in_memory().unwrap();
+        let mood = lib.add_tag_group("Mood").unwrap();
+        let user1 = lib.add_tag_group("User 1").unwrap();
+        lib.db
+            .execute_batch(&format!(
+                "DELETE FROM tag_sources;
+                 INSERT INTO tag_sources VALUES ('virtualdj', 'User 1', {mood});
+                 INSERT INTO tag_sources VALUES ('vdj', 'User 1', {user1});"
+            ))
+            .unwrap();
+        setup(&lib.db).unwrap();
+        let rows: Vec<(String, String, i64)> = lib
+            .db
+            .prepare("SELECT source, field, group_id FROM tag_sources")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(rows, [("vdj".into(), "User 1".into(), mood)]);
+        // The importer's own group keeps its tags until the DJ removes it.
+        assert_eq!(lib.tag_groups().unwrap().len(), 4);
     }
 
     #[test]

@@ -1933,6 +1933,9 @@ impl Sources {
             row.to_cache = d.cache;
             if is_active(&d.progress) {
                 row.going = d.note.clone().into();
+            } else if matches!(d.progress, Progress::Done(_)) && !d.note.is_empty() {
+                // What the source actually sent, in place of the search's guess.
+                row.quality = d.note.clone().into();
             }
             list.push(row);
         }

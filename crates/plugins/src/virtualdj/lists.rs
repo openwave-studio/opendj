@@ -296,6 +296,9 @@ fn vdj_folders(
         let file = dir.join(format!("{base}.vdjfolder"));
         if let Ok(text) = std::fs::read_to_string(&file) {
             match vdj_folder(&text) {
+                // A folder of lists with no songs of its own needs no
+                // empty list inside it.
+                Some(Folder::Songs(entries)) if entries.is_empty() && inner_dir.is_dir() => {}
                 Some(Folder::Songs(entries)) if virtual_folders => out.push(ImportedList {
                     folders: at.to_vec(),
                     name: base.clone(),
@@ -774,6 +777,8 @@ mod tests {
         std::fs::write(ml.join("Warm up.vdjfolder"), songs("/m/a.mp3")).unwrap();
         std::fs::write(ml.join("Gigs/2024/Friday.vdjfolder"), songs("/m/b.mp3")).unwrap();
         std::fs::write(ml.join("Moods.vdjfolder"), songs("/m/c.mp3")).unwrap();
+        // A folder of lists whose own file has no songs.
+        std::fs::write(ml.join("Gigs.vdjfolder"), "<VirtualFolder></VirtualFolder>").unwrap();
         std::fs::write(
             ml.join("Moods.subfolders/Old hits.vdjfolder"),
             r#"<FilterFolder filter="year &lt; 2000" />"#,
