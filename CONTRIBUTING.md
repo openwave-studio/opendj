@@ -2,6 +2,16 @@
 
 Thanks for helping. A few rules keep the issue tracker and the releases in step.
 
+## Building while you work
+
+`cargo run --release` builds what we ship, but every change recompiles the whole app with full optimisation, which takes minutes. A plain `cargo run` compiles quickly but runs too slowly to judge audio or the UI. For day-to-day work use the `fast` profile:
+
+```sh
+cargo run --profile fast --bin opendj
+```
+
+The first build takes about as long as a release build. After that, dependencies stay cached at full speed and openDJ's own crates rebuild incrementally, so a change to one file is ready in a fraction of the time and still plays smoothly. Builds land in `target/fast/`. Check performance-sensitive changes (audio, waveforms) with `--release` before you open the PR.
+
 ## Pull requests
 
 - **Link the issue.** Every pull request body names the issue it works on:
