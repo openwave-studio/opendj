@@ -153,6 +153,8 @@ pub struct AudioEngine {
     groove_hits: Mutex<Option<[rtrb::Consumer<groove::GrooveHit>; NUM_DECKS]>>,
     /// The master for broadcasting, until the broadcaster takes it.
     broadcast_feed: Mutex<Option<recorder::Feed>>,
+    /// The main output as it leaves, for the Room EQ page's spectrum.
+    spectrum_feed: Mutex<Option<recorder::Feed>>,
     /// Picks the outputs MIDI clock goes to.
     midi_clock: midi_clock::MidiClock,
 }
@@ -160,6 +162,21 @@ pub struct AudioEngine {
 /// The master output, for broadcasting: a copy of what the speakers get,
 /// after the limiter. The audio thread only copies while it is active.
 pub struct MasterFeed(recorder::Feed);
+
+/// The main output as it leaves the engine, copied only while switched on.
+pub struct OutputFeed(recorder::Feed);
+
+impl OutputFeed {
+    /// Moves every sample waiting (interleaved stereo) onto the end of `out`.
+    pub fn drain_into(&mut self, out: &mut Vec<f32>) {
+        self.0.drain_into(out);
+    }
+
+    /// Starts or stops the copying; it costs nothing while off.
+    pub fn set_active(&self, on: bool) {
+        self.0.set_active(on);
+    }
+}
 
 impl MasterFeed {
     /// Moves every sample waiting (interleaved stereo, at the engine's
@@ -211,6 +228,7 @@ impl AudioEngine {
             engine.take_meter_feed().expect("meter feed"),
         );
         let broadcast_feed = engine.take_broadcast_feed();
+        let spectrum_feed = engine.take_spectrum_feed();
         let preview = engine.take_preview_input().expect("preview input");
         let samplers = engine.take_sampler_input().expect("sampler input");
         let visual = engine.visual_positions();
@@ -271,6 +289,7 @@ impl AudioEngine {
             live_waves: Mutex::new(Some(live_waves)),
             groove_hits: Mutex::new(Some(groove_hits)),
             broadcast_feed: Mutex::new(broadcast_feed),
+            spectrum_feed: Mutex::new(spectrum_feed),
             midi_clock,
         }
     }
@@ -284,6 +303,12 @@ impl AudioEngine {
     /// calls get `None`.
     pub fn take_master_feed(&self) -> Option<MasterFeed> {
         self.broadcast_feed.lock().ok()?.take().map(MasterFeed)
+    }
+
+    /// The main output as it leaves the engine, after Room EQ, for drawing
+    /// its spectrum; there is only one.
+    pub fn take_output_feed(&self) -> Option<OutputFeed> {
+        self.spectrum_feed.lock().ok()?.take().map(OutputFeed)
     }
 
     /// The rate the engine runs at, in Hz.

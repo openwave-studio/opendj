@@ -1061,7 +1061,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let map_mode = map_mode::Mapper::install(&app, controllers.clone());
     prefs::apply_saved(&registry);
     room_eq::apply_saved(&registry);
-    room_eq::install(&app, registry.clone());
+    let _room_eq = room_eq::install(&app, registry.clone(), &engine);
     let _levels = prefs::remember_levels(registry.clone());
     if let Some(note) = restored {
         engine.alert(note);

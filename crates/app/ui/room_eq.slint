@@ -28,6 +28,10 @@ export global RoomEqUi {
     in property <bool> on;
     // The curve as path commands, in pixels of the plot (see `resized`).
     in property <string> curve;
+    // The main output's spectrum as a filled shape, behind the curve.
+    in property <string> spectrum;
+    in-out property <bool> show-spectrum: true;
+    callback spectrum-toggled(on: bool);
     in property <[RoomDot]> dots;
     in property <[RoomBand]> bands;
     in property <int> selected: 2;
@@ -158,6 +162,31 @@ export component RoomEqEditor inherits VerticalLayout {
             NameButton { text: "Cancel"; clicked => { RoomEqUi.naming = false; } }
         }
         Rectangle { horizontal-stretch: 1; }
+        // Spectrum: a tick box.
+        HorizontalLayout {
+            spacing: 6px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 3px;
+                    border-width: 1.5px;
+                    border-color: RoomEqUi.show-spectrum ? Theme.accent : Theme.text-dim;
+                    background: RoomEqUi.show-spectrum ? Theme.accent : transparent;
+                    Text { text: RoomEqUi.show-spectrum ? "✓" : ""; color: #000000; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+            Text { text: "Spectrum"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    RoomEqUi.show-spectrum = !RoomEqUi.show-spectrum;
+                    RoomEqUi.spectrum-toggled(RoomEqUi.show-spectrum);
+                }
+            }
+        }
+        Rectangle { width: 10px; }
         Text { text: "On"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
         VerticalLayout {
             alignment: center;
@@ -182,6 +211,16 @@ export component RoomEqEditor inherits VerticalLayout {
             // +6, 0 and -6 dB; 100 Hz, 1 kHz and 10 kHz.
             for y in [0.25, 0.5, 0.75]: Rectangle { y: parent.height * y; height: 1px; background: y == 0.5 ? #2e2e33 : #1f1f23; }
             for x in [0.2330, 0.5663, 0.8997]: Rectangle { x: parent.width * x; width: 1px; background: #1f1f23; }
+            if RoomEqUi.spectrum != "": Path {
+                width: parent.width;
+                height: parent.height;
+                viewbox-width: self.width / 1px;
+                viewbox-height: self.height / 1px;
+                commands: RoomEqUi.spectrum;
+                fill: Theme.lilac.with-alpha(0.10);
+                stroke: Theme.lilac.with-alpha(0.25);
+                stroke-width: 1px;
+            }
             Path {
                 width: parent.width;
                 height: parent.height;

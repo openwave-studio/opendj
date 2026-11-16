@@ -15,7 +15,7 @@ use opendj_engine::Role;
 use serde_json::{json, Value};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
-use crate::{settings, AppWindow, RoomBand, RoomDot, RoomEqUi};
+use crate::{settings, AppWindow, Preferences, RoomBand, RoomDot, RoomEqUi};
 
 /// One output's Room EQ as saved.
 #[derive(Clone, Debug, PartialEq)]
@@ -466,8 +466,34 @@ impl State {
     }
 }
 
-/// Wires the Room EQ tab to the controls and the saved settings.
-pub fn install(app: &AppWindow, registry: Arc<ControlRegistry>) {
+/// The Room EQ tab's place among Settings › Audio's tabs.
+const ROOM_EQ_TAB: i32 = 2;
+/// Points across the spectrum.
+const SPECTRUM_POINTS: usize = 160;
+
+/// The spectrum as a filled shape on the plot: `levels` from the floor
+/// (bottom) to 0 dB (top), in a `w` × `h` plot.
+fn spectrum_path(levels: &[f64], w: f64, h: f64) -> String {
+    let n = levels.len().max(1) as f64;
+    let floor = opendj_engine::room_eq::Spectrum::FLOOR;
+    let mut p = format!("M 0 {h:.1}");
+    for (i, db) in levels.iter().enumerate() {
+        let x = (i as f64 + 0.5) / n * w;
+        let y = h * (db / floor).clamp(0.0, 1.0);
+        p.push_str(&format!(" L {x:.1} {y:.1}"));
+    }
+    p.push_str(&format!(" L {w:.1} {h:.1} Z"));
+    p
+}
+
+/// Wires the Room EQ tab to the controls and the saved settings, and draws
+/// the main output's spectrum behind the curve while the tab is open.
+/// Keep the timer it returns.
+pub fn install(
+    app: &AppWindow,
+    registry: Arc<ControlRegistry>,
+    engine: &opendj_engine::AudioEngine,
+) -> slint::Timer {
     let state = Rc::new(RefCell::new(State {
         message: String::new(),
         curves: saved(),
@@ -478,6 +504,44 @@ pub fn install(app: &AppWindow, registry: Arc<ControlRegistry>) {
     }));
     state.borrow().show(app);
     let ui = app.global::<RoomEqUi>();
+    ui.set_show_spectrum(settings::flag("room_eq_spectrum", true));
+    ui.on_spectrum_toggled(|on| settings::set("room_eq_spectrum", json!(on)));
+    // The spectrum, 30 times a second while it shows.
+    let timer = slint::Timer::default();
+    if let Some(mut feed) = engine.take_output_feed() {
+        let mut spectrum =
+            opendj_engine::room_eq::Spectrum::new(engine.sample_rate(), SPECTRUM_POINTS);
+        let (weak, state) = (app.as_weak(), state.clone());
+        let mut copying = false;
+        let mut buf = Vec::new();
+        let tick = std::time::Duration::from_millis(33);
+        timer.start(slint::TimerMode::Repeated, tick, move || {
+            let Some(app) = weak.upgrade() else { return };
+            let prefs = app.global::<Preferences>();
+            let ui = app.global::<RoomEqUi>();
+            let shows = prefs.get_open()
+                && prefs.get_query().is_empty()
+                && prefs.get_page() == crate::prefs::AUDIO_PAGE
+                && prefs.get_tab() == ROOM_EQ_TAB
+                && ui.get_show_spectrum();
+            if shows != copying {
+                feed.set_active(shows);
+                copying = shows;
+                if !shows {
+                    ui.set_spectrum(SharedString::new());
+                }
+            }
+            if !shows {
+                return;
+            }
+            buf.clear();
+            feed.drain_into(&mut buf);
+            spectrum.push(&buf);
+            let (w, h) = state.borrow().plot;
+            let levels = spectrum.levels(tick.as_secs_f64());
+            ui.set_spectrum(spectrum_path(levels, w, h).into());
+        });
+    }
     // Runs `f` on the state; when it returns true, plays and shows the
     // change, and saves it when `keep`.
     let run = {
@@ -689,6 +753,7 @@ pub fn install(app: &AppWindow, registry: Arc<ControlRegistry>) {
             true
         });
     });
+    timer
 }
 
 #[cfg(test)]

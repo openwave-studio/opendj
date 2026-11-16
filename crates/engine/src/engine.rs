@@ -1701,6 +1701,10 @@ pub struct Engine {
     /// Copies the master out for broadcasting, while on air.
     broadcast: RecordTap,
     broadcast_feed: Option<Feed>,
+    /// Copies the main output as it leaves (after Room EQ and the
+    /// limiter) for the Room EQ page's spectrum, while it's open.
+    spectrum: RecordTap,
+    spectrum_feed: Option<Feed>,
     /// Plays a track into the headphones for the info panel.
     preview: Preview,
     preview_input: Option<PreviewInput>,
@@ -1904,6 +1908,7 @@ impl Engine {
         let (meter, meter_feed) = recorder::tap(sample_rate);
         meter_feed.set_active(true);
         let (broadcast, broadcast_feed) = recorder::tap(sample_rate);
+        let (spectrum, spectrum_feed) = recorder::tap(sample_rate);
         let mut live_wave_rx = Vec::with_capacity(NUM_DECKS);
         let live_waves = std::array::from_fn(|_| {
             let (wave, rx) = crate::live_wave::channel(sample_rate);
@@ -1937,6 +1942,8 @@ impl Engine {
                 groove_hit_rx,
                 broadcast,
                 broadcast_feed: Some(broadcast_feed),
+                spectrum,
+                spectrum_feed: Some(spectrum_feed),
                 preview,
                 preview_input: Some(preview_input),
                 sampler_input: Some(sampler_input),
@@ -2029,6 +2036,11 @@ impl Engine {
     /// The other end of the broadcast's tap; there is only one.
     pub(crate) fn take_broadcast_feed(&mut self) -> Option<Feed> {
         self.broadcast_feed.take()
+    }
+
+    /// The other end of the spectrum's tap; there is only one.
+    pub(crate) fn take_spectrum_feed(&mut self) -> Option<Feed> {
+        self.spectrum_feed.take()
     }
 
     /// Plays input `input` (see [`crate::inputs`]) from `feed`, or from
@@ -4193,6 +4205,9 @@ impl Engine {
         self.record.push(rec, 2);
         self.meter.push(rec, 2);
         self.broadcast.push(rec, 2);
+        if !external {
+            self.spectrum.push(out, channels);
+        }
     }
 }
 
