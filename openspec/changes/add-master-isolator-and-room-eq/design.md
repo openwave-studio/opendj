@@ -11,7 +11,7 @@ decks + master FX + mic ─▶ Isolator ─┬─▶ recording / broadcast / lou
 
 - The Isolator is part of the performance, so everything after it hears it: main, booth, headphones and recordings.
 - Room EQ corrects a room, so only the outputs into that room get it. The main curve goes before the limiter, so a boost can't clip; the booth keeps its soft clip.
-- The recording tap moves from after the main limiter to before Room EQ, with its own limiter at the same ceiling as today (`LIVE_CEILING` while recording or on air). With Room EQ off, a recording is the same as today's, which a test checks.
+- The recording tap moves from after the main limiter to before Room EQ, with its own limiter at the same ceiling as the main one. With Room EQ off, the recording is the main output as today, and the second limiter stands aside. When the main Room EQ comes in, the recording's limiter takes over the main one's state, so the recording has no seam; when it goes out, both run on until the main limiter has recovered to the same gain, then the main one takes the other's state back. Tests check the recording is sample for sample the same with and without Room EQ.
 
 ## Isolator
 
@@ -19,7 +19,7 @@ decks + master FX + mic ─▶ Isolator ─┬─▶ recording / broadcast / lou
 
 ## Room EQ
 
-Six bands, each with an on flag: low cut and high cut (12 or 24 dB/octave), low and high shelf (gain ±12 dB, fixed slope), two bells (gain ±12 dB, Q 0.3 to 8). The RBJ `Biquad` in `dsp.rs` gains `set_low_shelf` and `set_high_shelf`. Coefficients are recomputed when a band changes and crossfaded over 20 ms, so dragging a dot doesn't zip. A band at 0 dB, or switched off, is skipped.
+Six bands, each with an on flag: low cut and high cut (12 or 24 dB/octave, Butterworth), low and high shelf (gain ±12 dB, fixed slope), two bells (gain ±12 dB, Q 0.3 to 8). The RBJ `Biquad` in `dsp.rs` gains `set_low_shelf` and `set_high_shelf`. A change glides (frequency in octaves, gain, Q, and a wet mix for switching cuts in and out) over about 20 ms, with coefficients recomputed every 32 frames, so dragging a dot doesn't zip. A band at 0 dB, or switched off, is skipped; `crates/engine/src/room_eq.rs` holds it.
 
 Settings keys: `room_eq` holds `main` and `booth`, each `{ on, preset, bands: [...] }`, plus `room_eq_presets` for the DJ's own presets. The engine reads them as `[RoomEQ_Main]` and `[RoomEQ_Booth]` controls (`b1_freq`, `b1_gain`, `b1_q`, `b1_on`… `b6_*`, `enabled`), so OSC reaches them like any control.
 

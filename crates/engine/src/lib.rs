@@ -51,6 +51,7 @@ pub mod plugins;
 pub mod preview;
 pub mod process;
 pub mod recorder;
+pub mod room_eq;
 pub mod sampler;
 pub mod scale;
 pub mod scan;
