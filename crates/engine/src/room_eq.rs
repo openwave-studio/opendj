@@ -510,7 +510,7 @@ impl Spectrum {
 
     /// Takes interleaved stereo samples, keeping the latest.
     pub fn push(&mut self, stereo: &[f32]) {
-        let mono = stereo.chunks_exact(2).map(|f| (f[0] + f[1]) * 0.5);
+        let mono = stereo.as_chunks::<2>().0.iter().map(|[l, r]| (l + r) * 0.5);
         let new: Vec<f32> = mono.collect();
         let n = self.history.len();
         if new.len() >= n {
