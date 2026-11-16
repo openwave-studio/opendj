@@ -9,10 +9,12 @@ With ☰ › Keyboard › Hidden, the instrument deck's lower half only holds a 
 ## What Changes
 
 - **Step sequencer** in the instrument deck's keyboard space when the keyboard is hidden (2-Deck). One note per step, 16 steps (32 later on a second page).
-- **Lanes**, as in Pigments, picked by tabs above the steps: **PITCH** (bars dragged up and down; notes snap to the deck's scale, C minor when SCALE is off), **OCT** (−1, 0, +1), **VEL**, **GATE** (step length, up to a tie into the next step) and **CHANCE** (probability a step plays). Each lane can have its own length, for shifting, polyrhythmic riffs.
-- Under each step, **ACC** (accent) and **SLD** (slide into the next note, sent as legato with portamento where the plugin offers it), as on Acid V.
-- **Transport**: ▶ plays and stops, starting on the next bar of the mix's beat (as the Groove Box); **● REC** records notes played on keys or pads into the steps while it runs.
-- **Pattern slots A B C D**, as on the Groove Box. **LEN**, **RATE** (1/8, 1/16, 1/32, triplets), **GATE** and **SWING** for the whole pattern. **Dice** writes a random riff in key, with undo.
+- **Lanes**, modelled on Pigments' sequencer: **ON/OFF** (which steps play), **CHANCE** (probability), **PITCH** (bars dragged up and down; notes snap to the deck's scale, C minor when SCALE is off), **VEL**, **OCT** (−1, 0, +1), **GATE** (step length, up to a tie into the next step) and **SLIDE** (into the next note, sent as legato with portamento where the plugin offers it). Accent is velocity at the top of its range, as on Acid V.
+- **Per-lane controls**, as in Pigments: **RANDOM** (fill that lane only), **DIV** (the lane's own length, for polymetric riffs; off = the pattern's length) and **RESET** (clear the lane). PITCH and VEL also take an offset (semitones, percent) for the whole lane.
+- **Layout in the deck**: the room under the knobs (about 712 × 110 px) can't stack all seven lanes like Pigments, so PITCH shows tall with ON/OFF folded into it (an empty step is off), and the other lanes show one at a time under it, picked by tabs (CHANCE, VEL, OCT, GATE, SLIDE). The per-lane RANDOM, DIV and RESET sit at the lane's left.
+- **Playback**, Pigments' left panel in a compact strip: ▶ (starts on the next bar of the mix's beat, as the Groove Box), **Mode** (forward, backward, ping-pong, random), **Rate** (synced to the beat: 1/8, 1/16, 1/32, triplets), **Swing**, and **● REC**, which records notes played on keys or pads into the steps while it runs.
+- **Generation**: **Dice** writes a random riff in key, with undo (✕) and keep (✓), and a generation style (for example "contrasting minor", "steady bass", "arp-like"). **Auto-Regen** rolls a new riff every N bars.
+- **Pattern slots A B C D**, as on the Groove Box, and **LEN** 1 to 16 for the whole pattern.
 - The steps' notes go in where keys do, so **Scale**, **Chord**, **Arp** and **HOLD** apply to them.
 - Patterns are saved with the instrument's sound (in its preset).
 - 4-Deck shows ▶ and the slot in the strip, no steps.
