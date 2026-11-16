@@ -5806,9 +5806,15 @@ component SidePanel inherits Rectangle {
         y: tab-bar.height;
         height: parent.height - tab-bar.height;
     }
-    if tab == 5 && CueList.prep: ChecklistPanel {
+    if tab == 5 && CueList.prep: checklist-scroll := ScrollView {
         y: tab-bar.height;
         height: parent.height - tab-bar.height;
+        content-width: self.visible-width;
+        content-height: max(self.visible-height, checklist.preferred-height);
+        checklist := ChecklistPanel {
+            width: checklist-scroll.content-width;
+            height: checklist-scroll.content-height;
+        }
     }
     keys := FocusScope {
         y: tab-bar.height;
