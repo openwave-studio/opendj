@@ -14,25 +14,25 @@
 
 ## 3. Check my mix
 
-- [ ] 3.1 Clipping, silence and level-jump checks from the recording
-- [ ] 3.2 Drift, FX left on and mid-phrase jump checks from the control log
+- [x] 3.1 Clipping, silence and level-jump checks from the recording
+- [x] 3.2 Drift, FX left on and mid-phrase jump checks from the control log
 - [ ] 3.3 Check my mix tab; click plays from 2 bars before
 
 ## 4. Quick fixes
 
-- [ ] 4.1 Edit list beside the recording and a renderer that writes a new file
-- [ ] 4.2 Trim with fades; track level with eased ends; cut with crossfade
-- [ ] 4.3 Loudness presets through the meter and true-peak limiter, with before/after
+- [x] 4.1 Edit list beside the recording and a renderer that writes a new file
+- [x] 4.2 Trim with fades; track level with eased ends; cut with crossfade
+- [x] 4.3 Loudness presets through the meter and true-peak limiter, with before/after
 - [ ] 4.4 Fixes tab with undo; Save
 
 ## 5. Export
 
-- [ ] 5.1 Mixcloud tracklist, YouTube chapters (checked against YouTube's rules) and .cue, following cuts and trims
+- [x] 5.1 Mixcloud tracklist, YouTube chapters (checked against YouTube's rules) and .cue, following cuts and trims
 - [ ] 5.2 Export for Mixcloud from the edited file
 
 ## 6. Pair mixes
 
-- [ ] 6.1 `pair_mixes` table and Automix plan lookup: pair mix, then track points, then phrases
+- [x] 6.1 `pair_mixes` table and Automix plan lookup: pair mix, then track points, then phrases
 - [ ] 6.2 Save pair mixes from the transitions list: tick per transition, existing pair mix shown, newer replaces it
 
 ## 7. Docs
