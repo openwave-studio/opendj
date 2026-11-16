@@ -114,6 +114,7 @@ mod tutorials;
 mod ui_font;
 mod update;
 mod vocal_pass;
+mod wall_clock;
 mod wave_look;
 mod waveform_height;
 mod waveform_zoom;
@@ -1422,6 +1423,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let start = Instant::now();
+    let twenty_four_hour = wall_clock::system_uses_24_hour();
     let timer = slint::Timer::default();
     let covers: RefCell<[CoverImage; NUM_DECKS]> = Default::default();
     let qualities: RefCell<quality::Qualities> = Default::default();
@@ -1721,8 +1723,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         deck_rows.set_row_data(d, info);
                     }
                 }
-                let t = start.elapsed().as_secs();
-                let clock = format!("{:02}:{:02}", t / 60 % 60, t % 60);
+                let clock = wall_clock::format(chrono::Local::now().time(), twenty_four_hour);
                 if app.get_clock() != clock.as_str() {
                     app.set_clock(clock.into());
                 }
