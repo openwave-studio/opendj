@@ -54,6 +54,7 @@ mod coverart;
 mod diagnostics;
 mod file_drop;
 mod files;
+mod graphics;
 mod groove_box;
 mod inbox;
 mod instrument_art;
@@ -557,12 +558,21 @@ fn fit_to_screen(app: &AppWindow) {
     });
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     if std::env::args().nth(1).as_deref() == Some("--list-controls") {
         list_controls();
-        return Ok(());
+        return;
     }
     diagnostics::install();
+    // Picked before the window opens, from what happened last time.
+    let graphics = Rc::new(graphics::choose(settings::config_dir().as_deref()));
+    if let Err(e) = run(graphics.clone()) {
+        diagnostics::startup_failed(&e, graphics.pending());
+        std::process::exit(1);
+    }
+}
+
+fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>> {
     // Before any thread starts: Beat This! takes a few cores, not all.
     opendj_engine::background::configure();
     // Windows wakes sleeping threads only every 15.6 ms unless asked for
@@ -580,8 +590,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Before anything is saved: no settings yet means a first start, which
     // gets the guided tour.
     let first_run = settings::load().as_object().is_none_or(|m| m.is_empty());
-    let backend =
-        slint::BackendSelector::new().require_wgpu_30(slint::wgpu_30::WGPUConfiguration::default());
+    let backend = slint::BackendSelector::new().require_wgpu_30(graphics.backend.configuration());
     // On macOS the app draws under a hidden title bar: only
     // the traffic lights stay, over the top bar.
     #[cfg(target_os = "macos")]
@@ -1311,6 +1320,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // it. Waveforms are drawn just before Slint renders each frame, so their
     // play position is as close as possible to when the frame is shown.
     let gpu: Rc<RefCell<Option<Gpu>>> = Rc::new(RefCell::new(None));
+    let graphics_choice = graphics.clone();
     {
         let gpu = gpu.clone();
         let app_weak = app.as_weak();
@@ -1332,6 +1342,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     slint::RenderingState::RenderingSetup,
                     slint::GraphicsAPI::WGPU30 { device, queue, .. },
                 ) => {
+                    let info = device.adapter_info();
+                    eprintln!(
+                        "graphics: {} ({:?}, {:?}), driver {} {}",
+                        info.name, info.backend, info.device_type, info.driver, info.driver_info
+                    );
                     let renderer = WaveformRenderer::new(device, queue);
                     let make = |mode| WaveformView::new(device, mode, 1, 1);
                     *gpu.borrow_mut() = Some(Gpu {
@@ -1378,6 +1393,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
                 }
                 (slint::RenderingState::AfterRendering, _) => {
+                    // The first frame is on screen: these graphics work here.
+                    graphics.drew();
                     // While a deck moves, draw again as soon as the display
                     // can show it, rather than on the UI timer, which beats
                     // against the display's refresh and makes motion uneven.
@@ -1803,6 +1820,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         timer
     };
 
+    // Until the first frame is drawn, a crash counts against these graphics.
+    graphics_choice.arm();
     app.show()?;
     fit_to_screen(&app);
     app.run()?;
