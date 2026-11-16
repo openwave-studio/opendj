@@ -186,13 +186,17 @@ then click **Jam** in the rail and drag it from the list onto a deck (see
 [Jam on a deck](decks.md#jam-on-a-deck)). It plays through that deck's
 channel, with its EQ, filter, effects and fader.
 
-The deck's header shows the plugin's format (**CLAP**, **VST3** or **AU**)
-and its preset, with **‹** and **›** to step through the instrument's
-presets in the order the browser lists them. **SAVE** has **Save**, **Save
-as new…**, **Rename…** and **Tags…**, which sets what the preset is and how
-it sounds for the browser's chips. openDJ keeps the plugin's state, so the
-sound comes back next time. Right-click the cover to choose an image for
-the instrument, or drop one on the deck.
+In 2-Deck the deck has a slim title, like the Mixer and Groove Box decks:
+the lilac **☰** menu, the plugin's name and format (**CLAP**, **VST3** or
+**AU**), its preset with **‹** and **›** to step through the instrument's
+presets in the order the browser lists them, and a heart. Once you turn a
+knob the preset's name gets an asterisk (**Squelch Bass\***) and the heart
+empties: click it to save over your preset. For one of the plugin's own
+presets, or a sound with no preset yet, the heart asks a name and saves a
+copy. **☰** has **Save preset**, **Save preset as…**, **Rename…** and
+**Tags…** (what the preset is and how it sounds, for the browser's chips),
+**Keys on pads**, **Open plugin window** and **Unload deck**. openDJ keeps
+the plugin's state, so the sound comes back next time.
 
 In 2-Deck the deck shows:
 
@@ -203,10 +207,11 @@ In 2-Deck the deck shows:
   page buttons **1** to **4** beside them show the next ones. Right-click a
   knob to pick the setting it turns; **The plugin's own choice** puts it
   back.
-- **OPEN**, which opens the plugin's own window for every setting.
-- **KEYS ON PADS**, which makes the decks' **KEYBOARD** pads, on screen and
-  on your controller, play the instrument instead of the deck's hot cue (see
-  [Keyboard and key shift](pads.md#keyboard-and-key-shift)).
+- **OPEN** in the title, which opens the plugin's own window for every
+  setting.
+- **☰ › Keys on pads**, which makes the decks' **KEYBOARD** pads, on screen
+  and on your controller, play the instrument instead of the deck's hot cue
+  (see [Keyboard and key shift](pads.md#keyboard-and-key-shift)).
 - A row under them with **Scale**, **Chord**, **Arp**, **OCT −** and **+**,
   and a keyboard that lights the notes held.
 

@@ -124,6 +124,21 @@ export global PresetUi {
     public pure function name(deck: int) -> string {
         deck < current.length ? current[deck] : ""
     }
+
+    // Each deck's preset changed since it was loaded or saved (its knobs
+    // moved), shown as an asterisk. Set by the app.
+    in property <[bool]> changed;
+    // Each deck's preset is the user's own, which saving writes over (a
+    // plugin's own presets are copied instead). Set by the app.
+    in property <[bool]> own;
+
+    public pure function is-changed(deck: int) -> bool {
+        deck < changed.length && changed[deck]
+    }
+
+    public pure function is-own(deck: int) -> bool {
+        deck < own.length && own[deck]
+    }
 }
 
 // A parameter of the playing instrument, to put on a knob.

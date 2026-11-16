@@ -5541,6 +5541,213 @@ component TitleButton inherits Rectangle {
     }
 }
 
+// The ☰ that starts every live deck's title (an instrument plugin, the
+// Mixer, a Groove Box): three thin lilac lines opening the deck's menu.
+component DeckMenuButton inherits Rectangle {
+    in property <int> deck;
+    // What the deck plays: 0 an instrument plugin, 1 the Mixer, 2 a Groove Box.
+    in property <int> kind;
+    // The instrument's preset actions that ask something first: the title
+    // that holds the name and tag popups shows them.
+    callback save-as();
+    callback rename();
+    callback tags();
+    property <string> preset: PresetUi.name(deck);
+    property <int> keys-index: Controls.resolve("[Instrument1]", "keyboard_pads");
+    property <int> editor-index: Controls.resolve("[Instrument1]", "show_editor");
+    width: 24px;
+    height: 22px;
+    border-radius: 4px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.accent.with-alpha(0.18) : transparent;
+    for i in 3: Rectangle {
+        x: 4px;
+        y: 5px + i * 5px;
+        width: 16px;
+        height: 1.5px;
+        border-radius: 1px;
+        background: Theme.accent;
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
+    menu := PopupWindow {
+        x: 0;
+        y: root.height + 4px;
+        width: 230px;
+        GrooveMenuBackground { }
+        VerticalLayout {
+            padding: 4px;
+            if kind == 0 && preset != "": GrooveMenuItem {
+                text: "Save preset";
+                detail: "Over “" + preset + "”";
+                clicked => { PresetUi.save(deck); }
+            }
+            if kind == 0: GrooveMenuItem { text: "Save preset as…"; clicked => { root.save-as(); } }
+            if kind == 0 && preset != "": GrooveMenuItem { text: "Rename…"; clicked => { root.rename(); } }
+            if kind == 0 && preset != "": GrooveMenuItem { text: "Tags…"; clicked => { root.tags(); } }
+            if kind == 0: Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
+            if kind == 0: GrooveMenuItem {
+                text: "Keys on pads";
+                detail: "The pad controller plays notes";
+                checked: Controls.value(keys-index, Controls.tick) > 0;
+                clicked => { Controls.toggle(keys-index); }
+            }
+            if kind == 0: GrooveMenuItem {
+                text: "Open plugin window";
+                checked: Controls.value(editor-index, Controls.tick) > 0;
+                clicked => { Controls.toggle(editor-index); }
+            }
+            if kind == 0: Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
+            GrooveMenuItem { text: "Unload deck"; clicked => { DeckActions.eject(root.deck); } }
+        }
+    }
+}
+
+// The preset heart: filled while the deck plays one of the user's
+// presets (a click saves over it), empty for a sound not saved yet (a
+// click names and saves it).
+component PresetHeart inherits Rectangle {
+    in property <bool> saved;
+    callback clicked();
+    width: 24px;
+    height: 22px;
+    border-radius: 4px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.accent.with-alpha(0.15) : transparent;
+    Path {
+        width: 16px;
+        height: 15px;
+        viewbox-width: 16;
+        viewbox-height: 15;
+        commands: "M 8 13.6 C 8 13.6 1.2 9.4 1.2 4.9 A 3.4 3.4 0 0 1 8 3.4 A 3.4 3.4 0 0 1 14.8 4.9 C 14.8 9.4 8 13.6 8 13.6 Z";
+        fill: root.saved ? Theme.accent : transparent;
+        stroke: Theme.accent;
+        stroke-width: 1.4px;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        changed has-hover => {
+            if self.has-hover {
+                HoverTip.title = root.saved ? "Save over this preset" : "Save as a preset";
+                HoverTip.body = "";
+                HoverTip.right-aligned = false;
+                HoverTip.x = self.absolute-position.x;
+                HoverTip.y = self.absolute-position.y + self.height + 4px;
+                HoverTip.shown = true;
+            } else {
+                HoverTip.shown = false;
+            }
+        }
+        clicked => {
+            HoverTip.shown = false;
+            root.clicked();
+        }
+    }
+}
+
+// An instrument deck's slim title, as the Mixer's and the Groove Box's:
+// ☰, the plugin's name and format; its preset with ‹ › and the heart;
+// then which keyboard plays it, its window and ⏏.
+component InstrumentTitle inherits Rectangle {
+    in property <int> deck;
+    in property <color> tint;
+    property <int> instrument: InstrumentsUi.instrument();
+    property <bool> ready: Controls.value(Controls.resolve("[Instrument1]", "input_configured"), Controls.tick) > 0;
+    property <string> name: instrument > 0 && instrument <= EffectList.instruments.length ? EffectList.instruments[instrument - 1] : "Instrument";
+    property <string> preset: PresetUi.name(deck);
+    // Its knobs moved since it was loaded or saved.
+    property <bool> changed: PresetUi.is-changed(deck);
+    // What the name popup is for: 0 a new preset, 1 a new name.
+    property <int> asking;
+    height: 30px;
+    background: Theme.panel;
+    HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 8px;
+        spacing: 8px;
+        VerticalLayout {
+            alignment: center;
+            DeckMenuButton {
+                deck: root.deck;
+                kind: 0;
+                save-as => {
+                    root.asking = 0;
+                    namer.show();
+                }
+                rename => {
+                    root.asking = 1;
+                    namer.show();
+                }
+                tags => { tagger.show(); }
+            }
+        }
+        Text { text: root.name; color: Theme.text; font-size: 14px; font-weight: 600; vertical-alignment: center; overflow: elide; }
+        if InstrumentsUi.format() != "": VerticalLayout {
+            alignment: center;
+            FormatChip { text: InstrumentsUi.format(); tint: root.tint; compact: true; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        if root.ready: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 230px;
+                height: 22px;
+                border-radius: 4px;
+                background: Theme.control;
+                HorizontalLayout {
+                    PresetStep { text: "‹"; clicked => { PresetUi.step(root.deck, -1); } }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: root.preset == "" ? "No preset" : root.changed ? root.preset + "*" : root.preset;
+                        color: root.preset != "" ? Theme.text : Theme.text-dim;
+                        font-size: 12px;
+                        font-weight: 500;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    PresetStep { text: "›"; clicked => { PresetUi.step(root.deck, 1); } }
+                }
+            }
+        }
+        if root.ready: VerticalLayout {
+            alignment: center;
+            // The user's own preset saves over itself; a plugin's own
+            // preset, or a sound with none, asks a name for a copy.
+            PresetHeart {
+                saved: root.preset != "" && !root.changed;
+                clicked => {
+                    if root.preset != "" && PresetUi.is-own(root.deck) {
+                        PresetUi.save(root.deck);
+                    } else {
+                        root.asking = 0;
+                        namer.show();
+                    }
+                }
+            }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        VerticalLayout { alignment: center; MidiFromButton { tint: root.tint; size: 22px; } }
+        if root.ready: VerticalLayout {
+            alignment: center;
+            ControlButton { group: "[Instrument1]"; key: "show_editor"; text: "OPEN"; tint: Theme.accent; width: 52px; height: 22px; font-size: 10px; outline-when-lit: true; }
+        }
+        VerticalLayout {
+            alignment: center;
+            TitleButton {
+                icon: "M 5 13 L 12 5 L 19 13 Z M 5 18.5 L 19 18.5";
+                tip: "Unload deck";
+                clicked => { DeckActions.eject(root.deck); }
+            }
+        }
+    }
+    tagger := PresetTagger { x: (root.width - 300px) / 2; y: root.height + 2px; deck: root.deck; }
+    namer := PresetNamer {
+        x: (root.width - 280px) / 2;
+        y: root.height + 2px;
+        deck: root.deck;
+        asking: root.asking;
+        name: root.preset;
+    }
+}
+
 // A Groove Box deck's slim title, as the Mixer's (see MixerTitle): GROOVE
 // BOX on the left, ⏏ (unload the deck) on the right while it is stopped.
 component GrooveTitle inherits Rectangle {
@@ -5556,10 +5763,10 @@ component GrooveTitle inherits Rectangle {
     height: 26px;
     background: Theme.panel;
     HorizontalLayout {
-        padding-left: 10px;
+        padding-left: 6px;
         padding-right: 8px;
         spacing: 8px;
-        VerticalLayout { alignment: center; LiveIcon { kind: 1; tint: Theme.accent; size: 16px; } }
+        VerticalLayout { alignment: center; DeckMenuButton { deck: root.deck; kind: 2; } }
         Text { text: "GROOVE BOX"; color: Theme.text; font-size: 12px; font-weight: 700; letter-spacing: 1px; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
         if !playing: VerticalLayout {
@@ -5599,10 +5806,10 @@ component MixerTitle inherits Rectangle {
     height: 26px;
     background: Theme.panel;
     HorizontalLayout {
-        padding-left: 10px;
+        padding-left: 6px;
         padding-right: 8px;
         spacing: 8px;
-        VerticalLayout { alignment: center; LiveIcon { kind: 7; tint: Theme.accent; size: 16px; } }
+        VerticalLayout { alignment: center; DeckMenuButton { deck: root.deck; kind: 1; } }
         Text {
             text: "MIXER";
             color: root.in-view && back.has-hover ? Theme.lilac-text : root.in-view ? Theme.text-dim : Theme.text;
@@ -5637,6 +5844,9 @@ component MixerTitle inherits Rectangle {
 // instrument plugin its window, the KEYBOARD pads switch and their octave.
 component LivePanel inherits Rectangle {
     in property <int> live;
+    // Under an instrument's title, whose ☰ holds the window and the pads
+    // switch: they leave the panel.
+    in property <bool> titled;
     in property <string> group;
     in property <color> tint;
     property <string> input-group: ["[Microphone]", "[Auxiliary1]", "[Instrument1]", "[Auxiliary2]", "[Auxiliary3]", "[Auxiliary4]", "[Auxiliary5]", "[Auxiliary6]", "[Auxiliary7]", "[Auxiliary8]"][live - 1];
@@ -5762,7 +5972,7 @@ component LivePanel inherits Rectangle {
             ControlKnob { group: group; key: "live_pan"; label: "PAN"; size: 28px; bipolar: true; }
         }
         if live == 3: InstrumentKnobs { tint: tint; page <=> InstrumentsUi.knob-page; }
-        if live == 3: VerticalLayout {
+        if live == 3 && !titled: VerticalLayout {
             alignment: center;
             spacing: 4px;
             ControlButton { group: "[Instrument1]"; key: "show_editor"; text: "OPEN"; tint: Theme.accent; width: 80px; height: 20px; font-size: 10px; outline-when-lit: true; }
@@ -6009,6 +6219,7 @@ export component Deck inherits Rectangle {
     property <bool> looper: !info.loaded && Controls.value(Controls.resolve("[Looper" + (deck + 1) + "]", "enabled"), Controls.tick) > 0;
     property <int> live: info.loaded || groove || looper ? 0 : InstrumentsUi.live(deck);
     property <bool> mixer: live == InstrumentsUi.mixer-live;
+    property <bool> plugin: live == 3;
     // The Mixer deck shows the instrument's panel instead of its strips.
     property <bool> mixer-keys: mixer && InstrumentsUi.mixer-view == 1 && InstrumentsUi.in-mixer("[Instrument1]", Controls.tick);
     // Or its Groove Box's panel, while a channel plays it.
@@ -6047,7 +6258,9 @@ export component Deck inherits Rectangle {
 
         // A Mixer deck gives the header's room to its strips: a slim title
         // row instead.
-        header := Header { deck: deck; info: info; overview: overview; mirrored: mirrored; group: group; visible: !mixer; height: mixer ? 0px : self.fixed-height; }
+        header := Header { deck: deck; info: info; overview: overview; mirrored: mirrored; group: group; visible: !mixer && !plugin; height: mixer || plugin ? 0px : self.fixed-height; }
+        // An instrument plugin: a slim title too.
+        if plugin: InstrumentTitle { deck: deck; tint: tint; }
         if mixer: MixerTitle { deck: deck; in-view: root.mixer-keys || root.mixer-groove-shown; view: root.mixer-groove-shown ? 2 : root.mixer-keys ? 1 : 0; }
 
         Rectangle {
@@ -6056,7 +6269,7 @@ export component Deck inherits Rectangle {
             // Outside in: the tempo column, the pads, the loop, and the jog
             // with play and CUE under it beside the mixer. Deck B is the mirror image.
             if mixer-groove-shown: GrooveBox { x: 4px; y: 4px; width: parent.width - 8px; height: parent.height - 8px; deck: deck; group: group; tint: tint; }
-            if live > 0 && !mixer-groove-shown: LivePanel { x: mixer ? 4px : 8px; y: mixer ? 4px : 8px; width: parent.width - (mixer ? 8px : 16px); height: parent.height - (mixer ? 8px : 16px); live: mixer-keys ? 3 : live; group: group; tint: tint; }
+            if live > 0 && !mixer-groove-shown: LivePanel { x: mixer ? 4px : 8px; y: mixer ? 4px : 8px; width: parent.width - (mixer ? 8px : 16px); height: parent.height - (mixer ? 8px : 16px); live: mixer-keys ? 3 : live; titled: plugin; group: group; tint: tint; }
             if looper: LooperPanel { x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px; deck: deck; group: group; tint: tint; }
             if !groove && !looper && live == 0: HorizontalLayout {
                 padding: 8px;
