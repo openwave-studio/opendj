@@ -1739,7 +1739,10 @@ fn ddj_flx10_pad_colours_lights_and_jog_scale() {
     assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 1.0);
     let out = c.take_output();
     assert_eq!(
-        out.iter().rev().find(|m| m[0] == 0x90 && m[1] == 0x0E).map(|m| m[2]),
+        out.iter()
+            .rev()
+            .find(|m| m[0] == 0x90 && m[1] == 0x0E)
+            .map(|m| m[2]),
         Some(0x00),
         "VOCAL dimmed: {out:x?}"
     );
@@ -1757,7 +1760,10 @@ fn ddj_flx10_pad_colours_lights_and_jog_scale() {
     // The big jog's rim: ten ticks bend as much as about half an FLX4 tick.
     c.receive(&[0xB0, 0x21, 64 + 10]);
     let bend = get(&reg, "[Channel1]", "jog_bend");
-    assert!((bend - 10.0 * 720.0 / 12900.0).abs() < 1e-6, "jog_bend {bend}");
+    assert!(
+        (bend - 10.0 * 720.0 / 12900.0).abs() < 1e-6,
+        "jog_bend {bend}"
+    );
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
