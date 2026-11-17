@@ -9,4 +9,4 @@
 
 - [x] 2.1 `search.read` in the TIDAL sign-in scopes; catalog search for tracks in the worker
 - [x] 2.2 Typing in the TIDAL source lists the catalog's tracks in place of the playlist after a short pause; clearing shows the playlist again
-- [ ] 2.3 Checked against a real TIDAL account on macOS
+- [x] 2.3 Checked against a real TIDAL account on macOS
