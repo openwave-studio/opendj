@@ -208,6 +208,9 @@ pub(crate) struct DeckControls {
     /// Jog rim ticks since the engine last looked, 720 to a turn: a pitch
     /// bend that follows how fast the rim turns. The engine zeroes it.
     pub(crate) jog_bend: ControlHandle,
+    /// Fast search steps (SHIFT + jog on openDJ's own Pioneer mappings):
+    /// each unit moves the play position by 10 ms, whether playing or not.
+    pub(crate) jog_search: ControlHandle,
     /// Fast seek speed while non-zero, in multiples of normal speed.
     pub(crate) rate_search: ControlHandle,
     /// rate_temp_up, rate_temp_down, rate_temp_up_small, rate_temp_down_small.
@@ -490,8 +493,9 @@ impl DeckControls {
             scrub_enable: reg.toggle(g, "scrub_enable"),
             scrub_position: reg.create(g, "scrub_position", 0.0, 0.0, 1.0, Behavior::Linear),
             seek_hold: reg.toggle(g, "seek_hold"),
-            jog: reg.create(g, "jog", 0.0, -1000.0, 1000.0, Behavior::Free),
-            jog_bend: reg.create(g, "jog_bend", 0.0, -1000.0, 1000.0, Behavior::Free),
+            jog: reg.create(g, "jog", 0.0, -1e6, 1e6, Behavior::Free),
+            jog_bend: reg.create(g, "jog_bend", 0.0, -1e6, 1e6, Behavior::Free),
+            jog_search: reg.create(g, "jog_search", 0.0, -1e6, 1e6, Behavior::Free),
             rate_search: reg.create(g, "rateSearch", 0.0, -300.0, 300.0, Behavior::Free),
             rate_temp: ["up", "down", "up_small", "down_small"]
                 .map(|k| reg.push(g, &format!("rate_temp_{k}"))),

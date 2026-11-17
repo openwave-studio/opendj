@@ -459,7 +459,8 @@ impl Controller {
                 return;
             }
         }
-        target.set_from_midi(note_off, new_value);
+        let gain = self.host.borrow().bend_gain(&target);
+        target.set_from_midi(note_off, new_value * gain);
     }
 
     /// Lets the device's deck choice in Settings (see [`crate::routing`])

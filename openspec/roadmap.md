@@ -92,6 +92,8 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-played-marks](changes/add-played-marks/proposal.md) (tracks played in this History session dimmed with a lilac check, plays count only when heard in the master, a short Played note on the deck, Start new session over History, Mark as Not Played; issue #827, a user request, 2026-11-16)
 - [add-engine-dj-usb-export](changes/add-engine-dj-usb-export/proposal.md) (USB export for Denon DJ, Numark and Rane players: Engine DJ's m.db with grids, cues, loops, overview waveforms and lists, sharing the stick's music with the Pioneer export; learnt from EngineX-OS; issue #578, 2026-11-10; hardware check moved to v0.8 2026-11-14)
 - [add-karaoke-upgrade](changes/add-karaoke-upgrade/proposal.md) (Karaoke Upgrade: the karaoke screen with the cover beside the lyrics, hover-only Cover and Full screen buttons, a flat background from the cover, sung-word colors, Lines and Light up options, and one lyrics display in Player; a user request after community PR #773, issue #772, 2026-11-15)
+- [add-tidal-search](changes/add-tidal-search/proposal.md) (TIDAL catalog search in the TIDAL source, add-ons that play streamed rows from the source cache and can stay out of the rail; issue #838, a user request, 2026-11-17)
+- [rework-collection-health](changes/rework-collection-health/proposal.md) (Collection Health reworked after a gap analysis of Lexicon, rekordbox tools and dupeGuru: a sidebar row per check, check pages with numbered steps and Show tabs, a stage bar and explained score, duplicate groups with confidence and audio fingerprints, Tags and Lists pages, files not in the collection; a user request, 2026-11-17)
 
 ## v0.9 · In the club
 

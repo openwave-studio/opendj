@@ -44,7 +44,9 @@ for all of them (10 GB unless you pick another); **Manage** under
 openDJ shows what you saved on a streaming service, but doesn't play its
 audio: a track plays on a deck when your collection holds the same track,
 and the others are greyed out. Double-click one to open it on the service's
-own site; SoundCloud tracks and Mixcloud shows also have a **▶** button
+own site, or, when an add-on that plays that service's tracks is
+installed, to load it onto a deck through the add-on (it lands in the
+source cache, not your collection); SoundCloud tracks and Mixcloud shows also have a **▶** button
 (and **Play on…** when you right-click) that plays them there in your
 browser. Tracks are matched by ISRC when both sides have one, then by
 artist and title. If a match is wrong, right-click the track and pick
@@ -72,8 +74,10 @@ Each service is signed in to with your own app, so openDJ ships no keys:
 - **Spotify**: create an app at developer.spotify.com with the redirect URI
   `http://127.0.0.1:8898/callback` and paste its client ID.
 - **TIDAL**: create an app at developer.tidal.com with the same redirect
-  URI and the scopes `user.read`, `playlists.read` and `collection.read`,
-  and paste its client ID.
+  URI and the scopes `user.read`, `playlists.read`, `collection.read` and
+  `search.read`, and paste its client ID. In the TIDAL source, typing in
+  the search box searches TIDAL's catalog for tracks; clear it to see the
+  playlist again. If you signed in before search came, sign in again.
 - **Apple Music**: needs an Apple Developer account. Under **Certificates,
   Identifiers & Profiles › Keys**, create a key with **MusicKit** and
   download its `.p8` file. Enter your Team ID, the key's Key ID and the
@@ -380,7 +384,8 @@ Spotify and the other streaming services in rekordbox) have no file to
 play, so they stay in their lists as placeholders, in their place. A
 placeholder is greyed out and shows its service (**TIDAL**) where the album
 would be. It keeps the artist, title and length the app saved, and the
-service's own track id. Double-click one to open it on the service's site.
+service's own track id. Double-click one to open it on the service's site,
+or to load it onto a deck through an add-on that plays that service's tracks.
 Lists made only of streamed tracks come in too, marked **online only** in
 the list picker.
 

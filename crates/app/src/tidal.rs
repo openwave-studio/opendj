@@ -1,4 +1,5 @@
-//! TIDAL browsing: sign in, then list the playlists and favourite tracks.
+//! TIDAL browsing: sign in, then list the playlists and favourite tracks,
+//! and search TIDAL's catalog for tracks.
 //!
 //! Like Spotify (see [`crate::spotify`]), TIDAL's API gives track details but
 //! no audio for a DJ app, so a TIDAL track plays only when the collection
@@ -22,14 +23,17 @@ use serde_json::Value;
 
 use crate::spotify::{
     code_challenge, encode, open_in_browser, random_token, wait_for_code, Event, Playlist, Request,
-    Saved, Service, StreamTrack, LIKED, PORT, REDIRECT_URI,
+    Saved, Service, StreamTrack, LIKED, PORT, REDIRECT_URI, SEARCH,
 };
 
 const LOGIN: &str = "https://login.tidal.com/authorize";
 const TOKEN: &str = "https://auth.tidal.com/v1/oauth2/token";
 const API: &str = "https://openapi.tidal.com/v2";
-/// Reading the DJ's name, own playlists, and saved playlists and tracks.
-pub const SCOPES: &str = "user.read playlists.read collection.read";
+/// Reading the DJ's name, own playlists, and saved playlists and tracks,
+/// and searching the catalog.
+pub const SCOPES: &str = "user.read playlists.read collection.read search.read";
+/// How many tracks a catalog search lists.
+const SEARCH_RESULTS: usize = 40;
 /// Where the sign-in is kept, in the config folder.
 const SAVED: &str = "tidal.json";
 /// How many tracks `/tracks` takes at once.
@@ -176,6 +180,9 @@ impl Worker {
 
     /// A playlist's tracks (or the saved tracks, for [`LIKED`]), in order.
     fn tracks(&mut self, key: &str) -> Result<Vec<StreamTrack>, String> {
+        if let Some(words) = key.strip_prefix(SEARCH) {
+            return self.search(words);
+        }
         let url = if key == LIKED {
             format!("{API}/userCollectionTracks/me/relationships/items")
         } else {
@@ -187,6 +194,31 @@ impl Worker {
             .filter(|i| i["type"] == "tracks")
             .filter_map(|i| i["id"].as_str().map(str::to_string))
             .collect();
+        let found = self.lookup(&ids)?;
+        Ok(ids.iter().filter_map(|id| found.get(id).cloned()).collect())
+    }
+
+    /// The catalog's tracks for `words`, best first.
+    fn search(&mut self, words: &str) -> Result<Vec<StreamTrack>, String> {
+        let words = words.trim();
+        if words.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut ids: Vec<String> = Vec::new();
+        let mut next = Some(search_url(words));
+        while let Some(url) = next.filter(|_| ids.len() < SEARCH_RESULTS) {
+            let page = self.get(&url)?;
+            ids.extend(
+                page["data"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter(|i| i["type"] == "tracks")
+                    .filter_map(|i| i["id"].as_str().map(str::to_string)),
+            );
+            next = page["links"]["next"].as_str().map(absolute);
+        }
+        ids.truncate(SEARCH_RESULTS);
         let found = self.lookup(&ids)?;
         Ok(ids.iter().filter_map(|id| found.get(id).cloned()).collect())
     }
@@ -361,6 +393,11 @@ impl Worker {
     }
 }
 
+/// Where the catalog's tracks for `words` are listed.
+fn search_url(words: &str) -> String {
+    format!("{API}/searchResults/{}/relationships/tracks", encode(words))
+}
+
 /// A `links.next` as a full address: the API gives one relative to its host
 /// or to `/v2`.
 fn absolute(link: &str) -> String {
@@ -520,8 +557,16 @@ mod tests {
     fn builds_the_authorize_address() {
         let url = authorize_url("abc", "chal", "st");
         assert!(url.starts_with("https://login.tidal.com/authorize?client_id=abc"));
-        assert!(url.contains("scope=user.read%20playlists.read%20collection.read"));
+        assert!(url.contains("scope=user.read%20playlists.read%20collection.read%20search.read"));
         assert!(url.contains("code_challenge_method=S256"));
+    }
+
+    #[test]
+    fn search_address() {
+        assert_eq!(
+            search_url("daft punk/one"),
+            "https://openapi.tidal.com/v2/searchResults/daft%20punk%2Fone/relationships/tracks"
+        );
     }
 
     #[test]

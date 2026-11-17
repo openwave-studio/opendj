@@ -269,7 +269,9 @@ PioneerOPUSQUAD.jogTurn = function(channel, _control, value, _status, group) {
 };
 
 PioneerOPUSQUAD.jogSearch = function(_channel, _control, value, _status, group) {
-    engine.setValue(group, "jog", (value - 64) * PioneerOPUSQUAD.fastSeekScale);
+    // openDJ: SHIFT + turn moves the position (jog_search); plain jog bends
+    // the speed as in Mixxx.
+    engine.setValue(group, "jog_search", (value - 64) * PioneerOPUSQUAD.fastSeekScale);
 };
 
 PioneerOPUSQUAD.jogTouch = function(channel, _control, value) {

@@ -43,7 +43,10 @@ component Box inherits Rectangle {
 export component ChecklistPanel inherits Rectangle {
     property <int> done: ChecklistUi.done;
     background: Theme.browser;
-    VerticalLayout {
+    // Reports its full height so a short side panel can scroll to the
+    // last lines, the score and Edit instead of cutting them off.
+    preferred-height: content.preferred-height;
+    content := VerticalLayout {
         padding: 8px;
         spacing: 6px;
         HorizontalLayout {
