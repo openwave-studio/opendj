@@ -1637,7 +1637,10 @@ mod tests {
         r.automix.pick_length(1);
         assert_eq!(r.automix.shown_length(), 1);
         assert_eq!(r.automix.mix_length(), LENGTHS[1]);
-        assert!(r.ctl("[AutoDJ]", "enabled").get_bool(), "Automix keeps going");
+        assert!(
+            r.ctl("[AutoDJ]", "enabled").get_bool(),
+            "Automix keeps going"
+        );
     }
 
     #[test]
