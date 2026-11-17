@@ -2169,6 +2169,11 @@ impl Engine {
                         }
                     }
                     d.audio = track.audio.clone();
+                    // A drag that never saw its release (the Player bar
+                    // moving to the other deck mid-drag) would hold this
+                    // deck still for good; a new track starts free.
+                    d.c.seek_hold.set_bool(false);
+                    d.c.scrub_enable.set_bool(false);
                     d.velocity = 0.0;
                     d.jog_pending = 0.0;
                     d.slip = None;
@@ -6437,6 +6442,22 @@ mod tests {
         ctl("seek_hold").set_bool(false);
         assert!(run(&mut engine, 0.1) > 0.01, "audible after letting go");
         assert!(seconds() > 30.05 && seconds() < 30.2, "{}", seconds());
+    }
+
+    #[test]
+    fn a_held_overview_lets_go_when_a_track_loads() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 60.0));
+        run(&mut engine, 0.01);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        // Left held: a drag whose release went to another deck.
+        ctl("seek_hold").set_bool(true);
+        ctl("play").set_bool(false);
+        load(&mut input, 0, short_track(120.0, 60.0));
+        run(&mut engine, 0.01);
+        ctl("play").set_bool(true);
+        assert!(run(&mut engine, 0.1) > 0.01, "the new track plays");
+        assert!(!ctl("seek_hold").get_bool());
     }
 
     #[test]

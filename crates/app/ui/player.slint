@@ -255,6 +255,9 @@ export component PlayerBar inherits Rectangle {
     property <bool> playing: Controls.value(play-index, Controls.tick) > 0;
     property <int> position-index: Controls.resolve(group, "playposition");
     property <int> hold-index: Controls.resolve(group, "seek_hold");
+    // The deck a drag holds, kept from its start: Automix can move the
+    // bar to the other deck mid-drag, and the release must free this one.
+    property <int> held-index: -1;
     property <length> press-x;
     property <bool> scrubbing;
     // While dragging, where the pointer is (0 to 1), drawn at once rather
@@ -523,9 +526,10 @@ export component PlayerBar inherits Rectangle {
                                 scrubbing = false;
                                 Controls.set-value(position-index, clamp(self.mouse-x / self.width, 0, 1));
                             } else if e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel {
-                                if scrubbing {
-                                    Controls.set-value(hold-index, 0);
+                                if scrubbing && held-index >= 0 {
+                                    Controls.set-value(held-index, 0);
                                 }
+                                held-index = -1;
                                 scrubbing = false;
                             }
                         }
@@ -533,7 +537,8 @@ export component PlayerBar inherits Rectangle {
                             if self.pressed {
                                 if !scrubbing && abs(self.mouse-x - press-x) > 4px {
                                     scrubbing = true;
-                                    Controls.set-value(hold-index, 1);
+                                    held-index = hold-index;
+                                    Controls.set-value(held-index, 1);
                                 }
                                 if scrubbing {
                                     drag-at = clamp(self.mouse-x / self.width, 0, 1);
