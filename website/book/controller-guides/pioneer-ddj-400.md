@@ -10,6 +10,16 @@ have four pages: **HOT CUE**, **BEAT LOOP**, **BEAT JUMP** and **SAMPLER**.
 The **FILTER** knobs run each deck's filter, and the **BEAT FX** section on
 the right of the mixer runs the Beat FX.
 
+## Jog wheels
+
+The rim and untouched platter make gentle corrections to the playback speed, returning
+to normal when the wheel stops. On a paused deck they move through the track.
+Touching the platter scratches when **Settings › Decks › Vinyl mode** is on
+for that deck. With Vinyl mode off, the platter bends speed too.
+With Slip enabled, the track returns to where it would have reached once
+you release the platter and the wheel stops moving.
+**SHIFT + platter** searches quickly through the track.
+
 ## When you try it
 
 - Load a track with **LOAD**, play it, and scratch and nudge it with the jog

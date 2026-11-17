@@ -99,6 +99,9 @@ export struct TrackRow {
     streamed: bool,
     // Where a new set starts in a day of history: a line above it.
     set-start: bool,
+    // When it was played in this History session ("23:41"): shown dimmed
+    // with a lilac check. Empty when it wasn't.
+    played: string,
 }
 
 // One of the track list's columns. kind: 0 text, 1 the title (takes the
@@ -299,6 +302,13 @@ export global LibraryEdit {
     // The circling arrows over the Collection sidebar: look for new and
     // changed tracks in the music folders now.
     callback update-collection();
+    // Ends this History session: the played marks clear and the next track
+    // played starts a new session.
+    callback start-new-session();
+    // Takes rows first..last out of this session's played tracks.
+    callback mark-not-played(first: int, last: int);
+    // Any of rows first..last played in this session.
+    pure callback any-played(first: int, last: int) -> bool;
     // The DJ has lists a track can be added to.
     in property <bool> has-lists;
     // The lists the track menu's side panel shows: found by `find-lists`
@@ -1561,6 +1571,15 @@ component TrackMenu inherits PopupWindow {
                     root.close();
                 }
             }
+            if LibraryEdit.any-played(track-row, track-last): MenuLine {
+                icon: "minus";
+                text: "Mark as Not Played";
+                entered => { panel = 0; }
+                clicked => {
+                    LibraryEdit.mark-not-played(track-row, track-last);
+                    root.close();
+                }
+            }
             if StoreUi.source == 1 && !FilesUi.in-collection(track-row): MenuLine {
                 icon: "plus";
                 text: "Add to Collection";
@@ -2045,6 +2064,12 @@ component RailButton inherits Rectangle {
 component RefreshButton inherits Rectangle {
     in property <string> tip-title;
     in property <string> tip-body;
+    // Another icon in the same button, drawn in a 16-unit box; it doesn't
+    // spin when clicked.
+    in property <string> icon;
+    // The tip opens leftwards from the button's right edge, or rightwards
+    // from its left edge where there's no room on the left.
+    in property <bool> tip-leftwards: true;
     callback activated();
     property <int> turns;
     property <bool> tip-mine;
@@ -2060,9 +2085,9 @@ component RefreshButton inherits Rectangle {
         stroke: uta.has-hover ? Theme.text : Theme.text-dim;
         stroke-width: 1.5px;
         fill: transparent;
-        transform-rotation: turns * 360deg;
+        transform-rotation: icon != "" ? 0deg : turns * 360deg;
         animate transform-rotation { duration: 700ms; easing: ease-in-out; }
-        commands: "M 13.5 6.5 A 5.8 5.8 0 0 0 2.6 6 M 2.5 9.5 A 5.8 5.8 0 0 0 13.4 10 M 13.6 2.5 L 13.6 6.5 L 9.6 6.5 M 2.4 13.5 L 2.4 9.5 L 6.4 9.5";
+        commands: icon != "" ? icon : "M 13.5 6.5 A 5.8 5.8 0 0 0 2.6 6 M 2.5 9.5 A 5.8 5.8 0 0 0 13.4 10 M 13.6 2.5 L 13.6 6.5 L 9.6 6.5 M 2.4 13.5 L 2.4 9.5 L 6.4 9.5";
     }
     uta := TouchArea {
         mouse-cursor: pointer;
@@ -2084,8 +2109,51 @@ component RefreshButton inherits Rectangle {
             tip-mine = true;
             HoverTip.title = tip-title;
             HoverTip.body = tip-body;
-            HoverTip.right-aligned = true;
-            HoverTip.x = root.absolute-position.x + root.width;
+            HoverTip.right-aligned = tip-leftwards;
+            HoverTip.x = root.absolute-position.x + (tip-leftwards ? root.width : 0px);
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
+        }
+    }
+}
+
+// The lilac check on a track played in this History session. Hovering
+// shows when it was played.
+component PlayedCheck inherits Rectangle {
+    in property <string> played;
+    in property <bool> selected;
+    callback clicked();
+    property <bool> tip-mine;
+    width: 16px;
+    height: 16px;
+    Path {
+        width: 11px;
+        height: 11px;
+        viewbox-width: 12;
+        viewbox-height: 12;
+        stroke: selected ? Theme.on-row-selection : Theme.lilac;
+        stroke-width: 2px;
+        fill: transparent;
+        commands: "M 1.5 6.5 L 4.5 9.5 L 10.5 2.5";
+    }
+    cta := TouchArea {
+        clicked => { root.clicked(); }
+        changed has-hover => {
+            if !self.has-hover && tip-mine {
+                tip-mine = false;
+                HoverTip.shown = false;
+            }
+        }
+    }
+    Timer {
+        interval: 400ms;
+        running: cta.has-hover && !tip-mine;
+        triggered => {
+            tip-mine = true;
+            HoverTip.title = "Played " + played;
+            HoverTip.body = "In this session";
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
             HoverTip.y = root.absolute-position.y + root.height + 6px;
             HoverTip.shown = true;
         }
@@ -3081,6 +3149,17 @@ component FolderTree inherits Rectangle {
                 padding-left: 8px;
                 height: 26px;
                 Text { text: tab == 1 ? "Sessions" : source == 1 ? "Folders" : source == 0 ? (HealthUi.view ? "Collection Health" : "Library") : ["", "", "Spotify", "TIDAL", "Apple Music", "Bandcamp", "Beatport", "OneLibrary", "SoundCloud", "Albums", "Recordings", "Mixcloud"][source]; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; horizontal-stretch: 1; }
+                // Ends tonight's session: the played marks clear.
+                if tab == 1: VerticalLayout {
+                    alignment: center;
+                    RefreshButton {
+                        icon: "M 8 3 L 8 13 M 3 8 L 13 8";
+                        tip-leftwards: false;
+                        tip-title: "Start new session";
+                        tip-body: "Clears the played marks. The next track you play starts a new session.";
+                        activated => { LibraryEdit.start-new-session(); }
+                    }
+                }
                 if tab == 0 && source == 0 && !HealthUi.view: VerticalLayout {
                     alignment: center;
                     RefreshButton {
@@ -4843,6 +4922,13 @@ component TrackList inherits Rectangle {
                             border-width: 1.5px;
                             border-color: #1ed760;
                         }
+                        // Played in this session: a lilac check; hover
+                        // tells when.
+                        if r.played != "" && r.deck < 0 && !r.missing && r.analysing == 0: PlayedCheck {
+                            played: r.played;
+                            selected: selected;
+                            clicked => { current = i; }
+                        }
                         if r.deck >= 0: Rectangle {
                             width: 16px;
                             height: 16px;
@@ -4870,7 +4956,7 @@ component TrackList inherits Rectangle {
                         horizontal-stretch: 0;
                         min-width: col.width;
                         max-width: col.width;
-                        property <color> plain: selected ? Theme.on-row-selection : (r.available && !r.missing && !r.fade) || r.action != "" ? Theme.text : Theme.text-dim;
+                        property <color> plain: selected ? Theme.on-row-selection : (r.available && !r.missing && !r.fade && r.played == "") || r.action != "" ? Theme.text : Theme.text-dim;
                         if col.kind == 2: Text {
                             width: 100%;
                             text: r.rating == 0 ? "" : stars(r.rating);
@@ -4895,7 +4981,7 @@ component TrackList inherits Rectangle {
                             Text {
                                 min-width: self.preferred-width;
                                 text: c < r.cells.length ? r.cells[c] : "";
-                                color: selected ? Theme.on-row-selection : r.key-match ? Theme.lilac-text : Theme.text;
+                                color: selected ? Theme.on-row-selection : r.played != "" ? Theme.text-dim : r.key-match ? Theme.lilac-text : Theme.text;
                                 font-size: 15px;
                                 vertical-alignment: center;
                             }
@@ -4927,7 +5013,7 @@ component TrackList inherits Rectangle {
                             image-fit: fill;
                             // Its own colors (lilac shades or full color), except as a mask in one color on the
                             // selection and for tracks that can't play.
-                            colorize: selected ? Theme.on-row-selection : (r.available && !r.missing && !r.fade) ? transparent : Theme.text-dim;
+                            colorize: selected ? Theme.on-row-selection : (r.available && !r.missing && !r.fade && r.played == "") ? transparent : Theme.text-dim;
                         }
                         if col.kind == 0 || col.kind == 4 || col.kind == 5: Text {
                             width: 100%;
