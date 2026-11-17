@@ -29,11 +29,19 @@
 //! the offsets `seqS_pitch_offset` (semitones) and `seqS_vel_offset`.
 //! Shown: `seq_position` (the step playing, -1 stopped), `seq_waiting`
 //! (started, waiting for the bar) and `seq_slot_playing`.
+//!
+//! **Recording and generation.** With `seq_rec` on while it runs, keys and
+//! pads played write their note into the nearest step. `seq_dice` writes a
+//! new riff in `seq_dice_style` ([`STYLES`]) into the pattern being
+//! edited; `seq_dice_undo` puts the old one back, `seq_dice_keep` keeps
+//! it (`seq_can_undo` shows there is one to undo). `seq_regen` rolls a new
+//! riff every few bars by itself ([`REGEN_BARS`]).
 
 use opendj_control::{Behavior, ControlHandle, ControlRegistry};
 use opendj_plugin_host::{Midi, Transport};
 
 use crate::arp::RATES;
+use crate::controls::Edge;
 
 /// Steps in a pattern.
 pub const STEPS: usize = 16;
@@ -54,6 +62,10 @@ pub const FORWARD: u8 = 0;
 pub const BACKWARD: u8 = 1;
 pub const PING_PONG: u8 = 2;
 pub const RANDOM: u8 = 3;
+/// `seq_dice_style` values: the kind of riff Dice writes.
+pub const STYLES: [&str; 3] = ["Riff", "Bass", "Arp"];
+/// `seq_regen` values: bars between new riffs (0 off).
+pub const REGEN_BARS: [u32; 5] = [0, 1, 2, 4, 8];
 /// Pitch runs this many scale degrees either side of the root.
 pub const PITCH_RANGE: f64 = 7.0;
 /// A gate this long or longer ties the note into the next step.
@@ -93,6 +105,19 @@ pub struct SlotControls {
 
 pub struct SeqControls {
     pub play: ControlHandle,
+    /// On while it runs: keys and pads played go into the steps.
+    pub rec: ControlHandle,
+    /// Writes a new riff into the pattern being edited, in `dice_style`.
+    pub dice: ControlHandle,
+    pub dice_style: ControlHandle,
+    /// Puts back the pattern as it was before the last riff; `dice_keep`
+    /// keeps the new one (nothing left to undo).
+    pub dice_undo: ControlHandle,
+    pub dice_keep: ControlHandle,
+    pub can_undo: ControlHandle,
+    /// Auto-Regen: a new riff every 1, 2, 4 or 8 bars ([`REGEN_BARS`]) while
+    /// it runs; 0 off.
+    pub regen: ControlHandle,
     pub slot: ControlHandle,
     pub mode: ControlHandle,
     pub rate: ControlHandle,
@@ -155,6 +180,27 @@ impl SeqControls {
         };
         Self {
             play: reg.toggle(g, "seq"),
+            rec: reg.toggle(g, "seq_rec"),
+            dice: reg.push(g, "seq_dice"),
+            dice_style: reg.create(
+                g,
+                "seq_dice_style",
+                0.0,
+                0.0,
+                (STYLES.len() - 1) as f64,
+                Behavior::Free,
+            ),
+            dice_undo: reg.push(g, "seq_dice_undo"),
+            dice_keep: reg.push(g, "seq_dice_keep"),
+            can_undo: reg.indicator(g, "seq_can_undo", 1.0),
+            regen: reg.create(
+                g,
+                "seq_regen",
+                0.0,
+                0.0,
+                (REGEN_BARS.len() - 1) as f64,
+                Behavior::Free,
+            ),
             slot: reg.create(g, "seq_slot", 0.0, 0.0, (SLOTS - 1) as f64, Behavior::Free),
             mode: reg.create(
                 g,
@@ -247,6 +293,68 @@ pub fn random_lane(lane: usize, mut next: impl FnMut() -> u64) -> [f64; STEPS] {
     })
 }
 
+/// A whole new pattern in `style` (see [`STYLES`]), every lane, drawn
+/// from `next`. **Riff**: the lanes' RANDOM, every step sure to play.
+/// **Bass**: eighths and syncopated sixteenths, mostly root and fifth,
+/// some an octave down, slides and accents off the beat. **Arp**: every
+/// step on, climbing and falling through the chord's notes, short and
+/// even.
+#[allow(clippy::needless_range_loop)] // Steps index every lane at once.
+pub fn dice(style: usize, mut next: impl FnMut() -> u64) -> [[f64; STEPS]; LANES.len()] {
+    let mut p: [[f64; STEPS]; LANES.len()] =
+        std::array::from_fn(|lane| random_lane(lane, &mut next));
+    p[CHANCE] = [1.0; STEPS];
+    match style {
+        1 => {
+            for i in 0..STEPS {
+                let r = next();
+                let u = (r % 10_000) as f64 / 10_000.0;
+                let pick = (r >> 20) as usize;
+                p[ON][i] = f64::from(u8::from(i % 2 == 0 || u < 0.3));
+                p[PITCH][i] = [0.0, 0.0, 0.0, 0.0, 4.0, 4.0, -3.0, 2.0][pick % 8];
+                p[OCT][i] = if (r >> 40).is_multiple_of(5) {
+                    -1.0
+                } else {
+                    0.0
+                };
+                p[VEL][i] = if i % 4 == 2 { 1.0 } else { 0.7 };
+                p[GATE][i] = 0.4 + 0.2 * u;
+                p[SLIDE][i] = f64::from(u8::from((r >> 44).is_multiple_of(6)));
+            }
+        }
+        2 => {
+            const CHORD: [f64; 4] = [0.0, 2.0, 4.0, 7.0];
+            let up = next().is_multiple_of(2);
+            for i in 0..STEPS {
+                let j = if up { i % 4 } else { 3 - i % 4 };
+                p[ON][i] = 1.0;
+                p[PITCH][i] = CHORD[j];
+                p[OCT][i] = if (i / 4) % 2 == 1 { 1.0 } else { 0.0 };
+                p[VEL][i] = if i % 4 == 0 { 0.9 } else { 0.65 };
+                p[GATE][i] = 0.3;
+                p[SLIDE][i] = 0.0;
+            }
+        }
+        _ => {}
+    }
+    p
+}
+
+/// Of the notes [`note_for`] gives, the pitch degree (−7 to +7) and octave
+/// (−1 to +1) nearest `note`, for recording a key into a step.
+pub fn degree_for(note: u8, root: u8, mask: u16) -> (i32, i32) {
+    let mut best = (0, 0, i32::MAX);
+    for oct in [0, -1, 1] {
+        for d in -7..=7 {
+            let off = (note_for(d, root, mask) + 12 * oct - i32::from(note)).abs();
+            if off < best.2 {
+                best = (d, oct, off);
+            }
+        }
+    }
+    (best.0, best.1)
+}
+
 /// A lane's steps as RESET leaves them: no steps on, every other lane at
 /// its starting value.
 pub fn reset_value(lane: usize) -> f64 {
@@ -302,6 +410,11 @@ pub struct Seq {
     slot: usize,
     sounding: Option<Sounding>,
     rng: u32,
+    dice_edge: Edge,
+    undo_edge: Edge,
+    keep_edge: Edge,
+    /// The pattern before the last riff, and its slot.
+    undo: Option<(usize, [[f64; STEPS]; LANES.len()])>,
 }
 
 fn push(out: &mut Vec<Midi>, m: Midi) {
@@ -321,6 +434,10 @@ impl Seq {
             slot: 0,
             sounding: None,
             rng: 0x2545_f491,
+            dice_edge: Edge::default(),
+            undo_edge: Edge::default(),
+            keep_edge: Edge::default(),
+            undo: None,
         }
     }
 
@@ -346,6 +463,75 @@ impl Seq {
         s.steps[lane][position(k, len, mode, r)].get()
     }
 
+    /// Writes a new riff into `slot`, keeping the old pattern for undo.
+    fn roll(&mut self, slot: usize) {
+        let style = (self.c.dice_style.get().round().max(0.0) as usize).min(STYLES.len() - 1);
+        let mut seed = u64::from(self.random()) << 32 | u64::from(self.random());
+        let fresh = dice(style, || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            seed >> 11
+        });
+        let steps = &self.c.slots[slot].steps;
+        let old = std::array::from_fn(|lane| std::array::from_fn(|i| steps[lane][i].get()));
+        for (lane, values) in fresh.iter().enumerate() {
+            for (i, v) in values.iter().enumerate() {
+                steps[lane][i].set(*v);
+            }
+        }
+        self.undo = Some((slot, old));
+        self.c.can_undo.set_bool(true);
+    }
+
+    /// Dice, undo and keep, as pressed.
+    fn generation(&mut self) {
+        if self.dice_edge.pressed(&self.c.dice) {
+            self.roll(self.picked());
+        }
+        if self.undo_edge.pressed(&self.c.dice_undo) {
+            if let Some((slot, old)) = self.undo.take() {
+                let steps = &self.c.slots[slot].steps;
+                for (lane, values) in old.iter().enumerate() {
+                    for (i, v) in values.iter().enumerate() {
+                        steps[lane][i].set(*v);
+                    }
+                }
+            }
+            self.c.can_undo.set_bool(false);
+        }
+        if self.keep_edge.pressed(&self.c.dice_keep) {
+            self.undo = None;
+            self.c.can_undo.set_bool(false);
+        }
+    }
+
+    /// Writes the note-ons in `keys` (played at the buffer's start, beat
+    /// `beat`) into the step nearest them: on, pitch, octave and velocity.
+    #[allow(clippy::too_many_arguments)]
+    fn record(&mut self, keys: &[Midi], beat: f64, step: f64, root: u8, mask: u16) {
+        let k = ((beat - self.start_at) / step).round();
+        if k < 0.0 {
+            return;
+        }
+        let k = k as usize;
+        let s = &self.c.slots[self.slot];
+        let len = s.len.get().round().clamp(1.0, STEPS as f64) as usize;
+        let at = |lane: usize| {
+            let own = s.lane_len[lane].get().round() as usize;
+            k % if own == 0 { len } else { own.min(STEPS) }
+        };
+        for m in keys {
+            if let Some((_, note, vel)) = m.as_note_on() {
+                let (degree, oct) = degree_for(note, root, mask);
+                s.steps[ON][at(ON)].set(1.0);
+                s.steps[PITCH][at(PITCH)].set(f64::from(degree));
+                s.steps[OCT][at(OCT)].set(f64::from(oct));
+                s.steps[VEL][at(VEL)].set(f64::from(vel));
+            }
+        }
+    }
+
     fn end_note(&mut self, frame: u32, out: &mut Vec<Midi>) {
         if let Some(s) = self.sounding.take() {
             push(out, Midi::note_off(frame, 0, s.note));
@@ -354,7 +540,9 @@ impl Seq {
 
     /// Adds the notes it plays over `frames` at `sample_rate` to `out`, in
     /// time with `transport`, in the scale `mask` on `root` (see
-    /// [`note_for`]).
+    /// [`note_for`]). `keys` are the notes played on keys and pads this
+    /// buffer, which REC writes into the steps.
+    #[allow(clippy::too_many_arguments)]
     pub fn process(
         &mut self,
         frames: usize,
@@ -362,8 +550,10 @@ impl Seq {
         transport: Transport,
         root: u8,
         mask: u16,
+        keys: &[Midi],
         out: &mut Vec<Midi>,
     ) {
+        self.generation();
         let bpm = if transport.bpm > 0.0 {
             transport.bpm
         } else {
@@ -408,6 +598,9 @@ impl Seq {
         let step = 1.0 / per_beat;
         let late = self.c.swing.get().clamp(0.0, 0.75) * step;
         let mode = self.c.mode.get().round().max(0.0) as u8;
+        if self.c.rec.get_bool() && start >= self.start_at - step / 2.0 {
+            self.record(keys, start, step, root, mask);
+        }
         let start_at = self.start_at;
         let time = |k: i64| start_at + k as f64 * step + if k % 2 == 1 { late } else { 0.0 };
         let first = (((start - self.start_at - late) / step).floor() as i64).max(0);
@@ -460,6 +653,13 @@ impl Seq {
         let on_bar = ((t - self.start_at) / BAR - ((t - self.start_at) / BAR).round()).abs() < 1e-6;
         if on_bar {
             self.slot = self.picked();
+            // Auto-Regen: a new riff every N bars, after the first.
+            let every = REGEN_BARS
+                [(self.c.regen.get().round().max(0.0) as usize).min(REGEN_BARS.len() - 1)];
+            let bar = ((t - self.start_at) / BAR).round() as u64;
+            if every > 0 && bar > 0 && bar.is_multiple_of(u64::from(every)) {
+                self.roll(self.slot);
+            }
         }
         let r = self.random();
         let len = self.c.slots[self.slot].len.get().round() as usize;
@@ -537,7 +737,7 @@ mod tests {
         for b in 0..buffers {
             let mut out = Vec::with_capacity(64);
             let beat = from + b as f64 * 480.0 / 24_000.0;
-            s.process(480, SR, transport(beat, playing), 0, 0, &mut out);
+            s.process(480, SR, transport(beat, playing), 0, 0, &[], &mut out);
             found.extend(
                 out.iter()
                     .map(|m| (m.data[0] & 0xf0, m.data[1], b * 480 + m.frame as usize)),
@@ -583,6 +783,75 @@ mod tests {
             1.0,
             "a riff starts on the one"
         );
+    }
+
+    #[test]
+    fn keys_record_into_the_nearest_step() {
+        let (reg, mut s) = seq();
+        set(&reg, "seq", 1.0);
+        set(&reg, "seq_rec", 1.0);
+        run(&mut s, 0.0, 0.5, false);
+        // Beat 0.5 is step 2: F (degree 3 in C minor), an octave up.
+        let mut out = Vec::with_capacity(16);
+        let key = [Midi::note_on(0, 0, 65, 127)];
+        s.process(480, SR, transport(0.0, false), 0, 0, &key, &mut out);
+        let get = |k: &str| reg.get("[Instrument1]", k).unwrap().get();
+        assert_eq!(get("seq1_on_3"), 1.0);
+        assert_eq!(get("seq1_pitch_3"), 3.0);
+        assert_eq!(get("seq1_oct_3"), 1.0);
+        assert_eq!(get("seq1_vel_3"), 1.0);
+        assert_eq!(degree_for(46, 0, 0), (-1, 0), "Bb below C");
+    }
+
+    #[test]
+    fn dice_writes_a_riff_and_undo_takes_it_back() {
+        let (reg, mut s) = seq();
+        let get = |k: &str| reg.get("[Instrument1]", k).unwrap().get();
+        let before: Vec<f64> = (1..=16).map(|i| get(&format!("seq1_on_{i}"))).collect();
+        set(&reg, "seq_dice_style", 2.0);
+        set(&reg, "seq_dice", 1.0);
+        run(&mut s, 0.0, 0.02, false);
+        set(&reg, "seq_dice", 0.0);
+        // Arp: every step on.
+        assert!((1..=16).all(|i| get(&format!("seq1_on_{i}")) == 1.0));
+        assert_eq!(get("seq_can_undo"), 1.0);
+        set(&reg, "seq_dice_undo", 1.0);
+        run(&mut s, 0.0, 0.02, false);
+        let after: Vec<f64> = (1..=16).map(|i| get(&format!("seq1_on_{i}"))).collect();
+        assert_eq!(before, after);
+        assert_eq!(get("seq_can_undo"), 0.0);
+    }
+
+    #[test]
+    fn auto_regen_rolls_on_the_bar() {
+        let (reg, mut s) = seq();
+        set(&reg, "seq", 1.0);
+        set(&reg, "seq_dice_style", 2.0);
+        set(&reg, "seq_regen", 1.0);
+        run(&mut s, 0.0, 3.9, false);
+        assert_eq!(reg.get("[Instrument1]", "seq1_on_2").unwrap().get(), 0.0);
+        run(&mut s, 3.9, 0.2, false);
+        assert_eq!(reg.get("[Instrument1]", "seq1_on_2").unwrap().get(), 1.0);
+    }
+
+    #[test]
+    fn dice_styles_stay_in_range() {
+        let mut state = 3u64;
+        let mut next = || {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            state >> 11
+        };
+        for style in 0..STYLES.len() {
+            let p = dice(style, &mut next);
+            for (lane, steps) in p.iter().enumerate() {
+                let (lo, hi, _) = RANGES[lane];
+                assert!(
+                    steps.iter().all(|v| (lo..=hi).contains(v)),
+                    "{style} {}",
+                    LANES[lane]
+                );
+            }
+        }
     }
 
     #[test]
@@ -659,7 +928,7 @@ mod tests {
         run(&mut s, 0.0, 0.1, false);
         set(&reg, "seq", 0.0);
         let mut out = Vec::with_capacity(8);
-        s.process(480, SR, transport(0.0, false), 0, 0, &mut out);
+        s.process(480, SR, transport(0.0, false), 0, 0, &[], &mut out);
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].data, [0x80, 48, 0]);
         assert_eq!(
