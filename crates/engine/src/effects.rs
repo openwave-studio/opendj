@@ -25,6 +25,7 @@ use crate::controls::{
 };
 use crate::dsp::Svf;
 use crate::inputs::{input_group, MICROPHONE, NUM_INPUTS};
+use crate::tap_tempo::{tap_time, TapTempo};
 
 /// Mixxx's built-in effects that this engine implements, in `loaded_effect` order.
 pub const AVAILABLE_EFFECTS: [&str; 18] = [
@@ -99,10 +100,6 @@ pub const DEFAULT_EFFECTS: [[usize; EFFECTS_PER_UNIT]; NUM_EFFECT_UNITS] = [
 
 /// How long a released effect's tail rings on, in beats (see `release`).
 const RELEASE_BEATS: f32 = 8.0;
-/// Taps further apart than this, in seconds, start a new tap tempo.
-pub(crate) const TAP_GAP: f64 = 2.0;
-/// Tap intervals averaged into the tapped tempo.
-pub(crate) const TAPS: usize = 4;
 
 /// `loaded_effect` values from here on are plugins: `PLUGIN_BASE + i` is
 /// plugin `i` of the list the app hands the plugin host (see
@@ -820,10 +817,7 @@ struct UnitControls {
     auto: ControlHandle,
     release: ControlHandle,
     edges: [Edge; 3],
-    /// When the last tap came, on the engine clock, and the intervals before it.
-    last_tap: f64,
-    intervals: [f64; TAPS],
-    taps: usize,
+    taps: TapTempo,
 }
 
 impl UnitControls {
@@ -889,9 +883,7 @@ impl UnitControls {
             auto: reg.push(g, "bpm_auto"),
             release: reg.push(g, "release"),
             edges: [Edge::default(); 3],
-            last_tap: f64::NEG_INFINITY,
-            intervals: [0.0; TAPS],
-            taps: 0,
+            taps: TapTempo::default(),
         }
     }
 
@@ -926,20 +918,13 @@ impl UnitControls {
     fn update_tempo(&mut self, now: f64) {
         if self.edges[1].pressed(&self.auto) {
             self.bpm.set(0.0);
-            self.taps = 0;
+            self.taps = TapTempo::default();
         }
         if self.edges[0].pressed(&self.tap) {
-            let gap = now - self.last_tap;
-            self.last_tap = now;
-            if gap > TAP_GAP || gap <= 0.0 {
-                self.taps = 0;
-                return;
+            if let Some(bpm) = self.taps.tap(tap_time(now, &self.tap)) {
+                self.bpm
+                    .set((bpm.clamp(40.0, 300.0) * 100.0).round() / 100.0);
             }
-            self.intervals.rotate_right(1);
-            self.intervals[0] = gap;
-            self.taps = (self.taps + 1).min(TAPS);
-            let mean = self.intervals[..self.taps].iter().sum::<f64>() / self.taps as f64;
-            self.bpm.set((60.0 / mean).clamp(40.0, 300.0));
         }
     }
 }
@@ -1241,6 +1226,9 @@ pub(crate) struct EffectRack {
     scale_root: u8,
     /// The step sequencer's notes for this buffer (see [`crate::seq`]).
     seq_notes: Vec<Midi>,
+    /// The notes played on keys and pads this buffer, before scale and
+    /// chord.
+    keys: Vec<Midi>,
     /// What the instrument plays, for its deck to show.
     view: Arc<InstrumentView>,
     /// Its last [`SCOPE_SAMPLES`] samples (mono), and where the next goes.
@@ -1527,6 +1515,7 @@ impl EffectRack {
             scale_mask: 0,
             scale_root: 0,
             seq_notes: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
+            keys: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             view: Arc::default(),
             scope_ring: vec![0.0; SCOPE_SAMPLES],
             scope_pos: 0,
@@ -1604,11 +1593,21 @@ impl EffectRack {
     /// Queues a note for the instrument from the audio thread itself (the
     /// Instrument input's pads).
     pub(crate) fn queue_note(&mut self, data: [u8; 3]) {
-        self.scale.map(
-            Midi { frame: 0, data },
-            self.scale_mask,
-            &mut self.notes_waiting,
-        );
+        // In with the keys, so the arpeggiator, HOLD and the sequencer's
+        // REC take it too.
+        if self.keys.len() < self.keys.capacity() {
+            self.keys.push(Midi { frame: 0, data });
+        }
+    }
+
+    /// Takes the notes played on keys since the last buffer into `keys`.
+    fn take_keys(&mut self) {
+        while self.keys.len() < self.keys.capacity() {
+            match self.notes.pop() {
+                Ok(n) => self.keys.push(n),
+                Err(_) => break,
+            }
+        }
     }
 
     /// The scale notes for the instrument move to from now on: a bit per
@@ -1623,12 +1622,14 @@ impl EffectRack {
     /// beat: its notes go in with the keys' in
     /// [`EffectRack::start_instrument`].
     pub(crate) fn sequence(&mut self, seq: &mut crate::seq::Seq, frames: usize, target: usize) {
+        self.take_keys();
         seq.process(
             frames,
             self.sample_rate,
             self.transport[target],
             self.scale_root,
             self.scale_mask,
+            &self.keys,
             &mut self.seq_notes,
         );
     }
@@ -1679,16 +1680,13 @@ impl EffectRack {
     ) {
         self.instrument_sent = false;
         let cap = self.arp_in.capacity();
-        while let Ok(n) = self.notes.pop() {
+        self.take_keys();
+        for &n in self.keys.iter().chain(&self.seq_notes) {
             if self.arp_in.len() < cap {
                 self.scale.map(n, self.scale_mask, &mut self.arp_in);
             }
         }
-        for &n in &self.seq_notes {
-            if self.arp_in.len() < cap {
-                self.scale.map(n, self.scale_mask, &mut self.arp_in);
-            }
-        }
+        self.keys.clear();
         self.seq_notes.clear();
         if self.arp.is_on() {
             self.arp.process(

@@ -270,6 +270,15 @@ hands are on the mixer. Its notes go in where the keys' do, so **SCALE**,
 - Each lane has **⚄** (fill it at random, in key), **✕** (clear it) and
   **‹ n ›**, its own length. A lane shorter than the pattern repeats sooner
   and drifts against the others; it is dim while it follows the pattern.
+- **●** (REC) writes what you play on the keys or pads into the step
+  nearest each note while the sequencer runs: the note, its octave and how
+  hard you played it.
+- **⚄ DICE** writes a whole new riff into the pattern, in key, in the
+  style picked beside it: **RIFF** (anything goes), **BASS** (root and
+  fifth, eighths and offbeats, some slides) or **ARP** (up or down the
+  chord). **↶** puts the old pattern back and **✓** keeps the new one.
+  **AUTO** rolls a new riff by itself every 1, 2, 4 or 8 bars while it
+  plays.
 
 **OCT ‹** and **›** move the **KEYBOARD** pads up or down an
 octave, three at most each way. The pads play the white keys from middle C.

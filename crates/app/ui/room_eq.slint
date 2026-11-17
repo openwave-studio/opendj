@@ -32,6 +32,21 @@ export global RoomEqUi {
     in property <string> spectrum;
     in-out property <bool> show-spectrum: true;
     callback spectrum-toggled(on: bool);
+    // The spectrum before the Room EQ (0) or after it (1).
+    in property <int> view: 1;
+    callback view-picked(view: int);
+    // A frozen spectrum, as a line, to compare with; empty for none.
+    in property <string> frozen;
+    callback freeze();
+    // The curve's range up and down, in dB: 12, or 6 to zoom in.
+    in property <int> range: 12;
+    callback range-picked(range: int);
+    // Two curves to compare: 0 A, 1 B.
+    in property <int> slot;
+    callback pick-slot(slot: int);
+    // Held to hear the output without the Room EQ.
+    in property <bool> bypassed;
+    callback bypass(held: bool);
     in property <[RoomDot]> dots;
     in property <[RoomBand]> bands;
     in property <int> selected: 2;
@@ -126,6 +141,11 @@ export component RoomEqEditor inherits VerticalLayout {
             menu-width: 220px;
             picked(i) => { RoomEqUi.preset-picked(i); }
         }
+        Pick {
+            choices: ["A", "B"];
+            chosen: RoomEqUi.slot;
+            picked(i) => { RoomEqUi.pick-slot(i); }
+        }
         // A name for the curve, for a venue: Return saves, Esc gives up.
         if RoomEqUi.naming: HorizontalLayout {
             spacing: 6px;
@@ -162,28 +182,18 @@ export component RoomEqEditor inherits VerticalLayout {
             NameButton { text: "Cancel"; clicked => { RoomEqUi.naming = false; } }
         }
         Rectangle { horizontal-stretch: 1; }
-        // Spectrum: a tick box.
-        HorizontalLayout {
-            spacing: 6px;
-            VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 14px;
-                    height: 14px;
-                    border-radius: 3px;
-                    border-width: 1.5px;
-                    border-color: RoomEqUi.show-spectrum ? Theme.accent : Theme.text-dim;
-                    background: RoomEqUi.show-spectrum ? Theme.accent : transparent;
-                    Text { text: RoomEqUi.show-spectrum ? "✓" : ""; color: #000000; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
-                }
-            }
-            Text { text: "Spectrum"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
-            TouchArea {
+        // Held: the output without the Room EQ, to compare.
+        Rectangle {
+            height: 26px;
+            width: bypass-label.preferred-width + 20px;
+            border-radius: Theme.radius;
+            background: bypass-ta.pressed ? Theme.accent : bypass-ta.has-hover ? Theme.n-2a2a2e : Theme.control;
+            border-width: 1px;
+            border-color: Theme.border;
+            bypass-label := Text { text: "Bypass"; color: bypass-ta.pressed ? #000000 : Theme.text; font-size: 12px; vertical-alignment: center; horizontal-alignment: center; }
+            bypass-ta := TouchArea {
                 mouse-cursor: pointer;
-                clicked => {
-                    RoomEqUi.show-spectrum = !RoomEqUi.show-spectrum;
-                    RoomEqUi.spectrum-toggled(RoomEqUi.show-spectrum);
-                }
+                changed pressed => { RoomEqUi.bypass(self.pressed); }
             }
         }
         Rectangle { width: 10px; }
@@ -193,7 +203,7 @@ export component RoomEqEditor inherits VerticalLayout {
             Switch { on: RoomEqUi.on; toggled(on) => { RoomEqUi.toggled(on); } }
         }
     }
-    // The curve: ±12 dB up the side, 20 Hz to 20 kHz on a log scale.
+    // The curve: ±12 dB (or ±6) up the side, 20 Hz to 20 kHz on a log scale.
     Rectangle {
         height: 240px;
         border-radius: 8px;
@@ -221,13 +231,23 @@ export component RoomEqEditor inherits VerticalLayout {
                 stroke: Theme.lilac.with-alpha(0.25);
                 stroke-width: 1px;
             }
+            if RoomEqUi.frozen != "": Path {
+                width: parent.width;
+                height: parent.height;
+                viewbox-width: self.width / 1px;
+                viewbox-height: self.height / 1px;
+                commands: RoomEqUi.frozen;
+                stroke: #ffffff.with-alpha(0.45);
+                stroke-width: 1px;
+                fill: transparent;
+            }
             Path {
                 width: parent.width;
                 height: parent.height;
                 viewbox-width: self.width / 1px;
                 viewbox-height: self.height / 1px;
                 commands: RoomEqUi.curve;
-                stroke: RoomEqUi.on ? Theme.lilac : Theme.text-dim;
+                stroke: RoomEqUi.on && !RoomEqUi.bypassed ? Theme.lilac : Theme.text-dim;
                 stroke-width: 2.5px;
                 fill: transparent;
             }
@@ -266,7 +286,7 @@ export component RoomEqEditor inherits VerticalLayout {
                 }
             }
         }
-        for l[i] in ["+12", "+6", "0", "−6", "−12"]: Text {
+        for l[i] in ["+\{RoomEqUi.range}", "+\{RoomEqUi.range / 2}", "0", "−\{RoomEqUi.range / 2}", "−\{RoomEqUi.range}"]: Text {
             x: 6px;
             y: plot.y + plot.height * i / 4 - 6px;
             text: l;
@@ -279,6 +299,50 @@ export component RoomEqEditor inherits VerticalLayout {
             text: l;
             color: Theme.text-dim;
             font-size: 10px;
+        }
+    }
+    // The spectrum's and the curve's view.
+    HorizontalLayout {
+        spacing: 10px;
+        // Spectrum: a tick box.
+        HorizontalLayout {
+            horizontal-stretch: 0;
+            spacing: 6px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 3px;
+                    border-width: 1.5px;
+                    border-color: RoomEqUi.show-spectrum ? Theme.accent : Theme.text-dim;
+                    background: RoomEqUi.show-spectrum ? Theme.accent : transparent;
+                    Text { text: RoomEqUi.show-spectrum ? "✓" : ""; color: #000000; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+            Text { text: "Spectrum"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    RoomEqUi.show-spectrum = !RoomEqUi.show-spectrum;
+                    RoomEqUi.spectrum-toggled(RoomEqUi.show-spectrum);
+                }
+            }
+        }
+        if RoomEqUi.show-spectrum: Pick {
+            choices: ["Before", "After"];
+            chosen: RoomEqUi.view;
+            picked(i) => { RoomEqUi.view-picked(i); }
+        }
+        if RoomEqUi.show-spectrum: NameButton {
+            text: RoomEqUi.frozen != "" ? "Unfreeze" : "Freeze";
+            clicked => { RoomEqUi.freeze(); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Pick {
+            choices: ["±6 dB", "±12 dB"];
+            chosen: RoomEqUi.range == 6 ? 0 : 1;
+            picked(i) => { RoomEqUi.range-picked(i == 0 ? 6 : 12); }
         }
     }
     // A card per band; a click picks it, the dot in its corner turns it
@@ -323,7 +387,7 @@ export component RoomEqEditor inherits VerticalLayout {
         }
     }
     Text {
-        text: RoomEqUi.note != "" ? RoomEqUi.note : "Drag a dot for frequency and gain, scroll on it for width, double-click to reset. Recordings and the headphones don't get Room EQ.";
+        text: RoomEqUi.note != "" ? RoomEqUi.note : "Drag a dot for frequency and gain, scroll on it for width, double-click to reset. Click a peak in the spectrum to cut it. Hold Bypass to hear the room without it. Recordings and the headphones don't get Room EQ.";
         color: Theme.text-dim;
         font-size: 12px;
         wrap: word-wrap;
