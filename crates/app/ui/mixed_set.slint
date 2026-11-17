@@ -288,6 +288,7 @@ component Timeline inherits Rectangle {
             width: root.width / vl;
             height: row-h;
             viewbox-width: 1000;
+            fit: fill;
             viewbox-height: 100;
             fill: Theme.lilac-dim;
             commands: MixedSetUi.wave;
@@ -385,6 +386,7 @@ component Timeline inherits Rectangle {
                 width: root.width / vl;
                 height: 20px;
                 viewbox-width: 1000;
+                fit: fill;
                 viewbox-height: 100;
                 stroke: l.deck == 0 ? Theme.deck1 : l.deck == 1 ? Theme.deck2 : l.deck == 2 ? Theme.deck3 : l.deck == 3 ? Theme.deck4 : Theme.text-dim;
                 stroke-width: 1.2px;
@@ -453,6 +455,7 @@ component Overview inherits Rectangle {
         width: root.width;
         height: root.height;
         viewbox-width: 1000;
+        fit: fill;
         viewbox-height: 100;
         fill: Theme.n-3a3a3e;
         commands: MixedSetUi.wave;
