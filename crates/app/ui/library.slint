@@ -679,6 +679,10 @@ export global HealthUi {
     // the copy at a row and merge the rest of its group into it.
     in property <bool> copies;
     callback keep-this(row: int);
+    // Every group of copies is open.
+    in property <bool> all-copies;
+    // Opens or closes a row's group of copies; below 0, every group.
+    callback toggle-copies(row: int);
     // Merged copies' files in the quarantine folder, or waiting to go
     // there, and a button to show the folder.
     in property <int> quarantined;
@@ -1764,6 +1768,15 @@ component TrackMenu inherits PopupWindow {
                     entered => { panel = 0; }
                     clicked => {
                         HealthUi.fix(j, track-row, track-last);
+                        root.close();
+                    }
+                }
+                if HealthUi.copies && one: MenuLine {
+                    icon: "list";
+                    text: "Show or hide its copies";
+                    entered => { panel = 0; }
+                    clicked => {
+                        HealthUi.toggle-copies(track-row);
                         root.close();
                     }
                 }
@@ -4109,6 +4122,13 @@ component HealthBar inherits Rectangle {
                         text: f + (n > 1 ? " (" + n + ")" : "");
                         clicked => { HealthUi.fix(j, -1, -1); }
                     }
+                }
+            }
+            if HealthUi.copies: VerticalLayout {
+                alignment: center;
+                HealthButton {
+                    text: HealthUi.all-copies ? "Hide copies" : "Show copies";
+                    clicked => { HealthUi.toggle-copies(-1); }
                 }
             }
             if LibraryEdit.undo-text != "": VerticalLayout {

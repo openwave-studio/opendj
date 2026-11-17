@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use opendj_engine::{tags, Track};
 use opendj_library::cleanup::Field;
-use opendj_library::dupes::{self, Case, FileFacts, Group};
+use opendj_library::dupes::{self, Case, FileFacts, Group, Match};
 use opendj_library::health::{self, Area, Check, Facts};
 use opendj_library::query::Indexed;
 use opendj_library::relocate::{self, Lookup};
@@ -234,12 +234,12 @@ fn steps(check: Check) -> Vec<(Step, &'static str, &'static str)> {
             (
                 Sure,
                 "Merge the sure ones",
-                "Same file or the same recording in a better copy: nothing is lost.",
+                "The same file, or the same name and length to the second: nothing is lost.",
             ),
             (
                 Review,
                 "Check the rest",
-                "Pick the copy to keep, or ignore copies that are different tracks.",
+                "Likely copies a second or two apart: pick the one to keep, or ignore them.",
             ),
             (
                 Fix(self::Fix::LinkVersions),
@@ -492,6 +492,8 @@ impl Browser {
         let w = with.clone();
         ui.on_keep_this(move |row| w(&|b| b.keep_this(row)));
         let w = with.clone();
+        ui.on_toggle_copies(move |row| w(&|b| b.toggle_copies(row)));
+        let w = with.clone();
         ui.on_quarantine(move |first, last| {
             w(&|b| {
                 let indices = b.picked_rows(first, last);
@@ -666,9 +668,31 @@ impl Browser {
                     return s("Copy", "");
                 };
                 if g.tracks[0] == t.id {
+                    // The group's row: how it matched, and what differs.
+                    let problem = match g.case {
+                        Case::Versions => format!("{} versions", g.tracks.len()),
+                        c => format!("{} · {} ({})", g.matched.title(), c.title(), g.tracks.len()),
+                    };
+                    let fix = match g.case {
+                        Case::SameFile => "Identical files: keeps one".to_string(),
+                        Case::Versions => g
+                            .tracks
+                            .iter()
+                            .filter_map(|id| self.index_of.get(id))
+                            .map(|&i| super::short_time(self.library[i].duration).to_string())
+                            .collect::<Vec<_>>()
+                            .join(" vs "),
+                        _ => {
+                            let others: Vec<String> =
+                                g.tracks[1..].iter().map(|&id| self.copy_text(id)).collect();
+                            format!("Keeps {} over {}", self.copy_text(t.id), others.join(", "))
+                        }
+                    };
+                    (problem, fix)
+                } else if g.case == Case::Versions {
                     (
-                        format!("{}: kept", g.case.title()),
-                        "Keeps the others' cues and plays".into(),
+                        format!("Version · {}", self.copy_text(t.id)),
+                        Fix::LinkVersions.label().into(),
                     )
                 } else {
                     let keep = self
@@ -677,7 +701,10 @@ impl Browser {
                         .and_then(|&i| file_path(&self.library[i]))
                         .map(short)
                         .unwrap_or_default();
-                    (g.case.title().into(), format!("Merge into {keep}"))
+                    (
+                        format!("Copy · {}", self.copy_text(t.id)),
+                        format!("Merge into {keep}"),
+                    )
                 }
             }
             Check::MissingInfo => {
@@ -785,7 +812,8 @@ impl Browser {
             .map(|t| &**t)
             .collect();
         let links = &self.links;
-        self.duplicates = dupes::copies(tracks)
+        let alike: HashSet<(usize, usize)> = self.alike.iter().copied().collect();
+        self.duplicates = dupes::copies(tracks, &self.alike)
             .iter()
             .flat_map(|c| {
                 dupes::groups(
@@ -794,6 +822,7 @@ impl Browser {
                     |_| FileFacts::default(),
                     |_, _| false,
                     |a, b| links.contains(&(a, b)),
+                    |a, b| alike.contains(&(a.min(b), a.max(b))),
                 )
             })
             .flat_map(|g| g.tracks)
@@ -815,25 +844,33 @@ impl Browser {
                 file_path(t).filter(|p| !cover_scan::offloaded(p))
             }
             let facts = |t: &Track| {
-                here(t).map_or_else(FileFacts::default, |p| {
+                let f = here(t).map_or_else(FileFacts::default, |p| {
                     let info = tags::file_info(p);
                     FileFacts {
                         size: info.size,
                         lossless: dupes::lossless(&info.format, info.bit_depth),
                         bitrate: info.bitrate.unwrap_or(0),
                     }
-                })
+                });
+                self.dupe_facts.borrow_mut().insert(t.id, f);
+                f
             };
             let same = |a: &Track, b: &Track| match (here(a), here(b)) {
                 (Some(x), Some(y)) => dupes::same_bytes(x, y),
                 _ => false,
             };
-            dupes::copies(tracks)
+            let alike: HashSet<(usize, usize)> = self.alike.iter().copied().collect();
+            dupes::copies(tracks, &self.alike)
                 .iter()
                 .flat_map(|c| {
-                    dupes::groups(c, &self.folders, facts, same, |a, b| {
-                        self.links.contains(&(a, b))
-                    })
+                    dupes::groups(
+                        c,
+                        &self.folders,
+                        facts,
+                        same,
+                        |a, b| self.links.contains(&(a, b)),
+                        |a, b| alike.contains(&(a.min(b), a.max(b))),
+                    )
                 })
                 .collect()
         })
@@ -852,12 +889,86 @@ impl Browser {
             .collect()
     }
 
+    /// The rows of the Duplicates page (indices into `library`): each
+    /// group's kept copy, followed by its other copies when the group is
+    /// open.
+    pub(super) fn dupe_rows(&self, case: Option<Case>) -> Vec<usize> {
+        let mut seen = HashSet::new();
+        self.dupe_groups()
+            .iter()
+            .filter(|g| case.is_none_or(|c| g.case == c))
+            .flat_map(|g| {
+                let open = self.all_copies || self.open_groups.contains(&g.tracks[0]);
+                &g.tracks[..if open { g.tracks.len() } else { 1 }]
+            })
+            .filter(|&&id| seen.insert(id))
+            .filter_map(|id| self.index_of.get(id).copied())
+            .collect()
+    }
+
+    /// Opens or closes the group of the copy in `row`; with `row` below 0,
+    /// every group.
+    fn toggle_copies(&mut self, row: i32) {
+        match usize::try_from(row)
+            .ok()
+            .and_then(|r| self.rows.get(r).copied().flatten())
+        {
+            None => {
+                self.all_copies = !self.all_copies;
+                self.open_groups.clear();
+            }
+            Some(i) => {
+                let id = self.library[i].id;
+                let Some(keep) = self
+                    .dupe_groups()
+                    .iter()
+                    .find(|g| g.tracks.contains(&id))
+                    .map(|g| g.tracks[0])
+                else {
+                    return;
+                };
+                if !self.open_groups.remove(&keep) {
+                    self.open_groups.insert(keep);
+                }
+            }
+        }
+        self.refresh_rows_keeping_current();
+    }
+
+    /// A copy's file in a few words: "FLAC 1411 kb/s · 6:12".
+    fn copy_text(&self, id: usize) -> String {
+        let Some(t) = self.index_of.get(&id).map(|&i| &self.library[i]) else {
+            return String::new();
+        };
+        let format = file_path(t)
+            .and_then(|p| p.extension())
+            .map(|e| e.to_string_lossy().to_uppercase())
+            .unwrap_or_default();
+        let facts = self
+            .dupe_facts
+            .borrow()
+            .get(&id)
+            .copied()
+            .unwrap_or_default();
+        let mut parts = Vec::new();
+        match (format.is_empty(), facts.bitrate) {
+            (true, _) => {}
+            (false, 0) => parts.push(format),
+            (false, b) if facts.lossless => parts.push(format!("{format} {b} kb/s")),
+            (false, b) => parts.push(format!("{format} {b}")),
+        }
+        if t.duration > 0.0 {
+            parts.push(super::short_time(t.duration).to_string());
+        }
+        parts.join(" · ")
+    }
+
     /// Ids of the copies the listed groups would merge away: in every easy
     /// group, or in `case`'s.
     pub(super) fn dupe_faded(&self, case: Option<Case>) -> HashSet<usize> {
         self.dupe_groups()
             .iter()
-            .filter(|g| case.map_or(g.case.easy(), |c| g.case == c))
+            .filter(|g| case.map_or(g.easy(), |c| g.case == c))
             .flat_map(|g| g.tracks[1..].iter().copied())
             .collect()
     }
@@ -880,7 +991,7 @@ impl Browser {
             .iter()
             .filter(|g| match fix {
                 Fix::LinkVersions => g.case == Case::Versions,
-                _ => case.map_or(g.case.easy(), |c| g.case == c),
+                _ => case.map_or(g.easy(), |c| g.case == c),
             })
             .count()
     }
@@ -1123,6 +1234,7 @@ impl Browser {
         };
         let ignored = db.health_ignored().unwrap_or_default();
         let saved = db.covers().unwrap_or_default();
+        let saved_sounds = db.sounds().unwrap_or_default();
         let tracks: Vec<&Track> = self
             .library
             .iter()
@@ -1167,15 +1279,78 @@ impl Browser {
         }
         self.health = facts;
         self.removed = db.removed_count().unwrap_or(0);
+        let music = |b: &Self, id: usize| {
+            b.index_of.get(&id).is_some_and(|&i| {
+                !b.health
+                    .finds(Check::NotMusic, &b.library[i], &HashSet::new())
+            })
+        };
         for (id, path, album) in look {
-            let music = self.index_of.get(&id).is_some_and(|&i| {
-                !self
-                    .health
-                    .finds(Check::NotMusic, &self.library[i], &HashSet::new())
-            });
-            if music && !cover_scan::offloaded(&path) {
+            if music(self, id) && !cover_scan::offloaded(&path) {
                 self.cover_scan.add(id, &path, &album);
             }
+        }
+        // Fingerprints: those made since the file last changed are kept,
+        // the others are made again in the background.
+        let mut sounds = HashMap::new();
+        let mut listen = Vec::new();
+        for t in self
+            .library
+            .iter()
+            .filter(|t| self.in_collection(t) && !t.info.missing)
+        {
+            let Some(path) = file_path(t) else { continue };
+            match saved_sounds.get(&t.id) {
+                Some((mtime, print)) if *mtime == cover_scan::mtime(path) => {
+                    if !print.is_empty() {
+                        sounds.insert(t.id, print.clone());
+                    }
+                }
+                _ => listen.push((t.id, path.to_path_buf())),
+            }
+        }
+        for (id, path) in listen {
+            if music(self, id) && !cover_scan::offloaded(&path) {
+                self.sound_scan.add(id, &path);
+            }
+        }
+        if sounds != self.sounds {
+            self.sounds = sounds;
+            self.alike = dupes::same_sound(&self.sounds);
+        }
+    }
+
+    /// Takes in the fingerprints made since last time. Copies are looked
+    /// for again every so often, and once the last file is done.
+    pub fn poll_sounds(&mut self) {
+        let found = self.sound_scan.take();
+        if found.is_empty() {
+            return;
+        }
+        if let Some(db) = &mut self.db {
+            if let Err(e) = db.save_sounds(&found) {
+                eprintln!("can't save fingerprints: {e}");
+            }
+        }
+        for (id, _, print) in found {
+            if !print.is_empty() {
+                self.sounds.insert(id, print);
+                self.sounds_new += 1;
+            }
+        }
+        if self.sounds_new == 0 || (self.sound_scan.busy() && self.sounds_new < 50) {
+            return;
+        }
+        self.sounds_new = 0;
+        let alike = dupes::same_sound(&self.sounds);
+        if alike == self.alike {
+            return;
+        }
+        self.alike = alike;
+        self.refresh_dupes();
+        self.refresh_tree();
+        if self.dupe_view().is_some() {
+            self.refresh_rows_keeping_current();
         }
     }
 
@@ -1326,6 +1501,7 @@ impl Browser {
         ui.set_status(self.health_status.clone().into());
         ui.set_removed(self.removed as i32);
         ui.set_copies(on && self.dupe_view().is_some());
+        ui.set_all_copies(self.all_copies);
         ui.set_quarantined(self.quarantined as i32);
         ui.set_lists(self.list_health_text().into());
         ui.set_quarantine_exists(self.quarantine_root().is_some_and(|d| d.is_dir()));
@@ -1561,7 +1737,7 @@ impl Browser {
             Check::Duplicate => self
                 .dupe_groups()
                 .iter()
-                .filter(|g| !g.case.easy())
+                .filter(|g| !g.easy())
                 .map(|g| g.tracks.len())
                 .sum(),
             _ => listed.saturating_sub(self.sure_count(check)),
@@ -1729,11 +1905,18 @@ impl Browser {
                 let Some(groups) = groups.filter(|g| !g.is_empty()) else {
                     return String::new();
                 };
-                let easy = groups.iter().filter(|g| g.case.easy()).count();
-                let versions = groups.len() - easy;
-                let mut s = format!("{easy} easy to fix at once");
+                let count = |m: Match| groups.iter().filter(|g| g.matched == m).count();
+                let (sure, likely, versions) = (
+                    count(Match::Sure),
+                    count(Match::Likely),
+                    count(Match::Versions),
+                );
+                let mut s = format!("{sure} sure to merge at once");
+                if likely > 0 {
+                    s += &format!(", {likely} likely to look at");
+                }
                 if versions > 0 {
-                    s += &format!(", {versions} of different lengths to look at");
+                    s += &format!(", {versions} of different lengths");
                 }
                 s + "."
             }
@@ -2146,7 +2329,7 @@ impl Browser {
                 let plan = self
                     .dupe_groups()
                     .iter()
-                    .filter(|g| g.case.easy())
+                    .filter(|g| g.easy())
                     .map(|g| self.merge_plan(g, g.tracks[0]))
                     .collect();
                 self.merge(plan)

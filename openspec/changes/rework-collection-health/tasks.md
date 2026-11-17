@@ -9,8 +9,8 @@
 
 ## 2. Duplicates
 
-- [ ] 2.1 One row per group with match reason and confidence, opened to compare; local over streamed
-- [ ] 2.2 Audio fingerprints stored per track in the background; same-sound groups
+- [x] 2.1 One row per group with match reason and confidence, opened to compare; local over streamed
+- [x] 2.2 Audio fingerprints stored per track in the background; same-sound groups
 
 ## 3. Tags
 

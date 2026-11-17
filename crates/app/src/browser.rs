@@ -646,6 +646,12 @@ pub struct Browser {
     /// The copies grouped by case, worked out (reading their files) the
     /// first time they're needed after the library changes.
     dupe_groups: OnceCell<Vec<Group>>,
+    /// What each copy's file is like, read with the groups.
+    dupe_facts: RefCell<HashMap<usize, opendj_library::dupes::FileFacts>>,
+    /// Groups of copies opened to show every copy, by the kept copy's id.
+    open_groups: HashSet<usize>,
+    /// Every group shows its copies.
+    all_copies: bool,
     /// Pairs of linked tracks, both ways round.
     links: HashSet<(usize, usize)>,
     /// Tempo and key of the track playing now, for "mixes with deck", and its id.
@@ -750,6 +756,14 @@ pub struct Browser {
     health: Facts,
     /// Looks for covers in the background, for the "No cover" check.
     cover_scan: CoverScan,
+    /// Makes audio fingerprints, for copies found by their sound.
+    sound_scan: crate::sound_scan::SoundScan,
+    /// Each track's audio fingerprint, by id.
+    sounds: HashMap<usize, Vec<u32>>,
+    /// Pairs of tracks (ids, smaller first) that sound the same.
+    alike: Vec<(usize, usize)>,
+    /// Fingerprints taken in since `alike` was worked out.
+    sounds_new: usize,
     /// What the last Collection Health fix did.
     health_status: String,
     /// How many tracks have been taken out of the library.
@@ -1332,6 +1346,9 @@ impl Browser {
             indexed: Vec::new(),
             duplicates: HashSet::new(),
             dupe_groups: OnceCell::new(),
+            dupe_facts: RefCell::new(HashMap::new()),
+            open_groups: HashSet::new(),
+            all_copies: false,
             links: HashSet::new(),
             deck_ref: None,
             deck_track: None,
@@ -1401,6 +1418,10 @@ impl Browser {
             pending_moves: HashMap::new(),
             health: Facts::default(),
             cover_scan: CoverScan::start(),
+            sound_scan: crate::sound_scan::SoundScan::start(),
+            sounds: HashMap::new(),
+            alike: Vec::new(),
+            sounds_new: 0,
             health_status: String::new(),
             removed: 0,
             quarantined: 0,
@@ -5094,8 +5115,8 @@ impl Browser {
                 .filter(|&t| self.at_stage(&self.library[t], *stage, dir.as_deref()))
                 .collect(),
             Contents::Query(q) => self.search(&Query::parse(q), None),
-            Contents::Health(Some(Check::Duplicate)) => self.dupe_tracks(None),
-            Contents::Dupes(case) => self.dupe_tracks(Some(*case)),
+            Contents::Health(Some(Check::Duplicate)) => self.dupe_rows(None),
+            Contents::Dupes(case) => self.dupe_rows(Some(*case)),
             Contents::Health(Some(check)) => self.health_tracks(*check),
             Contents::Health(None) | Contents::Area(_) => Vec::new(),
             Contents::Ignored => self.ignored_tracks(),

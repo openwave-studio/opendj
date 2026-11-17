@@ -54,14 +54,14 @@ went to quarantine moves to your In Prep folder, to be looked at again.
 | Not music | Audiobooks, podcasts and spoken word: Apple Books and Podcasts folders, `.m4b` files, genres such as Audiobook, "(Unabridged)" albums, and chapters (several tracks in one folder sharing a title) | Remove from library, It's music |
 | Strays | Files outside your Inbox, In Prep and Play Ready folders | Move to In Prep, Remove from collection |
 | Outside folders | Files outside your music folders and stage folders, such as ones that came in with a VirtualDJ import | Move to In Prep, Remove from collection |
-| Duplicates | The same track more than once: same artist, title and remix | Auto-fix, Keep this copy, Link as versions (see [Duplicates](#duplicates)) |
+| Duplicates | The same track more than once: same artist, title and remix | Merge the sure ones, Keep this copy, Link as versions (see [Duplicates](#duplicates)) |
 | Not analyzed | No tempo or key | Analyze, in the background |
 | Missing information | No artist, title, album, year or genre, or one that says nothing, like "Unknown Artist", "Untitled" or "Track 01" | Look up online (see [Online lookup](#online-lookup)); Fill from file name… (`Artist - Title.mp3`, shown in the review table before anything is written). The page says what the flagged tracks lack, such as "80 no genre, 12 no artist or title" |
 | Low bitrate | Compressed files under 192 kb/s, which can sound dull on a big system | None yet: replace them with a better copy |
 | Junk in names | Track numbers, web sites, "(Official Video)", underscores, or a remix or guest in the title | Clean up… (see [Clean-up](#clean-up)), Look up online |
 | No cover | No picture in the file's tags or its folder | Find covers online, or one by one from the track's info panel |
 | Unrated | No stars; never counts against the score | Rate them in the list |
-| Missing files | The file isn't where your collection expects it | Auto-fix relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
+| Missing files | The file isn't where your collection expects it | Relink the sure ones relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
 | Long tracks | Over 20 minutes: recorded sets and long pieces | Tag as #mix |
 
 **Lists** at the bottom of the page shows up when crates are empty or lists
@@ -167,8 +167,12 @@ round.
 ## Duplicates
 
 Copies are tracks with the same artist, title and remix, ignoring case,
-punctuation and "Original Mix". Under **Duplicates** in the tree, openDJ
-sorts them into groups by what tells them apart:
+punctuation and "Original Mix", or tracks that sound the same. openDJ
+listens to the first two minutes of each file in the background, once, and
+again only when the file changes, so a renamed `Track 03.mp3` is found as
+a copy of the tagged FLAC it came from. A match by sound is always Sure.
+On a Mac, files that iCloud has taken off the disk are skipped. openDJ
+sorts the copies into groups by what tells them apart:
 
 | Group | What it is | What happens |
 |---|---|---|
@@ -177,14 +181,22 @@ sorts them into groups by what tells them apart:
 | Same format | The same recording in the same format, in different folders | One is kept |
 | Different lengths | More than 3 seconds apart: an edit and an extended mix, say | You decide: **Link as versions** or **Keep the best copies** |
 
-In each group the copy kept comes first and the others are dimmed. openDJ
+Each group is one row. Its Problem says how sure the match is and why:
+**Sure** (the same file, or the same name and length to the second),
+**Likely** (a second or two apart: look before merging) or **Versions**,
+with how many copies there are. Its Fix says what differs, such as
+"Keeps FLAC 1411 · 6:12 over MP3 192 · 6:12". **Show copies** on the bar
+opens every group; right-click a row and choose **Show or hide its
+copies** to open just that one.
+
+In an open group the copy kept comes first and the others are dimmed. openDJ
 keeps the copy in your Play Ready folder, then a lossless file over a lossy
 one, then the higher bitrate, then the one with cues or a checked grid,
 then the most played. To keep another one, right-click it and choose
 **Keep this copy**. The **Location** column (right-click a heading) shows
 which folder each copy is in.
 
-**Auto-fix** on Duplicates merges every group but Different lengths at once. Merging
+**Merge the sure ones** on Duplicates merges every Sure group at once. Merging
 loses nothing: the kept copy takes the others' lists and history, cues and
 grid (when it has none), links, the highest rating, all their plays, the
 earliest date added, and any tags it lacks. The other copies leave your

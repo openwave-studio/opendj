@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS covers (
     has_cover INTEGER NOT NULL,
     bitrate INTEGER
 );
+CREATE TABLE IF NOT EXISTS sounds (
+    track_id INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    file_mtime INTEGER NOT NULL,
+    print BLOB NOT NULL
+);
 ";
 
 /// A track taken out of the library (see [`Library::removed_tracks`]).
@@ -822,6 +827,40 @@ impl Library {
         rows.collect()
     }
 
+    /// Each track's audio fingerprint (see [`crate::dupes::same_sound`]),
+    /// with its file's modification time when it was made.
+    pub fn sounds(&self) -> Result<HashMap<usize, (i64, Vec<u32>)>, Error> {
+        let mut q = self
+            .db
+            .prepare("SELECT track_id, file_mtime, print FROM sounds")?;
+        let rows = q.query_map([], |r| {
+            let blob: Vec<u8> = r.get(2)?;
+            let print = blob
+                .chunks_exact(4)
+                .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                .collect();
+            Ok((track_id(r.get(0)?), (r.get(1)?, print)))
+        })?;
+        rows.collect()
+    }
+
+    /// Keeps tracks' audio fingerprints, by track id, with their files'
+    /// modification times.
+    pub fn save_sounds(&mut self, found: &[(usize, i64, Vec<u32>)]) -> Result<(), Error> {
+        let tx = self.db.transaction()?;
+        {
+            let mut put = tx.prepare(
+                "INSERT OR REPLACE INTO sounds (track_id, file_mtime, print) VALUES (?1, ?2, ?3)",
+            )?;
+            for (id, mtime, print) in found {
+                let Some(row) = row_id(*id) else { continue };
+                let blob: Vec<u8> = print.iter().flat_map(|v| v.to_le_bytes()).collect();
+                put.execute(params![row, mtime, blob])?;
+            }
+        }
+        tx.commit()
+    }
+
     /// Notes what was found in tracks' files, by track id.
     pub fn save_covers(&mut self, found: &[(usize, FileLook)]) -> Result<(), Error> {
         let tx = self.db.transaction()?;
@@ -1082,6 +1121,8 @@ mod tests {
         assert_eq!(removed.len(), 1);
         assert_eq!((removed[0].id, removed[0].title.as_str()), (ids[0], "One"));
         assert!(!removed[0].quarantined);
+        lib.save_sounds(&[(ids[1], 7, vec![1, u32::MAX])]).unwrap();
+        assert_eq!(lib.sounds().unwrap()[&ids[1]], (7, vec![1, u32::MAX]));
         // A scan finds the file again, but it stays out.
         lib.sync(&[file_track("/m/a.mp3", "One")]).unwrap();
         assert_eq!(lib.all_tracks(|_| true).unwrap().len(), 1);
