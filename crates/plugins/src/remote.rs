@@ -71,6 +71,8 @@ fn answer(plugin: &mut dyn Plugin, method: &str, p: &Value) -> Result<Value, Plu
                 let mut info = info_json(&s.info());
                 info["sites"] = json!(s.sites());
                 info["previews"] = json!(s.previews());
+                info["plays"] = json!(s.plays());
+                info["rail"] = json!(s.in_rail());
                 info
             });
             Ok(json!({
@@ -154,6 +156,10 @@ struct Described {
     source: Option<SourceInfo>,
     sites: &'static [&'static str],
     previews: bool,
+    /// Its files play from a cache (see [`SearchSource::plays`]).
+    plays: bool,
+    /// It has a place in the rail (see [`SearchSource::in_rail`]).
+    rail: bool,
 }
 
 fn described() -> &'static Mutex<HashMap<PathBuf, Described>> {
@@ -415,6 +421,12 @@ impl SearchSource for RemotePlugin {
     fn previews(&self) -> bool {
         self.described.previews
     }
+    fn plays(&self) -> bool {
+        self.described.plays
+    }
+    fn in_rail(&self) -> bool {
+        self.described.rail
+    }
     fn preview(&mut self, id: &str, item: &Found) -> Result<(), PluginError> {
         self.call(
             "source.preview",
@@ -537,6 +549,9 @@ fn described_from(hello: &Value) -> Result<Described, PluginError> {
         sites: Box::leak(sites.into_boxed_slice()),
         // An add-on from before previews says nothing: none.
         previews: hello["source"]["previews"].as_bool().unwrap_or(false),
+        // Nor from before playing add-ons: it doesn't play.
+        plays: hello["source"]["plays"].as_bool().unwrap_or(false),
+        rail: hello["source"]["rail"].as_bool().unwrap_or(true),
     })
 }
 
@@ -790,6 +805,12 @@ mod tests {
         let mut hello = hello;
         hello["source"]["previews"] = json!(true);
         assert!(described_from(&hello).unwrap().previews);
+        assert!(!described_from(&old).unwrap().plays);
+        hello["source"]["plays"] = json!(true);
+        assert!(described_from(&hello).unwrap().plays);
+        assert!(described_from(&old).unwrap().rail);
+        hello["source"]["rail"] = json!(false);
+        assert!(!described_from(&hello).unwrap().rail);
     }
 
     #[test]

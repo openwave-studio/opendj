@@ -619,6 +619,39 @@ pub fn set_controller_scaled(key: &str, on: bool) {
     });
 }
 
+/// Each controller's jog wheel choices (Pitch bend, Scratch), by device key
+/// (see `opendj_controllers::jog_feel`); Normal ones aren't listed.
+pub fn controller_jog_feel() -> Vec<(String, opendj_controllers::jog_feel::Feel)> {
+    load()["controller_jog"]
+        .as_object()
+        .map(|m| {
+            m.iter()
+                .map(|(k, v)| {
+                    let pick = |name: &str| {
+                        v[name]
+                            .as_u64()
+                            .map_or(opendj_controllers::jog_feel::NORMAL, |n| n as usize)
+                    };
+                    let feel = opendj_controllers::jog_feel::Feel {
+                        bend: pick("bend"),
+                        scratch: pick("scratch"),
+                    };
+                    (k.clone(), feel)
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+pub fn set_controller_jog_feel(key: &str, feel: opendj_controllers::jog_feel::Feel) {
+    save(|v| {
+        if !v["controller_jog"].is_object() {
+            v["controller_jog"] = json!({});
+        }
+        v["controller_jog"][key] = json!({ "bend": feel.bend, "scratch": feel.scratch });
+    });
+}
+
 /// The mapping picked for each controller, by its device key.
 pub fn controller_mappings() -> HashMap<String, MappingChoice> {
     load()["controller_mappings"]

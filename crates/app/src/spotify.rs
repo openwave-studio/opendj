@@ -39,6 +39,10 @@ pub(crate) const LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
 /// The key of the liked songs list, which is not a playlist in the API.
 pub const LIKED: &str = "liked";
 
+/// Keys starting with this are a catalog search for the rest, asked with
+/// [`Request::Tracks`] of a service that searches (TIDAL).
+pub const SEARCH: &str = "search:";
+
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Playlist {
     /// Spotify's playlist id, or [`LIKED`].

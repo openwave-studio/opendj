@@ -360,6 +360,7 @@
 [Channel1],hotcue_focus
 [Channel1],jog
 [Channel1],jog_bend
+[Channel1],jog_search
 [Channel1],key
 [Channel1],keyboard_1_activate
 [Channel1],keyboard_2_activate
@@ -677,6 +678,7 @@
 [Channel2],hotcue_focus
 [Channel2],jog
 [Channel2],jog_bend
+[Channel2],jog_search
 [Channel2],key
 [Channel2],keyboard_1_activate
 [Channel2],keyboard_2_activate
@@ -994,6 +996,7 @@
 [Channel3],hotcue_focus
 [Channel3],jog
 [Channel3],jog_bend
+[Channel3],jog_search
 [Channel3],key
 [Channel3],keyboard_1_activate
 [Channel3],keyboard_2_activate
@@ -1311,6 +1314,7 @@
 [Channel4],hotcue_focus
 [Channel4],jog
 [Channel4],jog_bend
+[Channel4],jog_search
 [Channel4],key
 [Channel4],keyboard_1_activate
 [Channel4],keyboard_2_activate

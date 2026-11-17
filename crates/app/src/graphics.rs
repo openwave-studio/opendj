@@ -10,8 +10,9 @@
 //! died on the way, and this one tries the next backend in [`CHAIN`]. The
 //! one that worked is kept in `graphics.txt` for the starts after.
 //!
-//! `OPENDJ_GRAPHICS` (auto, dx12, vulkan, metal or gl) picks one by hand and
-//! turns the fallback off; `OPENDJ_GRAPHICS=auto` also forgets a kept one.
+//! `OPENDJ_GRAPHICS` (dx12, vulkan, metal or gl) picks one by hand and turns
+//! the fallback off; `OPENDJ_GRAPHICS=auto` forgets a kept one and starts
+//! from the top of [`CHAIN`] again.
 
 use std::cell::Cell;
 use std::path::{Path, PathBuf};
@@ -30,7 +31,9 @@ pub enum Backend {
 
 /// The order backends are tried in after a start that didn't draw.
 #[cfg(windows)]
-const CHAIN: &[Backend] = &[Backend::Auto, Backend::Dx12, Backend::Gl];
+// DirectX 12 first: Intel's Vulkan drivers have closed openDJ while it
+// starts, and DX12 is what Windows drivers are tested hardest with.
+const CHAIN: &[Backend] = &[Backend::Dx12, Backend::Vulkan, Backend::Gl];
 #[cfg(all(unix, not(target_os = "macos")))]
 const CHAIN: &[Backend] = &[Backend::Auto, Backend::Gl];
 #[cfg(not(any(windows, all(unix, not(target_os = "macos")))))]
@@ -99,12 +102,18 @@ pub fn choose(dir: Option<&Path>) -> Choice {
         .ok()
         .and_then(|v| Backend::parse(&v))
     {
-        eprintln!("graphics: {} (OPENDJ_GRAPHICS)", by_hand.name());
-        if let (Backend::Auto, Some(dir)) = (by_hand, dir) {
-            let _ = std::fs::remove_file(dir.join(KEPT));
-            let _ = std::fs::remove_file(dir.join(STARTING));
+        match (by_hand, dir) {
+            // Back to the usual order, forgetting the one kept.
+            (Backend::Auto, Some(dir)) => {
+                eprintln!("graphics: back to the default (OPENDJ_GRAPHICS=auto)");
+                let _ = std::fs::remove_file(dir.join(KEPT));
+                let _ = std::fs::remove_file(dir.join(STARTING));
+            }
+            _ => {
+                eprintln!("graphics: {} (OPENDJ_GRAPHICS)", by_hand.name());
+                return Choice::new(by_hand, None);
+            }
         }
-        return Choice::new(by_hand, None);
     }
     // wgpu's own WGPU_BACKEND, likewise.
     if std::env::var_os("WGPU_BACKEND").is_some() {
@@ -112,7 +121,7 @@ pub fn choose(dir: Option<&Path>) -> Choice {
         return Choice::new(Backend::Auto, None);
     }
     let Some(dir) = dir else {
-        return Choice::new(Backend::Auto, None);
+        return Choice::new(CHAIN[0], None);
     };
     let read = |name: &str| {
         std::fs::read_to_string(dir.join(name))
@@ -129,7 +138,7 @@ pub fn choose(dir: Option<&Path>) -> Choice {
             );
             next
         }
-        None => read(KEPT).unwrap_or(Backend::Auto),
+        None => read(KEPT).unwrap_or(CHAIN[0]),
     };
     eprintln!("graphics: {}", backend.name());
     Choice::new(backend, Some(dir.to_path_buf()))
@@ -169,7 +178,7 @@ impl Choice {
         };
         let _ = std::fs::remove_file(dir.join(STARTING));
         let kept = dir.join(KEPT);
-        if self.backend == Backend::Auto {
+        if self.backend == CHAIN[0] {
             let _ = std::fs::remove_file(kept);
         } else {
             let _ = std::fs::write(kept, self.backend.name());
@@ -218,7 +227,7 @@ mod tests {
     fn a_start_that_didnt_draw_moves_on_and_the_one_that_did_is_kept() {
         let dir = temp_dir("chain");
         let first = choose(Some(&dir));
-        assert_eq!(first.backend, Backend::Auto);
+        assert_eq!(first.backend, CHAIN[0]);
         first.arm();
         // The process dies here; the next start moves on.
         let second = choose(Some(&dir));

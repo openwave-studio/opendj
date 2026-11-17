@@ -33,10 +33,11 @@ too, naming the DLL it happened in.
 
 ## If openDJ doesn't open
 
-Some graphics drivers (older Intel drivers, laptops with both Intel and
-NVIDIA graphics) can close openDJ while it sets up the GPU, before the
-window shows. openDJ notices at the next start and tries another graphics
-mode: the default first (usually Vulkan), then DirectX 12, then OpenGL.
+openDJ draws with DirectX 12 on Windows. Some graphics drivers (older
+Intel drivers, laptops with both Intel and NVIDIA graphics) can still close
+openDJ while it sets up the GPU, before the window shows. openDJ notices at
+the next start and tries another graphics mode: DirectX 12, then Vulkan,
+then OpenGL.
 The one that works is kept in `%APPDATA%\openDJ\graphics.txt`, so opening
 openDJ two or three times gets past a driver that crashes.
 
