@@ -203,7 +203,9 @@ component Tab inherits Rectangle {
 component Timeline inherits Rectangle {
     property <float> vs: MixedSetUi.view-start;
     property <float> vl: max(0.001, MixedSetUi.view-len);
-    property <length> row-h: MixedSetUi.show-decks ? 64px : 120px;
+    // The waveform takes the height there is; deck rows share it, within
+    // reason, after the lanes.
+    property <length> row-h: MixedSetUi.show-decks ? clamp((root.height - 18px - lanes-h) / max(1, MixedSetUi.deck-count), 64px, 140px) : max(80px, root.height - 18px - block-h - 8px);
     property <length> block-h: 22px;
     property <int> rows: MixedSetUi.show-decks ? MixedSetUi.deck-count : 1;
     property <length> lanes-h: MixedSetUi.show-decks && MixedSetUi.show-lanes ? MixedSetUi.lanes.length * 26px : 0px;
@@ -928,6 +930,8 @@ export component MixedSetEditor inherits Rectangle {
         drop-shadow-color: Theme.s-000000c0;
         clip: true;
         VerticalLayout {
+            width: parent.width;
+            height: parent.height;
             // Header.
             HorizontalLayout {
                 height: 60px;
@@ -1034,9 +1038,11 @@ export component MixedSetEditor inherits Rectangle {
             HorizontalLayout {
                 padding: 14px;
                 spacing: 14px;
+                vertical-stretch: 1;
                 // The timeline.
                 VerticalLayout {
                     horizontal-stretch: 1;
+                    max-height: 100000px;
                     spacing: 8px;
                     HorizontalLayout {
                         spacing: 8px;
@@ -1075,7 +1081,10 @@ export component MixedSetEditor inherits Rectangle {
                 // Side panel.
                 Rectangle {
                     width: 360px;
+                    max-height: 100000px;
                     VerticalLayout {
+                        width: parent.width;
+                        height: parent.height;
                         spacing: 8px;
                         HorizontalLayout {
                             spacing: 4px;
