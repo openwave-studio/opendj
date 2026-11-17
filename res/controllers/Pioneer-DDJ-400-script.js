@@ -16,6 +16,7 @@
 //      * Beat Loop Mode
 //      * Beat Jump Mode
 //      * Sampler Mode
+//      * Keyboard, Pad FX1, Pad FX2 and Key Shift modes
 //
 //  Custom (Mixxx specific mappings):
 //      * BeatFX: Assigned Effect Unit 1
@@ -36,12 +37,6 @@
 //                            from a previous position on long press)
 //        * CUE/LOOP CALL - memory & delete (complex and not useful. Hot cues are sufficient)
 //
-//      * Secondary pad modes (trial attempts complex and too experimental)
-//        * Keyboard mode
-//        * Pad FX1
-//        * Pad FX2
-//        * Keyshift mode
-
 var PioneerDDJ400 = {};
 
 PioneerDDJ400.lights = {
@@ -727,4 +722,55 @@ PioneerDDJ400.shutdown = function() {
     // stop any flashing lights
     PioneerDDJ400.toggleLight(PioneerDDJ400.lights.beatFx, false);
     PioneerDDJ400.toggleLight(PioneerDDJ400.lights.shiftBeatFx, false);
+};
+
+// Secondary pad modes use the same pad note ranges as the DDJ-FLX4.
+PioneerDDJ400.padFx = {
+    0x10: [1, 0.6], 0x11: [2, 0.7], 0x12: [3, 0.2], 0x13: [3, 0.8],
+    0x14: [4, 0.7], 0x15: [6, 0.7], 0x16: [5, 0.7], 0x17: [1, 1.0],
+    0x50: [8, 0.5], 0x51: [7, 0.5], 0x52: [9, 0.6], 0x53: [10, 0.5],
+    0x54: [11, 0.7], 0x55: [12, 0.7], 0x56: [7, 0.9], 0x57: [2, 1.0],
+};
+
+// Holding a pad puts its effect on the deck through the deck's pad FX unit
+// (units 6 to 9 for decks 1 to 4); letting go turns it off.
+PioneerDDJ400.padFxPressed = function(_channel, control, value, status, group) {
+    const fx = PioneerDDJ400.padFx[control];
+    if (fx === undefined) {
+        return;
+    }
+    // A side switched to deck 3 or 4 uses that deck's unit.
+    const left = group === "[Channel1]";
+    const layer = engine.getValue("[Controller]", left ? "deck3" : "deck4");
+    const deck = (left ? 1 : 2) + (layer ? 2 : 0);
+    const unit = "[EffectRack1_EffectUnit" + (deck + 5) + "]";
+    const slot = "[EffectRack1_EffectUnit" + (deck + 5) + "_Effect1]";
+    if (value === 0x7F) {
+        engine.setValue(slot, "loaded_effect", fx[0]);
+        engine.setValue(slot, "meta", fx[1]);
+        engine.setValue(unit, "mix", 1);
+        engine.setValue(unit, "enabled", 1);
+        engine.setValue(unit, "group_[Channel" + deck + "]_enable", 1);
+        engine.setValue(slot, "enabled", 1);
+    } else {
+        engine.setValue(slot, "enabled", 0);
+    }
+    midi.sendShortMsg(status, control, value === 0x7F ? 0x7F : 0x00);
+};
+
+PioneerDDJ400.keyboardPadPressed = function(_channel, control, value, _status, group) {
+    engine.setValue(group, "keyboard_" + (control - 0x40 + 1) + "_activate", value ? 1 : 0);
+};
+
+PioneerDDJ400.pitchPadPressed = function(_channel, control, value, _status, group) {
+    if (value) {
+        engine.setValue(group, "pitch_adjust", [0, 1, 2, 3, -3, -2, -1, 0][control - 0x70]);
+    }
+};
+
+PioneerDDJ400.pitchPadShiftPressed = function(_channel, control, value, _status, group) {
+    if (value) {
+        const step = [1, 2, 3, 4, -1, -2, -3, -4][control - 0x70];
+        engine.setValue(group, "pitch_adjust", engine.getValue(group, "pitch_adjust") + step);
+    }
 };
