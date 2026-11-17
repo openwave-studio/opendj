@@ -4514,6 +4514,7 @@
 [Playlist],SelectTrackKnob
 [Playlist],ToggleSelectedSidebarItem
 [PreviewDeck1],duration
+[PreviewDeck1],main
 [PreviewDeck1],play
 [PreviewDeck1],playposition
 [PreviewDeck1],track_loaded
