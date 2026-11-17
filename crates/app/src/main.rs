@@ -1027,6 +1027,9 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     for key in settings::controllers_scaled() {
         opendj_controllers::pickup::set_scale(&key, true);
     }
+    for (key, feel) in settings::controller_jog_feel() {
+        opendj_controllers::jog_feel::set_feel(&key, feel);
+    }
     opendj_controllers::routing::load_deck_choices(settings::controller_decks());
     let controllers = match opendj_controllers::default_mappings_dir() {
         Some(dir) => Some(Rc::new(opendj_controllers::Controllers::start(

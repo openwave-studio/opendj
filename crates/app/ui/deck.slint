@@ -249,7 +249,7 @@ export component Jog inherits Rectangle {
     property <int> last-cue: Controls.value(Controls.resolve(group, "hotcue_focus"), Controls.tick);
     property <color> sticker: last-cue >= 1 ? Theme.hotcues[last-cue - 1] : tint;
     property <length> centre: 70px * scale;
-    property <int> jog-index: Controls.resolve(group, "jog");
+    property <int> jog-index: Controls.resolve(group, "jog_search");
     property <int> bend-index: Controls.resolve(group, "jog_bend");
     // Dragging round the black rim bends the speed like a controller's jog
     // rim: clockwise faster, counterclockwise slower, by how fast it turns.
@@ -289,7 +289,7 @@ export component Jog inherits Rectangle {
             if !info.loaded || e.delta-y == 0 {
                 return reject;
             }
-            // One jog unit is 10 ms of track, so a pixel of scroll is 1 ms.
+            // One jog_search unit is 10 ms of track, so a pixel of scroll is 1 ms.
             Controls.set-value(jog-index, Controls.value(jog-index, Controls.tick) + e.delta-y / 1px * 0.1);
             accept
         }
