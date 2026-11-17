@@ -526,6 +526,12 @@ struct CueWatch {
 
 pub struct Browser {
     app: slint::Weak<AppWindow>,
+    /// Sites whose tracks an add-on source plays (see
+    /// [`crate::sources::Sources::playing_sites`]): a streamed track from
+    /// one loads onto a deck through it instead of opening its page.
+    pub play_sites: Vec<&'static str>,
+    /// Links of streamed tracks to load that way, for the frame loop.
+    stream_plays: Vec<String>,
     library: Vec<Arc<Track>>,
     nodes: Vec<Node>,
     /// Indices into `nodes` of the rows currently shown in the tree.
@@ -1314,6 +1320,8 @@ impl Browser {
             sorted_list: None,
             view_sort: (1, true),
             wanted_sort: (-1, true),
+            play_sites: Vec::new(),
+            stream_plays: Vec::new(),
             export_status: None,
             session: None,
             last_play: None,
@@ -1479,9 +1487,13 @@ impl Browser {
                     b.adopt(&[id]);
                     b.load_to_free_deck(id);
                 } else if let Some(t) = b.stream_track(row as usize) {
-                    // Not in the collection: it plays on the service's page.
-                    if !t.page.is_empty() {
-                        open_in_browser(&t.page);
+                    // Not in the collection: it loads through an add-on
+                    // that plays the service's tracks, or plays on its page.
+                    let page = t.page.clone();
+                    if b.plays_link(&page) {
+                        b.stream_plays.push(page);
+                    } else if !page.is_empty() {
+                        open_in_browser(&page);
                     }
                 }
             }))
@@ -2706,6 +2718,21 @@ impl Browser {
     /// Loads a file from a music server's cache onto a deck that isn't
     /// playing (deck A first), without it joining the collection: it stays
     /// a file shown, as in Files, until the DJ adds it.
+    /// Whether an add-on plays the streamed track at `link`.
+    fn plays_link(&self, link: &str) -> bool {
+        let host = link
+            .split_once("://")
+            .and_then(|(_, rest)| rest.split(['/', '?', '#']).next())
+            .unwrap_or_default();
+        !host.is_empty() && self.play_sites.contains(&host)
+    }
+
+    /// Streamed tracks double-clicked to load through an add-on, since last
+    /// asked.
+    pub fn take_stream_plays(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.stream_plays)
+    }
+
     pub fn load_cached(&mut self, path: &Path) {
         let index = match self.path_index.get(path) {
             Some(&i) => Some(i),

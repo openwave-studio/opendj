@@ -877,6 +877,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         });
     }
     let sources = sources::Sources::install(&app, library_path.clone());
+    browser.borrow_mut().play_sites = sources.borrow().playing_sites();
     {
         // Spotify's "Open in Browser" and "Add to Downloads", the latter
         // when an add-on source searches Spotify links.
@@ -1648,6 +1649,10 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 browser.borrow_mut().poll_stores(&app);
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
+                }
+                let plays = browser.borrow_mut().take_stream_plays();
+                for link in plays {
+                    sources.borrow_mut().play_link(&link);
                 }
                 for path in sources.borrow_mut().take_loads() {
                     browser.borrow_mut().load_cached(&path);
