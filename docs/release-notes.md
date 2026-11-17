@@ -1,59 +1,74 @@
-openDJ 0.7.0 brings your other DJ apps' libraries in and takes them out to more players. Import djay Pro and the Music app, export USB sticks for Engine DJ players, and play Pioneer DDJ-SX, RX, 800, FLX10 and XDJ-AZ controllers. A new Mixer deck holds up to eight input channels with the mic, an instrument and the Groove Box beside them. openDJ gets a Light mode, a regrouped Settings, and big waveforms you can colour, zoom and resize.
+openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor opens a recorded set as a timeline: check the mix, fix it, and export it with chapters. Collection Health is rebuilt around one row per check, with duplicates found by sound and new Tags and Lists pages. Beat FX work the same on every controller, the instrument deck is redesigned with a step sequencer, a Room EQ tunes the main and booth outputs to the venue, and the karaoke screen can show the cover beside the lyrics.
 
 ## What's new
 
-**Your library, everywhere**
+**Mixed Set Editor**
 
-- **djay Pro import**: tracks, hot cues, saved loops, colors and playlists from djay's media library.
-- **iTunes and Music app import** from the Library XML: tags, stars, play counts, dates and playlists in their folders.
-- **USB export for Engine DJ players** (Denon DJ, Numark, Rane): grids, cues, loops, overview waveforms and lists, sharing the stick's music with the Pioneer export. Experimental until it has been tried on a player.
-- **rekordbox import** reads libraries with dates or empty fields that stopped it before.
-- **Find missing files** looks for moved or renamed tracks in more places, closest first.
-- Pioneer USB exports are checked with a second, independent reader.
+- Right-click a recording in Mixed Sets, or a History session, and choose **Open in Mixed Set Editor**. It shows the set as track blocks over the recording's waveform. **Show decks** adds a row per deck with loops and scratches, and **Show moves** adds the faders, EQs, filters and effects.
+- Play the recording from any point, zoom, and step through a **Transitions** list with each mix's length, style and whether the beats stayed in time.
+- **Check my mix** finds clipping, silences, level jumps and drifting beats. Click one to hear it from 2 bars before.
+- **Fixes**: trim the start and end, change a track's level, cut a part out, and set the loudness for a platform, with Undo. **Save edited mix** writes a new file beside the recording.
+- **Export** a Mixcloud tracklist, YouTube chapters or a cue sheet, or send the edited mix to Mixcloud.
+- Save the transitions you liked as **pair mixes**, so Automix mixes those two tracks the same way next time.
 
-**Mixer deck**
+**Collection Health**
 
-- A **Mixer** item in Jam replaces Aux 1 to 3: up to eight thin channels on one deck, each with its input picker, live meters, trim, pan, mute, solo, cue and an FX switch that sends it through the deck's effects.
-- The **mic**, the **instrument plugin** and the **Groove Box** can be channels too, with a view button to open their own deck view.
-- Each audio interface opens once and its channels fan out, so inputs stay in step and come back after the interface resets. A channel shows how far behind its input is heard, and marks inputs on another interface's clock.
-- Slim channels on 4-Deck and 2-Deck, renamable channels with their own colors, a sideways swipe scrolls the strips, each channel keeps its settings across launches, and the Xone:K2 drives channels 1 to 4 from its columns.
-- The Mixer title shows MIXER › GROOVE BOX or the instrument while its panel is open; click MIXER to go back.
-- The Groove Box deck gets the same slim title bar.
+- One row per check in the sidebar, grouped under Files, Location, Duplicates, Metadata, Prep and Organization, each with a dot for its state and a green tick when it finds nothing.
+- The Overview shows the collection by stage on one bar, with Wanted beside it, and explains the score: which checks hold it back and by how much.
+- Check pages list their fixes as numbered steps.
+- **Duplicates** come as one row per group, marked Sure, Likely or Versions. Open a group to compare the copies. Copies are also found **by sound**, even with different or missing tags.
+- **Tags**: a card for Genre and each tag group, with names spelled like another and names used once. **Roll up** merges spelling twins, and any tag can be merged into another from Settings › Tags.
+- **Lists**: removed tracks still in lists, tracks listed twice, empty lists and lists named like another. **Tidy the sure ones** fixes the safe ones.
+- **Quarantine** lists every track taken out of the collection, with **Bring back**, and moves files left behind in your music folders into quarantine.
+- **Missing files**: **Look in a folder…** relinks files from another drive or a backup, and **Move to Wanted** puts tracks you no longer have on the Wanted list.
+- Old analyses of files that are gone can be cleared from Settings › Collection › Storage.
 
-**Waveforms**
+**Beat FX**
 
-- **Waveform color**: RGB, 3-Band with two palettes (layered as rekordbox does), or Stems in each stem's pad color, with a full or half overview.
-- **Vocals** in the waveforms menu: Off, a cyan Bar where someone sings, or the Lyrics lane. **Phrases** show on the overview, the waveform or both.
-- **Zoom** the big waveforms together with the mouse wheel, trackpad, keys or controllers, and **resize** them with a grip under them or a height slider in the waveforms menu, which also holds Full or Half, Color and the needle.
-- **Size follows gain**: a deck's gain knob sizes its waveforms.
-- **Edit the grid** from a pencil on each big waveform, and **Tap tempo** in the beat grid menu.
-- Detected tempo is read in the octave the track's genre is known by.
-- Waveforms draw as one solid shape, without the peak outline. Track list waveforms are shaded in lilac by sound, or in full color (Settings › Appearance).
-- Big waveforms scroll smoothly, without the small sideways tugs.
+- Beat FX work the same on every controller: the effect buttons step through effects in the order the list shows, and halve and double use each effect's own limits.
+- When an effect changes from a controller, its name glows and a strip shows the effects either side.
+- **MST** in the Beat FX routing row sends the effect to the main mix, and the MASTER position on Pioneer controllers now selects it.
+- Echoes and rolls go up to 16 beats.
 
-**Look and layout**
+**Instruments**
 
-- **Light mode**: Dark, Light or Auto (follows the system), with the waveforms kept on black.
-- **Settings regrouped** into tabs, with Appearance and Player pages, help behind ⓘ and a Help menu.
-- A **layout chooser** under the pencil in the layout menu: switch layouts on and off, reorder and rename them.
-- **Tempo panel** with a Range picker that keeps the tempo when the range changes, and a larger 2-Deck tempo fader.
-- **Unload a deck** with ⏏ on its cover, and Put back.
-- Reorder the rail's sources and the side panel's tabs by dragging.
-- Each library list keeps its scroll and selected track.
-- A **Crates** chip on the filter bar narrows the library to one or more crates.
-- Add-on sources search from a bar at the top, with options under a cog.
-- Player search scrolls through all results, and a click plays from the track's album.
-
-**Controllers**
-
-- **Pioneer DDJ-SX, DDJ-SX2, DDJ-RX, DDJ-800, DDJ-FLX10 and XDJ-AZ** (Beta).
-- **DDJ-400**: SHIFT + BEAT SYNC steps through all eight tempo ranges, keeping the tempo.
-- Pick-up no longer snaps a control back after something else moved it.
+- A redesigned instrument deck: a slim title with a ☰ deck menu, a heart to save presets and a mark when one has changed, an in and out box with the scope, trim and pan, larger knobs in the instrument's own color, Scale, Chord and Arp pills, and a shaded keyboard in three sizes.
+- **HOLD** for any instrument, and knob pages named after the plugin's own.
+- A **step sequencer** when the keyboard is hidden: pitch, octave, velocity, gate and chance lanes with their own lengths, four pattern slots, **REC** from keys and pads, **Dice** for a new riff with undo, and Auto-Regen. Patterns are saved in the preset, and the 4-Deck strip has ▶ and the slot picker.
 
 **Sound**
 
-- A soft clipper on headphone, booth and deck outputs, click-free effect fades and a tamer Flanger.
-- Live, Groove Box and Looper decks show their level on the deck meter.
+- **Room EQ** in Settings › Audio: six bands on the main and booth outputs with presets for common rooms, a live spectrum with Before and After, Freeze, click a peak to cut it, Bypass and A/B. Recordings are taken before it. The preset shows in the MASTER panel.
+
+**Karaoke**
+
+- Show the **cover** beside the lyrics, and go full screen, from buttons on the karaoke screen and the /karaoke page.
+- Pick the sung words' color, Few or Many lines, and Word by word or Whole line light-up.
+- In Player, a microphone button shows the lyrics beside the album art in the main window.
+- Lines no longer step back during long gaps.
+
+**Library and DJing**
+
+- **Played marks**: tracks played in this History session are dimmed with a lilac check. A play counts only when it is heard in the main mix, not in the headphones. Start a new session from History.
+- **TIDAL**: search TIDAL's catalog from the TIDAL source. With a TIDAL add-on that plays, double-click a TIDAL row to load it onto a deck.
+- **Jog wheels** bend the tempo as they do in Mixxx mappings, slip mode lets a back-spin finish before it returns, and Controller Editor › Options sets each controller's pitch bend and scratch feel.
+- **Tap tempo** fits steady taps and rounds to a whole BPM.
+- The MASTER pill clock shows the time of day.
+- A finished download shows the quality the source actually sent.
+- Phrase cuts wait for the kick, and phrase tooltips count bars from bar 1.
+- The Info tab's File, Track and Tags tabs are tidier.
+- VirtualDJ import no longer makes duplicate tag groups or empty folder lists.
+
+**Controllers**
+
+- **Pioneer OPUS-QUAD** (Beta).
+- **DDJ-400**: Beat FX controls, rim sensitivity, Slip release and the SHIFT pad modes (Keyboard, Pad FX 1 and 2, Key Shift) work.
+
+**Fixes**
+
+- Picking a LENGTH in Automix during an album takes effect at once, and dragging the Player bar no longer leaves a deck stuck.
+- The Prep Checklist scrolls when the side panel is short.
+- Windows draws with DirectX 12 first, falls back to another graphics driver after a start that never draws, and writes a crash report when it fails. Plugin helpers start without a console window.
 
 ## Install
 
@@ -79,11 +94,12 @@ Add your music folders in Settings › Collection, or let the guided tour do it 
 ## Known limits
 
 - Windows is a preview: unsigned, and less tested than macOS and Linux.
-- Streaming services are browse only. Buying from stores opens the store's page; openDJ doesn't check out for you.
+- Streaming services are browse only, except rows a playing add-on loads. Buying from stores opens the store's page; openDJ doesn't check out for you.
 - Automix uses decks 1 and 2 only.
 - Controllers marked Beta, including the Xone K2 and Maschine Mikro MK3 mappings, the Traktor Kontrol controllers, the XDJ-RX3 and Numark V7 mappings and the new Pioneer mappings, haven't all been tried on the hardware yet.
 - Plugins: their latency isn't compensated. On Linux, plugin windows need X11 (XWayland on Wayland).
 - The phone remote works on your local network only.
 - Broadcasting: Icecast and Shoutcast only for now. Twitch, YouTube and Mixcloud Live streaming come later.
 - USB export for Pioneer and Engine DJ players is experimental.
+- Room EQ has no Isolator or booth EQ knobs yet; they come in 0.9.
 - One instrument plugin plays at a time.
