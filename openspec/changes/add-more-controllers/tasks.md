@@ -14,6 +14,8 @@
 - [x] 2.6 Xone K2: openDJ's own two-deck mapping (`.opendj-mapping`, Latching Layers off, channel 15), shipped next to Mixxx's and picked first; openDJ ships mappings in its own format
 - [ ] 2.7 Xone K2: openDJ's own four-deck mapping
 
+- [x] 2.8 DDJ-400 secondary pad modes: Keyboard, Pad FX1, Pad FX2 and Key Shift bindings on both decks, controller layout and guide; tested on hardware (issue #812). Shared on-screen Pad FX highlighting remains follow-up work.
+
 ## Workflow follow-up
 
 - Archive the change once its PR is merged, so the main specs take its requirements.
