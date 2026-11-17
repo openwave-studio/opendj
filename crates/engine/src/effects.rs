@@ -1226,6 +1226,9 @@ pub(crate) struct EffectRack {
     scale_root: u8,
     /// The step sequencer's notes for this buffer (see [`crate::seq`]).
     seq_notes: Vec<Midi>,
+    /// The notes played on keys and pads this buffer, before scale and
+    /// chord.
+    keys: Vec<Midi>,
     /// What the instrument plays, for its deck to show.
     view: Arc<InstrumentView>,
     /// Its last [`SCOPE_SAMPLES`] samples (mono), and where the next goes.
@@ -1512,6 +1515,7 @@ impl EffectRack {
             scale_mask: 0,
             scale_root: 0,
             seq_notes: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
+            keys: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             view: Arc::default(),
             scope_ring: vec![0.0; SCOPE_SAMPLES],
             scope_pos: 0,
@@ -1589,11 +1593,21 @@ impl EffectRack {
     /// Queues a note for the instrument from the audio thread itself (the
     /// Instrument input's pads).
     pub(crate) fn queue_note(&mut self, data: [u8; 3]) {
-        self.scale.map(
-            Midi { frame: 0, data },
-            self.scale_mask,
-            &mut self.notes_waiting,
-        );
+        // In with the keys, so the arpeggiator, HOLD and the sequencer's
+        // REC take it too.
+        if self.keys.len() < self.keys.capacity() {
+            self.keys.push(Midi { frame: 0, data });
+        }
+    }
+
+    /// Takes the notes played on keys since the last buffer into `keys`.
+    fn take_keys(&mut self) {
+        while self.keys.len() < self.keys.capacity() {
+            match self.notes.pop() {
+                Ok(n) => self.keys.push(n),
+                Err(_) => break,
+            }
+        }
     }
 
     /// The scale notes for the instrument move to from now on: a bit per
@@ -1608,12 +1622,14 @@ impl EffectRack {
     /// beat: its notes go in with the keys' in
     /// [`EffectRack::start_instrument`].
     pub(crate) fn sequence(&mut self, seq: &mut crate::seq::Seq, frames: usize, target: usize) {
+        self.take_keys();
         seq.process(
             frames,
             self.sample_rate,
             self.transport[target],
             self.scale_root,
             self.scale_mask,
+            &self.keys,
             &mut self.seq_notes,
         );
     }
@@ -1664,16 +1680,13 @@ impl EffectRack {
     ) {
         self.instrument_sent = false;
         let cap = self.arp_in.capacity();
-        while let Ok(n) = self.notes.pop() {
+        self.take_keys();
+        for &n in self.keys.iter().chain(&self.seq_notes) {
             if self.arp_in.len() < cap {
                 self.scale.map(n, self.scale_mask, &mut self.arp_in);
             }
         }
-        for &n in &self.seq_notes {
-            if self.arp_in.len() < cap {
-                self.scale.map(n, self.scale_mask, &mut self.arp_in);
-            }
-        }
+        self.keys.clear();
         self.seq_notes.clear();
         if self.arp.is_on() {
             self.arp.process(

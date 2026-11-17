@@ -6503,6 +6503,13 @@ component SeqPanel inherits HorizontalLayout {
     property <float> swing: Controls.value(swing-index, Controls.tick);
     property <int> len-index: Controls.resolve(g, prefix + "len");
     property <int> len: Controls.value(len-index, Controls.tick);
+    property <int> rec-index: Controls.resolve(g, "seq_rec");
+    property <bool> rec: Controls.value(rec-index, Controls.tick) > 0.5;
+    property <int> style-index: Controls.resolve(g, "seq_dice_style");
+    property <int> style: Controls.value(style-index, Controls.tick);
+    property <bool> can-undo: Controls.value(Controls.resolve(g, "seq_can_undo"), Controls.tick) > 0.5;
+    property <int> regen-index: Controls.resolve(g, "seq_regen");
+    property <int> regen: Controls.value(regen-index, Controls.tick);
     property <int> pitch-len: Controls.value(Controls.resolve(g, prefix + "pitch_len"), Controls.tick);
     // The lane under PITCH, by the engine's number, and its own length.
     property <[int]> tab-lanes: [1, 3, 4, 5, 6];
@@ -6533,6 +6540,17 @@ component SeqPanel inherits HorizontalLayout {
                     font-size: 11px;
                 }
                 pta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.play-index, root.playing ? 0 : 1); } }
+            }
+            // REC: keys and pads played go into the steps while it runs.
+            Rectangle {
+                width: 26px;
+                height: 20px;
+                border-radius: 5px;
+                background: rta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
+                border-width: root.rec ? 1px : 0px;
+                border-color: #ff5e57;
+                Text { text: "●"; color: root.rec ? #ff5e57 : Theme.text-dim; font-size: 11px; }
+                rta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.rec-index, root.rec ? 0 : 1); } }
             }
             NoteSeg {
                 horizontal-stretch: 1;
@@ -6623,13 +6641,59 @@ component SeqPanel inherits HorizontalLayout {
                 SeqLaneLen { slot: root.slot; lane: root.lane; pattern-len: root.len; }
             }
             NoteSeg {
-                width: 280px;
+                width: 210px;
                 height: 16px;
                 options: ["CHANCE", "VEL", "OCT", "GATE", "SLIDE"];
                 picked: root.tab;
                 chose(i) => { root.tab = i; }
             }
             Rectangle { horizontal-stretch: 1; }
+            // Dice: a new riff in the style picked, then undo (↶) or keep
+            // (✓) it; AUTO rolls one every few bars.
+            NoteStepper {
+                width: 56px;
+                height: 16px;
+                arrow: 10px;
+                text: ["RIFF", "BASS", "ARP"][root.style];
+                step(by) => { Controls.set-value(root.style-index, Math.mod(root.style + by + 3, 3)); }
+            }
+            Rectangle {
+                width: 40px;
+                height: 16px;
+                border-radius: 3px;
+                background: dta.pressed ? root.hue : dta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
+                Text { text: "⚄ DICE"; color: Theme.text; font-size: 9px; font-weight: 600; }
+                dta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        Controls.set-value(Controls.resolve(root.g, "seq_dice"), 1);
+                        Controls.set-value(Controls.resolve(root.g, "seq_dice"), 0);
+                    }
+                }
+            }
+            for tool[i] in ["↶", "✓"]: Rectangle {
+                width: 16px;
+                height: 16px;
+                border-radius: 3px;
+                opacity: root.can-undo ? 1 : 0.35;
+                background: uta.has-hover && root.can-undo ? Theme.n-2a2a2d : Theme.n-111114;
+                Text { text: tool; color: Theme.text; font-size: 10px; }
+                uta := TouchArea {
+                    enabled: root.can-undo;
+                    mouse-cursor: pointer;
+                    clicked => {
+                        Controls.set-value(Controls.resolve(root.g, i == 0 ? "seq_dice_undo" : "seq_dice_keep"), 1);
+                        Controls.set-value(Controls.resolve(root.g, i == 0 ? "seq_dice_undo" : "seq_dice_keep"), 0);
+                    }
+                }
+            }
+            NoteStepper {
+                width: 58px;
+                height: 16px;
+                arrow: 10px;
+                text: root.regen == 0 ? "AUTO –" : "AUTO " + [0, 1, 2, 4, 8][root.regen];
+                step(by) => { Controls.set-value(root.regen-index, clamp(root.regen + by, 0, 4)); }
+            }
         }
     }
 }
