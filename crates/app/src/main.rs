@@ -60,6 +60,7 @@ mod inbox;
 mod instrument_art;
 mod instrument_knobs;
 mod instrument_midi;
+mod instrument_seq;
 mod instruments;
 mod keep_going;
 mod lastfm;
@@ -735,6 +736,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     mixer_picker::install(&app, engine.clone());
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());
+    instrument_seq::install(&app, registry.clone());
     let groove_keeper = RefCell::new(groove_box::Keeper::new(&registry));
     // The Mixer's channels as they were left, saved again as they change.
     let mixer_keeper = RefCell::new(mixer_keeper::Keeper::new(&registry));

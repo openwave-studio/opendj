@@ -1,6 +1,6 @@
 # Proposal
 
-Planned for: **v1.x** (scoped, not scheduled). Follows `rework-instrument-deck` (v0.8). Issue #819, a user request (2026-11-16).
+Planned for: **v0.8** (moved from v1.x 2026-11-17 to build it now). Follows `rework-instrument-deck` (v0.8). Issue #819, a user request (2026-11-16).
 
 ## Why
 

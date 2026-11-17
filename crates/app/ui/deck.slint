@@ -4451,19 +4451,21 @@ component NoteSeg inherits Rectangle {
 
 component NoteStepper inherits Rectangle {
     in property <string> text;
+    // The width of each arrow.
+    in property <length> arrow: 22px;
     callback step(by: int);
     height: 20px;
     border-radius: 5px;
     background: Theme.n-111114;
     HorizontalLayout {
         Rectangle {
-            width: 22px;
+            width: root.arrow;
             Text { text: "‹"; color: lta.has-hover ? Theme.text : Theme.text-dim; font-size: 13px; }
             lta := TouchArea { mouse-cursor: pointer; clicked => { root.step(-1); } }
         }
         Text { text: root.text; color: Theme.text; font-size: 10px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; horizontal-stretch: 1; }
         Rectangle {
-            width: 22px;
+            width: root.arrow;
             Text { text: "›"; color: rta.has-hover ? Theme.text : Theme.text-dim; font-size: 13px; }
             rta := TouchArea { mouse-cursor: pointer; clicked => { root.step(1); } }
         }
@@ -5739,9 +5741,10 @@ component DeckMenuButton inherits Rectangle {
                 padding-right: 8px;
                 height: 26px;
                 spacing: 3px;
-                Text { text: "Keyboard"; color: Theme.text; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; }
-                // Keyboard sizes: 0 full, 2 hidden (1 was a slim strip, now hidden).
-                for name[i] in ["Full", "Hidden"]: ChoiceChip {
+                Text { text: "Play with"; color: Theme.text; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; }
+                // Under the knobs: 0 the keyboard, 2 the step sequencer (1
+                // was a slim keyboard, now the sequencer too).
+                for name[i] in ["Keys", "Steps"]: ChoiceChip {
                     width: 56px;
                     y: 2px;
                     text: name;
@@ -6254,14 +6257,372 @@ component KnobTabs inherits HorizontalLayout {
 // (scope, level, TRIM, PAN), the plugin's knobs under their page tabs on
 // a soft backdrop in the instrument's color, the octave and Note FX, then
 // the pitch bend and mod wheel beside the keyboard.
+// The step sequencer's PITCH lane, one step: a bar at its pitch (scale
+// degrees -7 to +7, the root in the middle) while it plays, nothing while
+// it is off. Click to put a note there, click its bar to take it off, drag
+// to move it.
+component SeqPitchStep inherits Rectangle {
+    in property <string> prefix;
+    in property <int> index;
+    in property <color> hue;
+    // The step playing now, within the pattern, within the lane.
+    in property <bool> current;
+    in property <bool> in-pattern;
+    in property <bool> in-lane;
+    property <int> on-index: Controls.resolve("[Instrument1]", prefix + "on_" + (index + 1));
+    property <bool> on: Controls.value(on-index, Controls.tick) > 0.5;
+    property <int> pitch-index: Controls.resolve("[Instrument1]", prefix + "pitch_" + (index + 1));
+    property <int> pitch: round(Controls.value(pitch-index, Controls.tick));
+    property <bool> accent: Controls.value(Controls.resolve("[Instrument1]", prefix + "vel_" + (index + 1)), Controls.tick) >= 0.95;
+    property <bool> was-on;
+    property <bool> dragged;
+    pure function degree-at(y: length) -> int {
+        return clamp(round(7 - (y - 4px) / max(1px, root.height - 8px) * 14), -7, 7);
+    }
+    border-radius: 3px;
+    background: Math.mod(index, 4) == 0 ? #ffffff10 : #ffffff08;
+    border-width: current ? 1px : 0px;
+    border-color: hue;
+    opacity: in-pattern && in-lane ? 1 : 0.35;
+    // The root.
+    Rectangle { y: root.height / 2 - 0.5px; height: 1px; background: #ffffff12; }
+    if on: Rectangle {
+        x: 3px;
+        width: parent.width - 6px;
+        height: 5px;
+        y: 4px + (7 - root.pitch) / 14 * (parent.height - 8px) - 2.5px;
+        border-radius: 2px;
+        background: root.accent ? root.hue.brighter(0.35) : root.hue;
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                root.was-on = root.on;
+                root.dragged = false;
+            }
+        }
+        moved => {
+            if self.pressed {
+                if abs(self.mouse-y - self.pressed-y) > 3px {
+                    root.dragged = true;
+                }
+                if root.dragged {
+                    Controls.set-value(root.on-index, 1);
+                    Controls.set-value(root.pitch-index, root.degree-at(self.mouse-y));
+                }
+            }
+        }
+        clicked => {
+            if !root.dragged {
+                if root.was-on && abs(root.degree-at(self.mouse-y) - root.pitch) <= 1 {
+                    Controls.set-value(root.on-index, 0);
+                } else {
+                    Controls.set-value(root.on-index, 1);
+                    Controls.set-value(root.pitch-index, root.degree-at(self.mouse-y));
+                }
+            }
+        }
+    }
+}
+
+// One step of the lane under PITCH. `lane` is the engine's number: 1
+// CHANCE, 3 VEL and 5 GATE fill from the bottom (drag or click to set; a
+// full GATE ties into the next step), 4 OCT steps -1, 0, +1 on a click,
+// 6 SLIDE switches on a click.
+component SeqLaneStep inherits Rectangle {
+    in property <string> prefix;
+    in property <int> index;
+    in property <int> lane;
+    in property <color> hue;
+    in property <bool> current;
+    in property <bool> in-pattern;
+    in property <bool> in-lane;
+    property <string> name: ["on", "chance", "pitch", "vel", "oct", "gate", "slide"][lane];
+    property <int> value-index: Controls.resolve("[Instrument1]", prefix + name + "_" + (index + 1));
+    property <float> value: Controls.value(value-index, Controls.tick);
+    property <bool> fills: lane == 1 || lane == 3 || lane == 5;
+    property <float> low: lane == 5 ? 0.05 : 0;
+    property <float> part: clamp((value - low) / (1 - low), 0, 1);
+    pure function value-at(y: length) -> float {
+        return root.low + clamp(1 - (y - 2px) / max(1px, root.height - 4px), 0, 1) * (1 - root.low);
+    }
+    border-radius: 3px;
+    background: Math.mod(index, 4) == 0 ? #ffffff10 : #ffffff08;
+    border-width: current ? 1px : 0px;
+    border-color: hue;
+    opacity: in-pattern && in-lane ? 1 : 0.35;
+    if root.fills: Rectangle {
+        x: 3px;
+        width: parent.width - 6px;
+        height: max(2px, (parent.height - 4px) * root.part);
+        y: parent.height - 2px - self.height;
+        border-radius: 2px;
+        background: root.lane == 3 && root.value >= 0.95 ? root.hue.brighter(0.35) : root.hue.with-alpha(0.75);
+    }
+    // A tie runs into the next step.
+    if root.lane == 5 && root.value >= 1: Rectangle {
+        x: parent.width - 3px;
+        width: 5px;
+        y: 2px;
+        height: 4px;
+        background: root.hue.with-alpha(0.75);
+    }
+    if root.lane == 4: Text {
+        text: root.value > 0.5 ? "+1" : root.value < -0.5 ? "−1" : "0";
+        color: abs(root.value) > 0.5 ? root.hue : Theme.text-dim;
+        font-size: 9px;
+        font-weight: 600;
+    }
+    if root.lane == 6 && root.value > 0.5: Rectangle {
+        x: 3px;
+        width: parent.width - 6px;
+        y: 3px;
+        height: parent.height - 6px;
+        border-radius: 2px;
+        background: root.hue.with-alpha(0.75);
+        Text { text: "↗"; color: #1b1230; font-size: 10px; font-weight: 700; }
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        moved => {
+            if self.pressed && root.fills {
+                Controls.set-value(root.value-index, root.value-at(self.mouse-y));
+            }
+        }
+        clicked => {
+            if root.lane == 4 {
+                Controls.set-value(root.value-index, root.value > 0.5 ? -1 : root.value < -0.5 ? 0 : 1);
+            } else if root.lane == 6 {
+                Controls.set-value(root.value-index, root.value > 0.5 ? 0 : 1);
+            } else {
+                Controls.set-value(root.value-index, root.value-at(self.mouse-y));
+            }
+        }
+    }
+}
+
+// A lane's RANDOM (fills it) and RESET (clears it), as in Pigments. `lane`
+// is the engine's lane number; PITCH's also take the steps on and off.
+component SeqLaneButtons inherits HorizontalLayout {
+    in property <int> slot;
+    in property <int> lane;
+    width: 50px;
+    spacing: 2px;
+    for tool[i] in ["⚄", "✕"]: Rectangle {
+        height: 16px;
+        border-radius: 3px;
+        background: tta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
+        Text { text: tool; color: tta.has-hover ? Theme.text : Theme.text-dim; font-size: 11px; }
+        tta := TouchArea {
+            mouse-cursor: pointer;
+            clicked => { InstrumentsUi.seq-lane(root.slot, root.lane, i == 0); }
+        }
+    }
+}
+
+// A lane's own length (Pigments' DIV): the pattern's, shown dim, until it
+// is stepped away from it. PITCH's also sets the steps on and off.
+component SeqLaneLen inherits Rectangle {
+    in property <int> slot;
+    in property <int> lane;
+    in property <int> pattern-len;
+    property <string> prefix: "seq" + (slot + 1) + "_";
+    property <int> len-index: Controls.resolve("[Instrument1]", prefix + ["on", "chance", "pitch", "vel", "oct", "gate", "slide"][lane] + "_len");
+    property <int> on-len-index: Controls.resolve("[Instrument1]", prefix + "on_len");
+    property <int> own: Controls.value(len-index, Controls.tick);
+    property <int> len: own == 0 ? pattern-len : own;
+    function step-len(by: int) {
+        // Back to following the pattern when it matches it.
+        let next = clamp(root.len + by, 1, 16);
+        let stored = next == root.pattern-len ? 0 : next;
+        Controls.set-value(root.len-index, stored);
+        if root.lane == 2 {
+            Controls.set-value(root.on-len-index, stored);
+        }
+    }
+    width: 50px;
+    height: 16px;
+    border-radius: 3px;
+    background: Theme.n-111114;
+    Text { text: root.len; color: root.own == 0 ? Theme.text-dim : Theme.text; font-size: 10px; font-weight: 600; }
+    HorizontalLayout {
+        Rectangle {
+            width: 14px;
+            Text { text: "‹"; color: lta.has-hover ? Theme.text : Theme.text-dim; font-size: 11px; }
+            lta := TouchArea { mouse-cursor: pointer; clicked => { root.step-len(-1); } }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Rectangle {
+            width: 14px;
+            Text { text: "›"; color: rta.has-hover ? Theme.text : Theme.text-dim; font-size: 11px; }
+            rta := TouchArea { mouse-cursor: pointer; clicked => { root.step-len(1); } }
+        }
+    }
+}
+
+// The step sequencer, in the keyboard's room when it is hidden (see the
+// engine's seq.rs): ▶, the pattern slots and how it plays on the left; the
+// tall PITCH lane (a step with no bar is off) and one more lane under it,
+// picked by the tabs.
+component SeqPanel inherits HorizontalLayout {
+    in property <color> hue;
+    property <string> g: "[Instrument1]";
+    property <int> play-index: Controls.resolve(g, "seq");
+    property <bool> playing: Controls.value(play-index, Controls.tick) > 0.5;
+    property <bool> waiting: Controls.value(Controls.resolve(g, "seq_waiting"), Controls.tick) > 0.5;
+    property <int> position: Controls.value(Controls.resolve(g, "seq_position"), Controls.tick);
+    property <int> slot-index: Controls.resolve(g, "seq_slot");
+    property <int> slot: Controls.value(slot-index, Controls.tick);
+    property <int> slot-playing: Controls.value(Controls.resolve(g, "seq_slot_playing"), Controls.tick);
+    property <string> prefix: "seq" + (slot + 1) + "_";
+    property <int> mode-index: Controls.resolve(g, "seq_mode");
+    property <int> mode: Controls.value(mode-index, Controls.tick);
+    property <int> rate-index: Controls.resolve(g, "seq_rate");
+    property <int> rate: Controls.value(rate-index, Controls.tick);
+    property <int> swing-index: Controls.resolve(g, "seq_swing");
+    property <float> swing: Controls.value(swing-index, Controls.tick);
+    property <int> len-index: Controls.resolve(g, prefix + "len");
+    property <int> len: Controls.value(len-index, Controls.tick);
+    property <int> pitch-len: Controls.value(Controls.resolve(g, prefix + "pitch_len"), Controls.tick);
+    // The lane under PITCH, by the engine's number, and its own length.
+    property <[int]> tab-lanes: [1, 3, 4, 5, 6];
+    in-out property <int> tab: 1;
+    property <int> lane: tab-lanes[tab];
+    property <int> lane-len: Controls.value(Controls.resolve(g, prefix + ["on", "chance", "pitch", "vel", "oct", "gate", "slide"][lane] + "_len"), Controls.tick);
+    // The playhead shows on the pattern playing.
+    property <int> head: playing && slot-playing == slot ? position : -1;
+    spacing: 6px;
+    // Playing: ▶ and the slots, the mode, rate, swing and length.
+    VerticalLayout {
+        width: 172px;
+        padding: 2px;
+        spacing: 4px;
+        alignment: center;
+        HorizontalLayout {
+            spacing: 4px;
+            Rectangle {
+                width: 34px;
+                height: 20px;
+                border-radius: 5px;
+                background: root.playing && !root.waiting ? root.hue : pta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
+                border-width: root.waiting ? 1px : 0px;
+                border-color: root.hue;
+                Text {
+                    text: root.playing ? "■" : "▶";
+                    color: root.playing && !root.waiting ? #1b1230 : root.waiting ? root.hue : Theme.text;
+                    font-size: 11px;
+                }
+                pta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.play-index, root.playing ? 0 : 1); } }
+            }
+            NoteSeg {
+                horizontal-stretch: 1;
+                options: ["A", "B", "C", "D"];
+                picked: root.slot;
+                chose(i) => { Controls.set-value(root.slot-index, i); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            NoteStepper {
+                arrow: 16px;
+                text: ["FWD", "BACK", "P-PONG", "RAND"][root.mode];
+                step(by) => { Controls.set-value(root.mode-index, Math.mod(root.mode + by + 4, 4)); }
+            }
+            NoteStepper {
+                arrow: 16px;
+                text: ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][root.rate];
+                step(by) => { Controls.set-value(root.rate-index, clamp(root.rate + by, 0, 5)); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            NoteStepper {
+                arrow: 16px;
+                text: "SW " + round(root.swing * 100) + "%";
+                step(by) => { Controls.set-value(root.swing-index, clamp(round(root.swing * 20 + by) / 20, 0, 0.75)); }
+            }
+            NoteStepper {
+                arrow: 16px;
+                text: "LEN " + root.len;
+                step(by) => { Controls.set-value(root.len-index, clamp(root.len + by, 1, 16)); }
+            }
+        }
+    }
+    Rectangle { width: 1px; background: Theme.border.with-alpha(0.6); }
+    // The lanes.
+    VerticalLayout {
+        horizontal-stretch: 1;
+        spacing: 3px;
+        HorizontalLayout {
+            vertical-stretch: 1;
+            spacing: 4px;
+            VerticalLayout {
+                width: 50px;
+                spacing: 3px;
+                alignment: center;
+                SeqLaneButtons { slot: root.slot; lane: 2; }
+                SeqLaneLen { slot: root.slot; lane: 2; pattern-len: root.len; }
+            }
+            HorizontalLayout {
+                spacing: 2px;
+                for i in 16: SeqPitchStep {
+                    prefix: root.prefix;
+                    index: i;
+                    hue: root.hue;
+                    current: i == root.head;
+                    in-pattern: i < root.len;
+                    in-lane: root.pitch-len == 0 || i < root.pitch-len;
+                }
+            }
+        }
+        HorizontalLayout {
+            height: 20px;
+            spacing: 4px;
+            VerticalLayout {
+                alignment: center;
+                SeqLaneButtons { slot: root.slot; lane: root.lane; }
+            }
+            HorizontalLayout {
+                spacing: 2px;
+                for i in 16: SeqLaneStep {
+                    prefix: root.prefix;
+                    index: i;
+                    lane: root.lane;
+                    hue: root.hue;
+                    current: i == root.head;
+                    in-pattern: i < root.len;
+                    in-lane: root.lane-len == 0 || i < root.lane-len;
+                }
+            }
+        }
+        HorizontalLayout {
+            height: 16px;
+            spacing: 4px;
+            VerticalLayout {
+                alignment: center;
+                SeqLaneLen { slot: root.slot; lane: root.lane; pattern-len: root.len; }
+            }
+            NoteSeg {
+                width: 280px;
+                height: 16px;
+                options: ["CHANCE", "VEL", "OCT", "GATE", "SLIDE"];
+                picked: root.tab;
+                chose(i) => { root.tab = i; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+        }
+    }
+}
+
 component InstrumentRack inherits Rectangle {
     in property <string> group;
     property <color> hue: StripColors.palette(InstrumentsUi.color-index());
     property <int> size: InstrumentsUi.keyboard-size;
     property <int> count: Controls.value(Controls.resolve("[Instrument1]", "num_parameters"), Controls.tick);
     property <int> pages: max(1, ceil(count / 8));
-    // Two pages show at once when the keyboard is hidden.
-    property <int> shown: size == 0 || pages < 2 ? 1 : 2;
+    // One page of knobs; the keyboard or the step sequencer under it.
+    property <int> shown: 1;
     property <int> page: min(InstrumentsUi.knob-page, max(0, pages - shown));
     property <int> octave-index: Controls.resolve("[Instrument1]", "octave");
     property <int> octave: Controls.value(octave-index, Controls.tick);
@@ -6282,7 +6643,8 @@ component InstrumentRack inherits Rectangle {
         spacing: 6px;
         HorizontalLayout {
             vertical-stretch: 1;
-            min-height: 96px;
+            // Less room with the step sequencer under it.
+            min-height: root.size == 0 ? 96px : 80px;
             spacing: 6px;
             // In and out.
             Rectangle {
@@ -6376,6 +6738,11 @@ component InstrumentRack inherits Rectangle {
             WheelStrip { kind: 0; }
             WheelStrip { kind: 1; }
             Keybed { horizontal-stretch: 1; }
+        }
+        if root.size != 0: SeqPanel {
+            vertical-stretch: 2;
+            min-height: 100px;
+            hue: root.hue;
         }
     }
 }

@@ -198,6 +198,10 @@ export global InstrumentsUi {
     in property <[int]> knob-ids;
     in property <[ParamMatch]> param-matches;
     callback search-params(text: string);
+    // The step sequencer's lane tools: fills lane `lane` (the engine's
+    // numbering: 0 on, 1 chance, 2 pitch, 3 vel, 4 oct, 5 gate, 6 slide) of
+    // pattern `slot` at random, or clears it.
+    callback seq-lane(slot: int, lane: int, random: bool);
     // Puts parameter `id` on knob `knob` (from 0); -1 gives the knob back
     // to the plugin's own choice.
     callback pick-knob(knob: int, id: int);
