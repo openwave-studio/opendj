@@ -62,11 +62,15 @@ openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor open
 **Controllers**
 
 - **Pioneer OPUS-QUAD** (Beta).
+- **DDJ-FLX10**: jogs scaled for its big platters, pad colors that match the screen, ACTIVE PART lights for stems, and tempo, key and key shift on the jog displays.
+- The cue marker on the jog displays of the FLX10, OPUS-QUAD, XDJ-AZ and XDJ-RX3 points the right way.
 - **DDJ-400**: Beat FX controls, rim sensitivity, Slip release and the SHIFT pad modes (Keyboard, Pad FX 1 and 2, Key Shift) work.
 
 **Fixes**
 
 - Picking a LENGTH in Automix during an album takes effect at once, and dragging the Player bar no longer leaves a deck stuck.
+- A hot cue or saved loop pressed on a paused deck plays from it, as on Pioneer gear.
+- Control-click a track list heading, or right-click the empty header, to open the column menu.
 - The Prep Checklist scrolls when the side panel is short.
 - Windows draws with DirectX 12 first, falls back to another graphics driver after a start that never draws, and writes a crash report when it fails. Plugin helpers start without a console window.
 
