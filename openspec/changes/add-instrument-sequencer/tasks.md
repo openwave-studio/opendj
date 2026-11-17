@@ -10,4 +10,4 @@
 
 - [x] 2.1 Sequencer in the hidden keyboard's space: playback strip, slots, tall PITCH lane, tabbed second lane, per-lane RANDOM/DIV/RESET
 - [x] 2.2 REC from keys and pads; Dice with styles, undo/keep, Auto-Regen
-- [ ] 2.3 Patterns saved with the instrument's preset; 4-Deck strip shows ▶ and the slot
+- [x] 2.3 Patterns saved with the instrument's preset; 4-Deck strip shows ▶ and the slot

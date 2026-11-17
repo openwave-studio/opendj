@@ -92,6 +92,32 @@ pub fn lane_key(slot: usize, lane: usize, step: usize) -> String {
     format!("seq{}_{}_{}", slot + 1, LANES[lane], step + 1)
 }
 
+/// The controls a preset keeps with the sound: every pattern's steps,
+/// lane lengths, length and offsets, and how it plays (mode, rate, swing,
+/// Dice's style and Auto-Regen). Not whether it plays, the slot or REC.
+pub fn pattern_keys() -> Vec<String> {
+    let mut keys: Vec<String> = [
+        "seq_mode",
+        "seq_rate",
+        "seq_swing",
+        "seq_dice_style",
+        "seq_regen",
+    ]
+    .map(String::from)
+    .to_vec();
+    for s in 0..SLOTS {
+        let n = s + 1;
+        keys.push(format!("seq{n}_len"));
+        keys.push(format!("seq{n}_pitch_offset"));
+        keys.push(format!("seq{n}_vel_offset"));
+        for (lane, name) in LANES.iter().enumerate() {
+            keys.push(format!("seq{n}_{name}_len"));
+            keys.extend((0..STEPS).map(|i| lane_key(s, lane, i)));
+        }
+    }
+    keys
+}
+
 /// One pattern's controls.
 pub struct SlotControls {
     pub len: ControlHandle,
@@ -852,6 +878,19 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn a_preset_keeps_every_pattern_control() {
+        let (reg, _s) = seq();
+        let keys = pattern_keys();
+        assert_eq!(keys.len(), 5 + SLOTS * (3 + LANES.len() * (1 + STEPS)));
+        for k in &keys {
+            assert!(reg.get("[Instrument1]", k).is_some(), "{k}");
+        }
+        assert!(!keys
+            .iter()
+            .any(|k| k == "seq" || k == "seq_slot" || k == "seq_rec"));
     }
 
     #[test]
