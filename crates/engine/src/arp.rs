@@ -5,7 +5,8 @@
 //! Random or Order (as played, see [`MODES`]); `arp_rate` an index into
 //! [`RATES`]; `arp_gate` how much of each step a note sounds, 0.1 to 1;
 //! `arp_octaves` 1 to 4; `arp_hold` keeps the notes playing after the keys
-//! are let go, until new keys are played.
+//! are let go, until new keys are played (the instrument's HOLD, which
+//! [`crate::latch`] plays while the arpeggiator is off).
 //!
 //! It takes the notes after scale and chord mode, so a chord held with one
 //! key is arpeggiated too. Steps fall on the master deck's beat grid while

@@ -35,6 +35,7 @@ pub mod key;
 pub mod keynet;
 mod keyshift;
 pub mod kits;
+pub mod latch;
 pub mod link;
 pub mod live_wave;
 pub mod loader;
@@ -51,13 +52,20 @@ pub mod plugins;
 pub mod preview;
 pub mod process;
 pub mod recorder;
+pub mod room_eq;
 pub mod sampler;
 pub mod scale;
 pub mod scan;
 pub mod separation;
+pub mod seq;
+pub mod set_chapters;
+pub mod set_checks;
+pub mod set_fixes;
+pub mod set_timeline;
 pub mod stems;
 pub mod synth;
 pub mod tags;
+mod tap_tempo;
 pub mod track;
 mod visual;
 pub mod vocals;
@@ -78,9 +86,9 @@ pub use controls::{
     NUM_EFFECT_UNITS, NUM_HOTCUES, XFADER_CUT_IN,
 };
 pub use effects::{
-    color_fx_name, effect_name, parameter_names, plugin_index, InstrumentView, NoteInput,
-    PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, MAX_BUTTON_PARAMETERS,
-    MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    color_fx_name, effect_name, parameter_names, plugin_index, step_effect, InstrumentView,
+    NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
+    MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
 };
 pub use output::{
     channel_names, deck_outputs_split, default_output_device, input_devices, output_devices,
@@ -148,6 +156,8 @@ pub struct AudioEngine {
     groove_hits: Mutex<Option<[rtrb::Consumer<groove::GrooveHit>; NUM_DECKS]>>,
     /// The master for broadcasting, until the broadcaster takes it.
     broadcast_feed: Mutex<Option<recorder::Feed>>,
+    /// The main output as it leaves, for the Room EQ page's spectrum.
+    spectrum_feed: Mutex<Option<recorder::Feed>>,
     /// Picks the outputs MIDI clock goes to.
     midi_clock: midi_clock::MidiClock,
 }
@@ -155,6 +165,21 @@ pub struct AudioEngine {
 /// The master output, for broadcasting: a copy of what the speakers get,
 /// after the limiter. The audio thread only copies while it is active.
 pub struct MasterFeed(recorder::Feed);
+
+/// The main output as it leaves the engine, copied only while switched on.
+pub struct OutputFeed(recorder::Feed);
+
+impl OutputFeed {
+    /// Moves every sample waiting (interleaved stereo) onto the end of `out`.
+    pub fn drain_into(&mut self, out: &mut Vec<f32>) {
+        self.0.drain_into(out);
+    }
+
+    /// Starts or stops the copying; it costs nothing while off.
+    pub fn set_active(&self, on: bool) {
+        self.0.set_active(on);
+    }
+}
 
 impl MasterFeed {
     /// Moves every sample waiting (interleaved stereo, at the engine's
@@ -206,6 +231,7 @@ impl AudioEngine {
             engine.take_meter_feed().expect("meter feed"),
         );
         let broadcast_feed = engine.take_broadcast_feed();
+        let spectrum_feed = engine.take_spectrum_feed();
         let preview = engine.take_preview_input().expect("preview input");
         let samplers = engine.take_sampler_input().expect("sampler input");
         let visual = engine.visual_positions();
@@ -266,6 +292,7 @@ impl AudioEngine {
             live_waves: Mutex::new(Some(live_waves)),
             groove_hits: Mutex::new(Some(groove_hits)),
             broadcast_feed: Mutex::new(broadcast_feed),
+            spectrum_feed: Mutex::new(spectrum_feed),
             midi_clock,
         }
     }
@@ -279,6 +306,12 @@ impl AudioEngine {
     /// calls get `None`.
     pub fn take_master_feed(&self) -> Option<MasterFeed> {
         self.broadcast_feed.lock().ok()?.take().map(MasterFeed)
+    }
+
+    /// The main output as it leaves the engine, after Room EQ, for drawing
+    /// its spectrum; there is only one.
+    pub fn take_output_feed(&self) -> Option<OutputFeed> {
+        self.spectrum_feed.lock().ok()?.take().map(OutputFeed)
     }
 
     /// The rate the engine runs at, in Hz.
@@ -335,6 +368,14 @@ impl AudioEngine {
         self.plugins
             .as_ref()
             .map_or_else(Vec::new, |p| p.instrument_parameters())
+    }
+
+    /// A name for each page of 8 of the playing instrument's knobs, from
+    /// its maker ("" for none); empty while none plays or it names none.
+    pub fn instrument_pages(&self) -> Vec<String> {
+        self.plugins
+            .as_ref()
+            .map_or_else(Vec::new, |p| p.instrument_pages())
     }
 
     /// Every parameter of the playing instrument, (id, name), to pick

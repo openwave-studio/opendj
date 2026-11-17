@@ -178,13 +178,16 @@ fn the_rack_holds_a_few_buffers_not_one_per_instance() {
     let rack = EffectRack::new(&reg, SR as f64);
     let mb = rack.memory_bytes() as f64 / 1e6;
     // One two-second buffer for each of the 141 instances was about 108 MB.
-    assert!(mb < 40.0, "the rack holds {mb:.1} MB");
+    // The pool is about 40 MB, 16 of it the Beat FX's three 14-second
+    // buffers for echoes and rolls up to 16 beats.
+    println!("rack memory: {mb:.1} MB");
+    assert!(mb < 50.0, "the rack holds {mb:.1} MB");
 }
 
 #[test]
 fn an_empty_pool_leaves_the_effect_off_until_memory_comes_back() {
     let reg = ControlRegistry::new();
-    let mut rack = EffectRack::with_pool(&reg, SR as f64, 1, 0);
+    let mut rack = EffectRack::with_pool(&reg, SR as f64, 0, 1, 0);
     // Echo on deck 1 and deck 2's units: one long buffer between them.
     for u in 0..2 {
         let g = effect_group(u, 1);
@@ -215,6 +218,43 @@ fn an_empty_pool_leaves_the_effect_off_until_memory_comes_back() {
     }
     assert!(!rack.instance(on, 1, on).unwrap().active());
     assert!(rack.instance(off, 1, off).unwrap().active());
+}
+
+#[test]
+fn the_beat_fx_echoes_16_beats_at_75_bpm() {
+    // 16 beats at 75 BPM is 12.8 s: past a deck echo's two seconds, inside
+    // the Beat FX's own buffer.
+    let reg = ControlRegistry::new();
+    let mut rack = EffectRack::new(&reg, SR as f64);
+    let unit = effect_unit_group(BEAT_FX_UNIT);
+    let slot = effect_group(BEAT_FX_UNIT, 1);
+    reg.get(&unit, "route").unwrap().set(1.0);
+    reg.get(&slot, "loaded_effect").unwrap().set(1.0);
+    reg.get(&slot, "meta").unwrap().set(0.5);
+    let beat = 0.8;
+    // Loading the effect sets its length to 1/4 beat; then the switch.
+    rack.prepare([beat; TARGETS], 0.0);
+    reg.get(&slot, "beats").unwrap().set(16.0);
+    reg.get(&slot, "enabled").unwrap().set_bool(true);
+    let delay = (16.0 * beat * SR as f64) as usize;
+    let mut out = Vec::with_capacity(delay + SR as usize);
+    while out.len() < delay + SR as usize / 10 {
+        rack.prepare([beat; TARGETS], 0.0);
+        for f in 0..BUFFER {
+            let x = if out.is_empty() { 1.0 } else { 0.0 };
+            out.push(rack.process(0, [x, x], f, BUFFER)[0]);
+        }
+        rack.finish(BUFFER);
+    }
+    assert_eq!(reg.get(&slot, "beats").unwrap().get(), 16.0);
+    let quiet = out[1_000..delay - 1_000]
+        .iter()
+        .fold(0.0f32, |m, v| m.max(v.abs()));
+    let back = out[delay - 1_000..]
+        .iter()
+        .fold(0.0f32, |m, v| m.max(v.abs()));
+    assert!(quiet < 0.01, "nothing in between: {quiet}");
+    assert!(back > 0.1, "the click comes back 16 beats later: {back}");
 }
 
 #[test]
@@ -547,7 +587,8 @@ fn rolls_start_on_the_grid() {
     // and repeats from there: a click starting at that frame comes back a
     // beat later (past the 3 ms fade at each seam).
     let mut p = defaults(Kind::Roll);
-    p[0] = 0.0;
+    // One beat: the middle of 1/16 to 16.
+    p[0] = 0.5;
     let out = run_on_grid(Kind::Roll, p, 10.1, 3 * SR as usize, |i| {
         if (3_600..3_900).contains(&i) {
             0.8

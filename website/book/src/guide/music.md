@@ -264,7 +264,8 @@ fader and cue like the music. If the clicks drift off the music, fix the
 grid while it plays: **Bar 1 here** on a downbeat puts bar 1 there,
 **Move grid** ‹ › nudges it, **Tempo here** − + changes the tempo,
 **Tempo × ½ / × 2** fixes a tempo read at half or double, **Tap tempo**
-sets it from your taps, and **New tempo section
+sets it from your taps (it settles to a whole BPM over eight or more taps,
+skips a slipped tap, and starts over after a two second pause), and **New tempo section
 from here** starts a new tempo where a live track speeds up or slows down.
 
 ### Edit Grid

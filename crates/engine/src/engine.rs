@@ -19,8 +19,7 @@ use crate::controls::{
 };
 use crate::dsp::{soft_clip, Isolator, Limiter, Sculpt};
 use crate::effects::{
-    fade, fade_step, input_target, ColorFx, EffectRack, StemFx, BLOCK, COLOR_FX, MAIN, TAPS,
-    TAP_GAP, TARGETS,
+    fade, fade_step, input_target, ColorFx, EffectRack, StemFx, BLOCK, COLOR_FX, MAIN, TARGETS,
 };
 use crate::groove::{pick_source, GrooveBox};
 use crate::inputs::{
@@ -33,8 +32,10 @@ use crate::looper::{Heard, LooperIntake, Loopers};
 use crate::midi_clock::LeaderSource;
 use crate::preview::{Preview, PreviewInput};
 use crate::recorder::{self, Feed, RecordTap};
+use crate::room_eq::{RoomEq, RoomEqControls};
 use crate::sampler::{SamplerInput, Samplers};
 use crate::stems::{Stems, MAX_STEMS};
+use crate::tap_tempo::{tap_time, TapTempo};
 use crate::track::{Audio, Track};
 use crate::visual::VisualPositions;
 use crate::{NUM_DECKS, NUM_HOTCUES};
@@ -165,31 +166,6 @@ pub(crate) fn xfader_gains(x: f32, shape: u8, cut_in: f32) -> [f32; 2] {
     }
 }
 
-/// Tap tempo: taps in time give a tempo, averaged over the last few.
-#[derive(Default)]
-struct TapTempo {
-    last: Option<f64>,
-    intervals: [f64; TAPS],
-    taps: usize,
-}
-
-impl TapTempo {
-    /// A tap at `now` seconds; the tapped BPM once there are two in time.
-    fn tap(&mut self, now: f64) -> Option<f64> {
-        let gap = self.last.map_or(f64::INFINITY, |last| now - last);
-        self.last = Some(now);
-        if gap > TAP_GAP || gap <= 0.0 {
-            self.taps = 0;
-            return None;
-        }
-        self.intervals.rotate_right(1);
-        self.intervals[0] = gap;
-        self.taps = (self.taps + 1).min(TAPS);
-        let mean = self.intervals[..self.taps].iter().sum::<f64>() / self.taps as f64;
-        Some(60.0 / mean)
-    }
-}
-
 struct Deck {
     c: DeckControls,
     track: Option<Arc<Track>>,
@@ -209,6 +185,11 @@ struct Deck {
     /// `clock` at the last buffer's controls.
     last_clock: f64,
     taps: TapTempo,
+    /// When this buffer's `bpm_tap` press came, on the engine clock.
+    tap_at: f64,
+    /// The track tempo the taps last set, so a tap that changes nothing
+    /// leaves the grid (and its undo) alone.
+    tapped: Option<f64>,
     /// The `bpmlock` version last seen, so the DJ turning it is told apart
     /// from the engine showing a loaded track's lock.
     bpmlock_seen: u32,
@@ -736,6 +717,9 @@ impl Deck {
         let mut n = 0;
         for p in self.c.pushes.iter_mut() {
             if p.edge.pressed(&p.control) && n < actions.len() {
+                if matches!(p.action, Action::BpmTap) {
+                    self.tap_at = tap_time(self.clock, &p.control);
+                }
                 actions[n] = Some(p.action);
                 n += 1;
             }
@@ -861,15 +845,21 @@ impl Deck {
                 }
                 Action::Grid(edit) => self.grid_edit = Some((edit, now)),
                 // Taps come at the playing speed; the grid is at the track's.
-                Action::BpmTap => {
-                    if let Some(bpm) = self.taps.tap(self.clock) {
+                // Taps are good to about half a BPM, so the track's tempo
+                // goes to the nearest whole one.
+                Action::BpmTap => match self.taps.tap(self.tap_at) {
+                    Some(bpm) => {
                         let speed = self.speed().abs();
                         if speed > 0.0 {
-                            let bpm = (bpm / speed).clamp(40.0, 300.0);
-                            self.grid_edit = Some((GridEdit::SetTempo(bpm), now));
+                            let bpm = (bpm / speed).clamp(40.0, 300.0).round();
+                            if self.tapped != Some(bpm) {
+                                self.tapped = Some(bpm);
+                                self.grid_edit = Some((GridEdit::SetTempo(bpm), now));
+                            }
                         }
                     }
-                }
+                    None => self.tapped = None,
+                },
                 Action::KeyStep(n) => {
                     let p = (self.c.pitch.get() + n).clamp(-6.0, 6.0);
                     // Whole steps land on whole semitones.
@@ -1660,6 +1650,16 @@ pub struct Engine {
     /// Seconds played, for blinking indicators.
     clock: f64,
     limiter: Limiter,
+    /// Room EQ on the main output and on the booth, and their controls
+    /// (`[RoomEQ_Main]`, `[RoomEQ_Booth]`).
+    room_eq: [RoomEq; 2],
+    room_eq_controls: [RoomEqControls; 2],
+    /// While the main Room EQ is on, the mix without it goes through this
+    /// limiter for recording, going on air, the loudness meter, the
+    /// headphones and the loopers, at the main limiter's ceiling. Off, they
+    /// take the main output, and this one stands aside.
+    rec_limiter: Limiter,
+    rec_split: bool,
     visual: Arc<VisualPositions>,
     link: Link,
     /// The master deck: the one Link and MIDI clock follow.
@@ -1690,6 +1690,10 @@ pub struct Engine {
     /// Copies the master out for broadcasting, while on air.
     broadcast: RecordTap,
     broadcast_feed: Option<Feed>,
+    /// Copies the main output as it leaves (after Room EQ and the
+    /// limiter) for the Room EQ page's spectrum, while it's open.
+    spectrum: RecordTap,
+    spectrum_feed: Option<Feed>,
     /// Plays a track into the headphones for the info panel.
     preview: Preview,
     preview_input: Option<PreviewInput>,
@@ -1804,6 +1808,8 @@ impl Engine {
             clock: 0.0,
             last_clock: 0.0,
             taps: TapTempo::default(),
+            tap_at: 0.0,
+            tapped: None,
             bpmlock_seen: 0,
             metronome_beat: f64::NAN,
             click: None,
@@ -1893,6 +1899,7 @@ impl Engine {
         let (meter, meter_feed) = recorder::tap(sample_rate);
         meter_feed.set_active(true);
         let (broadcast, broadcast_feed) = recorder::tap(sample_rate);
+        let (spectrum, spectrum_feed) = recorder::tap(sample_rate);
         let mut live_wave_rx = Vec::with_capacity(NUM_DECKS);
         let live_waves = std::array::from_fn(|_| {
             let (wave, rx) = crate::live_wave::channel(sample_rate);
@@ -1926,6 +1933,8 @@ impl Engine {
                 groove_hit_rx,
                 broadcast,
                 broadcast_feed: Some(broadcast_feed),
+                spectrum,
+                spectrum_feed: Some(spectrum_feed),
                 preview,
                 preview_input: Some(preview_input),
                 sampler_input: Some(sampler_input),
@@ -1968,6 +1977,11 @@ impl Engine {
                 xfade: [1.0; NUM_DECKS],
                 clock: 0.0,
                 limiter: Limiter::new(sample_rate, LIMIT_CEILING),
+                room_eq: [RoomEq::new(sample_rate), RoomEq::new(sample_rate)],
+                room_eq_controls: [crate::room_eq::MAIN_GROUP, crate::room_eq::BOOTH_GROUP]
+                    .map(|g| RoomEqControls::create(registry, g)),
+                rec_limiter: Limiter::new(sample_rate, LIMIT_CEILING),
+                rec_split: false,
                 tone_frame: 0,
             },
             EngineInput {
@@ -2013,6 +2027,11 @@ impl Engine {
     /// The other end of the broadcast's tap; there is only one.
     pub(crate) fn take_broadcast_feed(&mut self) -> Option<Feed> {
         self.broadcast_feed.take()
+    }
+
+    /// The other end of the spectrum's tap; there is only one.
+    pub(crate) fn take_spectrum_feed(&mut self) -> Option<Feed> {
+        self.spectrum_feed.take()
     }
 
     /// Plays input `input` (see [`crate::inputs`]) from `feed`, or from
@@ -3134,6 +3153,26 @@ impl Engine {
         if ceiling != self.limiter.ceiling() {
             self.limiter.set_ceiling(ceiling);
         }
+        for (eq, c) in self.room_eq.iter_mut().zip(&self.room_eq_controls) {
+            let (on, bands) = c.read();
+            eq.set(on, &bands);
+        }
+        // The main Room EQ coming in, the recording's limiter takes over
+        // where the main one is, so the recording runs on without a seam.
+        // Going out, the two run on until the main one, which may have
+        // been holding a boost down, has come back to where the other is;
+        // then it takes over the other's state, and the main output and
+        // the recording are one again.
+        let settling =
+            self.rec_split && (self.limiter.gain() - self.rec_limiter.gain()).abs() > 1e-4;
+        let split = (self.room_eq[0].is_active() || settling) && !external;
+        if split && !self.rec_split {
+            self.rec_limiter.copy_state_from(&self.limiter);
+        } else if !split && self.rec_split {
+            self.limiter.copy_state_from(&self.rec_limiter);
+        }
+        self.rec_split = split;
+        self.rec_limiter.set_ceiling(ceiling);
         let auto_gain_on = self.master.auto_gain.get_bool();
         let auto_gain_target = self.master.auto_gain_target.get() as f32;
         let balance_target = self.master.balance.get() as f32;
@@ -3944,26 +3983,42 @@ impl Engine {
                 to[0] += t;
                 to[1] += t;
             }
-            // The booth hears the main mix before the main level, at its own,
-            // bent rather than clipped when it runs hot.
-            let booth = main.map(|v| soft_clip(v * booth_gain));
+            // The booth hears the main mix before the main level, through
+            // its Room EQ, at its own level, bent rather than clipped when
+            // it runs hot.
+            let booth = if channels >= 6 {
+                self.room_eq[1]
+                    .process(main)
+                    .map(|v| soft_clip(v * booth_gain))
+            } else {
+                [0.0; 2]
+            };
             let mg = lerp(master);
             let bal = balance_gains(lerp(balance));
-            let mut hot = [0.0; 2];
+            let mut hot = main.map(|v| v * mg);
+            // What is recorded and heard in the headphones: the mix without
+            // Room EQ, limited on its own while the main output has it.
+            let rec = split.then(|| self.rec_limiter.process(hot));
+            if split {
+                hot = self.room_eq[0].process(hot);
+            }
             for c in 0..2 {
-                hot[c] = main[c] * mg;
                 master_clip[c] |= hot[c].abs() > 1.0;
             }
             // Limited rather than clipped when the mix runs hot.
             let limited = self.limiter.process(hot);
+            let main_out = [limited[0] * bal[0], limited[1] * bal[1]];
             for c in 0..2 {
-                main[c] = limited[c] * bal[c];
-                master_peak[c] = master_peak[c].max(main[c].abs());
+                master_peak[c] = master_peak[c].max(main_out[c].abs());
             }
+            // From here on, `main` is the mix without Room EQ.
+            let rec = rec.unwrap_or(limited);
+            let main = [rec[0] * bal[0], rec[1] * bal[1]];
+            main_buf[f] = main;
             let o = &mut out[f * channels..(f + 1) * channels];
-            o[0] = main[0];
+            o[0] = main_out[0];
             if channels > 1 {
-                o[1] = main[1];
+                o[1] = main_out[1];
             }
             if channels >= 4 {
                 if head_split {
@@ -4112,12 +4167,17 @@ impl Engine {
         self.master
             .vu
             .set(self.master_vu[0].max(self.master_vu[1]) as f64);
-        // The main mix as heard, for loopers recording it next buffer.
+        // The main mix as heard, without Room EQ, for loopers recording it
+        // next buffer.
         for f in 0..frames {
-            self.last_main[f] = [
-                out[f * channels],
-                out[(f * channels + 1).min(out.len() - 1)],
-            ];
+            self.last_main[f] = if external {
+                [
+                    out[f * channels],
+                    out[(f * channels + 1).min(out.len() - 1)],
+                ]
+            } else {
+                self.main_buf[f]
+            };
         }
         self.last_main_len = frames;
         // What is recorded and sent on air: one Auxiliary input as it comes
@@ -4127,20 +4187,17 @@ impl Engine {
             0 => None,
             n => AUXILIARIES.get(n - 1).copied(),
         };
-        if let Some(input) = source {
-            let rec = self.inputs[input].raw[..frames].as_flattened();
-            self.record.push(rec, 2);
-            self.meter.push(rec, 2);
-            self.broadcast.push(rec, 2);
-        } else if external {
-            let rec = self.main_buf[..frames].as_flattened();
-            self.record.push(rec, 2);
-            self.meter.push(rec, 2);
-            self.broadcast.push(rec, 2);
-        } else {
-            self.record.push(out, channels);
-            self.meter.push(out, channels);
-            self.broadcast.push(out, channels);
+        // The main mix is in `main_buf`: limited and without Room EQ, or
+        // with an external mixer, the inputs as they are.
+        let rec = match source {
+            Some(input) => self.inputs[input].raw[..frames].as_flattened(),
+            None => self.main_buf[..frames].as_flattened(),
+        };
+        self.record.push(rec, 2);
+        self.meter.push(rec, 2);
+        self.broadcast.push(rec, 2);
+        if !external {
+            self.spectrum.push(out, channels);
         }
     }
 }
@@ -4657,6 +4714,127 @@ mod tests {
             .0
             .iter()
             .all(|f| f[4] == 0.0 && f[5] == 0.0));
+    }
+
+    /// Two engines playing the same tone at `pregain` to the main, headphone
+    /// (main only) and booth outputs, one with `room` set on its Room EQ controls
+    /// after `on_at` buffers (and back to flat `off_at`). Returns each
+    /// engine's six-channel output and recording.
+    fn room_eq_pair(
+        pregain: f64,
+        room: &[(&str, &str, f64)],
+        on_at: usize,
+        off_at: usize,
+        buffers: usize,
+    ) -> [(Vec<f32>, Vec<f32>); 2] {
+        std::array::from_fn(|n| {
+            let (reg, mut engine, mut input) = setup();
+            reg.get("[Master]", "headMix").unwrap().set(1.0);
+            load(&mut input, 0, tone_track(440.0, "A"));
+            engine.process(&mut vec![0.0; 512 * 6], 6);
+            let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+            c("pregain").set(pregain);
+            c("play").set_bool(true);
+            let mut feed = engine.take_record_feed().unwrap();
+            feed.set_active(true);
+            let (mut out, mut rec) = (Vec::new(), Vec::new());
+            let mut buf = vec![0.0f32; 512 * 6];
+            for b in 0..buffers {
+                if n == 1 && (b == on_at || b == off_at) {
+                    for (g, k, v) in room {
+                        let c = reg.get(g, k).unwrap();
+                        if b == on_at {
+                            c.set(*v);
+                        } else {
+                            c.reset();
+                        }
+                    }
+                }
+                engine.process(&mut buf, 6);
+                out.extend_from_slice(&buf);
+                feed.drain_into(&mut rec);
+            }
+            (out, rec)
+        })
+    }
+
+    /// One channel of six-channel audio, from `skip` frames on: its RMS.
+    fn channel_rms(out: &[f32], channel: usize, skip: usize) -> f32 {
+        let v: Vec<f32> = out.chunks(6).skip(skip).map(|f| f[channel]).collect();
+        (v.iter().map(|x| x * x).sum::<f32>() / v.len() as f32).sqrt()
+    }
+
+    #[test]
+    fn room_eq_reaches_the_main_output_only() {
+        let bell = [
+            ("[RoomEQ_Main]", "enabled", 1.0),
+            ("[RoomEQ_Main]", "b3_freq", 440.0),
+            ("[RoomEQ_Main]", "b3_gain", -6.0),
+        ];
+        let [(plain, plain_rec), (eqd, eqd_rec)] = room_eq_pair(1.0, &bell, 10, usize::MAX, 60);
+        // The recording and the headphones are the same, sample for sample,
+        // and the recording is the main output without Room EQ.
+        assert_eq!(plain_rec, eqd_rec);
+        let main_pair = |o: &[f32]| o.chunks(6).flat_map(|f| [f[0], f[1]]).collect::<Vec<_>>();
+        assert_eq!(
+            &plain_rec[..],
+            &main_pair(&plain)[plain.len() / 6 * 2 - plain_rec.len()..]
+        );
+        for (a, b) in plain.chunks(6).zip(eqd.chunks(6)) {
+            assert_eq!(a[2..4], b[2..4], "headphones");
+            assert_eq!(a[4..6], b[4..6], "booth");
+        }
+        // The main output is about 6 dB down once the bell has glided in.
+        let skip = 20 * 512;
+        let drop = 20.0 * (channel_rms(&eqd, 0, skip) / channel_rms(&plain, 0, skip)).log10();
+        assert!((drop + 6.0).abs() < 1.0, "{drop}");
+    }
+
+    #[test]
+    fn booth_room_eq_reaches_the_booth_only() {
+        let shelf = [
+            ("[RoomEQ_Booth]", "enabled", 1.0),
+            ("[RoomEQ_Booth]", "b5_freq", 300.0),
+            ("[RoomEQ_Booth]", "b5_gain", -4.0),
+        ];
+        let [(plain, plain_rec), (eqd, eqd_rec)] = room_eq_pair(0.5, &shelf, 10, usize::MAX, 40);
+        assert_eq!(plain_rec, eqd_rec);
+        for (a, b) in plain.chunks(6).zip(eqd.chunks(6)) {
+            assert_eq!(a[..4], b[..4], "main and headphones");
+        }
+        let skip = 20 * 512;
+        let drop = 20.0 * (channel_rms(&eqd, 4, skip) / channel_rms(&plain, 4, skip)).log10();
+        assert!(drop < -3.0 && drop > -4.5, "{drop}");
+    }
+
+    #[test]
+    fn room_eq_coming_and_going_leaves_no_seam() {
+        // A boost into the limiter, on and then off again: the recording
+        // never notices, and the main output comes back to exactly what it
+        // was without Room EQ.
+        let boost = [
+            ("[RoomEQ_Main]", "enabled", 1.0),
+            ("[RoomEQ_Main]", "b2_freq", 1000.0),
+            ("[RoomEQ_Main]", "b2_gain", 6.0),
+        ];
+        let [(plain, plain_rec), (eqd, eqd_rec)] = room_eq_pair(3.0, &boost, 10, 30, 160);
+        assert_eq!(plain_rec, eqd_rec);
+        let late = 150 * 512 * 6;
+        assert_eq!(plain[late..], eqd[late..]);
+        // While on, the boost was limited, not clipped, and changed the sound.
+        let mid = &eqd[20 * 512 * 6..30 * 512 * 6];
+        assert!(mid.chunks(6).all(|f| f[0].abs() <= LIMIT_CEILING));
+        assert_ne!(&plain[20 * 512 * 6..30 * 512 * 6], mid);
+        // Left channel, sample to sample: no jump as it comes and goes.
+        let left: Vec<f32> = eqd.chunks(6).map(|f| f[0]).collect();
+        let step = left
+            .windows(2)
+            .fold(0f32, |m, w| m.max((w[1] - w[0]).abs()));
+        let plain_left: Vec<f32> = plain.chunks(6).map(|f| f[0]).collect();
+        let plain_step = plain_left
+            .windows(2)
+            .fold(0f32, |m, w| m.max((w[1] - w[0]).abs()));
+        assert!(step < plain_step * 1.3, "{step} vs {plain_step}");
     }
 
     /// Renders `buffers` of 512 frames at the full output width and returns
@@ -6001,11 +6179,9 @@ mod tests {
                 _ => None,
             })
             .collect();
-        // The first tap only starts the count.
-        assert_eq!(taps.len(), 3, "{taps:?}");
-        for bpm in taps {
-            assert!((bpm - 96.0).abs() < 1.0, "{bpm}");
-        }
+        // The third tap gives the tempo, rounded to a whole BPM; the fourth
+        // agrees, so changes nothing.
+        assert_eq!(taps, [96.0]);
 
         // reloop_exit is Mixxx's old name for reloop_toggle.
         ctl("beatloop_2_activate").set_bool(true);
@@ -6159,16 +6335,18 @@ mod tests {
         assert_eq!(slot(1, "loaded_effect").get(), 1.0);
         slot(1, "effect_selector").set(1.0);
         run(&mut engine, 0.01);
-        assert_eq!(slot(1, "loaded_effect").get(), 2.0);
+        // The list's order: Echo Out follows Echo.
+        assert_eq!(
+            crate::effect_name(slot(1, "loaded_effect").get()),
+            "Echo Out"
+        );
         assert_eq!(slot(1, "effect_selector").get(), 0.0);
         slot(1, "effect_selector").set(-1.0);
         run(&mut engine, 0.01);
         slot(1, "effect_selector").set(-1.0);
         run(&mut engine, 0.01);
-        assert_eq!(
-            slot(1, "loaded_effect").get(),
-            AVAILABLE_EFFECTS.len() as f64
-        );
+        // Back past the first effect to the last: Roll.
+        assert_eq!(crate::effect_name(slot(1, "loaded_effect").get()), "Roll");
         slot(1, "next_effect").set_bool(true);
         run(&mut engine, 0.01);
         assert_eq!(crate::effect_name(slot(1, "loaded_effect").get()), "Echo");

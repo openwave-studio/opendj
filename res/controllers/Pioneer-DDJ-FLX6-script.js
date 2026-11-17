@@ -19,7 +19,7 @@
 //  Beat FX unit: any slot's ON/OFF turns it on or off, any LEVEL/DEPTH is
 //  its depth, FX SELECT steps the effect (SHIFT: backwards), BEAT < >
 //  halve and double its length (SHIFT: AUTO and TAP tempo) and CH SELECT
-//  sends it to one deck or, on MST, all four.
+//  sends it to one deck or, on MST, the main mix.
 //
 //  MERGE FX drives the side's deck FX unit (unit 1 to 4 for the deck that
 //  side plays): turning it raises the unit's super knob, pressing it turns
@@ -298,13 +298,12 @@ PioneerDDJFLX6.beatFxSelectPressed = function(_channel, _control, value) {
     engine.setValue(PioneerDDJFLX6.beatFxSlot, key, 0);
 };
 
-// Halves (-1) or doubles (+1) the effect's length, 1/16 to 4 beats; effects
-// without one (beats 0) stay as they are.
+// Halves (-1) or doubles (+1) the effect's length, within the effect's
+// own limits; effects without a length stay as they are.
 PioneerDDJFLX6.changeBeatFxBeats = function(direction) {
-    const beats = engine.getValue(PioneerDDJFLX6.beatFxSlot, "beats");
-    if (beats <= 0) { return; }
-    const next = Math.min(4, Math.max(1 / 16, direction > 0 ? beats * 2 : beats / 2));
-    engine.setValue(PioneerDDJFLX6.beatFxSlot, "beats", next);
+    const key = direction > 0 ? "beats_double" : "beats_halve";
+    engine.setValue(PioneerDDJFLX6.beatFxSlot, key, 1);
+    engine.setValue(PioneerDDJFLX6.beatFxSlot, key, 0);
 };
 
 PioneerDDJFLX6.pushBeatFxUnit = function(key) {
@@ -346,14 +345,15 @@ PioneerDDJFLX6.beatFxOnOffShiftPressed = function(_channel, _control, value) {
 };
 
 // CH SELECT sends the position it lands on (0x7F): CH1 to CH4 (notes 0x1C
-// to 0x1F) or MST (0x14), which sends the effect to all four decks.
+// to 0x1F), the Beat FX unit's route 1 to 4, or MST (0x14), the main mix
+// (route 6).
 PioneerDDJFLX6.beatFxChannelSelect = function(_channel, control, value) {
     if (value !== 0x7F) { return; }
 
-    PioneerDDJFLX6.decks.forEach(function(group, i) {
-        const on = control === 0x14 || control === 0x1C + i;
-        engine.setValue(PioneerDDJFLX6.beatFxUnit, "group_" + group + "_enable", on ? 1 : 0);
-    });
+    const route = {0x1C: 1, 0x1D: 2, 0x1E: 3, 0x1F: 4, 0x14: 6}[control];
+    if (route !== undefined) {
+        engine.setValue(PioneerDDJFLX6.beatFxUnit, "route", route);
+    }
 };
 
 //

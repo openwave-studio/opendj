@@ -115,6 +115,9 @@ struct List {
     requests: Vec<SoundRequest>,
     /// The playing instrument's parameter names, as its knobs show them.
     instrument_params: Vec<String>,
+    /// A name for each page of 8 of its knobs ("" for none); empty when
+    /// the plugin names none.
+    instrument_pages: Vec<String>,
     /// Every parameter of the playing instrument, (id, name), to pick from
     /// for a knob.
     instrument_all: Vec<(u32, String)>,
@@ -256,6 +259,12 @@ impl PluginHost {
     /// is the N-th. Empty while none plays.
     pub fn instrument_parameters(&self) -> Vec<String> {
         self.list.lock().unwrap().instrument_params.clone()
+    }
+
+    /// A name for each page of 8 of the playing instrument's knobs, from
+    /// its maker ("" for none). Empty while none plays or it names none.
+    pub fn instrument_pages(&self) -> Vec<String> {
+        self.list.lock().unwrap().instrument_pages.clone()
     }
 
     /// Every parameter of the playing instrument, (id, name) in its own
@@ -1138,6 +1147,7 @@ impl Supervisor {
                 ins.follow = ParamFollow::default();
                 let mut list = self.list.lock().unwrap();
                 list.instrument_params.clear();
+                list.instrument_pages.clear();
                 list.instrument_all.clear();
                 list.instrument_picks.clear();
                 list.instrument_ids.clear();
@@ -1247,6 +1257,7 @@ impl Supervisor {
                     list.instrument_params =
                         params.iter().take(shown).map(|p| p.name.clone()).collect();
                     list.instrument_all = helper.info().all.clone();
+                    list.instrument_pages = helper.info().pages.clone();
                     list.instrument_ids = params.iter().take(shown).map(|p| p.id).collect();
                     list.instrument_picks = picks;
                 }

@@ -520,7 +520,7 @@ fn audio_path(base: &Path, part: usize, format: RecordFormat) -> PathBuf {
 
 // ---------------------------------------------------------------- writing audio
 
-trait Sink: Send {
+pub(crate) trait Sink: Send {
     /// Interleaved stereo, -1..1.
     fn write(&mut self, samples: &[f32]) -> io::Result<()>;
     /// Makes the file on disk playable as far as it goes.
@@ -531,8 +531,18 @@ trait Sink: Send {
 }
 
 fn open_sink(path: &Path, s: &RecordSettings, rate: f64) -> io::Result<Box<dyn Sink>> {
-    let bits = if s.bits <= 16 { 16 } else { 24 };
-    Ok(match s.format {
+    audio_sink(path, s.format, s.bits, rate)
+}
+
+/// A WAV or FLAC file being written, 16 or 24 bits.
+pub(crate) fn audio_sink(
+    path: &Path,
+    format: RecordFormat,
+    bits: u16,
+    rate: f64,
+) -> io::Result<Box<dyn Sink>> {
+    let bits = if bits <= 16 { 16 } else { 24 };
+    Ok(match format {
         RecordFormat::Wav => Box::new(WavSink::create(path, rate as u32, bits)?),
         RecordFormat::Flac => Box::new(FlacSink::create(path, rate as u32, bits)?),
     })
@@ -1236,6 +1246,14 @@ mod tests {
             assert_eq!(lines[0]["opendj_recording"], 1);
             assert!(lines[1]["snapshot"]["[Channel1],volume"].is_number());
             assert!(lines.iter().any(|l| l["load"]["title"] == "Test \"Tone\""));
+            // The Mixed Set Editor reads it back: one track, played. (The
+            // seek splits its clip only when the logger saw it as a jump,
+            // which a busy test machine can hide.)
+            let set = crate::set_timeline::SetTimeline::parse(&log).unwrap();
+            assert_eq!(set.tracks.len(), 1);
+            assert_eq!(set.tracks[0].title, "Test \"Tone\"");
+            assert!(!set.clips.is_empty());
+            assert!(set.clips.iter().all(|c| c.deck == 0 && c.track == 0));
             let volume = lines
                 .iter()
                 .find(|l| l["c"] == "[Channel1],volume")

@@ -17,6 +17,7 @@
   {"name": "Pioneer DDJ-FLX6", "file": "Pioneer-DDJ-FLX6.midi.xml", "status": "beta", "note": "openDJ's own mapping, written from Pioneer's MIDI message list."},
   {"name": "Pioneer XDJ-RX3", "file": "Pioneer-XDJ-RX3.midi.xml", "status": "beta", "note": "openDJ's own mapping for the all-in-one in PC control mode, written from AlphaTheta's MIDI message list."},
   {"name": "Pioneer XDJ-AZ", "file": "Pioneer-XDJ-AZ.midi.xml", "status": "beta", "note": "openDJ's own mapping for the all-in-one in PC control mode, built on the XDJ-RX3 mapping from AlphaTheta's MIDI message list."},
+  {"name": "Pioneer OPUS-QUAD", "file": "Pioneer-OPUS-QUAD.midi.xml", "status": "beta", "note": "openDJ's own mapping for the all-in-one in PC control mode, built on the XDJ-AZ mapping from AlphaTheta's MIDI message list. The pads play hot cues; the touch screen keeps the OPUS-QUAD's own PC-mode screen."},
   {"name": "Pioneer DDJ-REV1", "file": null, "status": "planned", "note": "openDJ's own mapping, written from Pioneer's MIDI message list."},
   {"name": "Pioneer DDJ-1000", "file": null, "status": "planned", "note": "openDJ's own mapping, written from Pioneer's MIDI message list. The jog screens stay dark: they need Pioneer's own protocol."},
   {"name": "Pioneer DDJ-FLX10", "file": "Pioneer-DDJ-FLX10.midi.xml", "status": "beta", "note": "openDJ's own mapping, written from AlphaTheta's MIDI message list on top of the DDJ-FLX6's. The jog displays show the playhead, cue, BPM and time. MIX POINT, FX PART SELECT and the pad PAGE buttons do nothing yet."},

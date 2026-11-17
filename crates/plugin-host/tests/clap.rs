@@ -135,6 +135,8 @@ fn the_plugin_describes_itself() {
     assert_eq!(info.params[2].name, "Tone");
     assert_eq!((info.params[0].min, info.params[0].max), (0.0, 2.0));
     assert_eq!(info.params[0].value, 1.0);
+    // Its one page of knobs takes its remote controls page's name.
+    assert_eq!(info.pages, ["Main"]);
 }
 
 #[test]

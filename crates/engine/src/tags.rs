@@ -34,6 +34,13 @@ pub struct TagFields {
     /// Stars, 0 for none.
     pub rating: u8,
     pub comment: String,
+    /// Fields the Info tab shows folded under More: None leaves what the
+    /// file has alone, so a change elsewhere never takes them out.
+    pub label: Option<String>,
+    pub composer: Option<String>,
+    pub isrc: Option<String>,
+    /// 0 for none.
+    pub disc_number: Option<u32>,
 }
 
 /// What the file is, for the info panel.
@@ -94,6 +101,15 @@ pub fn fields_of(tag: &Tag) -> TagFields {
         key: text(tag, ItemKey::InitialKey),
         rating: tag.ratings().next().map_or(0, |r| r.rating as u8),
         comment,
+        // ID3v2 keeps the label as the publisher (TPUB).
+        label: Some(
+            Some(text(tag, ItemKey::Label))
+                .filter(|l| !l.is_empty())
+                .unwrap_or_else(|| text(tag, ItemKey::Publisher)),
+        ),
+        composer: Some(text(tag, ItemKey::Composer)),
+        isrc: Some(text(tag, ItemKey::Isrc)),
+        disc_number: Some(leading_number(&text(tag, ItemKey::DiscNumber))),
     }
 }
 
@@ -192,6 +208,29 @@ pub fn write(path: &Path, fields: &TagFields) -> Result<(), String> {
         }
         tag.remove_key(ItemKey::Description);
         set(tag, ItemKey::Comment, &fields.comment);
+        if let Some(label) = &fields.label {
+            tag.remove_key(ItemKey::Publisher);
+            set(tag, ItemKey::Label, label);
+            // A tag with no place for a label (ID3v2) keeps it as the
+            // publisher.
+            if tag.get_string(ItemKey::Label).is_none() {
+                set(tag, ItemKey::Publisher, label);
+            }
+        }
+        if let Some(composer) = &fields.composer {
+            set(tag, ItemKey::Composer, composer);
+        }
+        if let Some(isrc) = &fields.isrc {
+            set(tag, ItemKey::Isrc, isrc);
+        }
+        if let Some(disc) = fields.disc_number {
+            let disc = if disc > 0 {
+                disc.to_string()
+            } else {
+                String::new()
+            };
+            set(tag, ItemKey::DiscNumber, &disc);
+        }
     })
 }
 
@@ -239,7 +278,7 @@ pub fn file_info(path: &Path) -> FileInfo {
     let p = file.properties();
     FileInfo {
         format,
-        bitrate: p.audio_bitrate().or(p.overall_bitrate()).filter(|&b| b > 0),
+        bitrate: bitrate(p.audio_bitrate(), p.overall_bitrate()),
         sample_rate: p.sample_rate(),
         bit_depth: p.bit_depth(),
         channels: p.channels(),
@@ -247,9 +286,30 @@ pub fn file_info(path: &Path) -> FileInfo {
     }
 }
 
+/// The audio bitrate in kbps, or the whole file's when the audio one is
+/// off. A fragmented MP4 (as yt-dlp saves YouTube's M4A) has its audio in
+/// many `mdat` boxes and lofty counts only the first, so its audio bitrate
+/// comes out far too low ("5 kbps"); the file's size over its length is
+/// then nearer the truth.
+fn bitrate(audio: Option<u32>, overall: Option<u32>) -> Option<u32> {
+    match (audio.filter(|&b| b > 0), overall.filter(|&b| b > 0)) {
+        (Some(a), Some(o)) if a < o / 2 => Some(o),
+        (a, o) => a.or(o),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bitrate_falls_back_to_the_whole_file() {
+        assert_eq!(bitrate(Some(320), Some(325)), Some(320));
+        // A fragmented M4A: only the first fragment counted.
+        assert_eq!(bitrate(Some(5), Some(129)), Some(129));
+        assert_eq!(bitrate(None, Some(128)), Some(128));
+        assert_eq!(bitrate(Some(0), None), None);
+    }
 
     #[test]
     fn writes_and_reads_back_every_field() {
@@ -270,8 +330,26 @@ mod tests {
             key: "10B".into(),
             rating: 4,
             comment: "warm-up".into(),
+            label: Some("Ninja Tune".into()),
+            composer: Some("Chris Davids".into()),
+            isrc: Some("GBCFB1500123".into()),
+            disc_number: Some(2),
         };
         write(&path, &fields).unwrap();
+        assert_eq!(read(&path).unwrap(), fields);
+
+        // Fields left as None stay as the file has them.
+        write(
+            &path,
+            &TagFields {
+                label: None,
+                composer: None,
+                isrc: None,
+                disc_number: None,
+                ..fields.clone()
+            },
+        )
+        .unwrap();
         assert_eq!(read(&path).unwrap(), fields);
 
         // Clearing a field takes it out.

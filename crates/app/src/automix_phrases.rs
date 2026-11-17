@@ -37,6 +37,18 @@ pub enum Start {
     Outro,
     Phrase,
     Imported,
+    /// The DJ's own mix of this pair, learned from a recorded set.
+    Paired,
+}
+
+/// A saved mix of the two tracks (a pair mix, learned in the Mixed Set
+/// Editor): where the incoming track came in, in the outgoing track's
+/// seconds, where the incoming one was then, and for how many bars.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Paired {
+    pub out_seconds: f64,
+    pub in_seconds: f64,
+    pub bars: f64,
 }
 
 /// The track's phrases, earliest first: found from its waveform when that
@@ -101,8 +113,9 @@ pub fn in_point(t: &Track, phrases: &[Phrase], sound_start: f64) -> f64 {
 }
 
 /// The phrase mix from `out` (whose sound ends at `sound_end`) into `inc`,
-/// cued at `cue`; None when the outgoing track has no tempo, or neither an
-/// imported fade-out point nor a phrase change 8 to 32 bars before its end.
+/// cued at `cue`: the pair's saved mix first, then the outgoing track's
+/// imported fade-out point, then its phrases. None when the outgoing track
+/// has no tempo, or none of these fits before its end.
 pub fn plan(
     out: &Track,
     out_phrases: &[Phrase],
@@ -110,6 +123,7 @@ pub fn plan(
     inc: &Track,
     in_phrases: &[Phrase],
     cue: f64,
+    paired: Option<Paired>,
 ) -> Option<Plan> {
     if out.bpm <= 0.0 {
         return None;
@@ -122,6 +136,19 @@ pub fn plan(
             .filter(|&s| s > start + 1e-3 && s < end - 1e-3)
             .min_by(|a, b| (a - mid).abs().total_cmp(&(b - mid).abs()))
     };
+    if let Some(p) =
+        paired.filter(|p| p.out_seconds >= 0.0 && bars(out, p.out_seconds, sound_end) >= 1.0)
+    {
+        let end = out
+            .seconds_at(out.beat_at(p.out_seconds) + 4.0 * p.bars.max(1.0))
+            .min(sound_end);
+        return Some(Plan {
+            start: p.out_seconds,
+            end,
+            swap: swap(p.out_seconds, end),
+            from: Start::Paired,
+        });
+    }
     if let Some(s) = point(out, FADE_OUT).filter(|&s| s >= 0.0 && bars(out, s, sound_end) >= 1.0) {
         return Some(Plan {
             start: s,
@@ -198,7 +225,7 @@ mod tests {
     fn intro_over_outro() {
         let (out, op) = track(96.0, &[(0.0, Intro), (16.0, Drop), (80.0, Outro)]);
         let (inc, ip) = track(96.0, &[(0.0, Intro), (16.0, Drop)]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         // From the outro's first bar, as long as the intro: 16 bars.
         assert_eq!((p.start, p.end, p.from), (160.0, 192.0, Start::Outro));
     }
@@ -207,14 +234,14 @@ mod tests {
     fn a_short_intro_makes_a_short_mix_from_the_outro() {
         let (out, op) = track(96.0, &[(0.0, Intro), (16.0, Drop), (64.0, Outro)]);
         let (inc, ip) = track(96.0, &[(0.0, Intro), (8.0, Drop)]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!((p.start, p.end), (128.0, 144.0), "8 bars from bar 64");
         // An intro of 4 bars still gets 8; one of 40, at most 32.
         let (inc, ip) = track(96.0, &[(0.0, Intro), (4.0, Drop)]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!(p.end - p.start, 16.0);
         let (inc, ip) = track(96.0, &[(0.0, Intro), (40.0, Drop)]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!(p.end - p.start, 64.0);
     }
 
@@ -223,11 +250,11 @@ mod tests {
         // No outro; the last change is 24 bars before the end.
         let (out, op) = track(96.0, &[(0.0, Intro), (16.0, Drop), (72.0, Chorus)]);
         let (inc, ip) = track(96.0, &[]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!((p.start, p.end, p.from), (144.0, 192.0, Start::Phrase));
         // A last change only 4 bars from the end, and none in reach: no plan.
         let (out, op) = track(96.0, &[(0.0, Intro), (92.0, Outro)]);
-        assert!(plan(&out, &op, out.duration, &inc, &ip, 0.0).is_none());
+        assert!(plan(&out, &op, out.duration, &inc, &ip, 0.0, None).is_none());
     }
 
     #[test]
@@ -242,8 +269,37 @@ mod tests {
             detected: false,
         });
         let (inc, ip) = track(96.0, &[(0.0, Intro), (16.0, Drop)]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!((p.start, p.end, p.from), (170.0, 192.0, Start::Imported));
+    }
+
+    #[test]
+    fn the_pairs_saved_mix_comes_first() {
+        let (mut out, op) = track(96.0, &[(0.0, Intro), (16.0, Drop), (80.0, Outro)]);
+        out.info.markers.push(Marker {
+            kind: MarkerKind::Automix,
+            seconds: 170.0,
+            end: None,
+            name: FADE_OUT.into(),
+            color: None,
+            detected: false,
+        });
+        let (inc, ip) = track(96.0, &[(0.0, Intro), (16.0, Drop)]);
+        let paired = Paired {
+            out_seconds: 128.0,
+            in_seconds: 32.0,
+            bars: 12.0,
+        };
+        let p = plan(&out, &op, out.duration, &inc, &ip, 32.0, Some(paired)).unwrap();
+        // 12 bars of 2 s from 128 s, ahead of the fade-out point.
+        assert_eq!((p.start, p.end, p.from), (128.0, 152.0, Start::Paired));
+        // A saved point past the track's sound is ignored.
+        let late = Paired {
+            out_seconds: 191.5,
+            ..paired
+        };
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, Some(late)).unwrap();
+        assert_eq!(p.from, Start::Imported);
     }
 
     #[test]
@@ -251,11 +307,11 @@ mod tests {
         let (out, op) = track(96.0, &[(0.0, Intro), (64.0, Breakdown), (72.0, Outro)]);
         let (inc, ip) = track(96.0, &[(0.0, Intro), (16.0, Drop)]);
         // No outro of 8 bars... it has one: 24 bars from bar 72; intro caps at 16.
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!((p.start, p.end), (144.0, 176.0));
         assert_eq!(p.swap, None, "no change inside the mix");
         let (out, op) = track(96.0, &[(0.0, Intro), (64.0, Outro), (72.0, Breakdown)]);
-        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0).unwrap();
+        let p = plan(&out, &op, out.duration, &inc, &ip, 0.0, None).unwrap();
         assert_eq!((p.start, p.swap), (128.0, Some(144.0)));
     }
 

@@ -212,7 +212,89 @@ pub fn install(app: &AppWindow) {
             refresh(&app);
         }
     });
+    // The instrument deck's keyboard size, kept.
+    ui.set_keyboard_size(
+        crate::settings::load()[KEYBOARD_SIZE]
+            .as_i64()
+            .unwrap_or(0)
+            .clamp(0, 2) as i32,
+    );
+    ui.on_keyboard_size_changed(|size| {
+        crate::settings::set(KEYBOARD_SIZE, serde_json::json!(size));
+    });
+    let weak = app.as_weak();
+    ui.on_set_color(move |instrument, color| {
+        let key = STATE.with_borrow(|s| {
+            s.plugins
+                .get((instrument - 1).max(0) as usize)
+                .map(|p| p.key.clone())
+        });
+        if let Some(key) = key {
+            let mut picked = crate::settings::load()[COLORS].clone();
+            if !picked.is_object() {
+                picked = serde_json::json!({});
+            }
+            if color < 0 {
+                picked.as_object_mut().map(|m| m.remove(&key));
+            } else {
+                picked[&key] = serde_json::json!(color);
+            }
+            crate::settings::set(COLORS, picked);
+        }
+        if let Some(app) = weak.upgrade() {
+            show_colors(&app);
+        }
+    });
     refresh(app);
+}
+
+/// A pitch bend message for `value` -1 (down) to 1 (up), 0 the middle.
+pub fn bend_message(value: f32) -> [u8; 3] {
+    let v = ((value.clamp(-1.0, 1.0) + 1.0) * 8191.5).round() as u16;
+    let v = v.min(16383);
+    [0xe0, (v & 0x7f) as u8, (v >> 7) as u8]
+}
+
+/// A mod wheel (CC 1) message for `value` 0 to 1.
+pub fn modwheel_message(value: f32) -> [u8; 3] {
+    [0xb0, 1, (value.clamp(0.0, 1.0) * 127.0).round() as u8]
+}
+
+/// Settings: the instrument deck's keyboard size, and the colors picked
+/// for instruments, by plugin key.
+const KEYBOARD_SIZE: &str = "instrument_keyboard";
+const COLORS: &str = "instrument_colors";
+
+/// How many colors the Mixer strips' palette has; the last is grey, which
+/// an instrument only gets when picked.
+const PALETTE: u32 = 16;
+
+/// An instrument's own color, from its key: the same every run, spread
+/// over the palette but its grey.
+fn own_color(key: &str) -> i32 {
+    // FNV-1a, so the pick doesn't change between Rust versions.
+    let hash = key.bytes().fold(0x811c_9dc5_u32, |h, b| {
+        (h ^ b as u32).wrapping_mul(0x0100_0193)
+    });
+    (hash % (PALETTE - 1)) as i32
+}
+
+/// Each ticked plugin's color: the DJ's pick, else its own.
+fn show_colors(app: &AppWindow) {
+    let picked = crate::settings::load()[COLORS].clone();
+    let colors: Vec<i32> = STATE.with_borrow(|s| {
+        s.plugins
+            .iter()
+            .map(|p| {
+                picked[&p.key].as_i64().map_or_else(
+                    || own_color(&p.key),
+                    |c| c.clamp(0, PALETTE as i64 - 1) as i32,
+                )
+            })
+            .collect()
+    });
+    app.global::<InstrumentsUi>()
+        .set_plugin_colors(ModelRc::new(VecModel::from(colors)));
 }
 
 /// Lists the ticked instrument plugins, in the Instrument input's order,
@@ -238,6 +320,7 @@ pub fn show_plugins(app: &AppWindow, instruments: &[Found], names: &[String]) {
                 .map(|f| SharedString::from(f.format))
                 .collect::<Vec<_>>(),
         )));
+    show_colors(app);
     crate::instrument_art::show_plugins(
         app,
         instruments
@@ -757,6 +840,24 @@ fn route(status: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bend_and_mod_wheel_are_midi() {
+        assert_eq!(bend_message(0.0), [0xe0, 0x00, 0x40]);
+        assert_eq!(bend_message(-1.0), [0xe0, 0, 0]);
+        assert_eq!(bend_message(1.0), [0xe0, 0x7f, 0x7f]);
+        assert_eq!(modwheel_message(1.0), [0xb0, 1, 127]);
+        assert_eq!(modwheel_message(0.0), [0xb0, 1, 0]);
+    }
+
+    #[test]
+    fn an_instrument_keeps_its_own_color_and_never_the_grey() {
+        let key = "clap:/x/Acid V.clap#com.arturia.acid";
+        assert_eq!(own_color(key), own_color(key));
+        for k in ["a", "b", "au:aumu", "vst3:/y.vst3#1", key] {
+            assert!((0..PALETTE as i32 - 1).contains(&own_color(k)));
+        }
+    }
 
     #[test]
     fn payloads_read_back_as_their_items() {
