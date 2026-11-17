@@ -1708,3 +1708,35 @@ fn ddj_flx10_decks_mixer_fx_and_displays() {
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
+
+#[test]
+fn ddj_400_secondary_pad_modes() {
+    let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
+    for (deck, status) in [(1, 0x97), (2, 0x99)] {
+        let group = format!("[Channel{deck}]");
+        for shifted in 0..=1 {
+            for pad in 0..8 {
+                let key = format!("keyboard_{}_activate", pad + 1);
+                c.receive(&[status + shifted, 0x40 + pad, 0x7f]);
+                assert_eq!(get(&reg, &group, &key), 1.0);
+                c.receive(&[status + shifted, 0x40 + pad, 0]);
+                assert_eq!(get(&reg, &group, &key), 0.0);
+            }
+            for (note, effect) in [(0x10, 1.0), (0x50, 8.0)] {
+                let slot = format!("[EffectRack1_EffectUnit{}_Effect1]", deck + 5);
+                c.receive(&[status + shifted, note, 0x7f]);
+                assert_eq!(get(&reg, &slot, "loaded_effect"), effect);
+                assert_eq!(get(&reg, &slot, "enabled"), 1.0);
+                c.receive(&[status + shifted, note, 0]);
+                assert_eq!(get(&reg, &slot, "enabled"), 0.0);
+            }
+        }
+        c.receive(&[status, 0x72, 0x7f]);
+        c.receive(&[status, 0x72, 0]);
+        assert_eq!(get(&reg, &group, "pitch_adjust"), 2.0);
+        c.receive(&[status + 1, 0x74, 0x7f]);
+        c.receive(&[status + 1, 0x74, 0]);
+        assert_eq!(get(&reg, &group, "pitch_adjust"), 1.0);
+    }
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
