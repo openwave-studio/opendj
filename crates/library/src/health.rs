@@ -836,8 +836,10 @@ impl Library {
         let rows = q.query_map([], |r| {
             let blob: Vec<u8> = r.get(2)?;
             let print = blob
-                .chunks_exact(4)
-                .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|c| u32::from_le_bytes(*c))
                 .collect();
             Ok((track_id(r.get(0)?), (r.get(1)?, print)))
         })?;
