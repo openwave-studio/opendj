@@ -48,7 +48,10 @@ collection: merged copies, tracks moved to quarantine and ones you
 removed, newest first, with where each file is. **Bring back** on a row
 (or on the tracks you pick) puts it back in your collection; a file that
 went to quarantine moves to your In Prep folder, to be looked at again.
-**Show folder** opens the quarantine folder.
+A track you removed keeps its file where it was, and openDJ's scan leaves
+it out from then on; **Move files to quarantine** moves those files out of
+your music and stage folders, into the quarantine folder. **Show folder**
+opens the quarantine folder.
 
 | Check | Finds | Fixes |
 |---|---|---|
@@ -62,7 +65,7 @@ went to quarantine moves to your In Prep folder, to be looked at again.
 | Junk in names | Track numbers, web sites, "(Official Video)", underscores, or a remix or guest in the title | Clean up… (see [Clean-up](#clean-up)), Look up online |
 | No cover | No picture in the file's tags or its folder | Find covers online, or one by one from the track's info panel |
 | Unrated | No stars; never counts against the score | Rate them in the list |
-| Missing files | The file isn't where your collection expects it | Relink the sure ones relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
+| Missing files | The file isn't where your collection expects it | Relink the sure ones relinks a file found under the same name in your stage folders and music folders, when there is only one; Look in a folder… searches a folder you pick (another drive, a backup) and relinks the files it finds for sure; Find file… for one track; Move to Wanted puts the track on the Wanted list with a store search, to buy again, and takes it out of your collection; Remove from collection |
 | Long tracks | Over 20 minutes: recorded sets and long pieces | Tag as #mix |
 
 **Ignore for** in the right-click menu tells a check to leave a track
@@ -245,3 +248,8 @@ each shows the others on its Related tab, and they leave the Duplicates list.
 To put away a track you don't want, without deleting it, right-click it and
 choose **Move to Quarantine**. It leaves your collection and its file goes to the
 same `_Quarantine/<date>/` folder as duplicates, and **Undo** brings it back.
+
+Settings › Collection › Storage › Manage has **Clear analyses of files
+gone…**: it deletes the waveforms, tempo and key kept for files that are no
+longer in your collection (deleted, moved or changed), once they've been
+untouched for a month.

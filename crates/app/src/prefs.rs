@@ -165,10 +165,11 @@ const STORAGE: i32 = 23;
 /// The Room EQ editor (see room_eq.slint).
 const ROOM_EQ: i32 = 24;
 /// The Manage menu's clean-ups, in its order.
-const STORAGE_ACTIONS: [&str; 4] = [
+const STORAGE_ACTIONS: [&str; 5] = [
     "Clear analysis cache…",
     "Clear high quality stems…",
     "Clear played tracks…",
+    "Clear analyses of files gone…",
     "Show cache folder",
 ];
 /// A folder list's title icon in `chosen`: the sidebar's stage icons (its node
