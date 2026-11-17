@@ -61,6 +61,7 @@ mod spotify_export;
 mod staging;
 mod streamed;
 mod tag_chips;
+mod tag_health;
 mod track_menu;
 mod up_next;
 mod usb;
@@ -165,6 +166,11 @@ enum Contents {
     /// The tracks taken out of the collection: merged copies, quarantined
     /// and removed tracks, to bring back.
     Quarantine,
+    /// Collection Health's Tags page: genres and tag groups, how they're
+    /// used, and merging names (see [`tag_health`]).
+    Tags,
+    /// Collection Health's Lists page: what is wrong in the DJ's lists.
+    Lists,
 }
 
 /// Whether the streaming services that are built (Spotify, TIDAL) can be
@@ -697,7 +703,7 @@ pub struct Browser {
     /// The crates each track is in, by track id.
     crates: HashMap<usize, Vec<String>>,
     /// Empty crates and entries for removed tracks.
-    list_health: opendj_library::sets::ListHealth,
+    list_report: opendj_library::sets::ListReport,
     /// Hot cue controls per deck: enabled and position.
     /// Each deck's hot cues: enabled, position and a saved loop's end.
     hotcues: [Vec<(ControlHandle, ControlHandle, ControlHandle)>; NUM_DECKS],
@@ -1373,7 +1379,7 @@ impl Browser {
             played: played::Played::new(registry),
             menu_lists: Vec::new(),
             crates: HashMap::new(),
-            list_health: Default::default(),
+            list_report: Default::default(),
             hotcues: std::array::from_fn(|d| {
                 (1..=NUM_HOTCUES)
                     .map(|n| {
@@ -2051,6 +2057,7 @@ impl Browser {
         Self::install_mix_export(&app.global::<FilesUi>(), &with);
         Self::install_health(&app.global::<HealthUi>(), &with);
         Self::install_cleanup(&app.global::<crate::CleanupUi>(), &with);
+        Self::install_lists(&app.global::<crate::ListsUi>(), &with);
         Self::install_fix_names(app, &with);
         Self::install_analysis(&edit, &with);
         Self::install_albums(&edit, &with);
@@ -4823,6 +4830,12 @@ impl Browser {
                 hidden_below = Some(n.depth);
             }
         }
+        // Only worked out while Collection Health's tree is shown.
+        let tags_to_roll_up = if self.health_view && self.saved() && self.tree == COLLECTION {
+            self.tags_to_roll_up()
+        } else {
+            0
+        };
         let folders: Vec<Folder> = self
             .visible_nodes
             .iter()
@@ -4853,6 +4866,20 @@ impl Browser {
                         Contents::Health(Some(c)) if n.kind == KIND_AREA => {
                             self.check_state(c) as i32
                         }
+                        Contents::Lists => {
+                            (if self.list_report.issues.is_empty() {
+                                health::CheckState::Clear
+                            } else {
+                                health::CheckState::Check
+                            }) as i32
+                        }
+                        Contents::Tags if n.kind == KIND_AREA => {
+                            (if tags_to_roll_up > 0 {
+                                health::CheckState::Check
+                            } else {
+                                health::CheckState::Clear
+                            }) as i32
+                        }
                         _ => n.icon as i32,
                     },
                     count: match &n.contents {
@@ -4874,6 +4901,10 @@ impl Browser {
                         Contents::Dupes(case) => self.dupe_tracks(Some(*case)).len() as i32,
                         Contents::Ignored => self.ignored_tracks().len() as i32,
                         Contents::Quarantine => self.removed as i32,
+                        Contents::Tags if n.kind == KIND_AREA => tags_to_roll_up as i32,
+                        Contents::Lists => {
+                            (self.list_report.lists - self.list_report.tidy()) as i32
+                        }
                         _ => n.count.map_or(-1, |c| c as i32),
                     },
                     dim: n.dim,
@@ -5122,6 +5153,7 @@ impl Browser {
             Contents::Ignored => self.ignored_tracks(),
             // Store rows: tracks no longer in the library.
             Contents::Quarantine => Vec::new(),
+            Contents::Tags | Contents::Lists => Vec::new(),
             Contents::Grouping(g) => all()
                 .into_iter()
                 .filter(|&t| self.library[t].info.grouping == *g)

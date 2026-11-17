@@ -1,27 +1,12 @@
 //! Crates: the DJ's long-lived lists for sorting music, a track in as many
 //! as it fits (Yoga, Journeys, Dance), each track once and in no order of
-//! their own, as against playlists, which keep an order. Also what Collection Health finds in playlists: crates
-//! left empty, and entries for tracks taken out of the library.
+//! their own, as against playlists, which keep an order. Also what
+//! Collection Health finds in the lists: entries for tracks taken out of the
+//! library, repeats, empty lists and names used twice.
 
 use std::collections::HashMap;
 
 use crate::{track_id, Error, Library, PlaylistKind};
-
-/// What Collection Health finds in the DJ's lists.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct ListHealth {
-    /// Crates with no tracks (playlists are left alone: one made for a gig
-    /// starts empty).
-    pub empty: Vec<i64>,
-    /// Entries in lists for tracks removed from the library.
-    pub dead: usize,
-}
-
-impl ListHealth {
-    pub fn is_clean(&self) -> bool {
-        self.empty.is_empty() && self.dead == 0
-    }
-}
 
 /// The source of a playlist made at the top of Playlists rather than in a
 /// folder, so it isn't taken for a crate.
@@ -208,48 +193,179 @@ impl Library {
         }
         Ok(out)
     }
+}
 
-    /// Empty crates and entries for removed tracks in the DJ's lists.
-    pub fn list_health(&self) -> Result<ListHealth, Error> {
-        let crates = self.crate_ids()?;
-        let mut q = self.db.prepare(
-            "SELECT p.id FROM playlists p WHERE p.kind = 5
-               AND NOT EXISTS (SELECT 1 FROM playlist_tracks t WHERE t.playlist_id = p.id)",
+/// What can be wrong with one of the DJ's lists, on Collection Health's
+/// Lists page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ListIssueKind {
+    /// Entries for tracks taken out of the collection.
+    Removed,
+    /// The same track more than once.
+    Twice,
+    /// Nothing in it.
+    Empty,
+    /// Another list or folder beside it has its name.
+    SameName,
+}
+
+/// One list's problem.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ListIssue {
+    pub list: i64,
+    pub name: String,
+    pub kind: ListIssueKind,
+    /// Entries it concerns: removed tracks, or repeats.
+    pub count: usize,
+    /// Whether tidying it needs no look: entries for removed tracks,
+    /// repeats in a crate, an imported list that was always empty.
+    pub sure: bool,
+}
+
+/// The DJ's lists and what is wrong with them.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct ListReport {
+    /// Lists and crates looked at.
+    pub lists: usize,
+    pub issues: Vec<ListIssue>,
+}
+
+impl ListReport {
+    /// Lists with nothing wrong.
+    pub fn tidy(&self) -> usize {
+        let bad: std::collections::HashSet<i64> = self.issues.iter().map(|i| i.list).collect();
+        self.lists.saturating_sub(bad.len())
+    }
+
+    pub fn sure(&self) -> usize {
+        self.issues.iter().filter(|i| i.sure).count()
+    }
+}
+
+impl Library {
+    /// The lists and crates Collection Health looks at: the DJ's and
+    /// imported ones, not history, saved searches or the purchases Inbox.
+    fn checked_lists(&self) -> Result<Vec<crate::Playlist>, Error> {
+        let inbox = self.inbox_list_id();
+        Ok(self
+            .playlists()?
+            .into_iter()
+            .filter(|p| matches!(p.kind, PlaylistKind::List | PlaylistKind::Crate))
+            .filter(|p| Some(p.id) != inbox)
+            .collect())
+    }
+
+    /// What is wrong with the DJ's lists. A list the DJ made in the last
+    /// month, or one in a gig's folder, may stay empty: one made for a gig
+    /// starts that way.
+    pub fn list_report(&self) -> Result<ListReport, Error> {
+        let month_ago = crate::now() - 30 * 24 * 3600;
+        let all = self.playlists()?;
+        let lists = self.checked_lists()?;
+        let sizes = self.list_sizes()?;
+        let count_by = |sql: &str| -> Result<HashMap<i64, usize>, Error> {
+            let mut q = self.db.prepare(sql)?;
+            let rows = q.query_map([], |r| {
+                Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)? as usize))
+            })?;
+            rows.collect()
+        };
+        let removed = count_by(
+            "SELECT playlist_id, COUNT(*) FROM playlist_tracks
+              WHERE track_id IN (SELECT track_id FROM removed) GROUP BY playlist_id",
         )?;
-        let empty = q
-            .query_map([], |r| r.get::<_, i64>(0))?
-            .filter_map(|r| r.ok())
-            .filter(|id| crates.contains_key(id))
-            .collect();
-        let dead: i64 = self.db.query_row(
-            "SELECT COUNT(*) FROM playlist_tracks
-              WHERE track_id IN (SELECT track_id FROM removed)
-                AND playlist_id IN (SELECT id FROM playlists WHERE kind IN (0, 5))",
-            [],
-            |r| r.get(0),
+        let twice = count_by(
+            "SELECT playlist_id, COUNT(*) - COUNT(DISTINCT track_id) FROM playlist_tracks
+              GROUP BY playlist_id HAVING COUNT(*) > COUNT(DISTINCT track_id)",
         )?;
-        Ok(ListHealth {
-            empty,
-            dead: dead as usize,
+        let kind_of: HashMap<i64, PlaylistKind> = all.iter().map(|p| (p.id, p.kind)).collect();
+        let mut names: HashMap<(Option<i64>, String), usize> = HashMap::new();
+        for p in all.iter().filter(|p| {
+            matches!(
+                p.kind,
+                PlaylistKind::List | PlaylistKind::Crate | PlaylistKind::Folder | PlaylistKind::Set
+            )
+        }) {
+            *names
+                .entry((p.parent, p.name.trim().to_lowercase()))
+                .or_default() += 1;
+        }
+        let mut issues = Vec::new();
+        for p in &lists {
+            let issue = |kind, count, sure| ListIssue {
+                list: p.id,
+                name: p.name.clone(),
+                kind,
+                count,
+                sure,
+            };
+            if let Some(&n) = removed.get(&p.id) {
+                issues.push(issue(ListIssueKind::Removed, n, true));
+            }
+            if let Some(&n) = twice.get(&p.id) {
+                issues.push(issue(ListIssueKind::Twice, n, is_crate(p)));
+            }
+            let in_gig = p
+                .parent
+                .is_some_and(|f| kind_of.get(&f) == Some(&PlaylistKind::Set));
+            let new = !is_imported(p) && p.created > month_ago;
+            if !sizes.contains_key(&p.id) && !in_gig && !new {
+                issues.push(issue(ListIssueKind::Empty, 0, is_imported(p)));
+            }
+            if names
+                .get(&(p.parent, p.name.trim().to_lowercase()))
+                .is_some_and(|&n| n > 1)
+            {
+                issues.push(issue(ListIssueKind::SameName, 0, false));
+            }
+        }
+        Ok(ListReport {
+            lists: lists.len(),
+            issues,
         })
     }
 
-    /// Deletes the empty crates and the entries for removed tracks that
-    /// [`Library::list_health`] found; returns how many of each went.
-    pub fn tidy_lists(&mut self) -> Result<(usize, usize), Error> {
-        let health = self.list_health()?;
-        let tx = self.db.transaction()?;
-        for id in &health.empty {
-            tx.execute("DELETE FROM playlists WHERE id = ?1", [id])?;
+    /// Fixes one list's problem: takes out entries for removed tracks or
+    /// repeats (the first stays), or deletes an empty list. A name shared
+    /// with another is left for the DJ to rename. Returns entries or lists
+    /// that went.
+    pub fn fix_list(&mut self, list: i64, kind: ListIssueKind) -> Result<usize, Error> {
+        Ok(match kind {
+            ListIssueKind::Removed => self.db.execute(
+                "DELETE FROM playlist_tracks WHERE playlist_id = ?1
+                   AND track_id IN (SELECT track_id FROM removed)",
+                [list],
+            )?,
+            ListIssueKind::Twice => self.db.execute(
+                "DELETE FROM playlist_tracks WHERE playlist_id = ?1 AND position NOT IN
+                   (SELECT MIN(position) FROM playlist_tracks WHERE playlist_id = ?1
+                     GROUP BY track_id)",
+                [list],
+            )?,
+            ListIssueKind::Empty => {
+                let empty = !self.list_sizes()?.contains_key(&list);
+                if empty {
+                    self.delete_playlist(list)?;
+                }
+                empty as usize
+            }
+            ListIssueKind::SameName => 0,
+        })
+    }
+
+    /// Fixes every sure problem; returns lists deleted and entries taken
+    /// out.
+    pub fn tidy_sure_lists(&mut self) -> Result<(usize, usize), Error> {
+        let (mut lists, mut entries) = (0, 0);
+        for i in self.list_report()?.issues.into_iter().filter(|i| i.sure) {
+            let n = self.fix_list(i.list, i.kind)?;
+            if i.kind == ListIssueKind::Empty {
+                lists += n;
+            } else {
+                entries += n;
+            }
         }
-        let dead = tx.execute(
-            "DELETE FROM playlist_tracks
-              WHERE track_id IN (SELECT track_id FROM removed)
-                AND playlist_id IN (SELECT id FROM playlists WHERE kind IN (0, 5))",
-            [],
-        )?;
-        tx.commit()?;
-        Ok((health.empty.len(), dead))
+        Ok((lists, entries))
     }
 }
 
@@ -268,6 +384,81 @@ mod tests {
         .unwrap();
         let ids = lib.tracks(|_| true).unwrap().iter().map(|t| t.id).collect();
         (lib, ids)
+    }
+
+    #[test]
+    fn list_report_finds_and_fixes_problems() {
+        let (mut lib, ids) = library();
+        let yoga = lib.create_crate("Yoga", None).unwrap();
+        let mine = lib.create_crate("Empty", None).unwrap();
+        // Made long ago: a new one may stay empty.
+        lib.db
+            .execute("UPDATE playlists SET created = 0 WHERE id = ?1", [mine])
+            .unwrap();
+        lib.create_crate("New", None).unwrap();
+        let imported = lib
+            .create_playlist("Old", None, PlaylistKind::List)
+            .unwrap();
+        lib.db
+            .execute(
+                "UPDATE playlists SET source = 'vdj' WHERE id = ?1",
+                [imported],
+            )
+            .unwrap();
+        let gig = lib
+            .create_playlist("Friday", None, PlaylistKind::Set)
+            .unwrap();
+        lib.create_playlist("Opening", Some(gig), PlaylistKind::List)
+            .unwrap();
+        let set = lib
+            .create_playlist("Set", None, PlaylistKind::List)
+            .unwrap();
+        lib.create_playlist("Set", None, PlaylistKind::Folder)
+            .unwrap();
+        lib.add_to_playlist(yoga, &[ids[0], ids[1]]).unwrap();
+        // A crate brought in from another app may hold a track twice.
+        lib.db
+            .execute(
+                "INSERT INTO playlist_tracks (playlist_id, position, track_id)
+                 SELECT playlist_id, 99, track_id FROM playlist_tracks
+                  WHERE playlist_id = ?1 ORDER BY position LIMIT 1",
+                [yoga],
+            )
+            .unwrap();
+        lib.add_to_playlist(set, &[ids[2], ids[2], ids[1]]).unwrap();
+        lib.remove_tracks(&[ids[1]]).unwrap();
+        let r = lib.list_report().unwrap();
+        let has = |list, kind, sure| {
+            r.issues
+                .iter()
+                .any(|i| i.list == list && i.kind == kind && i.sure == sure)
+        };
+        assert!(has(yoga, ListIssueKind::Removed, true));
+        assert!(has(yoga, ListIssueKind::Twice, true));
+        assert!(has(set, ListIssueKind::Twice, false));
+        assert!(has(set, ListIssueKind::SameName, false));
+        assert!(has(mine, ListIssueKind::Empty, false));
+        assert!(has(imported, ListIssueKind::Empty, true));
+        // The gig's list may stay empty.
+        assert_eq!(
+            r.issues
+                .iter()
+                .filter(|i| i.kind == ListIssueKind::Empty)
+                .count(),
+            2
+        );
+        assert_eq!((r.lists, r.tidy()), (6, 2));
+        assert_eq!(lib.tidy_sure_lists().unwrap(), (1, 3));
+        assert_eq!(lib.playlist_tracks(yoga).unwrap(), vec![ids[0]]);
+        let r = lib.list_report().unwrap();
+        assert_eq!(r.sure(), 0);
+        assert!(has_list(&lib, mine) && !has_list(&lib, imported));
+        assert_eq!(lib.fix_list(set, ListIssueKind::Twice).unwrap(), 1);
+        assert_eq!(lib.playlist_tracks(set).unwrap(), vec![ids[2]]);
+    }
+
+    fn has_list(lib: &Library, id: i64) -> bool {
+        lib.playlists().unwrap().iter().any(|p| p.id == id)
     }
 
     #[test]
@@ -367,31 +558,5 @@ mod tests {
         assert!(lib.crate_ids().unwrap().contains_key(&gig));
         lib.set_crate(gig, false).unwrap();
         assert!(!lib.crate_ids().unwrap().contains_key(&gig));
-    }
-
-    #[test]
-    fn tidies_empty_crates_and_removed_tracks() {
-        let (mut lib, ids) = library();
-        let empty = lib.create_crate("Old", None).unwrap();
-        let yoga = lib.create_crate("Yoga", None).unwrap();
-        let gig = lib
-            .create_playlist("Gig", None, PlaylistKind::Folder)
-            .unwrap();
-        lib.create_playlist("Set", Some(gig), PlaylistKind::List)
-            .unwrap();
-        lib.add_to_playlist(yoga, &[ids[0], ids[1]]).unwrap();
-        lib.remove_tracks(&[ids[1]]).unwrap();
-        let health = lib.list_health().unwrap();
-        // The gig's playlist is empty too, but a new one is meant to be.
-        assert_eq!(
-            health,
-            ListHealth {
-                empty: vec![empty],
-                dead: 1
-            }
-        );
-        assert_eq!(lib.tidy_lists().unwrap(), (1, 1));
-        assert!(lib.list_health().unwrap().is_clean());
-        assert_eq!(lib.playlist_tracks(yoga).unwrap(), [ids[0]]);
     }
 }

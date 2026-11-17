@@ -2774,6 +2774,26 @@ impl Prefs {
             self.refresh();
             return;
         }
+        if let Some(t) = id
+            .strip_prefix("tag_merge:")
+            .and_then(|x| x.parse::<i64>().ok())
+        {
+            // The menu lists the group's other tags after its title.
+            let into = open_library()
+                .and_then(|db| db.tags_of_group(self.open_group?).ok())
+                .and_then(|tags| {
+                    tags.into_iter()
+                        .filter(|x| x.id != t)
+                        .nth(index.checked_sub(1)?)
+                });
+            if let Some(into) = into {
+                self.removing_tag = None;
+                with_library(|db| db.rename_tag(t, &into.name).map(|_| ()));
+                settings::tags_changed();
+            }
+            self.refresh();
+            return;
+        }
         if let Some(t) = id.strip_prefix("tag:").and_then(|x| x.parse::<i64>().ok()) {
             let color = index
                 .checked_sub(1)

@@ -336,6 +336,14 @@ pub(super) fn health_nodes() -> Vec<Node> {
                 .map(|c| Node::new(c.title(), 0, KIND_AREA, Contents::Health(Some(c)))),
         );
     }
+    nodes.push(Node::new(
+        "Organization",
+        0,
+        KIND_HEALTH_SECTION,
+        Contents::Tags,
+    ));
+    nodes.push(Node::new("Tags", 0, KIND_AREA, Contents::Tags));
+    nodes.push(Node::new("Lists", 0, KIND_AREA, Contents::Lists));
     nodes.push(Node::new("Ignored", 0, KIND_IGNORED, Contents::Ignored));
     nodes.push(Node::new(
         "Quarantine",
@@ -488,7 +496,7 @@ impl Browser {
         let w = with.clone();
         ui.on_restore(move || w(&|b| b.restore_removed()));
         let w = with.clone();
-        ui.on_tidy_lists(move || w(&|b| b.tidy_lists()));
+        ui.on_tidy_lists(move || w(&|b| b.open_lists()));
         let w = with.clone();
         ui.on_keep_this(move |row| w(&|b| b.keep_this(row)));
         let w = with.clone();
@@ -1510,6 +1518,7 @@ impl Browser {
         self.refresh_health_page(&ui);
         self.refresh_review(&ui);
         self.refresh_cleanup_ui();
+        self.refresh_lists_ui();
     }
 
     /// The Overview's numbers: the stages, how much is clean and what
@@ -2463,7 +2472,7 @@ mod tests {
     fn every_check_has_a_node_and_fixes_fit() {
         let nodes = health_nodes();
         // Overview, a heading per section, every check, Ignored, Quarantine.
-        assert_eq!(nodes.len(), 1 + Area::ALL.len() + Check::ALL.len() + 2);
+        assert_eq!(nodes.len(), 1 + Area::ALL.len() + Check::ALL.len() + 5);
         assert_eq!(nodes[0].name, "Overview");
         assert_eq!(nodes[1].name, "Files");
         assert_eq!(nodes[2].name, "Missing files");

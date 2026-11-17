@@ -152,7 +152,7 @@ pub fn copies<'a>(
         by_name.entry(key).or_default().push(t);
     }
     // Groups holding tracks that sound alike become one.
-    let mut groups: Vec<Vec<&Track>> = by_name.into_values().collect();
+    let groups: Vec<Vec<&Track>> = by_name.into_values().collect();
     let mut at: HashMap<usize, usize> = HashMap::new();
     for (i, g) in groups.iter().enumerate() {
         for t in g {
@@ -176,9 +176,8 @@ pub fn copies<'a>(
         }
     }
     let mut joined: HashMap<usize, Vec<&Track>> = HashMap::new();
-    for i in 0..groups.len() {
+    for (i, g) in groups.into_iter().enumerate() {
         let r = root(&mut parent, i);
-        let g = std::mem::take(&mut groups[i]);
         joined.entry(r).or_default().extend(g);
     }
     let mut out: Vec<Vec<&Track>> = joined.into_values().filter(|g| g.len() > 1).collect();

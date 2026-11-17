@@ -1,5 +1,5 @@
 //! Clean-up in the browser (see [`opendj_library::cleanup`]): the review
-//! table of changes to names, the genres page, finding covers and looking
+//! table of changes to names, finding covers and looking
 //! up tags online for many tracks at once, and making (and taking back)
 //! changes to tags, in the library and in the files.
 
@@ -18,7 +18,7 @@ use super::info::{tag_fields, writable};
 use super::{file_path, is_browsed, Browser, Undo};
 use crate::coverart::{self, Wanted};
 use crate::lookup::{self, Found, Miss, Query};
-use crate::{cover_scan, settings, CleanupRow, CleanupUi, FixNamesUi, GenreRow};
+use crate::{cover_scan, settings, CleanupRow, CleanupUi, FixNamesUi};
 use opendj_library::fix_names::{self, Ready, Tool};
 
 /// How many changes the Fix Names dialog shows before Review.
@@ -185,9 +185,8 @@ struct CoverBatch {
 #[derive(Default)]
 pub(super) struct CleanupState {
     review: Vec<Pending>,
-    genres_open: bool,
-    /// Every genre, its track count, and whether it is ticked.
-    genres: Vec<(String, usize, bool)>,
+    /// Collection Health's Tags page.
+    pub(super) tags: super::tag_health::TagsPage,
     covers: Option<CoverBatch>,
     lookups: Option<LookupBatch>,
     /// What the review table is of.
@@ -328,7 +327,7 @@ pub(super) fn info_proposals(
     out
 }
 
-fn genre_key(g: &str) -> String {
+pub(super) fn genre_key(g: &str) -> String {
     g.chars()
         .filter(|c| c.is_alphanumeric())
         .flat_map(char::to_lowercase)
@@ -368,18 +367,17 @@ impl Browser {
             })
         });
         let w = with.clone();
-        ui.on_open_genres(move || w(&|b| b.open_genres()));
+        ui.on_open_genres(move || w(&|b| b.open_tags()));
         let w = with.clone();
-        ui.on_toggle_genre(move |row| w(&|b| b.toggle_genre(row.max(0) as usize)));
+        ui.on_toggle_genre(move |row| w(&|b| b.toggle_tag(row.max(0) as usize)));
         let w = with.clone();
-        ui.on_merge_genres(move || w(&|b| b.merge_genres()));
+        ui.on_merge_genres(move || w(&|b| b.merge_tags()));
         let w = with.clone();
-        ui.on_close_genres(move || {
-            w(&|b| {
-                b.cleanup.genres_open = false;
-                b.refresh_cleanup_ui();
-            })
-        });
+        ui.on_pick_tag_group(move |i| w(&|b| b.pick_tag_set(i.max(0) as usize)));
+        let w = with.clone();
+        ui.on_show_tags(move |i| w(&|b| b.show_tags(i.max(0) as usize)));
+        let w = with.clone();
+        ui.on_roll_up(move || w(&|b| b.roll_up_tags()));
     }
 
     pub(super) fn install_fix_names(
@@ -496,11 +494,9 @@ impl Browser {
         self.refresh_cleanup_ui();
     }
 
-    /// Closes the review table and the genres page, as another list is
-    /// picked.
+    /// Closes the review table, as another list is picked.
     pub(super) fn close_cleanup(&mut self) {
         self.cleanup.review.clear();
-        self.cleanup.genres_open = false;
     }
 
     /// Opens the review table with what the clean-up rules would change in
@@ -595,20 +591,7 @@ impl Browser {
         let alike = |g: &str| keys.get(&genre_key(g)).is_some_and(|&n| n > 1);
         ui.set_genre_count(if self.saved() { all.len() as i32 } else { 0 });
         ui.set_alike(all.keys().filter(|g| alike(g)).count() as i32);
-        ui.set_genres_open(self.cleanup.genres_open);
-        let genres: Vec<GenreRow> = self
-            .cleanup
-            .genres
-            .iter()
-            .map(|(name, count, picked)| GenreRow {
-                name: name.clone().into(),
-                count: *count as i32,
-                picked: *picked,
-                alike: alike(name),
-            })
-            .collect();
-        ui.set_genres(ModelRc::new(VecModel::from(genres)));
-        ui.set_genres_picked(self.cleanup.genres.iter().filter(|g| g.2).count() as i32);
+        self.refresh_tags_ui(&ui);
     }
 
     /// Makes the ticked changes in the review table.
@@ -752,81 +735,6 @@ impl Browser {
             }
         }
         out
-    }
-
-    /// Opens the genres page, every genre in name order.
-    fn open_genres(&mut self) {
-        let mut genres: Vec<(String, usize, bool)> = self
-            .genre_counts()
-            .into_iter()
-            .map(|(g, n)| (g, n, false))
-            .collect();
-        genres.sort_by(|a, b| {
-            a.0.to_lowercase()
-                .cmp(&b.0.to_lowercase())
-                .then(a.0.cmp(&b.0))
-        });
-        self.cleanup.genres = genres;
-        self.cleanup.genres_open = true;
-        if let Some(app) = self.app.upgrade() {
-            app.global::<CleanupUi>().set_into(SharedString::new());
-        }
-        self.refresh_cleanup_ui();
-    }
-
-    /// Ticks or unticks a genre; the first one ticked (the most used of
-    /// those ticked) fills in the name to merge into.
-    fn toggle_genre(&mut self, row: usize) {
-        let Some(g) = self.cleanup.genres.get_mut(row) else {
-            return;
-        };
-        g.2 = !g.2;
-        if let Some(app) = self.app.upgrade() {
-            let ui = app.global::<CleanupUi>();
-            let picked: Vec<&(String, usize, bool)> =
-                self.cleanup.genres.iter().filter(|g| g.2).collect();
-            let into = ui.get_into().to_string();
-            let named = picked.iter().any(|g| g.0 == into);
-            if into.trim().is_empty() || named {
-                // The most used; between equals, one with capitals.
-                let best = picked
-                    .iter()
-                    .max_by_key(|g| (g.1, g.0.chars().any(char::is_uppercase)))
-                    .map(|g| g.0.clone());
-                ui.set_into(best.unwrap_or_default().into());
-            }
-        }
-        self.refresh_cleanup_ui();
-    }
-
-    /// Gives every track with a ticked genre the name typed in.
-    fn merge_genres(&mut self) {
-        let Some(app) = self.app.upgrade() else {
-            return;
-        };
-        let into = app.global::<CleanupUi>().get_into().trim().to_string();
-        let picked: HashSet<String> = self
-            .cleanup
-            .genres
-            .iter()
-            .filter(|g| g.2)
-            .map(|g| g.0.clone())
-            .collect();
-        if into.is_empty() || picked.is_empty() {
-            return;
-        }
-        let changes: Vec<(usize, Field, String)> = (0..self.library.len())
-            .filter(|&i| {
-                let t = &self.library[i];
-                !is_browsed(t) && picked.contains(t.genre.trim()) && t.genre != into
-            })
-            .map(|i| (i, Field::Genre, into.clone()))
-            .collect();
-        let s = self.make_changes(changes, "genre merge");
-        self.health_status = format!("Merged {} into \"{into}\". {s}", genre_word(picked.len()));
-        self.open_genres();
-        self.refresh_tree();
-        self.refresh_rows();
     }
 
     /// Looks online for covers for these tracks (indices into `library`),
@@ -1167,11 +1075,6 @@ fn lookup_summary(batch: &LookupBatch, nothing_new: bool) -> String {
         s += " Ticked changes only fill empty fields from sure matches; tick others by hand.";
     }
     s
-}
-
-/// "1 genre" or "3 genres".
-fn genre_word(n: usize) -> String {
-    format!("{n} genre{}", if n == 1 { "" } else { "s" })
 }
 
 #[cfg(test)]

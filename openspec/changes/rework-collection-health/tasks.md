@@ -14,12 +14,12 @@
 
 ## 3. Tags
 
-- [ ] 3.1 Tags page: a card per group with coverage and top tags, spelling twins and tags used once, Roll up, writes to files
-- [ ] 3.2 Merge into… on a tag in Settings › Tags
+- [x] 3.1 Tags page: a card per group with coverage and top tags, spelling twins and tags used once, Roll up, writes to files
+- [x] 3.2 Merge into… on a tag in Settings › Tags
 
 ## 4. Lists
 
-- [ ] 4.1 Lists page: tracks twice, empty lists, twins, removed tracks, % tidy, Tidy the sure ones
+- [x] 4.1 Lists page: tracks twice, empty lists, twins, removed tracks, % tidy, Tidy the sure ones
 
 ## 5. Files
 

@@ -16,7 +16,8 @@ The sidebar lists every check under five sections, in the order they're best
 fixed: **Files** (Missing files, Low bitrate), **Location** (Outside folders,
 Long tracks, Strays, Not music), **Duplicates**, **Metadata** (Junk in
 names, Missing information, No cover, Album tags differ) and **Prep** (Not
-analyzed, Unrated). A dot shows how a check stands (red: won't play,
+analyzed, Unrated). **Organization** has the Tags and Lists pages (see
+[Tags](#tags) and [Lists](#lists)), which don't count against the score. A dot shows how a check stands (red: won't play,
 yellow: to look at, grey: a goal) and turns into a green tick when it finds
 nothing.
 
@@ -64,11 +65,6 @@ went to quarantine moves to your In Prep folder, to be looked at again.
 | Missing files | The file isn't where your collection expects it | Relink the sure ones relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
 | Long tracks | Over 20 minutes: recorded sets and long pieces | Tag as #mix |
 
-**Lists** at the bottom of the page shows up when crates are empty or lists
-still hold tracks you removed from your collection. **Tidy up** deletes the
-empty crates and takes those tracks out of the lists. Playlists are left
-alone, since a new one starts empty.
-
 **Ignore for** in the right-click menu tells a check to leave a track
 alone. A track that isn't music is left out of the other checks, so an
 audiobook doesn't also show up as missing its cover.
@@ -113,11 +109,43 @@ Each rule can be turned off in Settings › Collection › Health, under
 Clean-up. Titles that start with a number, such as `99 Luftballons`, stay
 as they are.
 
-**Genres…** at the bottom of the Collection Health page lists every genre with
-how many tracks have it. Genres spelled like another but for capitals,
-spaces or punctuation (`Electronica` and `electronica`) are lilac. Tick the
-ones that mean the same, type the name to keep (the most used one is
-filled in), and **Merge**. Undo takes a merge back too.
+## Tags
+
+**Tags**, under Organization, shows how your genres and each of your tag
+groups are used. Each has a card: the share of tracks with at least one,
+the most used names, how many names are spelled like another (but for
+capitals, spaces or punctuation, such as `Deep House` and `Deep-House`) and
+how many are used on one track only. The sidebar's count is the names a
+roll-up would merge.
+
+Pick a card to list its names, with **Show** tabs for every name, the ones
+spelled alike (lilac) and the ones used once.
+
+- **Roll up** merges each set of names spelled alike into its most used
+  spelling, in one go.
+- Or tick names that mean the same, type the name to keep (the most used
+  one is filled in) and **Merge**.
+
+Genres are written to the files' tags too; tag groups live in your
+collection. **Undo** takes a roll-up or merge back. In Settings › Collection
+› Tags, a tag's × also offers **Merge into…** another tag of its group.
+
+## Lists
+
+**Lists**, under Organization, shows how many of your lists and crates are
+tidy, then a row per problem:
+
+- entries for tracks taken out of your collection;
+- tracks listed more than once (a crate holds each track once);
+- empty lists, except a gig's lists and ones you made in the last month,
+  which often start empty;
+- a list with the same name as another list or folder beside it.
+
+**Tidy the sure ones** takes out entries for removed tracks and repeats in
+crates, and deletes lists an import brought in that were always empty.
+Everything else waits for you: each row has its own button (**Keep the
+first**, **Delete**, or **Rename**, which opens the list), and clicking a
+list's name opens it.
 
 ## Online lookup
 
