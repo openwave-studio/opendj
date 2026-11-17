@@ -670,6 +670,9 @@ impl Deck {
                         self.loop_end = end;
                         self.c.loop_enabled.set_bool(true);
                         self.set_seconds(position);
+                        // A paused deck starts playing the loop, as on
+                        // Pioneer gear.
+                        self.c.play.set_bool(true);
                     }
                     None if set => {
                         // In slip mode a playing deck plays the cue while
@@ -677,7 +680,10 @@ impl Deck {
                         if playing && self.c.slip_enabled.get_bool() {
                             self.slip_cue = Some(h);
                         }
-                        self.set_seconds(position)
+                        self.set_seconds(position);
+                        // A paused deck jumps there and plays, as on
+                        // Pioneer gear and as the pads' guide says.
+                        self.c.play.set_bool(true);
                     }
                     None => {
                         let hc = &self.c.hotcues[h];
@@ -5850,6 +5856,34 @@ mod tests {
         run(&mut engine, 0.2);
         assert_eq!(engine.sync_leader, Some(0));
         assert_eq!(c("[Channel1]", "sync_leader").get(), 1.0);
+    }
+
+    #[test]
+    fn a_hot_cue_on_a_paused_deck_plays_from_it() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 20.0));
+        run(&mut engine, 0.01);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        ctl("hotcue_2_position").set(6.0);
+        ctl("hotcue_2_enabled").set_bool(true);
+        ctl("hotcue_2_type").set(1.0);
+        assert!(!ctl("play").get_bool());
+        ctl("hotcue_2_activate").set_bool(true);
+        run(&mut engine, 0.01);
+        ctl("hotcue_2_activate").set_bool(false);
+        run(&mut engine, 0.3);
+        assert!(ctl("play").get_bool(), "still paused");
+        let at = ctl("playposition").get() * 20.0;
+        assert!(at > 6.1 && at < 6.5, "{at}");
+        // An empty pad on a paused deck only sets a cue.
+        ctl("play").set_bool(false);
+        run(&mut engine, 0.01);
+        ctl("hotcue_5_activate").set_bool(true);
+        run(&mut engine, 0.01);
+        ctl("hotcue_5_activate").set_bool(false);
+        run(&mut engine, 0.01);
+        assert!(ctl("hotcue_5_enabled").get_bool());
+        assert!(!ctl("play").get_bool());
     }
 
     #[test]
