@@ -30,11 +30,11 @@
 //  rolls purple, stems in theirs.
 //
 //  The jog displays show the playhead going round, the cue point, BPM,
-//  time, the key and its shift, and light MASTER, SYNC and MASTER TEMPO.
+//  time, the tempo, the key and its shift, and light MASTER, SYNC and
+//  MASTER TEMPO.
 //  They take no waveform over MIDI.
 //
-//  The jogs count about 12900 ticks a turn (jogTicksPerTurn), not the
-//  FLX4's 720.
+//  The jogs count 5760 ticks a turn (jogTicksPerTurn), not the FLX4's 720.
 //
 //  Not mapped yet: MIX POINT, CUE/LOOP MEMORY, MASTER CUE, INPUT SELECT, the
 //  mic, SAMPLER CUE and VOL, FX PART SELECT, the PITCH colour FX, the pad
@@ -108,10 +108,11 @@ PioneerDDJFLX10.beta = PioneerDDJFLX10.alpha/32;
 
 // openDJ: the FLX10's big jogs send far more ticks a turn than the FLX4's
 // and FLX6's 720 this script was built from, so a small move scratched,
-// bent and searched many times too far. About 12900 a turn, as measured on
-// the DDJ-1000, whose jog the FLX10 shares; everything below is scaled from
-// it so a turn feels as it does on the FLX4.
-PioneerDDJFLX10.jogTicksPerTurn = 12900;
+// bent and searched many times too far. 5760 a turn (8 x 720), the figure
+// a community Mixxx mapping for the FLX10 scratches well with on the
+// hardware; everything below is scaled from it so a turn feels as it does
+// on the FLX4.
+PioneerDDJFLX10.jogTicksPerTurn = 5760;
 // What one FLX10 tick is worth in the FLX4's 720-a-turn ticks.
 PioneerDDJFLX10.jogScale = 720 / PioneerDDJFLX10.jogTicksPerTurn;
 
@@ -240,7 +241,7 @@ PioneerDDJFLX10.init = function() {
         engine.makeConnection("[QuickEffectRack1_" + group + "]", "loaded_chain_preset", PioneerDDJFLX10.colorFxLights);
     });
     PioneerDDJFLX10.colorFxLights();
-    PioneerDDJFLX10.jogDisplays = PioneerDDJFLX10.decks.map(function() { return [-1, -1, -1, -1, -1, -1, -1]; });
+    PioneerDDJFLX10.jogDisplays = PioneerDDJFLX10.decks.map(function() { return [-1, -1, -1, -1, -1, -1, -1, -1]; });
     PioneerDDJFLX10.jogDisplayTimer = engine.beginTimer(40, PioneerDDJFLX10.jogDisplayUpdate);
 };
 
@@ -301,6 +302,7 @@ PioneerDDJFLX10.jogDisplayUpdate = function() {
             left % 60,
             loaded ? PioneerDDJFLX10.displayKey(engine.getValue(group, "key")) : 0,
             0x0D + Math.max(-12, Math.min(12, Math.round(engine.getValue(group, "pitch_adjust")))),
+            PioneerDDJFLX10.displaySpeed(group),
         ];
         const last = PioneerDDJFLX10.jogDisplays[i];
         if (now[0] !== last[0]) { PioneerDDJFLX10.sendDisplay(0x10 + i, now[0]); }
@@ -310,6 +312,7 @@ PioneerDDJFLX10.jogDisplayUpdate = function() {
         if (now[4] !== last[4]) { midi.sendShortMsg(0xBF, 0x43 + 2 * i, now[4]); }
         if (now[5] !== last[5]) { midi.sendShortMsg(0xB0 + i, 0x49, now[5]); }
         if (now[6] !== last[6]) { midi.sendShortMsg(0xB0 + i, 0x4A, now[6]); }
+        if (now[7] !== last[7]) { PioneerDDJFLX10.sendDisplay(0x18 + i, now[7]); }
         PioneerDDJFLX10.jogDisplays[i] = now;
     });
 };
@@ -328,6 +331,14 @@ PioneerDDJFLX10.displayKey = function(key) {
         return ((key - 13 + 3) % 12) * 2 + 2;
     }
     return 0;
+};
+
+// openDJ: the tempo for the jog display, -100.0% to +100.0% sent as tenths
+// of a percent above -100% (0 to 2000), as the community FLX10 mapping does.
+PioneerDDJFLX10.displaySpeed = function(group) {
+    const dir = engine.getValue(group, "rate_dir") < 0 ? -1 : 1;
+    const percent = engine.getValue(group, "rate") * engine.getValue(group, "rateRange") * dir * 100;
+    return Math.round((Math.max(-100, Math.min(100, percent)) + 100) * 10);
 };
 
 // MASTER TEMPO, MASTER and SYNC on the jog displays.

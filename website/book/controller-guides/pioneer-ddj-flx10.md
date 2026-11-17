@@ -41,7 +41,7 @@ so it works the same way where they share controls.
 - **SLIP**, **SLIP REVERSE** and **QUANTIZE** do what they say.
 - **CROSSFADER ASSIGN** puts each channel on side A, THRU or B.
 - The jog displays show the playhead going round, the cue point, the BPM,
-  the time played and the key with its shift, and light MASTER, SYNC and
+  the time played, the tempo and the key with its shift, and light MASTER, SYNC and
   MASTER TEMPO. They can't show waveforms: the FLX10 takes only these
   over MIDI.
 
@@ -59,7 +59,7 @@ buttons and the fader start messages.
 - Turn on the Beat FX, turn **BEAT FX SELECT** and **CH SELECT** through
   every position, and press each SOUND COLOR FX button.
 - Watch the jog displays while a track plays: the playhead, cue point, BPM,
-  time and key.
+  time, tempo and key.
 - Scratch and nudge with the platter and the rim: a full turn of the
   platter should move the track about 1.8 seconds, as a record would. If
   it's still far off, tell us how far one turn moves it.

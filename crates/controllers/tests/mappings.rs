@@ -1756,12 +1756,23 @@ fn ddj_flx10_pad_colours_lights_and_jog_scale() {
         out.iter().any(|m| m[..] == [0xB0, 0x49, 0x02]),
         "key shown: {out:x?}"
     );
+    // And the tempo: +4.0% is 1040 tenths above -100%.
+    reg.get("[Channel1]", "rateRange").unwrap().set(0.08);
+    reg.get("[Channel1]", "rate").unwrap().set(0.5);
+    // settle counts from now, so run past the last pass's timer.
+    settle(&mut c, 300);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xBF, 0x18, 8])
+            && out.iter().any(|m| m[..] == [0xBF, 0x38, 16]),
+        "tempo shown: {out:x?}"
+    );
 
-    // The big jog's rim: ten ticks bend as much as about half an FLX4 tick.
+    // The big jog's rim: ten ticks bend as much as an FLX4 tick and a quarter.
     c.receive(&[0xB0, 0x21, 64 + 10]);
     let bend = get(&reg, "[Channel1]", "jog_bend");
     assert!(
-        (bend - 10.0 * 720.0 / 12900.0).abs() < 1e-6,
+        (bend - 10.0 * 720.0 / 5760.0).abs() < 1e-6,
         "jog_bend {bend}"
     );
     assert_eq!(c.errors(), Vec::<String>::new());
