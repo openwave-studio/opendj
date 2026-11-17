@@ -57,6 +57,11 @@ enum Fix {
     /// Opens the review table with each album's tracks given the album
     /// tag most of them have.
     SameAlbum,
+    /// Missing tracks go on the Wanted list, to buy again, and out of the
+    /// collection.
+    ToWanted,
+    /// Looks for missing files in a folder the DJ picks.
+    FindInFolder,
 }
 
 impl Fix {
@@ -66,6 +71,8 @@ impl Fix {
             Fix::MarkMusic => "It's music",
             Fix::Relink => "Relink",
             Fix::Locate => "Find file…",
+            Fix::ToWanted => "Move to Wanted",
+            Fix::FindInFolder => "Look in a folder…",
             Fix::ToTriage => "Move to In Prep",
             Fix::FillFromName => "Fill from file name…",
             Fix::TagMix => "Tag as #mix",
@@ -93,7 +100,13 @@ fn fixes(check: Check, stages: bool) -> Vec<Fix> {
         // The bar's "Auto-fix" relinks the files found surely (see
         // `relocate`), and merges the easy copies; "Relink" takes the
         // likely ones too.
-        Check::Missing => vec![Fix::Relink, Fix::Locate, Fix::Remove],
+        Check::Missing => vec![
+            Fix::Relink,
+            Fix::FindInFolder,
+            Fix::Locate,
+            Fix::ToWanted,
+            Fix::Remove,
+        ],
         Check::Long => vec![Fix::TagMix],
         Check::Duplicate => Vec::new(),
         Check::Junk => vec![Fix::CleanUp, Fix::LookUp],
@@ -190,7 +203,7 @@ fn steps(check: Check) -> Vec<(Step, &'static str, &'static str)> {
             (
                 Review,
                 "Decide on the rest",
-                "Find the file yourself, or remove what's gone.",
+                "Look in a folder, find each file, move to Wanted to buy again, or remove.",
             ),
         ],
         Check::LowBitrate => vec![(
@@ -366,6 +379,7 @@ pub(super) fn removed_detail(r: &opendj_library::health::Removed, root: Option<&
         .unwrap_or_default();
     let what = match (r.quarantined, root.is_some_and(|q| r.path.starts_with(q))) {
         (_, true) => "File in quarantine",
+        (false, false) if !r.path.exists() => "File not found",
         // Moves wait while Move files is off.
         (true, false) => "File waits to go to quarantine",
         (false, false) => "File where it was",
@@ -374,6 +388,25 @@ pub(super) fn removed_detail(r: &opendj_library::health::Removed, root: Option<&
         what.into()
     } else {
         format!("{what} · {when}")
+    }
+}
+
+/// What the Quarantine page's buttons do.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum QuarantineFix {
+    BringBack,
+    /// Files of tracks taken out that stayed in the DJ's folders.
+    Move,
+    ShowFolder,
+}
+
+impl QuarantineFix {
+    fn label(self) -> &'static str {
+        match self {
+            QuarantineFix::BringBack => "Bring back",
+            QuarantineFix::Move => "Move files to quarantine",
+            QuarantineFix::ShowFolder => "Show folder",
+        }
     }
 }
 
@@ -434,14 +467,16 @@ impl Browser {
                     return;
                 }
                 if b.shows_quarantine() {
-                    if action == 1 {
-                        if let Some(dir) = b.quarantine_root().filter(|d| d.is_dir()) {
-                            crate::files::reveal(&dir);
-                        }
-                        return;
-                    }
                     let ids = b.picked_removed(first, last);
-                    b.bring_back_removed(&ids);
+                    match b.quarantine_fixes().get(action.max(0) as usize) {
+                        Some(QuarantineFix::Move) => b.quarantine_removed_files(&ids),
+                        Some(QuarantineFix::ShowFolder) => {
+                            if let Some(dir) = b.quarantine_root().filter(|d| d.is_dir()) {
+                                crate::files::reveal(&dir);
+                            }
+                        }
+                        _ => b.bring_back_removed(&ids),
+                    }
                     return;
                 }
                 let Some(check) = b.listed_check() else {
@@ -1133,6 +1168,45 @@ impl Browser {
             .filter(|t| !is_browsed(t))
             .map(|t| t.id)
             .collect();
+        self.quarantine_ids(ids, true)
+    }
+
+    /// Tracks taken out of the collection whose files stayed where they
+    /// were, by id.
+    fn removed_in_place(&self) -> Vec<usize> {
+        let root = self.quarantine_root();
+        self.db
+            .as_ref()
+            .and_then(|db| db.removed_tracks().ok())
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|r| !r.quarantined && r.path.is_file())
+            .filter(|r| !root.as_ref().is_some_and(|q| r.path.starts_with(q)))
+            .map(|r| r.id)
+            .collect()
+    }
+
+    /// Moves the files of tracks already out of the collection, that stayed
+    /// in your folders, to quarantine.
+    fn quarantine_removed_files(&mut self, ids: &[usize]) {
+        let in_place = self.removed_in_place();
+        let ids: Vec<usize> = ids
+            .iter()
+            .copied()
+            .filter(|id| in_place.contains(id))
+            .collect();
+        if ids.is_empty() {
+            self.health_status = "Their files are in quarantine already.".into();
+        } else {
+            self.health_status = self.quarantine_ids(ids, false);
+        }
+        self.refresh_tree();
+        self.refresh_rows();
+    }
+
+    /// Takes tracks (by id) out of the collection, if `take_out`, and
+    /// queues their files' moves to quarantine. Says what happened.
+    fn quarantine_ids(&mut self, ids: Vec<usize>, take_out: bool) -> String {
         let date = chrono::Local::now().format("%Y-%m-%d").to_string();
         let Some(quarantine) = dupes::quarantine_dir(&self.folders, &date) else {
             return "Set your Play Ready folder in Settings › Collection to quarantine tracks."
@@ -1163,17 +1237,27 @@ impl Browser {
         self.undo = Some(Undo {
             batch: Some(batch),
             text: format!("Undo moving {} to Quarantine", tracks(n)),
-            restore: ids,
+            // Tracks already out stay out: only their files go back.
+            restore: if take_out { ids } else { Vec::new() },
             changes: None,
             relinked: Vec::new(),
         });
         self.read_pending_moves();
         self.reload_library();
-        let mut s = format!("{} taken out of your collection.", tracks(n));
-        s += if moving {
-            " Their files are in _Quarantine."
+        let mut s = if take_out {
+            format!("{} taken out of your collection.", tracks(n))
         } else {
-            " Their files go to _Quarantine once Move files is on in Settings › Collection."
+            format!("The files of {}:", tracks(n))
+        };
+        s += match (take_out, moving) {
+            (true, true) => " Their files are in _Quarantine.",
+            (true, false) => {
+                " Their files go to _Quarantine once Move files is on in Settings › Collection."
+            }
+            (false, true) => " moved to _Quarantine.",
+            (false, false) => {
+                " they go to _Quarantine once Move files is on in Settings › Collection."
+            }
         };
         if failed > 0 {
             s += &format!(" {failed} couldn't be moved.");
@@ -1492,17 +1576,28 @@ impl Browser {
             counts: ModelRc::default(),
             menu_fixes: ModelRc::new(VecModel::from(vec![0])),
         });
-        let mut fixes: Vec<SharedString> = vec!["Bring back".into()];
-        if self.quarantine_root().is_some_and(|d| d.is_dir()) {
-            fixes.push("Show folder".into());
-        }
+        let in_place = if self.shows_quarantine() {
+            self.removed_in_place().len()
+        } else {
+            0
+        };
+        let qfixes = self.quarantine_fixes_with(in_place);
+        let fixes: Vec<SharedString> = qfixes.iter().map(|f| f.label().into()).collect();
+        let counts: Vec<i32> = qfixes
+            .iter()
+            .map(|f| match f {
+                QuarantineFix::BringBack => self.removed as i32,
+                QuarantineFix::Move => in_place as i32,
+                QuarantineFix::ShowFolder => 0,
+            })
+            .collect();
         cards.push(HealthCard {
             title: "Quarantine".into(),
-            about: "Tracks taken out of your collection: merged copies, quarantined and removed tracks. Bring back puts one back; a file in quarantine goes to In Prep.".into(),
+            about: "Tracks taken out of your collection: merged copies, quarantined and removed tracks. Bring back puts one back; a file in quarantine goes to In Prep. Files still in your folders can move to quarantine, out of the way.".into(),
             count: self.removed as i32,
             detail: SharedString::new(),
             fixes: ModelRc::new(VecModel::from(fixes)),
-            counts: ModelRc::new(VecModel::from(vec![self.removed as i32, 0])),
+            counts: ModelRc::new(VecModel::from(counts)),
             menu_fixes: ModelRc::new(VecModel::from(vec![0])),
         });
         ui.set_cards(ModelRc::new(VecModel::from(cards)));
@@ -2007,6 +2102,8 @@ impl Browser {
             Fix::FindCovers => self.batch_covers(indices),
             Fix::LookUp => self.batch_lookup(indices),
             Fix::SameAlbum => self.review_album_tags(indices),
+            Fix::ToWanted => self.missing_to_wanted(indices),
+            Fix::FindInFolder => self.find_in_folder(indices),
         };
         // Removed tracks leave dead entries in lists.
         self.refresh_crates();
@@ -2064,6 +2161,62 @@ impl Browser {
     }
 
     /// Takes tracks out of the library, keeping their files.
+    /// Puts missing tracks on the Wanted list, with a store search for each,
+    /// and takes them out of the collection.
+    fn missing_to_wanted(&mut self, indices: &[usize]) -> String {
+        let Some(db) = &self.db else {
+            return String::new();
+        };
+        let mut wanted = 0;
+        for &i in indices {
+            let t = &self.library[i];
+            let words = format!("{} {}", t.artist, t.title);
+            let url = format!(
+                "https://bandcamp.com/search?q={}&item_type=t",
+                opendj_plugins::encode(words.trim())
+            );
+            match db.add_wanted("Bandcamp", &t.artist, &t.title, &url) {
+                Ok(_) => wanted += 1,
+                Err(e) => eprintln!("can't add {} to Wanted: {e}", t.title),
+            }
+        }
+        if let Ok(w) = db.wanted() {
+            self.store.wanted = w;
+        }
+        let s = self.remove_tracks(indices);
+        format!("{} on the Wanted list. {s}", tracks(wanted))
+    }
+
+    /// Asks for a folder and relinks the missing tracks whose files are
+    /// found there for sure (see [`Self::poll_located`]).
+    fn find_in_folder(&mut self, indices: &[usize]) -> String {
+        let wanted: Vec<(usize, PathBuf, String, String, f64)> = indices
+            .iter()
+            .map(|&i| &self.library[i])
+            .filter_map(|t| {
+                Some((
+                    t.id,
+                    file_path(t)?.to_path_buf(),
+                    t.artist.clone(),
+                    t.title.clone(),
+                    t.duration,
+                ))
+            })
+            .collect();
+        let tx = self.located.0.clone();
+        crate::prefs::choose_folder("Look for the missing files in", move |dir| {
+            let index = relocate::Index::new(audio_files(std::slice::from_ref(&dir)));
+            for (id, path, artist, title, duration) in wanted {
+                if let Lookup::Found(f) = index.find(&path, &artist, &title, duration) {
+                    if f.sure {
+                        let _ = tx.send((id, f.path));
+                    }
+                }
+            }
+        });
+        String::new()
+    }
+
     fn remove_tracks(&mut self, indices: &[usize]) -> String {
         let ids: Vec<usize> = indices.iter().map(|&i| self.library[i].id).collect();
         let Some(db) = &mut self.db else {
@@ -2081,7 +2234,22 @@ impl Browser {
         }
     }
 
-    /// Brings back every track taken out of the library.
+    /// The Quarantine page's fixes, in its bar's order.
+    fn quarantine_fixes(&self) -> Vec<QuarantineFix> {
+        self.quarantine_fixes_with(self.removed_in_place().len())
+    }
+
+    fn quarantine_fixes_with(&self, in_place: usize) -> Vec<QuarantineFix> {
+        let mut out = vec![QuarantineFix::BringBack];
+        if in_place > 0 && self.quarantine_root().is_some() {
+            out.push(QuarantineFix::Move);
+        }
+        if self.quarantine_root().is_some_and(|d| d.is_dir()) {
+            out.push(QuarantineFix::ShowFolder);
+        }
+        out
+    }
+
     /// Whether the Quarantine page is shown.
     pub(super) fn shows_quarantine(&self) -> bool {
         self.saved()
@@ -2149,6 +2317,7 @@ impl Browser {
         self.refresh_rows();
     }
 
+    /// Brings back every track taken out of the library.
     fn restore_removed(&mut self) {
         let Some(db) = &mut self.db else { return };
         self.health_status = match db.restore_tracks(None) {

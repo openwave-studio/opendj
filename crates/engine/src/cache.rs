@@ -100,6 +100,50 @@ pub fn clear_analysis() -> usize {
         .count()
 }
 
+/// Deletes stored analyses (and their overviews) that belong to none of
+/// `keep` as the files are now: files deleted, moved or out of the
+/// collection. Ones touched in the last `days` days stay, in case their
+/// drive is only away for now. Returns how many went and the bytes freed.
+pub fn clear_unused_analysis(keep: &[PathBuf], days: u64) -> (usize, u64) {
+    let Some(dir) = analysis_dir() else {
+        return (0, 0);
+    };
+    let wanted: std::collections::HashSet<PathBuf> = keep.iter().filter_map(|p| entry(p)).collect();
+    clear_unused_in(&dir, &wanted, days)
+}
+
+fn clear_unused_in(
+    dir: &Path,
+    wanted: &std::collections::HashSet<PathBuf>,
+    days: u64,
+) -> (usize, u64) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return (0, 0);
+    };
+    let recent = std::time::SystemTime::now()
+        .checked_sub(std::time::Duration::from_secs(days * 86_400))
+        .unwrap_or(UNIX_EPOCH);
+    let (mut n, mut bytes) = (0, 0);
+    for e in entries.flatten() {
+        let path = e.path();
+        let Ok(meta) = e.metadata() else { continue };
+        if !meta.is_file() || wanted.contains(&path) {
+            continue;
+        }
+        if meta.modified().is_ok_and(|m| m > recent) {
+            continue;
+        }
+        if fs::remove_file(&path).is_ok() {
+            n += 1;
+            bytes += meta.len();
+            if let Some(o) = overview_file(&path) {
+                let _ = fs::remove_file(o);
+            }
+        }
+    }
+    (n, bytes)
+}
+
 /// Where `path`'s analysis is kept, or None if the file can't be read.
 /// Where the analysis of `path` is kept, named for the file as it is now.
 pub(crate) fn entry_path(path: &Path) -> Option<PathBuf> {
@@ -462,6 +506,32 @@ fn decode_chroma(data: &[u8]) -> Option<Chroma> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn unused_old_analyses_go() {
+        let root = std::env::temp_dir().join(format!("opendj-unused-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        let dir = root.join("analysis");
+        fs::create_dir_all(&dir).unwrap();
+        fs::create_dir_all(root.join("overviews")).unwrap();
+        let old = std::time::SystemTime::now() - std::time::Duration::from_secs(40 * 86_400);
+        for name in ["kept", "gone", "new"] {
+            fs::write(dir.join(name), vec![0u8; 100]).unwrap();
+            fs::write(root.join("overviews").join(name), b"o").unwrap();
+            if name != "new" {
+                let f = fs::File::options()
+                    .write(true)
+                    .open(dir.join(name))
+                    .unwrap();
+                f.set_modified(old).unwrap();
+            }
+        }
+        let wanted = [dir.join("kept")].into_iter().collect();
+        assert_eq!(clear_unused_in(&dir, &wanted, 30), (1, 100));
+        assert!(dir.join("kept").exists() && dir.join("new").exists());
+        assert!(!dir.join("gone").exists() && !root.join("overviews").join("gone").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
     #[test]
     fn the_stems_used_longest_ago_go_first() {
         let root = std::env::temp_dir().join(format!("opendj-stems-trim-{}", std::process::id()));

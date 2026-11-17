@@ -23,9 +23,9 @@
 
 ## 5. Files
 
-- [ ] 5.1 Not in collection: files in music and stage folders, Bring in files wizard, quarantine; clear old caches
-- [ ] 5.2 Find missing files wizard and Move to Wanted
-- [ ] 5.3 Update the user guide page (website/book/src/guide, Collection Health) and check it in the built book
+- [x] 5.1 Not in collection: files of removed tracks left in the music and stage folders move to quarantine (the scan brings every other file in); clear analyses of files gone
+- [x] 5.2 Find missing files wizard and Move to Wanted
+- [x] 5.3 Update the user guide page (website/book/src/guide, Collection Health) and check it in the built book
 
 ## Workflow follow-up
 

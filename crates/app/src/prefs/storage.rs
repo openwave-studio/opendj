@@ -70,6 +70,13 @@ impl Prefs {
                      Tracks you added to your collection stay.",
                     "Clear",
                 ),
+                Some(3) => (
+                    "Clear analyses of files gone?".to_string(),
+                    "Waveforms, tempo and key kept for files no longer in your collection, \
+                     deleted or changed, untouched for a month. Your collection's tracks keep \
+                     theirs.",
+                    "Clear",
+                ),
                 _ => (String::new(), "", ""),
             };
             g.set_confirm(confirm.into());
@@ -88,7 +95,7 @@ impl Prefs {
     /// Manage › a clean-up: asks first, but Show cache folder just opens it.
     pub(super) fn storage_picked(&mut self, index: usize) {
         self.storage_note.clear();
-        if index == 3 {
+        if index == 4 {
             self.storage_pending = None;
             if let Some(dir) = cache::cache_dir() {
                 crate::files::reveal(&dir);
@@ -125,6 +132,25 @@ impl Prefs {
                     size(before),
                     if n == 1 { "track" } else { "tracks" }
                 )
+            }
+            3 => {
+                let keep: Vec<std::path::PathBuf> = open_library()
+                    .and_then(|db| db.tracks(|p| p.exists()).ok())
+                    .unwrap_or_default()
+                    .iter()
+                    .filter_map(|t| match &t.source {
+                        opendj_engine::Source::File(p) => Some(p.clone()),
+                        _ => None,
+                    })
+                    .collect();
+                match cache::clear_unused_analysis(&keep, 30) {
+                    (0, _) => "No analyses of files gone.".into(),
+                    (n, bytes) => format!(
+                        "Cleared {} from {n} {}.",
+                        size(bytes),
+                        if n == 1 { "analysis" } else { "analyses" }
+                    ),
+                }
             }
             _ => match crate::sources::clear_cache() {
                 0 => "There were no played tracks to clear.".into(),

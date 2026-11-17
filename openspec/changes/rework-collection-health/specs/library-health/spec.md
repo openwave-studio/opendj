@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Area lists
-The Health sidebar SHALL list the Overview, then one row per check under six sections in this order: Files (Missing files, Low bitrate), Location (Not in collection, Outside folders, Long tracks, Strays, Not music), Duplicates, Metadata (Junk in names, Missing information, No cover, Album tags differ), Prep (Not analyzed, Unrated) and Organization (Tags, Lists), then Ignored and Quarantine. Each row SHALL show how many tracks it finds and its state, with a tick when it finds none. Selecting a row SHALL show that check's page, closing any open review card.
+The Health sidebar SHALL list the Overview, then one row per check under six sections in this order: Files (Missing files, Low bitrate), Location (Outside folders, Long tracks, Strays, Not music), Duplicates, Metadata (Junk in names, Missing information, No cover, Album tags differ), Prep (Not analyzed, Unrated) and Organization (Tags, Lists), then Ignored and Quarantine. Each row SHALL show how many tracks it finds and its state, with a tick when it finds none. Selecting a row SHALL show that check's page, closing any open review card.
 
 #### Scenario: Switch check during a review
 - **WHEN** the review card is open on Missing files and the DJ selects Duplicates in the sidebar
@@ -45,8 +45,16 @@ Collection Health SHALL have a Lists page for tracks listed twice in a list, emp
 - **THEN** Tidy removes it; an empty list the DJ made goes to review
 
 ### Requirement: Files not in the collection
-Collection Health SHALL list audio files in the music and stage folders that aren't in the collection, offering to bring them into the Inbox or move them to quarantine.
+The library scan SHALL bring every audio file in the music and stage folders into the collection, except files of tracks the DJ took out. Collection Health's Quarantine page SHALL offer to move those files, still in the music and stage folders, to quarantine.
 
-#### Scenario: Copied in Finder
-- **WHEN** a FLAC was copied into the Inbox folder outside openDJ
-- **THEN** it is listed under Not in collection with Bring in as the sure fix
+#### Scenario: Removed track's file left behind
+- **WHEN** the DJ removed a track from the collection and its file is still in the Inbox folder
+- **THEN** the Quarantine page lists it with "File where it was" and offers Move files to quarantine
+
+### Requirement: Missing files fixes
+The Missing files check SHALL offer, besides relinking, to look for the files in a folder the DJ picks and relink the ones found for sure, and to move missing tracks to the Wanted list with a store search, taking them out of the collection.
+
+#### Scenario: Lost drive
+- **WHEN** 40 tracks are missing and their files are on a backup drive
+- **THEN** Look in a folder… on that drive relinks each one found there for sure
+
