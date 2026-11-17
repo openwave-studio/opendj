@@ -113,6 +113,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-serato-onelibrary-import](changes/add-serato-onelibrary-import/proposal.md) (Serato DJ libraries from their file tags and crates, and OneLibrary sticks from any app that writes them; a user request in issue #602, 2026-11-14)
 - [add-itunes-library-import](changes/add-itunes-library-import/proposal.md) (iTunes and Music app library import: tracks with tags, stars, play counts and dates, and playlists in their folders from the Library XML; a user request, issue #630, 2026-11-11; real-library check moved to v0.8 2026-11-14)
 - [add-played-marks](changes/add-played-marks/proposal.md) (tracks played in this History session dimmed with a lilac check, plays count only when heard in the master, a short Played note on the deck, Start new session over History, Mark as Not Played; issue #827, a user request, 2026-11-16)
+- [add-tidal-search](changes/add-tidal-search/proposal.md) (TIDAL catalog search in the TIDAL source, add-ons that play streamed rows from the source cache and can stay out of the rail; issue #838, a user request, 2026-11-17)
 - [add-engine-dj-usb-export](changes/add-engine-dj-usb-export/proposal.md) (USB export for Denon DJ, Numark and Rane players: Engine DJ's m.db with grids, cues, loops, overview waveforms and lists, sharing the stick's music with the Pioneer export; learnt from EngineX-OS; issue #578, 2026-11-10; hardware check moved to v0.8 2026-11-14)
 
 ## v0.9 · In the club

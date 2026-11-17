@@ -240,6 +240,13 @@ pub trait SearchSource: Send {
         false
     }
 
+    /// Whether it has a place in the rail. A source that only plays other
+    /// sources' tracks (through [`Self::sites`] and [`Self::plays`]) can
+    /// stay out of it, working behind the service whose links it takes.
+    fn in_rail(&self) -> bool {
+        true
+    }
+
     /// Whether the DJ can hear a file from its searches before downloading
     /// it, with [`Self::preview`].
     fn previews(&self) -> bool {

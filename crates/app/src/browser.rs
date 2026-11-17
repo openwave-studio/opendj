@@ -534,6 +534,11 @@ pub struct Browser {
     pub play_sites: Vec<&'static str>,
     /// Links of streamed tracks to load that way, for the frame loop.
     stream_plays: Vec<String>,
+    /// The catalog search shown in place of the playlist, while words are
+    /// typed in a service that searches (its [`spotify::SEARCH`] key), and
+    /// when to ask the service for it.
+    stream_search: String,
+    search_due: Option<std::time::Instant>,
     library: Vec<Arc<Track>>,
     nodes: Vec<Node>,
     /// Indices into `nodes` of the rows currently shown in the tree.
@@ -775,6 +780,15 @@ pub(crate) const STREAMS: [(i32, &str, &str); 5] = [
     (SOUNDCLOUD, "SoundCloud", "soundcloud"),
     (MIXCLOUD, "Mixcloud", "mixcloud"),
 ];
+
+/// Whether the service with this id searches its catalog from the search
+/// box (see [`spotify::SEARCH`]).
+fn searches(id: &str) -> bool {
+    id == "tidal"
+}
+
+/// How long typing pauses before a catalog search is asked for.
+const SEARCH_PAUSE: std::time::Duration = std::time::Duration::from_millis(400);
 
 /// A streaming service: its worker, and what it has sent.
 struct Stream {
@@ -1326,6 +1340,8 @@ impl Browser {
             wanted_sort: (-1, true),
             play_sites: Vec::new(),
             stream_plays: Vec::new(),
+            stream_search: String::new(),
+            search_due: None,
             export_status: None,
             session: None,
             last_play: None,
@@ -1481,6 +1497,7 @@ impl Browser {
                 if is_stores(b.tree) {
                     b.search_stores(StoreQuery::text(&text));
                 }
+                b.search_catalog(&text);
                 b.refresh_rows();
             }))
         });
@@ -1619,9 +1636,11 @@ impl Browser {
             crate::settings::set_hidden_sources(hidden.clone());
             hidden
         });
+        // Add-on sources that work behind another source stay out.
+        let off_rail = crate::sources::off_rail_sources();
         let shown: Vec<bool> = names
             .iter()
-            .map(|n| !hidden.iter().any(|h| h == n))
+            .map(|n| !hidden.iter().any(|h| h == n) && !off_rail.contains(n))
             .collect();
         app.set_sources_shown(std::rc::Rc::new(slint::VecModel::from(shown)).into());
         side_tabs::install(app);
@@ -2886,6 +2905,28 @@ impl Browser {
     }
 
     /// The streaming service shown in the tree, if one is.
+    /// Typing in a service that searches its catalog lists what it finds
+    /// there instead of the playlist; asked for once typing pauses.
+    fn search_catalog(&mut self, text: &str) {
+        let Some(st) = self.shown_stream() else {
+            return;
+        };
+        let words = text.trim();
+        if !searches(st.id) || words.chars().count() < 2 {
+            self.stream_search.clear();
+            self.search_due = None;
+            return;
+        }
+        self.stream_search = format!("{}{words}", spotify::SEARCH);
+        self.search_due = Some(std::time::Instant::now() + SEARCH_PAUSE);
+    }
+
+    /// Whether the list shows a catalog search rather than a playlist.
+    fn shows_catalog_search(&self) -> bool {
+        self.current_playlist()
+            .is_some_and(|k| k.starts_with(spotify::SEARCH))
+    }
+
     fn shown_stream(&self) -> Option<&Stream> {
         self.streams.iter().find(|s| s.source == self.tree)
     }
@@ -2908,7 +2949,10 @@ impl Browser {
 
     /// The streaming playlist selected in the tree, if a service is shown.
     fn current_playlist(&self) -> Option<&str> {
-        self.shown_stream()?;
+        let st = self.shown_stream()?;
+        if searches(st.id) && !self.stream_search.is_empty() {
+            return Some(&self.stream_search);
+        }
         match &self.nodes.get(self.current_node)?.contents {
             Contents::Stream(k) => Some(k),
             _ => None,
@@ -3070,6 +3114,14 @@ impl Browser {
     /// Takes in what the streaming services' workers have done. Called
     /// every frame.
     pub fn poll_streams(&mut self) {
+        if self
+            .search_due
+            .is_some_and(|due| due <= std::time::Instant::now())
+        {
+            self.search_due = None;
+            self.fetch_current_playlist();
+            self.refresh_rows();
+        }
         for i in 0..self.streams.len() {
             let source = self.streams[i].source;
             for event in self.streams[i].service.poll() {
@@ -5523,8 +5575,10 @@ impl Browser {
         let needle = query::fold(&self.search);
         let filtering = self.filtering();
         let all = self.row_data();
+        // What the service found for the words is listed as it came.
+        let found = self.shows_catalog_search();
         let keep = |q: &Query, r: &RowData| match r.local {
-            _ if q.is_empty() => true,
+            _ if q.is_empty() || found => true,
             Some(id) => q.matches(&self.library[id], &self.indexed[id], &cx),
             None if filtering => false,
             None => [r.title, &r.artist, r.album]

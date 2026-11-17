@@ -74,8 +74,10 @@ Each service is signed in to with your own app, so openDJ ships no keys:
 - **Spotify**: create an app at developer.spotify.com with the redirect URI
   `http://127.0.0.1:8898/callback` and paste its client ID.
 - **TIDAL**: create an app at developer.tidal.com with the same redirect
-  URI and the scopes `user.read`, `playlists.read` and `collection.read`,
-  and paste its client ID.
+  URI and the scopes `user.read`, `playlists.read`, `collection.read` and
+  `search.read`, and paste its client ID. In the TIDAL source, typing in
+  the search box searches TIDAL's catalog for tracks; clear it to see the
+  playlist again. If you signed in before search came, sign in again.
 - **Apple Music**: needs an Apple Developer account. Under **Certificates,
   Identifiers & Profiles › Keys**, create a key with **MusicKit** and
   download its `.p8` file. Enter your Team ID, the key's Key ID and the

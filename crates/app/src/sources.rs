@@ -64,6 +64,18 @@ pub fn source_plugins() -> Vec<(Box<dyn Plugin>, SourceInfo)> {
         .collect()
 }
 
+/// The names of add-on sources that stay out of the rail (see
+/// [`SearchSource::in_rail`]).
+pub fn off_rail_sources() -> Vec<String> {
+    source_plugins()
+        .into_iter()
+        .filter_map(|(mut p, info)| {
+            let off = p.source().is_some_and(|s| !s.in_rail());
+            off.then(|| info.name.to_string())
+        })
+        .collect()
+}
+
 enum Request {
     Start(u64, SourceQuery),
     Stop(u64),
