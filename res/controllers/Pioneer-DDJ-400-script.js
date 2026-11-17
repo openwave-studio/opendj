@@ -103,13 +103,34 @@ PioneerDDJ400.lights = {
 PioneerDDJ400.timers = {};
 
 // Jog wheel constants
-PioneerDDJ400.vinylMode = true;
+// openDJ: touching the platter follows each deck's Vinyl mode setting.
+PioneerDDJ400.vinylMode = function(deckNum) {
+    return engine.getValue("[Channel" + deckNum + "]", "vinyl_mode") > 0;
+};
 PioneerDDJ400.alpha = 1.0/8;
 PioneerDDJ400.beta = PioneerDDJ400.alpha/32;
+// openDJ: gentler rim corrections for beatmatching on the DDJ-400.
+PioneerDDJ400.bendScale = 0.175;
+// openDJ: keep Slip scratching through the wheel's physical spin after release.
+PioneerDDJ400.slipReleased = [false, false];
+PioneerDDJ400.slipReleaseTimers = [0, 0];
+PioneerDDJ400.cancelSlipRelease = function(channel) {
+    if (PioneerDDJ400.slipReleaseTimers[channel]) {
+        engine.stopTimer(PioneerDDJ400.slipReleaseTimers[channel]);
+        PioneerDDJ400.slipReleaseTimers[channel] = 0;
+    }
+};
+PioneerDDJ400.waitForWheelStop = function(channel) {
+    PioneerDDJ400.cancelSlipRelease(channel);
+    PioneerDDJ400.slipReleaseTimers[channel] = engine.beginTimer(80, () => {
+        PioneerDDJ400.slipReleaseTimers[channel] = 0;
+        PioneerDDJ400.slipReleased[channel] = false;
+        engine.scratchDisable(channel + 1, false);
+    }, true);
+};
 
 // Multiplier for fast seek through track using SHIFT+JOGWHEEL
 PioneerDDJ400.fastSeekScale = 150;
-PioneerDDJ400.bendScale = 0.8;
 
 // SHIFT + BEAT SYNC steps through the same ranges as the deck's Range menu
 // and Settings.
@@ -471,8 +492,13 @@ PioneerDDJ400.jogTurn = function(channel, _control, value, _status, group) {
 
     if (engine.isScratching(deckNum)) {
         engine.scratchTick(deckNum, newVal);
-    } else { // fallback
-        engine.setValue(group, "jog", newVal * this.bendScale);
+        // openDJ: each movement postpones Slip's return until the wheel is idle.
+        if (newVal !== 0 && PioneerDDJ400.slipReleased[channel]) {
+            PioneerDDJ400.waitForWheelStop(channel);
+        }
+    } else {
+        // openDJ: scale rim and untouched platter ticks for finer pitch bends.
+        engine.setValue(group, "jog_bend", newVal * PioneerDDJ400.bendScale);
     }
 };
 
@@ -490,10 +516,21 @@ PioneerDDJ400.jogTouch = function(channel, _control, value) {
         return;
     }
 
-    if (value !== 0 && this.vinylMode) {
+    // openDJ: re-touching cancels a pending Slip return.
+    PioneerDDJ400.cancelSlipRelease(channel);
+    PioneerDDJ400.slipReleased[channel] = false;
+    // openDJ: use the deck setting instead of a hard-coded vinyl mode.
+    if (value !== 0 && PioneerDDJ400.vinylMode(deckNum)) {
         engine.scratchEnable(deckNum, 720, 33+1/3, this.alpha, this.beta);
     } else {
-        engine.scratchDisable(deckNum);
+        // openDJ: let the physical wheel finish spinning before Slip returns.
+        const slip = engine.getValue("[Channel" + deckNum + "]", "slip_enabled") > 0;
+        if (slip && engine.isScratching(deckNum)) {
+            PioneerDDJ400.slipReleased[channel] = true;
+            PioneerDDJ400.waitForWheelStop(channel);
+        } else {
+            engine.scratchDisable(deckNum);
+        }
     }
 };
 
@@ -655,6 +692,10 @@ PioneerDDJ400.quickJumpBack = function(_channel, _control, value, _status, group
 //
 
 PioneerDDJ400.shutdown = function() {
+    // openDJ: cancel wheel-stop timers when the mapping shuts down.
+    for (let channel = 0; channel < 2; ++channel) {
+        PioneerDDJ400.cancelSlipRelease(channel);
+    }
     // reset vumeter
     PioneerDDJ400.toggleLight(PioneerDDJ400.lights.deck1.vuMeter, false);
     PioneerDDJ400.toggleLight(PioneerDDJ400.lights.deck2.vuMeter, false);
