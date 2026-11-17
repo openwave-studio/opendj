@@ -252,7 +252,7 @@ loop, turn reverse off or press PLAY) the track carries on from that line,
 on the beat and the phrase, as if it had played on. In slip mode a hot cue
 plays only while you hold it. SLIP blinks while the track is held elsewhere;
 switching it off then also brings the track back. Slip only works on a deck
-that's playing: on a paused deck, scratching and hot cues find a spot as
+that's playing: on a paused deck, scratching finds a spot as
 usual. Let go of a spinning jog in slip mode (a back-spin) and the deck
 follows the jog until it stops turning, then carries on from the line.
 

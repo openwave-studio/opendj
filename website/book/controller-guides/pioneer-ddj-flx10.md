@@ -24,7 +24,13 @@ so it works the same way where they share controls.
 - **SOUND COLOR FX**: SPACE, D.ECHO, CRUSH, NOISE and FILTER pick what the
   COLOR knobs play.
 - **ACTIVE PART** DRUMS, VOCAL and INST mute and unmute those stems of the
-  deck.
+  deck: lit while they play, dimmed when muted.
+- The **pads** light in colour: hot cues in the colours they have on
+  screen, loops orange, loop rolls purple, stems pads in the stems'
+  colours.
+- The **jogs** are scaled for the FLX10's big platters, so a turn scratches,
+  bends and searches as far as on the smaller FLX controllers. Pitch bend
+  and Scratch in the Controller Editor's Options fine-tune them.
 - **SHIFT + BEAT SYNC** makes the deck the one the others sync to.
   **KEY SYNC** matches the key of the other deck (SHIFT: back to the
   track's key), **TEMPO RESET** puts the tempo back to 0 (SHIFT: next
@@ -34,8 +40,10 @@ so it works the same way where they share controls.
   LOOP OUT lets the jog move that end of the loop.
 - **SLIP**, **SLIP REVERSE** and **QUANTIZE** do what they say.
 - **CROSSFADER ASSIGN** puts each channel on side A, THRU or B.
-- The jog displays show the playhead going round, the cue point, the BPM
-  and the time played, and light MASTER, SYNC and MASTER TEMPO.
+- The jog displays show the playhead going round, the cue point, the BPM,
+  the time played, the tempo and the key with its shift, and light MASTER, SYNC and
+  MASTER TEMPO. They can't show waveforms: the FLX10 takes only these
+  over MIDI.
 
 Not mapped yet: MIX POINT, CUE/LOOP MEMORY, MASTER CUE, INPUT SELECT, the
 mic, SAMPLER CUE and VOL, FX PART SELECT, the PITCH colour FX, the pad PAGE
@@ -50,6 +58,9 @@ buttons and the fader start messages.
 - Try every pad mode, with and without SHIFT, and check the pad colours.
 - Turn on the Beat FX, turn **BEAT FX SELECT** and **CH SELECT** through
   every position, and press each SOUND COLOR FX button.
-- Watch the jog displays while a track plays: the playhead, cue point, BPM
-  and time.
+- Watch the jog displays while a track plays: the playhead, cue point, BPM,
+  time, tempo and key.
+- Scratch and nudge with the platter and the rim: a full turn of the
+  platter should move the track about 1.8 seconds, as a record would. If
+  it's still far off, tell us how far one turn moves it.
 - With a track that has stems, press each ACTIVE PART button.

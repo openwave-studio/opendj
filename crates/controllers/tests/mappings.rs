@@ -1710,6 +1710,76 @@ fn ddj_flx10_decks_mixer_fx_and_displays() {
 }
 
 #[test]
+fn ddj_flx10_pad_colours_lights_and_jog_scale() {
+    let (reg, mut c) = load("Pioneer-DDJ-FLX10.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+
+    // A set hot cue lights its pad in the hot cue's colour, not white:
+    // hot cue 2 is green (21) on deck 1's HOT CUE pads.
+    reg.get("[Channel1]", "hotcue_2_status").unwrap().set(1.0);
+    settle(&mut c, 5);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x97, 0x01, 21]),
+        "hot cue 2 green: {out:x?}"
+    );
+
+    // ACTIVE PART: lit while the stems play, dimmed once muted.
+    reg.get("[Channel1]", "stem_count").unwrap().set(5.0);
+    settle(&mut c, 5);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x90, 0x0E, 0x7F]),
+        "VOCAL lit: {out:x?}"
+    );
+    c.receive(&[0x90, 0x0E, 0x7F]);
+    c.receive(&[0x90, 0x0E, 0x00]);
+    settle(&mut c, 5);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 1.0);
+    let out = c.take_output();
+    assert_eq!(
+        out.iter()
+            .rev()
+            .find(|m| m[0] == 0x90 && m[1] == 0x0E)
+            .map(|m| m[2]),
+        Some(0x00),
+        "VOCAL dimmed: {out:x?}"
+    );
+
+    // The jog display shows the key: A minor is 2.
+    reg.get("[Channel1]", "track_loaded").unwrap().set(1.0);
+    reg.get("[Channel1]", "key").unwrap().set(22.0);
+    settle(&mut c, 100);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB0, 0x49, 0x02]),
+        "key shown: {out:x?}"
+    );
+    // And the tempo: +4.0% is 1040 tenths above -100%.
+    reg.get("[Channel1]", "rateRange").unwrap().set(0.08);
+    reg.get("[Channel1]", "rate").unwrap().set(0.5);
+    // settle counts from now, so run past the last pass's timer.
+    settle(&mut c, 300);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xBF, 0x18, 8])
+            && out.iter().any(|m| m[..] == [0xBF, 0x38, 16]),
+        "tempo shown: {out:x?}"
+    );
+
+    // The big jog's rim: ten ticks bend as much as an FLX4 tick and a quarter.
+    c.receive(&[0xB0, 0x21, 64 + 10]);
+    let bend = get(&reg, "[Channel1]", "jog_bend");
+    assert!(
+        (bend - 10.0 * 720.0 / 5760.0).abs() < 1e-6,
+        "jog_bend {bend}"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
 fn ddj_400_secondary_pad_modes() {
     let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
     for (deck, status) in [(1, 0x97), (2, 0x99)] {

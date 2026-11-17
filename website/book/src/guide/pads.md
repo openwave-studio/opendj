@@ -40,7 +40,7 @@ A hot cue marks a place in the track to jump back to.
 
 - **Press an empty pad** (it shows **+**) to set a hot cue where the track is
   playing.
-- **Press a set pad** to jump there and play.
+- **Press a set pad** to jump there and play, also on a paused deck.
 - **Shift-click a pad** to delete its cue.
 
 The eight hot cues are blue, green, yellow, orange, red, pink, purple and

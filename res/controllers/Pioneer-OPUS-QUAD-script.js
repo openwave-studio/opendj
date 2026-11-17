@@ -107,11 +107,10 @@ PioneerOPUSQUAD.jogRingUpdate = function() {
         if (engine.getValue(group, "track_loaded")) {
             const duration = engine.getValue(group, "duration");
             bar = step(engine.getValue(group, "playposition") * duration);
-            const samples = engine.getValue(group, "track_samples");
-            const rate = engine.getValue(group, "track_samplerate");
+            // openDJ: cue_point is in seconds.
             const point = engine.getValue(group, "cue_point");
-            if (samples > 0 && rate > 0 && point >= 0) {
-                cue = step(point / rate / 2);
+            if (point >= 0) {
+                cue = step(point);
             }
         }
         const last = PioneerOPUSQUAD.jogRings[i];

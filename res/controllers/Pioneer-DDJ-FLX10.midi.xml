@@ -7528,7 +7528,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x97</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7536,7 +7536,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x97</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7544,7 +7544,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x97</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7552,7 +7552,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x97</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7560,7 +7560,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x97</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7568,7 +7568,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x97</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7576,7 +7576,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x97</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7584,7 +7584,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x97</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7592,7 +7592,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x97</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7600,7 +7600,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x97</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7608,7 +7608,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x97</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7616,7 +7616,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x97</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7624,7 +7624,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x97</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7632,7 +7632,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x97</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7640,7 +7640,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x97</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7648,7 +7648,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x97</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7656,7 +7656,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x97</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7664,7 +7664,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x97</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7672,7 +7672,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x97</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7680,7 +7680,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x97</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7688,7 +7688,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x97</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7696,7 +7696,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x97</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7704,7 +7704,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x97</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7712,7 +7712,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x97</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7720,7 +7720,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x98</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7728,7 +7728,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x98</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7736,7 +7736,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x98</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7744,7 +7744,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x98</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7752,7 +7752,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x98</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7760,7 +7760,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x98</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7768,7 +7768,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x98</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7776,7 +7776,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x98</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7800,7 +7800,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x98</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7808,7 +7808,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x98</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7816,7 +7816,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x98</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7824,7 +7824,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x98</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7832,7 +7832,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x98</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7840,7 +7840,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x98</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7848,7 +7848,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x98</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7856,7 +7856,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x98</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7864,7 +7864,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x98</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7872,7 +7872,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x98</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7880,7 +7880,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x98</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7888,7 +7888,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x98</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7896,7 +7896,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x98</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7904,7 +7904,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x98</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7912,7 +7912,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x98</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7920,7 +7920,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x98</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7928,7 +7928,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x99</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7936,7 +7936,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x99</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7944,7 +7944,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x99</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7952,7 +7952,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x99</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7960,7 +7960,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x99</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7968,7 +7968,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x99</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7976,7 +7976,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x99</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7984,7 +7984,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x99</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -7992,7 +7992,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x99</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8000,7 +8000,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x99</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8008,7 +8008,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x99</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8016,7 +8016,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x99</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8024,7 +8024,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x99</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8032,7 +8032,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x99</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8040,7 +8040,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x99</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8048,7 +8048,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x99</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8056,7 +8056,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x99</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8064,7 +8064,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x99</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8072,7 +8072,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x99</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8080,7 +8080,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x99</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8088,7 +8088,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x99</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8096,7 +8096,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x99</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8104,7 +8104,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x99</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8112,7 +8112,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x99</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8120,7 +8120,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x9A</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8128,7 +8128,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x9A</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8136,7 +8136,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x9A</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8144,7 +8144,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x9A</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8152,7 +8152,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x9A</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8160,7 +8160,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x9A</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8168,7 +8168,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x9A</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8176,7 +8176,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x9A</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8200,7 +8200,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x9A</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8208,7 +8208,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x9A</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8216,7 +8216,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x9A</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8224,7 +8224,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x9A</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8232,7 +8232,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x9A</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8240,7 +8240,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x9A</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8248,7 +8248,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x9A</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8256,7 +8256,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x9A</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8264,7 +8264,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x9A</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8272,7 +8272,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x9A</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8280,7 +8280,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x9A</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8288,7 +8288,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x9A</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8296,7 +8296,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x9A</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8304,7 +8304,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x9A</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8312,7 +8312,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x9A</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8320,7 +8320,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x9A</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8328,7 +8328,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x9B</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8336,7 +8336,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x9B</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8344,7 +8344,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x9B</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8352,7 +8352,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x9B</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8360,7 +8360,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x9B</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8368,7 +8368,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x9B</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8376,7 +8376,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x9B</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8384,7 +8384,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x9B</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8392,7 +8392,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x9B</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8400,7 +8400,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x9B</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8408,7 +8408,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x9B</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8416,7 +8416,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x9B</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8424,7 +8424,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x9B</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8432,7 +8432,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x9B</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8440,7 +8440,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x9B</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8448,7 +8448,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x9B</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8456,7 +8456,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x9B</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8464,7 +8464,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x9B</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8472,7 +8472,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x9B</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8480,7 +8480,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x9B</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8488,7 +8488,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x9B</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8496,7 +8496,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x9B</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8504,7 +8504,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x9B</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8512,7 +8512,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x9B</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8520,7 +8520,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x9C</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8528,7 +8528,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x9C</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8536,7 +8536,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x9C</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8544,7 +8544,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x9C</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8552,7 +8552,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x9C</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8560,7 +8560,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x9C</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8568,7 +8568,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x9C</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8576,7 +8576,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x9C</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8600,7 +8600,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x9C</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8608,7 +8608,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x9C</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8616,7 +8616,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x9C</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8624,7 +8624,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x9C</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8632,7 +8632,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x9C</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8640,7 +8640,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x9C</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8648,7 +8648,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x9C</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8656,7 +8656,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x9C</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8664,7 +8664,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x9C</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8672,7 +8672,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x9C</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8680,7 +8680,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x9C</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8688,7 +8688,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x9C</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8696,7 +8696,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x9C</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8704,7 +8704,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x9C</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8712,7 +8712,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x9C</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8720,7 +8720,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x9C</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8728,7 +8728,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x9D</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8736,7 +8736,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x9D</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8744,7 +8744,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x9D</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8752,7 +8752,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x9D</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8760,7 +8760,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x9D</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8768,7 +8768,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x9D</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8776,7 +8776,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x9D</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8784,7 +8784,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x9D</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8792,7 +8792,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x9D</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8800,7 +8800,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x9D</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8808,7 +8808,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x9D</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8816,7 +8816,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x9D</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8824,7 +8824,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x9D</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8832,7 +8832,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x9D</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8840,7 +8840,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x9D</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8848,7 +8848,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x9D</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8856,7 +8856,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x9D</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8864,7 +8864,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x9D</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8872,7 +8872,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x9D</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8880,7 +8880,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x9D</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8888,7 +8888,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x9D</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8896,7 +8896,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x9D</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8904,7 +8904,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x9D</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8912,7 +8912,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x9D</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8920,7 +8920,7 @@
                 <key>hotcue_1_status</key>
                 <status>0x9E</status>
                 <midino>0x00</midino>
-                <on>0x7F</on>
+                <on>0x09</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8928,7 +8928,7 @@
                 <key>hotcue_2_status</key>
                 <status>0x9E</status>
                 <midino>0x01</midino>
-                <on>0x7F</on>
+                <on>0x15</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8936,7 +8936,7 @@
                 <key>hotcue_3_status</key>
                 <status>0x9E</status>
                 <midino>0x02</midino>
-                <on>0x7F</on>
+                <on>0x1D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8944,7 +8944,7 @@
                 <key>hotcue_4_status</key>
                 <status>0x9E</status>
                 <midino>0x03</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8952,7 +8952,7 @@
                 <key>hotcue_5_status</key>
                 <status>0x9E</status>
                 <midino>0x04</midino>
-                <on>0x7F</on>
+                <on>0x29</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8960,7 +8960,7 @@
                 <key>hotcue_6_status</key>
                 <status>0x9E</status>
                 <midino>0x05</midino>
-                <on>0x7F</on>
+                <on>0x35</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8968,7 +8968,7 @@
                 <key>hotcue_7_status</key>
                 <status>0x9E</status>
                 <midino>0x06</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -8976,7 +8976,7 @@
                 <key>hotcue_8_status</key>
                 <status>0x9E</status>
                 <midino>0x07</midino>
-                <on>0x7F</on>
+                <on>0x11</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9000,7 +9000,7 @@
                 <key>beatloop_0.25_enabled</key>
                 <status>0x9E</status>
                 <midino>0x60</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9008,7 +9008,7 @@
                 <key>beatloop_0.5_enabled</key>
                 <status>0x9E</status>
                 <midino>0x61</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9016,7 +9016,7 @@
                 <key>beatloop_1_enabled</key>
                 <status>0x9E</status>
                 <midino>0x62</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9024,7 +9024,7 @@
                 <key>beatloop_2_enabled</key>
                 <status>0x9E</status>
                 <midino>0x63</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9032,7 +9032,7 @@
                 <key>beatloop_4_enabled</key>
                 <status>0x9E</status>
                 <midino>0x64</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9040,7 +9040,7 @@
                 <key>beatloop_8_enabled</key>
                 <status>0x9E</status>
                 <midino>0x65</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9048,7 +9048,7 @@
                 <key>beatloop_16_enabled</key>
                 <status>0x9E</status>
                 <midino>0x66</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9056,7 +9056,7 @@
                 <key>beatloop_32_enabled</key>
                 <status>0x9E</status>
                 <midino>0x67</midino>
-                <on>0x7F</on>
+                <on>0x25</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9064,7 +9064,7 @@
                 <key>beatlooproll_0.0625_activate</key>
                 <status>0x9E</status>
                 <midino>0x78</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9072,7 +9072,7 @@
                 <key>beatlooproll_0.125_activate</key>
                 <status>0x9E</status>
                 <midino>0x79</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9080,7 +9080,7 @@
                 <key>beatlooproll_0.25_activate</key>
                 <status>0x9E</status>
                 <midino>0x7A</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9088,7 +9088,7 @@
                 <key>beatlooproll_0.5_activate</key>
                 <status>0x9E</status>
                 <midino>0x7B</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9096,7 +9096,7 @@
                 <key>beatlooproll_1_activate</key>
                 <status>0x9E</status>
                 <midino>0x7C</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9104,7 +9104,7 @@
                 <key>beatlooproll_2_activate</key>
                 <status>0x9E</status>
                 <midino>0x7D</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9112,7 +9112,7 @@
                 <key>beatlooproll_4_activate</key>
                 <status>0x9E</status>
                 <midino>0x7E</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>
@@ -9120,7 +9120,7 @@
                 <key>beatlooproll_8_activate</key>
                 <status>0x9E</status>
                 <midino>0x7F</midino>
-                <on>0x7F</on>
+                <on>0x3D</on>
                 <minimum>0.5</minimum>
             </output>
             <output>

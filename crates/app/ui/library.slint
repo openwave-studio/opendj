@@ -3531,8 +3531,13 @@ component HeaderCell inherits Rectangle {
             }
         }
         pointer-event(e) => {
-            if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+            // Control-click opens it too, as on a Mac trackpad (Slint calls
+            // the Mac's Control key meta).
+            if e.kind == PointerEventKind.down && (e.button == PointerEventButton.right
+                    || (e.button == PointerEventButton.left && (e.modifiers.control || e.modifiers.meta))) {
+                armed = false;
                 menu(self.absolute-position.x - header-x + self.mouse-x, self.mouse-y);
+                return;
             }
             if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
                 armed = true;
@@ -5130,8 +5135,20 @@ component TrackList inherits Rectangle {
                     column-menu.show();
                 }
             }
-            // Every column keeps its width; spare room stays at the end.
-            Rectangle { horizontal-stretch: 1; }
+            // Every column keeps its width; spare room stays at the end,
+            // and right-click (or Control-click) there opens the menu too.
+            Rectangle {
+                horizontal-stretch: 1;
+                TouchArea {
+                    pointer-event(e) => {
+                        if e.kind == PointerEventKind.down && (e.button == PointerEventButton.right
+                                || (e.button == PointerEventButton.left && (e.modifiers.control || e.modifiers.meta))) {
+                            column-menu-x = self.absolute-position.x - header.absolute-position.x + self.mouse-x + lv.content-x;
+                            column-menu.show();
+                        }
+                    }
+                }
+            }
         }
         // Where a dragged heading will land.
         if ColumnUi.drop-x >= 0: Rectangle {
