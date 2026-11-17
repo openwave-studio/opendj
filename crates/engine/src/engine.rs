@@ -3831,6 +3831,7 @@ impl Engine {
             };
             self.fx.process_blocks(&mut blocks);
         }
+        let preview_main = self.preview.on_main();
         // The Mixer's dry strips join its deck after the deck's effects.
         if let Some(m) = mixer_deck {
             for (d, x) in deck_buf[m][..frames].iter_mut().zip(&mixer_dry) {
@@ -3872,10 +3873,15 @@ impl Engine {
                     tap_buf[i][f] = [s[0] * g, s[1] * g];
                 }
             }
-            // The preview player is for the headphones only.
+            // The preview player is for the headphones only, unless the
+            // Mixed Set Editor plays a recording back through the main mix.
             let preview = self.preview.next();
             cue[0] += preview[0];
             cue[1] += preview[1];
+            if preview_main && !external {
+                main[0] += preview[0];
+                main[1] += preview[1];
+            }
             let samples = self.samplers.next();
             if !external {
                 main[0] += samples[0];

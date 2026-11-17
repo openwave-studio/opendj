@@ -36,7 +36,7 @@ pub(super) enum Progress {
 
 /// What to do with a mixed set.
 #[derive(Clone, Copy, PartialEq)]
-enum Job {
+pub(super) enum Job {
     Export,
     Upload,
 }
@@ -102,6 +102,7 @@ impl Browser {
         if let Some(app) = self.app.upgrade() {
             app.global::<FilesUi>().set_mix_status(text.into());
         }
+        self.mixed_set_status(text);
     }
 
     fn mix_job(&mut self, row: usize, job: Job) {
@@ -124,6 +125,14 @@ impl Browser {
         }) else {
             return;
         };
+        self.mix_job_at(path, title, artist, job);
+    }
+
+    /// Makes the recording at `path` into a Mixcloud MP3, or uploads it.
+    pub(super) fn mix_job_at(&mut self, path: PathBuf, title: String, artist: String, job: Job) {
+        if self.mix_export.is_some() {
+            return;
+        }
         let (tx, rx) = channel();
         self.mix_export = Some(rx);
         self.set_mix_status(match job {
@@ -169,11 +178,16 @@ impl Browser {
         let ui = app.global::<FilesUi>();
         for p in said {
             match p {
-                Progress::Status(s) => ui.set_mix_status(s.into()),
+                Progress::Status(s) => {
+                    self.mixed_set_status(&s);
+                    ui.set_mix_status(s.into());
+                }
                 Progress::SignedIn(on) => ui.set_mixcloud_signed_in(on),
                 Progress::Made(mp3) => {
                     let name = mp3.file_name().unwrap_or_default().to_string_lossy();
-                    ui.set_mix_status(format!("Made {name}, with its tracklist.").into());
+                    let made = format!("Made {name}, with its tracklist.");
+                    self.mixed_set_status(&made);
+                    ui.set_mix_status(made.into());
                     files::reveal(&mp3);
                     self.add_recordings(&[mp3]);
                 }
@@ -184,7 +198,10 @@ impl Browser {
                     );
                     open_in_browser(&url);
                 }
-                Progress::Failed(e) => ui.set_mix_status(e.into()),
+                Progress::Failed(e) => {
+                    self.mixed_set_status(&e);
+                    ui.set_mix_status(e.into());
+                }
             }
         }
         if finished {

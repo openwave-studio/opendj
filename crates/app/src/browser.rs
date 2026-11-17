@@ -48,6 +48,7 @@ mod info_lists;
 mod keep_going;
 mod lyrics;
 mod mix_export;
+mod mixed_set;
 mod pages;
 mod picks;
 mod played;
@@ -699,6 +700,8 @@ pub struct Browser {
     mixed_sets: Option<PathBuf>,
     /// A mixed set being made into a Mixcloud MP3.
     mix_export: Option<std::sync::mpsc::Receiver<mix_export::Progress>>,
+    /// The Mixed Set Editor and the set open in it.
+    mixed_set: mixed_set::MixedSetEditor,
     /// Play Album was picked, for Automix to play the list gaplessly.
     album_request: bool,
     keep_going: keep_going::KeepGoing,
@@ -1350,6 +1353,7 @@ impl Browser {
             folders: crate::settings::stage_folders(),
             mixed_sets: crate::settings::mixed_sets_folder(),
             mix_export: None,
+            mixed_set: mixed_set::MixedSetEditor::new(registry),
             album_request: false,
             keep_going: Default::default(),
             pages: Default::default(),
@@ -1980,6 +1984,7 @@ impl Browser {
         Self::install_up_next(&app.global::<crate::UpNextUi>(), &with);
         Self::install_pages(&app.global::<crate::PageUi>(), &with);
         Self::install_mix_export(&app.global::<FilesUi>(), &with);
+        Self::install_mixed_set(app, &with);
         Self::install_health(&app.global::<HealthUi>(), &with);
         Self::install_cleanup(&app.global::<crate::CleanupUi>(), &with);
         Self::install_fix_names(app, &with);

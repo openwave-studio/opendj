@@ -31,6 +31,8 @@ import { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi } from "instr
 import { Browser, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow } from "library.slint";
 import { Preferences, PreferencesOverlay, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart } from "preferences.slint";
 import { UsbExport, UsbExportDialog } from "usb_export.slint";
+import { MixedSetEditor, MixedSetUi } from "mixed_set.slint";
+export { MixedSetUi, SetBlock, SetSpan, SetTransitionRow, SetFindingRow, SetFixRow, SetLane } from "mixed_set.slint";
 import { Tour, TourSetup, TourSetupDialog, TourTip, TourOffer } from "tour.slint";
 import { MapMode } from "mapmark.slint";
 import { RemoteButton, RemoteUi, RemoteDevice } from "remote.slint";
@@ -1854,6 +1856,10 @@ export component AppWindow inherits Window {
                 LibraryEdit.undo-stage();
                 return accept;
             }
+            if e.text == Key.Escape && MixedSetUi.open && !MixedSetUi.saving {
+                MixedSetUi.close();
+                return accept;
+            }
             if e.text == Key.Escape && UsbExport.open && !UsbExport.running {
                 UsbExport.open = false;
                 return accept;
@@ -2488,6 +2494,10 @@ export component AppWindow inherits Window {
             height: root.height;
         }
         if UsbExport.open: UsbExportDialog {
+            width: root.width;
+            height: root.height;
+        }
+        if MixedSetUi.open: MixedSetEditor {
             width: root.width;
             height: root.height;
         }

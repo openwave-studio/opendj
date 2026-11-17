@@ -420,6 +420,9 @@ export global LibraryEdit {
     // Saves the list, folder, history session, album or mixed set at a
     // sidebar row as M3U8 files; asks where first.
     callback export-m3u(row: int);
+    // Opens the recording made during the history session at a row of the
+    // tree in the Mixed Set Editor.
+    callback open-session-recording(row: int);
     // Saves the Collection (every track and list) or a list or folder at a
     // sidebar row as a rekordbox XML file; asks where first.
     callback export-rekordbox(row: int);
@@ -523,6 +526,8 @@ export global FilesUi {
     // Signs in to Mixcloud if need be and uploads the mixed set at a row,
     // with its tracklist, as a private show.
     callback upload-mixcloud(row: int);
+    // Opens the mixed set at a row in the Mixed Set Editor.
+    callback open-mixed-set(row: int);
     in property <bool> mixcloud-signed-in;
     callback mixcloud-sign-out();
     // What making it is doing, under the Mixed Sets folders.
@@ -1586,6 +1591,15 @@ component TrackMenu inherits PopupWindow {
                 entered => { panel = 0; }
                 clicked => {
                     FilesUi.add-track(track-row);
+                    root.close();
+                }
+            }
+            if StoreUi.source == 10 && one: MenuLine {
+                icon: "analyze";
+                text: "Open in Mixed Set Editor";
+                entered => { panel = 0; }
+                clicked => {
+                    FilesUi.open-mixed-set(track-row);
                     root.close();
                 }
             }
@@ -2822,6 +2836,13 @@ component FolderTree inherits Rectangle {
             }
             // A list with streamed tracks standing in it: the tracks the
             // collection hasn't got. A store's cart joins these later.
+            if tab == 1 && menu-kind == 5: MenuLine {
+                text: "Open in Mixed Set Editor";
+                clicked => {
+                    LibraryEdit.open-session-recording(menu-index);
+                    folder-menu.close();
+                }
+            }
             if !StoreUi.stream(StoreUi.source) && WantedUi.list-streamed(menu-index): MenuLine {
                 text: "Add to Wanted";
                 clicked => {
