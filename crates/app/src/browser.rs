@@ -163,6 +163,9 @@ enum Contents {
     Area(Area),
     /// The tracks a Collection Health check was told to leave alone.
     Ignored,
+    /// The tracks taken out of the collection: merged copies, quarantined
+    /// and removed tracks, to bring back.
+    Quarantine,
 }
 
 /// Whether the streaming services that are built (Spotify, TIDAL) can be
@@ -286,6 +289,8 @@ enum StoreRow {
     /// A store's own search page.
     Link(usize, String),
     Wanted(Wanted),
+    /// A track taken out of the collection, on the Quarantine page.
+    Removed(opendj_library::health::Removed),
 }
 
 #[derive(Clone)]
@@ -495,7 +500,8 @@ const KIND_INBOX: i32 = 10;
 const KIND_TRIAGE: i32 = 11;
 /// Collection Health, and one of its checks.
 const KIND_HEALTH: i32 = 12;
-/// One of Collection Health's areas, drawn as a dot in its state's colour.
+/// One of Collection Health's checks, drawn as a dot in its state's colour
+/// (a tick when it finds nothing).
 const KIND_AREA: i32 = 21;
 /// A set: a folder made for one gig, drawn in lilac.
 /// One of the DJ's crates, and the Crates and Playlists headings.
@@ -510,6 +516,8 @@ const KIND_MIX: i32 = 16;
 const KIND_ARTIST: i32 = 20;
 /// Collection Health's Ignored node.
 const KIND_IGNORED: i32 = 22;
+/// A section heading in Collection Health's tree: Files, Location and so on.
+const KIND_HEALTH_SECTION: i32 = 24;
 
 /// Seconds a track must be heard in the master to count as played, for the
 /// history and this session's played marks.
@@ -649,11 +657,11 @@ pub struct Browser {
     /// The collection's tree shows Collection Health's checks, picked in
     /// the rail.
     health_view: bool,
-    /// The chip picked on each Collection Health area (an index into
-    /// `health::area_chips`); unpicked, the first with tracks.
-    area_chip: HashMap<Area, usize>,
-    /// Tracks each area found when first opened, for its progress bar.
-    area_start: std::cell::RefCell<HashMap<Area, usize>>,
+    /// The case of copies the Duplicates page's Show tab picks; `None`
+    /// lists every copy.
+    dupe_tab: Option<opendj_library::dupes::Case>,
+    /// Tracks each check found when first opened, for its progress bar.
+    check_start: std::cell::RefCell<HashMap<Check, usize>>,
     /// The review card's place among the listed tracks, while it's open.
     review_at: Option<usize>,
     /// Audio files in the stage and music folders, and what the collection
@@ -1332,8 +1340,8 @@ impl Browser {
             deck_track: None,
             history_tab: false,
             health_view: false,
-            area_chip: HashMap::new(),
-            area_start: Default::default(),
+            dupe_tab: None,
+            check_start: Default::default(),
             review_at: None,
             relink_files: OnceCell::new(),
             located: std::sync::mpsc::channel(),
@@ -1437,7 +1445,16 @@ impl Browser {
             w(Box::new(move |b| {
                 if let Some(&n) = b.visible_nodes.get(i as usize) {
                     b.park_view();
+                    // A Collection Health heading picks its first check.
+                    let n = if b.nodes[n].kind == KIND_HEALTH_SECTION {
+                        (n + 1).min(b.nodes.len() - 1)
+                    } else {
+                        n
+                    };
                     b.current_node = n;
+                    // Another page: the review card and Show tab close.
+                    b.review_at = None;
+                    b.dupe_tab = None;
                     // An artist opens to show their albums too.
                     if b.nodes[n].kind == KIND_ARTIST {
                         b.nodes[n].expanded = true;
@@ -2266,7 +2283,7 @@ impl Browser {
     /// Whether the list shows store rows: the stores' results, or the
     /// wanted list wherever it is.
     fn shows_store_rows(&self) -> bool {
-        is_stores(self.tree) || self.shows_wanted()
+        is_stores(self.tree) || self.shows_wanted() || self.shows_quarantine()
     }
 
     /// A store row's button: open its page (and remember the track as
@@ -2300,6 +2317,7 @@ impl Browser {
             StoreRow::Wanted(w) => {
                 open_in_browser(&w.page_url);
             }
+            StoreRow::Removed(r) => return self.bring_back_removed(&[r.id]),
         }
         self.refresh_rows();
     }
@@ -2431,6 +2449,30 @@ impl Browser {
                     notice = "Tracks you click Buy on, or Add to Wanted on a streaming service, wait here until your collection has them.".into();
                 }
             }
+            Some(Contents::Quarantine) => {
+                let needle = query::fold(&self.search);
+                let removed = self
+                    .db
+                    .as_ref()
+                    .and_then(|db| db.removed_tracks().ok())
+                    .unwrap_or_default();
+                rows.extend(
+                    removed
+                        .into_iter()
+                        .filter(|r| {
+                            needle.is_empty()
+                                || [&r.artist, &r.title]
+                                    .iter()
+                                    .any(|t| query::fold(t).contains(&needle))
+                        })
+                        .map(StoreRow::Removed),
+                );
+                if rows.is_empty() && !needle.is_empty() {
+                    notice = "Nothing in quarantine matches.".into();
+                } else if rows.is_empty() {
+                    notice = "Nothing here: tracks you merge, quarantine or remove from your collection wait here until you bring them back.".into();
+                }
+            }
             Some(which @ (Contents::Store(_) | Contents::OtherStores)) => {
                 let bandcamp = self
                     .store
@@ -2501,6 +2543,7 @@ impl Browser {
             .iter()
             .map(|s| s.name.clone())
             .collect();
+        let quarantine = opendj_library::dupes::quarantine_root(&self.folders);
         let list: Vec<TrackRow> = rows
             .iter()
             .map(|r| {
@@ -2536,6 +2579,13 @@ impl Browser {
                         w.duration,
                         "Buy",
                     ),
+                    StoreRow::Removed(r) => (
+                        r.title.clone(),
+                        r.artist.clone(),
+                        health::removed_detail(r, quarantine.as_deref()),
+                        r.duration,
+                        "Bring back",
+                    ),
                 };
                 let row = TrackRow {
                     title: title.into(),
@@ -2551,15 +2601,17 @@ impl Browser {
                     action: action.into(),
                     ..Default::default()
                 };
+                // On the Quarantine page: where the file is, and the fix.
+                let prep = match r {
+                    StoreRow::Removed(_) => columns::PrepFacts {
+                        problem: row.genre.to_string(),
+                        fix: "Bring back".into(),
+                        ..Default::default()
+                    },
+                    _ => Default::default(),
+                };
                 TrackRow {
-                    cells: columns::row_cells(
-                        &ids,
-                        &row,
-                        None,
-                        None,
-                        Default::default(),
-                        Default::default(),
-                    ),
+                    cells: columns::row_cells(&ids, &row, None, None, Default::default(), prep),
                     ..row
                 }
             })
@@ -4782,7 +4834,9 @@ impl Browser {
                     separator: n.separator,
                     color: n.color.map_or(-1, |c| c as i32),
                     icon: match n.contents {
-                        Contents::Area(a) => self.area_state(a) as i32,
+                        Contents::Health(Some(c)) if n.kind == KIND_AREA => {
+                            self.check_state(c) as i32
+                        }
                         _ => n.icon as i32,
                     },
                     count: match &n.contents {
@@ -4802,8 +4856,8 @@ impl Browser {
                             .count() as i32,
                         Contents::Health(Some(check)) => self.health_count(*check) as i32,
                         Contents::Dupes(case) => self.dupe_tracks(Some(*case)).len() as i32,
-                        Contents::Area(a) => self.area_count(*a) as i32,
                         Contents::Ignored => self.ignored_tracks().len() as i32,
+                        Contents::Quarantine => self.removed as i32,
                         _ => n.count.map_or(-1, |c| c as i32),
                     },
                     dim: n.dim,
@@ -5050,6 +5104,8 @@ impl Browser {
             Contents::Health(Some(check)) => self.health_tracks(*check),
             Contents::Health(None) | Contents::Area(_) => Vec::new(),
             Contents::Ignored => self.ignored_tracks(),
+            // Store rows: tracks no longer in the library.
+            Contents::Quarantine => Vec::new(),
             Contents::Grouping(g) => all()
                 .into_iter()
                 .filter(|&t| self.library[t].info.grouping == *g)
@@ -5567,6 +5623,10 @@ impl Browser {
         }
         if self.shows_store_rows() {
             self.set_close_matches(false);
+            // The Quarantine page has Collection Health's columns.
+            if self.shows_quarantine() {
+                self.follow_list_sort();
+            }
             self.refresh_store_rows();
             return;
         }
@@ -5778,6 +5838,10 @@ impl Browser {
             }
         }
         self.refresh_album_ui();
+        // A check's page counts the tracks listed, so it follows the list.
+        if self.shown_check().is_some() {
+            self.refresh_health_ui();
+        }
     }
 
     /// Sets the sort and columns up for the node shown: one of the DJ's
@@ -5798,7 +5862,15 @@ impl Browser {
         let history = list.is_some() && node.is_some_and(|n| n.history);
         let prep = node.is_some_and(|n| matches!(n.contents, Contents::Stage(Stage::Triage, _)));
         let area = self.health_view
-            && node.is_some_and(|n| matches!(n.contents, Contents::Area(_) | Contents::Ignored));
+            && node.is_some_and(|n| {
+                matches!(
+                    n.contents,
+                    Contents::Health(Some(_))
+                        | Contents::Area(_)
+                        | Contents::Ignored
+                        | Contents::Quarantine
+                )
+            });
         let kind = if history {
             columns::Columns::History
         } else if area {

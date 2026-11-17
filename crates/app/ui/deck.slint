@@ -7102,6 +7102,38 @@ component SlimMixerStrips inherits Rectangle {
     }
 }
 
+// The step sequencer in a 4-Deck strip: ▶ and the pattern playing, no
+// steps (they are edited on the 2-Deck instrument deck).
+component SeqMini inherits HorizontalLayout {
+    in property <color> tint;
+    property <int> play-index: Controls.resolve("[Instrument1]", "seq");
+    property <bool> playing: Controls.value(play-index, Controls.tick) > 0.5;
+    property <bool> waiting: Controls.value(Controls.resolve("[Instrument1]", "seq_waiting"), Controls.tick) > 0.5;
+    property <int> slot-index: Controls.resolve("[Instrument1]", "seq_slot");
+    property <int> slot: Controls.value(slot-index, Controls.tick);
+    spacing: 3px;
+    Rectangle {
+        width: 28px;
+        height: 20px;
+        border-radius: 5px;
+        background: root.playing && !root.waiting ? root.tint : pta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
+        border-width: root.waiting ? 1px : 0px;
+        border-color: root.tint;
+        Text {
+            text: root.playing ? "■" : "▶";
+            color: root.playing && !root.waiting ? #1b1230 : root.waiting ? root.tint : Theme.text;
+            font-size: 10px;
+        }
+        pta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.play-index, root.playing ? 0 : 1); } }
+    }
+    NoteSeg {
+        width: 84px;
+        options: ["A", "B", "C", "D"];
+        picked: root.slot;
+        chose(i) => { Controls.set-value(root.slot-index, i); }
+    }
+}
+
 // A 4-Deck strip's live input, in place of PLAY, the loop and the pads
 // (`DeckStrip` in fourdeck.slint): what it needs if it is not set up yet;
 // otherwise for an instrument a small scope, OPEN, its first four knobs and
@@ -7156,6 +7188,10 @@ export component LiveStrip inherits Rectangle {
             VerticalLayout {
                 alignment: center;
                 ControlButton { group: "[Instrument1]"; key: "show_editor"; text: "OPEN"; tint: Theme.accent; height: 20px; font-size: 10px; outline-when-lit: true; }
+            }
+            VerticalLayout {
+                alignment: center;
+                SeqMini { tint: root.tint; }
             }
         }
         // The interface input it comes in on; a click picks another.

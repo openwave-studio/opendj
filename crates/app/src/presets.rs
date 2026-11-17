@@ -423,6 +423,19 @@ fn plugin_state(body: &Map<String, Value>) -> Result<Vec<u8>, String> {
         .map_err(|_| "the preset's sound is damaged".to_string())
 }
 
+/// The step sequencer's controls kept in a plugin preset (see
+/// `opendj_engine::seq::pattern_keys`): only those it knows, so a preset
+/// can't set anything else.
+fn sequencer_values(body: &Map<String, Value>) -> Vec<(String, f64)> {
+    let Some(saved) = body.get("sequencer").and_then(Value::as_object) else {
+        return Vec::new();
+    };
+    opendj_engine::seq::pattern_keys()
+        .into_iter()
+        .filter_map(|k| saved.get(&k).and_then(Value::as_f64).map(|v| (k, v)))
+        .collect()
+}
+
 /// A plugin preset's knob picks, (knob, parameter id); none in a preset
 /// saved before knobs could be picked.
 fn knob_picks(body: &Map<String, Value>) -> Option<Vec<(usize, u32)>> {
@@ -646,6 +659,10 @@ impl Ctx {
             }
             self.engine
                 .load_instrument_sound(&preset.instrument, plugin_state(&body)?)?;
+            // Its patterns; a preset saved before the sequencer leaves them be.
+            for (k, v) in sequencer_values(&body) {
+                self.set("[Instrument1]", &k, v);
+            }
             self.set("[Instrument1]", "instrument", (index + 1) as f64);
             self.set(&format!("[Channel{}]", deck + 1), "live_input", 3.0);
         }
@@ -714,6 +731,15 @@ impl Ctx {
                 json!(base64::engine::general_purpose::STANDARD.encode(data)),
             );
             body.insert("knobs".into(), json!(self.engine.instrument_picks()));
+            // The step sequencer's patterns travel with the sound.
+            let pattern: Map<String, Value> = opendj_engine::seq::pattern_keys()
+                .into_iter()
+                .map(|k| {
+                    let v = self.value("[Instrument1]", &k);
+                    (k, json!(v))
+                })
+                .collect();
+            body.insert("sequencer".into(), Value::Object(pattern));
         }
         Ok(())
     }
@@ -923,6 +949,21 @@ mod tests {
         let d = std::env::temp_dir().join(format!("opendj-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
+    }
+
+    #[test]
+    fn a_presets_patterns_read_back_and_nothing_else() {
+        let body = |v: Value| v.as_object().unwrap().clone();
+        let b = body(
+            json!({"sequencer": {"seq1_pitch_3": 4.0, "seq_rate": 2.0, "seq": 1.0, "volume": 0.0}}),
+        );
+        let mut got = sequencer_values(&b);
+        got.sort_by(|a, b| a.0.cmp(&b.0));
+        assert_eq!(
+            got,
+            [("seq1_pitch_3".into(), 4.0), ("seq_rate".into(), 2.0)]
+        );
+        assert!(sequencer_values(&body(json!({"state": ""}))).is_empty());
     }
 
     #[test]

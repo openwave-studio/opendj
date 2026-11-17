@@ -280,6 +280,12 @@ hands are on the mixer. Its notes go in where the keys' do, so **SCALE**,
   **AUTO** rolls a new riff by itself every 1, 2, 4 or 8 bars while it
   plays.
 
+**SAVE** keeps the four patterns, their order, rate, swing and lane lengths
+with the sound in the preset, and opening the preset brings them back. In
+**4-Deck** the instrument's strip has **▶** and **A B C D** next to
+**OPEN**, so the riff can be started, stopped and switched without the
+Steps view.
+
 **OCT ‹** and **›** move the **KEYBOARD** pads up or down an
 octave, three at most each way. The pads play the white keys from middle C.
 

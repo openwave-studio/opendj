@@ -1,30 +1,53 @@
 # Collection Health
 
 **Collection Health**, the cross under Collection in the rail, checks the
-whole collection for what needs fixing. **Overview** shows how much of your
-collection is clean, with Inbox, In Prep and Play Ready on their own bars, and
-the checks grouped into five areas in the order they're best fixed: **Files**,
-**Out of place**, **Duplicates**, **Info** and **Prep**. The first area with
-work is marked Start here.
+whole collection for what needs fixing.
 
-An area lists its tracks with a **Problem** and a **Fix** column and a progress
-bar. Its bar has:
+**Overview** starts with one bar of your collection split by stage (Inbox,
+In Prep and Play Ready, adding up to 100%), with your Wanted list as a grey
+bar under it on the same scale. Then the clean score: a track is clean when
+no check in Files, Location, Duplicates or Metadata flags it (Prep doesn't
+count). Under the score, each check that holds it back shows how many
+tracks it finds and how many points the score would gain if you fixed
+them. Then every check has a tile, under its section; the first check with
+work says Start here.
 
-- **Auto-fix**, for the fixes with one clear answer: relinking a missing file
-  to the only file that matches it, merging easy duplicates, and taking the
-  junk the clean-up rules know out of names. Undo takes the whole run back.
-  On Prep the button reads **Analyze** and queues every track not analysed
-  yet.
-- **Review**, which goes through the area one track at a time on a card.
+The sidebar lists every check under five sections, in the order they're best
+fixed: **Files** (Missing files, Low bitrate), **Location** (Outside folders,
+Long tracks, Strays, Not music), **Duplicates**, **Metadata** (Junk in
+names, Missing information, No cover, Album tags differ) and **Prep** (Not
+analyzed, Unrated). A dot shows how a check stands (red: won't play,
+yellow: to look at, grey: a goal) and turns into a green tick when it finds
+nothing.
+
+A check's page starts with its name and a line on what is listed, then its
+fixes as **numbered steps** in the order to do them, one button each; the
+step to do now is outlined, and a done step gets a tick. **Show** tabs under
+the steps only filter the list (on Duplicates: each kind of copy); they
+never change anything. The list has a **Problem** and a **Fix** column.
+
+- The first step is often the sure fixes, with one clear answer: relinking
+  a missing file to the only file that matches it, merging easy
+  duplicates, and taking the junk the clean-up rules know out of names.
+  Undo takes the whole run back. On Not analyzed the button reads
+  **Analyze** and queues every track not analysed yet.
+- **Review** goes through the check one track at a time on a card.
   **Return** applies the fix shown, **→** skips, **I** ignores the track for
   that check, **E** opens its Info tab, **Space** plays it in the headphones,
-  **⌘Z** (Ctrl+Z) undoes and **Esc** goes back to the list. When the area is
-  done, **Next** carries on in the next one with work.
+  **⌘Z** (Ctrl+Z) undoes and **Esc** goes back to the list. When the check is
+  done, **Next** carries on with the next one with work.
 
 To fix only some tracks from the list, pick them (shift-click for a range,
-⌘-click or Ctrl-click for single tracks) and right-click. Tracks a check was
-told to leave alone are under **Ignored**, below the areas; **Bring back**
-lets every check see them again.
+⌘-click or Ctrl-click for single tracks) and right-click. Tracks you told a
+check to leave alone (I on the card) are under **Ignored**;
+**Bring back** lets every check see them again.
+
+**Quarantine**, the last row, lists every track taken out of your
+collection: merged copies, tracks moved to quarantine and ones you
+removed, newest first, with where each file is. **Bring back** on a row
+(or on the tracks you pick) puts it back in your collection; a file that
+went to quarantine moves to your In Prep folder, to be looked at again.
+**Show folder** opens the quarantine folder.
 
 | Check | Finds | Fixes |
 |---|---|---|
@@ -33,11 +56,11 @@ lets every check see them again.
 | Outside folders | Files outside your music folders and stage folders, such as ones that came in with a VirtualDJ import | Move to In Prep, Remove from collection |
 | Duplicates | The same track more than once: same artist, title and remix | Auto-fix, Keep this copy, Link as versions (see [Duplicates](#duplicates)) |
 | Not analyzed | No tempo or key | Analyze, in the background |
-| Missing or poor metadata | No artist, title, album, year or genre, or one that says nothing, like "Unknown Artist", "Untitled" or "Track 01" | Look up online (see [Online lookup](#online-lookup)); Fill from file name… (`Artist - Title.mp3`, shown in the review table before anything is written). The page says what the flagged tracks lack, such as "80 no genre, 12 no artist or title" |
+| Missing information | No artist, title, album, year or genre, or one that says nothing, like "Unknown Artist", "Untitled" or "Track 01" | Look up online (see [Online lookup](#online-lookup)); Fill from file name… (`Artist - Title.mp3`, shown in the review table before anything is written). The page says what the flagged tracks lack, such as "80 no genre, 12 no artist or title" |
 | Low bitrate | Compressed files under 192 kb/s, which can sound dull on a big system | None yet: replace them with a better copy |
 | Junk in names | Track numbers, web sites, "(Official Video)", underscores, or a remix or guest in the title | Clean up… (see [Clean-up](#clean-up)), Look up online |
 | No cover | No picture in the file's tags or its folder | Find covers online, or one by one from the track's info panel |
-| No rating | No stars | Rate them in the list |
+| Unrated | No stars; never counts against the score | Rate them in the list |
 | Missing files | The file isn't where your collection expects it | Auto-fix relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
 | Long tracks | Over 20 minutes: recorded sets and long pieces | Tag as #mix |
 
@@ -98,7 +121,7 @@ filled in), and **Merge**. Undo takes a merge back too.
 
 ## Online lookup
 
-**Look up online** on Missing or poor metadata or Junk in names works on
+**Look up online** on Missing information or Junk in names works on
 every track listed (or a right-click on some of them). It looks each track
 up on MusicBrainz in the background, paced as MusicBrainz asks, and opens
 the same review table as Clean-up with what it found: artist, title, album,

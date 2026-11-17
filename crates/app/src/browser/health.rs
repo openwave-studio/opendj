@@ -17,11 +17,13 @@ use opendj_library::stages::Stage;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use super::{
-    file_path, is_browsed, Browser, Contents, Node, Undo, KIND_AREA, KIND_HEALTH, KIND_IGNORED,
+    file_path, is_browsed, Browser, Contents, Node, Undo, KIND_AREA, KIND_HEALTH,
+    KIND_HEALTH_SECTION, KIND_IGNORED,
 };
 use crate::cover_scan;
 use crate::{
-    settings, HealthArea, HealthCard, HealthChip, HealthLine, HealthReview, HealthStage, HealthUi,
+    settings, HealthArea, HealthCard, HealthChip, HealthHold, HealthLine, HealthReview,
+    HealthStage, HealthStep, HealthUi,
 };
 
 /// The word the "Tag as mix" fix adds to a track's first tag field.
@@ -111,73 +113,209 @@ fn copies(n: usize) -> String {
     format!("{n} cop{}", if n == 1 { "y" } else { "ies" })
 }
 
-/// What one of an area's chips lists: a check's tracks, or one case of
-/// copies.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) enum Chip {
-    Check(Check),
-    Case(Case),
+/// The Show tabs over the Duplicates page: every copy, then each case.
+pub(super) const DUPE_TABS: [Option<Case>; 5] = [
+    None,
+    Some(Case::SameFile),
+    Some(Case::BetterCopy),
+    Some(Case::SameFormat),
+    Some(Case::Versions),
+];
+
+/// The checks in the order the sidebar and the Overview list them:
+/// section by section.
+pub(super) fn checks_in_order() -> Vec<Check> {
+    Area::ALL.iter().flat_map(|a| a.checks()).collect()
 }
 
-impl Chip {
-    fn title(self) -> &'static str {
-        match self {
-            Chip::Check(Check::Duplicate) => "All copies",
-            Chip::Check(c) => c.title(),
-            Chip::Case(c) => c.title(),
-        }
-    }
-
-    fn contents(self) -> Contents {
-        match self {
-            Chip::Check(c) => Contents::Health(Some(c)),
-            Chip::Case(c) => Contents::Dupes(c),
-        }
-    }
-}
-
-/// An area's chips: one per check, and for Duplicates all copies, then
-/// each case.
-pub(super) fn area_chips(area: Area) -> Vec<Chip> {
-    let mut chips: Vec<Chip> = area.checks().into_iter().map(Chip::Check).collect();
-    if area == Area::Duplicates {
-        chips.extend(Case::ALL.map(Chip::Case));
-    }
-    chips
-}
-
-/// How an area stands, for its dot and tile: nothing found, something to
+/// How a check stands, for its dot and tile: nothing found, something to
 /// look at, something that won't play, or a goal (Prep).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) enum AreaState {
+pub(super) enum CheckState {
     Clear = 0,
     Check = 1,
     Problem = 2,
     Goal = 3,
 }
 
-fn area_state(area: Area, count: usize) -> AreaState {
-    match (area, count) {
-        (_, 0) => AreaState::Clear,
-        (Area::Files, _) => AreaState::Problem,
-        (Area::Prep, _) => AreaState::Goal,
-        _ => AreaState::Check,
+pub(super) fn check_state(check: Check, count: usize) -> CheckState {
+    match (check.area(), count) {
+        (_, 0) => CheckState::Clear,
+        (Area::Files, _) => CheckState::Problem,
+        (Area::Prep, _) => CheckState::Goal,
+        _ => CheckState::Check,
     }
 }
 
-/// The area to start with: the first whose findings are problems, else
-/// Prep when it has any.
-fn start_area(counts: &[usize; 5]) -> Option<usize> {
+/// The check to start with: the first that finds a problem, else the first
+/// goal with tracks.
+fn start_check(counts: &[(Check, usize)]) -> Option<Check> {
     let first = |problem: bool| {
-        Area::ALL
+        counts
             .iter()
-            .zip(counts)
-            .position(|(a, &n)| a.problem() == problem && n > 0)
+            .find(|(c, n)| c.area().problem() == problem && *n > 0)
+            .map(|(c, _)| *c)
     };
     first(true).or_else(|| first(false))
 }
 
-/// Collection Health's tree: the overview page, then a node per area.
+/// A step on a check's page: what it does, and the button that does it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Step {
+    /// The check's sure fixes, at once (see `Browser::fix_sure`).
+    Sure,
+    /// One of the check's fixes, on every listed track.
+    Fix(Fix),
+    /// The review card, one track at a time.
+    Review,
+}
+
+/// A check's steps, in the order to do them, with a title and a line on
+/// each. Steps whose fix isn't offered (no stage folders, say) are left
+/// out when the page is shown.
+fn steps(check: Check) -> Vec<(Step, &'static str, &'static str)> {
+    use Step::*;
+    match check {
+        Check::Missing => vec![
+            (
+                Sure,
+                "Relink the sure ones",
+                "Each has exactly one match in your folders.",
+            ),
+            (
+                Fix(self::Fix::Relink),
+                "Relink likely matches",
+                "Same name or same artist, title and length, renamed.",
+            ),
+            (
+                Review,
+                "Decide on the rest",
+                "Find the file yourself, or remove what's gone.",
+            ),
+        ],
+        Check::LowBitrate => vec![(
+            Review,
+            "Listen to each",
+            "Find a better copy, or keep it if it sounds fine.",
+        )],
+        Check::Outside | Check::Stray => vec![
+            (
+                Fix(self::Fix::ToTriage),
+                "Move them into In Prep",
+                "openDJ moves the files into your In Prep folder.",
+            ),
+            (
+                Review,
+                "Check each",
+                "Keep, move or remove them one by one.",
+            ),
+        ],
+        Check::Long => vec![
+            (
+                Fix(self::Fix::TagMix),
+                "Tag the mixes",
+                "Mark recorded sets with #mix so filters can leave them out.",
+            ),
+            (
+                Review,
+                "Check each",
+                "Ignore long pieces that are fine as they are.",
+            ),
+        ],
+        Check::NotMusic => vec![
+            (
+                Fix(self::Fix::Remove),
+                "Remove them",
+                "Audiobooks and podcasts leave the collection. Files stay.",
+            ),
+            (Review, "Check each", "Mark any that are music after all."),
+        ],
+        Check::Duplicate => vec![
+            (
+                Sure,
+                "Merge the sure ones",
+                "Same file or the same recording in a better copy: nothing is lost.",
+            ),
+            (
+                Review,
+                "Check the rest",
+                "Pick the copy to keep, or ignore copies that are different tracks.",
+            ),
+            (
+                Fix(self::Fix::LinkVersions),
+                "Link versions",
+                "Different lengths: an edit and an extended mix stay, linked.",
+            ),
+        ],
+        Check::Junk => vec![
+            (
+                Sure,
+                "Clean the sure ones",
+                "Track numbers, sites and video words the rules know.",
+            ),
+            (
+                Fix(self::Fix::CleanUp),
+                "Clean up the rest…",
+                "See every change in a table before it's made.",
+            ),
+            (
+                Review,
+                "Check each",
+                "Fix or ignore what the rules don't know.",
+            ),
+        ],
+        Check::MissingInfo => vec![
+            (
+                Fix(self::Fix::FillFromName),
+                "Fill from file names…",
+                "Artist and title from file names, in a table to check first.",
+            ),
+            (
+                Fix(self::Fix::LookUp),
+                "Look up online",
+                "MusicBrainz and AcoustID; you pick what's used.",
+            ),
+            (
+                Review,
+                "Edit the rest",
+                "Type in what's left, one track at a time.",
+            ),
+        ],
+        Check::NoCover => vec![
+            (
+                Fix(self::Fix::FindCovers),
+                "Find covers online",
+                "The largest cover found is put in each file.",
+            ),
+            (
+                Review,
+                "Check each",
+                "Add a picture yourself, or ignore it.",
+            ),
+        ],
+        Check::AlbumTags => vec![
+            (
+                Fix(self::Fix::SameAlbum),
+                "Use one album tag…",
+                "Each folder's tracks get the album name most of them have.",
+            ),
+            (
+                Review,
+                "Check each",
+                "Ignore folders that hold more than one album.",
+            ),
+        ],
+        Check::NotAnalyzed => vec![(
+            Sure,
+            "Analyze them",
+            "In the background at low priority; it pauses while a deck plays.",
+        )],
+        Check::NoRating => Vec::new(),
+    }
+}
+
+/// Collection Health's tree: the Overview, then each section's heading
+/// with a node per check under it, then Ignored.
 pub(super) fn health_nodes() -> Vec<Node> {
     let mut nodes = vec![Node::new(
         "Overview",
@@ -185,22 +323,50 @@ pub(super) fn health_nodes() -> Vec<Node> {
         KIND_HEALTH,
         Contents::Health(None),
     )];
-    nodes.extend(
-        Area::ALL
-            .iter()
-            .map(|&a| Node::new(a.title(), 0, KIND_AREA, Contents::Area(a))),
-    );
+    for a in Area::ALL {
+        nodes.push(Node::new(
+            a.title(),
+            0,
+            KIND_HEALTH_SECTION,
+            Contents::Area(a),
+        ));
+        nodes.extend(
+            a.checks()
+                .into_iter()
+                .map(|c| Node::new(c.title(), 0, KIND_AREA, Contents::Health(Some(c)))),
+        );
+    }
     nodes.push(Node::new("Ignored", 0, KIND_IGNORED, Contents::Ignored));
+    nodes.push(Node::new(
+        "Quarantine",
+        0,
+        KIND_IGNORED,
+        Contents::Quarantine,
+    ));
     nodes
 }
 
-/// What the dashboard counts in each stage.
-#[derive(Default)]
-struct StageCount {
-    tracks: usize,
-    clean: usize,
-    /// Tracks each check finds, by its index in `Check::ALL`.
-    found: [usize; 13],
+/// The Quarantine page's line on a track taken out: where its file is,
+/// and when it left.
+pub(super) fn removed_detail(r: &opendj_library::health::Removed, root: Option<&Path>) -> String {
+    let when = chrono::DateTime::from_timestamp(r.removed, 0)
+        .map(|t| {
+            t.with_timezone(&chrono::Local)
+                .format("%-d %b %Y")
+                .to_string()
+        })
+        .unwrap_or_default();
+    let what = match (r.quarantined, root.is_some_and(|q| r.path.starts_with(q))) {
+        (_, true) => "File in quarantine",
+        // Moves wait while Move files is off.
+        (true, false) => "File waits to go to quarantine",
+        (false, false) => "File where it was",
+    };
+    if when.is_empty() {
+        what.into()
+    } else {
+        format!("{what} · {when}")
+    }
 }
 
 /// "86%" of `part` in `whole`, rounded down so 99.6% isn't "100%".
@@ -259,6 +425,17 @@ impl Browser {
                     b.bring_back(&indices);
                     return;
                 }
+                if b.shows_quarantine() {
+                    if action == 1 {
+                        if let Some(dir) = b.quarantine_root().filter(|d| d.is_dir()) {
+                            crate::files::reveal(&dir);
+                        }
+                        return;
+                    }
+                    let ids = b.picked_removed(first, last);
+                    b.bring_back_removed(&ids);
+                    return;
+                }
                 let Some(check) = b.listed_check() else {
                     return;
                 };
@@ -280,20 +457,18 @@ impl Browser {
             })
         });
         let w = with.clone();
-        ui.on_open_area(move |i| {
+        ui.on_fix_sure(move || {
             w(&|b| {
-                if let Some(&a) = usize::try_from(i).ok().and_then(|i| Area::ALL.get(i)) {
-                    b.open_area(a, None)
+                if let Some(check) = b.listed_check() {
+                    b.fix_sure(check);
                 }
             })
         });
         let w = with.clone();
-        ui.on_fix_sure(move || {
+        ui.on_run_step(move |i| {
             w(&|b| {
-                if let Some(Contents::Area(a)) =
-                    b.nodes.get(b.current_node).map(|n| n.contents.clone())
-                {
-                    b.fix_sure(a);
+                if let Ok(i) = usize::try_from(i) {
+                    b.run_step(i);
                 }
             })
         });
@@ -302,13 +477,11 @@ impl Browser {
         let w = with.clone();
         ui.on_pick_chip(move |i| {
             w(&|b| {
-                let Some(Contents::Area(a)) =
-                    b.nodes.get(b.current_node).map(|n| n.contents.clone())
-                else {
-                    return;
-                };
-                if let Ok(i) = usize::try_from(i) {
-                    b.open_area(a, Some(i));
+                if let Some(&tab) = usize::try_from(i).ok().and_then(|i| DUPE_TABS.get(i)) {
+                    b.dupe_tab = tab;
+                    b.review_at = None;
+                    b.refresh_tree();
+                    b.refresh_rows();
                 }
             })
         });
@@ -338,10 +511,15 @@ impl Browser {
         });
     }
 
-    /// What a node lists, with an area taken as the check its chip picks.
+    /// What a node lists: a section heading lists its first check, and
+    /// Duplicates lists the case its Show tab picks.
     pub(super) fn resolved(&self, contents: &Contents) -> Contents {
         match contents {
-            Contents::Area(a) => area_chips(*a)[self.chip_of(*a)].contents(),
+            Contents::Area(a) => Contents::Health(a.checks().first().copied()),
+            Contents::Health(Some(Check::Duplicate)) => match self.dupe_tab {
+                Some(case) => Contents::Dupes(case),
+                None => contents.clone(),
+            },
             c => c.clone(),
         }
     }
@@ -353,51 +531,22 @@ impl Browser {
             .map(|n| self.resolved(&n.contents))
     }
 
-    /// The chip shown for an area: the one picked, else the first check
-    /// with tracks (copies are never counted for this: that reads files).
-    fn chip_of(&self, area: Area) -> usize {
-        let chips = area_chips(area);
-        if let Some(&i) = self.area_chip.get(&area).filter(|&&i| i < chips.len()) {
-            return i;
-        }
-        chips
-            .iter()
-            .position(|c| matches!(c, Chip::Check(check) if self.health_count(*check) > 0))
-            .unwrap_or(0)
+    /// How a check stands (see [`CheckState`]).
+    pub(super) fn check_state(&self, check: Check) -> CheckState {
+        check_state(check, self.health_count(check))
     }
 
-    /// Tracks any of an area's checks finds.
-    pub(super) fn area_count(&self, area: Area) -> usize {
-        let checks = area.checks();
-        self.library
-            .iter()
-            .filter(|t| {
-                self.in_collection(t)
-                    && checks
-                        .iter()
-                        .any(|&c| self.health.finds(c, t, &self.duplicates))
-            })
-            .count()
-    }
-
-    /// How an area stands (see [`AreaState`]).
-    pub(super) fn area_state(&self, area: Area) -> AreaState {
-        area_state(area, self.area_count(area))
-    }
-
-    /// Selects an area's node, with its chip `chip` (or the one it had).
-    fn open_area(&mut self, area: Area, chip: Option<usize>) {
+    /// Selects a check's node, with all its tracks listed.
+    fn open_check(&mut self, check: Check) {
         self.show_health(true);
         let Some(n) = self
             .nodes
             .iter()
-            .position(|n| matches!(n.contents, Contents::Area(a) if a == area))
+            .position(|n| matches!(n.contents, Contents::Health(Some(c)) if c == check))
         else {
             return;
         };
-        if let Some(c) = chip {
-            self.area_chip.insert(area, c);
-        }
+        self.dupe_tab = None;
         self.review_at = None;
         self.health_status.clear();
         self.current_node = n;
@@ -581,12 +730,12 @@ impl Browser {
         }
     }
 
-    /// How far an area has come since it was first opened: tracks fixed,
+    /// How far a check has come since it was first opened: tracks fixed,
     /// of those it found then.
-    fn area_progress(&self, area: Area) -> (usize, usize) {
-        let now = self.area_count(area);
-        let mut starts = self.area_start.borrow_mut();
-        let start = starts.entry(area).or_insert(now);
+    fn check_progress(&self, check: Check) -> (usize, usize) {
+        let now = self.health_count(check);
+        let mut starts = self.check_start.borrow_mut();
+        let start = starts.entry(check).or_insert(now);
         *start = (*start).max(now);
         (*start - now, *start)
     }
@@ -1074,7 +1223,7 @@ impl Browser {
         }
     }
 
-    /// Selects a check's area with that check's chip, or the Overview.
+    /// Selects a check, or the Overview.
     fn review(&mut self, check: Option<Check>) {
         let Some(check) = check else {
             self.show_health(true);
@@ -1084,17 +1233,14 @@ impl Browser {
                 .position(|n| matches!(n.contents, Contents::Health(None)))
             {
                 self.health_status.clear();
+                self.review_at = None;
                 self.current_node = n;
                 self.refresh_tree();
                 self.refresh_rows();
             }
             return;
         };
-        let area = check.area();
-        let chip = area_chips(area)
-            .iter()
-            .position(|&c| c == Chip::Check(check));
-        self.open_area(area, chip);
+        self.open_check(check);
     }
 
     /// Shows the page and bar as things are now.
@@ -1110,7 +1256,10 @@ impl Browser {
         let check = listed.and_then(|c| Check::ALL.iter().position(|&x| x == c));
         // The Ignored node's bar is the card after the checks'.
         let ignored = on && matches!(current, Some(Contents::Ignored));
-        let check = check.or(ignored.then_some(Check::ALL.len()));
+        let quarantine = on && matches!(current, Some(Contents::Quarantine));
+        let check = check
+            .or(ignored.then_some(Check::ALL.len()))
+            .or(quarantine.then_some(Check::ALL.len() + 1));
         ui.set_check(check.map_or(-1, |c| c as i32));
         let case = self.dupe_view().flatten();
         let mut cards: Vec<HealthCard> = Check::ALL
@@ -1153,11 +1302,24 @@ impl Browser {
         let fixes: Vec<SharedString> = vec!["Bring back".into()];
         cards.push(HealthCard {
             title: "Ignored".into(),
-            about: "Tracks you told a check to leave alone.".into(),
+            about: "Tracks you pressed I on in a review: each check leaves them alone. Bring back any that should be flagged again.".into(),
             count: self.ignored_tracks().len() as i32,
             detail: SharedString::new(),
             fixes: ModelRc::new(VecModel::from(fixes)),
             counts: ModelRc::default(),
+            menu_fixes: ModelRc::new(VecModel::from(vec![0])),
+        });
+        let mut fixes: Vec<SharedString> = vec!["Bring back".into()];
+        if self.quarantine_root().is_some_and(|d| d.is_dir()) {
+            fixes.push("Show folder".into());
+        }
+        cards.push(HealthCard {
+            title: "Quarantine".into(),
+            about: "Tracks taken out of your collection: merged copies, quarantined and removed tracks. Bring back puts one back; a file in quarantine goes to In Prep.".into(),
+            count: self.removed as i32,
+            detail: SharedString::new(),
+            fixes: ModelRc::new(VecModel::from(fixes)),
+            counts: ModelRc::new(VecModel::from(vec![self.removed as i32, 0])),
             menu_fixes: ModelRc::new(VecModel::from(vec![0])),
         });
         ui.set_cards(ModelRc::new(VecModel::from(cards)));
@@ -1169,108 +1331,112 @@ impl Browser {
         ui.set_quarantine_exists(self.quarantine_root().is_some_and(|d| d.is_dir()));
         ui.set_can_quarantine(self.saved() && self.quarantine_root().is_some());
         self.refresh_dashboard(&ui);
-        self.refresh_chips(&ui);
+        self.refresh_health_page(&ui);
         self.refresh_review(&ui);
         self.refresh_cleanup_ui();
     }
 
-    /// The Overview's numbers: how much is clean, by stage, and each area.
+    /// The Overview's numbers: the stages, how much is clean and what
+    /// holds it back, and a tile per check.
     fn refresh_dashboard(&self, ui: &HealthUi) {
         let stages = [Stage::Inbox, Stage::Triage, Stage::Collection];
-        let mut by_stage: [StageCount; 3] = Default::default();
+        let order = checks_in_order();
+        let mut by_stage = [0usize; 3];
         let (mut total, mut clean) = (0, 0);
-        let mut areas = [0usize; 5];
+        // Tracks each check finds, and those it alone keeps from clean.
+        let mut found = vec![0usize; order.len()];
+        let mut only = vec![0usize; order.len()];
         for t in self.library.iter().filter(|t| self.in_collection(t)) {
-            let found: Vec<bool> = Check::ALL
+            let finds: Vec<bool> = order
                 .iter()
                 .map(|&c| self.health.finds(c, t, &self.duplicates))
                 .collect();
-            let problem = Check::ALL
+            let problems: Vec<usize> = order
                 .iter()
-                .zip(&found)
-                .any(|(c, &f)| f && c.area().problem());
-            for (i, a) in Area::ALL.iter().enumerate() {
-                if Check::ALL
-                    .iter()
-                    .zip(&found)
-                    .any(|(c, &f)| f && c.area() == *a)
-                {
-                    areas[i] += 1;
-                }
+                .zip(&finds)
+                .enumerate()
+                .filter(|(_, (c, &f))| f && c.area().problem())
+                .map(|(i, _)| i)
+                .collect();
+            for (n, &f) in found.iter_mut().zip(&finds) {
+                *n += usize::from(f);
+            }
+            if let [one] = problems[..] {
+                only[one] += 1;
             }
             total += 1;
-            clean += usize::from(!problem);
+            clean += usize::from(problems.is_empty());
             if let Some(s) = stages.iter().position(|s| t.info.stage == s.name()) {
-                let count = &mut by_stage[s];
-                count.tracks += 1;
-                count.clean += usize::from(!problem);
-                for (n, &f) in count.found.iter_mut().zip(&found) {
-                    *n += usize::from(f);
-                }
+                by_stage[s] += 1;
             }
         }
         ui.set_total(total as i32);
         ui.set_clean(clean as i32);
-        ui.set_clean_percent(percent(clean, total));
+        let now = percent(clean, total);
+        ui.set_clean_percent(now);
+        let staged: usize = by_stage.iter().sum();
         let stage_rows: Vec<HealthStage> = if self.folders.is_set() {
             stages
                 .iter()
-                .zip(&by_stage)
-                .map(|(stage, count)| {
-                    // The check finding most of the stage's problems.
-                    let top = Check::ALL
-                        .iter()
-                        .zip(count.found)
-                        .filter(|(c, n)| c.area().problem() && *n > 0)
-                        .max_by_key(|&(_, n)| n);
-                    HealthStage {
-                        title: stage.title().into(),
-                        count: count.tracks as i32,
-                        percent: percent(count.clean, count.tracks),
-                        note: top
-                            .map(|(c, n)| format!("{n} {}", c.title().to_lowercase()))
-                            .unwrap_or_default()
-                            .into(),
-                    }
+                .zip(by_stage)
+                .map(|(stage, n)| HealthStage {
+                    title: stage.title().into(),
+                    count: n as i32,
+                    percent: percent(n, staged).min(100) * i32::from(staged > 0),
+                    note: SharedString::new(),
                 })
                 .collect()
         } else {
             Vec::new()
         };
         ui.set_stages(ModelRc::new(VecModel::from(stage_rows)));
-        let start = start_area(&areas);
-        let tiles: Vec<HealthArea> = Area::ALL
+        ui.set_staged(staged as i32);
+        ui.set_wanted(self.store.wanted.len() as i32);
+        // What holds the score back, the biggest first.
+        let mut holds: Vec<HealthHold> = order
             .iter()
             .enumerate()
-            .map(|(i, &a)| {
-                let lines: Vec<HealthLine> = a
-                    .checks()
-                    .into_iter()
-                    .map(|c| HealthLine {
+            .filter(|(i, c)| c.area().problem() && found[*i] > 0)
+            .map(|(i, &c)| HealthHold {
+                title: c.title().into(),
+                count: found[i] as i32,
+                gain: (percent(clean + only[i], total) - now).max(0),
+                check: Check::ALL.iter().position(|&x| x == c).unwrap_or(0) as i32,
+                state: check_state(c, found[i]) as i32,
+            })
+            .collect();
+        holds.sort_by_key(|h| std::cmp::Reverse(h.count));
+        ui.set_holds(ModelRc::new(VecModel::from(holds)));
+        let counts: Vec<(Check, usize)> =
+            order.iter().copied().zip(found.iter().copied()).collect();
+        let start = start_check(&counts);
+        let sections: Vec<HealthArea> = Area::ALL
+            .iter()
+            .map(|&a| {
+                let lines: Vec<HealthLine> = counts
+                    .iter()
+                    .filter(|(c, _)| c.area() == a)
+                    .map(|&(c, n)| HealthLine {
                         title: c.title().into(),
-                        count: self.health_count(c) as i32,
+                        about: c.about().into(),
+                        count: n as i32,
                         check: Check::ALL.iter().position(|&x| x == c).unwrap_or(0) as i32,
+                        state: check_state(c, n) as i32,
+                        start: start == Some(c),
                     })
                     .collect();
                 HealthArea {
                     title: a.title().into(),
-                    question: a.question().into(),
-                    count: areas[i] as i32,
-                    state: area_state(a, areas[i]) as i32,
-                    start: start == Some(i),
                     lines: ModelRc::new(VecModel::from(lines)),
                 }
             })
             .collect();
-        ui.set_areas(ModelRc::new(VecModel::from(tiles)));
+        ui.set_areas(ModelRc::new(VecModel::from(sections)));
     }
 
-    /// The area shown, while Collection Health is.
-    fn shown_area(&self) -> Option<Area> {
-        match self.nodes.get(self.current_node).map(|n| &n.contents) {
-            Some(Contents::Area(a)) if self.health_view => Some(*a),
-            _ => None,
-        }
+    /// The check whose page is shown, while Collection Health is.
+    pub(super) fn shown_check(&self) -> Option<Check> {
+        self.listed_check().filter(|_| self.health_view)
     }
 
     /// The listed tracks (indices into `library`) in list order.
@@ -1278,14 +1444,15 @@ impl Browser {
         self.rows.iter().flatten().copied().collect()
     }
 
-    /// The first area after the one shown that still finds tracks.
-    fn next_area(&self) -> Option<Area> {
-        let now = self.shown_area()?;
-        let from = Area::ALL.iter().position(|&a| a == now)?;
-        Area::ALL[from + 1..]
+    /// The first check after the one shown that still finds tracks.
+    fn next_check(&self) -> Option<Check> {
+        let now = self.shown_check()?;
+        let order = checks_in_order();
+        let from = order.iter().position(|&c| c == now)?;
+        order[from + 1..]
             .iter()
             .copied()
-            .find(|&a| self.area_count(a) > 0)
+            .find(|&c| self.health_count(c) > 0)
     }
 
     /// What Return does on the review card for the listed check, if
@@ -1301,14 +1468,14 @@ impl Browser {
 
     /// Shows the review card as things are now.
     fn refresh_review(&self, ui: &HealthUi) {
-        let on = self.review_at.is_some() && self.shown_area().is_some();
+        let on = self.review_at.is_some() && self.shown_check().is_some();
         ui.set_reviewing(on);
         if !on {
             return;
         }
         let listed = self.listed();
         let at = self.review_at.unwrap_or(0);
-        let next = self.next_area().map_or("", |a| a.title()).into();
+        let next = self.next_check().map_or("", |c| c.title()).into();
         let Some(&i) = listed.get(at) else {
             ui.set_card(HealthReview {
                 of: listed.len() as i32,
@@ -1345,8 +1512,8 @@ impl Browser {
             "close" => self.review_at = None,
             "skip" => self.review_at = Some(at + 1),
             "next" => {
-                if let Some(a) = self.next_area() {
-                    self.open_area(a, None);
+                if let Some(c) = self.next_check() {
+                    self.open_check(c);
                     self.review_at = Some(0);
                 }
             }
@@ -1384,40 +1551,112 @@ impl Browser {
         self.refresh_health_ui();
     }
 
-    /// The chips over an area's tracks, when one is selected.
-    fn refresh_chips(&self, ui: &HealthUi) {
-        let area = match self.nodes.get(self.current_node).map(|n| &n.contents) {
-            Some(Contents::Area(a)) if self.health_view => Some(*a),
-            _ => None,
+    /// The steps a check's page offers now, each with how many tracks (or
+    /// groups) its button acts on; none of a fix not offered.
+    fn page_steps(&self, check: Check) -> Vec<(Step, &'static str, &'static str, usize)> {
+        let listed = self.rows.iter().flatten().count();
+        let offered = self.offered(check);
+        // What's left for a review once the sure fixes are made.
+        let rest = match check {
+            Check::Duplicate => self
+                .dupe_groups()
+                .iter()
+                .filter(|g| !g.case.easy())
+                .map(|g| g.tracks.len())
+                .sum(),
+            _ => listed.saturating_sub(self.sure_count(check)),
         };
-        let chips: Vec<HealthChip> = area
-            .map(|a| {
-                area_chips(a)
+        steps(check)
+            .into_iter()
+            .filter_map(|(step, title, about)| {
+                let n = match step {
+                    Step::Sure => self.sure_count(check),
+                    Step::Review => rest,
+                    // Duplicates' fixes work on their own kind of group,
+                    // whichever Show tab is picked.
+                    Step::Fix(f) if check == Check::Duplicate => self.fix_groups(f),
+                    Step::Fix(f) if !offered.contains(&f) => return None,
+                    Step::Fix(_) => listed,
+                };
+                Some((step, title, about, n))
+            })
+            .collect()
+    }
+
+    /// Runs step `i` of the shown check's page.
+    fn run_step(&mut self, i: usize) {
+        let Some(check) = self.listed_check() else {
+            return;
+        };
+        let Some(&(step, ..)) = self.page_steps(check).get(i) else {
+            return;
+        };
+        match step {
+            Step::Sure => self.fix_sure(check),
+            Step::Review => self.review_key("start"),
+            Step::Fix(f) => {
+                let all = self.picked_rows(-1, -1);
+                self.fix(f, &all);
+            }
+        }
+    }
+
+    /// The shown check's page: its steps, tabs and progress.
+    fn refresh_health_page(&self, ui: &HealthUi) {
+        let check = self.shown_check();
+        let steps: Vec<HealthStep> = check
+            .map(|c| {
+                self.page_steps(c)
                     .into_iter()
-                    .map(|c| HealthChip {
-                        title: c.title().into(),
-                        count: match c {
-                            Chip::Check(check) => self.health_count(check),
-                            Chip::Case(case) => self.dupe_tracks(Some(case)).len(),
-                        } as i32,
+                    .map(|(step, title, about, n)| HealthStep {
+                        title: title.into(),
+                        about: about.into(),
+                        label: match step {
+                            Step::Sure if c == Check::NotAnalyzed => format!("Analyze {n}"),
+                            Step::Sure if c == Check::Duplicate => format!("Merge {n}"),
+                            Step::Sure if c == Check::Missing => format!("Relink {n}"),
+                            Step::Sure => format!("Fix {n}"),
+                            Step::Review => format!("Review {n}"),
+                            Step::Fix(f) if n > 1 => format!("{} ({n})", f.label()),
+                            Step::Fix(f) => f.label().to_string(),
+                        }
+                        .into(),
+                        count: n as i32,
                     })
                     .collect()
             })
             .unwrap_or_default();
-        let (fixed, of) = area.map_or((0, 0), |a| self.area_progress(a));
+        // The first step with something to do is the one to do now.
+        ui.set_step(
+            steps
+                .iter()
+                .position(|s| s.count > 0)
+                .map_or(-1, |i| i as i32),
+        );
+        ui.set_steps(ModelRc::new(VecModel::from(steps)));
+        let tabs: Vec<HealthChip> = if check == Some(Check::Duplicate) {
+            DUPE_TABS
+                .iter()
+                .map(|case| HealthChip {
+                    title: case.map_or("All", Case::title).into(),
+                    count: self.dupe_tracks(*case).len() as i32,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        ui.set_chip(if tabs.is_empty() {
+            -1
+        } else {
+            DUPE_TABS
+                .iter()
+                .position(|&c| c == self.dupe_tab)
+                .unwrap_or(0) as i32
+        });
+        ui.set_chips(ModelRc::new(VecModel::from(tabs)));
+        let (fixed, of) = check.map_or((0, 0), |c| self.check_progress(c));
         ui.set_fixed(fixed as i32);
         ui.set_fixed_of(of as i32);
-        ui.set_sure(area.map_or(0, |a| self.sure_count(a)) as i32);
-        ui.set_sure_label(
-            if area == Some(Area::Prep) {
-                "Analyze"
-            } else {
-                "Auto-fix"
-            }
-            .into(),
-        );
-        ui.set_chip(area.map_or(-1, |a| self.chip_of(a) as i32));
-        ui.set_chips(ModelRc::new(VecModel::from(chips)));
     }
 
     /// A line on what a check found beyond its count.
@@ -1651,6 +1890,73 @@ impl Browser {
     }
 
     /// Brings back every track taken out of the library.
+    /// Whether the Quarantine page is shown.
+    pub(super) fn shows_quarantine(&self) -> bool {
+        self.saved()
+            && self.tree == super::COLLECTION
+            && self
+                .nodes
+                .get(self.current_node)
+                .is_some_and(|n| matches!(n.contents, Contents::Quarantine))
+    }
+
+    /// The tracks in rows `first` to `last` of the Quarantine page (every
+    /// row when `first` is below 0), by id.
+    fn picked_removed(&self, first: i32, last: i32) -> Vec<usize> {
+        let rows: Vec<usize> = if first < 0 {
+            (0..self.store.rows.len()).collect()
+        } else {
+            self.chosen_rows(first as usize, last.max(first) as usize)
+        };
+        rows.into_iter()
+            .filter_map(|r| match self.store.rows.get(r) {
+                Some(super::StoreRow::Removed(t)) => Some(t.id),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Brings tracks taken out back into the collection. One whose file
+    /// went to quarantine goes to In Prep, to be looked at again.
+    pub(super) fn bring_back_removed(&mut self, ids: &[usize]) {
+        if ids.is_empty() {
+            return;
+        }
+        let root = self.quarantine_root();
+        let Some(db) = &mut self.db else { return };
+        let moved: Vec<usize> = db
+            .removed_tracks()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|r| ids.contains(&r.id))
+            .filter(|r| root.as_ref().is_some_and(|q| r.path.starts_with(q)))
+            .map(|r| r.id)
+            .collect();
+        self.health_status = match db.restore_tracks(Some(ids)) {
+            Ok(n) => {
+                self.reload_library();
+                let indices: Vec<usize> = moved
+                    .iter()
+                    .filter_map(|id| self.library.iter().position(|t| t.id == *id))
+                    .collect();
+                if !indices.is_empty() {
+                    self.change_stage(&indices, Stage::Triage, None);
+                }
+                match indices.len() {
+                    0 => format!("{} back in your collection.", tracks(n)),
+                    m => format!(
+                        "{} back in your collection; {} out of quarantine into In Prep.",
+                        tracks(n),
+                        tracks(m)
+                    ),
+                }
+            }
+            Err(e) => format!("Couldn't bring them back: {e}"),
+        };
+        self.refresh_tree();
+        self.refresh_rows();
+    }
+
     fn restore_removed(&mut self) {
         let Some(db) = &mut self.db else { return };
         self.health_status = match db.restore_tracks(None) {
@@ -1808,35 +2114,35 @@ impl Browser {
             .collect()
     }
 
-    /// How many tracks an area's sure fixes would fix: those with one
+    /// How many tracks a check's sure fixes would fix: those with one
     /// clear answer (a file found once by name, an easy copy, junk the
     /// rules know). The rest are for review.
-    pub(super) fn sure_count(&self, area: Area) -> usize {
-        match area {
-            Area::Files => self.sure_relinks().len(),
-            Area::Duplicates => self.dupe_faded(None).len(),
-            Area::Info => self
+    pub(super) fn sure_count(&self, check: Check) -> usize {
+        match check {
+            Check::Missing => self.sure_relinks().len(),
+            Check::Duplicate => self.dupe_faded(None).len(),
+            Check::Junk => self
                 .sure_junk()
                 .iter()
                 .map(|c| c.0)
                 .collect::<HashSet<_>>()
                 .len(),
-            Area::Prep => self.health_count(Check::NotAnalyzed),
-            Area::OutOfPlace => 0,
+            Check::NotAnalyzed => self.health_count(Check::NotAnalyzed),
+            _ => 0,
         }
     }
 
-    /// Makes an area's sure fixes, as one change the undo line takes back.
-    fn fix_sure(&mut self, area: Area) {
+    /// Makes a check's sure fixes, as one change the undo line takes back.
+    fn fix_sure(&mut self, check: Check) {
         if !self.saved() {
             return;
         }
-        self.health_status = match area {
-            Area::Files => {
+        self.health_status = match check {
+            Check::Missing => {
                 let plan = self.sure_relinks();
                 self.relink_sure(&plan)
             }
-            Area::Duplicates => {
+            Check::Duplicate => {
                 let plan = self
                     .dupe_groups()
                     .iter()
@@ -1845,11 +2151,11 @@ impl Browser {
                     .collect();
                 self.merge(plan)
             }
-            Area::Info => {
+            Check::Junk => {
                 let changes = self.sure_junk();
                 self.make_changes(changes, "clean-up")
             }
-            Area::Prep => {
+            Check::NotAnalyzed => {
                 let picked: Vec<Arc<Track>> = self
                     .health_tracks(Check::NotAnalyzed)
                     .into_iter()
@@ -1858,7 +2164,7 @@ impl Browser {
                 self.analysis.add(&picked);
                 format!("Analyzing {} in the background.", tracks(picked.len()))
             }
-            Area::OutOfPlace => return,
+            _ => return,
         };
         self.refresh_crates();
         self.refresh_tree();
@@ -1973,25 +2279,46 @@ mod tests {
     #[test]
     fn every_check_has_a_node_and_fixes_fit() {
         let nodes = health_nodes();
-        // Overview, the areas, then Ignored.
-        assert_eq!(nodes.len(), Area::ALL.len() + 2);
+        // Overview, a heading per section, every check, Ignored, Quarantine.
+        assert_eq!(nodes.len(), 1 + Area::ALL.len() + Check::ALL.len() + 2);
         assert_eq!(nodes[0].name, "Overview");
-        assert!(matches!(nodes.last().unwrap().contents, Contents::Ignored));
-        assert!(nodes.iter().all(|n| n.depth == 0));
-        let chips: usize = Area::ALL.iter().map(|&a| area_chips(a).len()).sum();
-        assert_eq!(chips, Check::ALL.len() + Case::ALL.len());
+        assert_eq!(nodes[1].name, "Files");
+        assert_eq!(nodes[2].name, "Missing files");
+        assert!(matches!(
+            nodes.last().unwrap().contents,
+            Contents::Quarantine
+        ));
+        assert_eq!(checks_in_order().len(), Check::ALL.len());
         assert_eq!(fixes(Check::Stray, false), [Fix::Remove]);
         assert_eq!(fixes(Check::Stray, true)[0], Fix::ToTriage);
+        // Every fix a step names is one its check offers.
+        // Duplicates' fixes are offered per group, not per check.
+        for c in Check::ALL.into_iter().filter(|&c| c != Check::Duplicate) {
+            for (step, ..) in steps(c) {
+                if let Step::Fix(f) = step {
+                    assert!(fixes(c, true).contains(&f), "{c:?} {f:?}");
+                }
+            }
+        }
     }
 
     #[test]
     fn starts_with_the_first_problem_then_prep() {
-        assert_eq!(start_area(&[0, 28, 0, 5, 9]), Some(1));
-        assert_eq!(start_area(&[0, 0, 0, 0, 9]), Some(4));
-        assert_eq!(start_area(&[0; 5]), None);
-        assert_eq!(area_state(Area::Files, 3), AreaState::Problem);
-        assert_eq!(area_state(Area::Prep, 3), AreaState::Goal);
-        assert_eq!(area_state(Area::Info, 0), AreaState::Clear);
+        let counts = [
+            (Check::Missing, 0),
+            (Check::Long, 28),
+            (Check::Junk, 5),
+            (Check::NotAnalyzed, 9),
+        ];
+        assert_eq!(start_check(&counts), Some(Check::Long));
+        assert_eq!(
+            start_check(&[(Check::Long, 0), (Check::NotAnalyzed, 9)]),
+            Some(Check::NotAnalyzed)
+        );
+        assert_eq!(start_check(&[(Check::Long, 0)]), None);
+        assert_eq!(check_state(Check::Missing, 3), CheckState::Problem);
+        assert_eq!(check_state(Check::NoRating, 3), CheckState::Goal);
+        assert_eq!(check_state(Check::Junk, 0), CheckState::Clear);
         assert_eq!(percent(862, 1105), 78);
         assert_eq!(percent(0, 0), 100);
     }
