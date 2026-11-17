@@ -3,7 +3,8 @@
 //! (headphone) mix only, so the audience never hears it.
 //!
 //! Controls: `play`, `playposition` (0 to 1; set it to seek), `duration`,
-//! `track_loaded` and `volume`.
+//! `track_loaded` and `volume`. `main` on also plays it in the main mix,
+//! for listening back to a recorded set in the Mixed Set Editor.
 //!
 //! The audio arrives over a wait-free queue, and audio it is done with goes
 //! back over another to be freed off the audio thread, as deck tracks do.
@@ -43,6 +44,7 @@ pub(crate) struct Preview {
     duration: ControlHandle,
     loaded: ControlHandle,
     volume: ControlHandle,
+    main: ControlHandle,
     /// The position this player last published, so a different one is a seek.
     written: f64,
     gain: f32,
@@ -66,6 +68,7 @@ impl Preview {
                 duration: reg.indicator(g, "duration", 86_400.0),
                 loaded: reg.indicator(g, "track_loaded", 1.0),
                 volume: reg.create(g, "volume", 1.0, 0.0, 1.0, Behavior::Linear),
+                main: reg.toggle(g, "main"),
                 written: 0.0,
                 gain: 0.0,
                 incoming,
@@ -76,6 +79,11 @@ impl Preview {
                 done: done_rx,
             },
         )
+    }
+
+    /// Whether it plays in the main mix too.
+    pub(crate) fn on_main(&self) -> bool {
+        self.main.get_bool()
     }
 
     fn len(&self) -> f64 {

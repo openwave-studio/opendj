@@ -38,6 +38,11 @@ pub trait Host {
     /// and Repeat is on.
     fn requeue(&mut self, id: usize);
     fn load(&mut self, deck: usize, track: Arc<Track>);
+    /// The DJ's saved mix of track `out` into track `inc` (ids), learned
+    /// from a recorded set; Phrases mixes the pair the same way.
+    fn pair_mix(&self, _out: usize, _inc: usize) -> Option<automix_phrases::Paired> {
+        None
+    }
 }
 
 /// How long a track plays before it comes off the Automix list.
@@ -428,11 +433,21 @@ impl AutoMix {
         self.skip_next.control.set(1.0);
     }
 
+    /// Picks the panel's mix length. Picking one while an album plays
+    /// ends the album's gapless play, so the length picked is the one used.
     pub fn set_length(&mut self, i: usize) {
-        if i < LENGTHS.len() {
-            self.length = i;
+        if self.pick_length(i) {
             crate::settings::set_automix_length(i);
         }
+    }
+
+    /// [`Self::set_length`] without saving it; whether `i` is a length.
+    fn pick_length(&mut self, i: usize) -> bool {
+        if i < LENGTHS.len() {
+            self.album = false;
+            self.length = i;
+        }
+        i < LENGTHS.len()
     }
 
     /// Repeat: played tracks go back to the end of the list.
@@ -475,7 +490,7 @@ impl AutoMix {
                 self.glide_to(0.0);
             }
             _ => {
-                self.refresh_plan(tracks);
+                self.refresh_plan(host, tracks);
                 self.step(host, tracks)
             }
         }
@@ -943,8 +958,17 @@ impl AutoMix {
                 let start = if self.gapless() {
                     Some(0.0)
                 } else if self.mix_length() == Length::Phrases {
-                    // On the first bar of the incoming phrase.
-                    sound_start(t).map(|s| automix_phrases::in_point(t, &automix_phrases::of(t), s))
+                    // Where the DJ brought it in last time after the track
+                    // now playing, else on the first bar of its phrase.
+                    let paired = tracks[1 - deck]
+                        .as_deref()
+                        .and_then(|out| host.pair_mix(out.id, t.id))
+                        .map(|p| p.in_seconds)
+                        .filter(|s| (0.0..t.duration).contains(s));
+                    paired.or_else(|| {
+                        sound_start(t)
+                            .map(|s| automix_phrases::in_point(t, &automix_phrases::of(t), s))
+                    })
                 } else {
                     sound_start(t)
                 };
@@ -1107,7 +1131,7 @@ impl AutoMix {
     /// Works out the Phrases plan when a new track waits cued on the other
     /// deck (or either track changes, a grid edit say), and keeps it until
     /// the mix starts.
-    fn refresh_plan(&mut self, tracks: &[Option<Arc<Track>>; NUM_DECKS]) {
+    fn refresh_plan(&mut self, host: &dyn Host, tracks: &[Option<Arc<Track>>; NUM_DECKS]) {
         let Phase::Playing {
             live,
             next: Some(Next { cued: true, .. }),
@@ -1138,6 +1162,7 @@ impl AutoMix {
             inc,
             &automix_phrases::of(inc),
             cue,
+            host.pair_mix(out.id, inc.id),
         );
         self.plan = Some((key, plan));
     }
@@ -1204,6 +1229,7 @@ impl AutoMix {
                 Start::Outro => " at the outro",
                 Start::Phrase => " on a phrase",
                 Start::Imported => " at its mix point",
+                Start::Paired => " as you mixed it before",
             },
             (Length::Seconds(_), _) => " (15 s: tempos too far apart)",
             _ => " (16 bars: no phrases)",
@@ -1597,6 +1623,24 @@ mod tests {
         r.run(12.0);
         assert!(!r.ctl("[AutoDJ]", "enabled").get_bool());
         assert_eq!(r.automix.mix_length(), LENGTHS[1]);
+    }
+
+    #[test]
+    fn picking_a_length_during_an_album_takes_effect() {
+        let mut r = Rig::new(vec![track(0, 20.0), track(1, 20.0)]);
+        // 32 bars chosen earlier; the album plays gaplessly and shows 0 s.
+        r.automix.length = 5;
+        r.automix.play_album();
+        r.run(2.0);
+        assert_eq!(r.automix.shown_length(), 0);
+        // Picking 12 s on the panel shows and uses it.
+        r.automix.pick_length(1);
+        assert_eq!(r.automix.shown_length(), 1);
+        assert_eq!(r.automix.mix_length(), LENGTHS[1]);
+        assert!(
+            r.ctl("[AutoDJ]", "enabled").get_bool(),
+            "Automix keeps going"
+        );
     }
 
     #[test]

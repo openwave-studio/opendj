@@ -8,18 +8,47 @@
   :root { --lilac: #B69CFF; --text: #f5f5f7; --dim: #8e8e93; }
   html, body { margin: 0; height: 100%; background: #08080a; overflow: hidden; }
   body { font-family: Inter, "Helvetica Neue", Arial, sans-serif; color: var(--text);
-    background: radial-gradient(circle at 50% 50%, rgba(182,156,255,.10) 0%, rgba(8,8,10,0) 70%), #08080a; }
+    background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, rgba(8,8,10,0) 70%), #08080a; }
+  /* body.cover: the cover beside the lyrics.
+     The background is one flat color from the cover (--bg). */
+  #art-header { display: none; }
+  body.cover.has-art { background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--lilac) 10%, transparent) 0%, transparent 70%), var(--bg, #08080a); }
+  body.cover:not(.idle) #art-header { position: fixed; display: flex; flex-direction: column; align-items: center; gap: 2.8vh; left: 10vw; top: 18vh; width: 30vw; text-align: center; }
+  #art-header img { width: min(30vw, 44vh); height: min(30vw, 44vh); object-fit: cover; border-radius: 10px; }
+  #art-header div { min-width: 0; width: min(30vw, 44vh); }
+  #art-title, #art-artist { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+  #art-title { font-size: max(20px, 3.6vh); font-weight: 700; }
+  #art-artist { font-size: max(18px, 2.8vh); color: #ffffffaa; margin-top: .9vh; }
+  body.cover:not(.idle) #top, body.cover #lyrics, body.many #lyrics { display: none; }
+  body.cover:not(.idle) #main { inset: 10vh 8.5vw 10vh 51.5vw; padding: 0; text-align: left; }
+  #art-viewport { display: none; }
+  body.many:not(.message) #art-viewport { display: block; position: fixed; inset: 10vh 14vw 10vh 24vw; overflow: hidden; mask-image: linear-gradient(transparent, black 15%, black 80%, transparent); }
+  body.cover:not(.message) #art-viewport { display: block; position: fixed; inset: 10vh 8.5vw 10vh 51.5vw; overflow: hidden; mask-image: linear-gradient(transparent, black 15%, black 80%, transparent); }
+  #art-lines { position: absolute; top: 32vh; width: 100%; transition: transform 480ms ease-in-out; }
+  .art-line { font-size: max(18px, 6vh); line-height: 1.3; font-weight: 750; color: #ffffff59; margin: 0 0 4vh; transition: color 420ms ease-in-out, filter 480ms ease-in-out; overflow-wrap: anywhere; }
+  .art-line.active { color: #ffffff80; }
+  #art-dots { display: none; }
+  body.many:not(.message) #art-dots { display: flex; position: fixed; left: 24vw; top: 39vh; gap: 1.8vh; height: 2vh; }
+  body.cover:not(.message) #art-dots { display: flex; position: fixed; left: 51.5vw; top: 39vh; gap: 1.8vh; height: 2vh; }
+  #art-dots i { width: 2vh; height: 2vh; border-radius: 50%; background: var(--lilac); }
+  /* Cover and Full screen: shown while the pointer moves, or after a tap. */
+  #controls { position: fixed; top: 20px; right: 24px; display: flex; gap: 12px; opacity: 0; transition: opacity 250ms; pointer-events: none; z-index: 2; }
+  body.poked #controls, #controls:hover { opacity: 1; pointer-events: auto; }
+  #controls button { width: 44px; height: 44px; border-radius: 22px; border: 0; padding: 0; background: #ffffff10; color: #ffffffb0; cursor: pointer; display: grid; place-items: center; position: relative; }
+  #controls button:hover { background: #ffffff33; color: #fff; }
+  #controls button.on { background: #ffffff24; color: #fff; }
+  #controls button.on::after { content: ''; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 2px; background: #fff; }
+  #controls svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+  @media (prefers-reduced-motion: reduce) { #art-lines, .art-line { transition: none; } }
   #top { position: fixed; left: 32px; top: 24px; right: 32px; font-size: max(14px, 2.8vh); font-weight: 600;
     color: rgba(142,142,147,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #main { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+  #main { isolation: isolate; position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 3.5vh; padding: 0 48px; text-align: center; }
   .line { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   #before { font-size: 4.5vh; font-weight: 700; color: rgba(142,142,147,.45); min-height: 1.2em; }
   #dots { display: flex; gap: 2.5vh; height: 3vh; }
   #dots i { width: 3vh; height: 3vh; border-radius: 50%; background: var(--lilac); }
-  #now { min-height: 1.3em; }
-  #now .sung { color: var(--lilac); }
-  #now .word { color: transparent; -webkit-background-clip: text; background-clip: text; }
+  #now { min-height: 1.3em; color: transparent; background-clip: text; -webkit-background-clip: text; }
   #next { color: rgba(245,245,247,.72); font-weight: 700; min-height: 1.2em; }
   #after { color: rgba(142,142,147,.6); font-weight: 700; min-height: 1.2em; }
   #message { display: none; }
@@ -33,12 +62,19 @@
 </head>
 <body class="message">
 <div id="top"></div>
+<div id="controls">
+  <button id="cover-button" title="Cover" aria-label="Cover"><svg viewBox="0 0 24 24"><path d="M 3 3 L 21 3 L 21 21 L 3 21 Z M 3 16 L 9 10 L 14 15 L 17 12 L 21 16"/></svg></button>
+  <button id="screen-button" title="Full screen" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M 3 9 L 3 3 L 9 3 M 15 3 L 21 3 L 21 9 M 21 15 L 21 21 L 15 21 M 9 21 L 3 21 L 3 15"/></svg></button>
+</div>
+<div id="art-dots"></div>
+<div id="art-header"><img id="art-cover" alt=""><div><div id="art-title"></div><div id="art-artist"></div></div></div>
+<div id="art-viewport"><div id="art-lines"></div></div>
 <div id="main">
   <div id="message"><h1>openDJ Karaoke</h1><p>Lyrics show here for the track playing.</p></div>
   <div id="lyrics">
     <div id="before" class="line"></div>
     <div id="dots"></div>
-    <div id="now" class="line"><span class="sung"></span><span class="word"></span><span class="rest"></span></div>
+    <div id="now" class="line"></div>
     <div id="next" class="line"></div>
     <div id="after" class="line"></div>
   </div>
@@ -81,18 +117,21 @@
     };
   }
   function screen(t, beat) {
-    const s = { before: '', sung: '', word: '', part: 0, rest: '', next: '', after: '', count: 0 };
+    const s = { focus: -1, before: '', sung: '', word: '', part: 0, rest: '', next: '', after: '', count: 0 };
     const current = lineAt(t);
     let singing = -1;
     if (current >= 0 && sung(lines[current])) {
       const w = lines[current].words;
       const end = w.length ? w[w.length - 1][1] : t;
       const until = current + 1 < lines.length ? lines[current + 1].start : null;
-      if (t < end + LINGER || (until !== null && until - t < LINGER)) singing = current;
+      // Held until the next line when that follows soon after; in a longer
+      // gap it lets go once, so the screen never steps back to it.
+      if (t < end + LINGER || (until !== null && until - end < LINGER)) singing = current;
     }
     const focus = singing >= 0 ? singing : nextSung(current + 1);
     const prevSung = upTo => { for (let j = upTo; j >= 0; j--) if (sung(lines[j])) return lines[j].text.trim(); return ''; };
-    if (focus < 0) { s.before = prevSung(current); return s; }
+    if (focus < 0) { s.before = prevSung(current); for (let i = current; i >= 0; i--) if (sung(lines[i])) { s.focus = i; break; } return s; }
+    s.focus = focus;
     s.before = prevSung(focus - 1);
     const next = nextSung(focus + 1);
     if (next >= 0) {
@@ -102,6 +141,8 @@
     }
     if (singing >= 0) {
       Object.assign(s, fill(lines[focus], t));
+      // Whole line: lit all at once once it starts.
+      if (now.whole_line && (s.sung || s.word)) Object.assign(s, { sung: lines[focus].text.trim(), word: '', part: 0, rest: '' });
     } else {
       s.rest = lines[focus].text.trim();
       const toGo = lines[focus].start - t, beats = toGo / Math.max(beat, 0.1);
@@ -110,7 +151,73 @@
     return s;
   }
 
-  let shown = '';
+  const measure = document.createElement('canvas').getContext('2d');
+  let shown = '', artworkId = null, artworkFocus = -1, artworkSize = '';
+  function drawArtwork(s, t) {
+    const focus = s.focus;
+    const column = $('art-lines');
+    if (artworkId !== linesId) {
+      column.replaceChildren();
+      lines.forEach((line, i) => {
+        if (!sung(line)) return;
+        const row = document.createElement('div');
+        row.className = 'art-line';
+        row.dataset.line = i;
+        // Keep every word in the same text flow. Only its paint changes;
+        // no shorter, independently wrapped text is overlaid on the line.
+        if (line.words.length) {
+          line.words.forEach((word, index) => {
+            const span = document.createElement('span');
+            let text = word[2];
+            if (index === 0) text = text.trimStart();
+            if (index === line.words.length - 1) text = text.trimEnd();
+            span.textContent = text;
+            row.appendChild(span);
+          });
+        } else {
+          row.textContent = line.text.trim();
+        }
+        column.appendChild(row);
+      });
+      artworkId = linesId;
+      artworkFocus = -1;
+    }
+    const moved = artworkFocus !== focus;
+    if (moved) {
+      artworkFocus = focus;
+      for (const row of column.children) {
+        row.classList.toggle('active', Number(row.dataset.line) === focus);
+        for (const word of row.children) word.style.color = '';
+      }
+    }
+    const row = column.querySelector('.active');
+    if (row) {
+      const words = lines[focus].words;
+      for (let i = 0; i < words.length; i++) {
+        const [start, end] = words[i];
+        const part = now.whole_line ? (t >= words[0][0] ? 1 : 0)
+          : t < start ? 0 : end <= start ? 1 : Math.max(0, Math.min(1, (t - start) / (end - start)));
+        // Sung words take the highlight color; the word being sung fades into it.
+        row.children[i].style.color = part >= 1 ? 'var(--lilac)'
+          : 'color-mix(in srgb, var(--lilac) ' + Math.round(part * 100) + '%, #ffffff80)';
+      }
+    }
+    const viewport = $('art-viewport');
+    const size = viewport.clientWidth + ':' + viewport.clientHeight;
+    if (!moved && artworkSize === size) return;
+    artworkSize = size;
+    const offset = row ? row.offsetTop : 0;
+    const top = column.offsetTop;
+    for (const line of column.children) {
+      const y = top + line.offsetTop - offset;
+      const distance = Math.min(y, viewport.clientHeight - y - line.offsetHeight);
+      const edge = Math.max(0, Math.min(1, 1 - distance / Math.max(1, viewport.clientHeight * 0.18)));
+      const filter = 'blur(' + (edge * 4).toFixed(2) + 'px)';
+      if (line.style.filter !== filter) line.style.filter = filter;
+    }
+    const transform = 'translateY(-' + offset + 'px)';
+    if (column.style.transform !== transform) column.style.transform = transform;
+  }
   function draw() {
     requestAnimationFrame(draw);
     const message = now.state !== 3;
@@ -128,21 +235,30 @@
     if (linesId !== now.id) return;
     const t = base + (now.playing ? (performance.now() - baseWall) / 1000 : 0);
     const s = screen(t, now.bpm > 0 ? 60 / now.bpm : 0.5);
-    const key = JSON.stringify(s);
+    const v = view();
+    if (v.cover || v.many) {
+      const dots = '<i></i>'.repeat(s.count);
+      if ($('art-dots').innerHTML !== dots) $('art-dots').innerHTML = dots;
+      drawArtwork(s, t);
+      return;
+    }
+    const key = JSON.stringify([s, v]);
     if (key === shown) return;
     shown = key;
-    const letters = (s.sung + s.word + s.rest).length;
+    const text = s.focus >= 0 && (s.sung + s.word + s.rest) ? lines[s.focus].text.trim() : '';
+    const letters = text.length;
     const big = 'min(10vh, calc(170vw / ' + Math.max(letters, 14) + '))';
     const line = $('now');
     line.style.fontSize = big;
     $('next').style.fontSize = 'calc(' + big + ' * 0.62)';
     $('after').style.fontSize = 'calc(' + big + ' * 0.5)';
-    line.querySelector('.sung').textContent = s.sung;
-    const word = line.querySelector('.word');
-    word.textContent = s.word;
-    const p = (s.part * 100).toFixed(1) + '%';
-    word.style.backgroundImage = 'linear-gradient(90deg, var(--lilac) ' + p + ', var(--text) ' + p + ')';
-    line.querySelector('.rest').textContent = s.rest;
+    line.textContent = text;
+    measure.font = getComputedStyle(line).font;
+    const prefix = measure.measureText(s.sung).width;
+    const throughWord = measure.measureText(s.sung + s.word).width;
+    const width = measure.measureText(text).width;
+    const p = (width ? 100 * (prefix + (throughWord - prefix) * s.part) / width : 0) + '%';
+    line.style.backgroundImage = 'linear-gradient(90deg, var(--lilac) ' + p + ', var(--unsung, var(--text)) ' + p + ')';
     $('before').textContent = s.before;
     $('next').textContent = s.next;
     $('after').textContent = s.after;
@@ -150,20 +266,74 @@
   }
 
   async function poll() {
+    // Serialize updates so a slow response cannot overwrite a newer track or
+    // seek position. Bound a stalled request so polling always recovers.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     try {
-      const r = await fetch('/karaoke.json', { cache: 'no-store' });
+      const r = await fetch('/karaoke.json', { cache: 'no-store', signal: controller.signal });
       const j = await r.json();
+      const before = now;
       now = j;
-      base = j.t || 0;
+      document.documentElement.style.setProperty('--lilac', /^#[0-9a-f]{6}$/i.test(j.color) ? j.color : '#b69cff');
+      document.documentElement.style.setProperty('--unsung', j.color === '#ffffff' ? '#ffffff66' : '#f5f5f7');
+      if (/^#[0-9a-f]{6}$/i.test(j.background)) document.documentElement.style.setProperty('--bg', j.background);
+      layout();
+      $('art-title').textContent = j.state > 0 ? j.title || '' : '';
+      $('art-artist').textContent = j.state > 0 ? j.artist || '' : '';
+      const cover = typeof j.cover === 'string' && j.cover.startsWith('/karaoke/cover?track=') ? j.cover : '';
+      $('art-cover').hidden = !cover || !j.state;
+      document.body.classList.toggle('has-art', !!cover && j.state > 0);
+      if (cover && $('art-cover').getAttribute('src') !== cover) $('art-cover').src = cover;
+      // The time this page has run on to can be a little ahead of an answer
+      // that took a while to arrive: keep it rather than step back.
+      const ran = base + (performance.now() - baseWall) / 1000;
+      const t = j.t || 0;
+      base = j.playing && before.playing && j.id === before.id && t < ran && ran - t < 0.3 ? ran : t;
       baseWall = performance.now();
-      if (j.id !== undefined && j.id !== linesId) {
-        const l = await (await fetch('/karaoke/lines.json', { cache: 'no-store' })).json();
+      if (j.state === 3 && j.id !== null && j.id !== undefined && j.id !== linesId) {
+        const l = await (await fetch('/karaoke/lines.json', { cache: 'no-store', signal: controller.signal })).json();
         if (l.id === j.id) { lines = l.lines || []; linesId = l.id; shown = ''; }
       }
     } catch (e) { /* openDJ closed or the karaoke screen was closed */ }
+    finally {
+      clearTimeout(timeout);
+      setTimeout(poll, 250);
+    }
   }
+  // What this page shows: openDJ's choice, until a viewer taps a button here.
+  const mine = { cover: null };
+  function view() {
+    const cover = mine.cover ?? !!now.cover_on;
+    return { cover, many: !cover && !!now.many_lines };
+  }
+  function layout() {
+    const v = view();
+    document.body.classList.toggle('cover', v.cover);
+    document.body.classList.toggle('many', v.many);
+    document.body.classList.toggle('idle', !(now.state > 0));
+    $('cover-button').classList.toggle('on', v.cover);
+    shown = '';
+    artworkSize = '';
+  }
+  $('cover-button').onclick = () => {
+    const v = view();
+    mine.cover = !v.cover;
+    layout();
+  };
+  $('screen-button').onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.().catch(() => {});
+  };
+  let hide = null;
+  function poke() {
+    document.body.classList.add('poked');
+    clearTimeout(hide);
+    hide = setTimeout(() => document.body.classList.remove('poked'), 3000);
+  }
+  addEventListener('pointermove', poke);
+  addEventListener('pointerdown', poke);
   poll();
-  setInterval(poll, 250);
   requestAnimationFrame(draw);
 </script>
 </body>

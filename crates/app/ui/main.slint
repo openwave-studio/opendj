@@ -9,6 +9,7 @@ import { MasterPanel, MicPanel, OnAirPanel, BroadcastState, BroadcastStation, Ai
 import { PlayerBar, PlayerDeck, PlayerMixer, TopSearch, QuickResults, QuickSearch, QuickRow } from "player.slint";
 export { QuickSearch, QuickRow, SleepUi } from "player.slint";
 export { MiniPlayer } from "mini.slint";
+export { RoomEqUi, RoomDot, RoomBand } from "room_eq.slint";
 import { AppMenu, AppMenuButton } from "appmenu.slint";
 export { AppMenu, MenuEntry } from "appmenu.slint";
 import { PrepDeck, PrepUi } from "prep.slint";
@@ -28,9 +29,11 @@ import { DeckStrip, FourDeckBar } from "fourdeck.slint";
 import { LiteDeck, LiteMixer, LiteUi, PadBarHalf } from "lite.slint";
 import { FxBar } from "fxbar.slint";
 import { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi } from "instruments.slint";
-import { Browser, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow } from "library.slint";
+import { Browser, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow } from "library.slint";
 import { Preferences, PreferencesOverlay, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart } from "preferences.slint";
 import { UsbExport, UsbExportDialog } from "usb_export.slint";
+import { MixedSetEditor, MixedSetUi } from "mixed_set.slint";
+export { MixedSetUi, SetBlock, SetSpan, SetTransitionRow, SetFindingRow, SetFixRow, SetLane } from "mixed_set.slint";
 import { Tour, TourSetup, TourSetupDialog, TourTip, TourOffer } from "tour.slint";
 import { MapMode } from "mapmark.slint";
 import { RemoteButton, RemoteUi, RemoteDevice } from "remote.slint";
@@ -49,12 +52,13 @@ export { ChecklistUi, CheckRow } from "checklist.slint";
 export { PageUi, PageTrack, PageAlbum, HomeTile, HomeShelf } from "pages.slint";
 import { HomeButton } from "pages.slint";
 export { LyricsUi, LyricLine, LyricMatch, WaveLyrics, WaveLine, WaveWord, DeckLines } from "lyrics.slint";
-export { NowPlayingUi, NowDetail } from "nowplaying.slint";
+export { NowPlayingUi } from "nowplaying.slint";
+export { PlayerKaraoke } from "karaoke.slint";
 export { KaraokeWindow } from "karaoke.slint";
 export { RemoteUi, RemoteDevice }
 export { MixerMode, InputSettings, InputRow }
 export { BroadcastState, BroadcastStation }
-export { BrowserFocus, BrowserPane, InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
+export { BrowserFocus, BrowserPane, InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, TrackDrag, LibraryEdit, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
 
 // Macro lanes: an instrument deck's knobs drawn as lines on its scrolling
 // waveform instead of its note roll (2-Deck Basic only), a colour each.
@@ -1855,6 +1859,10 @@ export component AppWindow inherits Window {
                 LibraryEdit.undo-stage();
                 return accept;
             }
+            if e.text == Key.Escape && MixedSetUi.open && !MixedSetUi.saving {
+                MixedSetUi.close();
+                return accept;
+            }
             if e.text == Key.Escape && UsbExport.open && !UsbExport.running {
                 UsbExport.open = false;
                 return accept;
@@ -2268,7 +2276,8 @@ export component AppWindow inherits Window {
                 automix-set-style(i) => { automix-set-style(i); }
                 automix-repeat: automix-repeat;
                 automix-set-repeat(on) => { automix-set-repeat(on); }
-                side-visible: side-panel-visible;
+                // Player's karaoke takes the whole width.
+                side-visible: side-panel-visible && !(player && NowPlayingUi.open);
                 now-playing: player && NowPlayingUi.open;
             }
 
@@ -2334,11 +2343,16 @@ export component AppWindow inherits Window {
                 automix-next: automix-next;
                 automix-next-in: automix-next-in;
                 queue-has-tracks: automix-queued > 0;
-                queue-shown: side-panel-visible && side-tab == 0;
+                queue-shown: side-panel-visible && side-tab == 0 && !NowPlayingUi.open;
                 automix-toggle => { automix-toggle(); }
                 automix-cut-now => { automix-cut-now(); }
                 toggle-queue => {
-                    if side-panel-visible && side-tab != 0 {
+                    // Up Next over karaoke: back to the library beside it.
+                    if NowPlayingUi.open {
+                        NowPlayingUi.close();
+                        side-panel-visible = true;
+                        side-tab = 0;
+                    } else if side-panel-visible && side-tab != 0 {
                         side-tab = 0;
                     } else {
                         side-panel-visible = !side-panel-visible;
@@ -2490,6 +2504,10 @@ export component AppWindow inherits Window {
             height: root.height;
         }
         if UsbExport.open: UsbExportDialog {
+            width: root.width;
+            height: root.height;
+        }
+        if MixedSetUi.open: MixedSetEditor {
             width: root.width;
             height: root.height;
         }

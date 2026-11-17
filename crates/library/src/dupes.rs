@@ -28,6 +28,32 @@ use crate::{now, path_text, row_id, Error, Library};
 /// Copies whose lengths are this close (in seconds) are the same recording.
 pub const SAME_LENGTH: f64 = 3.0;
 
+/// Copies whose lengths are this close (in seconds) are surely the same
+/// recording; up to [`SAME_LENGTH`] they likely are.
+pub const SURE_LENGTH: f64 = 1.0;
+
+/// How sure a group's match is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Match {
+    /// The same file, or the same name and length to the second: merged
+    /// without a look.
+    Sure,
+    /// The same name and nearly the same length: worth a look first.
+    Likely,
+    /// Different lengths: versions the DJ decides about.
+    Versions,
+}
+
+impl Match {
+    pub fn title(self) -> &'static str {
+        match self {
+            Match::Sure => "Sure",
+            Match::Likely => "Likely",
+            Match::Versions => "Versions",
+        }
+    }
+}
+
 /// The name given to the quarantine folder, beside the stage folders.
 pub const QUARANTINE: &str = "_Quarantine";
 
@@ -97,22 +123,64 @@ pub fn lossless(format: &str, bit_depth: Option<u8>) -> bool {
 }
 
 /// Copies of the same track found among `tracks`: the same artist, title
-/// and remix, two or more of them. Missing files and tracks without a
-/// title are left out.
-pub fn copies<'a>(tracks: impl IntoIterator<Item = &'a Track>) -> Vec<Vec<&'a Track>> {
+/// and remix, or the same sound (pairs of ids in `alike`, see
+/// [`same_sound`]), two or more of them. Missing files are left out, and
+/// so are tracks without a title unless they sound like another.
+pub fn copies<'a>(
+    tracks: impl IntoIterator<Item = &'a Track>,
+    alike: &[(usize, usize)],
+) -> Vec<Vec<&'a Track>> {
+    let sounding: HashSet<usize> = alike.iter().flat_map(|&(a, b)| [a, b]).collect();
     let mut by_name: HashMap<(String, String, String), Vec<&Track>> = HashMap::new();
     for t in tracks {
-        if t.info.missing || t.title.trim().is_empty() || !matches!(t.source, Source::File(_)) {
+        if t.info.missing || !matches!(t.source, Source::File(_)) {
             continue;
         }
-        let key = (
-            normalized(&t.artist),
-            normalized(&t.title),
-            normalized(&t.info.remix),
-        );
+        let key = if t.title.trim().is_empty() {
+            if !sounding.contains(&t.id) {
+                continue;
+            }
+            // Untitled: a group of its own until a sound joins it.
+            (format!("#{}", t.id), String::new(), String::new())
+        } else {
+            (
+                normalized(&t.artist),
+                normalized(&t.title),
+                normalized(&t.info.remix),
+            )
+        };
         by_name.entry(key).or_default().push(t);
     }
-    let mut out: Vec<Vec<&Track>> = by_name.into_values().filter(|g| g.len() > 1).collect();
+    // Groups holding tracks that sound alike become one.
+    let groups: Vec<Vec<&Track>> = by_name.into_values().collect();
+    let mut at: HashMap<usize, usize> = HashMap::new();
+    for (i, g) in groups.iter().enumerate() {
+        for t in g {
+            at.insert(t.id, i);
+        }
+    }
+    let mut parent: Vec<usize> = (0..groups.len()).collect();
+    fn root(parent: &mut [usize], mut i: usize) -> usize {
+        while parent[i] != i {
+            parent[i] = parent[parent[i]];
+            i = parent[i];
+        }
+        i
+    }
+    for &(a, b) in alike {
+        if let (Some(&x), Some(&y)) = (at.get(&a), at.get(&b)) {
+            let (x, y) = (root(&mut parent, x), root(&mut parent, y));
+            if x != y {
+                parent[y] = x;
+            }
+        }
+    }
+    let mut joined: HashMap<usize, Vec<&Track>> = HashMap::new();
+    for (i, g) in groups.into_iter().enumerate() {
+        let r = root(&mut parent, i);
+        joined.entry(r).or_default().extend(g);
+    }
+    let mut out: Vec<Vec<&Track>> = joined.into_values().filter(|g| g.len() > 1).collect();
     for g in &mut out {
         g.sort_by_key(|t| t.id);
     }
@@ -124,8 +192,18 @@ pub fn copies<'a>(tracks: impl IntoIterator<Item = &'a Track>) -> Vec<Vec<&'a Tr
 #[derive(Clone, Debug, PartialEq)]
 pub struct Group {
     pub case: Case,
+    /// How sure the match is.
+    pub matched: Match,
     /// Track ids, the one kept first.
     pub tracks: Vec<usize>,
+}
+
+impl Group {
+    /// Whether merging it is safe without a look: the same recording, and
+    /// a sure match.
+    pub fn easy(&self) -> bool {
+        self.case.easy() && self.matched == Match::Sure
+    }
 }
 
 /// Which of two copies is better to keep: `Less` when `a` is.
@@ -155,6 +233,7 @@ pub fn groups(
     facts: impl Fn(&Track) -> FileFacts,
     same_bytes: impl Fn(&Track, &Track) -> bool,
     linked: impl Fn(usize, usize) -> bool,
+    alike: impl Fn(usize, usize) -> bool,
 ) -> Vec<Group> {
     let facts: HashMap<usize, FileFacts> = copies.iter().map(|t| (t.id, facts(t))).collect();
     let ranked = |list: &mut Vec<&Track>| {
@@ -200,8 +279,20 @@ pub fn groups(
         } else {
             Case::SameFormat
         };
+        let close = others.iter().all(|o| {
+            keep.duration > 0.0
+                && o.duration > 0.0
+                && (keep.duration - o.duration).abs() <= SURE_LENGTH
+        });
+        let sound = others.iter().all(|o| alike(keep.id, o.id));
+        let matched = if case == Case::SameFile || close || sound {
+            Match::Sure
+        } else {
+            Match::Likely
+        };
         out.push(Group {
             case,
+            matched,
             tracks: r.iter().map(|t| t.id).collect(),
         });
     }
@@ -210,10 +301,84 @@ pub fn groups(
         ranked(&mut kept);
         out.push(Group {
             case: Case::Versions,
+            matched: Match::Versions,
             tracks: kept.iter().map(|t| t.id).collect(),
         });
     }
     out
+}
+
+/// Fingerprint items skipped at the start (fades and silence), and how
+/// many after them are compared.
+const SOUND_SKIP: usize = 20;
+const SOUND_ITEMS: usize = 400;
+/// Items shared by more tracks than this say nothing (silence, a tone).
+const SOUND_COMMON: usize = 12;
+
+/// Pairs of tracks that sound the same, from their Chromaprint
+/// fingerprints (by track id): many of their fingerprint items are equal,
+/// and lined up, the rest differ in only a few bits. Re-encodes and
+/// renamed copies match; different mixes don't.
+pub fn same_sound(prints: &HashMap<usize, Vec<u32>>) -> Vec<(usize, usize)> {
+    let sample = |p: &[u32]| -> Vec<u32> {
+        p.iter()
+            .skip(SOUND_SKIP)
+            .take(SOUND_ITEMS)
+            .copied()
+            .collect()
+    };
+    let mut index: HashMap<u32, Vec<usize>> = HashMap::new();
+    for (&id, p) in prints {
+        let items: HashSet<u32> = sample(p).into_iter().collect();
+        for v in items {
+            index.entry(v).or_default().push(id);
+        }
+    }
+    let mut shared: HashMap<(usize, usize), usize> = HashMap::new();
+    for ids in index
+        .values()
+        .filter(|ids| ids.len() > 1 && ids.len() <= SOUND_COMMON)
+    {
+        for (i, &a) in ids.iter().enumerate() {
+            for &b in &ids[i + 1..] {
+                *shared.entry((a.min(b), a.max(b))).or_default() += 1;
+            }
+        }
+    }
+    let mut out: Vec<(usize, usize)> = shared
+        .into_iter()
+        .filter(|&((a, b), n)| {
+            let (pa, pb) = (sample(&prints[&a]), sample(&prints[&b]));
+            let fewer = pa.len().min(pb.len());
+            fewer >= 50 && n * 5 >= fewer && close_prints(&pa, &pb)
+        })
+        .map(|(pair, _)| pair)
+        .collect();
+    out.sort_unstable();
+    out
+}
+
+/// Whether two fingerprints, lined up at their best offset (a few items
+/// either way), differ in few bits on average.
+fn close_prints(a: &[u32], b: &[u32]) -> bool {
+    (-8i32..=8)
+        .filter_map(|shift| {
+            let pairs: Vec<(u32, u32)> = a
+                .iter()
+                .enumerate()
+                .filter_map(|(i, &x)| {
+                    let j = i as i32 + shift;
+                    (j >= 0)
+                        .then(|| b.get(j as usize).map(|&y| (x, y)))
+                        .flatten()
+                })
+                .collect();
+            (pairs.len() >= 50).then(|| {
+                pairs.iter().map(|(x, y)| (x ^ y).count_ones()).sum::<u32>() as f64
+                    / pairs.len() as f64
+            })
+        })
+        .any(|bits| bits < 6.0)
 }
 
 /// Whether every two recordings have a link between them.
@@ -532,23 +697,32 @@ mod tests {
         let c = copy(3, "/m/DB/_Staging/Clouds.flac", 271.5);
         let d = copy(4, "/m/DB/Library/Clouds (edit).mp3", 258.0);
         let all = [&a, &b, &c, &d];
-        assert_eq!(copies(all).len(), 1);
+        assert_eq!(copies(all, &[]).len(), 1);
         let facts = |t: &Track| FileFacts {
             size: 100,
             lossless: t.id == 3,
             bitrate: if t.id == 3 { 900 } else { 320 },
         };
-        let groups = groups(&all, &folders(), facts, |_, _| false, |_, _| false);
+        let groups = groups(
+            &all,
+            &folders(),
+            facts,
+            |_, _| false,
+            |_, _| false,
+            |_, _| false,
+        );
         // The Collection copy wins over the lossless one in _Staging.
         assert_eq!(
             groups,
             [
                 Group {
                     case: Case::Versions,
+                    matched: Match::Versions,
                     tracks: vec![2, 4]
                 },
                 Group {
                     case: Case::BetterCopy,
+                    matched: Match::Sure,
                     tracks: vec![2, 3, 1]
                 },
             ]
@@ -557,19 +731,41 @@ mod tests {
             .collect::<Vec<_>>()
         );
         // Versions linked to each other are left alone.
-        let linked = super::groups(&all, &folders(), facts, |_, _| false, |a, b| a + b == 6);
+        let linked = super::groups(
+            &all,
+            &folders(),
+            facts,
+            |_, _| false,
+            |a, b| a + b == 6,
+            |_, _| false,
+        );
         assert_eq!(linked.len(), 1);
         assert_eq!(linked[0].case, Case::BetterCopy);
         // Identical files.
         let same = groups_of(&[&a, &b], |_, _| true);
         assert_eq!(same[0].case, Case::SameFile);
+        assert_eq!(same[0].matched, Match::Sure);
         let format = groups_of(&[&a, &b], |_, _| false);
         assert_eq!(format[0].case, Case::SameFormat);
         assert_eq!(format[0].tracks, [2, 1]);
+        // A second apart is sure; two seconds is likely.
+        assert_eq!(format[0].matched, Match::Sure);
+        assert!(format[0].easy());
+        let near = copy(5, "/m/DB/_Staging/Clouds 2.mp3", 273.0);
+        let likely = groups_of(&[&a, &near], |_, _| false);
+        assert_eq!(likely[0].matched, Match::Likely);
+        assert!(!likely[0].easy());
     }
 
     fn groups_of(t: &[&Track], same: impl Fn(&Track, &Track) -> bool) -> Vec<Group> {
-        groups(t, &folders(), |_| FileFacts::default(), same, |_, _| false)
+        groups(
+            t,
+            &folders(),
+            |_| FileFacts::default(),
+            same,
+            |_, _| false,
+            |_, _| false,
+        )
     }
 
     #[test]
@@ -585,11 +781,57 @@ mod tests {
     }
 
     #[test]
+    fn copies_by_sound() {
+        // A renamed file with no tags sounds like a tagged FLAC.
+        let flac = copy(1, "/m/DB/Library/Clouds.flac", 271.0);
+        let mut renamed = copy(2, "/m/Downloads/Track 03.mp3", 271.0);
+        renamed.title.clear();
+        renamed.artist.clear();
+        assert!(copies([&flac, &renamed], &[]).is_empty());
+        let found = copies([&flac, &renamed], &[(1, 2)]);
+        assert_eq!(found.len(), 1);
+        let facts = |t: &Track| FileFacts {
+            size: 1,
+            lossless: t.id == 1,
+            bitrate: if t.id == 1 { 900 } else { 128 },
+        };
+        let g = groups(
+            &found[0],
+            &folders(),
+            facts,
+            |_, _| false,
+            |_, _| false,
+            |_, _| true,
+        );
+        assert_eq!(g[0].tracks, [1, 2]);
+        assert_eq!(g[0].matched, Match::Sure);
+    }
+
+    #[test]
+    fn same_sound_matches_close_prints_only() {
+        // A made-up fingerprint, a copy with a few bits flipped, and another.
+        let mut seed = 7u32;
+        let mut next = || {
+            seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            seed
+        };
+        let a: Vec<u32> = (0..500).map(|_| next()).collect();
+        let b: Vec<u32> = a
+            .iter()
+            .enumerate()
+            .map(|(i, &v)| if i % 3 == 0 { v ^ 0b101 } else { v })
+            .collect();
+        let c: Vec<u32> = (0..500).map(|_| next()).collect();
+        let prints = HashMap::from([(1, a), (2, b), (3, c)]);
+        assert_eq!(same_sound(&prints), [(1, 2)]);
+    }
+
+    #[test]
     fn different_remixes_are_not_copies() {
         let a = copy(1, "/m/a.mp3", 200.0);
         let mut b = copy(2, "/m/b.mp3", 200.0);
         b.info.remix = "Club Mix".into();
-        assert!(copies([&a, &b]).is_empty());
+        assert!(copies([&a, &b], &[]).is_empty());
     }
 
     #[test]

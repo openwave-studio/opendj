@@ -370,6 +370,16 @@ fn top_genre(v: &Value) -> String {
 /// The track's Chromaprint fingerprint, compressed and encoded as
 /// AcoustID takes it, and the file's length in seconds.
 pub fn fingerprint(path: &Path) -> Option<(String, f64)> {
+    let (print, duration) = raw_fingerprint(path)?;
+    let config = Configuration::preset_test2();
+    let compressed = rusty_chromaprint::FingerprintCompressor::from(&config).compress(&print);
+    let text = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(compressed);
+    Some((text, duration))
+}
+
+/// The track's Chromaprint fingerprint (of its first two minutes) as it
+/// comes, and the file's length in seconds.
+pub fn raw_fingerprint(path: &Path) -> Option<(Vec<u32>, f64)> {
     let audio = Decoder::open(path).ok()?.run(|_| true).ok()?;
     let rate = audio.sample_rate;
     let config = Configuration::preset_test2();
@@ -384,10 +394,7 @@ pub fn fingerprint(path: &Path) -> Option<(String, f64)> {
     }
     printer.consume(&samples);
     printer.finish();
-    let compressed =
-        rusty_chromaprint::FingerprintCompressor::from(&config).compress(printer.fingerprint());
-    let text = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(compressed);
-    Some((text, audio.duration()))
+    Some((printer.fingerprint().to_vec(), audio.duration()))
 }
 
 /// The best recording in an AcoustID answer: its MusicBrainz id and score.

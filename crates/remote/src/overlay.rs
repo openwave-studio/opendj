@@ -45,6 +45,14 @@ pub fn set_karaoke(now: String, lines: Option<String>) {
     }
 }
 
+static KARAOKE_COVER: Mutex<Option<Arc<Vec<u8>>>> = Mutex::new(None);
+
+/// Artwork for the karaoke track, independent of the overlay's track.
+pub fn set_karaoke_cover(bytes: Vec<u8>) {
+    *KARAOKE_COVER.lock().unwrap_or_else(|e| e.into_inner()) =
+        (!bytes.is_empty()).then(|| Arc::new(bytes));
+}
+
 fn karaoke_json(lines: bool) -> String {
     let k = KARAOKE.lock().unwrap_or_else(|e| e.into_inner());
     let json = if lines { &k.1 } else { &k.0 };
@@ -220,6 +228,16 @@ fn serve(mut stream: TcpStream, shown: &Mutex<Shown>) {
                 json.as_bytes(),
             )
         }
+        "/karaoke/cover" => {
+            let bytes = KARAOKE_COVER
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .clone();
+            match bytes {
+                Some(bytes) => http::respond(&mut stream, "200 OK", "image/jpeg", &bytes),
+                None => http::respond(&mut stream, "404 Not Found", "text/plain", b"No cover"),
+            }
+        }
         "/now-playing/cover" => {
             let cover = shown.lock().unwrap().cover.clone();
             match cover {
@@ -286,6 +304,10 @@ mod tests {
         assert!(get(o.port(), "/karaoke").contains("openDJ Karaoke"));
         set_karaoke(r#"{"id":1}"#.into(), Some(r#"{"id":1,"lines":[]}"#.into()));
         assert!(get(o.port(), "/karaoke.json").ends_with(r#"{"id":1}"#));
+        set_karaoke_cover(b"artwork".to_vec());
+        assert!(get(o.port(), "/karaoke/cover?track=1").ends_with("artwork"));
+        set_karaoke_cover(Vec::new());
+        assert!(!get(o.port(), "/karaoke/cover?track=2").ends_with("artwork"));
         set_karaoke(r#"{"id":2}"#.into(), None);
         assert!(get(o.port(), "/karaoke/lines.json").ends_with(r#"{"id":1,"lines":[]}"#));
     }

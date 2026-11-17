@@ -44,12 +44,15 @@ mod history;
 mod home;
 mod inbox_albums;
 mod info;
+mod info_lists;
 mod keep_going;
 mod lyrics;
 mod mix_export;
+mod mixed_set;
 mod navigation;
 mod pages;
 mod picks;
+mod played;
 mod playlist_files;
 mod prep;
 mod rail_order;
@@ -60,6 +63,7 @@ mod spotify_export;
 mod staging;
 mod streamed;
 mod tag_chips;
+mod tag_health;
 mod track_menu;
 mod up_next;
 mod usb;
@@ -163,6 +167,14 @@ enum Contents {
     Area(Area),
     /// The tracks a Collection Health check was told to leave alone.
     Ignored,
+    /// The tracks taken out of the collection: merged copies, quarantined
+    /// and removed tracks, to bring back.
+    Quarantine,
+    /// Collection Health's Tags page: genres and tag groups, how they're
+    /// used, and merging names (see [`tag_health`]).
+    Tags,
+    /// Collection Health's Lists page: what is wrong in the DJ's lists.
+    Lists,
 }
 
 /// Whether the streaming services that are built (Spotify, TIDAL) can be
@@ -286,6 +298,8 @@ enum StoreRow {
     /// A store's own search page.
     Link(usize, String),
     Wanted(Wanted),
+    /// A track taken out of the collection, on the Quarantine page.
+    Removed(opendj_library::health::Removed),
 }
 
 #[derive(Clone)]
@@ -495,7 +509,8 @@ const KIND_INBOX: i32 = 10;
 const KIND_TRIAGE: i32 = 11;
 /// Collection Health, and one of its checks.
 const KIND_HEALTH: i32 = 12;
-/// One of Collection Health's areas, drawn as a dot in its state's colour.
+/// One of Collection Health's checks, drawn as a dot in its state's colour
+/// (a tick when it finds nothing).
 const KIND_AREA: i32 = 21;
 /// A set: a folder made for one gig, drawn in lilac.
 /// One of the DJ's crates, and the Crates and Playlists headings.
@@ -510,8 +525,11 @@ const KIND_MIX: i32 = 16;
 const KIND_ARTIST: i32 = 20;
 /// Collection Health's Ignored node.
 const KIND_IGNORED: i32 = 22;
+/// A section heading in Collection Health's tree: Files, Location and so on.
+const KIND_HEALTH_SECTION: i32 = 24;
 
-/// Seconds a track must play on a deck to count as played, for the history.
+/// Seconds a track must be heard in the master to count as played, for the
+/// history and this session's played marks.
 const PLAYED_AFTER: f64 = 30.0;
 
 /// Watches one deck's hot cues so changes the DJ makes are saved.
@@ -528,6 +546,17 @@ struct CueWatch {
 
 pub struct Browser {
     app: slint::Weak<AppWindow>,
+    /// Sites whose tracks an add-on source plays (see
+    /// [`crate::sources::Sources::playing_sites`]): a streamed track from
+    /// one loads onto a deck through it instead of opening its page.
+    pub play_sites: Vec<&'static str>,
+    /// Links of streamed tracks to load that way, for the frame loop.
+    stream_plays: Vec<String>,
+    /// The catalog search shown in place of the playlist, while words are
+    /// typed in a service that searches (its [`spotify::SEARCH`] key), and
+    /// when to ask the service for it.
+    stream_search: String,
+    search_due: Option<std::time::Instant>,
     library: Vec<Arc<Track>>,
     nodes: Vec<Node>,
     /// Indices into `nodes` of the rows currently shown in the tree.
@@ -627,6 +656,12 @@ pub struct Browser {
     /// The copies grouped by case, worked out (reading their files) the
     /// first time they're needed after the library changes.
     dupe_groups: OnceCell<Vec<Group>>,
+    /// What each copy's file is like, read with the groups.
+    dupe_facts: RefCell<HashMap<usize, opendj_library::dupes::FileFacts>>,
+    /// Groups of copies opened to show every copy, by the kept copy's id.
+    open_groups: HashSet<usize>,
+    /// Every group shows its copies.
+    all_copies: bool,
     /// Pairs of linked tracks, both ways round.
     links: HashSet<(usize, usize)>,
     /// Tempo and key of the track playing now, for "mixes with deck", and its id.
@@ -637,11 +672,11 @@ pub struct Browser {
     /// The collection's tree shows Collection Health's checks, picked in
     /// the rail.
     health_view: bool,
-    /// The chip picked on each Collection Health area (an index into
-    /// `health::area_chips`); unpicked, the first with tracks.
-    area_chip: HashMap<Area, usize>,
-    /// Tracks each area found when first opened, for its progress bar.
-    area_start: std::cell::RefCell<HashMap<Area, usize>>,
+    /// The case of copies the Duplicates page's Show tab picks; `None`
+    /// lists every copy.
+    dupe_tab: Option<opendj_library::dupes::Case>,
+    /// Tracks each check found when first opened, for its progress bar.
+    check_start: std::cell::RefCell<HashMap<Check, usize>>,
     /// The review card's place among the listed tracks, while it's open.
     review_at: Option<usize>,
     /// Audio files in the stage and music folders, and what the collection
@@ -665,12 +700,14 @@ pub struct Browser {
     /// When the last track counted as played (Unix seconds): an hour
     /// later, or on a new day, the next play starts a new set.
     last_play: Option<i64>,
+    /// The tracks played in this session, marked in the list.
+    played: played::Played,
     /// Lists tracks can be added to, as offered in the track menu.
     menu_lists: Vec<track_menu::MenuList>,
     /// The crates each track is in, by track id.
     crates: HashMap<usize, Vec<String>>,
     /// Empty crates and entries for removed tracks.
-    list_health: opendj_library::sets::ListHealth,
+    list_report: opendj_library::sets::ListReport,
     /// Hot cue controls per deck: enabled and position.
     /// Each deck's hot cues: enabled, position and a saved loop's end.
     hotcues: [Vec<(ControlHandle, ControlHandle, ControlHandle)>; NUM_DECKS],
@@ -697,6 +734,8 @@ pub struct Browser {
     mixed_sets: Option<PathBuf>,
     /// A mixed set being made into a Mixcloud MP3.
     mix_export: Option<std::sync::mpsc::Receiver<mix_export::Progress>>,
+    /// The Mixed Set Editor and the set open in it.
+    mixed_set: mixed_set::MixedSetEditor,
     /// Play Album was picked, for Automix to play the list gaplessly.
     album_request: bool,
     keep_going: keep_going::KeepGoing,
@@ -729,6 +768,14 @@ pub struct Browser {
     health: Facts,
     /// Looks for covers in the background, for the "No cover" check.
     cover_scan: CoverScan,
+    /// Makes audio fingerprints, for copies found by their sound.
+    sound_scan: crate::sound_scan::SoundScan,
+    /// Each track's audio fingerprint, by id.
+    sounds: HashMap<usize, Vec<u32>>,
+    /// Pairs of tracks (ids, smaller first) that sound the same.
+    alike: Vec<(usize, usize)>,
+    /// Fingerprints taken in since `alike` was worked out.
+    sounds_new: usize,
     /// What the last Collection Health fix did.
     health_status: String,
     /// How many tracks have been taken out of the library.
@@ -767,6 +814,15 @@ pub(crate) const STREAMS: [(i32, &str, &str); 5] = [
     (SOUNDCLOUD, "SoundCloud", "soundcloud"),
     (MIXCLOUD, "Mixcloud", "mixcloud"),
 ];
+
+/// Whether the service with this id searches its catalog from the search
+/// box (see [`spotify::SEARCH`]).
+fn searches(id: &str) -> bool {
+    id == "tidal"
+}
+
+/// How long typing pauses before a catalog search is asked for.
+const SEARCH_PAUSE: std::time::Duration = std::time::Duration::from_millis(400);
 
 /// A streaming service: its worker, and what it has sent.
 struct Stream {
@@ -979,6 +1035,15 @@ impl crate::automix::Host for AutomixHost<'_> {
 
     fn load(&mut self, deck: usize, track: Arc<Track>) {
         self.engine.load_track(deck, track);
+    }
+
+    fn pair_mix(&self, out: usize, inc: usize) -> Option<crate::automix_phrases::Paired> {
+        let m = self.browser.db.as_ref()?.pair_mix(out, inc).ok()??;
+        Some(crate::automix_phrases::Paired {
+            out_seconds: m.out_seconds,
+            in_seconds: m.in_seconds,
+            bars: m.bars,
+        })
     }
 }
 
@@ -1293,13 +1358,16 @@ impl Browser {
             indexed: Vec::new(),
             duplicates: HashSet::new(),
             dupe_groups: OnceCell::new(),
+            dupe_facts: RefCell::new(HashMap::new()),
+            open_groups: HashSet::new(),
+            all_copies: false,
             links: HashSet::new(),
             deck_ref: None,
             deck_track: None,
             history_tab: false,
             health_view: false,
-            area_chip: HashMap::new(),
-            area_start: Default::default(),
+            dupe_tab: None,
+            check_start: Default::default(),
             review_at: None,
             relink_files: OnceCell::new(),
             located: std::sync::mpsc::channel(),
@@ -1307,12 +1375,17 @@ impl Browser {
             sorted_list: None,
             view_sort: (1, true),
             wanted_sort: (-1, true),
+            play_sites: Vec::new(),
+            stream_plays: Vec::new(),
+            stream_search: String::new(),
+            search_due: None,
             export_status: None,
             session: None,
             last_play: None,
+            played: played::Played::new(registry),
             menu_lists: Vec::new(),
             crates: HashMap::new(),
-            list_health: Default::default(),
+            list_report: Default::default(),
             hotcues: std::array::from_fn(|d| {
                 (1..=NUM_HOTCUES)
                     .map(|n| {
@@ -1338,6 +1411,7 @@ impl Browser {
             folders: crate::settings::stage_folders(),
             mixed_sets: crate::settings::mixed_sets_folder(),
             mix_export: None,
+            mixed_set: mixed_set::MixedSetEditor::new(registry),
             album_request: false,
             keep_going: Default::default(),
             pages: Default::default(),
@@ -1357,12 +1431,17 @@ impl Browser {
             pending_moves: HashMap::new(),
             health: Facts::default(),
             cover_scan: CoverScan::start(),
+            sound_scan: crate::sound_scan::SoundScan::start(),
+            sounds: HashMap::new(),
+            alike: Vec::new(),
+            sounds_new: 0,
             health_status: String::new(),
             removed: 0,
             quarantined: 0,
             cleanup: Default::default(),
         }));
         b.borrow_mut().set_library(library);
+        b.borrow_mut().resume_session();
         if STREAMING_ENABLED {
             b.borrow_mut().restore_streams();
         }
@@ -1444,6 +1523,7 @@ impl Browser {
                 if is_stores(b.tree) {
                     b.search_stores(StoreQuery::text(&text));
                 }
+                b.search_catalog(&text);
                 b.refresh_rows();
             }))
         });
@@ -1456,9 +1536,13 @@ impl Browser {
                     b.adopt(&[id]);
                     b.load_to_free_deck(id);
                 } else if let Some(t) = b.stream_track(row as usize) {
-                    // Not in the collection: it plays on the service's page.
-                    if !t.page.is_empty() {
-                        open_in_browser(&t.page);
+                    // Not in the collection: it loads through an add-on
+                    // that plays the service's tracks, or plays on its page.
+                    let page = t.page.clone();
+                    if b.plays_link(&page) {
+                        b.stream_plays.push(page);
+                    } else if !page.is_empty() {
+                        open_in_browser(&page);
                     }
                 }
             }))
@@ -1578,9 +1662,11 @@ impl Browser {
             crate::settings::set_hidden_sources(hidden.clone());
             hidden
         });
+        // Add-on sources that work behind another source stay out.
+        let off_rail = crate::sources::off_rail_sources();
         let shown: Vec<bool> = names
             .iter()
-            .map(|n| !hidden.iter().any(|h| h == n))
+            .map(|n| !hidden.iter().any(|h| h == n) && !off_rail.contains(n))
             .collect();
         app.set_sources_shown(std::rc::Rc::new(slint::VecModel::from(shown)).into());
         side_tabs::install(app);
@@ -1946,12 +2032,15 @@ impl Browser {
         Self::install_checklist(app, &with);
         Self::install_lyrics(app, &with);
         Self::install_track_menu(&edit, &with);
+        Self::install_played(&edit, &with);
         Self::install_keep_going(&app.global::<crate::KeepGoingUi>(), &with);
         Self::install_up_next(&app.global::<crate::UpNextUi>(), &with);
         Self::install_pages(&app.global::<crate::PageUi>(), &with);
         Self::install_mix_export(&app.global::<FilesUi>(), &with);
+        Self::install_mixed_set(app, &with);
         Self::install_health(&app.global::<HealthUi>(), &with);
         Self::install_cleanup(&app.global::<crate::CleanupUi>(), &with);
+        Self::install_lists(&app.global::<crate::ListsUi>(), &with);
         Self::install_fix_names(app, &with);
         Self::install_analysis(&edit, &with);
         Self::install_albums(&edit, &with);
@@ -2200,7 +2289,7 @@ impl Browser {
     /// Whether the list shows store rows: the stores' results, or the
     /// wanted list wherever it is.
     fn shows_store_rows(&self) -> bool {
-        is_stores(self.tree) || self.shows_wanted()
+        is_stores(self.tree) || self.shows_wanted() || self.shows_quarantine()
     }
 
     /// A store row's button: open its page (and remember the track as
@@ -2234,6 +2323,7 @@ impl Browser {
             StoreRow::Wanted(w) => {
                 open_in_browser(&w.page_url);
             }
+            StoreRow::Removed(r) => return self.bring_back_removed(&[r.id]),
         }
         self.refresh_rows();
     }
@@ -2365,6 +2455,30 @@ impl Browser {
                     notice = "Tracks you click Buy on, or Add to Wanted on a streaming service, wait here until your collection has them.".into();
                 }
             }
+            Some(Contents::Quarantine) => {
+                let needle = query::fold(&self.search);
+                let removed = self
+                    .db
+                    .as_ref()
+                    .and_then(|db| db.removed_tracks().ok())
+                    .unwrap_or_default();
+                rows.extend(
+                    removed
+                        .into_iter()
+                        .filter(|r| {
+                            needle.is_empty()
+                                || [&r.artist, &r.title]
+                                    .iter()
+                                    .any(|t| query::fold(t).contains(&needle))
+                        })
+                        .map(StoreRow::Removed),
+                );
+                if rows.is_empty() && !needle.is_empty() {
+                    notice = "Nothing in quarantine matches.".into();
+                } else if rows.is_empty() {
+                    notice = "Nothing here: tracks you merge, quarantine or remove from your collection wait here until you bring them back.".into();
+                }
+            }
             Some(which @ (Contents::Store(_) | Contents::OtherStores)) => {
                 let bandcamp = self
                     .store
@@ -2435,6 +2549,7 @@ impl Browser {
             .iter()
             .map(|s| s.name.clone())
             .collect();
+        let quarantine = opendj_library::dupes::quarantine_root(&self.folders);
         let list: Vec<TrackRow> = rows
             .iter()
             .map(|r| {
@@ -2470,6 +2585,13 @@ impl Browser {
                         w.duration,
                         "Buy",
                     ),
+                    StoreRow::Removed(r) => (
+                        r.title.clone(),
+                        r.artist.clone(),
+                        health::removed_detail(r, quarantine.as_deref()),
+                        r.duration,
+                        "Bring back",
+                    ),
                 };
                 let row = TrackRow {
                     title: title.into(),
@@ -2485,15 +2607,17 @@ impl Browser {
                     action: action.into(),
                     ..Default::default()
                 };
+                // On the Quarantine page: where the file is, and the fix.
+                let prep = match r {
+                    StoreRow::Removed(_) => columns::PrepFacts {
+                        problem: row.genre.to_string(),
+                        fix: "Bring back".into(),
+                        ..Default::default()
+                    },
+                    _ => Default::default(),
+                };
                 TrackRow {
-                    cells: columns::row_cells(
-                        &ids,
-                        &row,
-                        None,
-                        None,
-                        Default::default(),
-                        Default::default(),
-                    ),
+                    cells: columns::row_cells(&ids, &row, None, None, Default::default(), prep),
                     ..row
                 }
             })
@@ -2683,6 +2807,21 @@ impl Browser {
     /// Loads a file from a music server's cache onto a deck that isn't
     /// playing (deck A first), without it joining the collection: it stays
     /// a file shown, as in Files, until the DJ adds it.
+    /// Whether an add-on plays the streamed track at `link`.
+    fn plays_link(&self, link: &str) -> bool {
+        let host = link
+            .split_once("://")
+            .and_then(|(_, rest)| rest.split(['/', '?', '#']).next())
+            .unwrap_or_default();
+        !host.is_empty() && self.play_sites.contains(&host)
+    }
+
+    /// Streamed tracks double-clicked to load through an add-on, since last
+    /// asked.
+    pub fn take_stream_plays(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.stream_plays)
+    }
+
     pub fn load_cached(&mut self, path: &Path) {
         let index = match self.path_index.get(path) {
             Some(&i) => Some(i),
@@ -2829,6 +2968,28 @@ impl Browser {
     }
 
     /// The streaming service shown in the tree, if one is.
+    /// Typing in a service that searches its catalog lists what it finds
+    /// there instead of the playlist; asked for once typing pauses.
+    fn search_catalog(&mut self, text: &str) {
+        let Some(st) = self.shown_stream() else {
+            return;
+        };
+        let words = text.trim();
+        if !searches(st.id) || words.chars().count() < 2 {
+            self.stream_search.clear();
+            self.search_due = None;
+            return;
+        }
+        self.stream_search = format!("{}{words}", spotify::SEARCH);
+        self.search_due = Some(std::time::Instant::now() + SEARCH_PAUSE);
+    }
+
+    /// Whether the list shows a catalog search rather than a playlist.
+    fn shows_catalog_search(&self) -> bool {
+        self.current_playlist()
+            .is_some_and(|k| k.starts_with(spotify::SEARCH))
+    }
+
     fn shown_stream(&self) -> Option<&Stream> {
         self.streams.iter().find(|s| s.source == self.tree)
     }
@@ -2851,7 +3012,10 @@ impl Browser {
 
     /// The streaming playlist selected in the tree, if a service is shown.
     fn current_playlist(&self) -> Option<&str> {
-        self.shown_stream()?;
+        let st = self.shown_stream()?;
+        if searches(st.id) && !self.stream_search.is_empty() {
+            return Some(&self.stream_search);
+        }
         match &self.nodes.get(self.current_node)?.contents {
             Contents::Stream(k) => Some(k),
             _ => None,
@@ -3013,6 +3177,14 @@ impl Browser {
     /// Takes in what the streaming services' workers have done. Called
     /// every frame.
     pub fn poll_streams(&mut self) {
+        if self
+            .search_due
+            .is_some_and(|due| due <= std::time::Instant::now())
+        {
+            self.search_due = None;
+            self.fetch_current_playlist();
+            self.refresh_rows();
+        }
         for i in 0..self.streams.len() {
             let source = self.streams[i].source;
             for event in self.streams[i].service.poll() {
@@ -4028,14 +4200,15 @@ impl Browser {
             if opendj_library::row_id(t.id).is_none() {
                 continue;
             }
-            let w = &mut self.watch[d];
-            if w.track.map(|(id, _)| id) != Some(t.id) {
-                *w = CueWatch {
+            if self.watch[d].track.map(|(id, _)| id) != Some(t.id) {
+                self.watch[d] = CueWatch {
                     track: Some((t.id, std::time::Instant::now())),
                     saved: t.info.hotcues.clone(),
                     ..Default::default()
                 };
+                self.note_load(d, t.id);
             }
+            let w = &mut self.watch[d];
             // The engine sets the new track's cues as it loads; wait for that.
             let settled = w
                 .track
@@ -4084,7 +4257,7 @@ impl Browser {
                 }
             }
             let w = &mut self.watch[d];
-            if self.play[d].get_bool() && !w.recorded {
+            if self.play[d].get_bool() && !w.recorded && self.played.heard(d) {
                 w.played += dt;
                 if w.played >= PLAYED_AFTER {
                     w.recorded = true;
@@ -4093,8 +4266,9 @@ impl Browser {
                 }
             }
         }
-        if (changed && self.history_tab) || cues_changed {
-            self.refresh_rows();
+        self.keep_played(dt);
+        if changed || cues_changed {
+            self.refresh_rows_keeping_current();
         }
     }
 
@@ -4107,6 +4281,7 @@ impl Browser {
             .is_some_and(|last| history::new_set(last, now))
         {
             self.session = None;
+            self.played.at.clear();
         }
         self.last_play = Some(now);
         if self.session.is_none() {
@@ -4124,21 +4299,11 @@ impl Browser {
         if let Err(e) = db.record_play(self.session, id) {
             eprintln!("can't record the play: {e}");
         }
+        self.mark_played(id, now);
         if let Some(&i) = self.index_of.get(&id) {
             let mut e = (*self.library[i]).clone();
             e.info.play_count += 1;
             self.library[i] = Arc::new(e);
-        }
-        let showing_session =
-            self.nodes
-                .get(self.current_node)
-                .is_some_and(|n| match (&n.contents, self.session) {
-                    (Contents::Playlist(p), Some(s)) => *p == s,
-                    (Contents::HistoryDay(sets), Some(s)) => sets.contains(&s),
-                    _ => false,
-                });
-        if showing_session {
-            self.refresh_rows();
         }
     }
 
@@ -4641,7 +4806,16 @@ impl Browser {
             return;
         };
         self.park_view();
+        // Health headings open their first check on click. Directional
+        // navigation skips the headings so that moving up never gets stuck.
+        let n = if self.nodes[n].kind == KIND_HEALTH_SECTION {
+            (n + 1).min(self.nodes.len() - 1)
+        } else {
+            n
+        };
         self.current_node = n;
+        self.review_at = None;
+        self.dupe_tab = None;
         // Clicking an artist opens it; navigating through artists does not.
         if open_artist && self.nodes[n].kind == KIND_ARTIST {
             self.nodes[n].expanded = true;
@@ -4778,6 +4952,12 @@ impl Browser {
             }
         }
         let mut top = 0.0;
+        // Only worked out while Collection Health's tree is shown.
+        let tags_to_roll_up = if self.health_view && self.saved() && self.tree == COLLECTION {
+            self.tags_to_roll_up()
+        } else {
+            0
+        };
         let folders: Vec<Folder> = self
             .visible_nodes
             .iter()
@@ -4800,7 +4980,23 @@ impl Browser {
                     separator: n.separator,
                     color: n.color.map_or(-1, |c| c as i32),
                     icon: match n.contents {
-                        Contents::Area(a) => self.area_state(a) as i32,
+                        Contents::Health(Some(c)) if n.kind == KIND_AREA => {
+                            self.check_state(c) as i32
+                        }
+                        Contents::Lists => {
+                            (if self.list_report.issues.is_empty() {
+                                health::CheckState::Clear
+                            } else {
+                                health::CheckState::Check
+                            }) as i32
+                        }
+                        Contents::Tags if n.kind == KIND_AREA => {
+                            (if tags_to_roll_up > 0 {
+                                health::CheckState::Check
+                            } else {
+                                health::CheckState::Clear
+                            }) as i32
+                        }
                         _ => n.icon as i32,
                     },
                     count: match &n.contents {
@@ -4820,8 +5016,12 @@ impl Browser {
                             .count() as i32,
                         Contents::Health(Some(check)) => self.health_count(*check) as i32,
                         Contents::Dupes(case) => self.dupe_tracks(Some(*case)).len() as i32,
-                        Contents::Area(a) => self.area_count(*a) as i32,
                         Contents::Ignored => self.ignored_tracks().len() as i32,
+                        Contents::Quarantine => self.removed as i32,
+                        Contents::Tags if n.kind == KIND_AREA => tags_to_roll_up as i32,
+                        Contents::Lists => {
+                            (self.list_report.lists - self.list_report.tidy()) as i32
+                        }
                         _ => n.count.map_or(-1, |c| c as i32),
                     },
                     dim: n.dim,
@@ -5063,11 +5263,14 @@ impl Browser {
                 .filter(|&t| self.at_stage(&self.library[t], *stage, dir.as_deref()))
                 .collect(),
             Contents::Query(q) => self.search(&Query::parse(q), None),
-            Contents::Health(Some(Check::Duplicate)) => self.dupe_tracks(None),
-            Contents::Dupes(case) => self.dupe_tracks(Some(*case)),
+            Contents::Health(Some(Check::Duplicate)) => self.dupe_rows(None),
+            Contents::Dupes(case) => self.dupe_rows(Some(*case)),
             Contents::Health(Some(check)) => self.health_tracks(*check),
             Contents::Health(None) | Contents::Area(_) => Vec::new(),
             Contents::Ignored => self.ignored_tracks(),
+            // Store rows: tracks no longer in the library.
+            Contents::Quarantine => Vec::new(),
+            Contents::Tags | Contents::Lists => Vec::new(),
             Contents::Grouping(g) => all()
                 .into_iter()
                 .filter(|&t| self.library[t].info.grouping == *g)
@@ -5585,6 +5788,10 @@ impl Browser {
         }
         if self.shows_store_rows() {
             self.set_close_matches(false);
+            // The Quarantine page has Collection Health's columns.
+            if self.shows_quarantine() {
+                self.follow_list_sort();
+            }
             self.refresh_store_rows();
             return;
         }
@@ -5598,8 +5805,10 @@ impl Browser {
         let needle = query::fold(&self.search);
         let filtering = self.filtering();
         let all = self.row_data();
+        // What the service found for the words is listed as it came.
+        let found = self.shows_catalog_search();
         let keep = |q: &Query, r: &RowData| match r.local {
-            _ if q.is_empty() => true,
+            _ if q.is_empty() || found => true,
             Some(id) => q.matches(&self.library[id], &self.indexed[id], &cx),
             None if filtering => false,
             None => [r.title, &r.artist, r.album]
@@ -5726,6 +5935,11 @@ impl Browser {
                     streamed: r.stream.is_some(),
                     // Only while the day is in play order.
                     set_start: r.list.set_start && self.sort_column == columns::ORDER,
+                    played: r
+                        .local
+                        .map(|id| self.played.time_of(library[id].id))
+                        .unwrap_or_default()
+                        .into(),
                 };
                 let crates = r.local.and_then(|id| self.crates.get(&library[id].id));
                 TrackRow {
@@ -5789,6 +6003,10 @@ impl Browser {
             }
         }
         self.refresh_album_ui();
+        // A check's page counts the tracks listed, so it follows the list.
+        if self.shown_check().is_some() {
+            self.refresh_health_ui();
+        }
     }
 
     /// Sets the sort and columns up for the node shown: one of the DJ's
@@ -5809,7 +6027,15 @@ impl Browser {
         let history = list.is_some() && node.is_some_and(|n| n.history);
         let prep = node.is_some_and(|n| matches!(n.contents, Contents::Stage(Stage::Triage, _)));
         let area = self.health_view
-            && node.is_some_and(|n| matches!(n.contents, Contents::Area(_) | Contents::Ignored));
+            && node.is_some_and(|n| {
+                matches!(
+                    n.contents,
+                    Contents::Health(Some(_))
+                        | Contents::Area(_)
+                        | Contents::Ignored
+                        | Contents::Quarantine
+                )
+            });
         let kind = if history {
             columns::Columns::History
         } else if area {

@@ -310,7 +310,9 @@ PioneerXDJRX3.jogTurn = function(channel, _control, value, _status, group) {
 };
 
 PioneerXDJRX3.jogSearch = function(_channel, _control, value, _status, group) {
-    engine.setValue(group, "jog", (value - 64) * PioneerXDJRX3.fastSeekScale);
+    // openDJ: SHIFT + turn moves the position (jog_search); plain jog bends
+    // the speed as in Mixxx.
+    engine.setValue(group, "jog_search", (value - 64) * PioneerXDJRX3.fastSeekScale);
 };
 
 PioneerXDJRX3.jogTouch = function(channel, _control, value) {

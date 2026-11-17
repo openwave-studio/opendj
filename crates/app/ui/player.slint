@@ -255,6 +255,9 @@ export component PlayerBar inherits Rectangle {
     property <bool> playing: Controls.value(play-index, Controls.tick) > 0;
     property <int> position-index: Controls.resolve(group, "playposition");
     property <int> hold-index: Controls.resolve(group, "seek_hold");
+    // The deck a drag holds, kept from its start: Automix can move the
+    // bar to the other deck mid-drag, and the release must free this one.
+    property <int> held-index: -1;
     property <length> press-x;
     property <bool> scrubbing;
     // While dragging, where the pointer is (0 to 1), drawn at once rather
@@ -523,9 +526,10 @@ export component PlayerBar inherits Rectangle {
                                 scrubbing = false;
                                 Controls.set-value(position-index, clamp(self.mouse-x / self.width, 0, 1));
                             } else if e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel {
-                                if scrubbing {
-                                    Controls.set-value(hold-index, 0);
+                                if scrubbing && held-index >= 0 {
+                                    Controls.set-value(held-index, 0);
                                 }
+                                held-index = -1;
                                 scrubbing = false;
                             }
                         }
@@ -533,7 +537,8 @@ export component PlayerBar inherits Rectangle {
                             if self.pressed {
                                 if !scrubbing && abs(self.mouse-x - press-x) > 4px {
                                     scrubbing = true;
-                                    Controls.set-value(hold-index, 1);
+                                    held-index = hold-index;
+                                    Controls.set-value(held-index, 1);
                                 }
                                 if scrubbing {
                                     drag-at = clamp(self.mouse-x / self.width, 0, 1);
@@ -643,35 +648,32 @@ export component PlayerBar inherits Rectangle {
                         }
                     }
                 }
-                // Opens Now Playing on its Lyrics, or closes it.
+                // Karaoke: opens Now Playing (the art and the lyrics as on
+                // the karaoke screen), or closes it.
                 VerticalLayout {
                     alignment: center;
                     Rectangle {
                         width: 40px;
                         height: 36px;
                         border-radius: 9px;
-                        property <bool> lit: NowPlayingUi.open && NowPlayingUi.tab == 0;
+                        property <bool> lit: NowPlayingUi.open;
                         background: lit ? Theme.accent.with-alpha(0.18) : lyta.has-hover ? Theme.n-3a3a3d : transparent;
                         border-width: lit ? 1px : 0px;
                         border-color: Theme.accent;
-                        // A speech bubble with lines of words.
+                        // A small hand-held microphone.
                         Path {
-                            width: 22px;
-                            height: 19px;
+                            width: 20px;
+                            height: 20px;
                             viewbox-width: 18;
-                            viewbox-height: 16;
+                            viewbox-height: 18;
                             stroke: lit ? Theme.accent : Theme.text;
                             stroke-width: 1.6px;
-                            commands: "M 2 1.5 L 16 1.5 L 16 11 L 7 11 L 3.5 14.5 L 3.5 11 L 2 11 Z M 5 5 L 13 5 M 5 8 L 10.5 8";
+                            commands: "M 11.2 2.4 A 3.2 3.2 0 1 1 15.6 6.8 A 3.2 3.2 0 1 1 11.2 2.4 Z M 10.6 5.2 L 3 13.4 L 4.6 15 L 12.8 7.4";
                         }
                         lyta := TouchArea {
                             mouse-cursor: pointer;
                             clicked => {
-                                if lit {
-                                    NowPlayingUi.close();
-                                } else {
-                                    NowPlayingUi.show(0);
-                                }
+                                NowPlayingUi.toggle();
                             }
                         }
                     }

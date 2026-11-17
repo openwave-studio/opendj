@@ -1,0 +1,12 @@
+[package]
+name = "opendj-karaoke-render"
+description = "Rendered checks of the karaoke screen (crates/app/ui/karaoke.slint), kept out of the app crate so its tests don't build the whole app a second time"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+# The app's slint features, so the workspace builds slint once.
+slint = { version = "~1.18", features = ["unstable-wgpu-30", "unstable-fontique-011", "unstable-winit-030", "renderer-femtovg-wgpu"] }
+image = { version = "0.25", default-features = false, features = ["png"] }

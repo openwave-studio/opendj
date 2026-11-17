@@ -1,50 +1,69 @@
 # Collection Health
 
 **Collection Health**, the cross under Collection in the rail, checks the
-whole collection for what needs fixing. **Overview** shows how much of your
-collection is clean, with Inbox, In Prep and Play Ready on their own bars, and
-the checks grouped into five areas in the order they're best fixed: **Files**,
-**Out of place**, **Duplicates**, **Info** and **Prep**. The first area with
-work is marked Start here.
+whole collection for what needs fixing.
 
-An area lists its tracks with a **Problem** and a **Fix** column and a progress
-bar. Its bar has:
+**Overview** starts with one bar of your collection split by stage (Inbox,
+In Prep and Play Ready, adding up to 100%), with your Wanted list as a grey
+bar under it on the same scale. Then the clean score: a track is clean when
+no check in Files, Location, Duplicates or Metadata flags it (Prep doesn't
+count). Under the score, each check that holds it back shows how many
+tracks it finds and how many points the score would gain if you fixed
+them. Then every check has a tile, under its section; the first check with
+work says Start here.
 
-- **Auto-fix**, for the fixes with one clear answer: relinking a missing file
-  to the only file that matches it, merging easy duplicates, and taking the
-  junk the clean-up rules know out of names. Undo takes the whole run back.
-  On Prep the button reads **Analyze** and queues every track not analysed
-  yet.
-- **Review**, which goes through the area one track at a time on a card.
+The sidebar lists every check under five sections, in the order they're best
+fixed: **Files** (Missing files, Low bitrate), **Location** (Outside folders,
+Long tracks, Strays, Not music), **Duplicates**, **Metadata** (Junk in
+names, Missing information, No cover, Album tags differ) and **Prep** (Not
+analyzed, Unrated). **Organization** has the Tags and Lists pages (see
+[Tags](#tags) and [Lists](#lists)), which don't count against the score. A dot shows how a check stands (red: won't play,
+yellow: to look at, grey: a goal) and turns into a green tick when it finds
+nothing.
+
+A check's page starts with its name and a line on what is listed, then its
+fixes as **numbered steps** in the order to do them, one button each; the
+step to do now is outlined, and a done step gets a tick. **Show** tabs under
+the steps only filter the list (on Duplicates: each kind of copy); they
+never change anything. The list has a **Problem** and a **Fix** column.
+
+- The first step is often the sure fixes, with one clear answer: relinking
+  a missing file to the only file that matches it, merging easy
+  duplicates, and taking the junk the clean-up rules know out of names.
+  Undo takes the whole run back. On Not analyzed the button reads
+  **Analyze** and queues every track not analysed yet.
+- **Review** goes through the check one track at a time on a card.
   **Return** applies the fix shown, **→** skips, **I** ignores the track for
   that check, **E** opens its Info tab, **Space** plays it in the headphones,
-  **⌘Z** (Ctrl+Z) undoes and **Esc** goes back to the list. When the area is
-  done, **Next** carries on in the next one with work.
+  **⌘Z** (Ctrl+Z) undoes and **Esc** goes back to the list. When the check is
+  done, **Next** carries on with the next one with work.
 
 To fix only some tracks from the list, pick them (shift-click for a range,
-⌘-click or Ctrl-click for single tracks) and right-click. Tracks a check was
-told to leave alone are under **Ignored**, below the areas; **Bring back**
-lets every check see them again.
+⌘-click or Ctrl-click for single tracks) and right-click. Tracks you told a
+check to leave alone (I on the card) are under **Ignored**;
+**Bring back** lets every check see them again.
+
+**Quarantine**, the last row, lists every track taken out of your
+collection: merged copies, tracks moved to quarantine and ones you
+removed, newest first, with where each file is. **Bring back** on a row
+(or on the tracks you pick) puts it back in your collection; a file that
+went to quarantine moves to your In Prep folder, to be looked at again.
+**Show folder** opens the quarantine folder.
 
 | Check | Finds | Fixes |
 |---|---|---|
 | Not music | Audiobooks, podcasts and spoken word: Apple Books and Podcasts folders, `.m4b` files, genres such as Audiobook, "(Unabridged)" albums, and chapters (several tracks in one folder sharing a title) | Remove from library, It's music |
 | Strays | Files outside your Inbox, In Prep and Play Ready folders | Move to In Prep, Remove from collection |
 | Outside folders | Files outside your music folders and stage folders, such as ones that came in with a VirtualDJ import | Move to In Prep, Remove from collection |
-| Duplicates | The same track more than once: same artist, title and remix | Auto-fix, Keep this copy, Link as versions (see [Duplicates](#duplicates)) |
+| Duplicates | The same track more than once: same artist, title and remix | Merge the sure ones, Keep this copy, Link as versions (see [Duplicates](#duplicates)) |
 | Not analyzed | No tempo or key | Analyze, in the background |
-| Missing or poor metadata | No artist, title, album, year or genre, or one that says nothing, like "Unknown Artist", "Untitled" or "Track 01" | Look up online (see [Online lookup](#online-lookup)); Fill from file name… (`Artist - Title.mp3`, shown in the review table before anything is written). The page says what the flagged tracks lack, such as "80 no genre, 12 no artist or title" |
+| Missing information | No artist, title, album, year or genre, or one that says nothing, like "Unknown Artist", "Untitled" or "Track 01" | Look up online (see [Online lookup](#online-lookup)); Fill from file name… (`Artist - Title.mp3`, shown in the review table before anything is written). The page says what the flagged tracks lack, such as "80 no genre, 12 no artist or title" |
 | Low bitrate | Compressed files under 192 kb/s, which can sound dull on a big system | None yet: replace them with a better copy |
 | Junk in names | Track numbers, web sites, "(Official Video)", underscores, or a remix or guest in the title | Clean up… (see [Clean-up](#clean-up)), Look up online |
 | No cover | No picture in the file's tags or its folder | Find covers online, or one by one from the track's info panel |
-| No rating | No stars | Rate them in the list |
-| Missing files | The file isn't where your collection expects it | Auto-fix relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
+| Unrated | No stars; never counts against the score | Rate them in the list |
+| Missing files | The file isn't where your collection expects it | Relink the sure ones relinks a file found under the same name in your stage folders and music folders, when there is only one; Remove from collection |
 | Long tracks | Over 20 minutes: recorded sets and long pieces | Tag as #mix |
-
-**Lists** at the bottom of the page shows up when crates are empty or lists
-still hold tracks you removed from your collection. **Tidy up** deletes the
-empty crates and takes those tracks out of the lists. Playlists are left
-alone, since a new one starts empty.
 
 **Ignore for** in the right-click menu tells a check to leave a track
 alone. A track that isn't music is left out of the other checks, so an
@@ -90,15 +109,47 @@ Each rule can be turned off in Settings › Collection › Health, under
 Clean-up. Titles that start with a number, such as `99 Luftballons`, stay
 as they are.
 
-**Genres…** at the bottom of the Collection Health page lists every genre with
-how many tracks have it. Genres spelled like another but for capitals,
-spaces or punctuation (`Electronica` and `electronica`) are lilac. Tick the
-ones that mean the same, type the name to keep (the most used one is
-filled in), and **Merge**. Undo takes a merge back too.
+## Tags
+
+**Tags**, under Organization, shows how your genres and each of your tag
+groups are used. Each has a card: the share of tracks with at least one,
+the most used names, how many names are spelled like another (but for
+capitals, spaces or punctuation, such as `Deep House` and `Deep-House`) and
+how many are used on one track only. The sidebar's count is the names a
+roll-up would merge.
+
+Pick a card to list its names, with **Show** tabs for every name, the ones
+spelled alike (lilac) and the ones used once.
+
+- **Roll up** merges each set of names spelled alike into its most used
+  spelling, in one go.
+- Or tick names that mean the same, type the name to keep (the most used
+  one is filled in) and **Merge**.
+
+Genres are written to the files' tags too; tag groups live in your
+collection. **Undo** takes a roll-up or merge back. In Settings › Collection
+› Tags, a tag's × also offers **Merge into…** another tag of its group.
+
+## Lists
+
+**Lists**, under Organization, shows how many of your lists and crates are
+tidy, then a row per problem:
+
+- entries for tracks taken out of your collection;
+- tracks listed more than once (a crate holds each track once);
+- empty lists, except a gig's lists and ones you made in the last month,
+  which often start empty;
+- a list with the same name as another list or folder beside it.
+
+**Tidy the sure ones** takes out entries for removed tracks and repeats in
+crates, and deletes lists an import brought in that were always empty.
+Everything else waits for you: each row has its own button (**Keep the
+first**, **Delete**, or **Rename**, which opens the list), and clicking a
+list's name opens it.
 
 ## Online lookup
 
-**Look up online** on Missing or poor metadata or Junk in names works on
+**Look up online** on Missing information or Junk in names works on
 every track listed (or a right-click on some of them). It looks each track
 up on MusicBrainz in the background, paced as MusicBrainz asks, and opens
 the same review table as Clean-up with what it found: artist, title, album,
@@ -144,8 +195,12 @@ round.
 ## Duplicates
 
 Copies are tracks with the same artist, title and remix, ignoring case,
-punctuation and "Original Mix". Under **Duplicates** in the tree, openDJ
-sorts them into groups by what tells them apart:
+punctuation and "Original Mix", or tracks that sound the same. openDJ
+listens to the first two minutes of each file in the background, once, and
+again only when the file changes, so a renamed `Track 03.mp3` is found as
+a copy of the tagged FLAC it came from. A match by sound is always Sure.
+On a Mac, files that iCloud has taken off the disk are skipped. openDJ
+sorts the copies into groups by what tells them apart:
 
 | Group | What it is | What happens |
 |---|---|---|
@@ -154,14 +209,22 @@ sorts them into groups by what tells them apart:
 | Same format | The same recording in the same format, in different folders | One is kept |
 | Different lengths | More than 3 seconds apart: an edit and an extended mix, say | You decide: **Link as versions** or **Keep the best copies** |
 
-In each group the copy kept comes first and the others are dimmed. openDJ
+Each group is one row. Its Problem says how sure the match is and why:
+**Sure** (the same file, or the same name and length to the second),
+**Likely** (a second or two apart: look before merging) or **Versions**,
+with how many copies there are. Its Fix says what differs, such as
+"Keeps FLAC 1411 · 6:12 over MP3 192 · 6:12". **Show copies** on the bar
+opens every group; right-click a row and choose **Show or hide its
+copies** to open just that one.
+
+In an open group the copy kept comes first and the others are dimmed. openDJ
 keeps the copy in your Play Ready folder, then a lossless file over a lossy
 one, then the higher bitrate, then the one with cues or a checked grid,
 then the most played. To keep another one, right-click it and choose
 **Keep this copy**. The **Location** column (right-click a heading) shows
 which folder each copy is in.
 
-**Auto-fix** on Duplicates merges every group but Different lengths at once. Merging
+**Merge the sure ones** on Duplicates merges every Sure group at once. Merging
 loses nothing: the kept copy takes the others' lists and history, cues and
 grid (when it has none), links, the highest rating, all their plays, the
 earliest date added, and any tags it lacks. The other copies leave your

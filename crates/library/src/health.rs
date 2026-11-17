@@ -47,7 +47,28 @@ CREATE TABLE IF NOT EXISTS covers (
     has_cover INTEGER NOT NULL,
     bitrate INTEGER
 );
+CREATE TABLE IF NOT EXISTS sounds (
+    track_id INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    file_mtime INTEGER NOT NULL,
+    print BLOB NOT NULL
+);
 ";
+
+/// A track taken out of the library (see [`Library::removed_tracks`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Removed {
+    pub id: usize,
+    pub artist: String,
+    pub title: String,
+    /// Where its file is: in quarantine once it has moved there.
+    pub path: PathBuf,
+    pub duration: f64,
+    /// Its file went (or waits to go) to quarantine; otherwise it stayed
+    /// where it was.
+    pub quarantined: bool,
+    /// When it left, in seconds since 1970.
+    pub removed: i64,
+}
 
 /// What a look at a track's file found: whether it has a cover and its
 /// bitrate (kb/s; 0 when the file doesn't say, `None` from before bitrates
@@ -142,10 +163,10 @@ impl Check {
             Check::Stray => "Strays",
             Check::Outside => "Outside folders",
             Check::NotAnalyzed => "Not analyzed",
-            Check::MissingInfo => "Missing or poor metadata",
+            Check::MissingInfo => "Missing information",
             Check::LowBitrate => "Low bitrate",
             Check::NoCover => "No cover",
-            Check::NoRating => "No rating",
+            Check::NoRating => "Unrated",
             Check::Missing => "Missing files",
             Check::Long => "Long tracks",
             Check::Duplicate => "Duplicates",
@@ -162,13 +183,13 @@ impl Check {
             }
             Check::Stray => "Files outside your Inbox, In Prep and Play Ready folders.",
             Check::Outside => "Files outside your music folders and stage folders.",
-            Check::NotAnalyzed => "No tempo or key yet.",
+            Check::NotAnalyzed => "No tempo, key or beatgrid yet. Analysis runs in the background and pauses while a deck plays.",
             Check::MissingInfo => {
                 "No artist, title, album, year or genre, or one that says nothing, like \"Unknown Artist\" or \"Track 01\"."
             }
             Check::LowBitrate => "Compressed files under 192 kb/s: they can sound dull on a big system.",
             Check::NoCover => "No picture in the file's tags or its folder.",
-            Check::NoRating => "No stars yet.",
+            Check::NoRating => "No stars yet. Rating is your call, so it never counts against the score.",
             Check::Missing => "The file isn't where your collection expects it.",
             Check::Long => "Over 20 minutes: recorded sets and long pieces.",
             Check::Duplicate => "The same track more than once.",
@@ -190,9 +211,9 @@ impl Check {
     pub fn area(self) -> Area {
         match self {
             Check::Missing | Check::LowBitrate => Area::Files,
-            Check::NotMusic | Check::Stray | Check::Outside | Check::Long => Area::OutOfPlace,
+            Check::NotMusic | Check::Stray | Check::Outside | Check::Long => Area::Location,
             Check::Duplicate => Area::Duplicates,
-            Check::MissingInfo | Check::Junk | Check::AlbumTags | Check::NoCover => Area::Info,
+            Check::MissingInfo | Check::Junk | Check::AlbumTags | Check::NoCover => Area::Metadata,
             Check::NotAnalyzed | Check::NoRating => Area::Prep,
         }
     }
@@ -205,27 +226,27 @@ impl Check {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Area {
     Files,
-    OutOfPlace,
+    Location,
     Duplicates,
-    Info,
+    Metadata,
     Prep,
 }
 
 impl Area {
     pub const ALL: [Area; 5] = [
         Area::Files,
-        Area::OutOfPlace,
+        Area::Location,
         Area::Duplicates,
-        Area::Info,
+        Area::Metadata,
         Area::Prep,
     ];
 
     pub fn title(self) -> &'static str {
         match self {
             Area::Files => "Files",
-            Area::OutOfPlace => "Out of place",
+            Area::Location => "Location",
             Area::Duplicates => "Duplicates",
-            Area::Info => "Info",
+            Area::Metadata => "Metadata",
             Area::Prep => "Prep",
         }
     }
@@ -234,9 +255,9 @@ impl Area {
     pub fn question(self) -> &'static str {
         match self {
             Area::Files => "Can it play?",
-            Area::OutOfPlace => "Should it be here?",
+            Area::Location => "Should it be here?",
             Area::Duplicates => "Same track twice?",
-            Area::Info => "Can you find it?",
+            Area::Metadata => "Can you find it?",
             Area::Prep => "Ready to play?",
         }
     }
@@ -246,15 +267,15 @@ impl Area {
         let order = [
             Check::Missing,
             Check::LowBitrate,
-            Check::NotMusic,
+            Check::Outside,
             Check::Long,
             Check::Stray,
-            Check::Outside,
+            Check::NotMusic,
             Check::Duplicate,
-            Check::MissingInfo,
             Check::Junk,
-            Check::AlbumTags,
+            Check::MissingInfo,
             Check::NoCover,
+            Check::AlbumTags,
             Check::NotAnalyzed,
             Check::NoRating,
         ];
@@ -757,6 +778,28 @@ impl Library {
         Ok(n)
     }
 
+    /// The tracks taken out of the library, newest first: merged copies,
+    /// quarantined tracks and removed ones.
+    pub fn removed_tracks(&self) -> Result<Vec<Removed>, Error> {
+        let mut q = self.db.prepare(
+            "SELECT t.id, t.artist, t.title, t.path, t.duration, t.stage, r.removed
+             FROM removed r JOIN tracks t ON t.id = r.track_id
+             ORDER BY r.removed DESC, t.id",
+        )?;
+        let rows = q.query_map([], |r| {
+            Ok(Removed {
+                id: track_id(r.get(0)?),
+                artist: r.get(1)?,
+                title: r.get(2)?,
+                path: PathBuf::from(r.get::<_, String>(3)?),
+                duration: r.get(4)?,
+                quarantined: r.get::<_, String>(5)? == "quarantine",
+                removed: r.get(6)?,
+            })
+        })?;
+        rows.collect()
+    }
+
     /// How many tracks have been taken out of the library.
     pub fn removed_count(&self) -> Result<usize, Error> {
         self.db
@@ -782,6 +825,42 @@ impl Library {
             ))
         })?;
         rows.collect()
+    }
+
+    /// Each track's audio fingerprint (see [`crate::dupes::same_sound`]),
+    /// with its file's modification time when it was made.
+    pub fn sounds(&self) -> Result<HashMap<usize, (i64, Vec<u32>)>, Error> {
+        let mut q = self
+            .db
+            .prepare("SELECT track_id, file_mtime, print FROM sounds")?;
+        let rows = q.query_map([], |r| {
+            let blob: Vec<u8> = r.get(2)?;
+            let print = blob
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|c| u32::from_le_bytes(*c))
+                .collect();
+            Ok((track_id(r.get(0)?), (r.get(1)?, print)))
+        })?;
+        rows.collect()
+    }
+
+    /// Keeps tracks' audio fingerprints, by track id, with their files'
+    /// modification times.
+    pub fn save_sounds(&mut self, found: &[(usize, i64, Vec<u32>)]) -> Result<(), Error> {
+        let tx = self.db.transaction()?;
+        {
+            let mut put = tx.prepare(
+                "INSERT OR REPLACE INTO sounds (track_id, file_mtime, print) VALUES (?1, ?2, ?3)",
+            )?;
+            for (id, mtime, print) in found {
+                let Some(row) = row_id(*id) else { continue };
+                let blob: Vec<u8> = print.iter().flat_map(|v| v.to_le_bytes()).collect();
+                put.execute(params![row, mtime, blob])?;
+            }
+        }
+        tx.commit()
     }
 
     /// Notes what was found in tracks' files, by track id.
@@ -1040,6 +1119,12 @@ mod tests {
         assert_eq!(left.len(), 1);
         assert_eq!(left[0].title, "Two");
         assert_eq!(lib.removed_count().unwrap(), 1);
+        let removed = lib.removed_tracks().unwrap();
+        assert_eq!(removed.len(), 1);
+        assert_eq!((removed[0].id, removed[0].title.as_str()), (ids[0], "One"));
+        assert!(!removed[0].quarantined);
+        lib.save_sounds(&[(ids[1], 7, vec![1, u32::MAX])]).unwrap();
+        assert_eq!(lib.sounds().unwrap()[&ids[1]], (7, vec![1, u32::MAX]));
         // A scan finds the file again, but it stays out.
         lib.sync(&[file_track("/m/a.mp3", "One")]).unwrap();
         assert_eq!(lib.all_tracks(|_| true).unwrap().len(), 1);

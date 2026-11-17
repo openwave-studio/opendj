@@ -43,18 +43,30 @@ impl Browser {
                 if app.global::<StoreUi>().get_source() == INSTRUMENTS {
                     self.navigate_instruments(&app, direction, code, steps);
                 } else if matches!(direction, Direction::Up | Direction::Down) {
-                    let current = self
-                        .visible_nodes
-                        .iter()
-                        .position(|&n| n == self.current_node);
                     let delta = if matches!(direction, Direction::Up) {
                         -steps
                     } else {
                         steps
                     };
-                    if let Some(row) =
+                    let row = if self.health_view && self.tree == COLLECTION {
+                        // Headings are click shortcuts, not distinct pages.
+                        // Including them would trap Up at the first check.
+                        let rows: Vec<_> = self
+                            .visible_nodes
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, n)| self.nodes[**n].kind != KIND_HEALTH_SECTION)
+                            .collect();
+                        let current = rows.iter().position(|&(_, &n)| n == self.current_node);
+                        tree_navigation::step_row(current, rows.len(), delta).map(|i| rows[i].0)
+                    } else {
+                        let current = self
+                            .visible_nodes
+                            .iter()
+                            .position(|&n| n == self.current_node);
                         tree_navigation::step_row(current, self.visible_nodes.len(), delta)
-                    {
+                    };
+                    if let Some(row) = row {
                         self.select_folder_row(row, false);
                         focus.invoke_focus(BrowserPane::Folders);
                     }

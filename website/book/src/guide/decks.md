@@ -253,7 +253,8 @@ on the beat and the phrase, as if it had played on. In slip mode a hot cue
 plays only while you hold it. SLIP blinks while the track is held elsewhere;
 switching it off then also brings the track back. Slip only works on a deck
 that's playing: on a paused deck, scratching and hot cues find a spot as
-usual.
+usual. Let go of a spinning jog in slip mode (a back-spin) and the deck
+follows the jog until it stops turning, then carries on from the line.
 
 **Scratching** follows your hand closely. openDJ smooths a controller's jog
 the way Mixxx does when you hold the record or push it at a steady speed,
@@ -266,15 +267,23 @@ buffer feels tighter still.
 **Vinyl mode** (Settings › Decks) decides what touching the top of a
 controller's jog does. On (the default), it grabs the record so you can
 scratch. Off, the top bends the tempo like the rim does, so brushing the jog
-doesn't stop the track, as CDJ mode does on a Pioneer player. The DDJ-FLX4
-and DDJ-FLX6 follow it, and a controller's own VINYL button still switches
-it for its deck.
+doesn't stop the track, as CDJ mode does on a Pioneer player. The DDJ-400,
+DDJ-FLX4, DDJ-FLX6 and DDJ-FLX10 follow it, and a controller's own VINYL
+button still switches it for its deck.
 
 **Pitch bend** nudges a deck's beat into line by ear: it plays a little
 faster or slower while you bend and springs back when you stop. Turn a
 controller's jog rim, drag round the on-screen jog's rim, or hold **«** or
 **»** beside the jog (2%, or 4% with Shift). <kbd>←</kbd> and <kbd>→</kbd>
 bend the deck you started last, the one you're mixing in.
+Every controller's rim bends the tempo this way, including the mappings
+that come from Mixxx, and **SHIFT** + jog searches through the track.
+
+**Jog feel** is set for each controller in the
+[Controller Editor](controllers.md)'s **Options**: **Pitch bend** (Fine,
+Normal, Strong) sets how much the rim bends the tempo, and **Scratch**
+(Loose, Normal, Tight) how closely the record follows your hand. Tight
+answers quick cuts sooner; Loose is smoother on long pushes.
 
 **Censor** plays the deck backwards while you hold it, then carries on as if
 it had played forwards, to bleep a word. Shift-click and hold PLAY while the

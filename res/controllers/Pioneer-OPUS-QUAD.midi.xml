@@ -1,0 +1,3188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>Pioneer OPUS-QUAD</name>
+        <author>openDJ (from its XDJ-AZ mapping)</author>
+        <description>openDJ mapping for the Pioneer OPUS-QUAD in PC control (MIDI) mode: four decks, the mixer, Beat FX and Sound Color FX, hot cue pads, jog ring lights. Beta: written from AlphaTheta's MIDI message list, not yet tried on the hardware.</description>
+        <manual>pioneer_opus_quad</manual>
+    </info>
+    <controller id="OPUS-QUAD">
+        <scriptfiles>
+            <file functionprefix="PioneerOPUSQUAD" filename="Pioneer-OPUS-QUAD-script.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <description>SMART ROTARY SELECTOR - rotate - move through the list</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB0</status>
+                <midino>0x4F</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR +SHIFT - rotate - zoom the waveforms (openDJ)</description>
+                <group>[Library]</group>
+                <key>PioneerOPUSQUAD.waveformZoom</key>
+                <status>0xB0</status>
+                <midino>0x60</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR - press - open the folder or load the track</description>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR +SHIFT - press - move between the list and the sidebar</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x90</status>
+                <midino>0x61</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR - tilt up - move up the list</description>
+                <group>[Library]</group>
+                <key>MoveUp</key>
+                <status>0x90</status>
+                <midino>0x31</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR - tilt down - move down the list</description>
+                <group>[Library]</group>
+                <key>MoveDown</key>
+                <status>0x90</status>
+                <midino>0x34</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR - tilt left - move to the sidebar</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x90</status>
+                <midino>0x37</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>SMART ROTARY SELECTOR - tilt right - move to the list</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x90</status>
+                <midino>0x39</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>BACK - press - move between the list and the sidebar</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x90</status>
+                <midino>0x32</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TAG TRACK - press - add the track to the end of Automix</description>
+                <group>[Library]</group>
+                <key>AutoDjAddBottom</key>
+                <status>0x90</status>
+                <midino>0x30</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TAG TRACK +SHIFT - press - add the track to the top of Automix</description>
+                <group>[Library]</group>
+                <key>AutoDjAddTop</key>
+                <status>0x90</status>
+                <midino>0x62</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE (DECK1) - press - play or pause</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.togglePlay</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CUE (DECK1) - press - cue</description>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>KEY SYNC (DECK1) - press - match the key of the other deck</description>
+                <group>[Channel1]</group>
+                <key>sync_key</key>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH FWD (DECK1) - press - jump 32 beats forward (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.quickJumpForward</key>
+                <status>0x90</status>
+                <midino>0x04</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH REV (DECK1) - press - jump 32 beats back (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.quickJumpBack</key>
+                <status>0x90</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK1) - press - set the loop start</description>
+                <group>[Channel1]</group>
+                <key>loop_in</key>
+                <status>0x90</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK1) - long press - adjust the loop start with the jog</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.toggleLoopAdjustIn</key>
+                <status>0x90</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP OUT (DECK1) - press - set the loop end</description>
+                <group>[Channel1]</group>
+                <key>loop_out</key>
+                <status>0x90</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>DECK QUANTIZE (DECK1) - press - quantize on or off</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.toggleQuantize</key>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE (DECK1) - press - next tempo range</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.cycleTempoRange</key>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MASTER TEMPO (DECK1) - press - key lock on or off</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.toggleKeylock</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG MODE (DECK1) - press - VINYL (scratch) or CDJ (bend)</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogModePressed</key>
+                <status>0x90</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RESET (DECK1) - press - tempo back to 0</description>
+                <group>[Channel1]</group>
+                <key>rate_set_zero</key>
+                <status>0x90</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>MASTER (DECK1) - press - make this deck the sync leader, again to let the app choose (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.masterPressed</key>
+                <status>0x90</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SYNC (DECK1) - press - sync on or off</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.syncPressed</key>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SLIP REVERSE (DECK1) - press - play backwards</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.toggleReverse</key>
+                <status>0x90</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD (DECK1) - press - jump ahead by the beat jump size</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatJumpForward</key>
+                <status>0x90</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD +SHIFT (DECK1) - press - double the beat jump size</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeUp</key>
+                <status>0x90</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV (DECK1) - press - jump back by the beat jump size</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatJumpBack</key>
+                <status>0x90</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV +SHIFT (DECK1) - press - halve the beat jump size</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeDown</key>
+                <status>0x90</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK1) - turn - halve or double the loop</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatLoopTurn</key>
+                <status>0xB0</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK1) - press - loop of that size, or out of the loop</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatLoopPressed</key>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP +SHIFT (DECK1) - press - back into the last loop, or out of it</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.beatLoopShiftPressed</key>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (DECK1) - press - load the selected track</description>
+                <group>[Channel1]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x90</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK1) - slide (MSB)</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.tempoSliderMSB</key>
+                <status>0xB0</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK1) - slide (LSB)</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.tempoSliderLSB</key>
+                <status>0xB0</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK1) - touch - scratch in VINYL mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK1) - touch</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK1) - turn - scratch or bend</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK1) - turn - search through the track</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) (DECK1) - turn - bend</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) +SHIFT (DECK1) - turn - search through the track</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NEEDLE POSITION (DECK1) - touch - jump there while paused</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.needleSearch</key>
+                <status>0xB0</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A (DECK1) - press - set or play hot cue 1</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A +SHIFT (DECK1) - press - clear hot cue 1</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x90</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B (DECK1) - press - set or play hot cue 2</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B +SHIFT (DECK1) - press - clear hot cue 2</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C (DECK1) - press - set or play hot cue 3</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x90</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C +SHIFT (DECK1) - press - clear hot cue 3</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D (DECK1) - press - set or play hot cue 4</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D +SHIFT (DECK1) - press - clear hot cue 4</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x90</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E (DECK1) - press - set or play hot cue 5</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x90</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E +SHIFT (DECK1) - press - clear hot cue 5</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x90</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F (DECK1) - press - set or play hot cue 6</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x90</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F +SHIFT (DECK1) - press - clear hot cue 6</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x90</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G (DECK1) - press - set or play hot cue 7</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x90</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G +SHIFT (DECK1) - press - clear hot cue 7</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H (DECK1) - press - set or play hot cue 8</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H +SHIFT (DECK1) - press - clear hot cue 8</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x90</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE (DECK2) - press - play or pause</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.togglePlay</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CUE (DECK2) - press - cue</description>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>KEY SYNC (DECK2) - press - match the key of the other deck</description>
+                <group>[Channel2]</group>
+                <key>sync_key</key>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH FWD (DECK2) - press - jump 32 beats forward (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.quickJumpForward</key>
+                <status>0x91</status>
+                <midino>0x04</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH REV (DECK2) - press - jump 32 beats back (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.quickJumpBack</key>
+                <status>0x91</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK2) - press - set the loop start</description>
+                <group>[Channel2]</group>
+                <key>loop_in</key>
+                <status>0x91</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK2) - long press - adjust the loop start with the jog</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.toggleLoopAdjustIn</key>
+                <status>0x91</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP OUT (DECK2) - press - set the loop end</description>
+                <group>[Channel2]</group>
+                <key>loop_out</key>
+                <status>0x91</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>DECK QUANTIZE (DECK2) - press - quantize on or off</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.toggleQuantize</key>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE (DECK2) - press - next tempo range</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.cycleTempoRange</key>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MASTER TEMPO (DECK2) - press - key lock on or off</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.toggleKeylock</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG MODE (DECK2) - press - VINYL (scratch) or CDJ (bend)</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogModePressed</key>
+                <status>0x91</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RESET (DECK2) - press - tempo back to 0</description>
+                <group>[Channel2]</group>
+                <key>rate_set_zero</key>
+                <status>0x91</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>MASTER (DECK2) - press - make this deck the sync leader, again to let the app choose (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.masterPressed</key>
+                <status>0x91</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SYNC (DECK2) - press - sync on or off</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.syncPressed</key>
+                <status>0x91</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SLIP REVERSE (DECK2) - press - play backwards</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.toggleReverse</key>
+                <status>0x91</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD (DECK2) - press - jump ahead by the beat jump size</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatJumpForward</key>
+                <status>0x91</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD +SHIFT (DECK2) - press - double the beat jump size</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeUp</key>
+                <status>0x91</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV (DECK2) - press - jump back by the beat jump size</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatJumpBack</key>
+                <status>0x91</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV +SHIFT (DECK2) - press - halve the beat jump size</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeDown</key>
+                <status>0x91</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK2) - turn - halve or double the loop</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatLoopTurn</key>
+                <status>0xB1</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK2) - press - loop of that size, or out of the loop</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatLoopPressed</key>
+                <status>0x91</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP +SHIFT (DECK2) - press - back into the last loop, or out of it</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.beatLoopShiftPressed</key>
+                <status>0x91</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (DECK2) - press - load the selected track</description>
+                <group>[Channel2]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x91</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK2) - slide (MSB)</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.tempoSliderMSB</key>
+                <status>0xB1</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK2) - slide (LSB)</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.tempoSliderLSB</key>
+                <status>0xB1</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK2) - touch - scratch in VINYL mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK2) - touch</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK2) - turn - scratch or bend</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK2) - turn - search through the track</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) (DECK2) - turn - bend</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) +SHIFT (DECK2) - turn - search through the track</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NEEDLE POSITION (DECK2) - touch - jump there while paused</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.needleSearch</key>
+                <status>0xB1</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A (DECK2) - press - set or play hot cue 1</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x91</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A +SHIFT (DECK2) - press - clear hot cue 1</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x91</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B (DECK2) - press - set or play hot cue 2</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B +SHIFT (DECK2) - press - clear hot cue 2</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C (DECK2) - press - set or play hot cue 3</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x91</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C +SHIFT (DECK2) - press - clear hot cue 3</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x91</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D (DECK2) - press - set or play hot cue 4</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D +SHIFT (DECK2) - press - clear hot cue 4</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x91</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E (DECK2) - press - set or play hot cue 5</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x91</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E +SHIFT (DECK2) - press - clear hot cue 5</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x91</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F (DECK2) - press - set or play hot cue 6</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x91</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F +SHIFT (DECK2) - press - clear hot cue 6</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x91</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G (DECK2) - press - set or play hot cue 7</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x91</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G +SHIFT (DECK2) - press - clear hot cue 7</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H (DECK2) - press - set or play hot cue 8</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H +SHIFT (DECK2) - press - clear hot cue 8</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x91</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE (DECK3) - press - play or pause</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.togglePlay</key>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CUE (DECK3) - press - cue</description>
+                <group>[Channel3]</group>
+                <key>cue_default</key>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>KEY SYNC (DECK3) - press - match the key of the other deck</description>
+                <group>[Channel3]</group>
+                <key>sync_key</key>
+                <status>0x92</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH FWD (DECK3) - press - jump 32 beats forward (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.quickJumpForward</key>
+                <status>0x92</status>
+                <midino>0x04</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH REV (DECK3) - press - jump 32 beats back (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.quickJumpBack</key>
+                <status>0x92</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK3) - press - set the loop start</description>
+                <group>[Channel3]</group>
+                <key>loop_in</key>
+                <status>0x92</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK3) - long press - adjust the loop start with the jog</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.toggleLoopAdjustIn</key>
+                <status>0x92</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP OUT (DECK3) - press - set the loop end</description>
+                <group>[Channel3]</group>
+                <key>loop_out</key>
+                <status>0x92</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>DECK QUANTIZE (DECK3) - press - quantize on or off</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.toggleQuantize</key>
+                <status>0x92</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE (DECK3) - press - next tempo range</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.cycleTempoRange</key>
+                <status>0x92</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MASTER TEMPO (DECK3) - press - key lock on or off</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.toggleKeylock</key>
+                <status>0x92</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG MODE (DECK3) - press - VINYL (scratch) or CDJ (bend)</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogModePressed</key>
+                <status>0x92</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RESET (DECK3) - press - tempo back to 0</description>
+                <group>[Channel3]</group>
+                <key>rate_set_zero</key>
+                <status>0x92</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>MASTER (DECK3) - press - make this deck the sync leader, again to let the app choose (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.masterPressed</key>
+                <status>0x92</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SYNC (DECK3) - press - sync on or off</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.syncPressed</key>
+                <status>0x92</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SLIP REVERSE (DECK3) - press - play backwards</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.toggleReverse</key>
+                <status>0x92</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD (DECK3) - press - jump ahead by the beat jump size</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatJumpForward</key>
+                <status>0x92</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD +SHIFT (DECK3) - press - double the beat jump size</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeUp</key>
+                <status>0x92</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV (DECK3) - press - jump back by the beat jump size</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatJumpBack</key>
+                <status>0x92</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV +SHIFT (DECK3) - press - halve the beat jump size</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeDown</key>
+                <status>0x92</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK3) - turn - halve or double the loop</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatLoopTurn</key>
+                <status>0xB2</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK3) - press - loop of that size, or out of the loop</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatLoopPressed</key>
+                <status>0x92</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP +SHIFT (DECK3) - press - back into the last loop, or out of it</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.beatLoopShiftPressed</key>
+                <status>0x92</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (DECK3) - press - load the selected track</description>
+                <group>[Channel3]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x92</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK3) - slide (MSB)</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.tempoSliderMSB</key>
+                <status>0xB2</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK3) - slide (LSB)</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.tempoSliderLSB</key>
+                <status>0xB2</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK3) - touch - scratch in VINYL mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x92</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK3) - touch</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x92</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK3) - turn - scratch or bend</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB2</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK3) - turn - search through the track</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB2</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) (DECK3) - turn - bend</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB2</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) +SHIFT (DECK3) - turn - search through the track</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB2</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NEEDLE POSITION (DECK3) - touch - jump there while paused</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.needleSearch</key>
+                <status>0xB2</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A (DECK3) - press - set or play hot cue 1</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x92</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A +SHIFT (DECK3) - press - clear hot cue 1</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x92</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B (DECK3) - press - set or play hot cue 2</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x92</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B +SHIFT (DECK3) - press - clear hot cue 2</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x92</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C (DECK3) - press - set or play hot cue 3</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x92</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C +SHIFT (DECK3) - press - clear hot cue 3</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x92</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D (DECK3) - press - set or play hot cue 4</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x92</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D +SHIFT (DECK3) - press - clear hot cue 4</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x92</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E (DECK3) - press - set or play hot cue 5</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x92</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E +SHIFT (DECK3) - press - clear hot cue 5</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x92</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F (DECK3) - press - set or play hot cue 6</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x92</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F +SHIFT (DECK3) - press - clear hot cue 6</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x92</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G (DECK3) - press - set or play hot cue 7</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x92</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G +SHIFT (DECK3) - press - clear hot cue 7</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x92</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H (DECK3) - press - set or play hot cue 8</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x92</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H +SHIFT (DECK3) - press - clear hot cue 8</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x92</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE (DECK4) - press - play or pause</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.togglePlay</key>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CUE (DECK4) - press - cue</description>
+                <group>[Channel4]</group>
+                <key>cue_default</key>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>KEY SYNC (DECK4) - press - match the key of the other deck</description>
+                <group>[Channel4]</group>
+                <key>sync_key</key>
+                <status>0x93</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH FWD (DECK4) - press - jump 32 beats forward (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.quickJumpForward</key>
+                <status>0x93</status>
+                <midino>0x04</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRACK SEARCH REV (DECK4) - press - jump 32 beats back (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.quickJumpBack</key>
+                <status>0x93</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK4) - press - set the loop start</description>
+                <group>[Channel4]</group>
+                <key>loop_in</key>
+                <status>0x93</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOOP IN (DECK4) - long press - adjust the loop start with the jog</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.toggleLoopAdjustIn</key>
+                <status>0x93</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP OUT (DECK4) - press - set the loop end</description>
+                <group>[Channel4]</group>
+                <key>loop_out</key>
+                <status>0x93</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>DECK QUANTIZE (DECK4) - press - quantize on or off</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.toggleQuantize</key>
+                <status>0x93</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RANGE (DECK4) - press - next tempo range</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.cycleTempoRange</key>
+                <status>0x93</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MASTER TEMPO (DECK4) - press - key lock on or off</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.toggleKeylock</key>
+                <status>0x93</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG MODE (DECK4) - press - VINYL (scratch) or CDJ (bend)</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogModePressed</key>
+                <status>0x93</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO RESET (DECK4) - press - tempo back to 0</description>
+                <group>[Channel4]</group>
+                <key>rate_set_zero</key>
+                <status>0x93</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>MASTER (DECK4) - press - make this deck the sync leader, again to let the app choose (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.masterPressed</key>
+                <status>0x93</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SYNC (DECK4) - press - sync on or off</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.syncPressed</key>
+                <status>0x93</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SLIP REVERSE (DECK4) - press - play backwards</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.toggleReverse</key>
+                <status>0x93</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD (DECK4) - press - jump ahead by the beat jump size</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatJumpForward</key>
+                <status>0x93</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP FWD +SHIFT (DECK4) - press - double the beat jump size</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeUp</key>
+                <status>0x93</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV (DECK4) - press - jump back by the beat jump size</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatJumpBack</key>
+                <status>0x93</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP REV +SHIFT (DECK4) - press - halve the beat jump size</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatJumpSizeDown</key>
+                <status>0x93</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK4) - turn - halve or double the loop</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatLoopTurn</key>
+                <status>0xB3</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP (DECK4) - press - loop of that size, or out of the loop</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatLoopPressed</key>
+                <status>0x93</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP +SHIFT (DECK4) - press - back into the last loop, or out of it</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.beatLoopShiftPressed</key>
+                <status>0x93</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (DECK4) - press - load the selected track</description>
+                <group>[Channel4]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x93</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK4) - slide (MSB)</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.tempoSliderMSB</key>
+                <status>0xB3</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK4) - slide (LSB)</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.tempoSliderLSB</key>
+                <status>0xB3</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK4) - touch - scratch in VINYL mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x93</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK4) - touch</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogTouch</key>
+                <status>0x93</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) (DECK4) - turn - scratch or bend</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB3</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (TOP) +SHIFT (DECK4) - turn - search through the track</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB3</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) (DECK4) - turn - bend</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogTurn</key>
+                <status>0xB3</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JOG WHEEL (SIDE) +SHIFT (DECK4) - turn - search through the track</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.jogSearch</key>
+                <status>0xB3</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NEEDLE POSITION (DECK4) - touch - jump there while paused</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.needleSearch</key>
+                <status>0xB3</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A (DECK4) - press - set or play hot cue 1</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x93</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE A +SHIFT (DECK4) - press - clear hot cue 1</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x93</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B (DECK4) - press - set or play hot cue 2</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x93</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE B +SHIFT (DECK4) - press - clear hot cue 2</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x93</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C (DECK4) - press - set or play hot cue 3</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x93</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE C +SHIFT (DECK4) - press - clear hot cue 3</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x93</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D (DECK4) - press - set or play hot cue 4</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x93</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE D +SHIFT (DECK4) - press - clear hot cue 4</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x93</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E (DECK4) - press - set or play hot cue 5</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x93</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE E +SHIFT (DECK4) - press - clear hot cue 5</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x93</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F (DECK4) - press - set or play hot cue 6</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x93</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE F +SHIFT (DECK4) - press - clear hot cue 6</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x93</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G (DECK4) - press - set or play hot cue 7</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x93</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE G +SHIFT (DECK4) - press - clear hot cue 7</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x93</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H (DECK4) - press - set or play hot cue 8</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x93</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE H +SHIFT (DECK4) - press - clear hot cue 8</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x93</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TRIM (DECK1) - turn - gain</description>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x01</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ HI (DECK1) - turn</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x02</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ MID (DECK1) - turn</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW (DECK1) - turn</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x04</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (DECK1) - turn - the Color FX</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x05</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER (DECK1) - slide - volume</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x11</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH CUE (DECK1) - press - headphone cue</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.pflPressed</key>
+                <status>0xB4</status>
+                <midino>0x46</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH1 - touch - A, THRU or B</description>
+                <group>[Channel1]</group>
+                <key>PioneerOPUSQUAD.crossfaderAssign</key>
+                <status>0xB4</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRIM (DECK2) - turn - gain</description>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x06</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ HI (DECK2) - turn</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x07</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ MID (DECK2) - turn</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x08</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW (DECK2) - turn</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x09</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (DECK2) - turn - the Color FX</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x0A</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER (DECK2) - slide - volume</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x12</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH CUE (DECK2) - press - headphone cue</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.pflPressed</key>
+                <status>0xB4</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH2 - touch - A, THRU or B</description>
+                <group>[Channel2]</group>
+                <key>PioneerOPUSQUAD.crossfaderAssign</key>
+                <status>0xB4</status>
+                <midino>0x42</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRIM (DECK3) - turn - gain</description>
+                <group>[Channel3]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x0C</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ HI (DECK3) - turn</description>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x0E</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ MID (DECK3) - turn</description>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x0F</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW (DECK3) - turn</description>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x15</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (DECK3) - turn - the Color FX</description>
+                <group>[QuickEffectRack1_[Channel3]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x16</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER (DECK3) - slide - volume</description>
+                <group>[Channel3]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x13</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH CUE (DECK3) - press - headphone cue</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.pflPressed</key>
+                <status>0xB4</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH3 - touch - A, THRU or B</description>
+                <group>[Channel3]</group>
+                <key>PioneerOPUSQUAD.crossfaderAssign</key>
+                <status>0xB4</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TRIM (DECK4) - turn - gain</description>
+                <group>[Channel4]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x50</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ HI (DECK4) - turn</description>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x51</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ MID (DECK4) - turn</description>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x5C</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW (DECK4) - turn</description>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x52</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (DECK4) - turn - the Color FX</description>
+                <group>[QuickEffectRack1_[Channel4]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x53</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER (DECK4) - slide - volume</description>
+                <group>[Channel4]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x14</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>CH CUE (DECK4) - press - headphone cue</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.pflPressed</key>
+                <status>0xB4</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH4 - touch - A, THRU or B</description>
+                <group>[Channel4]</group>
+                <key>PioneerOPUSQUAD.crossfaderAssign</key>
+                <status>0xB4</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER - slide</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB4</status>
+                <midino>0x0B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES MIXING - turn - cue or master in the headphones</description>
+                <group>[Master]</group>
+                <key>head_mix</key>
+                <status>0xB4</status>
+                <midino>0x1B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES LEVEL - turn - headphone volume</description>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <status>0xB4</status>
+                <midino>0x1A</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>MASTER LEVEL - turn - master volume</description>
+                <group>[Master]</group>
+                <key>gain</key>
+                <status>0xB4</status>
+                <midino>0x18</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>BOOTH MONITOR LEVEL - turn - booth volume</description>
+                <group>[Master]</group>
+                <key>booth_gain</key>
+                <status>0xB4</status>
+                <midino>0x19</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>SPACE - press - the COLOR knobs play space (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerOPUSQUAD.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x69</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>DUB ECHO - press - the COLOR knobs play dub echo (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerOPUSQUAD.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x6B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SWEEP - press - the COLOR knobs play sweep (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerOPUSQUAD.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x6A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NOISE - press - the COLOR knobs play noise (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerOPUSQUAD.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x55</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CRUSH - press - the COLOR knobs play crush (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerOPUSQUAD.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x56</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FILTER - press - the COLOR knobs play filter (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerOPUSQUAD.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x57</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT LEFT - press - halve the Beat FX length</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxLeftPressed</key>
+                <status>0xB4</status>
+                <midino>0x4C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT RIGHT - press - double the Beat FX length</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxRightPressed</key>
+                <status>0xB4</status>
+                <midino>0x4D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TAP - press - tap the Beat FX tempo</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxTapPressed</key>
+                <status>0xB4</status>
+                <midino>0x4E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LEVEL/DEPTH - turn - the Beat FX depth</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxLevelDepthRotate</key>
+                <status>0xB4</status>
+                <midino>0x5B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX ON/OFF - press - Beat FX on or off</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxOnOffPressed</key>
+                <status>0xB4</status>
+                <midino>0x72</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT DELAY - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x2A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT ECHO - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT PING PONG - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT SPIRAL - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT REVERB - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT TRANS - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT FILTER - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x3B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT FLANGER - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT PHASER - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x39</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT PITCH - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x3F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT SPIRAL ROLL - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x3A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT ROLL - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT VINYL BRAKE - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x3D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>EFFECT SELECT HELIX - turn - pick the Beat FX (openDJ)</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerOPUSQUAD.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x3E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_1_status</key>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_2_status</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_3_status</key>
+                <status>0x90</status>
+                <midino>0x0D</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_4_status</key>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_5_status</key>
+                <status>0x90</status>
+                <midino>0x15</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_6_status</key>
+                <status>0x90</status>
+                <midino>0x17</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_7_status</key>
+                <status>0x90</status>
+                <midino>0x19</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_8_status</key>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>quantize</key>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>keylock</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>reverse</key>
+                <status>0x90</status>
+                <midino>0x21</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_1_status</key>
+                <status>0x91</status>
+                <midino>0x08</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_2_status</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_3_status</key>
+                <status>0x91</status>
+                <midino>0x0D</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_4_status</key>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_5_status</key>
+                <status>0x91</status>
+                <midino>0x15</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_6_status</key>
+                <status>0x91</status>
+                <midino>0x17</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_7_status</key>
+                <status>0x91</status>
+                <midino>0x19</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_8_status</key>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>quantize</key>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>keylock</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <status>0x91</status>
+                <midino>0x1F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>reverse</key>
+                <status>0x91</status>
+                <midino>0x21</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_1_status</key>
+                <status>0x92</status>
+                <midino>0x08</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_2_status</key>
+                <status>0x92</status>
+                <midino>0x0B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_3_status</key>
+                <status>0x92</status>
+                <midino>0x0D</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_4_status</key>
+                <status>0x92</status>
+                <midino>0x0F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_5_status</key>
+                <status>0x92</status>
+                <midino>0x15</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_6_status</key>
+                <status>0x92</status>
+                <midino>0x17</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_7_status</key>
+                <status>0x92</status>
+                <midino>0x19</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_8_status</key>
+                <status>0x92</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>play_indicator</key>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>cue_indicator</key>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>quantize</key>
+                <status>0x92</status>
+                <midino>0x09</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>keylock</key>
+                <status>0x92</status>
+                <midino>0x11</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>sync_enabled</key>
+                <status>0x92</status>
+                <midino>0x1F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>reverse</key>
+                <status>0x92</status>
+                <midino>0x21</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_1_status</key>
+                <status>0x93</status>
+                <midino>0x08</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_2_status</key>
+                <status>0x93</status>
+                <midino>0x0B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_3_status</key>
+                <status>0x93</status>
+                <midino>0x0D</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_4_status</key>
+                <status>0x93</status>
+                <midino>0x0F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_5_status</key>
+                <status>0x93</status>
+                <midino>0x15</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_6_status</key>
+                <status>0x93</status>
+                <midino>0x17</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_7_status</key>
+                <status>0x93</status>
+                <midino>0x19</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_8_status</key>
+                <status>0x93</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>play_indicator</key>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>cue_indicator</key>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>quantize</key>
+                <status>0x93</status>
+                <midino>0x09</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>keylock</key>
+                <status>0x93</status>
+                <midino>0x11</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>sync_enabled</key>
+                <status>0x93</status>
+                <midino>0x1F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>reverse</key>
+                <status>0x93</status>
+                <midino>0x21</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <status>0xB4</status>
+                <midino>0x46</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <status>0xB4</status>
+                <midino>0x47</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>pfl</key>
+                <status>0xB4</status>
+                <midino>0x48</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>pfl</key>
+                <status>0xB4</status>
+                <midino>0x49</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>

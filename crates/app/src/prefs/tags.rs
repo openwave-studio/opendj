@@ -113,6 +113,7 @@ impl Prefs {
             "Rename a tag and press Return: it changes on every track. A name the group has \
              already merges the two.",
         )];
+        let names: Vec<(i64, String)> = tags.iter().map(|t| (t.id, t.name.clone())).collect();
         for t in tags {
             let chosen = t
                 .color
@@ -139,6 +140,21 @@ impl Prefs {
                         &format!("It comes off {}.", count(t.tracks, "track")),
                     )
                 });
+                // Or its tracks get another tag of the group instead.
+                let mut into = vec![format!("Merge {} into…", t.name)];
+                into.extend(names.iter().filter(|n| n.0 != t.id).map(|n| n.1.clone()));
+                if into.len() > 1 {
+                    rows.push(PrefItem {
+                        choices: strings(&into),
+                        chosen: 0,
+                        ..item(
+                            &format!("tag_merge:{}", t.id),
+                            MENU,
+                            "Or merge it",
+                            &format!("Its {} get the tag you pick.", count(t.tracks, "track")),
+                        )
+                    });
+                }
             }
         }
         rows

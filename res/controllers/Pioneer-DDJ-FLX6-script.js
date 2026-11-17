@@ -597,7 +597,9 @@ PioneerDDJFLX6.jogTurn = function(channel, _control, value, _status, group) {
 
 PioneerDDJFLX6.jogSearch = function(_channel, _control, value, _status, group) {
     const newVal = (value - 64) * PioneerDDJFLX6.fastSeekScale;
-    engine.setValue(group, "jog", newVal);
+    // openDJ: SHIFT + turn moves the position (jog_search); plain jog bends
+    // the speed as in Mixxx.
+    engine.setValue(group, "jog_search", newVal);
 };
 
 PioneerDDJFLX6.jogTouch = function(channel, _control, value) {

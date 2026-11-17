@@ -78,7 +78,7 @@ loop roll.
 **KEYBOARD** plays from the deck's hot cue at another key, like a sampler
 keyboard: the pads go 0, +1, +2, +3 semitones on the top row and −4, −3,
 −2, −1 on the bottom. They take the color of the hot cue they play.
-With **KEYS ON PADS** on an instrument deck they play the instrument
+With **☰ › Keys on pads** on an instrument deck they play the instrument
 plugin instead, from C up (see [Instruments](fx.md#instruments)).
 
 **KEY SHIFT** sets the track's key shift: 0, +1, +2, +3 on top and −3, −2,
@@ -86,3 +86,9 @@ plugin instead, from C up (see [Instruments](fx.md#instruments)).
 instead. A pad is lit while the deck plays at its key.
 
 See [Keys](decks.md#keys) for key lock and key matching.
+
+On the **DDJ-400**, hold **SHIFT** and press **HOT CUE** for Keyboard,
+**BEAT LOOP** for Pad FX1, **BEAT JUMP** for Pad FX2, or **SAMPLER** for
+Key Shift. Release SHIFT to play the selected mode. Pad FX stays on while
+a pad is held and turns off when released. SHIFT + a Key Shift pad moves
+the key by that pad's step.

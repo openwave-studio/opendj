@@ -20,6 +20,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 use base64::Engine as _;
 use opendj_control::ControlRegistry;
@@ -422,6 +423,19 @@ fn plugin_state(body: &Map<String, Value>) -> Result<Vec<u8>, String> {
         .map_err(|_| "the preset's sound is damaged".to_string())
 }
 
+/// The step sequencer's controls kept in a plugin preset (see
+/// `opendj_engine::seq::pattern_keys`): only those it knows, so a preset
+/// can't set anything else.
+fn sequencer_values(body: &Map<String, Value>) -> Vec<(String, f64)> {
+    let Some(saved) = body.get("sequencer").and_then(Value::as_object) else {
+        return Vec::new();
+    };
+    opendj_engine::seq::pattern_keys()
+        .into_iter()
+        .filter_map(|k| saved.get(&k).and_then(Value::as_f64).map(|v| (k, v)))
+        .collect()
+}
+
 /// A plugin preset's knob picks, (knob, parameter id); none in a preset
 /// saved before knobs could be picked.
 fn knob_picks(body: &Map<String, Value>) -> Option<Vec<(usize, u32)>> {
@@ -463,6 +477,35 @@ struct State {
     /// their tags (see [`show`]).
     shown: Vec<String>,
     shown_tags: Vec<bool>,
+    shown_changed: Vec<bool>,
+    shown_own: Vec<bool>,
+    /// Each deck's knob values when its preset was loaded or saved, to
+    /// tell when the sound changed (see [`Baseline`]).
+    baselines: Vec<Option<Baseline>>,
+}
+
+/// A preset's knob values as loaded or saved. A plugin reports its values
+/// back a little after a sound is loaded, so for [`SETTLE`] the values
+/// are taken again rather than compared.
+struct Baseline {
+    path: PathBuf,
+    since: Instant,
+    values: Vec<f64>,
+}
+
+/// The Instrument input's control group.
+const INSTRUMENT: &str = "[Instrument1]";
+
+/// How long after a preset is loaded or saved its knobs may still move to
+/// the loaded sound without counting as a change.
+const SETTLE: Duration = Duration::from_millis(1500);
+
+/// How far a knob moves before the preset counts as changed.
+const MOVED: f64 = 0.002;
+
+/// Whether `now` differs from `before` by more than [`MOVED`] anywhere.
+fn moved(before: &[f64], now: &[f64]) -> bool {
+    before.len() != now.len() || before.iter().zip(now).any(|(a, b)| (a - b).abs() > MOVED)
 }
 
 thread_local! {
@@ -546,8 +589,21 @@ impl Ctx {
         })
     }
 
+    /// The instrument's knob values, 0 to 1, as many as it has.
+    fn knob_values(&self) -> Vec<f64> {
+        let count = (self.value(INSTRUMENT, "num_parameters").max(0.0) as usize)
+            .min(opendj_engine::inputs::INSTRUMENT_PARAMETERS);
+        (1..=count)
+            .map(|k| self.value(INSTRUMENT, &format!("parameter{k}")))
+            .collect()
+    }
+
     fn set_current(&self, deck: usize, key: &str, path: Option<PathBuf>) {
         STATE.with_borrow_mut(|s| {
+            // Loaded or saved: the sound is the preset again.
+            if let Some(b) = s.baselines.get_mut(deck) {
+                *b = None;
+            }
             if key == GROOVE {
                 if s.groove.len() <= deck {
                     s.groove.resize(deck + 1, None);
@@ -603,6 +659,10 @@ impl Ctx {
             }
             self.engine
                 .load_instrument_sound(&preset.instrument, plugin_state(&body)?)?;
+            // Its patterns; a preset saved before the sequencer leaves them be.
+            for (k, v) in sequencer_values(&body) {
+                self.set("[Instrument1]", &k, v);
+            }
             self.set("[Instrument1]", "instrument", (index + 1) as f64);
             self.set(&format!("[Channel{}]", deck + 1), "live_input", 3.0);
         }
@@ -643,7 +703,10 @@ impl Ctx {
         }
         let mut body = read(&preset.path)?;
         self.fill(deck, &preset.instrument, &mut body)?;
-        write(&preset.path, &body)
+        write(&preset.path, &body)?;
+        // The sound is the preset again: no asterisk.
+        self.set_current(deck, &preset.instrument, Some(preset.path));
+        Ok(())
     }
 
     /// Puts what deck `deck` plays now into a preset's body.
@@ -668,6 +731,15 @@ impl Ctx {
                 json!(base64::engine::general_purpose::STANDARD.encode(data)),
             );
             body.insert("knobs".into(), json!(self.engine.instrument_picks()));
+            // The step sequencer's patterns travel with the sound.
+            let pattern: Map<String, Value> = opendj_engine::seq::pattern_keys()
+                .into_iter()
+                .map(|k| {
+                    let v = self.value("[Instrument1]", &k);
+                    (k, json!(v))
+                })
+                .collect();
+            body.insert("sequencer".into(), Value::Object(pattern));
         }
         Ok(())
     }
@@ -811,10 +883,52 @@ pub fn show(app: &AppWindow) {
             tags().map(move |t| p.as_ref().is_some_and(|p| p.tags.iter().any(|x| x == t)))
         })
         .collect();
+    let own: Vec<bool> = current
+        .iter()
+        .map(|p| p.as_ref().is_some_and(|p| !p.from_plugin))
+        .collect();
+    let values = ctx.knob_values();
+    let now = Instant::now();
+    let edited: Vec<bool> = STATE.with_borrow_mut(|s| {
+        s.baselines.resize_with(current.len(), || None);
+        current
+            .iter()
+            .zip(s.baselines.iter_mut())
+            .map(|(p, base)| {
+                // The Groove Box keeps no knob values here.
+                let Some(p) = p.as_ref().filter(|p| p.instrument != GROOVE) else {
+                    *base = None;
+                    return false;
+                };
+                match base {
+                    Some(b) if b.path == p.path && now.duration_since(b.since) >= SETTLE => {
+                        moved(&b.values, &values)
+                    }
+                    Some(b) if b.path == p.path => {
+                        b.values = values.clone();
+                        false
+                    }
+                    _ => {
+                        *base = Some(Baseline {
+                            path: p.path.clone(),
+                            since: now,
+                            values: values.clone(),
+                        });
+                        false
+                    }
+                }
+            })
+            .collect()
+    });
     let changed = STATE.with_borrow_mut(|s| {
-        let changed = s.shown != names || s.shown_tags != flags;
+        let changed = s.shown != names
+            || s.shown_tags != flags
+            || s.shown_changed != edited
+            || s.shown_own != own;
         s.shown = names.clone();
         s.shown_tags = flags.clone();
+        s.shown_changed = edited.clone();
+        s.shown_own = own.clone();
         changed
     });
     if changed {
@@ -822,6 +936,8 @@ pub fn show(app: &AppWindow) {
         let ui = app.global::<PresetUi>();
         ui.set_current(ModelRc::new(VecModel::from(names)));
         ui.set_deck_tags(ModelRc::new(VecModel::from(flags)));
+        ui.set_changed(ModelRc::new(VecModel::from(edited)));
+        ui.set_own(ModelRc::new(VecModel::from(own)));
     }
 }
 
@@ -833,6 +949,21 @@ mod tests {
         let d = std::env::temp_dir().join(format!("opendj-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         d
+    }
+
+    #[test]
+    fn a_presets_patterns_read_back_and_nothing_else() {
+        let body = |v: Value| v.as_object().unwrap().clone();
+        let b = body(
+            json!({"sequencer": {"seq1_pitch_3": 4.0, "seq_rate": 2.0, "seq": 1.0, "volume": 0.0}}),
+        );
+        let mut got = sequencer_values(&b);
+        got.sort_by(|a, b| a.0.cmp(&b.0));
+        assert_eq!(
+            got,
+            [("seq1_pitch_3".into(), 4.0), ("seq_rate".into(), 2.0)]
+        );
+        assert!(sequencer_values(&body(json!({"state": ""}))).is_empty());
     }
 
     #[test]
@@ -942,6 +1073,17 @@ mod tests {
         assert_eq!(list_in(&root)[0].tags, ["Dirty"]);
         assert_eq!(tags().count(), TYPES.len() + CHARACTERS.len());
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_preset_counts_as_changed_once_a_knob_moves() {
+        let saved = [0.5, 0.25, 1.0];
+        assert!(!moved(&saved, &[0.5, 0.25, 1.0]));
+        // A plugin's read-back rounding isn't a change.
+        assert!(!moved(&saved, &[0.5005, 0.25, 1.0]));
+        assert!(moved(&saved, &[0.5, 0.3, 1.0]));
+        // Another plugin with more knobs is a change too.
+        assert!(moved(&saved, &[0.5, 0.25, 1.0, 0.0]));
     }
 
     #[test]

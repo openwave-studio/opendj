@@ -37,11 +37,15 @@ line, or not timed) and where they came from.
 
 ## In Player mode
 
-The speech bubble button on the Player bar opens **Now Playing** on its
-**Lyrics**: the lyrics of the track playing large, beside its album art. The line being sung is big and
-white, and when the lyrics are timed by word, the words already sung turn
-lilac. Lines gone by fade, and a ♪ marks a break in the singing. Click a
-line to play from it. Press the button again, or the ⌄ at the top left, to go back to the list.
+The microphone button on the Player bar opens karaoke in the main window:
+the album art with the title, artist, album and year on the left, and the
+lyrics on the right as on the [karaoke screen](#karaoke-screen): a column
+of the song that glides to the line being sung, its words filling with the
+Sung words color, with count-in dots before a line after a break. The side
+panel hides while it shows. Lyrics that aren't timed show as a list.
+**Karaoke Screen** at the top right sends the lyrics to a window of their
+own. Press the microphone again, or the ⌄ at the top left, to go back to
+the library.
 
 ![Lyrics in Player mode](../images/player-lyrics.png)
 
@@ -89,15 +93,40 @@ any time.
 ## Karaoke screen
 
 **Karaoke** in the Lyrics tab (or **Karaoke Screen** at the top right of
-Player mode's lyrics) opens the lyrics in a window of their own, for a TV,
+Player mode's karaoke) opens the lyrics in a window of their own, for a TV,
 a projector or a second display. When another display is connected, the
 window opens full screen there. Double-click it, or press F, to switch full
 screen on or off; Esc leaves full screen. Close it with Karaoke again, or
 its window's close button.
 
+Move the mouse over the karaoke screen and two buttons show at the top
+right: **Cover** and **Full screen**. They fade out again after a few
+seconds, so the room doesn't see them. The keys do the same: **C** for
+Cover and **F** for full screen.
+
+**Cover** puts the cover, with the title and artist under it, on the left
+and the lyrics on the right. The lyrics glide from line to line and fade
+out at the top and bottom of the screen. The background takes one color
+from the cover. Press it again for the lyrics on their own.
+
+openDJ remembers what you chose. The web page starts with the same choice,
+and has the same buttons for whoever is watching it, which change only that
+page.
+
+**Settings → Appearance → Karaoke** has three more choices for the screen
+and its web page:
+
+- **Sung words**: the color the words fill with: Lilac, Ocean, Mint,
+  Amber, Rose or White.
+- **Lines**: **Few** shows the line to sing big in the middle, with the
+  lines either side of it. **Many** shows a column of the whole song that
+  scrolls as it is sung. Beside the cover the lyrics are always a column.
+- **Light up**: **Word by word** fills the line as each word is sung.
+  **Whole line** lights the line all at once when it starts.
+
 ![The karaoke screen](../images/karaoke-screen.png)
 
-The line to sing is big in the middle, with the line before it faded above
+With the cover off, the line to sing is big in the middle, with the line before it faded above
 and the next two lines below. The word being sung fills with lilac as it is
 sung. Lyrics timed only by line have their words spread over the line by
 length, so the fill is close but not exact; lyrics timed by word fill word

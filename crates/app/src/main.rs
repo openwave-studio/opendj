@@ -54,12 +54,15 @@ mod coverart;
 mod diagnostics;
 mod file_drop;
 mod files;
+mod graphics;
 mod groove_box;
 mod inbox;
 mod instrument_art;
 mod instrument_knobs;
 mod instrument_midi;
+mod instrument_seq;
 mod instruments;
+mod karaoke_look;
 mod keep_going;
 mod lastfm;
 mod layouts;
@@ -91,12 +94,14 @@ mod put_back;
 mod quality;
 mod quick_search;
 mod remote;
+mod room_eq;
 mod sampler;
 mod scrobble;
 mod settings;
 mod shortcuts;
 mod sleep_timer;
 mod smooth;
+mod sound_scan;
 mod soundcloud;
 mod sources;
 mod spotify;
@@ -557,12 +562,21 @@ fn fit_to_screen(app: &AppWindow) {
     });
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     if std::env::args().nth(1).as_deref() == Some("--list-controls") {
         list_controls();
-        return Ok(());
+        return;
     }
     diagnostics::install();
+    // Picked before the window opens, from what happened last time.
+    let graphics = Rc::new(graphics::choose(settings::config_dir().as_deref()));
+    if let Err(e) = run(graphics.clone()) {
+        diagnostics::startup_failed(&e, graphics.pending());
+        std::process::exit(1);
+    }
+}
+
+fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>> {
     // Before any thread starts: Beat This! takes a few cores, not all.
     opendj_engine::background::configure();
     // Windows wakes sleeping threads only every 15.6 ms unless asked for
@@ -580,8 +594,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Before anything is saved: no settings yet means a first start, which
     // gets the guided tour.
     let first_run = settings::load().as_object().is_none_or(|m| m.is_empty());
-    let backend =
-        slint::BackendSelector::new().require_wgpu_30(slint::wgpu_30::WGPUConfiguration::default());
+    let backend = slint::BackendSelector::new().require_wgpu_30(graphics.backend.configuration());
     // On macOS the app draws under a hidden title bar: only
     // the traffic lights stay, over the top bar.
     #[cfg(target_os = "macos")]
@@ -726,6 +739,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     mixer_picker::install(&app, engine.clone());
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());
+    instrument_seq::install(&app, registry.clone());
     let groove_keeper = RefCell::new(groove_box::Keeper::new(&registry));
     // The Mixer's channels as they were left, saved again as they change.
     let mixer_keeper = RefCell::new(mixer_keeper::Keeper::new(&registry));
@@ -866,6 +880,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
     let sources = sources::Sources::install(&app, library_path.clone());
+    browser.borrow_mut().play_sites = sources.borrow().playing_sites();
     {
         // Spotify's "Open in Browser" and "Add to Downloads", the latter
         // when an add-on source searches Spotify links.
@@ -1016,6 +1031,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for key in settings::controllers_scaled() {
         opendj_controllers::pickup::set_scale(&key, true);
     }
+    for (key, feel) in settings::controller_jog_feel() {
+        opendj_controllers::jog_feel::set_feel(&key, feel);
+    }
     opendj_controllers::routing::load_deck_choices(settings::controller_decks());
     let controllers = match opendj_controllers::default_mappings_dir() {
         Some(dir) => Some(Rc::new(opendj_controllers::Controllers::start(
@@ -1037,6 +1055,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 n.send(data);
             }
         })));
+    }
+    // The instrument deck's pitch bend and mod wheel strips.
+    {
+        let ui = app.global::<InstrumentsUi>();
+        let notes = engine.note_input();
+        ui.on_bend(move |v| {
+            if let Ok(mut n) = notes.lock() {
+                n.send(instruments::bend_message(v));
+            }
+        });
+        let notes = engine.note_input();
+        ui.on_modwheel(move |v| {
+            if let Ok(mut n) = notes.lock() {
+                n.send(instruments::modwheel_message(v));
+            }
+        });
     }
 
     // Start with two sample tracks loaded so the screen is not empty, but
@@ -1060,6 +1094,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let controller_editor = controller_editor::Editor::install(&app, controllers.clone());
     let map_mode = map_mode::Mapper::install(&app, controllers.clone());
     prefs::apply_saved(&registry);
+    room_eq::apply_saved(&registry);
+    let _room_eq = room_eq::install(&app, registry.clone(), &engine);
     let _levels = prefs::remember_levels(registry.clone());
     if let Some(note) = restored {
         engine.alert(note);
@@ -1103,6 +1139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let (weak, engine) = (app.as_weak(), engine.clone());
         let mut param_names: Vec<String> = Vec::new();
+        let mut page_names: Vec<String> = Vec::new();
         let mut knobs = Default::default();
         players_timer.start(
             slint::TimerMode::Repeated,
@@ -1130,6 +1167,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         names.iter().map(|n| n.as_str().into()).collect();
                     ui.set_param_names(slint::ModelRc::from(model.as_slice()));
                     param_names = names;
+                }
+                let pages = engine.instrument_pages();
+                if pages != page_names {
+                    let model: Vec<slint::SharedString> =
+                        pages.iter().map(|n| n.as_str().into()).collect();
+                    ui.set_page_names(slint::ModelRc::from(model.as_slice()));
+                    page_names = pages;
                 }
                 instrument_knobs::show(&app, &engine, &mut knobs);
             },
@@ -1285,6 +1329,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // it. Waveforms are drawn just before Slint renders each frame, so their
     // play position is as close as possible to when the frame is shown.
     let gpu: Rc<RefCell<Option<Gpu>>> = Rc::new(RefCell::new(None));
+    let graphics_choice = graphics.clone();
     {
         let gpu = gpu.clone();
         let app_weak = app.as_weak();
@@ -1306,6 +1351,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     slint::RenderingState::RenderingSetup,
                     slint::GraphicsAPI::WGPU30 { device, queue, .. },
                 ) => {
+                    let info = device.adapter_info();
+                    eprintln!(
+                        "graphics: {} ({:?}, {:?}), driver {} {}",
+                        info.name, info.backend, info.device_type, info.driver, info.driver_info
+                    );
                     let renderer = WaveformRenderer::new(device, queue);
                     let make = |mode| WaveformView::new(device, mode, 1, 1);
                     *gpu.borrow_mut() = Some(Gpu {
@@ -1352,6 +1402,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
                 }
                 (slint::RenderingState::AfterRendering, _) => {
+                    // The first frame is on screen: these graphics work here.
+                    graphics.drew();
                     // While a deck moves, draw again as soon as the display
                     // can show it, rather than on the UI timer, which beats
                     // against the display's refresh and makes motion uneven.
@@ -1599,10 +1651,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     browser.borrow_mut().add_recordings(&files);
                 }
                 browser.borrow_mut().poll_mix_export(&app);
+                browser.borrow_mut().poll_mixed_set(&app);
                 browser.borrow_mut().poll_streams();
                 browser.borrow_mut().poll_stores(&app);
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
+                }
+                let plays = browser.borrow_mut().take_stream_plays();
+                for link in plays {
+                    sources.borrow_mut().play_link(&link);
                 }
                 for path in sources.borrow_mut().take_loads() {
                     browser.borrow_mut().load_cached(&path);
@@ -1618,6 +1675,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 browser.borrow_mut().poll_inbox_albums();
                 browser.borrow_mut().poll_rekordbox_xml();
                 browser.borrow_mut().poll_covers();
+                browser.borrow_mut().poll_sounds();
                 browser.borrow_mut().poll_located();
                 browser.borrow_mut().poll_cleanup();
                 browser.borrow_mut().poll_files();
@@ -1777,6 +1835,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         timer
     };
 
+    // Until the first frame is drawn, a crash counts against these graphics.
+    graphics_choice.arm();
     app.show()?;
     fit_to_screen(&app);
     app.run()?;

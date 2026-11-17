@@ -8,6 +8,7 @@
 
 mod backups;
 mod broadcasting;
+mod karaoke;
 mod keyboard;
 mod plugins;
 mod sources;
@@ -57,7 +58,7 @@ const AUDIO: i32 = 0;
 /// Settings › Audio, for opening it from elsewhere.
 pub const AUDIO_PAGE: i32 = AUDIO;
 /// Settings › Audio's tabs.
-const AUDIO_TABS: [&str; 2] = ["Devices", "Recording"];
+const AUDIO_TABS: [&str; 3] = ["Devices", "Recording", "Room EQ"];
 const MIXER: i32 = 1;
 const DECKS: i32 = 2;
 /// Settings › Decks' tabs.
@@ -161,6 +162,8 @@ const FOLDER_LIST: i32 = 21;
 const TRACK_COLOR: i32 = 22;
 /// The storage bar with its Manage menu (see StorageUi in preferences.slint).
 const STORAGE: i32 = 23;
+/// The Room EQ editor (see room_eq.slint).
+const ROOM_EQ: i32 = 24;
 /// The Manage menu's clean-ups, in its order.
 const STORAGE_ACTIONS: [&str; 4] = [
     "Clear analysis cache…",
@@ -1253,6 +1256,14 @@ impl Prefs {
                         air_ceiling_item(),
                     ]);
                 }
+                if shows(2) {
+                    items.push(item(
+                        "room_eq",
+                        ROOM_EQ,
+                        "Room EQ",
+                        "Corrects the room the main output or the booth plays into.",
+                    ));
+                }
                 items
             }
             CONTROLLERS => {
@@ -1559,6 +1570,7 @@ impl Prefs {
                         )
                     },
                 ]);
+                items.extend(self.karaoke_items());
                 items
             }
             _ => Vec::new(),
@@ -2754,6 +2766,10 @@ impl Prefs {
     }
 
     fn picked(&mut self, id: &str, index: usize) {
+        if karaoke::picked(id, index) {
+            self.refresh();
+            return;
+        }
         if crate::midi_clock::picked(id, index) {
             self.refresh();
             return;
@@ -2761,6 +2777,26 @@ impl Prefs {
         if id == backup::EVERY_KEY {
             settings::set(id, json!(index));
             backup::run_if_due();
+            self.refresh();
+            return;
+        }
+        if let Some(t) = id
+            .strip_prefix("tag_merge:")
+            .and_then(|x| x.parse::<i64>().ok())
+        {
+            // The menu lists the group's other tags after its title.
+            let into = open_library()
+                .and_then(|db| db.tags_of_group(self.open_group?).ok())
+                .and_then(|tags| {
+                    tags.into_iter()
+                        .filter(|x| x.id != t)
+                        .nth(index.checked_sub(1)?)
+                });
+            if let Some(into) = into {
+                self.removing_tag = None;
+                with_library(|db| db.rename_tag(t, &into.name).map(|_| ()));
+                settings::tags_changed();
+            }
             self.refresh();
             return;
         }

@@ -13,7 +13,7 @@ The menu at the top left of the window switches layouts:
   instead). Point at the line and it turns lilac and shows the time there;
   click or drag to move through the track. The time played and the track's
   length are either side. On the right are the master volume, the mini
-  player button, the lyrics button and the queue button, which shows or hides **Up Next**
+  player button, the karaoke (microphone) button and the queue button, which shows or hides **Up Next**
   (the Automix list), and under them the file's quality: format, bit depth
   and sample rate in lilac for lossless files (**FLAC 16-BIT 44.1 KHZ**),
   or the bitrate in grey (**MP3 320 KBPS**). The **heart** beside the title
@@ -21,13 +21,12 @@ The menu at the top left of the window switches layouts:
   Playlists the first time), or takes it out; it is filled lilac while the
   track is there. Right-click it to add the track to a crate or playlist,
   or to a new crate.
-  Click the album art on the bar for **Now Playing**: the art large over
-  the whole library, with the title, artist, album, BPM, key and the file's
-  quality under it, and on the right the track's **Lyrics** (large, the line
-  sung lit) or its **Details** (album, track number, year, genre, length,
-  tempo, key, file, rating, plays, when it was last played and added).
-  Up Next stays beside it. The lyrics button opens it on Lyrics; the art
-  again, or the ⌄ at the top left, goes back to the library.
+  Click the album art or the microphone on the bar for **karaoke**: the
+  art large over the whole window, with the title, artist, album and year
+  under it, and the lyrics beside it as on the karaoke screen (see
+  [Lyrics](lyrics.md#in-player-mode)). The side panel hides while it
+  shows. The art or the microphone again, the ⌄ at the top left, or the
+  queue button goes back to the library.
   The **mini player** (**⇧⌘M**, **View › Mini Player**, or its button on
   the bar) is a small square window of album art that stays on top of the
   others. Point at it and the art dims and shows the title, artist, a
