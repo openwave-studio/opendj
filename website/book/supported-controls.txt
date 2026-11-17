@@ -4222,9 +4222,16 @@
 [Instrument1],seq4_vel_9
 [Instrument1],seq4_vel_len
 [Instrument1],seq4_vel_offset
+[Instrument1],seq_can_undo
+[Instrument1],seq_dice
+[Instrument1],seq_dice_keep
+[Instrument1],seq_dice_style
+[Instrument1],seq_dice_undo
 [Instrument1],seq_mode
 [Instrument1],seq_position
 [Instrument1],seq_rate
+[Instrument1],seq_rec
+[Instrument1],seq_regen
 [Instrument1],seq_slot
 [Instrument1],seq_slot_playing
 [Instrument1],seq_swing
