@@ -9,7 +9,8 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
+use std::time::Instant;
 
 /// A control's address, e.g. `[Channel1],play`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -61,6 +62,10 @@ pub struct Control {
     /// Held by something driving the control on its own (Automix and the
     /// crossfader): writes from anyone else are ignored until it lets go.
     locked: AtomicBool,
+    /// When a [push](Behavior::Push) control last went down, in [`now_nanos`]
+    /// (0 = never), so a reader that polls it (the audio thread, once a
+    /// buffer) still knows when the press really came.
+    pressed_at: AtomicU64,
     default: f64,
     min: f64,
     max: f64,
@@ -74,12 +79,19 @@ impl Control {
             bits: AtomicU64::new(default.to_bits()),
             version: AtomicU32::new(0),
             locked: AtomicBool::new(false),
+            pressed_at: AtomicU64::new(0),
             default,
             min,
             max,
             behavior,
         }
     }
+}
+
+/// Nanoseconds on a monotonic clock, from 1 at the first call.
+fn now_nanos() -> u64 {
+    static EPOCH: OnceLock<Instant> = OnceLock::new();
+    EPOCH.get_or_init(Instant::now).elapsed().as_nanos() as u64 + 1
 }
 
 /// A resolved control. Cheap to clone; all operations are lock-free.
@@ -125,6 +137,9 @@ impl ControlHandle {
     pub fn force(&self, value: f64) {
         let v = value.clamp(self.0.min, self.0.max);
         let old = self.0.bits.swap(v.to_bits(), Ordering::Relaxed);
+        if self.0.behavior == Behavior::Push && v > 0.0 && f64::from_bits(old) <= 0.0 {
+            self.0.pressed_at.store(now_nanos(), Ordering::Release);
+        }
         if old != v.to_bits() {
             self.0.version.fetch_add(1, Ordering::Release);
         }
@@ -151,6 +166,13 @@ impl ControlHandle {
 
     pub fn is_locked(&self) -> bool {
         self.0.locked.load(Ordering::Acquire)
+    }
+
+    /// How long ago, in seconds, this push control last went down; `None`
+    /// before the first press.
+    pub fn pressed_ago(&self) -> Option<f64> {
+        let at = self.0.pressed_at.load(Ordering::Acquire);
+        (at != 0).then(|| now_nanos().saturating_sub(at) as f64 * 1e-9)
     }
 
     /// Increments every time the value changes; lets pollers skip unchanged controls.
@@ -308,6 +330,25 @@ impl ControlRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_push_remembers_when_it_went_down() {
+        let reg = ControlRegistry::new();
+        let tap = reg.push("[Channel1]", "bpm_tap");
+        let play = reg.toggle("[Channel1]", "play");
+        assert_eq!(tap.pressed_ago(), None);
+        tap.set_bool(true);
+        play.set_bool(true);
+        let ago = tap.pressed_ago().unwrap();
+        assert!((0.0..1.0).contains(&ago), "{ago}");
+        // Held or let go, it is still the same press.
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        tap.set_bool(true);
+        tap.set_bool(false);
+        assert!(tap.pressed_ago().unwrap() >= 0.005);
+        // Only pushes keep the time.
+        assert_eq!(play.pressed_ago(), None);
+    }
 
     #[test]
     fn resolves_by_name_and_alias() {

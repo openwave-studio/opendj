@@ -17,6 +17,7 @@
 - [x] 3.1 Settings › Audio › Room EQ: Main and Booth tabs, On switch, the curve widget with draggable dots, scroll for width, double-click reset, band cards; saved in settings; screenshot
 - [x] 3.2 Presets: Flat, Muddy room, Harsh highs, Small speakers, own presets by name, modified mark
 - [x] 3.3 Spectrum behind the curve while the page is open
+- [x] 3.4 Polish from comparing room correction tools: spectrum Before/After and Freeze, a click on a spectrum peak drops a cut there, hold Bypass, A/B between two curves, ±6 dB zoom
 
 ## 4. Docs
 

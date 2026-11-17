@@ -50,6 +50,7 @@ mod lyrics;
 mod mix_export;
 mod pages;
 mod picks;
+mod played;
 mod playlist_files;
 mod prep;
 mod rail_order;
@@ -517,7 +518,8 @@ const KIND_IGNORED: i32 = 22;
 /// A section heading in Collection Health's tree: Files, Location and so on.
 const KIND_HEALTH_SECTION: i32 = 24;
 
-/// Seconds a track must play on a deck to count as played, for the history.
+/// Seconds a track must be heard in the master to count as played, for the
+/// history and this session's played marks.
 const PLAYED_AFTER: f64 = 30.0;
 
 /// Watches one deck's hot cues so changes the DJ makes are saved.
@@ -671,6 +673,8 @@ pub struct Browser {
     /// When the last track counted as played (Unix seconds): an hour
     /// later, or on a new day, the next play starts a new set.
     last_play: Option<i64>,
+    /// The tracks played in this session, marked in the list.
+    played: played::Played,
     /// Lists tracks can be added to, as offered in the track menu.
     menu_lists: Vec<track_menu::MenuList>,
     /// The crates each track is in, by track id.
@@ -1325,6 +1329,7 @@ impl Browser {
             export_status: None,
             session: None,
             last_play: None,
+            played: played::Played::new(registry),
             menu_lists: Vec::new(),
             crates: HashMap::new(),
             list_health: Default::default(),
@@ -1378,6 +1383,7 @@ impl Browser {
             cleanup: Default::default(),
         }));
         b.borrow_mut().set_library(library);
+        b.borrow_mut().resume_session();
         if STREAMING_ENABLED {
             b.borrow_mut().restore_streams();
         }
@@ -1986,6 +1992,7 @@ impl Browser {
         Self::install_checklist(app, &with);
         Self::install_lyrics(app, &with);
         Self::install_track_menu(&edit, &with);
+        Self::install_played(&edit, &with);
         Self::install_keep_going(&app.global::<crate::KeepGoingUi>(), &with);
         Self::install_up_next(&app.global::<crate::UpNextUi>(), &with);
         Self::install_pages(&app.global::<crate::PageUi>(), &with);
@@ -4103,14 +4110,15 @@ impl Browser {
             if opendj_library::row_id(t.id).is_none() {
                 continue;
             }
-            let w = &mut self.watch[d];
-            if w.track.map(|(id, _)| id) != Some(t.id) {
-                *w = CueWatch {
+            if self.watch[d].track.map(|(id, _)| id) != Some(t.id) {
+                self.watch[d] = CueWatch {
                     track: Some((t.id, std::time::Instant::now())),
                     saved: t.info.hotcues.clone(),
                     ..Default::default()
                 };
+                self.note_load(d, t.id);
             }
+            let w = &mut self.watch[d];
             // The engine sets the new track's cues as it loads; wait for that.
             let settled = w
                 .track
@@ -4159,7 +4167,7 @@ impl Browser {
                 }
             }
             let w = &mut self.watch[d];
-            if self.play[d].get_bool() && !w.recorded {
+            if self.play[d].get_bool() && !w.recorded && self.played.heard(d) {
                 w.played += dt;
                 if w.played >= PLAYED_AFTER {
                     w.recorded = true;
@@ -4168,8 +4176,9 @@ impl Browser {
                 }
             }
         }
-        if (changed && self.history_tab) || cues_changed {
-            self.refresh_rows();
+        self.keep_played(dt);
+        if changed || cues_changed {
+            self.refresh_rows_keeping_current();
         }
     }
 
@@ -4182,6 +4191,7 @@ impl Browser {
             .is_some_and(|last| history::new_set(last, now))
         {
             self.session = None;
+            self.played.at.clear();
         }
         self.last_play = Some(now);
         if self.session.is_none() {
@@ -4199,21 +4209,11 @@ impl Browser {
         if let Err(e) = db.record_play(self.session, id) {
             eprintln!("can't record the play: {e}");
         }
+        self.mark_played(id, now);
         if let Some(&i) = self.index_of.get(&id) {
             let mut e = (*self.library[i]).clone();
             e.info.play_count += 1;
             self.library[i] = Arc::new(e);
-        }
-        let showing_session =
-            self.nodes
-                .get(self.current_node)
-                .is_some_and(|n| match (&n.contents, self.session) {
-                    (Contents::Playlist(p), Some(s)) => *p == s,
-                    (Contents::HistoryDay(sets), Some(s)) => sets.contains(&s),
-                    _ => false,
-                });
-        if showing_session {
-            self.refresh_rows();
         }
     }
 
@@ -5684,6 +5684,11 @@ impl Browser {
                     streamed: r.stream.is_some(),
                     // Only while the day is in play order.
                     set_start: r.list.set_start && self.sort_column == columns::ORDER,
+                    played: r
+                        .local
+                        .map(|id| self.played.time_of(library[id].id))
+                        .unwrap_or_default()
+                        .into(),
                 };
                 let crates = r.local.and_then(|id| self.crates.get(&library[id].id));
                 TrackRow {
