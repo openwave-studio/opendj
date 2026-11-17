@@ -457,6 +457,100 @@ impl RoomEqControls {
     }
 }
 
+/// The spectrum of an output, for drawing behind the curve: the last
+/// [`Spectrum::SIZE`] frames, windowed, as levels at log-spaced points,
+/// tilted 3 dB an octave about 1 kHz so typical music reads about flat,
+/// rising at once and falling slowly.
+pub struct Spectrum {
+    sample_rate: f64,
+    fft: std::sync::Arc<dyn rustfft::Fft<f32>>,
+    window: Vec<f32>,
+    /// The latest mono samples, oldest first.
+    history: Vec<f32>,
+    work: Vec<rustfft::num_complex::Complex<f32>>,
+    /// Each point's bins, and its level now (dB).
+    points: Vec<(usize, usize, f64)>,
+    level: Vec<f64>,
+}
+
+impl Spectrum {
+    pub const SIZE: usize = 4096;
+    /// The quietest level drawn, in dB.
+    pub const FLOOR: f64 = -90.0;
+
+    /// A spectrum of `points` levels from 20 Hz to 20 kHz.
+    pub fn new(sample_rate: f64, points: usize) -> Self {
+        let n = Self::SIZE;
+        let bin = |f: f64| ((f * n as f64 / sample_rate).round() as usize).clamp(1, n / 2 - 1);
+        let freqs = log_freqs(points + 1);
+        let points = freqs
+            .windows(2)
+            .map(|w| {
+                let (a, b) = (bin(w[0]), bin(w[1]));
+                (a, b.max(a), (w[0] * w[1]).sqrt())
+            })
+            .map(|(a, b, mid)| (a, b, 3.0 * (mid / 1000.0).log2()))
+            .collect::<Vec<_>>();
+        Self {
+            sample_rate,
+            fft: rustfft::FftPlanner::new().plan_fft_forward(n),
+            window: (0..n)
+                .map(|i| (0.5 - 0.5 * (std::f64::consts::TAU * i as f64 / n as f64).cos()) as f32)
+                .collect(),
+            history: vec![0.0; n],
+            work: vec![Default::default(); n],
+            level: vec![Self::FLOOR; points.len()],
+            points,
+        }
+    }
+
+    pub fn sample_rate(&self) -> f64 {
+        self.sample_rate
+    }
+
+    /// Takes interleaved stereo samples, keeping the latest.
+    pub fn push(&mut self, stereo: &[f32]) {
+        let mono = stereo.as_chunks::<2>().0.iter().map(|[l, r]| (l + r) * 0.5);
+        let new: Vec<f32> = mono.collect();
+        let n = self.history.len();
+        if new.len() >= n {
+            self.history.copy_from_slice(&new[new.len() - n..]);
+        } else {
+            self.history.drain(..new.len());
+            self.history.extend_from_slice(&new);
+        }
+    }
+
+    /// The levels now, in dB, one for each point, after `dt` seconds since
+    /// the last call: up at once, down 24 dB a second.
+    pub fn levels(&mut self, dt: f64) -> &[f64] {
+        for (w, (h, win)) in self
+            .work
+            .iter_mut()
+            .zip(self.history.iter().zip(&self.window))
+        {
+            *w = rustfft::num_complex::Complex::new(h * win, 0.0);
+        }
+        self.fft.process(&mut self.work);
+        // A full-scale sine reads 0 dB: the Hann window halves the peak.
+        let scale = 4.0 / Self::SIZE as f64;
+        let fall = 24.0 * dt;
+        for ((a, b, tilt), level) in self.points.iter().zip(&mut self.level) {
+            let peak = self.work[*a..=*b]
+                .iter()
+                .map(|c| c.norm() as f64)
+                .fold(0.0, f64::max);
+            let db = (20.0 * (peak * scale).max(1e-9).log10() + tilt).max(Self::FLOOR);
+            *level = if db > *level {
+                db
+            } else {
+                (*level - fall).max(db)
+            };
+        }
+        &self.level
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -725,5 +819,31 @@ mod tests {
             "one second of audio: six bands {eq_cost:.3}% of a core, \
              the recording's limiter {limiter_cost:.3}%"
         );
+    }
+
+    #[test]
+    fn the_spectrum_finds_a_tone() {
+        let mut sp = Spectrum::new(SR, 120);
+        let tone: Vec<f32> = sine(1000.0, Spectrum::SIZE).flatten().collect();
+        sp.push(&tone);
+        let levels = sp.levels(0.0).to_vec();
+        let freqs = log_freqs(121);
+        let at = |hz: f64| {
+            freqs
+                .windows(2)
+                .position(|w| w[0] <= hz && hz < w[1])
+                .unwrap()
+        };
+        // A 0.5 sine is -6 dB; 1 kHz has no tilt.
+        assert!(
+            (levels[at(1000.0)] + 6.0).abs() < 1.5,
+            "{}",
+            levels[at(1000.0)]
+        );
+        assert!(levels[at(100.0)] < -60.0, "{}", levels[at(100.0)]);
+        // Silence: it falls slowly, not at once.
+        sp.push(&vec![0.0; Spectrum::SIZE * 2]);
+        let after = sp.levels(0.1)[at(1000.0)];
+        assert!((after - (levels[at(1000.0)] - 2.4)).abs() < 0.01, "{after}");
     }
 }

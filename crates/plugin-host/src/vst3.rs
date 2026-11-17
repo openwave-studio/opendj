@@ -1146,6 +1146,7 @@ pub fn load(
                 name,
                 params: params.into_iter().map(|(_, p)| p).collect(),
                 all: listed,
+                pages: Vec::new(),
                 latency,
             },
         })

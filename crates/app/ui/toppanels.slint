@@ -6,6 +6,7 @@ import { Caption, Controls, ControlButton, CueHeadphones, PickupGhost, VuMeter }
 import { EffectList, FxSlot } from "deck.slint";
 import { AudioSettings, Knob } from "mixer.slint";
 import { Preferences } from "preferences.slint";
+import { RoomEqUi } from "room_eq.slint";
 
 // A speaker, with one or two waves; for the ends of a level slider.
 component SpeakerIcon inherits Path {
@@ -463,6 +464,20 @@ export component MasterPanel inherits PopupWindow {
                 Caption { text: "CUE"; vertical-alignment: center; width: 22px; }
                 LevelSlider { group: "[Master]"; key: "headMix"; detent: true; }
                 Caption { text: "MIX"; vertical-alignment: center; width: 22px; }
+            }
+        }
+        // The main output's Room EQ: its preset, or Off.
+        HorizontalLayout {
+            spacing: 8px;
+            Text { text: "Room EQ"; color: Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
+            Text { text: RoomEqUi.master-text; color: RoomEqUi.master-text == "Off" ? Theme.text-dim : Theme.lilac-text; font-size: 12px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+            PanelLink {
+                text: "Edit…";
+                vertical-alignment: center;
+                clicked => {
+                    root.close();
+                    Preferences.show-tab(Preferences.audio-page, 2);
+                }
             }
         }
         EdgeLine { line-color: Theme.border; }

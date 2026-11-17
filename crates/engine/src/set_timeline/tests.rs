@@ -3,14 +3,14 @@ use serde_json::json;
 use super::*;
 
 /// Writes a control log line by line, as the recorder does.
-struct Log {
-    lines: Vec<String>,
+pub(crate) struct Log {
+    pub(crate) lines: Vec<String>,
     end: f64,
 }
 
 impl Log {
     /// Decks 1 and 2 with their faders as given, nothing loaded.
-    fn new(snapshot: serde_json::Value) -> Log {
+    pub(crate) fn new(snapshot: serde_json::Value) -> Log {
         let mut log = Log {
             lines: Vec::new(),
             end: 0.0,
@@ -29,12 +29,12 @@ impl Log {
         self.lines.push(v.to_string());
     }
 
-    fn c(&mut self, t: f64, name: &str, v: f64) -> &mut Self {
+    pub(crate) fn c(&mut self, t: f64, name: &str, v: f64) -> &mut Self {
         self.push(json!({ "t": t, "c": name, "v": v }));
         self
     }
 
-    fn load(&mut self, t: f64, deck: usize, title: &str, bpm: f64) -> &mut Self {
+    pub(crate) fn load(&mut self, t: f64, deck: usize, title: &str, bpm: f64) -> &mut Self {
         self.push(json!({ "t": t, "load": {
             "deck": deck, "artist": "Artist", "title": title,
             "path": format!("/music/{title}.mp3"), "bpm": bpm, "key": "8A",
@@ -42,14 +42,14 @@ impl Log {
         self
     }
 
-    fn pos(&mut self, t: f64, deck: usize, s: f64) -> &mut Self {
+    pub(crate) fn pos(&mut self, t: f64, deck: usize, s: f64) -> &mut Self {
         self.push(json!({ "t": t, "pos": { "deck": deck, "s": s } }));
         self
     }
 
     /// `pos` lines once a second for a deck playing at normal speed from
     /// `s` at `from` until `to`.
-    fn playing(&mut self, deck: usize, from: f64, to: f64, s: f64) -> &mut Self {
+    pub(crate) fn playing(&mut self, deck: usize, from: f64, to: f64, s: f64) -> &mut Self {
         let mut t = from;
         while t < to {
             self.pos(t, deck, s + (t - from));
@@ -58,14 +58,14 @@ impl Log {
         self
     }
 
-    fn end(&mut self, t: f64) -> SetTimeline {
+    pub(crate) fn end(&mut self, t: f64) -> SetTimeline {
         self.end = t;
         self.push(json!({ "t": t, "end": true }));
         SetTimeline::parse(&self.lines.join("\n")).unwrap()
     }
 }
 
-fn two_decks() -> Log {
+pub(crate) fn two_decks() -> Log {
     Log::new(json!({
         "[Channel1],volume": 1.0,
         "[Channel2],volume": 0.0,
@@ -80,7 +80,7 @@ fn two_decks() -> Log {
 /// Deck 1 plays A from 1 s; deck 2 starts B at 20 s, faded in at 30 s
 /// with its bass out; the basses swap at 40 s; deck 1 is faded out at 50 s
 /// and stopped at 52 s.
-fn bass_swap() -> SetTimeline {
+pub(crate) fn bass_swap() -> SetTimeline {
     let mut log = two_decks();
     log.load(0.5, 1, "A", 120.0).pos(0.5, 1, 0.0);
     log.c(1.0, "[Channel1],play", 1.0);

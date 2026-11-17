@@ -146,8 +146,13 @@ export component ControlKnob inherits Rectangle {
     // arc round its rim from `origin` (the centre for EQs) to where it points.
     in property <float> origin: bipolar ? 0.5 : 0;
     // 0 the grey cap; as on the Model 1's sculpt section, 1 a white
-    // cap (sculpt) and 2 a black cap ringed in white (contour filters).
+    // cap (sculpt) and 2 a black cap ringed in white (contour filters);
+    // 3 a rack knob (instrument decks): a dark cap inside a ring, the
+    // ring's arc in `arc-color` with a soft glow.
     in property <int> look: 0;
+    in property <color> arc-color: Theme.knob-arc;
+    // A rack knob's cap sits inside its ring.
+    property <length> inset: look == 3 ? round(size * 0.17 / 1px) * 1px : 0px;
     property <angle> origin-angle: -135deg + origin * 270deg;
     // Soft shadow, then the cap.
     Rectangle {
@@ -158,13 +163,26 @@ export component ControlKnob inherits Rectangle {
         border-radius: self.width / 2;
         background: Theme.n-050506;
     }
+    // A rack knob's ring: the whole sweep, dark, under its arc.
+    if look == 3: KnobArc {
+        x: 4px + 1px;
+        y: 3px + 1px;
+        width: size - 2px;
+        height: size - 2px;
+        from: -135deg;
+        to: 135deg;
+        stroke: Theme.n-26262a;
+        stroke-width: max(3px, size / 10);
+    }
     cap := Rectangle {
-        x: 4px;
-        y: 3px;
-        width: size;
-        height: size;
+        x: 4px + inset;
+        y: 3px + inset;
+        width: size - 2 * inset;
+        height: size - 2 * inset;
         border-radius: self.width / 2;
-        background: look == 1
+        background: look == 3
+            ? (touch.has-hover ? @radial-gradient(circle, #55575f 0%, #24252a 100%) : @radial-gradient(circle, #4a4c54 0%, #1d1e23 100%))
+            : look == 1
             ? (touch.has-hover ? @linear-gradient(180deg, #ffffff 0%, #d4d4d8 100%) : @linear-gradient(180deg, #f2f2f4 0%, #c8c8cc 100%))
             : look == 2
             ? (touch.has-hover ? Theme.n-1c1c1e : Theme.n-0e0e10)
@@ -172,9 +190,22 @@ export component ControlKnob inherits Rectangle {
             ? @linear-gradient(180deg, #505055 0%, #303034 100%)
             : @linear-gradient(180deg, #46464b 0%, #2a2a2e 100%);
         border-width: look == 2 ? max(2px, size / 12) : 1px;
+        drop-shadow-blur: look == 3 ? 4px : 0px;
+        drop-shadow-color: Theme.s-000000b0;
         border-color: look == 2 ? Theme.n-e4e4e8 : Theme.n-141416;
     }
     // Hidden at the origin, where the arc would be a dot.
+    // A rack knob's glow, under its arc.
+    if look == 3 && abs(param - origin) > 0.004: KnobArc {
+        x: 4px + 1px;
+        y: 3px + 1px;
+        width: size - 2px;
+        height: size - 2px;
+        from: origin-angle;
+        to: value-angle;
+        stroke: root.arc-color.with-alpha(0.28);
+        stroke-width: max(7px, size / 4.5);
+    }
     if abs(param - origin) > 0.004: KnobArc {
         x: 4px + 1px;
         y: 3px + 1px;
@@ -182,8 +213,8 @@ export component ControlKnob inherits Rectangle {
         height: size - 2px;
         from: origin-angle;
         to: value-angle;
-        stroke: Theme.knob-arc;
-        stroke-width: max(2px, size / 11);
+        stroke: look == 3 ? root.arc-color : Theme.knob-arc;
+        stroke-width: look == 3 ? max(3px, size / 10) : max(2px, size / 11);
     }
     // Pointer line from near the centre to the rim.
     Path {
@@ -196,8 +227,8 @@ export component ControlKnob inherits Rectangle {
         stroke: look == 1 ? Theme.n-1c1c1e : root.tint == Theme.text ? Theme.n-e4e4e8 : root.tint;
         stroke-width: max(1.5px, size / 14);
         stroke-line-cap: round;
-        MoveTo { x: 50 + 8 * sin(value-angle); y: 50 - 8 * cos(value-angle); }
-        LineTo { x: 50 + 40 * sin(value-angle); y: 50 - 40 * cos(value-angle); }
+        MoveTo { x: 50 + (look == 3 ? 12 : 8) * sin(value-angle); y: 50 - (look == 3 ? 12 : 8) * cos(value-angle); }
+        LineTo { x: 50 + (look == 3 ? 38 : 40) * sin(value-angle); y: 50 - (look == 3 ? 38 : 40) * cos(value-angle); }
     }
     if hardware >= 0: PickupDot {
         x: cap.x;

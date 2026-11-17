@@ -27,6 +27,26 @@ of updating the first.
   the previous run in `opendj.1.log`, crash reports as `crash-*.txt`).
 - Analysis cache and stems: `%LOCALAPPDATA%\openDJ`.
 
+Paste `%APPDATA%\openDJ\logs` into the File Explorer address bar to open the
+logs. A crash inside a driver (graphics or audio) writes a `crash-*.txt`
+too, naming the DLL it happened in.
+
+## If openDJ doesn't open
+
+Some graphics drivers (older Intel drivers, laptops with both Intel and
+NVIDIA graphics) can close openDJ while it sets up the GPU, before the
+window shows. openDJ notices at the next start and tries another graphics
+mode: the default first (usually Vulkan), then DirectX 12, then OpenGL.
+The one that works is kept in `%APPDATA%\openDJ\graphics.txt`, so opening
+openDJ two or three times gets past a driver that crashes.
+
+To pick one by hand, set the environment variable `OPENDJ_GRAPHICS` to
+`dx12`, `vulkan` or `gl` (in Command Prompt:
+`set OPENDJ_GRAPHICS=dx12 && "%LOCALAPPDATA%\Programs\openDJ\openDJ.exe"`).
+`OPENDJ_GRAPHICS=auto` goes back to the default and forgets the kept one.
+Updating the graphics driver from Intel's or the laptop maker's site
+often fixes the crash itself.
+
 ## Audio
 
 The Settings > Audio device lists show Windows Audio (WASAPI, shared mode)
