@@ -72,7 +72,11 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo fmt --all --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --workspace --exclude opendj --all-targets -- -D warnings
+      # Checking the app takes several GB per target (its Slint UI is one
+      # large generated module): its binary and tests one at a time, so the
+      # runner doesn't run out of memory.
+      - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
       # Includes the check that website/book/supported-controls.txt matches
       # `opendj --list-controls` (control_list_tests in crates/app).
       - run: cargo test --workspace
@@ -90,7 +94,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --workspace --exclude opendj --all-targets -- -D warnings
+      # Checking the app takes several GB per target (its Slint UI is one
+      # large generated module): its binary and tests one at a time, so the
+      # runner doesn't run out of memory.
+      - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
       - run: cargo test --workspace
 
   dependencies:
