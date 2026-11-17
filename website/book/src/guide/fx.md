@@ -212,8 +212,8 @@ In 2-Deck the deck shows:
 - A keyboard the width of the deck that lights the notes held in lilac, with
   pitch bend and mod wheel strips on its left.
 
-**☰ › Keyboard** shows the keyboard (**Full**) or hides it (**Hidden**),
-which shows two pages of knobs at once. **☰ › Color**
+**☰ › Play with** shows the keyboard (**Keys**) or, in its place, the step
+sequencer (**Steps**). **☰ › Color**
 picks the instrument's color; each plugin starts with its own.
 
 A 4-Deck strip shows the scope, **OPEN**, the first four knobs and
@@ -243,6 +243,33 @@ chords from **Chord** too.
 **HOLD** keeps the notes you play sounding after you let go of the keys,
 until you play new ones or switch it off. With **ARP** on it is the
 arpeggiator's **Hold**.
+
+### Step sequencer
+
+With **☰ › Play with › Steps** the keyboard makes room for a riff of up to
+16 steps that plays by itself, on the mix's beat and in key, while your
+hands are on the mixer. Its notes go in where the keys' do, so **SCALE**,
+**CHORD**, **ARP** and **HOLD** work on them too.
+
+- **▶** starts it on the next bar of the playing deck's beat (or at once
+  when no deck plays; the button is outlined while it waits) and **■**
+  stops it. **A B C D** are four patterns; a new one starts on the next
+  bar.
+- **FWD**, **BACK**, **P-PONG** (forward and back) or **RAND** is the order the
+  steps play in; the rate (**1/4** to **1/32**, with triplets), **SW**
+  (swing, every second step late) and **LEN** (1 to 16 steps) sit under it.
+- **PITCH** is the tall lane. Click a step to put a note at that height,
+  click its bar to take it off, and drag to move it. Heights are notes of
+  the deck's scale, or C minor while **SCALE** is off, from the root in the
+  middle up and down an octave.
+- The lane under it is picked by the tabs: **CHANCE** (how likely the step
+  plays), **VEL** (how hard; the top is the accent, drawn brighter),
+  **OCT** (click for +1, −1 or 0 octaves), **GATE** (how long the note
+  sounds; full ties it into the next step) and **SLIDE** (the note runs
+  into the next one, so a mono synth glides).
+- Each lane has **⚄** (fill it at random, in key), **✕** (clear it) and
+  **‹ n ›**, its own length. A lane shorter than the pattern repeats sooner
+  and drifts against the others; it is dim while it follows the pattern.
 
 **OCT ‹** and **›** move the **KEYBOARD** pads up or down an
 octave, three at most each way. The pads play the white keys from middle C.

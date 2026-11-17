@@ -2,9 +2,9 @@
 
 ## 1. Engine
 
-- [ ] 1.1 Step clock on the master beat grid: 16 steps, rate, swing, start on the next bar; notes into the instrument's note input
-- [ ] 1.2 Lanes: on/off, chance, pitch (scale-snapped), velocity, octave, gate (with tie), slide; per-lane length (DIV), offsets
-- [ ] 1.3 Play modes (forward, backward, ping-pong, random), swing; pattern slots A-D; `[Instrument1],seq_*` controls
+- [x] 1.1 Step clock on the master beat grid: 16 steps, rate, swing, start on the next bar; notes into the instrument's note input
+- [x] 1.2 Lanes: on/off, chance, pitch (scale-snapped), velocity, octave, gate (with tie), slide; per-lane length (DIV), offsets
+- [x] 1.3 Play modes (forward, backward, ping-pong, random), swing; pattern slots A-D; `[Instrument1],seq_*` controls
 
 ## 2. Deck
 

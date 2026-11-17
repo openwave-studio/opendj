@@ -57,6 +57,7 @@ pub mod sampler;
 pub mod scale;
 pub mod scan;
 pub mod separation;
+pub mod seq;
 pub mod set_chapters;
 pub mod set_checks;
 pub mod set_fixes;

@@ -228,6 +228,19 @@ enum Memory {
 
 /// Floats in a long buffer: Echo's stereo delay line, which Roll, Brake,
 /// Echo Out and Spiral use too.
+/// Puts `notes` in order of frame, keeping the order of those on the same
+/// frame (an insertion sort: it never allocates, and they come nearly in
+/// order).
+fn sort_by_frame(notes: &mut [Midi]) {
+    for i in 1..notes.len() {
+        let mut j = i;
+        while j > 0 && notes[j - 1].frame > notes[j].frame {
+            notes.swap(j - 1, j);
+            j -= 1;
+        }
+    }
+}
+
 fn long_size(sample_rate: f32) -> usize {
     2 * Echo::new(sample_rate).len
 }
@@ -1224,6 +1237,10 @@ pub(crate) struct EffectRack {
     latch: crate::latch::Latch,
     arp_in: Vec<Midi>,
     scale_mask: u16,
+    /// The scale's root, 0 to 11 from C.
+    scale_root: u8,
+    /// The step sequencer's notes for this buffer (see [`crate::seq`]).
+    seq_notes: Vec<Midi>,
     /// What the instrument plays, for its deck to show.
     view: Arc<InstrumentView>,
     /// Its last [`SCOPE_SAMPLES`] samples (mono), and where the next goes.
@@ -1508,6 +1525,8 @@ impl EffectRack {
             latch: crate::latch::Latch::default(),
             arp_in: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             scale_mask: 0,
+            scale_root: 0,
+            seq_notes: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             view: Arc::default(),
             scope_ring: vec![0.0; SCOPE_SAMPLES],
             scope_pos: 0,
@@ -1594,8 +1613,24 @@ impl EffectRack {
 
     /// The scale notes for the instrument move to from now on: a bit per
     /// pitch class from C, 0 for none (see [`crate::scale`]).
-    pub(crate) fn set_scale(&mut self, mask: u16) {
+    /// `root` is the scale's root, 0 to 11 from C.
+    pub(crate) fn set_scale(&mut self, mask: u16, root: u8) {
         self.scale_mask = mask;
+        self.scale_root = root;
+    }
+
+    /// Runs the step sequencer over this buffer of `frames`, on `target`'s
+    /// beat: its notes go in with the keys' in
+    /// [`EffectRack::start_instrument`].
+    pub(crate) fn sequence(&mut self, seq: &mut crate::seq::Seq, frames: usize, target: usize) {
+        seq.process(
+            frames,
+            self.sample_rate,
+            self.transport[target],
+            self.scale_root,
+            self.scale_mask,
+            &mut self.seq_notes,
+        );
     }
 
     /// The chord each note plays from now on (see [`crate::scale::chord`]),
@@ -1649,6 +1684,12 @@ impl EffectRack {
                 self.scale.map(n, self.scale_mask, &mut self.arp_in);
             }
         }
+        for &n in &self.seq_notes {
+            if self.arp_in.len() < cap {
+                self.scale.map(n, self.scale_mask, &mut self.arp_in);
+            }
+        }
+        self.seq_notes.clear();
         if self.arp.is_on() {
             self.arp.process(
                 &self.arp_in,
@@ -1661,6 +1702,9 @@ impl EffectRack {
             self.latch.process(&self.arp_in, &mut self.notes_waiting);
         }
         self.arp_in.clear();
+        // Keys come at the buffer's start, the sequencer's and the
+        // arpeggiator's notes on their steps: the plugin takes them in order.
+        sort_by_frame(&mut self.notes_waiting);
         let Some(a) = self.instrument.as_deref_mut() else {
             self.notes_waiting.clear();
             return;

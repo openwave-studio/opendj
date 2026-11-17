@@ -99,6 +99,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-synced-lyrics](changes/add-synced-lyrics/proposal.md) (lyrics from .lrc files and tags in a Lyrics tab and Player mode, LRCLIB lookup off at first, fixing and syncing; moved from v1.x 2026-11-06 after the lyrics and karaoke research; rest moved to v0.8 2026-11-12)
 - [add-live-looper](changes/add-live-looper/proposal.md) (a four-layer looper on a deck: grab the last bars of the mix, layer instruments and inputs on top, record and overdub locked to the beat, save loops to the Inbox; a clip grid assessed and left out; 2026-11-07; rest moved to v0.8 2026-11-12)
 - [rework-instrument-deck](changes/rework-instrument-deck/proposal.md) (the instrument deck cleaned up: a slim title with a ☰ deck menu shared with the Mixer and Groove Box, a preset heart, page tabs, larger knobs, Note FX pills, a full-width keyboard in three sizes, smaller Scale/Chord/Arp editors, HOLD for any instrument, page names from the plugin; issue #802, a user request, 2026-11-16)
+- [add-instrument-sequencer](changes/add-instrument-sequencer/proposal.md) (a Pigments-style step sequencer in the instrument deck when its keyboard is hidden: pitch, octave, velocity, gate and chance lanes with their own lengths, accent and slide, slots A-D, on the mix's beat and in key; issue #819, a user request, 2026-11-16; moved from v1.x 2026-11-17 to build it now)
 - [add-instrument-per-deck](changes/add-instrument-per-deck/proposal.md) (several instrument plugins at once, one per deck, with plugins processed side by side and idle instruments sleeping; issue #523, 2026-11-09; rest moved to v0.8 2026-11-12)
 - [add-prep-layout](changes/add-prep-layout/proposal.md) (a Prep layout on Deck 1 for getting In Prep tracks ready: grid tools, hot cues with suggestions from phrases, a checklist and quick review keys; issue #292, 2026-11-03; built behind a switch in v0.5, shown from v0.6 to leave time to test it, 2026-11-04; rest moved to v0.8 2026-11-12)
 - [add-live-broadcast](changes/add-live-broadcast/proposal.md) (steps 3-5: Go live to Twitch, YouTube and Mixcloud Live over RTMP with a now-playing picture, WebRTC (WHIP), radio show tools; rest moved to v0.8 2026-11-12)
@@ -128,7 +129,6 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 
 ## v1.x · after 1.0
 
-- [add-instrument-sequencer](changes/add-instrument-sequencer/proposal.md) (a Pigments-style step sequencer in the instrument deck when its keyboard is hidden: pitch, octave, velocity, gate and chance lanes with their own lengths, accent and slide, slots A-D, on the mix's beat and in key; issue #819, a user request, 2026-11-16)
 - [add-karaoke](changes/add-karaoke/proposal.md)
 - [add-library-cloud-sync](changes/add-library-cloud-sync/proposal.md)
 - [add-track-suggestions](changes/add-track-suggestions/proposal.md)
