@@ -12,7 +12,7 @@ tracks it finds and how many points the score would gain if you fixed
 them. Then every check has a tile, under its section; the first check with
 work says Start here.
 
-The sidebar lists every check under six sections, in the order they're best
+The sidebar lists every check under five sections, in the order they're best
 fixed: **Files** (Missing files, Low bitrate), **Location** (Outside folders,
 Long tracks, Strays, Not music), **Duplicates**, **Metadata** (Junk in
 names, Missing information, No cover, Album tags differ) and **Prep** (Not
@@ -39,8 +39,15 @@ never change anything. The list has a **Problem** and a **Fix** column.
 
 To fix only some tracks from the list, pick them (shift-click for a range,
 ⌘-click or Ctrl-click for single tracks) and right-click. Tracks you told a
-check to leave alone (I on the card) are under **Ignored**, the last row;
+check to leave alone (I on the card) are under **Ignored**;
 **Bring back** lets every check see them again.
+
+**Quarantine**, the last row, lists every track taken out of your
+collection: merged copies, tracks moved to quarantine and ones you
+removed, newest first, with where each file is. **Bring back** on a row
+(or on the tracks you pick) puts it back in your collection; a file that
+went to quarantine moves to your In Prep folder, to be looked at again.
+**Show folder** opens the quarantine folder.
 
 | Check | Finds | Fixes |
 |---|---|---|

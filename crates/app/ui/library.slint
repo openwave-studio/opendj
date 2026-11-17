@@ -1757,7 +1757,8 @@ component TrackMenu inherits PopupWindow {
                         root.close();
                     }
                 }
-                MenuLine {
+                // Not on Ignored and Quarantine, the two cards after the checks'.
+                if HealthUi.check < HealthUi.cards.length - 2: MenuLine {
                     icon: "hide";
                     text: "Ignore for " + HealthUi.cards[HealthUi.check].title;
                     entered => { panel = 0; }

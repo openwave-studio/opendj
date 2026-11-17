@@ -49,6 +49,22 @@ CREATE TABLE IF NOT EXISTS covers (
 );
 ";
 
+/// A track taken out of the library (see [`Library::removed_tracks`]).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Removed {
+    pub id: usize,
+    pub artist: String,
+    pub title: String,
+    /// Where its file is: in quarantine once it has moved there.
+    pub path: PathBuf,
+    pub duration: f64,
+    /// Its file went (or waits to go) to quarantine; otherwise it stayed
+    /// where it was.
+    pub quarantined: bool,
+    /// When it left, in seconds since 1970.
+    pub removed: i64,
+}
+
 /// What a look at a track's file found: whether it has a cover and its
 /// bitrate (kb/s; 0 when the file doesn't say, `None` from before bitrates
 /// were looked at), and the file's modification time then.
@@ -757,6 +773,28 @@ impl Library {
         Ok(n)
     }
 
+    /// The tracks taken out of the library, newest first: merged copies,
+    /// quarantined tracks and removed ones.
+    pub fn removed_tracks(&self) -> Result<Vec<Removed>, Error> {
+        let mut q = self.db.prepare(
+            "SELECT t.id, t.artist, t.title, t.path, t.duration, t.stage, r.removed
+             FROM removed r JOIN tracks t ON t.id = r.track_id
+             ORDER BY r.removed DESC, t.id",
+        )?;
+        let rows = q.query_map([], |r| {
+            Ok(Removed {
+                id: track_id(r.get(0)?),
+                artist: r.get(1)?,
+                title: r.get(2)?,
+                path: PathBuf::from(r.get::<_, String>(3)?),
+                duration: r.get(4)?,
+                quarantined: r.get::<_, String>(5)? == "quarantine",
+                removed: r.get(6)?,
+            })
+        })?;
+        rows.collect()
+    }
+
     /// How many tracks have been taken out of the library.
     pub fn removed_count(&self) -> Result<usize, Error> {
         self.db
@@ -1040,6 +1078,10 @@ mod tests {
         assert_eq!(left.len(), 1);
         assert_eq!(left[0].title, "Two");
         assert_eq!(lib.removed_count().unwrap(), 1);
+        let removed = lib.removed_tracks().unwrap();
+        assert_eq!(removed.len(), 1);
+        assert_eq!((removed[0].id, removed[0].title.as_str()), (ids[0], "One"));
+        assert!(!removed[0].quarantined);
         // A scan finds the file again, but it stays out.
         lib.sync(&[file_track("/m/a.mp3", "One")]).unwrap();
         assert_eq!(lib.all_tracks(|_| true).unwrap().len(), 1);

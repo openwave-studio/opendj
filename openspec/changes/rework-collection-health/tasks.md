@@ -5,7 +5,7 @@
 - [x] 1.1 Sidebar: a row per check under white sections, state dots and a tick at zero, Ignored last; selecting a row always shows its check
 - [x] 1.2 Check page: title, what is listed, numbered steps, Show tabs; Unrated as a Prep check
 - [x] 1.3 Overview: stage bar with Wanted, the clean score with what holds it back, tiles per check by section
-- [ ] 1.4 Quarantine page: merged and removed tracks, Bring back, Show folder
+- [x] 1.4 Quarantine page: merged and removed tracks, Bring back, Show folder
 
 ## 2. Duplicates
 

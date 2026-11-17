@@ -337,7 +337,36 @@ pub(super) fn health_nodes() -> Vec<Node> {
         );
     }
     nodes.push(Node::new("Ignored", 0, KIND_IGNORED, Contents::Ignored));
+    nodes.push(Node::new(
+        "Quarantine",
+        0,
+        KIND_IGNORED,
+        Contents::Quarantine,
+    ));
     nodes
+}
+
+/// The Quarantine page's line on a track taken out: where its file is,
+/// and when it left.
+pub(super) fn removed_detail(r: &opendj_library::health::Removed, root: Option<&Path>) -> String {
+    let when = chrono::DateTime::from_timestamp(r.removed, 0)
+        .map(|t| {
+            t.with_timezone(&chrono::Local)
+                .format("%-d %b %Y")
+                .to_string()
+        })
+        .unwrap_or_default();
+    let what = match (r.quarantined, root.is_some_and(|q| r.path.starts_with(q))) {
+        (_, true) => "File in quarantine",
+        // Moves wait while Move files is off.
+        (true, false) => "File waits to go to quarantine",
+        (false, false) => "File where it was",
+    };
+    if when.is_empty() {
+        what.into()
+    } else {
+        format!("{what} · {when}")
+    }
 }
 
 /// "86%" of `part` in `whole`, rounded down so 99.6% isn't "100%".
@@ -394,6 +423,17 @@ impl Browser {
                 if matches!(b.current_shown(), Some(Contents::Ignored)) {
                     let indices = b.picked_rows(first, last);
                     b.bring_back(&indices);
+                    return;
+                }
+                if b.shows_quarantine() {
+                    if action == 1 {
+                        if let Some(dir) = b.quarantine_root().filter(|d| d.is_dir()) {
+                            crate::files::reveal(&dir);
+                        }
+                        return;
+                    }
+                    let ids = b.picked_removed(first, last);
+                    b.bring_back_removed(&ids);
                     return;
                 }
                 let Some(check) = b.listed_check() else {
@@ -1216,7 +1256,10 @@ impl Browser {
         let check = listed.and_then(|c| Check::ALL.iter().position(|&x| x == c));
         // The Ignored node's bar is the card after the checks'.
         let ignored = on && matches!(current, Some(Contents::Ignored));
-        let check = check.or(ignored.then_some(Check::ALL.len()));
+        let quarantine = on && matches!(current, Some(Contents::Quarantine));
+        let check = check
+            .or(ignored.then_some(Check::ALL.len()))
+            .or(quarantine.then_some(Check::ALL.len() + 1));
         ui.set_check(check.map_or(-1, |c| c as i32));
         let case = self.dupe_view().flatten();
         let mut cards: Vec<HealthCard> = Check::ALL
@@ -1264,6 +1307,19 @@ impl Browser {
             detail: SharedString::new(),
             fixes: ModelRc::new(VecModel::from(fixes)),
             counts: ModelRc::default(),
+            menu_fixes: ModelRc::new(VecModel::from(vec![0])),
+        });
+        let mut fixes: Vec<SharedString> = vec!["Bring back".into()];
+        if self.quarantine_root().is_some_and(|d| d.is_dir()) {
+            fixes.push("Show folder".into());
+        }
+        cards.push(HealthCard {
+            title: "Quarantine".into(),
+            about: "Tracks taken out of your collection: merged copies, quarantined and removed tracks. Bring back puts one back; a file in quarantine goes to In Prep.".into(),
+            count: self.removed as i32,
+            detail: SharedString::new(),
+            fixes: ModelRc::new(VecModel::from(fixes)),
+            counts: ModelRc::new(VecModel::from(vec![self.removed as i32, 0])),
             menu_fixes: ModelRc::new(VecModel::from(vec![0])),
         });
         ui.set_cards(ModelRc::new(VecModel::from(cards)));
@@ -1834,6 +1890,73 @@ impl Browser {
     }
 
     /// Brings back every track taken out of the library.
+    /// Whether the Quarantine page is shown.
+    pub(super) fn shows_quarantine(&self) -> bool {
+        self.saved()
+            && self.tree == super::COLLECTION
+            && self
+                .nodes
+                .get(self.current_node)
+                .is_some_and(|n| matches!(n.contents, Contents::Quarantine))
+    }
+
+    /// The tracks in rows `first` to `last` of the Quarantine page (every
+    /// row when `first` is below 0), by id.
+    fn picked_removed(&self, first: i32, last: i32) -> Vec<usize> {
+        let rows: Vec<usize> = if first < 0 {
+            (0..self.store.rows.len()).collect()
+        } else {
+            self.chosen_rows(first as usize, last.max(first) as usize)
+        };
+        rows.into_iter()
+            .filter_map(|r| match self.store.rows.get(r) {
+                Some(super::StoreRow::Removed(t)) => Some(t.id),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// Brings tracks taken out back into the collection. One whose file
+    /// went to quarantine goes to In Prep, to be looked at again.
+    pub(super) fn bring_back_removed(&mut self, ids: &[usize]) {
+        if ids.is_empty() {
+            return;
+        }
+        let root = self.quarantine_root();
+        let Some(db) = &mut self.db else { return };
+        let moved: Vec<usize> = db
+            .removed_tracks()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|r| ids.contains(&r.id))
+            .filter(|r| root.as_ref().is_some_and(|q| r.path.starts_with(q)))
+            .map(|r| r.id)
+            .collect();
+        self.health_status = match db.restore_tracks(Some(ids)) {
+            Ok(n) => {
+                self.reload_library();
+                let indices: Vec<usize> = moved
+                    .iter()
+                    .filter_map(|id| self.library.iter().position(|t| t.id == *id))
+                    .collect();
+                if !indices.is_empty() {
+                    self.change_stage(&indices, Stage::Triage, None);
+                }
+                match indices.len() {
+                    0 => format!("{} back in your collection.", tracks(n)),
+                    m => format!(
+                        "{} back in your collection; {} out of quarantine into In Prep.",
+                        tracks(n),
+                        tracks(m)
+                    ),
+                }
+            }
+            Err(e) => format!("Couldn't bring them back: {e}"),
+        };
+        self.refresh_tree();
+        self.refresh_rows();
+    }
+
     fn restore_removed(&mut self) {
         let Some(db) = &mut self.db else { return };
         self.health_status = match db.restore_tracks(None) {
@@ -2156,12 +2279,15 @@ mod tests {
     #[test]
     fn every_check_has_a_node_and_fixes_fit() {
         let nodes = health_nodes();
-        // Overview, a heading per section, every check, then Ignored.
-        assert_eq!(nodes.len(), 1 + Area::ALL.len() + Check::ALL.len() + 1);
+        // Overview, a heading per section, every check, Ignored, Quarantine.
+        assert_eq!(nodes.len(), 1 + Area::ALL.len() + Check::ALL.len() + 2);
         assert_eq!(nodes[0].name, "Overview");
         assert_eq!(nodes[1].name, "Files");
         assert_eq!(nodes[2].name, "Missing files");
-        assert!(matches!(nodes.last().unwrap().contents, Contents::Ignored));
+        assert!(matches!(
+            nodes.last().unwrap().contents,
+            Contents::Quarantine
+        ));
         assert_eq!(checks_in_order().len(), Check::ALL.len());
         assert_eq!(fixes(Check::Stray, false), [Fix::Remove]);
         assert_eq!(fixes(Check::Stray, true)[0], Fix::ToTriage);
