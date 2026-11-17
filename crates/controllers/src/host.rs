@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 
 use opendj_control::{Behavior, ConfigKey, ControlHandle, ControlRegistry};
 
+use crate::jog_feel;
 use crate::pickup::{self, Takeover};
 
 /// Shortcut controls Mixxx adds next to every knob, e.g. `pregain_set_default`.
@@ -41,9 +42,10 @@ const SUBS: [(&str, Sub); 10] = [
 /// Controls whose writes are steps to apply rather than positions: two
 /// identical steps arriving between polls must both count, so writes add up
 /// and whoever acts on them takes the total and sets it back to 0.
-const RELATIVE: [&str; 11] = [
+const RELATIVE: [&str; 12] = [
     "jog",
     "jog_bend",
+    "jog_search",
     "beatjump",
     "loop_move",
     "loop_move_loops",
@@ -333,6 +335,9 @@ const SCRATCH_QUICK_NOISE: f64 = 16.0;
 /// smooth filter is pulled to the quick one, so a steady hand still plays
 /// as smoothly as before.
 const SCRATCH_TRUST: f64 = 2.0;
+/// openDJ: in slip mode, how long a let-go wheel has to be still before
+/// the deck lets go of it and slip returns.
+const SLIP_RELEASE_STILL: Duration = Duration::from_millis(80);
 const BRAKE_RAMP_TO: f64 = 0.01;
 const MAX_DECKS: usize = 8;
 /// Deck controls a controller holds on while a button is down, let go of
@@ -357,6 +362,8 @@ struct Scratch {
     accumulator: f64,
     ramp: bool,
     ramp_to: f64,
+    /// Let go in slip mode: following the wheel until it is still.
+    slip_release: bool,
     brake: bool,
     spinback: bool,
     soft_start: bool,
@@ -638,11 +645,23 @@ impl Host {
     /// dropped, or scaled.
     pub(crate) fn set_value(&mut self, group: &str, key: &str, v: f64) {
         let t = self.resolve(group, key);
+        let v = v * self.bend_gain(&t);
         self.record(key, &t, v);
         match self.soft_take(group, key, &t, t.parameter_for_value(v)) {
             Some(p) => t.set(t.value_for_parameter(p)),
             None if self.soft_has(group, key) => {}
             None => t.set(v),
+        }
+    }
+
+    /// What a write to `t` is multiplied by: this controller's Pitch bend
+    /// choice for its rim and nudge steps (`jog`, `jog_bend`), else 1.
+    pub(crate) fn bend_gain(&self, t: &Target) -> f64 {
+        match t {
+            Target::Control(h) if matches!(h.key().item.as_str(), "jog" | "jog_bend") => {
+                jog_feel::bend_gain(&crate::device_key(&self.name))
+            }
+            _ => 1.0,
         }
     }
 
@@ -977,11 +996,15 @@ impl Host {
         s.accumulator = 0.0;
         s.ramp = false;
         s.brake = false;
+        s.slip_release = false;
         let (alpha, beta) = if alpha != 0.0 && beta != 0.0 {
             (alpha, beta)
         } else {
             (1.0 / 8.0, (1.0 / 8.0) / 32.0)
         };
+        // openDJ: the controller's Scratch choice (Loose, Normal, Tight).
+        let (ga, gb) = jog_feel::scratch_gain(&crate::device_key(&self.name));
+        let (alpha, beta) = ((alpha * ga).min(1.0), (beta * gb).min(0.5));
         s.filter.init(SCRATCH_DT, v0, alpha, beta);
         s.quick.init(
             SCRATCH_DT,
@@ -1011,6 +1034,19 @@ impl Host {
 
     pub(crate) fn scratch_disable(&mut self, deck: f64, ramp: bool) {
         let Some(d) = Self::deck_ok(deck) else { return };
+        // openDJ: in slip mode the deck keeps following the wheel while it
+        // spins on after the hand lets go (a back-spin), and lets go once
+        // the wheel is still; the track then carries on where it would be.
+        if self.scratch[d].active
+            && !self.scratch[d].ramp
+            && self.control(d, "scratch2_enable").get_bool()
+            && self.control(d, "slip_enabled").get_bool()
+        {
+            let s = &mut self.scratch[d];
+            s.slip_release = true;
+            s.last_movement = Some(Instant::now());
+            return;
+        }
         let mut ramp_to = 0.0;
         if !ramp {
             self.control(d, "scratch2_enable").set_bool(false);
@@ -1146,9 +1182,16 @@ impl Host {
         let playing = self.control(d, "play").get_bool();
         let loaded = self.control(d, "track_loaded").get_bool();
         let s = &mut self.scratch[d];
-        let idle = s
-            .last_movement
-            .is_none_or(|t| now.saturating_duration_since(t) >= Duration::from_millis(1));
+        let still = |t: Duration| {
+            s.last_movement
+                .is_none_or(|at| now.saturating_duration_since(at) >= t)
+        };
+        let idle = still(Duration::from_millis(1));
+        if s.slip_release && (still(SLIP_RELEASE_STILL) || !loaded) {
+            *s = Scratch::default();
+            self.control(d, "scratch2_enable").set_bool(false);
+            return;
+        }
         // Ramping after the wheel was let go, or a soft start: steer towards
         // the target speed; otherwise follow the wheel.
         if s.soft_start || (s.ramp && idle) {
@@ -1300,6 +1343,10 @@ mod tests {
     use super::*;
 
     fn host() -> Host {
+        named_host("test")
+    }
+
+    fn named_host(name: &str) -> Host {
         let reg = ControlRegistry::new();
         reg.create(
             "[Channel1]",
@@ -1323,7 +1370,8 @@ mod tests {
             100.0,
             Behavior::Linear,
         );
-        Host::new(reg, "test".into())
+        reg.toggle("[Channel1]", "slip_enabled");
+        Host::new(reg, name.into())
     }
 
     #[test]
@@ -1441,9 +1489,12 @@ mod tests {
     /// turn, a MIDI message every 2 ms), fed through the 1 kHz filter.
     /// Returns the speed heard each millisecond.
     fn probe(hand: impl Fn(f64) -> f64, ms: u64) -> (Vec<f64>, Vec<f64>) {
+        probe_on(host(), hand, ms)
+    }
+
+    fn probe_on(mut h: Host, hand: impl Fn(f64) -> f64, ms: u64) -> (Vec<f64>, Vec<f64>) {
         let (ipr, rpm) = (720.0, 100.0 / 3.0);
         let per_second = ipr * rpm / 60.0;
-        let mut h = host();
         h.scratch_enable(1.0, ipr, rpm, 1.0 / 8.0, 1.0 / 256.0, false);
         let start = Instant::now();
         let (mut at, mut sent) = (0.0f64, 0.0f64);
@@ -1463,6 +1514,81 @@ mod tests {
             wanted.push(hand(t));
         }
         (heard, wanted)
+    }
+
+    #[test]
+    fn scratch_choice_tightens_or_loosens_the_platter() {
+        let reach = |name: &str, choice: usize| {
+            jog_feel::set_feel(
+                &crate::device_key(name),
+                jog_feel::Feel {
+                    bend: jog_feel::NORMAL,
+                    scratch: choice,
+                },
+            );
+            let (heard, _) = probe_on(named_host(name), |_| 1.0, 400);
+            heard.iter().position(|&v| v >= 0.9).unwrap()
+        };
+        let (loose, normal, tight) = (
+            reach("feel loose", 0),
+            reach("feel normal", 1),
+            reach("feel tight", 2),
+        );
+        assert!(loose > normal && normal > tight, "{loose} {normal} {tight}");
+    }
+
+    #[test]
+    fn bend_choice_scales_rim_and_nudge_steps() {
+        let mut h = named_host("feel strong");
+        h.registry
+            .create("[Channel1]", "jog_bend", 0.0, -1e6, 1e6, Behavior::Free);
+        h.registry
+            .create("[Channel1]", "jog", 0.0, -1e6, 1e6, Behavior::Free);
+        h.registry
+            .create("[Channel1]", "jog_search", 0.0, -1e6, 1e6, Behavior::Free);
+        jog_feel::set_feel(
+            &crate::device_key("feel strong"),
+            jog_feel::Feel {
+                bend: 2,
+                scratch: jog_feel::NORMAL,
+            },
+        );
+        h.set_value("[Channel1]", "jog_bend", 3.0);
+        h.set_value("[Channel1]", "jog", 1.0);
+        h.set_value("[Channel1]", "jog_search", 75.0);
+        assert_eq!(h.resolve("[Channel1]", "jog_bend").get(), 6.0);
+        assert_eq!(h.resolve("[Channel1]", "jog").get(), 2.0);
+        // The fast search isn't a bend.
+        assert_eq!(h.resolve("[Channel1]", "jog_search").get(), 75.0);
+    }
+
+    #[test]
+    fn slip_mode_follows_the_spinning_wheel_after_the_hand_lets_go() {
+        let mut h = host();
+        h.resolve("[Channel1]", "slip_enabled").set(1.0);
+        h.scratch_enable(1.0, 720.0, 100.0 / 3.0, 1.0 / 8.0, 1.0 / 256.0, true);
+        h.scratch_disable(1.0, true);
+        // A back-spin: the let-go wheel keeps turning for 200 ms (in real
+        // time: the wheel's last movement is stamped with the clock).
+        for step in 0..100 {
+            h.scratch_tick(1.0, -4.0);
+            std::thread::sleep(Duration::from_millis(2));
+            h.process_scratch(Instant::now());
+            assert!(
+                h.is_scratching(1.0),
+                "still following the wheel at step {step}"
+            );
+        }
+        assert!(h.resolve("[Channel1]", "scratch2").get() < -1.0);
+        // Once the wheel is still, the deck lets go (and slip returns).
+        std::thread::sleep(SLIP_RELEASE_STILL + Duration::from_millis(20));
+        h.process_scratch(Instant::now());
+        assert!(!h.is_scratching(1.0));
+        // Without slip, letting go ramps back as before.
+        h.resolve("[Channel1]", "slip_enabled").set(0.0);
+        h.scratch_enable(1.0, 720.0, 100.0 / 3.0, 1.0 / 8.0, 1.0 / 256.0, true);
+        h.scratch_disable(1.0, true);
+        assert!(h.scratch[1].ramp && !h.scratch[1].slip_release);
     }
 
     #[test]

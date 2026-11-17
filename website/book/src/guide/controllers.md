@@ -77,7 +77,8 @@ the list by any of those words.
 - **Lights** lists what each LED shows, and **Options** how the controller
   plays with this mapping (**Knobs and faders**: Pick-up waits for the
   hardware to reach a knob moved on screen, Scale takes over at once and
-  closes the gap) and the mapping's own settings with their defaults.
+  closes the gap; **Pitch bend** and **Scratch** for how its jog wheels
+  feel) and the mapping's own settings with their defaults.
 - **Your own mappings.** The **Mapping** menu next to the controller has the
   original mapping, which never changes, and your own copies of it: choose
   **Duplicate…** to make one, and **Rename…** or **Delete…** to tidy up. The

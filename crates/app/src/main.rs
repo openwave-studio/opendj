@@ -877,6 +877,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         });
     }
     let sources = sources::Sources::install(&app, library_path.clone());
+    browser.borrow_mut().play_sites = sources.borrow().playing_sites();
     {
         // Spotify's "Open in Browser" and "Add to Downloads", the latter
         // when an add-on source searches Spotify links.
@@ -1026,6 +1027,9 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     // so the library controls the mappings use already exist.
     for key in settings::controllers_scaled() {
         opendj_controllers::pickup::set_scale(&key, true);
+    }
+    for (key, feel) in settings::controller_jog_feel() {
+        opendj_controllers::jog_feel::set_feel(&key, feel);
     }
     opendj_controllers::routing::load_deck_choices(settings::controller_decks());
     let controllers = match opendj_controllers::default_mappings_dir() {
@@ -1649,6 +1653,10 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 browser.borrow_mut().poll_stores(&app);
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
+                }
+                let plays = browser.borrow_mut().take_stream_plays();
+                for link in plays {
+                    sources.borrow_mut().play_link(&link);
                 }
                 for path in sources.borrow_mut().take_loads() {
                     browser.borrow_mut().load_cached(&path);

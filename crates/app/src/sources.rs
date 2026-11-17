@@ -64,6 +64,18 @@ pub fn source_plugins() -> Vec<(Box<dyn Plugin>, SourceInfo)> {
         .collect()
 }
 
+/// The names of add-on sources that stay out of the rail (see
+/// [`SearchSource::in_rail`]).
+pub fn off_rail_sources() -> Vec<String> {
+    source_plugins()
+        .into_iter()
+        .filter_map(|(mut p, info)| {
+            let off = p.source().is_some_and(|s| !s.in_rail());
+            off.then(|| info.name.to_string())
+        })
+        .collect()
+}
+
 enum Request {
     Start(u64, SourceQuery),
     Stop(u64),
@@ -633,6 +645,9 @@ pub struct Sources {
     loads: Vec<PathBuf>,
     /// Files to load once they're in the cache, by source and key.
     play_after: HashSet<(usize, String)>,
+    /// Searches for a streamed track's link, by source and search: the
+    /// first file they find loads onto a deck (see [`Self::play_link`]).
+    play_first: HashSet<(usize, u64)>,
     /// The file being heard before it's downloaded, if any.
     preview: Option<Preview>,
     /// What the frame loop should tell the preview player.
@@ -734,6 +749,7 @@ impl Sources {
             setup_status: String::new(),
             loads: Vec::new(),
             play_after: HashSet::new(),
+            play_first: HashSet::new(),
             preview: None,
             preview_actions: Vec::new(),
         };
@@ -1008,6 +1024,7 @@ impl Sources {
         for s in finished {
             self.sources[s].save_results();
         }
+        self.play_firsts();
         if changed {
             for s in 0..self.sources.len() {
                 for i in 0..self.sources[s].searches.len() {
@@ -1101,6 +1118,81 @@ impl Sources {
         let Some(Row::Item(key)) = self.rows.get(row).cloned() else {
             return;
         };
+        self.play(s, i, key);
+    }
+
+    /// The sites whose links a source that plays takes: a streamed track
+    /// from one of them can load onto a deck through it.
+    pub fn playing_sites(&self) -> Vec<&'static str> {
+        self.sources
+            .iter()
+            .filter(|s| s.cache.is_some())
+            .flat_map(|s| s.sites.iter().copied())
+            .collect()
+    }
+
+    /// Loads a streamed track onto a deck through the source that plays
+    /// links from its site: searches the link (once), then loads the first
+    /// file found from the cache. Returns the source's name, if one takes it.
+    pub fn play_link(&mut self, link: &str) -> Option<&'static str> {
+        let host = link_host(link)?;
+        let s = self
+            .sources
+            .iter()
+            .position(|x| x.cache.is_some() && x.sites.contains(&host))?;
+        let name = self.sources[s].info.name;
+        let earlier = self.sources[s]
+            .searches
+            .iter()
+            .position(|x| x.query.text == link && x.error.is_none());
+        let i = match earlier {
+            Some(i) => i,
+            None => {
+                let query = SourceQuery {
+                    text: link.to_string(),
+                    kind: QueryKind::Track,
+                    ..Default::default()
+                };
+                let i = self.start(s, query, now(), false);
+                self.sources[s].save();
+                i
+            }
+        };
+        let local = self.sources[s].searches[i].local;
+        self.play_first.insert((s, local));
+        self.play_firsts();
+        self.refresh();
+        Some(name)
+    }
+
+    /// Plays the first file of each search waiting on one (see
+    /// [`Self::play_link`]), once it has found one; forgets those that
+    /// found none.
+    fn play_firsts(&mut self) {
+        let waiting: Vec<(usize, u64)> = self.play_first.iter().copied().collect();
+        for (s, local) in waiting {
+            let Some(i) = self.sources[s]
+                .searches
+                .iter()
+                .position(|x| x.local == local)
+            else {
+                self.play_first.remove(&(s, local));
+                continue;
+            };
+            let search = &self.sources[s].searches[i];
+            if let Some(f) = search.items.iter().find(|f| !f.folder) {
+                let key = f.key.clone();
+                self.play_first.remove(&(s, local));
+                self.play(s, i, key);
+            } else if search.done {
+                self.play_first.remove(&(s, local));
+            }
+        }
+    }
+
+    /// Loads file `key` of search `i` of source `s` from the cache,
+    /// fetching it there first if it isn't yet.
+    fn play(&mut self, s: usize, i: usize, key: String) {
         let source = &self.sources[s];
         let Some(found) = source.searches[i].find(&key) else {
             return;
@@ -2126,6 +2218,13 @@ pub fn needs_setup(settings: &[Setting], config: &PluginConfig) -> bool {
 
 /// Where playing sources keep their caches: `sources` in the app's cache
 /// folder, one folder per source.
+/// The host of a link, e.g. "tidal.com" for "https://tidal.com/browse/track/1".
+fn link_host(link: &str) -> Option<&str> {
+    let rest = link.split_once("://")?.1;
+    let host = rest.split(['/', '?', '#']).next()?;
+    (!host.is_empty()).then_some(host)
+}
+
 fn caches_root() -> Option<PathBuf> {
     opendj_engine::cache::cache_dir().map(|d| d.join("sources"))
 }
@@ -2645,6 +2744,20 @@ mod tests {
         skip.sort();
         // Kong's only copy failed, so it's searched for again.
         assert_eq!(skip, ["1. Kerala", "3. Cirrus", "4. Grains"]);
+    }
+
+    #[test]
+    fn links_name_their_site() {
+        assert_eq!(
+            link_host("https://tidal.com/browse/track/1"),
+            Some("tidal.com")
+        );
+        assert_eq!(
+            link_host("https://open.spotify.com/track/x?si=1"),
+            Some("open.spotify.com")
+        );
+        assert_eq!(link_host("tidal.com/browse/track/1"), None);
+        assert_eq!(link_host(""), None);
     }
 
     #[test]
