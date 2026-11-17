@@ -86,3 +86,9 @@ plugin instead, from C up (see [Instruments](fx.md#instruments)).
 instead. A pad is lit while the deck plays at its key.
 
 See [Keys](decks.md#keys) for key lock and key matching.
+
+On the **DDJ-400**, hold **SHIFT** and press **HOT CUE** for Keyboard,
+**BEAT LOOP** for Pad FX1, **BEAT JUMP** for Pad FX2, or **SAMPLER** for
+Key Shift. Release SHIFT to play the selected mode. Pad FX stays on while
+a pad is held and turns off when released. SHIFT + a Key Shift pad moves
+the key by that pad's step.
