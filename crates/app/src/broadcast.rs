@@ -182,12 +182,27 @@ pub fn audible_deck(
             if tracks[d].is_none() || get(&g, "play", 0.0) < 0.5 {
                 return None;
             }
-            let orientation = get(&g, "orientation", 1.0).round() as i32;
-            Some(get(&g, "volume", 0.0) * crossfader_side(orientation, xfader))
+            Some(master_level(
+                get(&g, "volume", 0.0),
+                get(&g, "orientation", 1.0),
+                xfader,
+            ))
         })
         .collect();
     let d = loudest(&levels)?;
     Some((d, tracks[d].clone()?))
+}
+
+/// How much of a deck reaches the master: its channel fader times what
+/// the crossfader lets through for its side (orientation 0 left, 1 thru,
+/// 2 right). Pass 0 for `xfader` when the crossfader is switched off.
+pub fn master_level(volume: f64, orientation: f64, xfader: f64) -> f64 {
+    volume * crossfader_side(orientation.round() as i32, xfader)
+}
+
+/// Whether a deck at `level` (see [`master_level`]) is heard in the master.
+pub fn heard(level: f64) -> bool {
+    level > AUDIBLE
 }
 
 /// How much of a deck the crossfader lets through: left decks (0) fade as
@@ -406,5 +421,16 @@ mod audible_tests {
         let left = 1.0 * crossfader_side(0, 1.0);
         let right = 1.0 * crossfader_side(2, 1.0);
         assert_eq!(loudest(&[Some(left), Some(right), None, None]), Some(1));
+    }
+
+    #[test]
+    fn a_deck_is_heard_with_its_fader_up_on_the_open_side() {
+        // Fader down: headphones only.
+        assert!(!heard(master_level(0.0, 1.0, 0.0)));
+        assert!(heard(master_level(1.0, 1.0, 0.0)));
+        // A left deck with the crossfader hard right is silent; thru isn't.
+        assert!(!heard(master_level(1.0, 0.0, 1.0)));
+        assert!(heard(master_level(1.0, 1.0, 1.0)));
+        assert!(heard(master_level(1.0, 2.0, 1.0)));
     }
 }

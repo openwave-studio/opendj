@@ -1760,6 +1760,61 @@ impl Library {
         ids
     }
 
+    /// The most recent history session with a play in it, and when its
+    /// last track was played (Unix seconds), so a restart can carry on in
+    /// it.
+    pub fn last_session(&self) -> Result<Option<(i64, i64)>, Error> {
+        let ended = self
+            .meta("ended_session")
+            .and_then(|v| v.parse::<i64>().ok());
+        Ok(self
+            .db
+            .query_row(
+                "SELECT t.playlist_id, MAX(t.played_at) FROM playlist_tracks t
+                   JOIN playlists p ON p.id = t.playlist_id
+                  WHERE p.kind = 2 AND p.parent IS NOT NULL AND t.played_at IS NOT NULL
+                  GROUP BY t.playlist_id
+                  ORDER BY MAX(t.played_at) DESC LIMIT 1",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?
+            .filter(|&(s, _)| Some(s) != ended))
+    }
+
+    /// Marks a history session as ended by hand, so a restart doesn't carry
+    /// on in it.
+    pub fn end_session(&self, session: i64) -> Result<(), Error> {
+        self.set_meta("ended_session", &session.to_string())
+    }
+
+    /// The tracks played in a history session and when each was first
+    /// played there (Unix seconds).
+    pub fn session_plays(&self, session: i64) -> Result<Vec<(usize, i64)>, Error> {
+        let mut q = self.db.prepare(
+            "SELECT track_id, MIN(played_at) FROM playlist_tracks
+              WHERE playlist_id = ?1 AND played_at IS NOT NULL
+              GROUP BY track_id",
+        )?;
+        let plays = q
+            .query_map([session], |r| {
+                Ok((track_id(r.get::<_, i64>(0)?), r.get::<_, i64>(1)?))
+            })?
+            .collect();
+        plays
+    }
+
+    /// Takes a track out of a history session, as if it had not been
+    /// played there. Its play count stays.
+    pub fn unrecord_play(&self, session: i64, id: usize) -> Result<(), Error> {
+        let Some(row) = row_id(id) else { return Ok(()) };
+        self.db.execute(
+            "DELETE FROM playlist_tracks WHERE playlist_id = ?1 AND track_id = ?2",
+            params![session, row],
+        )?;
+        Ok(())
+    }
+
     /// Deletes history sessions in which nothing was played.
     pub fn drop_empty_sessions(&self) -> Result<(), Error> {
         self.db.execute(
@@ -3676,6 +3731,12 @@ mod tests {
         let session = lib.start_session("2026-10-13 21:00").unwrap();
         lib.record_play(Some(session), ids[1]).unwrap();
         lib.record_play(Some(session), ids[1]).unwrap();
+        assert_eq!(lib.last_session().unwrap().map(|(s, _)| s), Some(session));
+        lib.end_session(session).unwrap();
+        assert_eq!(lib.last_session().unwrap(), None);
+        let plays = lib.session_plays(session).unwrap();
+        assert_eq!(plays.len(), 1);
+        assert_eq!(plays[0].0, ids[1]);
         let empty = lib.start_session("2026-10-14 21:00").unwrap();
         lib.drop_empty_sessions().unwrap();
         let tree = lib.playlists().unwrap();
@@ -3697,6 +3758,9 @@ mod tests {
             .find(|t| t.id == ids[1])
             .unwrap();
         assert_eq!(b.info.play_count, 2);
+        // Marked as not played: out of the session, its count kept.
+        lib.unrecord_play(session, ids[1]).unwrap();
+        assert!(lib.session_plays(session).unwrap().is_empty());
 
         // Deleting a folder deletes what is in it.
         lib.delete_playlist(sets).unwrap();

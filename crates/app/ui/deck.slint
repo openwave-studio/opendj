@@ -1293,6 +1293,7 @@ export component Header inherits Rectangle {
     property <bool> occupied: info.loaded || groove || looper || live > 0;
     // On an empty deck: what it held before it was unloaded, to put back.
     property <string> put-back: occupied ? "" : DeckActions.put-back-names[deck];
+    property <string> played-note: DeckActions.played-notes[deck];
     property <int> instrument: InstrumentsUi.instrument();
     property <bool> instrument-ready: Controls.value(Controls.resolve("[Instrument1]", "input_configured"), Controls.tick) > 0;
     property <string> live-name: InstrumentsUi.live-name(live,
@@ -1377,7 +1378,22 @@ export component Header inherits Rectangle {
                     horizontal-stretch: 1;
                     alignment: center;
                     spacing: 2px;
-                    Text { text: groove ? "Groove Box" : looper ? "Looper" : live > 0 ? live-name : info.loaded ? info.title : "Empty deck"; color: Theme.text; font-size: compact ? 14px : 18px; font-weight: 500; overflow: elide; }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: groove ? "Groove Box" : looper ? "Looper" : live > 0 ? live-name : info.loaded ? info.title : "Empty deck"; color: Theme.text; font-size: compact ? 14px : 18px; font-weight: 500; overflow: elide; }
+                        // Loaded a track already played tonight: a lilac note for a few seconds.
+                        if played-note != "" && info.loaded && live == 0 && !groove && !looper: VerticalLayout {
+                            alignment: center;
+                            Rectangle {
+                                height: note-text.preferred-height + 4px;
+                                width: note-text.preferred-width + 14px;
+                                border-radius: self.height / 2;
+                                background: Theme.lilac;
+                                note-text := Text { text: played-note; color: #1a1424; font-size: compact ? 10px : 11px; font-weight: 700; }
+                            }
+                        }
+                        if played-note != "": Rectangle { horizontal-stretch: 1; }
+                    }
                     // An instrument plugin: its format, as a chip.
                     if live == 3 && InstrumentsUi.format() != "": HorizontalLayout {
                         alignment: start;
@@ -1589,6 +1605,9 @@ export global DeckActions {
     // What each deck held before it was last unloaded, offered on the
     // empty deck as Put back ("" for nothing); see put_back.rs.
     in property <[string]> put-back-names;
+    // "Played 23:41" for a few seconds after a deck loads a track already
+    // played in this History session ("" otherwise).
+    in property <[string]> played-notes;
     callback put-back(deck: int);
     // Unloads `deck`, as its eject button: the engine leaves a playing deck
     // alone.
