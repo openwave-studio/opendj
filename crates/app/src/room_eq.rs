@@ -210,10 +210,19 @@ fn freq_at(x: f64) -> f64 {
     MIN_FREQ * (MAX_FREQ / MIN_FREQ).powf(x.clamp(0.0, 1.0))
 }
 
-/// Where `db` sits, from 0 (+12 dB) to 1 (−12 dB).
-fn y_of(db: f64) -> f64 {
-    ((MAX_GAIN - db) / (2.0 * MAX_GAIN)).clamp(0.0, 1.0)
+/// Where `db` sits on a curve `range` dB up and down, from 0 (+range) to
+/// 1 (−range).
+fn y_of(db: f64, range: f64) -> f64 {
+    ((range - db) / (2.0 * range)).clamp(0.0, 1.0)
 }
+
+/// The gain at `y` (0 top, 1 bottom) on a curve `range` dB up and down.
+fn db_at(y: f64, range: f64) -> f64 {
+    range - 2.0 * range * y.clamp(0.0, 1.0)
+}
+
+/// The curve's ranges: ±12 dB, or ±6 to zoom in.
+const RANGES: [f64; 2] = [MAX_GAIN / 2.0, MAX_GAIN];
 
 /// A frequency as the cards show it: "250 Hz", "3.2 kHz".
 pub fn hz_text(f: f64) -> String {
@@ -346,6 +355,111 @@ fn free_name(own: &[Preset]) -> String {
         .unwrap_or_default()
 }
 
+/// A dot being dragged: its band, and how far it sits from the pointer
+/// (from 0 to 1 across and down), so it moves with the pointer rather than
+/// jumping to it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Grab {
+    band: usize,
+    dx: f64,
+    dy: f64,
+}
+
+/// The spectrum's points' frequencies: the middle of each of `n` equal
+/// steps from 20 Hz to 20 kHz, as the spectrum is drawn.
+fn point_freqs(n: usize) -> Vec<f64> {
+    (0..n)
+        .map(|i| freq_at((i as f64 + 0.5) / n as f64))
+        .collect()
+}
+
+/// The spectrum to draw, from the main output's (`post`, at `freqs`): the
+/// mix before any Room EQ, or what `target` plays after its own.
+fn view_levels(
+    post: &[f64],
+    freqs: &[f64],
+    curves: &[Curve; 2],
+    target: usize,
+    after: bool,
+) -> Vec<f64> {
+    let floor = opendj_engine::room_eq::Spectrum::FLOOR;
+    let gain = |c: &Curve| -> Vec<f64> {
+        if c.on {
+            response(&c.bands, DRAW_RATE, freqs)
+        } else {
+            vec![0.0; freqs.len()]
+        }
+    };
+    if after && target == 0 {
+        return post.to_vec();
+    }
+    let main = gain(&curves[0]);
+    let own = if after {
+        gain(&curves[target])
+    } else {
+        vec![0.0; freqs.len()]
+    };
+    post.iter()
+        .zip(main.iter().zip(&own))
+        .map(|(l, (m, o))| {
+            if *l <= floor {
+                floor
+            } else {
+                (l - m + o).max(floor)
+            }
+        })
+        .collect()
+}
+
+/// The loudest point within `reach` points of point `i`.
+fn peak_near(levels: &[f64], i: usize, reach: usize) -> usize {
+    let lo = i.saturating_sub(reach);
+    let hi = (i + reach + 1).min(levels.len());
+    (lo..hi)
+        .max_by(|a, b| levels[*a].total_cmp(&levels[*b]))
+        .unwrap_or(i)
+}
+
+/// How deep a cut dropped on a spectrum peak starts, and how narrow.
+const PEAK_CUT: f64 = -3.0;
+const PEAK_Q: f64 = 4.0;
+
+/// Drops a bell cutting `freq` into `curve`: an off bell if there is one,
+/// else the bell nearest `freq`. Returns the band.
+fn drop_cut(curve: &mut Curve, freq: f64) -> usize {
+    let bells: Vec<usize> = (0..BANDS).filter(|&i| KINDS[i] == Kind::Bell).collect();
+    let band = bells
+        .iter()
+        .copied()
+        .find(|&i| !curve.bands[i].on)
+        .unwrap_or_else(|| {
+            bells
+                .iter()
+                .copied()
+                .min_by(|&a, &b| {
+                    let d = |i: usize| (curve.bands[i].freq / freq).log2().abs();
+                    d(a).total_cmp(&d(b))
+                })
+                .unwrap_or(bells[0])
+        });
+    curve.on = true;
+    curve.bands[band] = Band {
+        on: true,
+        freq: round_freq(freq),
+        gain: PEAK_CUT,
+        q: PEAK_Q,
+    }
+    .clamped(KINDS[band]);
+    band
+}
+
+/// Switches `curve` to the other of its two slots (A and B), keeping the
+/// one it leaves in `other`. The first switch copies the curve.
+fn switch_slot(curve: &mut Curve, other: &mut Option<Curve>) {
+    let next = other.take().unwrap_or_else(|| curve.clone());
+    *other = Some(std::mem::replace(curve, next));
+}
+
 struct State {
     /// Shown under the curve until the next change, such as why a name
     /// can't be used.
@@ -353,9 +467,18 @@ struct State {
     curves: [Curve; 2],
     target: usize,
     /// The dot being dragged.
-    grabbed: Option<usize>,
+    grabbed: Option<Grab>,
     /// The plot's size in pixels.
     plot: (f64, f64),
+    /// The curve's range up and down, in dB.
+    range: f64,
+    /// Each output's slot in use (0 A, 1 B), and the curve in the other.
+    slots: [usize; 2],
+    others: [Option<Curve>; 2],
+    /// The spectrum as drawn, one level per point; empty while hidden.
+    levels: Vec<f64>,
+    /// A spectrum kept to compare with.
+    frozen: Option<Vec<f64>>,
     registry: Arc<ControlRegistry>,
 }
 
@@ -376,9 +499,9 @@ impl State {
                     // corner (as if on, so an off one shows where it'd cut).
                     let mut bands = c.bands;
                     bands[i].on = true;
-                    y_of(response(&bands, DRAW_RATE, &[b.freq])[0])
+                    y_of(response(&bands, DRAW_RATE, &[b.freq])[0], self.range)
                 } else {
-                    y_of(b.gain)
+                    y_of(b.gain, self.range)
                 };
                 (x_of(b.freq), y)
             })
@@ -399,6 +522,28 @@ impl State {
             .map(|(i, _)| i)
     }
 
+    /// The spectrum peak a press at (x, y) is on, as a frequency: a press
+    /// on or under the spectrum, near its loudest point within a third of
+    /// an octave. `None` with no spectrum drawn.
+    fn peak_at(&self, x: f64, y: f64) -> Option<f64> {
+        let n = self.levels.len();
+        if n == 0 {
+            return None;
+        }
+        let i = ((x.clamp(0.0, 1.0) * n as f64) as usize).min(n - 1);
+        let floor = opendj_engine::room_eq::Spectrum::FLOOR;
+        // Where the spectrum's top is, from 0 to 1 down, with a little
+        // slack above it.
+        let top = (self.levels[i] / floor).clamp(0.0, 1.0) - 12.0 / self.plot.1.max(1.0);
+        if self.levels[i] <= floor || y < top {
+            return None;
+        }
+        // Points to a third of an octave.
+        let reach = (n as f64 / (MAX_FREQ / MIN_FREQ).log2() / 3.0).round() as usize;
+        let peak = peak_near(&self.levels, i, reach);
+        Some(point_freqs(n)[peak])
+    }
+
     /// The controls take the change, and the page shows it.
     fn changed(&self, app: &AppWindow) {
         play(&self.registry, self.target, &self.curves[self.target]);
@@ -416,7 +561,7 @@ impl State {
                 "{} {:.1} {:.1} ",
                 if k == 0 { "M" } else { "L" },
                 x_of(*f) * self.plot.0,
-                y_of(*d) * self.plot.1
+                y_of(*d, self.range) * self.plot.1
             ));
         }
         ui.set_curve(SharedString::from(path.trim_end()));
@@ -440,6 +585,8 @@ impl State {
         ui.set_bands(ModelRc::new(VecModel::from(cards)));
         ui.set_on(c.on);
         ui.set_target(self.target as i32);
+        ui.set_range(self.range as i32);
+        ui.set_slot(self.slots[self.target] as i32);
         let booth = settings::audio_setup()
             .routes
             .iter()
@@ -486,6 +633,22 @@ fn spectrum_path(levels: &[f64], w: f64, h: f64) -> String {
     p
 }
 
+/// A spectrum as a line on the plot, as `spectrum_path` places it.
+fn spectrum_line(levels: &[f64], w: f64, h: f64) -> String {
+    let n = levels.len().max(1) as f64;
+    let floor = opendj_engine::room_eq::Spectrum::FLOOR;
+    let mut p = String::new();
+    for (i, db) in levels.iter().enumerate() {
+        let x = (i as f64 + 0.5) / n * w;
+        let y = h * (db / floor).clamp(0.0, 1.0);
+        p.push_str(&format!(
+            "{} {x:.1} {y:.1} ",
+            if i == 0 { "M" } else { "L" }
+        ));
+    }
+    p.trim_end().to_string()
+}
+
 /// Wires the Room EQ tab to the controls and the saved settings, and draws
 /// the main output's spectrum behind the curve while the tab is open.
 /// Keep the timer it returns.
@@ -500,12 +663,49 @@ pub fn install(
         target: 0,
         grabbed: None,
         plot: (680.0, 210.0),
+        range: if settings::load()["room_eq_range"].as_f64() == Some(RANGES[0]) {
+            RANGES[0]
+        } else {
+            RANGES[1]
+        },
+        slots: [0; 2],
+        others: [None, None],
+        levels: Vec::new(),
+        frozen: None,
         registry,
     }));
     state.borrow().show(app);
     let ui = app.global::<RoomEqUi>();
     ui.set_show_spectrum(settings::flag("room_eq_spectrum", true));
     ui.on_spectrum_toggled(|on| settings::set("room_eq_spectrum", json!(on)));
+    ui.set_view(if settings::string("room_eq_spectrum_view") == "before" {
+        0
+    } else {
+        1
+    });
+    {
+        let weak = app.as_weak();
+        ui.on_view_picked(move |v| {
+            if let Some(app) = weak.upgrade() {
+                app.global::<RoomEqUi>().set_view(v);
+            }
+            settings::set(
+                "room_eq_spectrum_view",
+                json!(if v == 0 { "before" } else { "after" }),
+            );
+        });
+    }
+    {
+        let state = state.clone();
+        ui.on_freeze(move || {
+            let mut s = state.borrow_mut();
+            s.frozen = match s.frozen {
+                Some(_) => None,
+                None if !s.levels.is_empty() => Some(s.levels.clone()),
+                None => None,
+            };
+        });
+    }
     // The spectrum, 30 times a second while it shows.
     let timer = slint::Timer::default();
     if let Some(mut feed) = engine.take_output_feed() {
@@ -514,6 +714,7 @@ pub fn install(
         let (weak, state) = (app.as_weak(), state.clone());
         let mut copying = false;
         let mut buf = Vec::new();
+        let freqs = point_freqs(SPECTRUM_POINTS);
         let tick = std::time::Duration::from_millis(33);
         timer.start(slint::TimerMode::Repeated, tick, move || {
             let Some(app) = weak.upgrade() else { return };
@@ -528,7 +729,9 @@ pub fn install(
                 feed.set_active(shows);
                 copying = shows;
                 if !shows {
+                    state.borrow_mut().levels.clear();
                     ui.set_spectrum(SharedString::new());
+                    ui.set_frozen(SharedString::new());
                 }
             }
             if !shows {
@@ -537,9 +740,19 @@ pub fn install(
             buf.clear();
             feed.drain_into(&mut buf);
             spectrum.push(&buf);
-            let (w, h) = state.borrow().plot;
-            let levels = spectrum.levels(tick.as_secs_f64());
-            ui.set_spectrum(spectrum_path(levels, w, h).into());
+            let post = spectrum.levels(tick.as_secs_f64());
+            let mut s = state.borrow_mut();
+            let levels = view_levels(post, &freqs, &s.curves, s.target, ui.get_view() == 1);
+            s.levels = levels;
+            let (w, h) = s.plot;
+            ui.set_spectrum(spectrum_path(&s.levels, w, h).into());
+            ui.set_frozen(
+                s.frozen
+                    .as_ref()
+                    .map(|f| spectrum_line(f, w, h))
+                    .unwrap_or_default()
+                    .into(),
+            );
         });
     }
     // Runs `f` on the state; when it returns true, plays and shows the
@@ -693,28 +906,46 @@ pub fn install(
     let r = run.clone();
     ui.on_press(move |x, y, w, h| {
         r(false, &|s, ui| {
-            s.grabbed = s.hit(x, y, w, h);
-            if let Some(i) = s.grabbed {
-                ui.set_selected(i as i32);
-            }
-            false
+            let (px, py) = (x as f64, y as f64);
+            // On a dot: grab it. On the spectrum: cut its peak there with
+            // a bell, and grab that.
+            let (band, dropped) = match s.hit(x, y, w, h) {
+                Some(i) => (i, false),
+                None => match s.peak_at(px, py) {
+                    Some(f) => (drop_cut(s.curve(), f), true),
+                    None => {
+                        s.grabbed = None;
+                        return false;
+                    }
+                },
+            };
+            let (dx, dy) = s.dots()[band];
+            s.grabbed = Some(Grab {
+                band,
+                dx: dx - px,
+                dy: dy - py,
+            });
+            ui.set_selected(band as i32);
+            dropped
         });
         true
     });
     let r = run.clone();
     ui.on_drag(move |x, y| {
         r(false, &|s, _| {
-            let Some(i) = s.grabbed else {
+            let Some(g) = s.grabbed else {
                 return false;
             };
+            let i = g.band;
+            let range = s.range;
             // Editing turns the band and the Room EQ on.
             let c = s.curve();
             c.on = true;
             let b = &mut c.bands[i];
             b.on = true;
-            b.freq = round_freq(freq_at(x as f64));
+            b.freq = round_freq(freq_at(x as f64 + g.dx));
             if !KINDS[i].is_cut() {
-                let db = MAX_GAIN - 2.0 * MAX_GAIN * (y as f64).clamp(0.0, 1.0);
+                let db = db_at(y as f64 + g.dy, range);
                 b.gain = (db * 10.0).round() / 10.0;
             }
             *b = b.clamped(KINDS[i]);
@@ -741,6 +972,43 @@ pub fn install(
             b.q = (b.q * 100.0).round() / 100.0;
             true
         })
+    });
+    let r = run.clone();
+    ui.on_range_picked(move |range| {
+        r(false, &|s, _| {
+            let range = if range as f64 == RANGES[0] {
+                RANGES[0]
+            } else {
+                RANGES[1]
+            };
+            settings::set("room_eq_range", json!(range));
+            s.range = range;
+            true
+        });
+    });
+    let r = run.clone();
+    ui.on_pick_slot(move |slot| {
+        r(true, &|s, _| {
+            let (t, slot) = (s.target, slot.clamp(0, 1) as usize);
+            if s.slots[t] == slot {
+                return false;
+            }
+            s.slots[t] = slot;
+            let mut other = s.others[t].take();
+            switch_slot(s.curve(), &mut other);
+            s.others[t] = other;
+            true
+        });
+    });
+    let r = run.clone();
+    ui.on_bypass(move |held| {
+        r(false, &|s, ui| {
+            ui.set_bypassed(held);
+            let mut c = s.curves[s.target].clone();
+            c.on &= !held;
+            play(&s.registry, s.target, &c);
+            false
+        });
     });
     let r = run.clone();
     ui.on_double(move |x, y, w, h| {
@@ -832,11 +1100,83 @@ mod tests {
     }
 
     #[test]
+    fn the_spectrum_shows_before_or_after() {
+        let freqs = point_freqs(40);
+        assert!((freqs[0] - freq_at(0.5 / 40.0)).abs() < 1e-9);
+        let post = vec![-20.0; 40];
+        let mut curves = [Curve::default(), Curve::default()];
+        // Main cuts 6 dB everywhere near 1 kHz with a bell.
+        curves[0].on = true;
+        curves[0].bands[2] = Band {
+            on: true,
+            freq: 1000.0,
+            gain: -6.0,
+            q: 0.3,
+        };
+        let k = freqs.iter().position(|f| *f > 1000.0).unwrap();
+        let cut = response(&curves[0].bands, DRAW_RATE, &[freqs[k]])[0];
+        // After, on main: as measured. Before: the cut put back.
+        assert_eq!(view_levels(&post, &freqs, &curves, 0, true), post);
+        let before = view_levels(&post, &freqs, &curves, 0, false);
+        assert!((before[k] - (-20.0 - cut)).abs() < 1e-9);
+        // After, on the booth (flat, off): the mix, as before.
+        assert_eq!(view_levels(&post, &freqs, &curves, 1, true), before);
+        // Silence stays at the floor.
+        let floor = opendj_engine::room_eq::Spectrum::FLOOR;
+        assert_eq!(
+            view_levels(&vec![floor; 40], &freqs, &curves, 0, false)[k],
+            floor
+        );
+    }
+
+    #[test]
+    fn a_spectrum_peak_gets_a_cut() {
+        let levels = [-40.0, -30.0, -12.0, -35.0, -50.0, -8.0];
+        assert_eq!(peak_near(&levels, 1, 1), 2);
+        assert_eq!(peak_near(&levels, 4, 1), 5);
+        assert_eq!(peak_near(&levels, 0, 0), 0);
+        // An off bell first, then the bell nearest the peak.
+        let mut c = Curve::default();
+        assert_eq!(drop_cut(&mut c, 180.4), 2);
+        assert!(c.on && c.bands[2].on);
+        assert_eq!(
+            (c.bands[2].freq, c.bands[2].gain, c.bands[2].q),
+            (180.0, PEAK_CUT, PEAK_Q)
+        );
+        assert_eq!(drop_cut(&mut c, 4000.0), 3);
+        assert_eq!(drop_cut(&mut c, 3000.0), 3);
+        assert_eq!(c.bands[2].freq, 180.0);
+    }
+
+    #[test]
+    fn a_and_b_keep_two_curves() {
+        let mut c = Curve {
+            on: true,
+            ..Curve::default()
+        };
+        let mut other = None;
+        // The first switch copies A to B.
+        switch_slot(&mut c, &mut other);
+        assert_eq!(other.as_ref(), Some(&c));
+        c.bands[2].gain = -4.0;
+        // Back to A: as it was; B keeps its change.
+        switch_slot(&mut c, &mut other);
+        assert_eq!(c.bands[2].gain, FLAT[2].gain);
+        assert_eq!(other.as_ref().unwrap().bands[2].gain, -4.0);
+        switch_slot(&mut c, &mut other);
+        assert_eq!(c.bands[2].gain, -4.0);
+    }
+
+    #[test]
     fn axes_and_labels() {
         assert!((x_of(20.0)).abs() < 1e-9 && (x_of(20_000.0) - 1.0).abs() < 1e-9);
         assert!((freq_at(x_of(250.0)) - 250.0).abs() < 1e-6);
-        assert_eq!(y_of(12.0), 0.0);
-        assert_eq!(y_of(0.0), 0.5);
+        assert_eq!(y_of(12.0, 12.0), 0.0);
+        assert_eq!(y_of(0.0, 12.0), 0.5);
+        // Zoomed in, 6 dB is the top, and more stays on the plot.
+        assert_eq!(y_of(6.0, 6.0), 0.0);
+        assert_eq!(y_of(-9.0, 6.0), 1.0);
+        assert!((db_at(y_of(-3.0, 6.0), 6.0) + 3.0).abs() < 1e-9);
         assert_eq!(hz_text(250.0), "250 Hz");
         assert_eq!(hz_text(3200.0), "3.2 kHz");
         assert_eq!(hz_text(12_000.0), "12 kHz");
