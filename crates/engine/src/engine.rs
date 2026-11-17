@@ -95,8 +95,20 @@ impl EngineInput {
     }
 }
 
-/// Track seconds one unit of `jog` moves the play position by.
+/// Track seconds one unit of `jog_search` moves the play position by.
 const JOG_SECONDS: f64 = 0.01;
+/// `jog` works as in Mixxx (RateControl::getJogFactor): each unit adds a
+/// tenth of itself to the speed for one engine block, averaged over the
+/// last 25 blocks. Counted in 10 ms blocks, as `jog_bend` is, that is this
+/// many times normal speed for each unit a second: a unit moves a playing
+/// deck 1 ms further, and can play it backwards.
+const JOG_RATE: f64 = 0.001;
+/// A paused deck moves this many times further per `jog` unit (Mixxx's
+/// kPausedJogMultiplier): 18 ms a unit.
+const JOG_PAUSED: f64 = 18.0;
+/// Seconds `jog` is averaged over, like Mixxx's 25-block moving average
+/// (an exponential average this long lags the same).
+const JOG_SMOOTH: f64 = 0.125;
 /// Seconds over which a jog movement is spread, so a turning wheel bends smoothly.
 const JOG_SPREAD: f64 = 0.05;
 /// The SLICER's section, in beats: one beat on each of the 8 pads.
@@ -200,8 +212,13 @@ struct Deck {
     /// Playback speed reached at the end of the last buffer, in multiples of
     /// normal speed; negative plays backwards.
     velocity: f64,
-    /// Jog movement still to be applied, in track seconds.
+    /// Fast-search movement (`jog_search`) still to be applied, in track
+    /// seconds.
     jog_pending: f64,
+    /// `jog` units that came in since the last buffer.
+    jog_in: f64,
+    /// `jog`, smoothed, in units a second.
+    jog_rate: f64,
     /// Seconds the deck stays quiet for after a fast-search jog.
     search_quiet: f64,
     /// How fast the jog's rim is turning, smoothed, in ticks per second.
@@ -407,6 +424,8 @@ impl Deck {
     /// sync leaves alone.
     fn nudging(&self) -> bool {
         self.jog_pending != 0.0
+            || self.jog_rate != 0.0
+            || self.jog_in != 0.0
             || self.bend_rate != 0.0
             || self.c.rate_temp.iter().any(|c| c.get_bool())
             || self.c.scratch2_enable.get_bool()
@@ -489,6 +508,8 @@ impl Deck {
         self.pos = 0.0;
         self.velocity = 0.0;
         self.jog_pending = 0.0;
+        self.jog_in = 0.0;
+        self.jog_rate = 0.0;
         self.bend_rate = 0.0;
         self.slip = None;
         self.slip_moving = false;
@@ -943,7 +964,12 @@ impl Deck {
         let jog = self.c.jog.get();
         if jog != 0.0 {
             self.c.jog.set(0.0);
-            self.jog_pending += jog * JOG_SECONDS;
+            self.jog_in += jog;
+        }
+        let search = self.c.jog_search.get();
+        if search != 0.0 {
+            self.c.jog_search.set(0.0);
+            self.jog_pending += search * JOG_SECONDS;
         }
 
         let enabled = self.c.loop_enabled.get_bool();
@@ -1134,28 +1160,31 @@ impl Deck {
     fn target_velocity(&mut self, dt: f64) -> f64 {
         self.search_quiet = (self.search_quiet - dt).max(0.0);
         let bend = self.bend_step(dt);
-        if self.audio.is_none() {
+        let held =
+            self.audio.is_none() || self.c.seek_hold.get_bool() || self.c.scrub_enable.get_bool();
+        if held || self.c.rate_search.get() != 0.0 {
             self.jog_pending = 0.0;
-            return 0.0;
+            self.jog_in = 0.0;
+            self.jog_rate = 0.0;
         }
-        if self.c.seek_hold.get_bool() {
-            self.jog_pending = 0.0;
+        if self.audio.is_none() || self.c.seek_hold.get_bool() {
             return 0.0;
         }
         if self.c.scrub_enable.get_bool() {
-            self.jog_pending = 0.0;
             return self.scrub_velocity(dt);
         }
         if self.c.scratch2_enable.get_bool() {
-            // Jog still counts while the wheel is touched: mappings such as
-            // the DDJ-FLX4's send SHIFT + turn as fast `jog` steps.
-            return self.c.scratch2.get() + self.jog_step(dt);
+            // Jog still counts while the wheel is touched, as in Mixxx;
+            // mappings such as the DDJ-FLX4's send SHIFT + turn as fast
+            // `jog_search` steps.
+            return self.c.scratch2.get() + self.jog_rate_step(dt, 1.0) + self.jog_step(dt);
         }
         let search = self.c.rate_search.get();
         if search != 0.0 {
             return search;
         }
-        let mut v = if self.c.play.get_bool() {
+        let playing = self.c.play.get_bool();
+        let mut v = if playing {
             // Turning the rim bends the speed: faster clockwise, slower
             // counterclockwise, but never backwards.
             (self.forward_speed() + bend).max(0.0)
@@ -1165,8 +1194,29 @@ impl Deck {
         if self.c.reverse.get_bool() || self.c.reverseroll.get_bool() {
             v = -v;
         }
-        // A jog movement bends the speed while playing and scrubs while stopped.
-        v + self.jog_step(dt)
+        // `jog` bends the speed as in Mixxx, further while paused; a fast
+        // search moves the position.
+        let jog = self.jog_rate_step(dt, if playing { 1.0 } else { JOG_PAUSED });
+        v + jog + self.jog_step(dt)
+    }
+
+    /// Takes the `jog` units that came in over the last `dt` seconds and
+    /// returns the speed they add, in multiples of normal speed: the
+    /// smoothed units a second times [`JOG_RATE`] times `gain`.
+    fn jog_rate_step(&mut self, dt: f64, gain: f64) -> f64 {
+        let units = std::mem::take(&mut self.jog_in);
+        if dt <= 0.0 {
+            return 0.0;
+        }
+        self.jog_rate += (units / dt - self.jog_rate) * (dt / JOG_SMOOTH).min(1.0);
+        if units == 0.0 && (self.jog_rate * JOG_RATE).abs() < 1e-4 {
+            self.jog_rate = 0.0;
+        }
+        let speed = self.jog_rate * JOG_RATE * gain;
+        if speed.abs() > JOG_SEARCH_SPEED {
+            self.search_quiet = JOG_SEARCH_HOLD;
+        }
+        speed
     }
 
     /// Takes the rim ticks (`jog_bend`) that came in over the last `dt`
@@ -1815,6 +1865,8 @@ impl Engine {
             click: None,
             velocity: 0.0,
             jog_pending: 0.0,
+            jog_in: 0.0,
+            jog_rate: 0.0,
             search_quiet: 0.0,
             bend_rate: 0.0,
             slip: None,
@@ -2162,6 +2214,8 @@ impl Engine {
                     d.audio = track.audio.clone();
                     d.velocity = 0.0;
                     d.jog_pending = 0.0;
+                    d.jog_in = 0.0;
+                    d.jog_rate = 0.0;
                     d.slip = None;
                     d.slip_moving = false;
                     d.slip_cue = None;
@@ -6453,16 +6507,17 @@ mod tests {
         run(&mut engine, 0.5);
         assert_eq!(seconds(), 0.0);
 
-        // Jog while paused scrubs forward: 10 ms of track per unit.
+        // Jog while paused scrubs forward, as in Mixxx: 18 ms of track per
+        // unit.
         ctl("scratch2_enable").set_bool(false);
         ctl("play").set_bool(false);
         run(&mut engine, 0.02);
         ctl("playposition").set(0.2);
         run(&mut engine, 0.02);
         ctl("jog").set(20.0);
-        assert!(run(&mut engine, 0.5) > 0.01, "a nudge is heard");
+        assert!(run(&mut engine, 0.8) > 0.01, "a nudge is heard");
         assert_eq!(ctl("jog").get(), 0.0);
-        assert!((seconds() - 2.2).abs() < 0.01, "{}", seconds());
+        assert!((seconds() - 2.36).abs() < 0.01, "{}", seconds());
 
         // A fast search (SHIFT + jog) moves on silently, then sound returns.
         ctl("play").set_bool(true);
@@ -6470,7 +6525,7 @@ mod tests {
         let before = seconds();
         let mut quiet = 0.0f32;
         for i in 0..4 {
-            ctl("jog").set(75.0);
+            ctl("jog_search").set(75.0);
             let peak = run(&mut engine, 0.02);
             // The first buffer fades out.
             if i > 0 {
@@ -6481,6 +6536,54 @@ mod tests {
         assert!(quiet < 1e-3, "silent while searching: {quiet}");
         run(&mut engine, 0.3);
         assert!(run(&mut engine, 0.2) > 0.01, "heard again after searching");
+    }
+
+    #[test]
+    fn jog_while_playing_bends_the_speed_as_in_mixxx() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 60.0));
+        run(&mut engine, 0.01);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        let seconds = || ctl("playposition").get() * 60.0;
+        ctl("play").set_bool(true);
+        run(&mut engine, 0.2);
+        // A Mixxx mapping's rim: 0.8 a tick, 180 ticks a second (a quarter
+        // turn) for about a second.
+        let turn = |engine: &mut Engine, ticks: f64| {
+            let dt = 512.0 / SR;
+            let n = 90;
+            let start = seconds();
+            for _ in 0..n {
+                ctl("jog").set(0.8 * ticks * dt);
+                run(engine, dt);
+            }
+            (seconds() - start) / (n as f64 * dt)
+        };
+        // Like jog_bend: about +14%, a little less while it builds up, and
+        // the playhead never jumps.
+        let faster = turn(&mut engine, 180.0);
+        assert!(faster > 1.1 && faster < 1.15, "clockwise: {faster}");
+        assert_eq!(ctl("jog").get(), 0.0);
+        run(&mut engine, 1.0);
+        let start = seconds();
+        run(&mut engine, 1.0);
+        assert!((seconds() - start - 1.0).abs() < 0.01, "springs back");
+        let slower = turn(&mut engine, -180.0);
+        assert!(slower < 0.9 && slower > 0.85, "counterclockwise: {slower}");
+        // A big jog (a Mixxx mapping's SHIFT search) plays fast, backwards
+        // too, and silently.
+        run(&mut engine, 1.0);
+        let start = seconds();
+        let mut quiet = 0.0f32;
+        for i in 0..20 {
+            ctl("jog").set(-200.0);
+            let peak = run(&mut engine, 0.02);
+            if i > 14 {
+                quiet = quiet.max(peak);
+            }
+        }
+        assert!(seconds() < start - 2.0, "{start} -> {}", seconds());
+        assert!(quiet < 1e-3, "silent while searching: {quiet}");
     }
 
     #[test]

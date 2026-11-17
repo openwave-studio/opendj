@@ -23,7 +23,7 @@ use opendj_controllers::own::{self, OwnMapping};
 use opendj_controllers::probe::{message_key, MessageKey};
 use opendj_controllers::view::{self, LightRow, MappingView, Row};
 use opendj_controllers::{is_own_file, Controllers, MappingChoice};
-use opendj_controllers::{pickup, support};
+use opendj_controllers::{jog_feel, pickup, support};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use crate::{
@@ -1678,7 +1678,7 @@ impl Editor {
 
     /// The Options tab's first rows: two decks or four and the deck order,
     /// for a mapping with a layout for each, and how knobs and faders take
-    /// over on the controllers running it.
+    /// over and how the jog wheels feel on the controllers running it.
     fn playing(&self) {
         let Some(app) = self.app.upgrade() else {
             return;
@@ -1726,6 +1726,25 @@ impl Editor {
                 choices: strings(&["Pick-up", "Scale"]),
                 chosen: pickup::scale(&opendj_controllers::device_key(port)) as i32,
             });
+            let feel = jog_feel::feel(&opendj_controllers::device_key(port));
+            rows.push(EditorSetting {
+                id: "jog_bend".into(),
+                label: "Pitch bend".into(),
+                detail: "How much turning a jog wheel's rim speeds the track up or slows \
+                         it down. Fine suits small beatmatching nudges."
+                    .into(),
+                choices: strings(&jog_feel::BEND_CHOICES),
+                chosen: feel.bend as i32,
+            });
+            rows.push(EditorSetting {
+                id: "jog_scratch".into(),
+                label: "Scratch".into(),
+                detail: "How closely the track follows your hand on the platter. Tight \
+                         answers quick cuts sooner; Loose is smoother on long pushes."
+                    .into(),
+                choices: strings(&jog_feel::SCRATCH_CHOICES),
+                chosen: feel.scratch as i32,
+            });
         }
         g.set_playing(ModelRc::new(VecModel::from(rows)));
     }
@@ -1744,6 +1763,21 @@ impl Editor {
                 let key = opendj_controllers::device_key(&port);
                 pickup::set_scale(&key, index == 1);
                 settings::set_controller_scaled(&key, index == 1);
+            }
+            self.playing();
+            return;
+        }
+        if id == "jog_bend" || id == "jog_scratch" {
+            for port in self.live_ports() {
+                let key = opendj_controllers::device_key(&port);
+                let mut feel = jog_feel::feel(&key);
+                if id == "jog_bend" {
+                    feel.bend = index;
+                } else {
+                    feel.scratch = index;
+                }
+                jog_feel::set_feel(&key, feel);
+                settings::set_controller_jog_feel(&key, jog_feel::feel(&key));
             }
             self.playing();
             return;
