@@ -109,8 +109,16 @@ openDJ remembers what you chose. The web page starts with the same choice,
 and has the same buttons for whoever is watching it, which change only that
 page.
 
-To change the color the words fill with, go to **Settings → Appearance →
-Karaoke → Sung words**: Lilac, Ocean, Mint, Amber, Rose or White.
+**Settings → Appearance → Karaoke** has three more choices for the screen
+and its web page:
+
+- **Sung words**: the color the words fill with: Lilac, Ocean, Mint,
+  Amber, Rose or White.
+- **Lines**: **Few** shows the line to sing big in the middle, with the
+  lines either side of it. **Many** shows a column of the whole song that
+  scrolls as it is sung. Beside the cover the lyrics are always a column.
+- **Light up**: **Word by word** fills the line as each word is sung.
+  **Whole line** lights the line all at once when it starts.
 
 ![The karaoke screen](../images/karaoke-screen.png)
 

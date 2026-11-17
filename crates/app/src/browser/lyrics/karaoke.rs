@@ -154,6 +154,19 @@ pub(super) struct Screen {
     pub count_in: i32,
 }
 
+impl Screen {
+    /// The line being sung lit all at once, for the Whole line setting.
+    fn light_whole_line(&mut self) {
+        if self.sung.is_empty() && self.word.is_empty() {
+            return;
+        }
+        self.sung = format!("{}{}{}", self.sung, self.word, self.rest);
+        self.word.clear();
+        self.rest.clear();
+        self.part = 0.0;
+    }
+}
+
 fn sung(line: &Line) -> bool {
     line.start.is_some() && !line.text.trim().is_empty()
 }
@@ -171,7 +184,9 @@ pub(super) fn screen(lines: &[Line], seconds: f64, beat: f64) -> Screen {
         }
         let until = start_of(i + 1);
         let end = lines[i].word_times(until).last().map_or(seconds, |w| w.1);
-        seconds < end + LINGER || until.is_some_and(|u| u - seconds < LINGER)
+        // Held until the next line when that follows soon after; in a longer
+        // gap it lets go once, so the screen never steps back to it.
+        seconds < end + LINGER || until.is_some_and(|u| u - end < LINGER)
     });
     let focus = singing.or_else(|| next_sung(current.map_or(0, |i| i + 1)));
     let Some(focus) = focus else {
@@ -406,6 +421,8 @@ impl Browser {
             "bpm": bpm,
             "cover_on": k.look.cover,
             "color": format!("#{:06x}", k.look.color()),
+            "many_lines": k.look.many_lines,
+            "whole_line": k.look.whole_line,
             "background": format!("#{:06x}", k.background),
             "cover": k.cover_url,
         });
@@ -486,6 +503,7 @@ impl Browser {
         if let Some(window) = &k.window {
             let rgb = |c: u32| slint::Color::from_rgb_u8((c >> 16) as u8, (c >> 8) as u8, c as u8);
             window.set_cover_on(look.cover);
+            window.set_many_lines(look.many_lines);
             window.set_highlight(rgb(look.color()));
             window.set_base_color(if k.has_cover {
                 rgb(k.background)
@@ -547,7 +565,10 @@ impl Browser {
         let seconds = p.playposition.get() * p.duration.get();
         let bpm = k.bpm[d].get();
         let beat = if bpm > 0.0 { 60.0 / bpm } else { 0.5 };
-        let s = screen(&l.lines, seconds, beat);
+        let mut s = screen(&l.lines, seconds, beat);
+        if k.look.whole_line {
+            s.light_whole_line();
+        }
         if k.native_generation != Some(self.lyrics.generation) {
             let lines: Vec<SharedString> = l
                 .lines
@@ -607,6 +628,43 @@ mod tests {
         assert_eq!(screen(&lines, 5.2, 0.5).focus, Some(2));
         assert_eq!(screen(&lines, 1.2, 0.5).focus, Some(0));
         assert_eq!(screen(&lines, 30.0, 0.5).focus, Some(3));
+    }
+
+    #[test]
+    fn a_long_gap_never_steps_back_to_the_last_line() {
+        let lines =
+            parse("[00:10.00]<00:10.00>Hi <00:10.50>there<00:11.00>\n[00:20.00]Next one").unwrap();
+        let focus: Vec<_> = [10.2, 12.0, 13.0, 16.0, 18.9, 19.5, 20.1]
+            .iter()
+            .map(|&t| screen(&lines, t, 0.5).focus)
+            .collect();
+        assert_eq!(
+            focus,
+            [
+                Some(0),
+                Some(0),
+                Some(1),
+                Some(1),
+                Some(1),
+                Some(1),
+                Some(1)
+            ]
+        );
+    }
+
+    #[test]
+    fn whole_line_lights_the_line_at_once() {
+        let lines = parse("[00:10.00]<00:10.00>Hi <00:10.50>there<00:11.00>").unwrap();
+        let mut s = screen(&lines, 10.2, 0.5);
+        s.light_whole_line();
+        assert_eq!(
+            (s.sung.as_str(), s.word.as_str(), s.rest.as_str()),
+            ("Hi there", "", "")
+        );
+        // A line still to come stays unlit.
+        let mut s = screen(&lines, 8.0, 0.5);
+        s.light_whole_line();
+        assert_eq!((s.sung.as_str(), s.rest.as_str()), ("", "Hi there"));
     }
 
     #[test]

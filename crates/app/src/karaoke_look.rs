@@ -1,5 +1,6 @@
-//! The karaoke screen's saved look: the sung-word color (in Settings) and
-//! whether the cover shows beside the lyrics (its own button and key).
+//! The karaoke screen's saved look: the sung-word color, how many lines show
+//! and how they light up (in Settings), and whether the cover shows beside
+//! the lyrics (its own button and key).
 //! Color indexes are saved and sent to the web page; append colors rather
 //! than reorder them.
 use serde_json::Value;
@@ -7,6 +8,13 @@ use std::cell::Cell;
 
 pub(crate) const COLOR_KEY: &str = "karaoke_color";
 pub(crate) const COVER_KEY: &str = "karaoke_cover";
+pub(crate) const LINES_KEY: &str = "karaoke_lines";
+pub(crate) const FILL_KEY: &str = "karaoke_fill";
+/// Lines shown without the cover: the four around the line to sing, or a
+/// scrolling column of the whole song.
+pub(crate) const LINES: [&str; 2] = ["Few", "Many"];
+/// How the line being sung lights up.
+pub(crate) const FILLS: [&str; 2] = ["Word by word", "Whole line"];
 pub(crate) const COLORS: [(&str, u32); 6] = [
     ("Lilac", 0xb69cff),
     ("Ocean", 0x66cfff),
@@ -20,6 +28,10 @@ pub(crate) const COLORS: [(&str, u32); 6] = [
 pub(crate) struct Look {
     /// The cover beside the lyrics.
     pub cover: bool,
+    /// The scrolling column of the whole song, not just four lines.
+    pub many_lines: bool,
+    /// The line being sung lights up all at once, not word by word.
+    pub whole_line: bool,
     color_index: usize,
 }
 
@@ -27,6 +39,8 @@ impl Look {
     pub fn from_settings(saved: &Value) -> Self {
         Self {
             cover: saved[COVER_KEY].as_bool().unwrap_or(false),
+            many_lines: saved[LINES_KEY].as_u64() == Some(1),
+            whole_line: saved[FILL_KEY].as_u64() == Some(1),
             color_index: saved[COLOR_KEY]
                 .as_u64()
                 .unwrap_or(0)
@@ -75,10 +89,13 @@ pub(crate) fn toggle_cover() {
 
 /// A Settings menu pick; false when `id` isn't a karaoke row.
 pub(crate) fn choose(id: &str, index: usize) -> bool {
-    if id != COLOR_KEY {
-        return false;
-    }
-    crate::settings::set(id, serde_json::json!(index.min(COLORS.len() - 1)));
+    let last = match id {
+        COLOR_KEY => COLORS.len() - 1,
+        LINES_KEY => LINES.len() - 1,
+        FILL_KEY => FILLS.len() - 1,
+        _ => return false,
+    };
+    crate::settings::set(id, serde_json::json!(index.min(last)));
     CACHED.with(|cached| cached.set(None));
     true
 }

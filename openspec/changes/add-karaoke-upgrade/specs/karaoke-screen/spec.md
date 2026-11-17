@@ -7,6 +7,17 @@ Settings SHALL offer a Sung words color for the karaoke screen, from Lilac, Ocea
 - **WHEN** the DJ picks Amber while the karaoke screen is open
 - **THEN** the sung words fill with amber on the window and the shared page without reopening either
 
+### Requirement: Lines and light up
+Settings SHALL offer Lines (Few, the default four lines around the line to sing, or Many, a column of the whole song that scrolls as it is sung) and Light up (Word by word, the default, or Whole line, which lights the line being sung all at once). Both SHALL apply to the window and the page while the screen is open. Beside the cover the lyrics SHALL always be a column.
+
+#### Scenario: Whole line
+- **WHEN** Light up is Whole line and a line starts
+- **THEN** the whole line takes the highlight color at once instead of filling word by word
+
+#### Scenario: A long gap between lines
+- **WHEN** a line has been sung and the next one starts more than a second and a half later
+- **THEN** the screen moves on to count in the next line once and never steps back to the line already sung
+
 ### Requirement: On-screen buttons
 The karaoke window and page SHALL show Cover and Full screen buttons only while the pointer moves over them or after a tap, hiding them after about three seconds without input. The window SHALL toggle them with C and F. The lyrics SHALL always show. The window's choice SHALL be remembered and the page SHALL start from it; a viewer's own picks on the page SHALL change only that page.
 

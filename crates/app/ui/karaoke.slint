@@ -143,6 +143,12 @@ export component KaraokeWindow inherits Window {
     in property <bool> cover-on;
     // 0 lyrics only, 1 cover beside lyrics.
     property <int> view: cover-on ? 1 : 0;
+    // A scrolling column of the whole song instead of the four lines around
+    // the line to sing. Beside the cover the lyrics are always a column.
+    in property <bool> many-lines;
+    property <bool> column: cover-on || many-lines;
+    property <length> column-x: cover-on ? root.width * 0.515 : root.width * 0.24;
+    property <length> column-width: cover-on ? root.width * 0.40 : root.width * 0.62;
     // The Cover and Full screen buttons, shown while the mouse moves.
     in property <bool> show-controls;
     in property <bool> is-full-screen;
@@ -192,7 +198,7 @@ export component KaraokeWindow inherits Window {
     }
 
     // Title and artist, small along the top.
-    if state > 0 && view == 0: Text {
+    if state > 0 && !cover-on: Text {
         x: 32px;
         y: 24px;
         width: parent.width - 64px;
@@ -230,7 +236,7 @@ export component KaraokeWindow inherits Window {
         }
     }
 
-    if state == 3 && view == 0: VerticalLayout {
+    if state == 3 && !column: VerticalLayout {
         alignment: center;
         padding-left: 48px;
         padding-right: 48px;
@@ -348,10 +354,10 @@ export component KaraokeWindow inherits Window {
             }
         }
     }
-    if view == 1 && state == 3: lyric-viewport := Rectangle {
-        x: root.width * 0.515;
+    if column && state == 3: lyric-viewport := Rectangle {
+        x: root.column-x;
         y: root.height * 0.10;
-        width: root.width * 0.40;
+        width: root.column-width;
         height: root.height * 0.80;
         clip: true;
         lyric-column := VerticalLayout {
@@ -378,8 +384,8 @@ export component KaraokeWindow inherits Window {
 
     // The count-in beside the cover: a dot a beat, in the gap above the
     // line to sing (the column keeps it at 42% of the height).
-    if view == 1 && state == 3 && count-in > 0: HorizontalLayout {
-        x: root.width * 0.515;
+    if column && state == 3 && count-in > 0: HorizontalLayout {
+        x: root.column-x;
         y: root.height * 0.39;
         height: root.height * 0.02;
         spacing: root.height * 0.018;

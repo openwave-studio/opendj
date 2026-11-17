@@ -5,6 +5,8 @@
 - [x] 1.1 Sung words color in Settings › Appearance › Karaoke, applied live to the window and the page
 - [x] 1.2 Cover worker: decode and resize off the UI thread, flat background color, JPEG for the page, stale tracks dropped
 - [x] 1.3 Cover layout: cover, title and artist left, gliding lyric column right with word fill in the highlight color and count-in dots
+- [x] 1.4 Lines (Few / Many) and Light up (Word by word / Whole line) settings, on the window and the page
+- [x] 1.5 The screen never steps back to the last line in a long gap between lines
 
 ## 2. On-screen buttons
 

@@ -55,6 +55,7 @@ function page() {
   vm.runInContext(script, context);
   return {
     requests, timers, body,
+    run: code => vm.runInContext(code, context),
     button: id => elements.get(id),
     retry() {
       const entry = [...timers.entries()].find(([, timer]) => timer.delay === 250);
@@ -119,4 +120,19 @@ test('the page follows openDJ until a viewer picks', async () => {
   p.requests[1].resolve({ ...idle, state: 1, cover_on: true });
   await next;
   assert.ok(!p.body.classList.contains('cover'), "the viewer's own pick stays");
+});
+
+test('a long gap never steps back to the last line, and whole line lights at once', () => {
+  const p = page();
+  p.run(`lines = [
+    { text: 'Hi there', start: 10, words: [[10, 10.5, 'Hi '], [10.5, 11, 'there']] },
+    { text: 'Next one', start: 20, words: [[20, 20.5, 'Next '], [20.5, 21, 'one']] },
+  ]`);
+  const focus = [10.2, 12, 13, 16, 18.9, 19.5, 20.1].map(t => p.run(`screen(${t}, 0.5).focus`));
+  assert.deepEqual(focus, [0, 0, 1, 1, 1, 1, 1]);
+  p.run(`now = { whole_line: true }`);
+  const s = p.run('screen(10.2, 0.5)');
+  assert.equal(s.sung, 'Hi there');
+  assert.equal(s.rest, '');
+  assert.equal(p.run('screen(8, 0.5)').sung, '');
 });
