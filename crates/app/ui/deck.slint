@@ -6643,7 +6643,8 @@ component InstrumentRack inherits Rectangle {
         spacing: 6px;
         HorizontalLayout {
             vertical-stretch: 1;
-            min-height: 96px;
+            // Less room with the step sequencer under it.
+            min-height: root.size == 0 ? 96px : 80px;
             spacing: 6px;
             // In and out.
             Rectangle {
@@ -6739,8 +6740,8 @@ component InstrumentRack inherits Rectangle {
             Keybed { horizontal-stretch: 1; }
         }
         if root.size != 0: SeqPanel {
-            vertical-stretch: 1;
-            min-height: 96px;
+            vertical-stretch: 2;
+            min-height: 100px;
             hue: root.hue;
         }
     }
