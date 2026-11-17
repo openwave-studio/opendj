@@ -3,6 +3,7 @@
 // preview player for the headphones and a cover art search.
 import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { HoverTip } from "controls.slint";
+import { CrateIcon } from "crate_icon.slint";
 
 // A tag in a tag field, and how many of the tracks shown have it.
 export struct TagChip {
@@ -11,6 +12,10 @@ export struct TagChip {
     // The color the DJ gave the tag, when `has-color`.
     tint: color,
     has-color: bool,
+    // A crate's icon (see CrateIcon) and its color as a CrateColors index;
+    // -1 for a tag.
+    icon: int,
+    icon-tint: int,
 }
 
 // One line of the info list.
@@ -21,7 +26,10 @@ export struct InfoField {
     value: string,
     // 0 text to edit, 1 text to read, 2 rating (value "0" to "5"),
     // 4 text to read with a button (`action`), 5 tags as `chips` with a
-    // box to add more.
+    // box to add more, 6 a folder: its name with the whole path (`hint`)
+    // on hover and an arrow that shows the file (`action` is its tooltip),
+    // 7 a value picked from a ▾ menu, 8 the line that shows or hides the
+    // More fields. Kind 4's button opens the web address in `hint`.
     kind: int,
     // Shown greyed in an empty field.
     hint: string,
@@ -35,6 +43,11 @@ export struct InfoField {
     mixed: int,
     edited: bool,
     chips: [TagChip],
+    // A text field with a ▾ of the values the collection has (genre); a
+    // picker (kind 7) with a box to find or type a new value.
+    menu: bool,
+    // Typing in it suggests names the collection has (artist, album).
+    suggest: bool,
 }
 
 // A line of the info list: one field, or two short ones side by side.
@@ -74,12 +87,12 @@ export global TrackInfo {
     in property <[bool]> tab-edited;
     callback set-tab(tab: int);
     // Tag fields: adds the tags typed to every track shown, or takes one
-    // off them all; while typing, the collection's tags that match.
+    // off them all.
     callback tag-add(id: string, tags: string);
     callback tag-remove(id: string, tag: string);
-    callback tag-suggest(id: string, typed: string);
-    in property <[string]> suggestions;
-    in property <string> suggest-for;
+    // Fills `choices` with the tags of tag group field `id` in the
+    // collection that contain `typed`, most used first.
+    callback tag-find(id: string, typed: string);
     // The rating, shown under the title.
     in property <int> rating;
     // Several tracks shown (how many; 0 for one): fields edit them all,
@@ -98,6 +111,13 @@ export global TrackInfo {
     callback set-subject(subject: int);
     callback edit(id: string, value: string);
     callback reveal();
+    callback open-link(url: string);
+    // Shows or hides the Track tab's More fields.
+    callback toggle-more();
+    // Typing in a field that suggests: fills `suggestions` for `suggest-for`.
+    callback suggest(id: string, typed: string);
+    in property <string> suggest-for;
+    in property <[ValueChoice]> suggestions;
     // Something went wrong saving, shown under the list until the next edit;
     // or, with `status-ok`, what an Apply did.
     in property <string> status;
@@ -166,6 +186,8 @@ component EditLine inherits Rectangle {
     in property <string> hint;
     in property <bool> enabled: true;
     callback commit(text: string);
+    callback typed(text: string);
+    callback left();
     height: 22px;
     border-radius: 4px;
     background: input.has-focus ? Theme.well : hover.has-hover && enabled ? Theme.n-ffffff0c : transparent;
@@ -199,12 +221,16 @@ component EditLine inherits Rectangle {
         selection-foreground-color: Theme.on-selection;
         font-size: 13px;
         vertical-alignment: center;
+        edited => { root.typed(self.text); }
         accepted => {
             if self.text != value { commit(self.text); }
             self.clear-focus();
         }
         changed has-focus => {
-            if !self.has-focus && self.text != value { commit(self.text); }
+            if !self.has-focus {
+                if self.text != value { commit(self.text); }
+                root.left();
+            }
         }
     }
 }
@@ -276,6 +302,9 @@ component Chip inherits Rectangle {
     // The tag's color, as a dot before its name.
     in property <color> tint;
     in property <bool> has-color;
+    // A crate's icon and its color (-1 for a tag), drawn before its name.
+    in property <int> icon: -1;
+    in property <int> icon-tint: -1;
     // A suggestion to add, not a tag the tracks have.
     in property <bool> offer;
     callback add();
@@ -297,7 +326,11 @@ component Chip inherits Rectangle {
         padding-left: 8px;
         padding-right: offer ? 8px : 2px;
         spacing: 4px;
-        if has-color: VerticalLayout {
+        if icon >= 0: VerticalLayout {
+            alignment: center;
+            CrateIcon { icon: root.icon; tint: root.icon-tint; width: 14px; height: 14px; }
+        }
+        if has-color && icon < 0: VerticalLayout {
             alignment: center;
             Rectangle { width: 8px; height: 8px; border-radius: 4px; background: root.tint; }
         }
@@ -339,7 +372,6 @@ component Chip inherits Rectangle {
 component TagField inherits VerticalLayout {
     in property <InfoField> field;
     in property <bool> editable;
-    spacing: 4px;
     padding-top: 1px;
     padding-bottom: 1px;
     FlexboxLayout {
@@ -349,57 +381,282 @@ component TagField inherits VerticalLayout {
             count: c.count;
             tint: c.tint;
             has-color: c.has-color;
+            icon: c.icon;
+            icon-tint: c.icon-tint;
             enabled: editable;
             add => { TrackInfo.tag-add(field.id, c.tag); }
             remove => { TrackInfo.tag-remove(field.id, c.tag); }
         }
-        Rectangle {
-            width: 90px;
+        // A small +: a menu of the group's tags in the collection, with a
+        // box on top to find one or type a new one.
+        if editable: Rectangle {
+            width: field.chips.length == 0 ? 52px : 22px;
             height: 22px;
             border-radius: 11px;
-            background: input.has-focus ? Theme.well : add-ta.has-hover ? Theme.n-ffffff0c : transparent;
+            background: add-ta.has-hover ? Theme.n-ffffff14 : transparent;
             border-width: 1px;
-            border-color: input.has-focus ? Theme.accent : Theme.border;
+            border-color: add-ta.has-hover ? Theme.text-dim : Theme.border;
+            Text {
+                text: field.chips.length == 0 ? field.hint : "+";
+                color: add-ta.has-hover ? Theme.text : Theme.text-dim;
+                font-size: 12px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
             add-ta := TouchArea {
-                enabled: editable;
-                mouse-cursor: text;
-                clicked => { input.focus(); }
-            }
-            if input.text == "" && !input.has-focus: Text {
-                x: 9px;
-                text: field.hint;
-                color: Theme.text-dim.with-alpha(0.7);
-                font-size: 12px;
-                vertical-alignment: center;
-            }
-            input := TextInput {
-                x: 9px;
-                width: parent.width - 18px;
-                enabled: editable;
-                single-line: true;
-                color: Theme.text;
-                selection-background-color: Theme.selection;
-                selection-foreground-color: Theme.on-selection;
-                font-size: 12px;
-                vertical-alignment: center;
-                edited => { TrackInfo.tag-suggest(field.id, self.text); }
-                accepted => {
-                    if self.text != "" { TrackInfo.tag-add(field.id, self.text); }
-                    self.text = "";
+                mouse-cursor: pointer;
+                clicked => {
+                    TrackInfo.tag-find(field.id, "");
+                    tags-menu.show();
                 }
-                changed has-focus => {
-                    if !self.has-focus { TrackInfo.tag-suggest(field.id, ""); }
+            }
+            tags-menu := PopupWindow {
+                x: 0px;
+                y: parent.height + 2px;
+                width: 220px;
+                height: min(TrackInfo.choices.length * 26px, 260px) + 46px;
+                close-policy: close-on-click-outside;
+                Rectangle {
+                    background: Theme.panel-raised;
+                    border-radius: Theme.radius;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    drop-shadow-blur: 12px;
+                    drop-shadow-color: Theme.s-000000a0;
+                }
+                VerticalLayout {
+                    padding: 6px;
+                    spacing: 4px;
+                    Rectangle {
+                        height: 26px;
+                        border-radius: 4px;
+                        background: Theme.well;
+                        border-width: 1px;
+                        border-color: Theme.accent;
+                        if find.text == "": Text {
+                            x: 8px;
+                            text: "Find or add a tag";
+                            color: Theme.text-dim.with-alpha(0.7);
+                            font-size: 12px;
+                            vertical-alignment: center;
+                        }
+                        find := TextInput {
+                            x: 8px;
+                            width: parent.width - 16px;
+                            single-line: true;
+                            color: Theme.text;
+                            selection-background-color: Theme.selection;
+                            selection-foreground-color: Theme.on-selection;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                            init => { self.focus(); }
+                            edited => { TrackInfo.tag-find(field.id, self.text); }
+                            accepted => {
+                                if self.text != "" { TrackInfo.tag-add(field.id, self.text); }
+                                tags-menu.close();
+                            }
+                        }
+                    }
+                    Flickable {
+                        content-height: TrackInfo.choices.length * 26px;
+                        VerticalLayout {
+                            alignment: start;
+                            for c in TrackInfo.choices: ValueLine {
+                                text: c.value;
+                                count: c.count;
+                                clicked => {
+                                    TrackInfo.tag-add(field.id, c.value);
+                                    tags-menu.close();
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-    if TrackInfo.suggest-for == field.id && TrackInfo.suggestions.length > 0: FlexboxLayout {
+}
+
+// A value picked from a ▾ menu: a stage, or the one tag of a group that
+// takes one per track. With `menu`, the menu has a box on top to find a
+// value or type a new one.
+component PickValue inherits Rectangle {
+    in property <InfoField> field;
+    in property <bool> editable;
+    height: 24px;
+    border-radius: 4px;
+    background: pta.has-hover && editable ? Theme.n-ffffff0c : transparent;
+    HorizontalLayout {
+        padding-left: 6px;
         spacing: 4px;
-        for s in TrackInfo.suggestions: Chip {
-            tag: s;
-            offer: true;
-            enabled: editable;
-            add => { TrackInfo.tag-add(field.id, s); }
+        Text {
+            horizontal-stretch: 1;
+            text: field.value == "" ? field.hint : field.value;
+            color: field.value == "" ? Theme.text-dim.with-alpha(0.6) : Theme.text;
+            font-size: 13px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            width: 22px;
+            text: "▾";
+            color: pta.has-hover ? Theme.text : Theme.text-dim;
+            font-size: 11px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    pta := TouchArea {
+        enabled: editable;
+        mouse-cursor: pointer;
+        clicked => {
+            TrackInfo.tag-find(field.id, "");
+            pick-menu.show();
+        }
+    }
+    pick-menu := PopupWindow {
+        x: 0px;
+        y: parent.height + 2px;
+        width: min(240px, root.width + 22px);
+        height: min(TrackInfo.choices.length * 26px, 260px) + (field.menu ? 46px : 12px);
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.panel-raised;
+            border-radius: Theme.radius;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 12px;
+            drop-shadow-color: Theme.s-000000a0;
+        }
+        VerticalLayout {
+            padding: 6px;
+            spacing: 4px;
+            if field.menu: Rectangle {
+                height: 26px;
+                border-radius: 4px;
+                background: Theme.well;
+                border-width: 1px;
+                border-color: Theme.accent;
+                if find.text == "": Text {
+                    x: 8px;
+                    text: "Find or type one";
+                    color: Theme.text-dim.with-alpha(0.7);
+                    font-size: 12px;
+                    vertical-alignment: center;
+                }
+                find := TextInput {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    single-line: true;
+                    color: Theme.text;
+                    selection-background-color: Theme.selection;
+                    selection-foreground-color: Theme.on-selection;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    init => { self.focus(); }
+                    edited => { TrackInfo.tag-find(field.id, self.text); }
+                    accepted => {
+                        if self.text != "" { TrackInfo.edit(field.id, self.text); }
+                        pick-menu.close();
+                    }
+                }
+            }
+            Flickable {
+                content-height: TrackInfo.choices.length * 26px;
+                VerticalLayout {
+                    alignment: start;
+                    for c in TrackInfo.choices: ValueLine {
+                        text: c.value;
+                        count: c.count;
+                        clicked => {
+                            TrackInfo.edit(field.id, c.value);
+                            pick-menu.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A folder: Finder's icon and the folder's name, the whole path on
+// hover, and an arrow that shows the file in Finder or Explorer.
+component FolderValue inherits HorizontalLayout {
+    in property <InfoField> field;
+    property <bool> tip-mine;
+    property <bool> arrow-tip;
+    spacing: 6px;
+    VerticalLayout {
+        alignment: center;
+        Path {
+            width: 16px;
+            height: 14px;
+            viewbox-width: 16;
+            viewbox-height: 14;
+            fill: Theme.accent;
+            commands: "M 1 2.5 Q 1 1 2.5 1 L 6 1 L 7.5 2.5 L 13.5 2.5 Q 15 2.5 15 4 L 15 11.5 Q 15 13 13.5 13 L 2.5 13 Q 1 13 1 11.5 Z";
+        }
+    }
+    name := Text {
+        horizontal-stretch: 1;
+        text: field.value;
+        color: Theme.text;
+        font-size: 13px;
+        vertical-alignment: center;
+        overflow: elide;
+        nta := TouchArea {
+            changed has-hover => {
+                if !self.has-hover && root.tip-mine && !root.arrow-tip {
+                    root.tip-mine = false;
+                    HoverTip.shown = false;
+                }
+            }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        arrow := Rectangle {
+            width: 18px;
+            height: 18px;
+            Path {
+                width: 16px;
+                height: 16px;
+                viewbox-width: 16;
+                viewbox-height: 16;
+                stroke: ata.has-hover ? Theme.text : Theme.text-dim;
+                stroke-width: 1.2px;
+                fill: transparent;
+                commands: "M 8 1.5 A 6.5 6.5 0 1 1 7.99 1.5 Z M 4.5 8 L 11 8 M 8.5 5.5 L 11 8 L 8.5 10.5";
+            }
+            ata := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.tip-mine = false;
+                    HoverTip.shown = false;
+                    TrackInfo.reveal();
+                }
+                changed has-hover => {
+                    if !self.has-hover && root.tip-mine && root.arrow-tip {
+                        root.tip-mine = false;
+                        HoverTip.shown = false;
+                    }
+                }
+            }
+        }
+    }
+    // The whole path over the name; what the arrow does over the arrow.
+    Timer {
+        interval: 600ms;
+        running: (nta.has-hover || ata.has-hover) && !root.tip-mine;
+        triggered => {
+            root.tip-mine = true;
+            root.arrow-tip = ata.has-hover;
+            HoverTip.title = ata.has-hover ? field.action : field.value;
+            HoverTip.body = ata.has-hover ? "" : field.hint;
+            HoverTip.right-aligned = true;
+            HoverTip.x = root.absolute-position.x + root.width;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
         }
     }
 }
@@ -433,13 +690,47 @@ component InfoCell inherits Rectangle {
             field: root.field;
             editable: root.editable;
         }
-        if field.kind == 0: EditLine {
+        if field.kind == 0: VerticalLayout {
             horizontal-stretch: 1;
-            y: 1px;
-            value: field.value;
-            hint: field.hint;
-            enabled: editable;
-            commit(text) => { TrackInfo.edit(field.id, text); }
+            spacing: 3px;
+            EditLine {
+                value: field.value;
+                hint: field.hint;
+                enabled: editable;
+                commit(text) => { TrackInfo.edit(field.id, text); }
+                typed(text) => {
+                    if field.suggest { TrackInfo.suggest(field.id, text); }
+                }
+                left => {
+                    if field.suggest && TrackInfo.suggest-for == field.id { TrackInfo.suggest(field.id, ""); }
+                }
+            }
+            // Names the collection has that match what is typed.
+            if field.suggest && TrackInfo.suggest-for == field.id: FlexboxLayout {
+                spacing: 4px;
+                padding-bottom: 2px;
+                for c in TrackInfo.suggestions: Rectangle {
+                    height: 22px;
+                    width: sug.preferred-width + 18px;
+                    border-radius: 11px;
+                    background: sta.has-hover ? Theme.selection : transparent;
+                    border-width: 1px;
+                    border-color: Theme.accent.with-alpha(0.5);
+                    sug := Text {
+                        text: c.value;
+                        color: sta.has-hover ? Theme.on-selection : Theme.lilac-text;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                    }
+                    sta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => {
+                            TrackInfo.edit(field.id, c.value);
+                            TrackInfo.suggest(field.id, "");
+                        }
+                    }
+                }
+            }
         }
         // One track: a value a look-up found goes back to the track's own.
         if field.kind == 0 && TrackInfo.many == 0 && field.edited: Rectangle {
@@ -450,14 +741,15 @@ component InfoCell inherits Rectangle {
             kta := TouchArea { clicked => { TrackInfo.keep(field.id); } }
         }
         // With several tracks: the values they have, to pick one for all,
-        // keep each track's own or clear it in all.
-        if field.kind == 0 && TrackInfo.many > 0: Rectangle {
+        // keep each track's own or clear it in all. A field with a menu
+        // offers the collection's values for one track too.
+        if field.kind == 0 && (TrackInfo.many > 0 || field.menu): Rectangle {
             width: 22px;
             border-radius: 4px;
             background: vta.has-hover ? Theme.n-ffffff14 : transparent;
             Text {
                 text: "▾";
-                color: field.mixed > 1 || field.edited ? Theme.text : Theme.text-dim.with-alpha(0.5);
+                color: field.mixed > 1 || field.edited || (field.menu && vta.has-hover) ? Theme.text : Theme.text-dim.with-alpha(0.5);
                 font-size: 11px;
             }
             vta := TouchArea {
@@ -471,6 +763,7 @@ component InfoCell inherits Rectangle {
                 x: parent.width - 240px;
                 y: parent.height;
                 width: 240px;
+                height: min(TrackInfo.choices.length * 26px + (TrackInfo.many > 0 ? 66px : 12px), 340px);
                 Rectangle {
                     background: Theme.panel-raised;
                     border-radius: Theme.radius;
@@ -481,25 +774,38 @@ component InfoCell inherits Rectangle {
                 }
                 VerticalLayout {
                     padding: 6px;
-                    ValueLine {
+                    if TrackInfo.many > 0: ValueLine {
                         text: "Keep each track's own";
                         dim: true;
                         clicked => { TrackInfo.keep(field.id); }
                     }
-                    Rectangle { height: 1px; background: Theme.border; }
-                    for c in TrackInfo.choices: ValueLine {
-                        text: c.value == "" ? "(empty)" : c.value;
-                        dim: c.value == "";
-                        count: c.count;
-                        clicked => { TrackInfo.edit(field.id, c.value); }
+                    if TrackInfo.many > 0: Rectangle { height: 1px; background: Theme.border; }
+                    Flickable {
+                        content-height: TrackInfo.choices.length * 26px;
+                        VerticalLayout {
+                            alignment: start;
+                            for c in TrackInfo.choices: ValueLine {
+                                text: c.value == "" ? "(empty)" : c.value;
+                                dim: c.value == "";
+                                count: c.count;
+                                clicked => {
+                                    TrackInfo.edit(field.id, c.value);
+                                    values-menu.close();
+                                }
+                            }
+                        }
                     }
-                    Rectangle { height: 1px; background: Theme.border; }
-                    ValueLine {
+                    if TrackInfo.many > 0: Rectangle { height: 1px; background: Theme.border; }
+                    if TrackInfo.many > 0: ValueLine {
                         text: "Clear in all " + TrackInfo.many;
                         clicked => { TrackInfo.edit(field.id, ""); }
                     }
                 }
             }
+        }
+        if field.kind == 6: FolderValue {
+            horizontal-stretch: 1;
+            field: root.field;
         }
         if field.kind == 1 || field.kind == 4: Text {
             horizontal-stretch: 1;
@@ -513,7 +819,37 @@ component InfoCell inherits Rectangle {
             alignment: center;
             TextButton {
                 text: field.action;
-                clicked => { TrackInfo.reveal(); }
+                clicked => { TrackInfo.open-link(field.hint); }
+            }
+        }
+        if field.kind == 7: PickValue {
+            horizontal-stretch: 1;
+            field: root.field;
+            editable: root.editable;
+        }
+        if field.kind == 8: Rectangle {
+            horizontal-stretch: 1;
+            height: 24px;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: field.label == "MORE" ? "▸" : "▾";
+                    color: mta.has-hover ? Theme.text : Theme.text-dim;
+                    font-size: 11px;
+                    vertical-alignment: center;
+                }
+                Text {
+                    horizontal-stretch: 1;
+                    text: field.value;
+                    color: mta.has-hover ? Theme.text : Theme.text-dim;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+            mta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { TrackInfo.toggle-more(); }
             }
         }
         if field.kind == 2: Stars {
@@ -578,22 +914,36 @@ component LookUpButton inherits Rectangle {
     }
 }
 
-// A line of the list: one field, or two short ones side by side, the
-// second with a label just wide enough.
+// A line of the list: one field, or two short ones side by side in two
+// columns with a faint rule between them. A short field on its own keeps
+// to the left column.
 component InfoRow inherits HorizontalLayout {
     in property <InfoLine> line;
     in property <bool> editable;
-    spacing: 10px;
+    spacing: 0px;
     InfoCell {
-        width: line.two ? (root.width - root.spacing) / 2 : root.width;
+        width: line.two ? (root.width - 1px) / 2 - 8px : root.width;
         field: line.a;
         editable: root.editable;
+        label-width: line.two ? 74px : 86px;
+    }
+    if line.two: Rectangle {
+        width: 17px;
+        Rectangle {
+            x: 8px;
+            width: 1px;
+            // Through the gap between lines, so the rule reads as one.
+            y: -1px;
+            height: parent.height + 2px;
+            background: Theme.separator;
+        }
     }
     if line.two: InfoCell {
-        width: (root.width - root.spacing) / 2;
+        width: (root.width - 1px) / 2 - 8px;
         field: line.b;
         editable: root.editable;
-        label-width: 52px;
+        visible: line.b.label != "";
+        label-width: 46px;
     }
 }
 

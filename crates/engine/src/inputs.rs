@@ -392,6 +392,8 @@ pub(crate) struct Input {
     chord: Option<[ControlHandle; 3]>,
     /// Its arpeggiator: on, mode, rate, gate, octaves and hold.
     arp: Option<[ControlHandle; 6]>,
+    /// Its step sequencer (see [`crate::seq`]).
+    seq: Option<crate::seq::Seq>,
     /// The master deck's key, for Auto.
     master_key: Option<crate::key::Key>,
     feed: Option<InputFeed>,
@@ -467,6 +469,9 @@ impl Input {
                     reg.get(input_group(input), k)
                         .expect("the instrument's arpeggiator controls exist")
                 })
+            }),
+            seq: (input == INSTRUMENT).then(|| {
+                crate::seq::Seq::new(crate::seq::SeqControls::new(reg, input_group(input)))
             }),
             master_key: None,
             params: if input == INSTRUMENT {
@@ -572,7 +577,7 @@ impl Input {
             let mask = scale.map_or(0, |(r, s)| crate::scale::mask(r, s));
             mask_shown.set(mask as f64);
             now_shown.set(scale.map_or(0.0, |(r, s)| (1 + s * 12 + r as usize) as f64));
-            fx.set_scale(mask);
+            fx.set_scale(mask, scale.map_or(0, |(r, _)| r));
         }
         if let Some([mode, shape, learn]) = &self.chord {
             if let Some(learned) = fx.take_learned_chord() {
@@ -598,6 +603,9 @@ impl Input {
         }
         if let Some(pads) = &mut self.pads {
             pads.play(fx);
+        }
+        if let Some(seq) = &mut self.seq {
+            fx.sequence(seq, frames, target);
         }
         let mut params = [0.0f32; INSTRUMENT_PARAMETERS];
         for (p, c) in params.iter_mut().zip(&self.params) {

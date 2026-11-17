@@ -1,0 +1,331 @@
+// Settings › Audio › Room EQ: six bands correcting the room, drawn as a
+// curve with a dot per band, for the main output (Master) and the booth.
+// The app (room_eq.rs) fills RoomEqUi and finds which dot a press, a
+// scroll or a double-click is on.
+import { Theme } from "theme.slint";
+import { Switch } from "controls.slint";
+import { MenuField } from "mixer.slint";
+
+// A band's dot, its place on the curve from 0 to 1 (left to right, top to
+// bottom).
+export struct RoomDot {
+    x: float,
+    y: float,
+    on: bool,
+}
+
+// A band's card under the curve.
+export struct RoomBand {
+    name: string,
+    freq: string,
+    detail: string,
+    on: bool,
+}
+
+export global RoomEqUi {
+    // 0 Master, 1 Booth.
+    in-out property <int> target;
+    in property <bool> on;
+    // The curve as path commands, in pixels of the plot (see `resized`).
+    in property <string> curve;
+    // The main output's spectrum as a filled shape, behind the curve.
+    in property <string> spectrum;
+    in-out property <bool> show-spectrum: true;
+    callback spectrum-toggled(on: bool);
+    in property <[RoomDot]> dots;
+    in property <[RoomBand]> bands;
+    in property <int> selected: 2;
+    // Under the curve, such as "No output is the booth yet".
+    in property <string> note;
+    // The preset menu: the preset in use ("Muddy room *" once changed),
+    // and the presets and actions to pick from.
+    in property <string> preset;
+    in property <[string]> preset-menu;
+    in property <int> preset-chosen: -1;
+    // Asking for a name to save the curve under.
+    in-out property <bool> naming;
+    in property <string> name-hint;
+    // The main output's Room EQ as the MASTER panel shows it: the preset,
+    // or Off.
+    in property <string> master-text: "Off";
+    callback preset-picked(index: int);
+    callback save-as(name: string);
+    callback pick-target(target: int);
+    callback toggled(on: bool);
+    callback band-toggled(band: int, on: bool);
+    callback select(band: int);
+    // A press on the curve box at (x, y) from 0 to 1, in a box `w` × `h`
+    // pixels: grabs the dot under it, if any.
+    callback press(x: float, y: float, w: float, h: float) -> bool;
+    // The grabbed dot dragged to (x, y), from 0 to 1.
+    callback drag(x: float, y: float);
+    callback released();
+    // Scroll on the dot under (x, y): `steps` up is positive.
+    callback wheel(x: float, y: float, w: float, h: float, steps: float) -> bool;
+    callback double(x: float, y: float, w: float, h: float);
+    // The plot's size in pixels, for drawing the curve to it.
+    callback resized(w: float, h: float);
+}
+
+component Pick inherits Rectangle {
+    in property <[string]> choices;
+    in property <int> chosen;
+    callback picked(index: int);
+    height: 26px;
+    border-radius: Theme.radius;
+    background: Theme.control;
+    border-width: 1px;
+    border-color: Theme.border;
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for c[i] in choices: Rectangle {
+            border-radius: Theme.radius - 2px;
+            background: i == chosen ? Theme.selection : ta.has-hover ? Theme.n-222225 : transparent;
+            HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 14px;
+                Text { text: c; color: i == chosen ? #ffffff : Theme.text-dim; font-size: 12px; font-weight: i == chosen ? 600 : 500; vertical-alignment: center; horizontal-alignment: center; }
+            }
+            ta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.picked(i); }
+            }
+        }
+    }
+}
+
+component NameButton inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    height: 26px;
+    width: label.preferred-width + 20px;
+    border-radius: Theme.radius;
+    background: ta.has-hover ? Theme.n-2a2a2e : Theme.control;
+    border-width: 1px;
+    border-color: Theme.border;
+    label := Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; horizontal-alignment: center; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component RoomEqEditor inherits VerticalLayout {
+    spacing: 12px;
+    padding-top: 6px;
+    HorizontalLayout {
+        spacing: 10px;
+        Pick {
+            choices: ["Master", "Booth"];
+            chosen: RoomEqUi.target;
+            picked(i) => { RoomEqUi.pick-target(i); }
+        }
+        if !RoomEqUi.naming: MenuField {
+            width: 200px;
+            text: RoomEqUi.preset;
+            choices: RoomEqUi.preset-menu;
+            chosen: RoomEqUi.preset-chosen;
+            menu-width: 220px;
+            picked(i) => { RoomEqUi.preset-picked(i); }
+        }
+        // A name for the curve, for a venue: Return saves, Esc gives up.
+        if RoomEqUi.naming: HorizontalLayout {
+            spacing: 6px;
+            Rectangle {
+                width: 200px;
+                height: 26px;
+                border-radius: Theme.radius;
+                background: Theme.well;
+                border-width: 1px;
+                border-color: Theme.accent;
+                name := TextInput {
+                    x: 8px;
+                    width: parent.width - 16px;
+                    text: RoomEqUi.name-hint;
+                    color: Theme.text;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    single-line: true;
+                    init => {
+                        self.select-all();
+                        self.focus();
+                    }
+                    accepted => { RoomEqUi.save-as(self.text); }
+                    key-pressed(e) => {
+                        if e.text == Key.Escape {
+                            RoomEqUi.naming = false;
+                            return accept;
+                        }
+                        reject
+                    }
+                }
+            }
+            NameButton { text: "Save"; clicked => { RoomEqUi.save-as(name.text); } }
+            NameButton { text: "Cancel"; clicked => { RoomEqUi.naming = false; } }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        // Spectrum: a tick box.
+        HorizontalLayout {
+            spacing: 6px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 3px;
+                    border-width: 1.5px;
+                    border-color: RoomEqUi.show-spectrum ? Theme.accent : Theme.text-dim;
+                    background: RoomEqUi.show-spectrum ? Theme.accent : transparent;
+                    Text { text: RoomEqUi.show-spectrum ? "✓" : ""; color: #000000; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+            Text { text: "Spectrum"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    RoomEqUi.show-spectrum = !RoomEqUi.show-spectrum;
+                    RoomEqUi.spectrum-toggled(RoomEqUi.show-spectrum);
+                }
+            }
+        }
+        Rectangle { width: 10px; }
+        Text { text: "On"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+        VerticalLayout {
+            alignment: center;
+            Switch { on: RoomEqUi.on; toggled(on) => { RoomEqUi.toggled(on); } }
+        }
+    }
+    // The curve: ±12 dB up the side, 20 Hz to 20 kHz on a log scale.
+    Rectangle {
+        height: 240px;
+        border-radius: 8px;
+        background: Theme.wave-well;
+        border-width: 1px;
+        border-color: Theme.separator;
+        plot := Rectangle {
+            x: 34px;
+            y: 10px;
+            width: parent.width - 46px;
+            height: parent.height - 30px;
+            init => { RoomEqUi.resized(self.width / 1px, self.height / 1px); }
+            changed width => { RoomEqUi.resized(self.width / 1px, self.height / 1px); }
+            changed height => { RoomEqUi.resized(self.width / 1px, self.height / 1px); }
+            // +6, 0 and -6 dB; 100 Hz, 1 kHz and 10 kHz.
+            for y in [0.25, 0.5, 0.75]: Rectangle { y: parent.height * y; height: 1px; background: y == 0.5 ? #2e2e33 : #1f1f23; }
+            for x in [0.2330, 0.5663, 0.8997]: Rectangle { x: parent.width * x; width: 1px; background: #1f1f23; }
+            if RoomEqUi.spectrum != "": Path {
+                width: parent.width;
+                height: parent.height;
+                viewbox-width: self.width / 1px;
+                viewbox-height: self.height / 1px;
+                commands: RoomEqUi.spectrum;
+                fill: Theme.lilac.with-alpha(0.10);
+                stroke: Theme.lilac.with-alpha(0.25);
+                stroke-width: 1px;
+            }
+            Path {
+                width: parent.width;
+                height: parent.height;
+                viewbox-width: self.width / 1px;
+                viewbox-height: self.height / 1px;
+                commands: RoomEqUi.curve;
+                stroke: RoomEqUi.on ? Theme.lilac : Theme.text-dim;
+                stroke-width: 2.5px;
+                fill: transparent;
+            }
+            for d[i] in RoomEqUi.dots: Rectangle {
+                x: parent.width * d.x - self.width / 2;
+                y: parent.height * d.y - self.height / 2;
+                width: i == RoomEqUi.selected ? 18px : 14px;
+                height: self.width;
+                border-radius: self.width / 2;
+                background: !d.on ? transparent : i == RoomEqUi.selected ? #ffffff : Theme.lilac;
+                border-width: !d.on ? 2px : i == RoomEqUi.selected ? 3px : 0px;
+                border-color: !d.on ? #6b6c70 : Theme.lilac;
+            }
+            TouchArea {
+                pointer-event(e) => {
+                    if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                        RoomEqUi.press(self.mouse-x / self.width, self.mouse-y / self.height, self.width / 1px, self.height / 1px);
+                    } else if e.kind == PointerEventKind.up {
+                        RoomEqUi.released();
+                    }
+                }
+                moved => {
+                    RoomEqUi.drag(self.mouse-x / self.width, self.mouse-y / self.height);
+                }
+                double-clicked => {
+                    RoomEqUi.double(self.mouse-x / self.width, self.mouse-y / self.height, self.width / 1px, self.height / 1px);
+                }
+                scroll-event(e) => {
+                    if e.delta-y == 0 {
+                        return reject;
+                    }
+                    if RoomEqUi.wheel(self.mouse-x / self.width, self.mouse-y / self.height, self.width / 1px, self.height / 1px, e.delta-y > 0 ? 1 : -1) {
+                        return accept;
+                    }
+                    reject
+                }
+            }
+        }
+        for l[i] in ["+12", "+6", "0", "−6", "−12"]: Text {
+            x: 6px;
+            y: plot.y + plot.height * i / 4 - 6px;
+            text: l;
+            color: Theme.text-dim;
+            font-size: 10px;
+        }
+        for l[i] in ["20", "100", "1k", "10k", "20k"]: Text {
+            x: plot.x + plot.width * [0, 0.2330, 0.5663, 0.8997, 1][i] - (i == 4 ? 18px : i == 0 ? 0px : 8px);
+            y: plot.y + plot.height + 4px;
+            text: l;
+            color: Theme.text-dim;
+            font-size: 10px;
+        }
+    }
+    // A card per band; a click picks it, the dot in its corner turns it
+    // on or off.
+    HorizontalLayout {
+        spacing: 6px;
+        for b[i] in RoomEqUi.bands: Rectangle {
+            // Equal widths, whatever each says.
+            horizontal-stretch: 1;
+            preferred-width: 0px;
+            min-width: 0px;
+            height: 62px;
+            border-radius: 7px;
+            background: i == RoomEqUi.selected ? #2a2440 : Theme.row;
+            border-width: 1px;
+            border-color: i == RoomEqUi.selected ? Theme.lilac : Theme.separator;
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => { RoomEqUi.select(i); }
+            }
+            VerticalLayout {
+                padding: 8px;
+                spacing: 3px;
+                HorizontalLayout {
+                    Text { text: b.name; color: b.on ? Theme.lilac-text : Theme.text-dim; font-size: 11px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
+                    Rectangle {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 6px;
+                        background: b.on ? Theme.lilac : transparent;
+                        border-width: 1.5px;
+                        border-color: b.on ? Theme.lilac : #6b6c70;
+                        TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => { RoomEqUi.band-toggled(i, !b.on); }
+                        }
+                    }
+                }
+                Text { text: b.freq; color: Theme.text; font-size: 12px; overflow: elide; }
+                Text { text: b.detail; color: Theme.text-dim; font-size: 11px; overflow: elide; }
+            }
+        }
+    }
+    Text {
+        text: RoomEqUi.note != "" ? RoomEqUi.note : "Drag a dot for frequency and gain, scroll on it for width, double-click to reset. Recordings and the headphones don't get Room EQ.";
+        color: Theme.text-dim;
+        font-size: 12px;
+        wrap: word-wrap;
+    }
+}

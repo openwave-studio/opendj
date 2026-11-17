@@ -20,6 +20,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::time::{Duration, Instant};
 
 use base64::Engine as _;
 use opendj_control::ControlRegistry;
@@ -463,6 +464,35 @@ struct State {
     /// their tags (see [`show`]).
     shown: Vec<String>,
     shown_tags: Vec<bool>,
+    shown_changed: Vec<bool>,
+    shown_own: Vec<bool>,
+    /// Each deck's knob values when its preset was loaded or saved, to
+    /// tell when the sound changed (see [`Baseline`]).
+    baselines: Vec<Option<Baseline>>,
+}
+
+/// A preset's knob values as loaded or saved. A plugin reports its values
+/// back a little after a sound is loaded, so for [`SETTLE`] the values
+/// are taken again rather than compared.
+struct Baseline {
+    path: PathBuf,
+    since: Instant,
+    values: Vec<f64>,
+}
+
+/// The Instrument input's control group.
+const INSTRUMENT: &str = "[Instrument1]";
+
+/// How long after a preset is loaded or saved its knobs may still move to
+/// the loaded sound without counting as a change.
+const SETTLE: Duration = Duration::from_millis(1500);
+
+/// How far a knob moves before the preset counts as changed.
+const MOVED: f64 = 0.002;
+
+/// Whether `now` differs from `before` by more than [`MOVED`] anywhere.
+fn moved(before: &[f64], now: &[f64]) -> bool {
+    before.len() != now.len() || before.iter().zip(now).any(|(a, b)| (a - b).abs() > MOVED)
 }
 
 thread_local! {
@@ -546,8 +576,21 @@ impl Ctx {
         })
     }
 
+    /// The instrument's knob values, 0 to 1, as many as it has.
+    fn knob_values(&self) -> Vec<f64> {
+        let count = (self.value(INSTRUMENT, "num_parameters").max(0.0) as usize)
+            .min(opendj_engine::inputs::INSTRUMENT_PARAMETERS);
+        (1..=count)
+            .map(|k| self.value(INSTRUMENT, &format!("parameter{k}")))
+            .collect()
+    }
+
     fn set_current(&self, deck: usize, key: &str, path: Option<PathBuf>) {
         STATE.with_borrow_mut(|s| {
+            // Loaded or saved: the sound is the preset again.
+            if let Some(b) = s.baselines.get_mut(deck) {
+                *b = None;
+            }
             if key == GROOVE {
                 if s.groove.len() <= deck {
                     s.groove.resize(deck + 1, None);
@@ -643,7 +686,10 @@ impl Ctx {
         }
         let mut body = read(&preset.path)?;
         self.fill(deck, &preset.instrument, &mut body)?;
-        write(&preset.path, &body)
+        write(&preset.path, &body)?;
+        // The sound is the preset again: no asterisk.
+        self.set_current(deck, &preset.instrument, Some(preset.path));
+        Ok(())
     }
 
     /// Puts what deck `deck` plays now into a preset's body.
@@ -811,10 +857,52 @@ pub fn show(app: &AppWindow) {
             tags().map(move |t| p.as_ref().is_some_and(|p| p.tags.iter().any(|x| x == t)))
         })
         .collect();
+    let own: Vec<bool> = current
+        .iter()
+        .map(|p| p.as_ref().is_some_and(|p| !p.from_plugin))
+        .collect();
+    let values = ctx.knob_values();
+    let now = Instant::now();
+    let edited: Vec<bool> = STATE.with_borrow_mut(|s| {
+        s.baselines.resize_with(current.len(), || None);
+        current
+            .iter()
+            .zip(s.baselines.iter_mut())
+            .map(|(p, base)| {
+                // The Groove Box keeps no knob values here.
+                let Some(p) = p.as_ref().filter(|p| p.instrument != GROOVE) else {
+                    *base = None;
+                    return false;
+                };
+                match base {
+                    Some(b) if b.path == p.path && now.duration_since(b.since) >= SETTLE => {
+                        moved(&b.values, &values)
+                    }
+                    Some(b) if b.path == p.path => {
+                        b.values = values.clone();
+                        false
+                    }
+                    _ => {
+                        *base = Some(Baseline {
+                            path: p.path.clone(),
+                            since: now,
+                            values: values.clone(),
+                        });
+                        false
+                    }
+                }
+            })
+            .collect()
+    });
     let changed = STATE.with_borrow_mut(|s| {
-        let changed = s.shown != names || s.shown_tags != flags;
+        let changed = s.shown != names
+            || s.shown_tags != flags
+            || s.shown_changed != edited
+            || s.shown_own != own;
         s.shown = names.clone();
         s.shown_tags = flags.clone();
+        s.shown_changed = edited.clone();
+        s.shown_own = own.clone();
         changed
     });
     if changed {
@@ -822,6 +910,8 @@ pub fn show(app: &AppWindow) {
         let ui = app.global::<PresetUi>();
         ui.set_current(ModelRc::new(VecModel::from(names)));
         ui.set_deck_tags(ModelRc::new(VecModel::from(flags)));
+        ui.set_changed(ModelRc::new(VecModel::from(edited)));
+        ui.set_own(ModelRc::new(VecModel::from(own)));
     }
 }
 
@@ -942,6 +1032,17 @@ mod tests {
         assert_eq!(list_in(&root)[0].tags, ["Dirty"]);
         assert_eq!(tags().count(), TYPES.len() + CHARACTERS.len());
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_preset_counts_as_changed_once_a_knob_moves() {
+        let saved = [0.5, 0.25, 1.0];
+        assert!(!moved(&saved, &[0.5, 0.25, 1.0]));
+        // A plugin's read-back rounding isn't a change.
+        assert!(!moved(&saved, &[0.5005, 0.25, 1.0]));
+        assert!(moved(&saved, &[0.5, 0.3, 1.0]));
+        // Another plugin with more knobs is a change too.
+        assert!(moved(&saved, &[0.5, 0.25, 1.0, 0.0]));
     }
 
     #[test]

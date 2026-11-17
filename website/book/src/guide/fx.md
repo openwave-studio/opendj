@@ -186,54 +186,93 @@ then click **Jam** in the rail and drag it from the list onto a deck (see
 [Jam on a deck](decks.md#jam-on-a-deck)). It plays through that deck's
 channel, with its EQ, filter, effects and fader.
 
-The deck's header shows the plugin's format (**CLAP**, **VST3** or **AU**)
-and its preset, with **‹** and **›** to step through the instrument's
-presets in the order the browser lists them. **SAVE** has **Save**, **Save
-as new…**, **Rename…** and **Tags…**, which sets what the preset is and how
-it sounds for the browser's chips. openDJ keeps the plugin's state, so the
-sound comes back next time. Right-click the cover to choose an image for
-the instrument, or drop one on the deck.
+In 2-Deck the deck has a slim title, like the Mixer and Groove Box decks:
+the lilac **☰** menu, the plugin's name and format (**CLAP**, **VST3** or
+**AU**), its preset with **‹** and **›** to step through the instrument's
+presets in the order the browser lists them, and a heart. Once you turn a
+knob the preset's name gets an asterisk (**Squelch Bass\***) and the heart
+empties: click it to save over your preset. For one of the plugin's own
+presets, or a sound with no preset yet, the heart asks a name and saves a
+copy. **☰** has **Save preset**, **Save preset as…**, **Rename…** and
+**Tags…** (what the preset is and how it sounds, for the browser's chips),
+**Keys on pads**, **Open plugin window** and **Unload deck**. openDJ keeps
+the plugin's state, so the sound comes back next time.
 
 In 2-Deck the deck shows:
 
-- A scope of what the instrument plays, and its level.
-- **TRIM** and **PAN**. A safety limiter keeps the deck from clipping
-  whatever the trim.
-- Eight knobs for the plugin's settings. When it has more than eight, the
-  page buttons **1** to **4** beside them show the next ones. Right-click a
-  knob to pick the setting it turns; **The plugin's own choice** puts it
-  back.
-- **OPEN**, which opens the plugin's own window for every setting.
-- **KEYS ON PADS**, which makes the decks' **KEYBOARD** pads, on screen and
-  on your controller, play the instrument instead of the deck's hot cue (see
-  [Keyboard and key shift](pads.md#keyboard-and-key-shift)).
-- A row under them with **Scale**, **Chord**, **Arp**, **OCT −** and **+**,
-  and a keyboard that lights the notes held.
+- A box with a scope of what the instrument plays, its level, **TRIM** and
+  **PAN**. A safety limiter keeps the deck from clipping whatever the trim.
+- Eight knobs for the plugin's settings, on a backdrop in the instrument's
+  color. When it has more than eight, tabs above them show the next pages,
+  named after the plugin's own pages where a CLAP plugin names them.
+  Right-click a knob to pick the setting it turns; **The plugin's own
+  choice** puts it back.
+- **OCT ‹ ›** and the **SCALE**, **CHORD**, **ARP** and **HOLD** pills. Click
+  a pill's light to switch it on or off, and its name for its settings.
+- A keyboard the width of the deck that lights the notes held in lilac, with
+  pitch bend and mod wheel strips on its left.
+
+**☰ › Play with** shows the keyboard (**Keys**) or, in its place, the step
+sequencer (**Steps**). **☰ › Color**
+picks the instrument's color; each plugin starts with its own.
 
 A 4-Deck strip shows the scope, **OPEN**, the first four knobs and
 **TRIM**, with the preset in its header.
 
+Each of the three opens a small editor with the same light at its top:
+switched off, notes play as they are.
+
 **Scale** moves each note you play to the nearest note of a scale, so
-every key sounds in key with the mix. **Off** plays notes as they are.
-**Auto** takes the master deck's key. Or pick a root (C to B) and **Major**,
-**Minor**, **Major pentatonic** or **Minor pentatonic**. The keyboard on the
-deck marks the scale's keys and dims the rest.
+every key sounds in key with the mix. **Key › Auto** takes the master
+deck's key; **Pick** uses the **Root** (C to B) and **Scale** (**Maj**,
+**Min**, **Pent** or **mPent**) you choose. The keyboard on the deck marks
+the scale's keys and dims the rest.
 
 **Chord** plays a chord built on the scale from each key: **Triad**,
-**Seventh**, or **Power** (root, fifth and octave). For a chord of your
-own, choose **Learn a chord**, hold its keys and let go; **Mine** then
-plays it from any key. **Off** plays one note per key.
+**7th**, or **Power** (root, fifth and octave). For a chord of your own,
+press **Learn a chord**, hold its keys and let go; **Mine** then plays it
+from any key.
 
-**Arp** plays the notes you hold one at a time, on the mix's beat. Pick
-**Up**, **Down**, **Up and down**, **Random** or **Order played** to turn it
-on (**Arpeggiator on** turns it off and on), then
-**RATE** (1/4 to 1/32, with triplets), **GATE** (how long each note
-sounds, 25% to 100%) and **OCTAVES** (1 to 4). **Hold** keeps it playing
-after you let go, until you play new keys. It plays the chords from
-**Chord** too.
+**Arp** plays the notes you hold one at a time, on the mix's beat. Pick its
+**Order** (**Up**, **Down**, **Up/Dn**, **Rand** or **Played**), step the
+**Rate** with **‹ ›** (1/4 to 1/32, with triplets), and set **Octaves**
+(1 to 4) and **Gate** (how long each note sounds, 25% to 100%). **Hold**
+keeps it playing after you let go, until you play new keys. It plays the
+chords from **Chord** too.
 
-**OCT −** and **+** move the **KEYBOARD** pads up or down an octave, three
-at most each way. The pads play the white keys from middle C.
+**HOLD** keeps the notes you play sounding after you let go of the keys,
+until you play new ones or switch it off. With **ARP** on it is the
+arpeggiator's **Hold**.
+
+### Step sequencer
+
+With **☰ › Play with › Steps** the keyboard makes room for a riff of up to
+16 steps that plays by itself, on the mix's beat and in key, while your
+hands are on the mixer. Its notes go in where the keys' do, so **SCALE**,
+**CHORD**, **ARP** and **HOLD** work on them too.
+
+- **▶** starts it on the next bar of the playing deck's beat (or at once
+  when no deck plays; the button is outlined while it waits) and **■**
+  stops it. **A B C D** are four patterns; a new one starts on the next
+  bar.
+- **FWD**, **BACK**, **P-PONG** (forward and back) or **RAND** is the order the
+  steps play in; the rate (**1/4** to **1/32**, with triplets), **SW**
+  (swing, every second step late) and **LEN** (1 to 16 steps) sit under it.
+- **PITCH** is the tall lane. Click a step to put a note at that height,
+  click its bar to take it off, and drag to move it. Heights are notes of
+  the deck's scale, or C minor while **SCALE** is off, from the root in the
+  middle up and down an octave.
+- The lane under it is picked by the tabs: **CHANCE** (how likely the step
+  plays), **VEL** (how hard; the top is the accent, drawn brighter),
+  **OCT** (click for +1, −1 or 0 octaves), **GATE** (how long the note
+  sounds; full ties it into the next step) and **SLIDE** (the note runs
+  into the next one, so a mono synth glides).
+- Each lane has **⚄** (fill it at random, in key), **✕** (clear it) and
+  **‹ n ›**, its own length. A lane shorter than the pattern repeats sooner
+  and drifts against the others; it is dim while it follows the pattern.
+
+**OCT ‹** and **›** move the **KEYBOARD** pads up or down an
+octave, three at most each way. The pads play the white keys from middle C.
 
 Any MIDI keyboard without a mapping plays the instrument. The keyboard
 button in the deck's header picks which one (**Any keyboard** or one by

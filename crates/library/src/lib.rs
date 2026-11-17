@@ -28,6 +28,7 @@ pub mod dupes;
 pub mod fix_names;
 pub mod health;
 mod moves;
+pub mod pair_mixes;
 pub mod playlist_files;
 pub mod query;
 pub mod relocate;
@@ -596,6 +597,7 @@ impl Library {
         db.execute_batch(STREAM_MATCHES_SCHEMA)?;
         db.execute_batch(LIST_STREAMS_SCHEMA)?;
         db.execute_batch(WANTED_DISMISSED_SCHEMA)?;
+        db.execute_batch(pair_mixes::PAIR_MIXES_SCHEMA)?;
         // The import that put a wanted track there (its streamed tracks),
         // NULL for tracks the DJ went to buy.
         let has_wanted_source = db
@@ -1212,7 +1214,8 @@ impl Library {
             "UPDATE tracks SET title = ?2, artist = ?3, remix = ?4, album = ?5, year = ?6,
                     genre = ?7, track_number = ?8, grouping = ?9, key = ?10,
                     key_source = CASE WHEN key = ?10 THEN key_source ELSE 'user' END,
-                    rating = ?11, comment = ?12, gain = ?13, file_mtime = ?14
+                    rating = ?11, comment = ?12, gain = ?13, file_mtime = ?14,
+                    label = ?15, composer = ?16, isrc = ?17, disc_number = ?18
              WHERE id = ?1",
             params![
                 row,
@@ -1233,6 +1236,10 @@ impl Library {
                     Source::File(path) => mtime(path),
                     Source::Synth { .. } => 0,
                 },
+                t.info.label,
+                t.info.composer,
+                t.info.isrc,
+                t.info.disc_number as i64,
             ],
         )?;
         tags::write_track_tags(&self.db, row, &t.info.tags, None)

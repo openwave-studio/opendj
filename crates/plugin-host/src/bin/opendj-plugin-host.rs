@@ -152,6 +152,9 @@ fn main() {
     for (id, name) in &info.all {
         say(&format!("all\t{id}\t{}", clean(name)));
     }
+    for name in &info.pages {
+        say(&format!("page\t{}", clean(name)));
+    }
     let mut main = loaded.main;
     let mut no_main = NoMain {
         state: Vec::new(),

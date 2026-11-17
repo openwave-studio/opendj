@@ -666,23 +666,26 @@ impl MainThread for ClapMain {
 
 /// Loads plugin `id` from `file` and activates it for blocks of up to
 /// `max_frames`.
-/// The parameters on the plugin's remote controls pages, page by page,
-/// each once; none if it has no pages.
-fn remote_controls(handle: &PluginMainThreadHandle) -> Vec<ClapId> {
-    let mut ids = Vec::new();
+/// The plugin's remote controls pages, each as its name and the
+/// parameters on it; none if it has no pages.
+fn remote_controls(handle: &PluginMainThreadHandle) -> Vec<(String, Vec<u32>)> {
+    let mut pages = Vec::new();
     if let Some(ext) = handle.get_extension::<PluginRemoteControls>() {
         let mut buf = RemoteControlsPageBuffer::new();
         for i in 0..ext.count(handle) {
             if let Some(page) = ext.get(handle, i, &mut buf) {
-                for id in page.param_ids.into_iter().flatten() {
-                    if !ids.contains(&id) {
-                        ids.push(id);
-                    }
-                }
+                pages.push((
+                    String::from_utf8_lossy(page.page_name).into_owned(),
+                    page.param_ids
+                        .into_iter()
+                        .flatten()
+                        .map(|id| id.get())
+                        .collect(),
+                ));
             }
         }
     }
-    ids
+    pages
 }
 
 pub fn load(
@@ -738,6 +741,7 @@ pub fn load(
     // maker picked for hardware knobs), then the rest in its own order.
     let mut params = Vec::new();
     let mut listed = Vec::new();
+    let mut page_list = Vec::new();
     if let Some(ext) = handle.get_extension::<PluginParams>() {
         let mut all = Vec::new();
         let mut buf = ParamInfoBuffer::new();
@@ -763,8 +767,16 @@ pub fn load(
                 },
             ));
         }
-        let pages: Vec<u32> = remote_controls(&handle).iter().map(|id| id.get()).collect();
-        listed = arrange(&mut all, &pages, picks);
+        let pages = remote_controls(&handle);
+        let mut on_pages: Vec<u32> = Vec::new();
+        for id in pages.iter().flat_map(|(_, ids)| ids) {
+            if !on_pages.contains(id) {
+                on_pages.push(*id);
+            }
+        }
+        listed = arrange(&mut all, &on_pages, picks);
+        let ids: Vec<u32> = all.iter().map(|(_, p)| p.id).collect();
+        page_list = crate::effects::page_names(&ids, &pages);
         params = all;
     }
 
@@ -810,6 +822,7 @@ pub fn load(
             name,
             params: params.into_iter().map(|(_, p)| p).collect(),
             all: listed,
+            pages: page_list,
             latency,
         },
     })
