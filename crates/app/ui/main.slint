@@ -48,7 +48,8 @@ export { ChecklistUi, CheckRow } from "checklist.slint";
 export { PageUi, PageTrack, PageAlbum, HomeTile, HomeShelf } from "pages.slint";
 import { HomeButton } from "pages.slint";
 export { LyricsUi, LyricLine, LyricMatch, WaveLyrics, WaveLine, WaveWord, DeckLines } from "lyrics.slint";
-export { NowPlayingUi, NowDetail } from "nowplaying.slint";
+export { NowPlayingUi } from "nowplaying.slint";
+export { PlayerKaraoke } from "karaoke.slint";
 export { KaraokeWindow } from "karaoke.slint";
 export { RemoteUi, RemoteDevice }
 export { MixerMode, InputSettings, InputRow }
@@ -2265,7 +2266,8 @@ export component AppWindow inherits Window {
                 automix-set-style(i) => { automix-set-style(i); }
                 automix-repeat: automix-repeat;
                 automix-set-repeat(on) => { automix-set-repeat(on); }
-                side-visible: side-panel-visible;
+                // Player's karaoke takes the whole width.
+                side-visible: side-panel-visible && !(player && NowPlayingUi.open);
                 now-playing: player && NowPlayingUi.open;
             }
 
@@ -2331,11 +2333,16 @@ export component AppWindow inherits Window {
                 automix-next: automix-next;
                 automix-next-in: automix-next-in;
                 queue-has-tracks: automix-queued > 0;
-                queue-shown: side-panel-visible && side-tab == 0;
+                queue-shown: side-panel-visible && side-tab == 0 && !NowPlayingUi.open;
                 automix-toggle => { automix-toggle(); }
                 automix-cut-now => { automix-cut-now(); }
                 toggle-queue => {
-                    if side-panel-visible && side-tab != 0 {
+                    // Up Next over karaoke: back to the library beside it.
+                    if NowPlayingUi.open {
+                        NowPlayingUi.close();
+                        side-panel-visible = true;
+                        side-tab = 0;
+                    } else if side-panel-visible && side-tab != 0 {
                         side-tab = 0;
                     } else {
                         side-panel-visible = !side-panel-visible;

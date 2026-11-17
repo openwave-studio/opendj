@@ -7,6 +7,13 @@ Settings SHALL offer a Sung words color for the karaoke screen, from Lilac, Ocea
 - **WHEN** the DJ picks Amber while the karaoke screen is open
 - **THEN** the sung words fill with amber on the window and the shared page without reopening either
 
+### Requirement: Player karaoke
+Player mode SHALL offer one lyrics display: a microphone button on the Player bar SHALL show, in the main window, the album art with title, artist, album and year beside the lyrics drawn as on the karaoke screen (the same column, highlight color and Light up setting), and SHALL hide the side panel while it shows. Lyrics not timed SHALL show as a list. A Karaoke Screen button SHALL open the karaoke window. Other layouts SHALL keep opening the karaoke window from the Lyrics tab without switching layout.
+
+#### Scenario: Singing along in Player
+- **WHEN** the listener presses the microphone on the Player bar while a track with timed lyrics plays
+- **THEN** the art and track details show on the left, the lyrics glide and fill on the right, and the side panel is hidden until it closes
+
 ### Requirement: Lines and light up
 Settings SHALL offer Lines (Few, the default four lines around the line to sing, or Many, a column of the whole song that scrolls as it is sung) and Light up (Word by word, the default, or Whole line, which lights the line being sung all at once). Both SHALL apply to the window and the page while the screen is open. Beside the cover the lyrics SHALL always be a column.
 

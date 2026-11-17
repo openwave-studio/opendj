@@ -643,35 +643,32 @@ export component PlayerBar inherits Rectangle {
                         }
                     }
                 }
-                // Opens Now Playing on its Lyrics, or closes it.
+                // Karaoke: opens Now Playing (the art and the lyrics as on
+                // the karaoke screen), or closes it.
                 VerticalLayout {
                     alignment: center;
                     Rectangle {
                         width: 40px;
                         height: 36px;
                         border-radius: 9px;
-                        property <bool> lit: NowPlayingUi.open && NowPlayingUi.tab == 0;
+                        property <bool> lit: NowPlayingUi.open;
                         background: lit ? Theme.accent.with-alpha(0.18) : lyta.has-hover ? Theme.n-3a3a3d : transparent;
                         border-width: lit ? 1px : 0px;
                         border-color: Theme.accent;
-                        // A speech bubble with lines of words.
+                        // A small hand-held microphone.
                         Path {
-                            width: 22px;
-                            height: 19px;
+                            width: 20px;
+                            height: 20px;
                             viewbox-width: 18;
-                            viewbox-height: 16;
+                            viewbox-height: 18;
                             stroke: lit ? Theme.accent : Theme.text;
                             stroke-width: 1.6px;
-                            commands: "M 2 1.5 L 16 1.5 L 16 11 L 7 11 L 3.5 14.5 L 3.5 11 L 2 11 Z M 5 5 L 13 5 M 5 8 L 10.5 8";
+                            commands: "M 11.2 2.4 A 3.2 3.2 0 1 1 15.6 6.8 A 3.2 3.2 0 1 1 11.2 2.4 Z M 10.6 5.2 L 3 13.4 L 4.6 15 L 12.8 7.4";
                         }
                         lyta := TouchArea {
                             mouse-cursor: pointer;
                             clicked => {
-                                if lit {
-                                    NowPlayingUi.close();
-                                } else {
-                                    NowPlayingUi.show(0);
-                                }
+                                NowPlayingUi.toggle();
                             }
                         }
                     }

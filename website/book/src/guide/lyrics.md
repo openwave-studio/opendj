@@ -37,11 +37,15 @@ line, or not timed) and where they came from.
 
 ## In Player mode
 
-The speech bubble button on the Player bar opens **Now Playing** on its
-**Lyrics**: the lyrics of the track playing large, beside its album art. The line being sung is big and
-white, and when the lyrics are timed by word, the words already sung turn
-lilac. Lines gone by fade, and a ♪ marks a break in the singing. Click a
-line to play from it. Press the button again, or the ⌄ at the top left, to go back to the list.
+The microphone button on the Player bar opens karaoke in the main window:
+the album art with the title, artist, album and year on the left, and the
+lyrics on the right as on the [karaoke screen](#karaoke-screen): a column
+of the song that glides to the line being sung, its words filling with the
+Sung words color, with count-in dots before a line after a break. The side
+panel hides while it shows. Lyrics that aren't timed show as a list.
+**Karaoke Screen** at the top right sends the lyrics to a window of their
+own. Press the microphone again, or the ⌄ at the top left, to go back to
+the library.
 
 ![Lyrics in Player mode](../images/player-lyrics.png)
 
@@ -89,7 +93,7 @@ any time.
 ## Karaoke screen
 
 **Karaoke** in the Lyrics tab (or **Karaoke Screen** at the top right of
-Player mode's lyrics) opens the lyrics in a window of their own, for a TV,
+Player mode's karaoke) opens the lyrics in a window of their own, for a TV,
 a projector or a second display. When another display is connected, the
 window opens full screen there. Double-click it, or press F, to switch full
 screen on or off; Esc leaves full screen. Close it with Karaoke again, or

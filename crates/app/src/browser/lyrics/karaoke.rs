@@ -25,7 +25,7 @@ use slint::{CloseRequestResponse, ComponentHandle, SharedString};
 
 use super::super::Browser;
 use super::PLAYING;
-use crate::{AppWindow, KaraokeWindow, LyricsUi};
+use crate::{AppWindow, KaraokeWindow, LyricsUi, PlayerKaraoke};
 
 /// Beats counted in before a line.
 const COUNT_IN: f64 = 4.0;
@@ -67,8 +67,15 @@ pub(super) struct Karaoke {
     cover: slint::Image,
     has_cover: bool,
     native_generation: Option<u64>,
+    /// The lyrics Player's karaoke (Now Playing) has.
+    player_generation: Option<u64>,
     page_sent: Option<Instant>,
     page_lines: Option<u64>,
+}
+
+/// A 0xRRGGBB color.
+fn rgb(c: u32) -> slint::Color {
+    slint::Color::from_rgb_u8((c >> 16) as u8, (c >> 8) as u8, c as u8)
 }
 
 /// The setting: the karaoke page, off at first.
@@ -133,6 +140,7 @@ impl Karaoke {
             cover: slint::Image::default(),
             has_cover: false,
             native_generation: None,
+            player_generation: None,
             page_sent: None,
             page_lines: None,
         }
@@ -461,6 +469,53 @@ impl Browser {
         }
     }
 
+    /// Keeps Player's karaoke (Now Playing, in the main window) up to date
+    /// with the same column as the karaoke screen; called from
+    /// `poll_lyrics` each frame while it shows.
+    pub(super) fn poll_player_karaoke(&mut self, app: &AppWindow) {
+        let ui = app.global::<PlayerKaraoke>();
+        let lyrics = self
+            .lyrics
+            .lyrics
+            .as_ref()
+            .filter(|l| l.timing() != Timing::Plain);
+        let (Some(l), Some(d)) = (lyrics, self.lyrics.deck) else {
+            if ui.get_timed() {
+                ui.set_timed(false);
+            }
+            return;
+        };
+        let k = &mut self.lyrics.karaoke;
+        let look = crate::karaoke_look::current();
+        if k.player_generation != Some(self.lyrics.generation) {
+            let lines: Vec<SharedString> = l
+                .lines
+                .iter()
+                .filter(|line| sung(line))
+                .map(|line| line.text.trim().into())
+                .collect();
+            ui.set_lines(Rc::new(slint::VecModel::from(lines)).into());
+            k.player_generation = Some(self.lyrics.generation);
+        }
+        let p = &self.lyrics.decks[d];
+        let seconds = p.playposition.get() * p.duration.get();
+        let bpm = k.bpm[d].get();
+        let mut s = screen(&l.lines, seconds, if bpm > 0.0 { 60.0 / bpm } else { 0.5 });
+        if look.whole_line {
+            s.light_whole_line();
+        }
+        ui.set_timed(true);
+        ui.set_accent(rgb(look.color()));
+        ui.set_active_line(s.focus.map_or(-1, |focus| {
+            l.lines[..focus].iter().filter(|line| sung(line)).count() as i32
+        }));
+        ui.set_sung(s.sung.into());
+        ui.set_word(s.word.into());
+        ui.set_part(s.part as f32);
+        ui.set_rest(s.rest.into());
+        ui.set_count_in(s.count_in);
+    }
+
     /// Keeps the karaoke screen and the Vocals slider up to date; called
     /// from `poll_lyrics` each frame while the screen is open.
     pub(super) fn poll_karaoke(&mut self, app: &AppWindow) {
@@ -501,7 +556,6 @@ impl Browser {
             k.cover_url = format!("/karaoke/cover?track={}", k.artwork_request);
         }
         if let Some(window) = &k.window {
-            let rgb = |c: u32| slint::Color::from_rgb_u8((c >> 16) as u8, (c >> 8) as u8, c as u8);
             window.set_cover_on(look.cover);
             window.set_many_lines(look.many_lines);
             window.set_highlight(rgb(look.color()));

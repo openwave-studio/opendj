@@ -1,24 +1,16 @@
-// Player mode's Now Playing: the track playing over the whole library, as
-// TIDAL shows it. Its album art large on the left with the title, artist,
-// album and what the file is under it; on the right, its Lyrics (the large
-// lyrics, see PlayerLyrics) or its Details. Up Next stays in the side
-// panel beside it. The bar's art opens and closes it, the bar's lyrics
-// button opens it on Lyrics; the app fills NowPlayingUi with the track the
-// Player bar shows (crate::now_playing_view).
+// Player mode's karaoke: the track playing over the whole library, its album
+// art large on the left with the title, artist, album and year under it,
+// and on the right its lyrics as on the karaoke screen (KaraokeColumn), or
+// the lyrics list when they aren't timed. The side panel hides while it
+// shows. The bar's art and its microphone open and close it; Karaoke Screen
+// sends the lyrics to a window of their own. The app fills NowPlayingUi with
+// the track the Player bar shows (crate::now_playing_view).
 import { Theme } from "theme.slint";
-import { LyricsUi, PlayerLyrics } from "lyrics.slint";
-import { ScrollView } from "scroll.slint";
-
-// A row of Details: "Album", "Night Shift".
-export struct NowDetail {
-    label: string,
-    value: string,
-}
+import { LyricsUi, PlayerLyrics, SmallButton } from "lyrics.slint";
+import { KaraokeColumn, PlayerKaraoke } from "karaoke.slint";
 
 export global NowPlayingUi {
     in-out property <bool> open;
-    // 0 Lyrics, 1 Details.
-    in-out property <int> tab;
     in property <bool> loaded;
     in property <string> title;
     in property <string> artist;
@@ -28,54 +20,22 @@ export global NowPlayingUi {
     in property <bool> has-cover;
     in property <string> initials;
     in property <color> tint: #5b3fd1;
-    // "126 BPM", "8A" and its wheel colour, the file's quality.
-    in property <string> bpm;
-    in property <string> key;
-    in property <color> key-color;
-    in property <string> quality;
-    in property <bool> lossless;
-    in property <[NowDetail]> details;
-    // Opens on a tab; the lyrics follow the track playing while Lyrics shows.
-    public function show(t: int) {
+    // The lyrics follow the track playing while it shows.
+    public function show() {
         open = true;
-        tab = t;
-        LyricsUi.big = t == 0;
+        LyricsUi.big = true;
     }
     public function close() {
         open = false;
         LyricsUi.big = false;
     }
-    // The bar's art: opens on the tab last shown, or closes.
+    // The bar's art and microphone: open or close.
     public function toggle() {
         if open {
             close();
         } else {
-            show(tab);
+            show();
         }
-    }
-}
-
-component Tab inherits Rectangle {
-    in property <string> text;
-    in property <bool> on;
-    callback clicked();
-    width: label.preferred-width + 4px;
-    height: 34px;
-    label := Text {
-        y: 4px;
-        text: root.text;
-        color: on ? Theme.text : ta.has-hover ? Theme.text.with-alpha(0.8) : Theme.text-dim;
-        font-size: 15px;
-        font-weight: on ? 700 : 600;
-    }
-    Rectangle {
-        y: parent.height - 3px;
-        height: 2px;
-        background: on ? Theme.accent : transparent;
-    }
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
     }
 }
 
@@ -154,25 +114,6 @@ export component NowPlayingView inherits Rectangle {
                 font-size: 14px;
                 overflow: elide;
             }
-            if NowPlayingUi.loaded: HorizontalLayout {
-                alignment: start;
-                spacing: 10px;
-                padding-top: 6px;
-                if NowPlayingUi.bpm != "": Text { text: NowPlayingUi.bpm; color: Theme.text-dim; font-size: 13px; font-weight: 600; vertical-alignment: center; }
-                if NowPlayingUi.key != "": Text { text: NowPlayingUi.key; color: NowPlayingUi.key-color; font-size: 13px; font-weight: 700; vertical-alignment: center; }
-                if NowPlayingUi.quality != "": Rectangle {
-                    width: q.preferred-width + 12px;
-                    height: 20px;
-                    border-radius: 4px;
-                    background: NowPlayingUi.lossless ? Theme.accent.with-alpha(0.16) : Theme.n-ffffff12;
-                    q := Text {
-                        text: NowPlayingUi.quality;
-                        color: NowPlayingUi.lossless ? Theme.lilac-text : Theme.text-dim;
-                        font-size: 10.5px;
-                        font-weight: 700;
-                    }
-                }
-            }
             if !NowPlayingUi.loaded: Text {
                 text: "Pick a track and press play: it shows here, with its lyrics.";
                 color: Theme.text-dim;
@@ -181,61 +122,41 @@ export component NowPlayingView inherits Rectangle {
             }
         }
 
-        // Lyrics or Details.
-        VerticalLayout {
+        // The lyrics: as on the karaoke screen when they are timed, else
+        // the lyrics list (no lyrics, Find, lines without times).
+        Rectangle {
             horizontal-stretch: 1;
             min-width: 0px;
-            spacing: 10px;
-            HorizontalLayout {
-                alignment: start;
-                spacing: 26px;
-                Tab { text: "Lyrics"; on: NowPlayingUi.tab == 0; clicked => { NowPlayingUi.show(0); } }
-                Tab { text: "Details"; on: NowPlayingUi.tab == 1; clicked => { NowPlayingUi.show(1); } }
+            if PlayerKaraoke.timed: KaraokeColumn {
+                width: 100%;
+                height: 100%;
+                unit: self.height * 0.9;
+                lines: PlayerKaraoke.lines;
+                active-line: PlayerKaraoke.active-line;
+                sung: PlayerKaraoke.sung;
+                word: PlayerKaraoke.word;
+                part: PlayerKaraoke.part;
+                rest: PlayerKaraoke.rest;
+                count-in: PlayerKaraoke.count-in;
+                accent: PlayerKaraoke.accent;
             }
-            Rectangle {
-                vertical-stretch: 1;
-                if NowPlayingUi.tab == 0: PlayerLyrics {
-                    width: 100%;
-                    height: 100%;
-                    back: false;
-                    inset: 0px;
-                }
-                if NowPlayingUi.tab == 1: ScrollView {
-                    width: 100%;
-                    height: 100%;
-                    VerticalLayout {
-                        padding-top: 8px;
-                        spacing: 0px;
-                        alignment: start;
-                        for d in NowPlayingUi.details: HorizontalLayout {
-                            height: 38px;
-                            spacing: 18px;
-                            Text {
-                                width: 130px;
-                                text: d.label;
-                                color: Theme.text-dim;
-                                font-size: 14px;
-                                vertical-alignment: center;
-                            }
-                            Text {
-                                horizontal-stretch: 1;
-                                text: d.value;
-                                color: Theme.text;
-                                font-size: 14px;
-                                font-weight: 600;
-                                vertical-alignment: center;
-                                overflow: elide;
-                            }
-                        }
-                        if NowPlayingUi.details.length == 0: Text {
-                            text: "Nothing playing.";
-                            color: Theme.text-dim;
-                            font-size: 14px;
-                        }
-                    }
-                }
+            if !PlayerKaraoke.timed: PlayerLyrics {
+                width: 100%;
+                height: 100%;
+                back: false;
+                inset: 0px;
+                screen-button: false;
             }
         }
+    }
+
+    // Sends the lyrics to a window of their own, for a TV or a projector.
+    SmallButton {
+        x: parent.width - self.width - 20px;
+        y: 14px;
+        text: LyricsUi.karaoke ? "Close Karaoke Screen" : "Karaoke Screen";
+        primary: LyricsUi.karaoke;
+        clicked => { LyricsUi.set-karaoke(!LyricsUi.karaoke); }
     }
 
     // Closes, back to the library: a chevron, as in other players.

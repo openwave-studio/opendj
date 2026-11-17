@@ -341,6 +341,9 @@ impl Browser {
             ui.set_to_come(sung.1.as_str().into());
             self.lyrics.sung = sung;
         }
+        if ui.get_big() {
+            self.poll_player_karaoke(app);
+        }
         self.poll_karaoke(app);
         self.poll_find(&ui);
     }

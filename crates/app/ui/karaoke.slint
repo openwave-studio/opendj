@@ -66,6 +66,70 @@ component ArtworkLine inherits Rectangle {
     }
 }
 
+// The lyrics as a column of the whole song that glides to the line being
+// sung, its words filling with the accent color, and count-in dots above it
+// before a line after a break. Sizes follow `unit`, the screen's height.
+export component KaraokeColumn inherits Rectangle {
+    in property <length> unit;
+    in property <[string]> lines;
+    in property <int> active-line: -1;
+    in property <string> sung;
+    in property <string> word;
+    in property <float> part;
+    in property <string> rest;
+    in property <int> count-in;
+    in property <color> accent: #b69cff;
+    private property <length> scroll-y;
+    clip: true;
+    lyric-column := VerticalLayout {
+        y: root.unit * 0.32 - root.scroll-y;
+        width: parent.width;
+        height: self.preferred-height;
+        spacing: root.unit * 0.04;
+        animate y { duration: 480ms; easing: ease-in-out; }
+        for line[i] in root.lines: ArtworkLine {
+            text: line;
+            active: i == root.active-line;
+            viewport-y: self.y + lyric-column.y;
+            viewport-height: root.height;
+            sung: root.sung + root.word == "" && root.rest == "" ? line : root.sung;
+            word: root.word;
+            rest: root.rest;
+            part: root.part;
+            accent: root.accent;
+            font-size: max(18px, root.unit * 0.06);
+            positioned(offset) => { root.scroll-y = offset; }
+        }
+    }
+    // The count-in: a dot a beat, in the gap above the line to sing.
+    if root.count-in > 0: HorizontalLayout {
+        x: 0;
+        y: root.unit * 0.29;
+        height: root.unit * 0.02;
+        spacing: root.unit * 0.018;
+        alignment: start;
+        for i in root.count-in: Rectangle {
+            width: root.unit * 0.02;
+            border-radius: self.width / 2;
+            background: root.accent;
+        }
+    }
+}
+
+// The same column in Player's Now Playing, inside the main window; the app
+// fills it while Now Playing shows timed lyrics.
+export global PlayerKaraoke {
+    in property <bool> timed;
+    in property <[string]> lines;
+    in property <int> active-line: -1;
+    in property <string> sung;
+    in property <string> word;
+    in property <float> part;
+    in property <string> rest;
+    in property <int> count-in;
+    in property <color> accent: #b69cff;
+}
+
 // A round button on the karaoke screen, with its key in a tip under it.
 component ScreenButton inherits Rectangle {
     in property <bool> on;
@@ -165,7 +229,6 @@ export component KaraokeWindow inherits Window {
 
     in property <[string]> artwork-lines;
     in property <int> active-line: -1;
-    private property <length> scroll-y;
     // One flat color from the cover, dark enough for white text.
     in property <color> base-color: #08080a;
     if view == 1 && has-cover && state > 0: Rectangle { background: root.base-color; }
@@ -354,47 +417,20 @@ export component KaraokeWindow inherits Window {
             }
         }
     }
-    if column && state == 3: lyric-viewport := Rectangle {
+    if column && state == 3: KaraokeColumn {
         x: root.column-x;
         y: root.height * 0.10;
         width: root.column-width;
         height: root.height * 0.80;
-        clip: true;
-        lyric-column := VerticalLayout {
-            y: root.height * 0.32 - root.scroll-y;
-            width: parent.width;
-            height: self.preferred-height;
-            spacing: root.height * 0.04;
-            animate y { duration: 480ms; easing: ease-in-out; }
-            for line[i] in root.artwork-lines: ArtworkLine {
-                text: line;
-                active: i == root.active-line;
-                viewport-y: self.y + lyric-column.y;
-                viewport-height: lyric-viewport.height;
-                sung: root.sung + root.word == "" && root.rest == "" ? line : root.sung;
-                word: root.word;
-                rest: root.rest;
-                part: root.part;
-                accent: root.lilac;
-                font-size: max(18px, root.height * 0.06);
-                positioned(offset) => { root.scroll-y = offset; }
-            }
-        }
-    }
-
-    // The count-in beside the cover: a dot a beat, in the gap above the
-    // line to sing (the column keeps it at 42% of the height).
-    if column && state == 3 && count-in > 0: HorizontalLayout {
-        x: root.column-x;
-        y: root.height * 0.39;
-        height: root.height * 0.02;
-        spacing: root.height * 0.018;
-        alignment: start;
-        for i in root.count-in: Rectangle {
-            width: root.height * 0.02;
-            border-radius: self.width / 2;
-            background: lilac;
-        }
+        unit: root.height;
+        lines: root.artwork-lines;
+        active-line: root.active-line;
+        sung: root.sung;
+        word: root.word;
+        part: root.part;
+        rest: root.rest;
+        count-in: root.count-in;
+        accent: root.lilac;
     }
 
     // Cover and Full screen, top right. Shown while the mouse moves,

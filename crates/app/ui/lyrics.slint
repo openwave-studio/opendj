@@ -185,7 +185,7 @@ export component LyricsLane inherits Rectangle {
     }
 }
 
-component SmallButton inherits Rectangle {
+export component SmallButton inherits Rectangle {
     in property <string> text;
     in property <bool> primary;
     callback clicked();
@@ -530,6 +530,8 @@ export component PlayerLyrics inherits Rectangle {
     // its left edge.
     in property <bool> back: true;
     in property <length> inset: 48px;
+    // Its own Karaoke Screen button; Now Playing has one for both views.
+    in property <bool> screen-button: true;
     background: back ? Theme.browser : transparent;
     if back: Rectangle { background: @linear-gradient(180deg, Theme.accent.with-alpha(0.12) 0%, Theme.browser.with-alpha(0) 70%); }
     function follow() {
@@ -617,7 +619,7 @@ export component PlayerLyrics inherits Rectangle {
         }
     }
     // Opens the karaoke screen for a second display.
-    SmallButton {
+    if screen-button: SmallButton {
         x: parent.width - self.width - 16px;
         y: 12px;
         text: LyricsUi.karaoke ? "Close Karaoke" : "Karaoke Screen";
