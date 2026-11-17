@@ -9,6 +9,8 @@
 - [ ] 1.5 Feel test on the DDJ-FLX4 (hardware)
 - [ ] 1.6 Tune platter inertia and back-spin per controller (brake/spinback ramps)
 
+- [x] 1.7 DDJ-400: tune rim pitch bend, follow per-deck Vinyl mode, and return Slip after wheel movement ends; verify on hardware
+
 ## Workflow follow-up
 
 - Archive the change once its PR is merged, so the main specs take its requirements.
