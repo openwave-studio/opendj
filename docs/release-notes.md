@@ -54,6 +54,7 @@ openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor open
 - **Jog wheels** bend the tempo as they do in Mixxx mappings, slip mode lets a back-spin finish before it returns, and Controller Editor › Options sets each controller's pitch bend and scratch feel.
 - **Tap tempo** fits steady taps and rounds to a whole BPM.
 - The MASTER pill clock shows the time of day.
+- The RGB waveform draws mids green instead of amber, with purer red and blue, so bass with hi-hats reads purple and bass with mids orange.
 - A finished download shows the quality the source actually sent.
 - Phrase cuts wait for the kick, and phrase tooltips count bars from bar 1.
 - The Info tab's File, Track and Tags tabs are tidier.
