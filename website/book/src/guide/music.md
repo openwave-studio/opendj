@@ -323,7 +323,8 @@ whatever zoom the waveform is at, and loading another track finishes it.
 In the [Prep layout](layouts.md) the grid is always open for editing while
 it is unlocked, and the metronome turns on by itself there and back off
 once the grid is locked. Controllers and keyboard shortcuts can use
-`edit_grid` (the `beats_edit` control).
+`edit_grid` (the `beats_edit` control), and set the grid mode with
+`beats_mode` (0 Auto, 1 Fixed, 2 Flexible).
 
 To analyse tracks yourself, right-click them and choose **Analyze Track**
 (or **Analyze 12 Tracks** when you picked several), or right-click a
