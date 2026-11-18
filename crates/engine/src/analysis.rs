@@ -442,8 +442,55 @@ impl Analyser {
     }
 }
 
+/// Just the waveform of long audio, such as a recorded set, at
+/// `per_second` slices a second: the deck waveforms' bands and levels
+/// without the rest of the analysis.
+pub struct WaveformMaker {
+    eq: Isolator,
+    slice_len: f64,
+    per_second: f64,
+    slices: Vec<Slice>,
+    frames: usize,
+}
+
+impl WaveformMaker {
+    pub fn new(sample_rate: u32, per_second: f64) -> Self {
+        let sr = sample_rate.max(1) as f64;
+        WaveformMaker {
+            eq: Isolator::new(sr),
+            slice_len: sr / per_second,
+            per_second,
+            slices: Vec::new(),
+            frames: 0,
+        }
+    }
+
+    pub fn push(&mut self, f: [f32; 2]) {
+        let s = (self.frames as f64 / self.slice_len) as usize;
+        self.frames += 1;
+        if s >= self.slices.len() {
+            self.slices.resize(s + 1, Slice::default());
+        }
+        let [lo, mid, hi] = self.eq.split(f);
+        let slice = &mut self.slices[s];
+        for (k, x) in [lo, mid, hi, f].iter().enumerate() {
+            slice.peak[k] = slice.peak[k].max(x[0].abs().max(x[1].abs()));
+            slice.power[k] += (x[0] * x[0] + x[1] * x[1]) * 0.5;
+        }
+        slice.frames += 1;
+    }
+
+    pub fn finish(self) -> Waveform {
+        summarise_at(&self.slices, self.per_second)
+    }
+}
+
 /// Quantises the slices; the coarser levels are built from the result.
 fn summarise(slices: &[Slice]) -> Waveform {
+    summarise_at(slices, WAVEFORM_RATE)
+}
+
+fn summarise_at(slices: &[Slice], per_second: f64) -> Waveform {
     let top = slices.iter().map(|s| s.peak[3]).fold(1e-6f32, f32::max);
     // The bands carry less energy than the whole signal; lift them so the
     // colours read clearly (as Mixxx's analyzer does with its band gains).
@@ -463,7 +510,7 @@ fn summarise(slices: &[Slice]) -> Waveform {
             })
         })
         .collect();
-    Waveform::from_finest(WAVEFORM_RATE, finest)
+    Waveform::from_finest(per_second, finest)
 }
 
 /// Standard deviation of `v`; never zero, so it can divide.

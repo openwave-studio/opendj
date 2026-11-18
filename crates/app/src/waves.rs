@@ -204,17 +204,31 @@ fn shade(mid: u8, high: u8) -> [f32; 3] {
 /// towards the centre. Rows that color it (the selection, missing
 /// tracks) use it as a mask.
 fn image(overview: &[OverviewSlice], in_full: bool) -> slint::Image {
-    let mut pixels =
-        slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(WIDTH as u32, HEIGHT as u32);
+    draw(overview, WIDTH, HEIGHT, in_full)
+}
+
+/// [`image`] at any size: a column per pixel, each from its part of the
+/// overview. The Mixed Set Editor draws a recorded set's waveform with it.
+pub(crate) fn draw(
+    overview: &[OverviewSlice],
+    width: usize,
+    height: usize,
+    in_full: bool,
+) -> slint::Image {
+    let (w, h) = (width.max(1), height.max(1));
+    if overview.is_empty() {
+        return slint::Image::from_rgba8(slint::SharedPixelBuffer::new(1, 1));
+    }
+    let mut pixels = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(w as u32, h as u32);
     let buf = pixels.make_mut_slice();
-    let half = HEIGHT as f32 / 2.0;
-    for x in 0..WIDTH {
+    let half = h as f32 / 2.0;
+    for x in 0..w {
         // One solid shape, sized as on the deck waveforms: the body (RMS)
         // doubled, never past the peaks, on the same gentle curve. Slices
         // hold square roots of the levels, so they're squared first;
         // doubling the stored value instead would fill loud tracks to the
         // edges as flat blocks.
-        let [peak, rms, mid, high] = overview[x * overview.len() / WIDTH];
+        let [peak, rms, mid, high] = overview[x * overview.len() / w];
         let color = if in_full {
             full(mid, high)
         } else {
@@ -223,7 +237,7 @@ fn image(overview: &[OverviewSlice], in_full: bool) -> slint::Image {
         let linear = |b: u8| (b as f32 / 255.0).powi(2);
         let body = (2.0 * linear(rms)).min(linear(peak));
         let rms = body.powf(0.8) * 0.94 * half;
-        for y in 0..HEIGHT {
+        for y in 0..h {
             // How far this pixel's middle is from the centre line, and how
             // much of it each part covers, for soft edges.
             let d = (y as f32 + 0.5 - half).abs() - 0.5;
@@ -231,7 +245,7 @@ fn image(overview: &[OverviewSlice], in_full: bool) -> slint::Image {
             let a = cover(rms.max(0.5));
             let lift = 0.88 + 0.12 * (1.0 - d / rms.max(1.0)).clamp(0.0, 1.0);
             let c = |i: usize| (color[i] * lift).round().clamp(0.0, 255.0) as u8;
-            buf[y * WIDTH + x] = slint::Rgba8Pixel {
+            buf[y * w + x] = slint::Rgba8Pixel {
                 r: c(0),
                 g: c(1),
                 b: c(2),

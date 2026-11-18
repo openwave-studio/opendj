@@ -17,23 +17,29 @@ use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, TryRecvError};
 use std::sync::Arc;
 
 use opendj_control::{ControlHandle, ControlRegistry};
+use opendj_engine::analysis::WaveformMaker;
 use opendj_engine::decode::Decoder;
 use opendj_engine::preview::PREVIEW_GROUP;
 use opendj_engine::set_chapters::{self, clock, Chapter, YoutubeNote};
 use opendj_engine::set_checks::{self, Finding, Severity, Stretch, TrackGrid};
 use opendj_engine::set_fixes::{self, Edits, Fix, Rendered, LOUDNESS_PRESETS};
 use opendj_engine::set_timeline::{CueTrack, LaneKind, Recording, SetTimeline};
+use opendj_engine::Waveform;
 use opendj_library::pair_mixes::PairMix;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use super::{file_path, Browser, MIXED_SETS};
 use crate::{
     files, AppWindow, FilesUi, MixedSetUi, SetBlock, SetFindingRow, SetFixRow, SetLane, SetSpan,
-    SetTransitionRow,
+    SetTrackRow, SetTransitionRow,
 };
 
-/// Bins in the waveform: across the whole set, 1000 wide.
-const WAVE_BINS: usize = 2000;
+/// Waveform slices a second: fine enough for a view of a few seconds.
+const WAVE_RATE: f64 = 50.0;
+/// The overview's size in pixels; it is stretched to its box.
+const OVERVIEW_PX: (usize, usize) = (1600, 68);
+/// The timeline waveform's height in pixels; stretched to its row.
+const WAVE_PX_HIGH: usize = 240;
 /// A transition plays from this many bars before it.
 const TRANSITION_LEAD_BARS: f64 = 4.0;
 /// A finding plays from this many bars before it.
@@ -51,9 +57,9 @@ const MIN_VIEW: f64 = 0.002;
 
 /// What the editor's threads say.
 enum Said {
-    /// The waveform's path, and the audio checks' findings.
+    /// The waveform, and the audio checks' findings.
     Read {
-        wave: String,
+        waveform: Waveform,
         findings: Vec<Finding>,
     },
     /// What the loudness preset would do.
@@ -105,6 +111,15 @@ struct Open {
     /// Stops the threads once the editor closes.
     cancel: Arc<AtomicBool>,
     shown_position: (f32, bool),
+    /// Seconds: where listening to a transition stops.
+    listen_until: Option<f64>,
+    /// The track playing, as last shown in the Tracks tab.
+    shown_track: i32,
+    /// The recording's waveform, once read.
+    waveform: Option<Waveform>,
+    /// The view the timeline's waveform was last drawn for: start, length
+    /// and width in pixels.
+    drawn_view: (f32, f32, f32),
 }
 
 #[derive(Clone, Default)]
@@ -178,6 +193,8 @@ impl Browser {
         ui.on_select_block(move |i| w(&|b| b.set_select_block(i as usize)));
         let w = with.clone();
         ui.on_select_transition(move |i| w(&|b| b.set_select_transition(i as usize)));
+        let w = with.clone();
+        ui.on_select_track(move |i| w(&|b| b.set_select_track(i as usize)));
         let w = with.clone();
         ui.on_step_transition(move |d| w(&|b| b.set_step_transition(d)));
         let w = with.clone();
@@ -361,7 +378,9 @@ impl Browser {
             chapters,
             edits: Edits::load(audio),
             row_of,
-            show_decks: false,
+            show_decks: true,
+            listen_until: None,
+            shown_track: -1,
             selection: None,
             block: None,
             level_db: 0.0,
@@ -379,6 +398,8 @@ impl Browser {
             tell,
             cancel,
             shown_position: (-1.0, false),
+            waveform: None,
+            drawn_view: (-1.0, -1.0, -1.0),
         };
         open.pairs = self.pairs_of(&open);
         if let Some(t) = &open.timeline {
@@ -391,7 +412,6 @@ impl Browser {
         };
         read_set(
             audio.to_path_buf(),
-            length,
             stretches,
             open.tell.clone(),
             open.cancel.clone(),
@@ -399,9 +419,11 @@ impl Browser {
         let ui = app.global::<MixedSetUi>();
         ui.set_open(true);
         ui.set_loading(false);
-        ui.set_wave(SharedString::new());
-        ui.set_tab(0);
-        ui.set_show_decks(false);
+        let blank = slint::Image::default();
+        ui.set_wave_image(blank.clone());
+        ui.set_overview_image(blank);
+        ui.set_tab(3);
+        ui.set_show_decks(true);
         ui.set_show_lanes(false);
         ui.set_view_start(0.0);
         ui.set_view_len(1.0);
@@ -445,12 +467,11 @@ impl Browser {
         self.mixed_set.open = Some(Box::new(open));
         self.show_mixed_set();
         self.measure_loudness();
-        // Plays back through the preview player, into the main mix.
-        if let Some(i) = self.path_index.get(audio).copied() {
-            self.engine.preview(Some(&self.library[i]), false);
-            if let Some(p) = &self.mixed_set.player {
-                p.main.set_bool(true);
-            }
+        // Plays back through the preview player, into the main mix,
+        // streamed from the file so a long set is never held in memory.
+        self.engine.preview_stream(audio.to_path_buf(), 0.0, false);
+        if let Some(p) = &self.mixed_set.player {
+            p.main.set_bool(true);
         }
     }
 
@@ -577,18 +598,26 @@ impl Browser {
         let (Some(p), Some(_)) = (&self.mixed_set.player, &self.mixed_set.open) else {
             return;
         };
-        p.play.set_bool(!p.play.get_bool());
+        if p.play.get_bool() {
+            p.play.set_bool(false);
+        } else {
+            // Streamed again from where it is: after the end it starts over.
+            self.set_seek(p.position.get(), true);
+        }
     }
 
     /// Plays from `at` (a fraction of the set); `play` starts it too.
     fn set_seek(&mut self, at: f64, play: bool) {
-        let Some(p) = &self.mixed_set.player else {
+        let (Some(p), Some(o)) = (&self.mixed_set.player, &mut self.mixed_set.open) else {
             return;
         };
-        p.position.set(at.clamp(0.0, 1.0));
-        if play {
-            p.play.set_bool(true);
-        }
+        o.listen_until = None;
+        let play = play || p.play.get_bool();
+        let at = at.clamp(0.0, 1.0);
+        // Shown there at once; the stream catches up a moment later.
+        p.position.set(at);
+        self.engine
+            .preview_stream(o.audio.clone(), at * o.length, play);
     }
 
     fn set_select_range(&mut self, a: f64, z: f64) {
@@ -647,8 +676,23 @@ impl Browser {
         o.transition = Some(i);
         let bar = bar_seconds(t, x.from_track, x.start);
         let at = (x.start - TRANSITION_LEAD_BARS * bar).max(0.0) / o.length;
+        // Heard with a few bars either side, then it stops.
+        let until = x.end + TRANSITION_LEAD_BARS * bar_seconds(t, x.to_track, x.end);
         self.show_mixed_set();
         self.set_seek(at, true);
+        if let Some(o) = &mut self.mixed_set.open {
+            o.listen_until = Some(until);
+        }
+    }
+
+    /// Jumps to the start of track `i` in the tracklist.
+    fn set_select_track(&mut self, i: usize) {
+        let Some(o) = &self.mixed_set.open else {
+            return;
+        };
+        let Some(c) = o.chapters.get(i) else { return };
+        let at = c.start / o.length.max(1e-9);
+        self.set_seek(at, false);
     }
 
     fn set_step_transition(&mut self, step: i32) {
@@ -939,8 +983,11 @@ impl Browser {
         let mut changed = false;
         loop {
             match o.said.try_recv() {
-                Ok(Said::Read { wave, findings }) => {
-                    ui.set_wave(wave.into());
+                Ok(Said::Read { waveform, findings }) => {
+                    let (w, h) = OVERVIEW_PX;
+                    ui.set_overview_image(crate::waves::draw(&waveform.overview(w), w, h, true));
+                    o.waveform = Some(waveform);
+                    o.drawn_view = (-1.0, -1.0, -1.0);
                     o.audio_findings = findings;
                     o.checking = false;
                     let mut all = o.audio_findings.clone();
@@ -991,9 +1038,39 @@ impl Browser {
             o.block = None;
             changed = true;
         }
+        // The timeline's waveform, drawn for what it shows at its width.
+        let view = (ui.get_view_start(), ui.get_view_len(), ui.get_wave_px());
+        if view != o.drawn_view && view.2 >= 1.0 {
+            if let Some(w) = &o.waveform {
+                o.drawn_view = view;
+                let px = view.2.round() as usize;
+                let from = view.0 as f64 * o.length;
+                let to = (view.0 + view.1) as f64 * o.length;
+                let slices = w.overview_of(from, to, px);
+                ui.set_wave_image(crate::waves::draw(&slices, px, WAVE_PX_HIGH, true));
+            }
+        }
         if let Some(p) = &self.mixed_set.player {
             let at = p.position.get() as f32;
             let playing = p.play.get_bool();
+            // Only just past the end: until the new stream comes in, the
+            // player still says where the old one was.
+            if let Some(until) = o.listen_until {
+                let now = at as f64 * o.length;
+                if playing && (until..until + 2.0).contains(&now) {
+                    p.play.set_bool(false);
+                    o.listen_until = None;
+                }
+            }
+            let now = o
+                .chapters
+                .iter()
+                .rposition(|c| c.start <= at as f64 * o.length)
+                .map_or(-1, |i| i as i32);
+            if now != o.shown_track {
+                o.shown_track = now;
+                ui.set_playing_track(now);
+            }
             if (at, playing) != o.shown_position {
                 o.shown_position = (at, playing);
                 ui.set_position(at);
@@ -1165,6 +1242,22 @@ impl Browser {
             ui.set_selected_transition(-1);
         }
         ui.set_transitions(ModelRc::new(VecModel::from(rows)));
+        ui.set_tracks(ModelRc::new(VecModel::from(
+            o.chapters
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    let end = o.chapters.get(i + 1).map_or(o.length, |n| n.start);
+                    SetTrackRow {
+                        number: i as i32 + 1,
+                        title: c.title.as_str().into(),
+                        artist: c.artist.as_str().into(),
+                        at: clock(c.start).into(),
+                        length: clock((end - c.start).max(0.0)).into(),
+                    }
+                })
+                .collect::<Vec<_>>(),
+        )));
 
         // Check my mix.
         ui.set_checking(o.checking);
@@ -1486,13 +1579,7 @@ fn frames(
 }
 
 /// Reads the set once for its waveform and the audio checks.
-fn read_set(
-    audio: PathBuf,
-    length: f64,
-    stretches: Vec<Stretch>,
-    tell: Sender<Said>,
-    cancel: Arc<AtomicBool>,
-) {
+fn read_set(audio: PathBuf, stretches: Vec<Stretch>, tell: Sender<Said>, cancel: Arc<AtomicBool>) {
     spawn("set read", move || {
         let (rate, frames) = match frames(&audio, cancel.clone()) {
             Ok(f) => f,
@@ -1501,48 +1588,17 @@ fn read_set(
                 return;
             }
         };
-        let total = (length * rate as f64).max(1.0);
-        let mut peaks = vec![0f32; WAVE_BINS];
-        let mut n = 0usize;
-        let counted = frames.inspect(|f| {
-            let bin = ((n as f64 / total) * WAVE_BINS as f64) as usize;
-            if let Some(p) = peaks.get_mut(bin) {
-                *p = p.max(f[0].abs().max(f[1].abs()));
-            }
-            n += 1;
-        });
+        let mut maker = WaveformMaker::new(rate, WAVE_RATE);
+        let counted = frames.inspect(|f| maker.push(*f));
         let findings = set_checks::check_audio(counted, rate as f64, &stretches);
         if cancel.load(Ordering::Acquire) {
             return;
         }
         let _ = tell.send(Said::Read {
-            wave: wave_path(&peaks),
+            waveform: maker.finish(),
             findings,
         });
     });
-}
-
-/// The waveform as path commands over 1000 by 100, mirrored round 50.
-fn wave_path(peaks: &[f32]) -> String {
-    use std::fmt::Write;
-    let last = peaks.len().saturating_sub(1).max(1) as f32;
-    let x = |i: usize| i as f32 * 1000.0 / last;
-    let h = |p: f32| 49.0 * p.clamp(0.0, 1.0);
-    let mut out = String::with_capacity(peaks.len() * 24);
-    for (i, p) in peaks.iter().enumerate() {
-        let _ = write!(
-            out,
-            "{} {:.1} {:.1} ",
-            if i == 0 { 'M' } else { 'L' },
-            x(i),
-            50.0 - h(*p)
-        );
-    }
-    for (i, p) in peaks.iter().enumerate().rev() {
-        let _ = write!(out, "L {:.1} {:.1} ", x(i), 50.0 + h(*p));
-    }
-    out.push('Z');
-    out
 }
 
 /// After Save: `<name> (edited).cue` and `.tracklist.txt` beside the
@@ -1669,15 +1725,5 @@ mod tests {
         assert!(recording_started(&named).is_some());
         assert_eq!(recording_started(&dir.join("Some Mix.mp3")), None);
         let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn waveform_is_mirrored() {
-        let p = wave_path(&[0.0, 1.0]);
-        assert!(
-            p.starts_with("M 0.0 50.0 L 1000.0 1.0 L 1000.0 99.0"),
-            "{p}"
-        );
-        assert!(p.ends_with('Z'));
     }
 }

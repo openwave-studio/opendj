@@ -519,6 +519,27 @@ impl AudioEngine {
         }
     }
 
+    /// Streams the file at `path` into the preview player from `from`
+    /// seconds, playing if `play`: decoded a few seconds ahead of the
+    /// playhead, so a long recording is never held whole. Seek by calling it
+    /// again; the old stream stops.
+    pub fn preview_stream(&self, path: std::path::PathBuf, from: f64, play: bool) {
+        let generation = self.preview_generation.fetch_add(1, Ordering::AcqRel) + 1;
+        let input = self.preview.clone();
+        let current = self.preview_generation.clone();
+        let spawned = std::thread::Builder::new()
+            .name("preview".into())
+            .spawn(move || {
+                let latest = || current.load(Ordering::Acquire) == generation;
+                if let Err(e) = stream_preview(&path, from, play, &input, latest) {
+                    eprintln!("can't play {}: {e}", path.display());
+                }
+            });
+        if let Err(e) = spawned {
+            eprintln!("could not start the preview: {e}");
+        }
+    }
+
     /// Puts the file at `path` in the preview player, playing, while it's
     /// still being downloaded: it will hold `size` bytes, and plays as far
     /// as they've come. Reading stops once something else is previewed.
@@ -809,4 +830,110 @@ fn loaded_paths(tracks: &[Arc<Track>]) -> Vec<std::path::PathBuf> {
             _ => None,
         })
         .collect()
+}
+
+/// Decodes `path` from `from` seconds into a ring the preview player reads,
+/// for [`AudioEngine::preview_stream`]; returns once `latest` turns false,
+/// the player lets the stream go, or the file ends.
+fn stream_preview(
+    path: &std::path::Path,
+    from: f64,
+    play: bool,
+    input: &Mutex<preview::PreviewInput>,
+    latest: impl Fn() -> bool,
+) -> Result<(), String> {
+    /// Seconds decoded ahead of the playhead.
+    const AHEAD: usize = 4;
+    let mut decoder = decode::Decoder::open(path)?;
+    let rate = decoder.audio().sample_rate.max(1);
+    let total = decoder
+        .seconds()
+        .map_or(0, |s| (s * rate as f64).round() as usize);
+    let from = from.clamp(0.0, (total as f64 / rate as f64 - 0.05).max(0.0));
+    let mut skip = decoder.seek(from)?;
+    let start = (from * rate as f64).round() as usize;
+    let (mut tx, frames) = rtrb::RingBuffer::new(rate as usize * AHEAD);
+    let mut stream = Some(preview::Stream {
+        frames,
+        start,
+        total: total.max(start + 1),
+        rate,
+    });
+    // Sent once half a second is ready, so it starts without a gap.
+    let ready = rate as usize / 2;
+    let send = |stream: &mut Option<preview::Stream>| {
+        if let Some(s) = stream.take() {
+            if latest() {
+                if let Ok(mut p) = input.lock() {
+                    p.send_stream(s, play);
+                }
+            }
+        }
+    };
+    let result = decoder.stream(|_, packet| {
+        for f in packet.chunks_exact(2) {
+            if skip > 0 {
+                skip -= 1;
+                continue;
+            }
+            while tx.is_full() {
+                if stream.is_some() {
+                    send(&mut stream);
+                }
+                if !latest() || tx.is_abandoned() {
+                    return false;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            let _ = tx.push([f[0], f[1]]);
+        }
+        if stream.is_some() && tx.slots() + ready <= rate as usize * AHEAD {
+            send(&mut stream);
+        }
+        latest() && !tx.is_abandoned()
+    });
+    // A short file: sent once decoded.
+    send(&mut stream);
+    match result {
+        Err(e) if e.ends_with("decoding cancelled") => Ok(()),
+        r => r.map(|_| ()),
+    }
+}
+
+#[cfg(test)]
+mod stream_tests {
+    use super::*;
+
+    #[test]
+    fn streams_a_file_from_the_second_asked_for() {
+        let dir = std::env::temp_dir().join(format!("opendj-preview-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("set.wav");
+        // 3 s at 8 kHz, each sample its frame number / 8.
+        let samples: Vec<i16> = (0..24_000).map(|i| (i / 8) as i16).collect();
+        decode::tests::write_wav(&path, 8000, 1, &samples);
+        let reg = ControlRegistry::new();
+        let (mut player, input) = preview::Preview::new(&reg, 8000.0);
+        let input = Mutex::new(input);
+        // The ring holds 4 s, more than the file, so it decodes in one go.
+        stream_preview(&path, 1.5, true, &input, || true).unwrap();
+        player.update();
+        let at = reg
+            .get(preview::PREVIEW_GROUP, "playposition")
+            .unwrap()
+            .get();
+        assert!((at - 0.5).abs() < 1e-6, "{at}");
+        // Past the start ramp, it hears frame 12000 onwards.
+        let mut last = [0.0; 2];
+        for _ in 0..4000 {
+            last = player.next();
+        }
+        let expected = ((12_000 + 3998) / 8) as f32 / 32768.0;
+        assert!(
+            (last[0] - expected).abs() < 0.002,
+            "{} vs {expected}",
+            last[0]
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
 }

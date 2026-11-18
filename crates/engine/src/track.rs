@@ -86,9 +86,16 @@ impl Waveform {
     /// waveform, shaded by its sound as the deck waveforms are.
     /// Empty when the track isn't analysed.
     pub fn overview(&self, slices: usize) -> Vec<OverviewSlice> {
+        self.overview_of(0.0, f64::INFINITY, slices)
+    }
+
+    /// As [`Waveform::overview`], for `from..to` seconds only.
+    pub fn overview_of(&self, from: f64, to: f64, slices: usize) -> Vec<OverviewSlice> {
         let Some(finest) = self.levels.first().filter(|l| !l.is_empty()) else {
             return Vec::new();
         };
+        let at = |s: f64| ((s * self.bins_per_second).max(0.0) as usize).min(finest.len() - 1);
+        let finest = &finest[at(from)..=at(to).max(at(from))];
         let power = |b: u8| (b as f32 / 255.0).powi(4);
         (0..slices)
             .map(|i| {
