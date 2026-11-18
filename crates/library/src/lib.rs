@@ -1506,6 +1506,45 @@ impl Library {
         Ok(())
     }
 
+    /// Puts collection track `track` in the place of streamed track
+    /// `stream_id` on `service` in every list it stands in, keeping its
+    /// place and when it was played or added. Returns the lists changed.
+    pub fn fill_streamed(
+        &mut self,
+        service: &str,
+        stream_id: &str,
+        track: usize,
+    ) -> Result<Vec<i64>, Error> {
+        let Some(row) = row_id(track) else {
+            return Ok(Vec::new());
+        };
+        let tx = self.db.transaction()?;
+        let places: Vec<(i64, i64, Option<i64>)> = tx
+            .prepare(
+                "SELECT playlist_id, position, played_at FROM list_streams
+                 WHERE service = ?1 AND stream_id = ?2",
+            )?
+            .query_map(params![service, stream_id], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            })?
+            .collect::<Result<_, _>>()?;
+        for (list, position, at) in &places {
+            tx.execute(
+                "DELETE FROM list_streams WHERE playlist_id = ?1 AND position = ?2",
+                params![list, position],
+            )?;
+            tx.execute(
+                "INSERT INTO playlist_tracks (playlist_id, position, track_id, played_at)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![list, position, row, at],
+            )?;
+        }
+        tx.commit()?;
+        let mut lists: Vec<i64> = places.into_iter().map(|(l, _, _)| l).collect();
+        lists.dedup();
+        Ok(lists)
+    }
+
     /// Appends tracks to a list. Tracks not in the library are skipped.
     pub fn add_to_playlist(&mut self, id: i64, tracks: &[usize]) -> Result<(), Error> {
         let tx = self.db.transaction()?;
@@ -3239,6 +3278,14 @@ mod tests {
             ("GBARL9600049", "Online Only")
         );
         assert_eq!(lib.streamed_without_isrc("tidal").unwrap(), ["1"]);
+        // Once the file is in, the track takes the placeholder's place.
+        let b = tracks.iter().find(|t| t.title == "Imported").unwrap().id;
+        let filled = lib.fill_streamed("tidal", "1", b).unwrap();
+        assert_eq!(filled, [id("Mixed").unwrap()]);
+        let entries = lib.playlist_entries(id("Mixed").unwrap()).unwrap();
+        assert!(matches!(entries[0], ListEntry::Track(t) if t == b));
+        assert_eq!(entries.len(), 4);
+        assert!(lib.fill_streamed("tidal", "nope", b).unwrap().is_empty());
         lib.remove_import("vdj", |_| false).unwrap();
         assert!(lib.wanted().unwrap().is_empty());
         assert!(!lib.has_streamed_entries().unwrap());

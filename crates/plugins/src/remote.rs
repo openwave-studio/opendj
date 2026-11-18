@@ -73,6 +73,7 @@ fn answer(plugin: &mut dyn Plugin, method: &str, p: &Value) -> Result<Value, Plu
                 info["previews"] = json!(s.previews());
                 info["plays"] = json!(s.plays());
                 info["rail"] = json!(s.in_rail());
+                info["catalog"] = json!(s.catalog());
                 info
             });
             Ok(json!({
@@ -140,6 +141,7 @@ fn answer(plugin: &mut dyn Plugin, method: &str, p: &Value) -> Result<Value, Plu
                     source.stop_preview();
                     Ok(Value::Null)
                 }
+                "source.browse" => source.browse(&p["ask"]),
                 _ => Err(unsupported()),
             }
         }
@@ -160,6 +162,8 @@ struct Described {
     plays: bool,
     /// It has a place in the rail (see [`SearchSource::in_rail`]).
     rail: bool,
+    /// The service it browses for (see [`SearchSource::catalog`]).
+    catalog: Option<&'static str>,
 }
 
 fn described() -> &'static Mutex<HashMap<PathBuf, Described>> {
@@ -427,6 +431,12 @@ impl SearchSource for RemotePlugin {
     fn in_rail(&self) -> bool {
         self.described.rail
     }
+    fn catalog(&self) -> Option<&'static str> {
+        self.described.catalog
+    }
+    fn browse(&mut self, ask: &Value) -> Result<Value, PluginError> {
+        self.call("source.browse", json!({ "ask": ask }))
+    }
     fn preview(&mut self, id: &str, item: &Found) -> Result<(), PluginError> {
         self.call(
             "source.preview",
@@ -552,6 +562,10 @@ fn described_from(hello: &Value) -> Result<Described, PluginError> {
         // Nor from before playing add-ons: it doesn't play.
         plays: hello["source"]["plays"].as_bool().unwrap_or(false),
         rail: hello["source"]["rail"].as_bool().unwrap_or(true),
+        catalog: hello["source"]["catalog"]
+            .as_str()
+            .filter(|c| !c.is_empty())
+            .map(intern),
     })
 }
 
@@ -811,6 +825,9 @@ mod tests {
         assert!(described_from(&old).unwrap().rail);
         hello["source"]["rail"] = json!(false);
         assert!(!described_from(&hello).unwrap().rail);
+        assert_eq!(described_from(&old).unwrap().catalog, None);
+        hello["source"]["catalog"] = json!("tidal");
+        assert_eq!(described_from(&hello).unwrap().catalog, Some("tidal"));
     }
 
     #[test]

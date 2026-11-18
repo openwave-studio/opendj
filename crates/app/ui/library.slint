@@ -965,6 +965,189 @@ export global BuyUi {
     callback close();
 }
 
+// One match in a streaming service's catalog search (CatalogResults).
+export struct CatalogRow {
+    // 0 a track, 1 an artist, 2 an album.
+    kind: int,
+    title: string,
+    // Under the title, e.g. "Album · Radiohead · 12 tracks".
+    detail: string,
+    cover: image,
+    has-cover: bool,
+    initials: string,
+}
+
+// A streaming service's catalog search, under the list's search box while
+// a service that searches (TIDAL) is shown: artists, albums and tracks.
+export global CatalogSearch {
+    in property <[CatalogRow]> rows;
+    in-out property <bool> open;
+    // The row the arrow keys are on; -1 for none.
+    in-out property <int> current: -1;
+    // "Searching…", or why it went wrong; empty once rows are in.
+    in property <string> note;
+    // mode 0 opens the row (an artist's or album's tracks in the list; a
+    // track loads onto a free deck), 1 downloads a track.
+    callback act(row: int, mode: int);
+    // Every track found, in the list.
+    callback all();
+}
+
+// A choice on a catalog result's right-click menu.
+component CatalogChoice inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    height: 28px;
+    border-radius: 5px;
+    background: cta.has-hover ? Theme.n-ffffff14 : transparent;
+    HorizontalLayout {
+        padding-left: 12px;
+        Text { text: root.text; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+    }
+    cta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The dropdown under the list's search box for a streaming service's
+// catalog: artists, albums and tracks with their pictures. A click opens
+// an artist's or album's tracks in the list, or loads a track onto a free
+// deck; Download is on a track's right-click.
+component CatalogResults inherits Rectangle {
+    in property <length> max-list-height: 480px;
+    property <int> menu-row;
+    property <length> menu-x;
+    property <length> menu-y;
+    height: frame.preferred-height;
+    background: Theme.panel-raised;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 24px;
+    drop-shadow-color: Theme.s-000000c0;
+    TouchArea {
+        scroll-event(e) => { accept }
+    }
+    frame := VerticalLayout {
+        padding: 6px;
+        spacing: 2px;
+        scroll := ScrollView {
+            height: min(list.preferred-height, max(120px, root.max-list-height));
+            vertical-stretch: 0;
+            list := VerticalLayout {
+                spacing: 2px;
+                for r[i] in CatalogSearch.rows: item := VerticalLayout {
+                    if i == 0 || CatalogSearch.rows[i - 1].kind != r.kind: Text {
+                        height: 24px;
+                        x: 10px;
+                        text: r.kind == 1 ? "ARTISTS" : r.kind == 2 ? "ALBUMS" : "TRACKS";
+                        color: Theme.text-dim;
+                        font-size: 10px;
+                        font-weight: 700;
+                        letter-spacing: 0.6px;
+                        vertical-alignment: center;
+                    }
+                    line := Rectangle {
+                        height: 46px;
+                        border-radius: 8px;
+                        property <bool> lit: i == CatalogSearch.current;
+                        background: lit ? Theme.n-ffffff12 : transparent;
+                        changed lit => {
+                            if lit && !rta.has-hover {
+                                let top = item.y + self.y;
+                                if top + scroll.content-y < 0px {
+                                    scroll.content-y = -top;
+                                } else if top + self.height + scroll.content-y > scroll.visible-height {
+                                    scroll.content-y = scroll.visible-height - top - self.height;
+                                }
+                            }
+                        }
+                        rta := TouchArea {
+                            mouse-cursor: pointer;
+                            changed has-hover => {
+                                if self.has-hover {
+                                    CatalogSearch.current = i;
+                                }
+                            }
+                            clicked => { CatalogSearch.act(i, 0); }
+                            pointer-event(e) => {
+                                if r.kind == 0 && e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                                    root.menu-row = i;
+                                    root.menu-x = self.absolute-position.x - root.absolute-position.x + self.mouse-x;
+                                    root.menu-y = self.absolute-position.y - root.absolute-position.y + self.mouse-y;
+                                    menu.show();
+                                }
+                            }
+                        }
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            spacing: 10px;
+                            VerticalLayout {
+                                alignment: center;
+                                Rectangle {
+                                    width: 34px;
+                                    height: 34px;
+                                    border-radius: r.kind == 1 ? 17px : 5px;
+                                    clip: true;
+                                    background: @linear-gradient(135deg, Theme.accent 0%, Theme.accent.darker(0.6) 60%, #101012 100%);
+                                    if !r.has-cover: Text { text: r.initials; color: #ffffffe0; font-size: 12px; font-weight: 700; }
+                                    if r.has-cover: Image { width: parent.width; height: parent.height; source: r.cover; image-fit: cover; }
+                                }
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                horizontal-stretch: 1;
+                                min-width: 0px;
+                                Text { text: r.title; color: Theme.text; font-size: 13px; overflow: elide; }
+                                Text { text: r.detail; color: Theme.text-dim; font-size: 12px; overflow: elide; }
+                            }
+                        }
+                    }
+                }
+                if CatalogSearch.rows.length == 0: Text {
+                    height: 40px;
+                    x: 10px;
+                    text: CatalogSearch.note != "" ? CatalogSearch.note : "Nothing found.";
+                    color: Theme.text-dim;
+                    font-size: 13px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.separator; }
+        Text {
+            height: 26px;
+            x: 10px;
+            width: parent.width - 20px;
+            text: CatalogSearch.rows.length == 0 ? "Esc closes" : "↵ all tracks · click a track to play it · right-click to download · Esc closes";
+            color: Theme.text-dim;
+            font-size: 11px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    menu := PopupWindow {
+        x: min(root.menu-x, root.width - 170px);
+        y: root.menu-y;
+        width: 160px;
+        Rectangle {
+            background: Theme.panel-raised;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 10px;
+            drop-shadow-color: Theme.s-00000090;
+        }
+        VerticalLayout {
+            padding: 5px;
+            CatalogChoice { text: "Play"; clicked => { CatalogSearch.act(root.menu-row, 0); } }
+            CatalogChoice { text: "Download"; clicked => { CatalogSearch.act(root.menu-row, 1); } }
+        }
+    }
+}
+
 // Fixing which collection track a streaming track is, by hand.
 export global StreamMatch {
     // What the DJ typed to find the track, and what it found.
@@ -980,6 +1163,10 @@ export global StreamMatch {
     callback none(row: int);
     // Back to matching by ISRC, title and artist.
     callback auto(row: int);
+    // The row's track downloads through an add-on that plays its service's
+    // tracks: the menu offers Download, as a double-click does.
+    in property <bool> fetchable;
+    callback fetch(row: int);
 }
 
 export global StoreUi {
@@ -1219,14 +1406,21 @@ component MatchMenu inherits PopupWindow {
         // Tracks the collection hasn't got: on the Wanted list, or (with a
         // download source installed) downloaded. A store's cart joins here
         // later.
-        MenuLine {
+        if StreamMatch.fetchable: MenuLine {
+            text: count > 1 ? "Download " + count + " Tracks" : "Download";
+            clicked => {
+                StreamMatch.fetch(track-row);
+                root.close();
+            }
+        }
+        if !StreamMatch.fetchable: MenuLine {
             text: count > 1 ? "Add " + count + " Tracks to Wanted" : "Add to Wanted";
             clicked => {
                 WantedUi.add-tracks(track-row, track-row);
                 root.close();
             }
         }
-        if StoreUi.downloads-to != "": MenuLine {
+        if !StreamMatch.fetchable && StoreUi.downloads-to != "": MenuLine {
             text: count > 1 ? "Add " + count + " Tracks to Downloads" : "Add to Downloads";
             clicked => {
                 StoreUi.download-tracks(track-row, track-row);
@@ -5249,6 +5443,28 @@ component TrackList inherits Rectangle {
                 // values that match show under the field, ↓ and ↑ move
                 // through them and Return adds the one picked as a filter.
                 key-pressed(e) => {
+                    if CatalogSearch.open && search-text != "" {
+                        if e.text == Key.DownArrow {
+                            CatalogSearch.current = min(CatalogSearch.current + 1, CatalogSearch.rows.length - 1);
+                            return accept;
+                        }
+                        if e.text == Key.UpArrow {
+                            CatalogSearch.current = max(CatalogSearch.current - 1, -1);
+                            return accept;
+                        }
+                        if e.text == Key.Return {
+                            if CatalogSearch.current >= 0 {
+                                CatalogSearch.act(CatalogSearch.current, 0);
+                            } else {
+                                CatalogSearch.all();
+                            }
+                            return accept;
+                        }
+                        if e.text == Key.Escape {
+                            CatalogSearch.open = false;
+                            return accept;
+                        }
+                    }
                     if FilterUi.suggestions.length > 0 && search-text != "" {
                         if e.text == Key.DownArrow && FilterUi.highlight < FilterUi.suggestions.length - 1 {
                             FilterUi.highlight += 1;
@@ -5773,6 +5989,15 @@ component TrackList inherits Rectangle {
                 search("");
             }
         }
+    }
+
+    // A streaming service's catalog search: artists, albums and tracks,
+    // as the player's search shows them.
+    if search-text != "" && CatalogSearch.open: CatalogResults {
+        x: search-row.x + search-row.search-x;
+        y: search-row.y + search-row.height + 4px;
+        width: max(search-row.search-w, 420px);
+        max-list-height: root.height - self.y - 60px;
     }
 
     // A key shift as the library marks it: "+1", "−2".

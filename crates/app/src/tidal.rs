@@ -21,9 +21,10 @@ use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
+use crate::sources::Catalog;
 use crate::spotify::{
-    code_challenge, encode, open_in_browser, random_token, wait_for_code, Event, Playlist, Request,
-    Saved, Service, StreamTrack, LIKED, PORT, REDIRECT_URI, SEARCH,
+    code_challenge, encode, open_in_browser, random_token, wait_for_code, Event, Hit, Hits,
+    Playlist, Request, Saved, Service, StreamTrack, LIKED, PORT, REDIRECT_URI, SEARCH,
 };
 
 const LOGIN: &str = "https://login.tidal.com/authorize";
@@ -38,6 +39,10 @@ const SEARCH_RESULTS: usize = 40;
 const SAVED: &str = "tidal.json";
 /// How many tracks `/tracks` takes at once.
 const TRACK_BATCH: usize = 20;
+/// How many tracks the add-on looks up at once.
+const ADDON_LOOKUP: usize = 25;
+/// How long a sign-in through the add-on may wait for the DJ.
+const ADDON_SIGN_IN: Duration = Duration::from_secs(600);
 
 /// Starts TIDAL's worker. With a saved sign-in it reconnects straight away.
 pub fn start() -> Service {
@@ -67,6 +72,10 @@ struct Worker {
     agent: ureq::Agent,
     events: Sender<Event>,
     session: Option<Session>,
+    /// The add-on browsing for this source, when one does: it signs in,
+    /// lists playlists and searches in place of the public API, so the DJ
+    /// signs in once for browsing and playing.
+    addon: Option<Catalog>,
 }
 
 impl Worker {
@@ -79,6 +88,7 @@ impl Worker {
             agent: ureq::Agent::new_with_config(config),
             events,
             session: None,
+            addon: None,
         }
     }
 
@@ -101,7 +111,29 @@ impl Worker {
             }
         }
         for request in requests {
+            if let Some(addon) = self.addon.clone() {
+                self.through_addon(&addon, request);
+                continue;
+            }
             match request {
+                Request::Catalog(addon) => {
+                    self.session = None;
+                    self.addon = Some(addon.clone());
+                    self.addon_connect(&addon);
+                }
+                Request::Search(words) => match self.search(&words) {
+                    Ok(tracks) => self.emit(Event::Searched {
+                        words,
+                        hits: Hits {
+                            tracks: tracks.into_iter().map(|t| (t, String::new())).collect(),
+                            ..Default::default()
+                        },
+                    }),
+                    Err(e) => self.emit(Event::TracksFailed {
+                        key: format!("{SEARCH}{words}"),
+                        error: e,
+                    }),
+                },
                 Request::Connect(client_id) => {
                     let result = self.login(client_id.trim()).and_then(|s| {
                         self.session = Some(s);
@@ -144,6 +176,108 @@ impl Worker {
                         .store(SAVED);
                     }
                     self.emit(Event::Disconnected);
+                }
+            }
+        }
+    }
+
+    /// Does a request through the add-on browsing for this source.
+    fn through_addon(&mut self, addon: &Catalog, request: Request) {
+        match request {
+            Request::Catalog(other) => {
+                self.addon = Some(other.clone());
+                self.addon_connect(&other);
+            }
+            Request::Connect(_) | Request::Playlists => self.addon_connect(addon),
+            Request::Tracks(key) => {
+                match addon.ask(serde_json::json!({ "ask": "tracks", "key": key })) {
+                    Ok(list) => self.emit(Event::Tracks {
+                        key,
+                        tracks: addon_tracks(&list).into_iter().map(|(t, _)| t).collect(),
+                    }),
+                    Err(error) => self.emit(Event::TracksFailed { key, error }),
+                }
+            }
+            Request::Lookup(ids) => {
+                // A track at a time there: a batch at a time here, so
+                // downloads aren't held up for long.
+                for batch in ids.chunks(ADDON_LOOKUP) {
+                    match addon.ask(serde_json::json!({ "ask": "lookup", "ids": batch })) {
+                        Ok(list) => self.emit(Event::Found(
+                            addon_tracks(&list).into_iter().map(|(t, _)| t).collect(),
+                        )),
+                        Err(e) => {
+                            eprintln!("TIDAL: can't look tracks up: {e}");
+                            break;
+                        }
+                    }
+                }
+            }
+            Request::Search(words) => {
+                match addon.ask(serde_json::json!({ "ask": "search", "words": words })) {
+                    Ok(found) => self.emit(Event::Searched {
+                        words,
+                        hits: addon_hits(&found),
+                    }),
+                    Err(error) => self.emit(Event::TracksFailed {
+                        key: format!("{SEARCH}{words}"),
+                        error,
+                    }),
+                }
+            }
+            Request::Export { list, .. } => self.emit(Event::ExportFailed {
+                list,
+                error: "Only Spotify can be exported to.".into(),
+            }),
+            Request::Disconnect => {
+                let _ = addon.ask(serde_json::json!({ "ask": "sign_out" }));
+                self.emit(Event::Disconnected);
+            }
+        }
+    }
+
+    /// Signs in through the add-on, waiting while the DJ confirms it in the
+    /// browser, then reports the playlists.
+    fn addon_connect(&mut self, addon: &Catalog) {
+        self.emit(Event::Status("Signing in…".into()));
+        let deadline = Instant::now() + ADDON_SIGN_IN;
+        loop {
+            match addon.ask(serde_json::json!({ "ask": "connect" })) {
+                Ok(v) if v["waiting"].is_string() => {
+                    if Instant::now() > deadline {
+                        self.emit(Event::SignInFailed(
+                            "The TIDAL sign-in ran out. Sign in again.".into(),
+                        ));
+                        return;
+                    }
+                    self.emit(Event::Status(
+                        "Confirm the TIDAL sign-in in your browser…".into(),
+                    ));
+                    std::thread::sleep(Duration::from_secs(2));
+                }
+                Ok(v) => {
+                    let user = v["user"].as_str().unwrap_or("you").to_string();
+                    let mut playlists = vec![Playlist {
+                        key: LIKED.into(),
+                        name: "My Tracks".into(),
+                        ..Default::default()
+                    }];
+                    playlists.extend(v["playlists"].as_array().into_iter().flatten().filter_map(
+                        |p| {
+                            Some(Playlist {
+                                key: p["key"].as_str()?.to_string(),
+                                name: p["name"].as_str().unwrap_or_default().to_string(),
+                                total: p["count"].as_u64().unwrap_or(0) as usize,
+                                version: p["version"].as_str().unwrap_or_default().to_string(),
+                            })
+                        },
+                    ));
+                    self.emit(Event::Connected { user, playlists });
+                    return;
+                }
+                Err(e) => {
+                    self.emit(Event::SignInFailed(format!("Couldn't sign in: {e}")));
+                    return;
                 }
             }
         }
@@ -204,8 +338,18 @@ impl Worker {
         if words.is_empty() {
             return Ok(Vec::new());
         }
+        // The search itself gives an opaque id; its tracks are listed
+        // under that id, a page at a time.
+        let result = self.get(&search_url(words))?;
+        let first = match &result["data"] {
+            Value::Array(all) => all.first().cloned().unwrap_or(Value::Null),
+            one => one.clone(),
+        };
+        let Some(id) = first["id"].as_str() else {
+            return Ok(Vec::new());
+        };
         let mut ids: Vec<String> = Vec::new();
-        let mut next = Some(search_url(words));
+        let mut next = Some(search_tracks_url(id));
         while let Some(url) = next.filter(|_| ids.len() < SEARCH_RESULTS) {
             let page = self.get(&url)?;
             ids.extend(
@@ -393,9 +537,14 @@ impl Worker {
     }
 }
 
-/// Where the catalog's tracks for `words` are listed.
+/// The catalog search for `words`: one result, whose id lists what it found.
 fn search_url(words: &str) -> String {
-    format!("{API}/searchResults/{}/relationships/tracks", encode(words))
+    format!("{API}/searchResults?filter%5Bquery%5D={}", encode(words))
+}
+
+/// The tracks a search found, by the id it gave.
+fn search_tracks_url(id: &str) -> String {
+    format!("{API}/searchResults/{}/relationships/tracks", encode(id))
 }
 
 /// A `links.next` as a full address: the API gives one relative to its host
@@ -455,6 +604,71 @@ fn parse_playlist(v: &Value) -> Option<Playlist> {
 
 /// The tracks of a `/tracks` document, their artists and album names taken
 /// from what it included.
+/// Tracks as the add-on lists them (see
+/// [`opendj_plugins::source::SearchSource::browse`]), each with its cover's
+/// address.
+fn addon_tracks(list: &Value) -> Vec<(StreamTrack, String)> {
+    list.as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|t| {
+            let id = match &t["id"] {
+                Value::String(s) => s.clone(),
+                Value::Number(n) => n.to_string(),
+                _ => return None,
+            };
+            let text = |k: &str| t[k].as_str().unwrap_or_default().to_string();
+            Some((
+                StreamTrack {
+                    page: format!("https://tidal.com/browse/track/{id}"),
+                    id,
+                    isrc: text("isrc"),
+                    title: text("title"),
+                    artists: t["artists"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|a| a.as_str().map(str::to_string))
+                        .collect(),
+                    album: text("album"),
+                    duration: t["duration"].as_f64().unwrap_or(0.0),
+                },
+                text("cover"),
+            ))
+        })
+        .collect()
+}
+
+/// A search's artists, albums and tracks, as the add-on gives them.
+fn addon_hits(found: &Value) -> Hits {
+    let hits = |kind: &str, prefix: &str, name: &str, picture: &str| -> Vec<Hit> {
+        found[kind]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|h| {
+                let id = match &h["id"] {
+                    Value::String(s) => s.clone(),
+                    Value::Number(n) => n.to_string(),
+                    _ => return None,
+                };
+                Some(Hit {
+                    key: format!("{prefix}{id}"),
+                    name: h[name].as_str().unwrap_or_default().to_string(),
+                    by: h["artist"].as_str().unwrap_or_default().to_string(),
+                    picture: h[picture].as_str().unwrap_or_default().to_string(),
+                    count: h["count"].as_u64().unwrap_or(0) as usize,
+                })
+            })
+            .collect()
+    };
+    Hits {
+        artists: hits("artists", "artist:", "name", "picture"),
+        albums: hits("albums", "album:", "title", "cover"),
+        tracks: addon_tracks(&found["tracks"]),
+    }
+}
+
 fn parse_tracks(doc: &Value) -> Vec<StreamTrack> {
     let mut names: HashMap<(String, String), String> = HashMap::new();
     for r in doc["included"].as_array().into_iter().flatten() {
@@ -562,10 +776,36 @@ mod tests {
     }
 
     #[test]
+    fn reads_what_the_addon_found() {
+        let found = serde_json::json!({
+            "artists": [{ "id": 1, "name": "Radiohead", "picture": "p.jpg" }],
+            "albums": [{ "id": "2", "title": "OK Computer", "artist": "Radiohead",
+                "cover": "c.jpg", "count": 12 }],
+            "tracks": [{ "id": 3, "title": "Airbag", "artists": ["Radiohead"],
+                "album": "OK Computer", "duration": 284.0, "isrc": "GBAYE9700084",
+                "cover": "c.jpg" }],
+        });
+        let hits = addon_hits(&found);
+        assert_eq!(hits.artists[0].key, "artist:1");
+        assert_eq!(hits.albums[0].key, "album:2");
+        assert_eq!(hits.albums[0].by, "Radiohead");
+        assert_eq!(hits.albums[0].count, 12);
+        let (t, cover) = &hits.tracks[0];
+        assert_eq!(t.id, "3");
+        assert_eq!(t.page, "https://tidal.com/browse/track/3");
+        assert_eq!(t.artists, ["Radiohead"]);
+        assert_eq!(cover, "c.jpg");
+    }
+
+    #[test]
     fn search_address() {
         assert_eq!(
             search_url("daft punk/one"),
-            "https://openapi.tidal.com/v2/searchResults/daft%20punk%2Fone/relationships/tracks"
+            "https://openapi.tidal.com/v2/searchResults?filter%5Bquery%5D=daft%20punk%2Fone"
+        );
+        assert_eq!(
+            search_tracks_url("abc"),
+            "https://openapi.tidal.com/v2/searchResults/abc/relationships/tracks"
         );
     }
 

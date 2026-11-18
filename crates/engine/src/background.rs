@@ -37,12 +37,12 @@ pub fn configure() {
 /// [`is_low`]): macOS doesn't pass the class on to them.
 pub fn lower_priority() {
     LOW.with(|l| l.set(true));
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     // SAFETY: only changes the calling thread's scheduling.
     unsafe {
         libc::pthread_set_qos_class_self_np(libc::qos_class_t::QOS_CLASS_UTILITY, 0);
     }
-    #[cfg(all(unix, not(target_os = "macos")))]
+    #[cfg(all(unix, not(any(target_os = "macos", target_os = "ios"))))]
     // SAFETY: as above; on Linux the nice value belongs to each thread.
     unsafe {
         let tid = libc::syscall(libc::SYS_gettid) as libc::id_t;

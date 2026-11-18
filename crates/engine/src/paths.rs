@@ -13,10 +13,10 @@ pub fn home_dir() -> Option<PathBuf> {
 }
 
 /// Where apps keep their settings: `~/Library/Application Support` on
-/// macOS, `%APPDATA%` (Roaming) on Windows, `$XDG_CONFIG_HOME` or
+/// macOS and iPadOS (inside the app's container there), `%APPDATA%` (Roaming) on Windows, `$XDG_CONFIG_HOME` or
 /// `~/.config` elsewhere.
 pub fn config_base() -> Option<PathBuf> {
-    if cfg!(target_os = "macos") {
+    if cfg!(any(target_os = "macos", target_os = "ios")) {
         home_dir().map(|h| h.join("Library/Application Support"))
     } else if cfg!(windows) {
         non_empty("APPDATA").or_else(|| home_dir().map(|h| h.join("AppData").join("Roaming")))
@@ -25,10 +25,10 @@ pub fn config_base() -> Option<PathBuf> {
     }
 }
 
-/// Where apps keep caches: `~/Library/Caches` on macOS, `%LOCALAPPDATA%` on
+/// Where apps keep caches: `~/Library/Caches` on macOS and iPadOS, `%LOCALAPPDATA%` on
 /// Windows, `$XDG_CACHE_HOME` or `~/.cache` elsewhere.
 pub fn cache_base() -> Option<PathBuf> {
-    if cfg!(target_os = "macos") {
+    if cfg!(any(target_os = "macos", target_os = "ios")) {
         home_dir().map(|h| h.join("Library/Caches"))
     } else if cfg!(windows) {
         non_empty("LOCALAPPDATA").or_else(|| home_dir().map(|h| h.join("AppData").join("Local")))
@@ -41,7 +41,7 @@ pub fn cache_base() -> Option<PathBuf> {
 /// [`cache_base`]: "openDJ" on macOS and Windows, where folders there are
 /// named like the app, and "opendj" on Linux.
 pub fn app_folder_name() -> &'static str {
-    if cfg!(any(target_os = "macos", windows)) {
+    if cfg!(any(target_os = "macos", target_os = "ios", windows)) {
         "openDJ"
     } else {
         "opendj"

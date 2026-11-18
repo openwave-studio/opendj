@@ -33,6 +33,7 @@ use opendj_plugins::{ItemKind, StoreItem, StoreQuery};
 mod albums;
 mod analysis;
 mod buy;
+mod catalog;
 mod checklist;
 mod cleanup;
 pub(crate) mod columns;
@@ -62,6 +63,7 @@ mod side_tabs;
 mod sidelist;
 mod spotify_export;
 mod staging;
+mod stream_play;
 mod streamed;
 mod tag_chips;
 mod tag_health;
@@ -552,13 +554,15 @@ pub struct Browser {
     /// [`crate::sources::Sources::playing_sites`]): a streamed track from
     /// one loads onto a deck through it instead of opening its page.
     pub play_sites: Vec<&'static str>,
-    /// Links of streamed tracks to load that way, for the frame loop.
-    stream_plays: Vec<String>,
-    /// The catalog search shown in place of the playlist, while words are
-    /// typed in a service that searches (its [`spotify::SEARCH`] key), and
-    /// when to ask the service for it.
+    /// Streamed tracks to fetch that way, for the frame loop.
+    stream_plays: Vec<crate::sources::StreamPlay>,
+    /// What each deck is fetching to load (see [`stream_play`]).
+    fetches: [Option<stream_play::DeckFetch>; NUM_DECKS],
+    /// What a catalog search listed in place of the playlist: every track
+    /// it found (its [`spotify::SEARCH`] key), or an artist's or album's
+    /// tracks ("artist:<id>", "album:<id>"). Empty for the playlist.
     stream_search: String,
-    search_due: Option<std::time::Instant>,
+    catalog: catalog::CatalogState,
     library: Vec<Arc<Track>>,
     nodes: Vec<Node>,
     /// Indices into `nodes` of the rows currently shown in the tree.
@@ -1410,8 +1414,9 @@ impl Browser {
             wanted_sort: (-1, true),
             play_sites: Vec::new(),
             stream_plays: Vec::new(),
+            fetches: Default::default(),
             stream_search: String::new(),
-            search_due: None,
+            catalog: catalog::CatalogState::new(),
             export_status: None,
             session: None,
             last_play: None,
@@ -1516,6 +1521,9 @@ impl Browser {
                         n
                     };
                     b.current_node = n;
+                    // A playlist picked in a streaming service takes the
+                    // place of what a catalog search listed.
+                    b.stream_search.clear();
                     // Another page: the review card and Show tab close.
                     b.review_at = None;
                     b.dupe_tab = None;
@@ -1525,6 +1533,7 @@ impl Browser {
                     }
                     if let Some(app) = b.app.upgrade() {
                         app.global::<LibraryEdit>().set_making_smart(false);
+                        app.global::<crate::CatalogSearch>().set_open(false);
                     }
                     b.health_status.clear();
                     b.close_cleanup();
@@ -1594,15 +1603,11 @@ impl Browser {
                 } else if let Some(&Some(id)) = b.rows.get(row as usize) {
                     b.adopt(&[id]);
                     b.load_to_free_deck(id);
-                } else if let Some(t) = b.stream_track(row as usize) {
-                    // Not in the collection: it loads through an add-on
-                    // that plays the service's tracks, or plays on its page.
-                    let page = t.page.clone();
-                    if b.plays_link(&page) {
-                        b.stream_plays.push(page);
-                    } else if !page.is_empty() {
-                        open_in_browser(&page);
-                    }
+                } else if let Some((t, service)) = b.stream_row(row as usize) {
+                    // Not in the collection: it downloads and loads through
+                    // an add-on that plays the service's tracks, or plays on
+                    // its page.
+                    b.play_stream(&t, &service, None);
                 }
             }))
         });
@@ -1823,6 +1828,13 @@ impl Browser {
             let w = with.clone();
             ui.on_open(move |row| w(Box::new(move |b| b.open_match(row as usize))));
             let w = with.clone();
+            ui.on_fetch(move |row| {
+                w(Box::new(move |b| {
+                    let row = row.max(0) as usize;
+                    b.fetch_rows(row, row);
+                }))
+            });
+            let w = with.clone();
             ui.on_search(move |text| {
                 let text = text.to_string();
                 w(Box::new(move |b| b.search_match(&text)))
@@ -1846,6 +1858,7 @@ impl Browser {
         Self::install_info(app, &b);
         Self::install_picks(app, &b);
         Self::install_wanted(app, &b);
+        Self::install_catalog(app, &b);
         Self::install_buy(app, &b);
         Self::install_filters(app, &b);
         Self::install_columns(app, &b);
@@ -2969,12 +2982,6 @@ impl Browser {
         !host.is_empty() && self.play_sites.contains(&host)
     }
 
-    /// Streamed tracks double-clicked to load through an add-on, since last
-    /// asked.
-    pub fn take_stream_plays(&mut self) -> Vec<String> {
-        std::mem::take(&mut self.stream_plays)
-    }
-
     pub fn load_cached(&mut self, path: &Path) {
         let index = match self.path_index.get(path) {
             Some(&i) => Some(i),
@@ -3120,27 +3127,10 @@ impl Browser {
         self.show_stream();
     }
 
-    /// The streaming service shown in the tree, if one is.
-    /// Typing in a service that searches its catalog lists what it finds
-    /// there instead of the playlist; asked for once typing pauses.
-    fn search_catalog(&mut self, text: &str) {
-        let Some(st) = self.shown_stream() else {
-            return;
-        };
-        let words = text.trim();
-        if !searches(st.id) || words.chars().count() < 2 {
-            self.stream_search.clear();
-            self.search_due = None;
-            return;
-        }
-        self.stream_search = format!("{}{words}", spotify::SEARCH);
-        self.search_due = Some(std::time::Instant::now() + SEARCH_PAUSE);
-    }
-
-    /// Whether the list shows a catalog search rather than a playlist.
+    /// Whether the list shows a catalog search, or an artist's or album's
+    /// tracks found by one, rather than a playlist.
     fn shows_catalog_search(&self) -> bool {
-        self.current_playlist()
-            .is_some_and(|k| k.starts_with(spotify::SEARCH))
+        !self.stream_search.is_empty() && self.shown_stream().is_some_and(|s| searches(s.id))
     }
 
     fn shown_stream(&self) -> Option<&Stream> {
@@ -3330,14 +3320,7 @@ impl Browser {
     /// Takes in what the streaming services' workers have done. Called
     /// every frame.
     pub fn poll_streams(&mut self) {
-        if self
-            .search_due
-            .is_some_and(|due| due <= std::time::Instant::now())
-        {
-            self.search_due = None;
-            self.fetch_current_playlist();
-            self.refresh_rows();
-        }
+        self.poll_catalog();
         for i in 0..self.streams.len() {
             let source = self.streams[i].source;
             for event in self.streams[i].service.poll() {
@@ -3399,7 +3382,25 @@ impl Browser {
                         }
                         self.synced_arrived(i, &key);
                     }
+                    Event::Searched { words, hits } => {
+                        if shown {
+                            self.catalog_found(&words, hits);
+                        }
+                    }
                     Event::TracksFailed { key, error } => {
+                        if let Some(words) = key.strip_prefix(spotify::SEARCH) {
+                            let words = words.to_string();
+                            if shown {
+                                self.catalog_failed(&words, &error);
+                            }
+                            let st = &mut self.streams[i];
+                            st.state.loading.remove(&key);
+                            st.state.errors.insert(key.clone(), error);
+                            if shown && self.current_playlist() == Some(key.as_str()) {
+                                self.refresh_rows();
+                            }
+                            continue;
+                        }
                         st.state.loading.remove(&key);
                         if st.state.tracks.contains_key(&key) {
                             // The tracks from last time stay.
@@ -4622,6 +4623,15 @@ impl Browser {
         }
         if let Some(id) = self.dropped_track(data) {
             self.engine.load_track(deck, self.library[id].clone());
+            return;
+        }
+        // A streamed track the collection hasn't got: fetched to play here.
+        if let Some(Dragged::Rows(first, _)) = dragged(data) {
+            if self.rows.get(first).is_some_and(Option::is_none) {
+                if let Some((t, service)) = self.stream_row(first) {
+                    self.play_stream(&t, &service, Some(deck));
+                }
+            }
         }
     }
 
@@ -5742,10 +5752,12 @@ impl Browser {
                 .shown_stream()
                 .is_some_and(|st| st.state.manual.contains_key(&key)),
         };
+        let fetchable = self.fetchable_row(row);
         if let Some(app) = self.app.upgrade() {
             let ui = app.global::<StreamMatch>();
             ui.set_query(query.clone().into());
             ui.set_manual(manual);
+            ui.set_fetchable(fetchable);
         }
         self.search_match(&query);
     }
