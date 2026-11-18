@@ -37,6 +37,17 @@ done
 
 lipo -create -output "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" "${EXECUTABLES[@]}"
 
+# The supported controllers' mappings (../controllers.txt), in a
+# "controllers" folder beside the executable, where openDJ looks for them.
+MAPPINGS="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/controllers"
+rm -rf "$MAPPINGS"
+mkdir -p "$MAPPINGS"
+grep -v '^#' "$SRCROOT/../controllers.txt" | while IFS= read -r FILE; do
+    if [[ -n "$FILE" ]]; then
+        cp "$SRCROOT/../../../res/controllers/$FILE" "$MAPPINGS/"
+    fi
+done
+
 if [[ -n "${DWARF_DSYM_FOLDER_PATH:-}" && -n "${DWARF_DSYM_FILE_NAME:-}" ]]; then
     dsymutil "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" -o "$DWARF_DSYM_FOLDER_PATH/$DWARF_DSYM_FILE_NAME"
 fi
