@@ -35,6 +35,7 @@ use opendj_control::ControlRegistry;
 use opendj_controllers::routing::{self, DeckChoice};
 use opendj_controllers::{is_system_port, own, Controllers, MappingChoice, Port};
 use opendj_engine::inputs::{DEFAULT_DUCK_STRENGTH, DUCK_AUTO};
+use opendj_engine::GridMode;
 use opendj_engine::{
     analysis, beatthis, cache, channel_names, deck_group, deck_outputs_split, engine,
     input_devices, key, meter, separation, AudioSetup, InputRole, InputRoute, RecordFormat,
@@ -330,6 +331,7 @@ pub fn apply_saved(registry: &ControlRegistry) {
     analysis::set_bpm_range(lo, hi);
     key::set_detector(key_detector());
     beatthis::set_enabled(settings::flag("neural_beats", true));
+    opendj_engine::gridfit::set_default_mode(grid_mode());
     separation::set_on_load(settings::flag("stems_on_load", true));
     apply_stems_cache_limit();
     key::set_mixing(key_mixing());
@@ -427,6 +429,11 @@ fn key_mixing() -> key::Mixing {
 /// semitones.
 pub fn key_match_range() -> u8 {
     settings::number("key_match_on_load", 1.0).clamp(0.0, 2.0) as u8
+}
+
+/// How grids follow the tempo for tracks without a mode of their own.
+fn grid_mode() -> GridMode {
+    GridMode::from_name(&settings::string("grid_mode")).unwrap_or_default()
 }
 
 fn key_detector() -> key::Detector {
@@ -1315,6 +1322,23 @@ impl Prefs {
                              so bar 1 starts on one. \
                              It takes a few seconds more per track, after the waveform. \
                              Edited and imported grids stay.",
+                        )
+                    },
+                    PrefItem {
+                        choices: strings(&["Fixed", "Auto", "Flexible"]),
+                        chosen: GridMode::ALL
+                            .iter()
+                            .position(|&m| m == grid_mode())
+                            .unwrap_or(1) as i32,
+                        ..item(
+                            "grid_mode",
+                            SEGMENTED,
+                            "Grids",
+                            "How grids follow the tempo. Auto keeps one tempo unless the \
+                             track drifts for a while. Fixed always keeps one. Flexible \
+                             follows the beats bar by bar, for live drums. \
+                             A track can have its own in Edit Grid or its right-click menu. \
+                             Edited and locked grids stay.",
                         )
                     },
                     PrefItem {
@@ -2986,6 +3010,13 @@ impl Prefs {
                 };
                 settings::set("stems_cache_gb", json!(gb));
                 apply_stems_cache_limit();
+            }
+            "grid_mode" => {
+                let Some(&m) = GridMode::ALL.get(index) else {
+                    return;
+                };
+                settings::set("grid_mode", json!(m.name()));
+                opendj_engine::gridfit::set_default_mode(m);
             }
             "beat_detector" => {
                 let on = index == 1;

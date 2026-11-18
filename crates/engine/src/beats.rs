@@ -39,11 +39,14 @@ pub enum GridEdit {
     Lock(bool),
     /// Goes back to the grid analysis found (`beats_reset`).
     Reset,
+    /// Fits the grid again from the analysed beats in this mode, and keeps
+    /// the mode for the track (`beats_mode`).
+    Mode(crate::gridfit::GridMode),
 }
 
 impl BeatGrid {
-    /// The grid after `edit` at `seconds` (`Undo`, `Lock` and `Reset` are the
-    /// caller's to handle).
+    /// The grid after `edit` at `seconds` (`Undo`, `Lock`, `Reset` and `Mode`
+    /// are the caller's to handle).
     pub fn edited(&self, edit: GridEdit, seconds: f64) -> Self {
         match edit {
             GridEdit::BeatHere => self.with_beat_at(seconds),
@@ -62,7 +65,9 @@ impl BeatGrid {
                     })
                     .collect(),
             ),
-            GridEdit::Undo | GridEdit::Lock(_) | GridEdit::Reset => self.clone(),
+            GridEdit::Undo | GridEdit::Lock(_) | GridEdit::Reset | GridEdit::Mode(_) => {
+                self.clone()
+            }
         }
     }
 }

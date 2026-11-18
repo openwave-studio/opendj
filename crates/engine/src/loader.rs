@@ -17,6 +17,7 @@ use crate::cache;
 use crate::cover::{self, Cover};
 use crate::decode::{decode, Decoder};
 use crate::engine::{Command, EngineInput, Returned};
+use crate::gridfit::GridMode;
 use crate::key;
 use crate::phrases;
 use crate::scan;
@@ -57,6 +58,7 @@ fn analysis_hint(track: &Track) -> TempoHint {
     TempoHint {
         bpm: tempo_hint(track),
         genre: track.genre.clone(),
+        mode: track.info.grid_mode(),
     }
 }
 
@@ -135,6 +137,7 @@ pub fn analyse_file(track: &Track, fresh: bool) -> Result<Track, String> {
     let hint = TempoHint {
         bpm: tempo_hint(track).filter(|_| !fresh),
         genre: track.genre.clone(),
+        mode: track.info.grid_mode(),
     };
     let cached = if fresh { None } else { cache::load(path) };
     let mut audio = None;
@@ -153,6 +156,14 @@ pub fn analyse_file(track: &Track, fresh: bool) -> Result<Track, String> {
         }
     };
     let mut changed = audio.is_some();
+    // Beats kept from an analysis in another grid mode are fitted again.
+    if analysis.grid_mode != hint.mode
+        && grid_replaceable(&base)
+        && beatthis::refit(&mut analysis, track.duration, hint.clone()).is_ok()
+    {
+        changed = true;
+        base.info.fixed_grid = false;
+    }
     if beatthis::wanted(&analysis) && grid_replaceable(&base) {
         let decoded = match audio.take() {
             Some(a) => a,
@@ -338,6 +349,24 @@ static LAST_DRAG: Mutex<[Option<Instant>; NUM_DECKS]> = Mutex::new([None; NUM_DE
 /// A pause this long ends a drag.
 const DRAG_PAUSE: Duration = Duration::from_millis(600);
 
+/// `track`'s cached analysis with its grid fitted in the track's mode
+/// (see [`crate::track::LibraryInfo::grid_mode`]), stored back when that
+/// changed it; None without a cached analysis whose beats it can be fitted
+/// from.
+fn refitted(path: &std::path::Path, track: &Track) -> Option<Analysis> {
+    let mut analysis = cache::load(path)?;
+    // Fitted afresh: the library's tempo is no hint once analysed or edited.
+    let hint = TempoHint {
+        bpm: None,
+        ..analysis_hint(track)
+    };
+    if analysis.grid_mode != hint.mode {
+        beatthis::refit(&mut analysis, track.duration, hint).ok()?;
+        cache::store(path, &analysis);
+    }
+    Some(analysis)
+}
+
 /// Most edits kept for undo per deck.
 const UNDO_DEPTH: usize = 64;
 
@@ -367,11 +396,52 @@ fn edit_grid(
         }
         // A locked grid stays as it is.
         _ if current.info.grid_locked => return None,
+        GridEdit::Mode(mode) => {
+            t.info.grid_mode = Some(mode);
+            let before = current.beat_grid();
+            let grid = match &current.source {
+                Source::File(path) => refitted(path, &t).map(|a| (a.grid, a.grid_unsure)),
+                Source::Synth { .. } => None,
+            };
+            let (grid, unsure) = match grid {
+                Some(g) => g,
+                // Without the beats, Fixed can still keep the main tempo.
+                None if mode == GridMode::Fixed && before.is_dynamic() => (
+                    BeatGrid::constant(before.main_bpm(current.duration), before.first_beat()),
+                    current.info.grid_unsure,
+                ),
+                // The mode is kept for the next analysis.
+                None => {
+                    let t = Arc::new(t);
+                    l[deck] = Some(t.clone());
+                    return Some(t);
+                }
+            };
+            if !before.is_empty() && grid != before {
+                let mut undo = UNDO.lock().unwrap();
+                let history = &mut undo[deck];
+                history.retain(|(id, _)| *id == current.id);
+                history.push((current.id, before));
+                if history.len() > UNDO_DEPTH {
+                    history.remove(0);
+                }
+            }
+            t.set_grid(grid);
+            t.info.fixed_grid = false;
+            t.info.grid_analysed = true;
+            t.info.grid_from = "analysis".into();
+            t.info.grid_unsure = unsure;
+            let t = Arc::new(t);
+            l[deck] = Some(t.clone());
+            return Some(t);
+        }
         GridEdit::Reset => {
             let Source::File(path) = &current.source else {
                 return None;
             };
-            let analysed = cache::load(path).filter(|a| !a.grid.is_empty())?;
+            let analysed = refitted(path, &current)
+                .or_else(|| cache::load(path))
+                .filter(|a| !a.grid.is_empty())?;
             if current.info.grid_analysed && analysed.grid == current.grid {
                 return None;
             }
@@ -678,6 +748,27 @@ fn load(shared: &Arc<Shared>, deck: usize, generation: u64, base: &Track) -> Res
     if !latest() {
         return Ok(());
     }
+    // Beats kept from an analysis in another grid mode are fitted again,
+    // and an analysed grid from the library gives way to that.
+    let mut analysis = analysis;
+    let mut refit_base = None;
+    if let Some(path) = path {
+        let hint = analysis_hint(base);
+        if analysis.grid_mode != hint.mode
+            && grid_replaceable(base)
+            && beatthis::refit(&mut analysis, audio.duration(), hint).is_ok()
+        {
+            cache::store(path, &analysis);
+            refit_base = Some(Track {
+                info: LibraryInfo {
+                    fixed_grid: false,
+                    ..base.info.clone()
+                },
+                ..base.clone()
+            });
+        }
+    }
+    let base = refit_base.as_ref().unwrap_or(base);
     // Beat This! takes a few seconds more: the deck plays on the DSP grid
     // meanwhile, then takes the grid fitted to its beats.
     let refine = beatthis::wanted(&analysis) && grid_replaceable(base) && path.is_some();
@@ -767,6 +858,66 @@ mod tests {
         assert!((t.first_beat - 0.23).abs() < 1e-9);
         let back = edit_grid(&loaded, deck, &t, GridEdit::Undo, 0.0).unwrap();
         assert!((back.first_beat - 0.2).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_grid_mode_refits_from_the_cached_beats() {
+        // Deck 2: the undo history is shared with the other tests.
+        let deck = 1;
+        let dir = std::env::temp_dir().join(format!("opendj-modes-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("drums.wav");
+        std::fs::write(&file, b"live drums").unwrap();
+        // A drummer between 116 and 124 BPM, every 16 bars.
+        let mut beats = vec![0.2];
+        for k in 1..512 {
+            let bpm = 120.0 + 4.0 * (k as f64 * std::f64::consts::TAU / 64.0).sin();
+            beats.push(beats[k - 1] + 60.0 / bpm);
+        }
+        let mut a = analyse(&synth::render_with(120.0, 0.1, 10.0, 1), None);
+        a.downbeats = beats.iter().step_by(4).copied().collect();
+        a.beats = beats;
+        a.neural_beats = true;
+        beatthis::refit(&mut a, 260.0, None).unwrap();
+        assert_eq!(a.grid_mode, GridMode::Auto);
+        cache::store(&file, &a);
+
+        let loaded: LoadedTracks = Default::default();
+        let mut t = (*synth::sample_library()[0]).clone();
+        t.source = Source::File(file.clone());
+        t.duration = 260.0;
+        t.set_grid(a.grid.clone());
+        t.info.fixed_grid = true;
+        t.info.grid_analysed = true;
+        t.audio = Some(Arc::new(Audio::from_frames(44_100, vec![[0.0; 2]; 44_100])));
+        let t = Arc::new(t);
+        loaded.write().unwrap()[deck] = Some(t.clone());
+
+        let fixed = edit_grid(&loaded, deck, &t, GridEdit::Mode(GridMode::Fixed), 0.0).unwrap();
+        assert!(!fixed.beat_grid().is_dynamic());
+        assert_eq!(fixed.info.grid_mode, Some(GridMode::Fixed));
+        assert_eq!(fixed.info.grid_from, "analysis");
+        assert!(!fixed.info.fixed_grid, "the library takes it as analysed");
+        let flexible = edit_grid(
+            &loaded,
+            deck,
+            &fixed,
+            GridEdit::Mode(GridMode::Flexible),
+            0.0,
+        )
+        .unwrap();
+        assert!(flexible.beat_grid().markers().len() > a.grid.markers().len());
+        assert_eq!(cache::load(&file).unwrap().grid_mode, GridMode::Flexible);
+        let back = edit_grid(&loaded, deck, &flexible, GridEdit::Undo, 0.0).unwrap();
+        assert!(
+            !back.beat_grid().is_dynamic(),
+            "undo goes back to Fixed's grid"
+        );
+
+        // A locked grid keeps its mode and grid.
+        let locked = edit_grid(&loaded, deck, &back, GridEdit::Lock(true), 0.0).unwrap();
+        assert!(edit_grid(&loaded, deck, &locked, GridEdit::Mode(GridMode::Auto), 0.0).is_none());
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

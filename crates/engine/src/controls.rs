@@ -258,6 +258,10 @@ pub(crate) struct DeckControls {
     /// The loaded track's beat grid is locked (Mixxx's `bpmlock`): turning
     /// it on or off locks or unlocks the grid.
     pub(crate) bpmlock: ControlHandle,
+    /// The loaded track's grid mode (openDJ's own; see
+    /// [`crate::gridfit::GridMode::id`]): setting it fits the grid again in
+    /// that mode.
+    pub(crate) beats_mode: ControlHandle,
     /// Clicks on each beat of the grid, louder on bar 1 (openDJ's own), to
     /// check the grid by ear.
     pub(crate) metronome: ControlHandle,
@@ -541,6 +545,7 @@ impl DeckControls {
             }),
             keylock: reg.toggle(g, "keylock"),
             bpmlock: reg.toggle(g, "bpmlock"),
+            beats_mode: reg.create(g, "beats_mode", 0.0, 0.0, 2.0, Behavior::Free),
             metronome: reg.toggle(g, "metronome"),
             beats_edit: reg.toggle(g, "beats_edit"),
             live_input: reg.create(

@@ -17,12 +17,13 @@ use flate2::Compression;
 
 use crate::analysis::Analysis;
 use crate::beats::{BeatGrid, GridMarker};
+use crate::gridfit::GridMode;
 use crate::key::{Detector, Key};
 use crate::loudness::Loudness;
 use crate::track::{Chroma, OverviewSlice, Waveform, WaveformBin};
 
 /// Changes whenever the analysis or this format changes, so old entries are ignored.
-const MAGIC: &[u8; 8] = b"MXRSAN07";
+const MAGIC: &[u8; 8] = b"MXRSAN08";
 
 /// Starts each stored overview, followed by the analysis's own [`MAGIC`],
 /// so overviews of an older analysis are made again too.
@@ -419,8 +420,10 @@ fn encode(a: &Analysis) -> Vec<u8> {
         out.extend_from_slice(&m.seconds.to_le_bytes());
         out.extend_from_slice(&m.bpm.to_le_bytes());
     }
-    // Grid flags: unsure, then from Beat This!.
-    let flags = u64::from(a.grid_unsure) | u64::from(a.neural_beats) << 1;
+    // Grid flags: unsure, then from Beat This!, then the grid mode (two bits).
+    let flags = u64::from(a.grid_unsure)
+        | u64::from(a.neural_beats) << 1
+        | u64::from(a.grid_mode.id()) << 2;
     out.extend_from_slice(&flags.to_le_bytes());
     out.extend_from_slice(&(finest.len() as u64).to_le_bytes());
     for b in finest {
@@ -433,6 +436,13 @@ fn encode(a: &Analysis) -> Vec<u8> {
     out.extend_from_slice(&(chroma.steps.len() as u64).to_le_bytes());
     for s in &chroma.steps {
         out.extend_from_slice(s);
+    }
+    // Beat This!'s beats and downbeats after it, likewise.
+    for times in [&a.beats, &a.downbeats] {
+        out.extend_from_slice(&(times.len() as u64).to_le_bytes());
+        for &t in times {
+            out.extend_from_slice(&(t as f32).to_le_bytes());
+        }
     }
     out
 }
@@ -478,7 +488,9 @@ fn decode(data: &[u8]) -> Option<Analysis> {
     let (bins, after) = rest.split_at(bytes);
     let finest: Vec<WaveformBin> = bins.as_chunks::<8>().0.to_vec();
     let mut waveform = Waveform::from_finest(bins_per_second, finest);
-    waveform.chroma = decode_chroma(after).unwrap_or_default();
+    let (chroma, after) = decode_chroma(after).unwrap_or_default();
+    waveform.chroma = chroma;
+    let (beats, downbeats) = decode_beats(after).unwrap_or_default();
     Some(Analysis {
         waveform,
         key,
@@ -488,20 +500,50 @@ fn decode(data: &[u8]) -> Option<Analysis> {
         grid: BeatGrid::new(grid),
         grid_unsure: flags & 1 != 0,
         neural_beats: flags & 2 != 0,
+        grid_mode: GridMode::from_id((flags >> 2 & 3) as u8).unwrap_or_default(),
+        beats,
+        downbeats,
         loudness,
     })
 }
 
-/// The chroma stored after the waveform; None for entries from before.
-fn decode_chroma(data: &[u8]) -> Option<Chroma> {
+/// The chroma stored after the waveform, and what follows it; None for
+/// entries from before.
+fn decode_chroma(data: &[u8]) -> Option<(Chroma, &[u8])> {
     let (rate, rest) = data.split_first_chunk::<8>()?;
     let (len, rest) = rest.split_first_chunk::<8>()?;
     let len = u64::from_le_bytes(*len) as usize;
-    let (steps, _) = rest.as_chunks::<12>();
-    (steps.len() == len).then(|| Chroma {
+    let bytes = len.checked_mul(12).filter(|&b| b <= rest.len())?;
+    let (steps, after) = rest.split_at(bytes);
+    let chroma = Chroma {
         per_second: f64::from_le_bytes(*rate),
-        steps: steps.to_vec(),
-    })
+        steps: steps.as_chunks::<12>().0.to_vec(),
+    };
+    Some((chroma, after))
+}
+
+/// The beats and downbeats stored after the chroma; None for entries from
+/// before.
+fn decode_beats(data: &[u8]) -> Option<(Vec<f64>, Vec<f64>)> {
+    let mut rest = data;
+    let mut times = || -> Option<Vec<f64>> {
+        let (len, r) = rest.split_first_chunk::<8>()?;
+        let len = u64::from_le_bytes(*len) as usize;
+        let bytes = len.checked_mul(4).filter(|&b| b <= r.len())?;
+        let (values, after) = r.split_at(bytes);
+        rest = after;
+        Some(
+            values
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|b| f64::from(f32::from_le_bytes(*b)))
+                .collect(),
+        )
+    };
+    let beats = times()?;
+    let downbeats = times()?;
+    Some((beats, downbeats))
 }
 
 #[cfg(test)]
@@ -585,12 +627,27 @@ mod tests {
         assert!(!a.waveform.chroma.steps.is_empty());
         assert_eq!(b.waveform.chroma, a.waveform.chroma);
         // Cut short inside the waveform: nothing; without the chroma (an
-        // entry from before it was kept): the rest, without one.
-        let chroma_bytes = 16 + 12 * a.waveform.chroma.steps.len();
+        // entry from before it was kept): the rest, without one. (Two empty
+        // lists of beats follow it.)
+        let chroma_bytes = 16 + 12 * a.waveform.chroma.steps.len() + 16;
         assert!(decode(&data[..data.len() - chroma_bytes - 3]).is_none());
         let old = decode(&data[..data.len() - chroma_bytes]).unwrap();
         assert_eq!(old.waveform.levels, a.waveform.levels);
         assert!(old.waveform.chroma.steps.is_empty());
+
+        // Beat This!'s beats and the grid mode; entries from before them
+        // load without.
+        a.beats = vec![0.5, 1.0, 1.5];
+        a.downbeats = vec![0.5];
+        a.grid_mode = crate::gridfit::GridMode::Flexible;
+        let data = encode(&a);
+        let b = decode(&data).unwrap();
+        assert_eq!((&b.beats, &b.downbeats), (&a.beats, &a.downbeats));
+        assert_eq!(b.grid_mode, a.grid_mode);
+        assert_eq!(b.waveform.chroma, a.waveform.chroma);
+        let before_beats = decode(&data[..data.len() - 16 - 4 * 4]).unwrap();
+        assert!(before_beats.beats.is_empty());
+        assert_eq!(before_beats.waveform.chroma, a.waveform.chroma);
 
         // Which detector found the key, and keys from before there was a choice.
         a.key_detector = Detector::Neural;

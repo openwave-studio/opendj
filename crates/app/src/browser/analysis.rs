@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use opendj_engine::{phrases, Source, Track, NUM_DECKS};
+use opendj_engine::{phrases, GridMode, Source, Track, NUM_DECKS};
 use slint::{ComponentHandle, Model};
 
 use super::{is_browsed, Browser, Contents};
@@ -80,6 +80,16 @@ impl Browser {
             })
         });
         let w = with.clone();
+        edit.on_set_grid_mode(move |first, last, mode| {
+            w(&|b| {
+                let Some(mode) = GridMode::from_id(mode as u8) else {
+                    return;
+                };
+                let picked = b.picked_rows(first, last);
+                b.set_grid_mode(&picked, mode);
+            })
+        });
+        let w = with.clone();
         edit.on_prepare_hq_stems(move |first, last| {
             w(&|b| {
                 for i in b.picked_rows(first, last) {
@@ -113,6 +123,44 @@ impl Browser {
                 | Contents::Dir(_)
                 | Contents::Health(None)
         )
+    }
+
+    /// Gives library tracks (by index) a grid mode and fits their grids
+    /// again in it. A track on a deck goes through the deck; locked grids
+    /// stay as they are.
+    fn set_grid_mode(&mut self, indices: &[usize], mode: GridMode) {
+        for &i in indices {
+            let Some(t) = self.library.get(i).cloned() else {
+                continue;
+            };
+            if t.info.grid_locked || !matches!(t.source, Source::File(_)) || is_browsed(&t) {
+                continue;
+            }
+            if let Some(d) = self.loaded.iter().position(|l| *l == Some(t.id)) {
+                self.deck_grid_mode[d].set(f64::from(mode.id()));
+                continue;
+            }
+            if t.info.grid_mode == Some(mode) {
+                continue;
+            }
+            let mut e = (*t).clone();
+            e.info.grid_mode = Some(mode);
+            if let (true, Some(db)) = (self.saved(), &self.db) {
+                if let Err(err) = db.set_grid_mode(e.id, e.info.grid_mode) {
+                    eprintln!("can't save the grid mode: {err}");
+                }
+            }
+            let e = Arc::new(e);
+            self.library[i] = e.clone();
+            // An edited grid gives way to the analysed one, as Reset does.
+            let mut queued = (*e).clone();
+            if !matches!(e.info.grid_from.as_str(), "" | "analysis") {
+                queued.info.fixed_grid = true;
+                queued.info.grid_analysed = true;
+            }
+            self.analysis.add_refit(&Arc::new(queued));
+        }
+        self.show_analysis();
     }
 
     /// Queues library tracks (by index) to be analysed afresh.

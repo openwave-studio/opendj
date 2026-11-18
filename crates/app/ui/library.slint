@@ -471,6 +471,9 @@ export global LibraryEdit {
     callback play-album-folder(index: int);
     // Analyses the rows `first` to `last` again, in the background.
     callback analyze(first: int, last: int);
+    // Gives the tracks a grid mode (Auto 0, Fixed 1, Flexible 2) and fits
+    // their grids again in it.
+    callback set-grid-mode(first: int, last: int, mode: int);
     // Analyses every track of the tree's row `row`.
     callback analyze-all(row: int);
     // Opens Export to USB for the tree's row `row` (a list or folder).
@@ -1674,7 +1677,7 @@ component TrackMenu inherits PopupWindow {
     // The side panel opens on the left, as the menu is near the right edge.
     in property <bool> panel-left;
     // The side panel shown: 0 none, 1 add to a list, 2 the lists it's in,
-    // 3 add a tag.
+    // 3 add a tag, 4 the grid mode.
     property <int> panel;
     property <string> find;
     property <bool> one: count <= 1;
@@ -1723,6 +1726,28 @@ component TrackMenu inherits PopupWindow {
         track-row: track-row;
         track-last: track-last;
         done => { root.close(); }
+    }
+    if panel == 4: Rectangle {
+        x: panel-left ? panel-width - self.width : menu-width + 6px;
+        y: max(4px, min(menu-y + grid-line.y - 6px, root.height - self.height - 4px));
+        width: 160px;
+        height: grid-col.preferred-height;
+        MenuBackground {}
+        grid-col := VerticalLayout {
+            padding: 6px;
+            spacing: 2px;
+            for item in [
+                { text: "Fixed", id: 1 },
+                { text: "Auto", id: 0 },
+                { text: "Flexible", id: 2 },
+            ]: MenuLine {
+                text: item.text;
+                clicked => {
+                    LibraryEdit.set-grid-mode(track-row, track-last, item.id);
+                    root.close();
+                }
+            }
+        }
     }
     if panel == 2: ListPanel {
         x: panel-left ? 0px : menu-width + 6px;
@@ -2039,6 +2064,14 @@ component TrackMenu inherits PopupWindow {
                     LibraryEdit.analyze(track-row, track-last);
                     root.close();
                 }
+            }
+            grid-line := MenuLine {
+                icon: "analyze";
+                text: "Grid";
+                submenu: true;
+                open: panel == 4;
+                entered => { panel = 4; }
+                clicked => { panel = 4; }
             }
             MenuLine {
                 icon: "stems";

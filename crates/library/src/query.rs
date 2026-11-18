@@ -32,6 +32,8 @@
 //!   [`crate::health`]).
 //! - `stage:inbox`, `stage:prep`, `stage:playready` (or the older
 //!   `stage:triage`, `stage:collection`; see [`crate::stages`]); `stage:none` for tracks outside the stage folders.
+//! - `grid:auto`, `grid:fixed`, `grid:flexible`: how the track's beat grid
+//!   follows its tempo (see [`opendj_engine::GridMode`]).
 //! - `crate:yoga` for tracks in a crate whose name has "yoga" in it,
 //!   `crate:=yoga` for that crate only, `crate:""` for tracks in no crate
 //!   (see [`crate::sets`]).
@@ -235,6 +237,8 @@ enum Test {
     Is(Flag),
     /// The track's stage name; empty for none.
     Stage(String),
+    /// `grid:fixed`: the track's grid mode.
+    GridMode(opendj_engine::GridMode),
     /// In a crate whose lowercased name has this in it (or is it, when
     /// exact); `Crate(None)` is in no crate.
     Crate(Option<(String, bool)>),
@@ -552,6 +556,10 @@ fn parse_test(word: &str) -> Option<Test> {
             None if v.is_empty() => return None,
             None => Test::Crate(Some((v.to_lowercase(), false))),
         },
+        "grid" => match v.as_str() {
+            "" => return None,
+            name => opendj_engine::GridMode::from_name(name).map_or(Test::Never, Test::GridMode),
+        },
         "stage" => match v.to_ascii_lowercase().as_str() {
             "none" => Test::Stage(String::new()),
             "" => return None,
@@ -844,6 +852,7 @@ impl Term {
                 }
             }
             Test::Stage(s) => t.info.stage == *s,
+            Test::GridMode(m) => t.info.grid_mode() == *m,
             Test::Crate(want) => {
                 let names = cx.crates.and_then(|c| c.get(&t.id));
                 match want {
@@ -1064,6 +1073,19 @@ mod tests {
         t.rating = 0;
         t.source = Source::File(PathBuf::from(format!("/music/{artist} - {title}.mp3")));
         t
+    }
+
+    #[test]
+    fn grid_modes() {
+        use opendj_engine::GridMode;
+        let mut tracks = library();
+        tracks[0].info.grid_mode = Some(GridMode::Flexible);
+        tracks[1].info.grid_mode = Some(GridMode::Fixed);
+        assert_eq!(find(&tracks, "grid:flexible"), [1]);
+        assert_eq!(find(&tracks, "grid:Fixed"), [2]);
+        // The others follow the default, Auto.
+        assert!(find(&tracks, "grid:auto").len() == tracks.len() - 2);
+        assert!(find(&tracks, "grid:wobbly").is_empty());
     }
 
     fn find(tracks: &[Track], q: &str) -> Vec<usize> {

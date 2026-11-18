@@ -374,6 +374,9 @@ pub struct LibraryInfo {
     pub grid_locked: bool,
     /// The analysed grid fits the beats poorly: worth checking by ear.
     pub grid_unsure: bool,
+    /// How the DJ wants the track's grid to follow its tempo; None for the
+    /// mode set in Settings (see [`LibraryInfo::grid_mode`]).
+    pub grid_mode: Option<crate::gridfit::GridMode>,
     /// When the track joined the library, as a Unix time (0 if unknown).
     pub added: i64,
     /// The library has the track but its file is not on disk.
@@ -410,6 +413,12 @@ pub struct LibraryInfo {
 }
 
 impl LibraryInfo {
+    /// How the track's grid is fitted: the DJ's choice for it, else the
+    /// mode set in Settings.
+    pub fn grid_mode(&self) -> crate::gridfit::GridMode {
+        self.grid_mode.unwrap_or_else(crate::gridfit::default_mode)
+    }
+
     /// The names of the track's tags in `group`, in the order they were added.
     pub fn tags_in(&self, group: i64) -> impl Iterator<Item = &str> {
         self.tags

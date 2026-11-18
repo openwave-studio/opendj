@@ -8,6 +8,12 @@
 //! line (one tempo) is fitted through them; only where the beats move away
 //! from that line for a while, as live drums and old disco do, does the grid
 //! start a new tempo section.
+//!
+//! That is the [`GridMode::Auto`] fit. A track can also be fitted with one
+//! tempo throughout ([`GridMode::Fixed`]), or bar by bar so the grid follows
+//! a drummer's pushes and pulls ([`GridMode::Flexible`]).
+
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use crate::beats::{BeatGrid, GridMarker};
 
@@ -37,6 +43,73 @@ const ROUND_SLACK: f64 = 0.003;
 /// one section.
 const SAME_TEMPO: f64 = 0.002;
 
+/// How far (in seconds, the median of a bar's beats) a bar may sit from
+/// its section's line in a Flexible grid before a new section starts.
+const FLEX_TOLERANCE: f64 = 0.015;
+/// Fewest bars in a Flexible grid's section.
+const FLEX_MIN_BARS: usize = 2;
+
+/// How a track's grid follows its tempo.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub enum GridMode {
+    /// One tempo unless the beats drift away from it for a while.
+    #[default]
+    Auto,
+    /// One tempo for the whole track.
+    Fixed,
+    /// Follows the beats bar by bar, for live drums.
+    Flexible,
+}
+
+impl GridMode {
+    pub const ALL: [GridMode; 3] = [GridMode::Fixed, GridMode::Auto, GridMode::Flexible];
+
+    /// The mode's number, as settings, controls and the cache keep it.
+    pub fn id(self) -> u8 {
+        match self {
+            GridMode::Auto => 0,
+            GridMode::Fixed => 1,
+            GridMode::Flexible => 2,
+        }
+    }
+
+    pub fn from_id(id: u8) -> Option<Self> {
+        match id {
+            0 => Some(GridMode::Auto),
+            1 => Some(GridMode::Fixed),
+            2 => Some(GridMode::Flexible),
+            _ => None,
+        }
+    }
+
+    /// The mode's name, as the library keeps it and searches name it.
+    pub fn name(self) -> &'static str {
+        match self {
+            GridMode::Auto => "auto",
+            GridMode::Fixed => "fixed",
+            GridMode::Flexible => "flexible",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|m| m.name().eq_ignore_ascii_case(name))
+    }
+}
+
+static DEFAULT_MODE: AtomicU8 = AtomicU8::new(0);
+
+/// The mode tracks without one of their own are fitted in.
+pub fn default_mode() -> GridMode {
+    GridMode::from_id(DEFAULT_MODE.load(Ordering::Relaxed)).unwrap_or_default()
+}
+
+/// Sets the mode tracks without one of their own are fitted in.
+pub fn set_default_mode(mode: GridMode) {
+    DEFAULT_MODE.store(mode.id(), Ordering::Relaxed);
+}
+
 /// A grid fitted to detected beats.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Fitted {
@@ -47,8 +120,19 @@ pub struct Fitted {
 
 /// Fits a grid to `beats` (times in seconds, ascending; missed beats are
 /// fine) whose tempo is near `bpm`. With `downbeats`, the grid's beat 0, and
-/// so bar 1, falls on a downbeat. None with too few beats.
+/// so bar 1, falls on a downbeat. None with too few beats. The fit is
+/// [`GridMode::Auto`]'s; see [`fit_mode`] for the others.
 pub fn fit(beats: &[f64], downbeats: Option<&[f64]>, bpm: f64) -> Option<Fitted> {
+    fit_mode(beats, downbeats, bpm, GridMode::Auto)
+}
+
+/// Fits a grid as [`fit`] does, in `mode`.
+pub fn fit_mode(
+    beats: &[f64],
+    downbeats: Option<&[f64]>,
+    bpm: f64,
+    mode: GridMode,
+) -> Option<Fitted> {
     if bpm <= 0.0 {
         return None;
     }
@@ -56,23 +140,8 @@ pub fn fit(beats: &[f64], downbeats: Option<&[f64]>, bpm: f64) -> Option<Fitted>
     if numbered.len() < MIN_BEATS {
         return None;
     }
+    // Found in every mode: it numbers again the beats after a slip.
     let found = sections(&mut numbered);
-    let period = |(a, b): (usize, usize)| Line::through(&numbered[a..b]).period;
-    // Neighbours at nearly the same tempo are one section.
-    let mut merged: Vec<(usize, usize)> = Vec::new();
-    for s in found {
-        match merged.last_mut() {
-            Some(last) if (period(s) / period(*last) - 1.0).abs() < SAME_TEMPO => last.1 = s.1,
-            _ => merged.push(s),
-        }
-    }
-    let markers: Vec<(f64, Line)> = merged
-        .iter()
-        .map(|&(a, b)| {
-            let beats = &numbered[a..b];
-            (numbered[a].0, Line::through(beats).rounded(beats))
-        })
-        .collect();
 
     // Bar 1 on the downbeats: the beat number most of them land on, mod 4.
     let first = numbered[0].0;
@@ -92,14 +161,24 @@ pub fn fit(beats: &[f64], downbeats: Option<&[f64]>, bpm: f64) -> Option<Fitted>
     // Start the grid on the last bar line at or before the first beat.
     let start = first - (first - bar).rem_euclid(4.0);
 
-    let mut grid_markers: Vec<GridMarker> = markers
-        .iter()
-        .map(|(n, line)| GridMarker {
-            seconds: line.at(*n),
-            bpm: 60.0 / line.period,
-        })
-        .collect();
-    grid_markers[0].seconds = markers[0].1.at(start);
+    let grid_markers = match mode {
+        GridMode::Flexible => flexible_markers(&numbered, bar, start),
+        GridMode::Fixed => line_markers(&numbered, &[(0, numbered.len())], start),
+        GridMode::Auto => {
+            let period = |(a, b): (usize, usize)| Line::through(&numbered[a..b]).period;
+            // Neighbours at nearly the same tempo are one section.
+            let mut merged: Vec<(usize, usize)> = Vec::new();
+            for s in found {
+                match merged.last_mut() {
+                    Some(last) if (period(s) / period(*last) - 1.0).abs() < SAME_TEMPO => {
+                        last.1 = s.1
+                    }
+                    _ => merged.push(s),
+                }
+            }
+            line_markers(&numbered, &merged, start)
+        }
+    };
     let grid = BeatGrid::new(grid_markers);
 
     let rms = (numbered
@@ -230,6 +309,102 @@ fn sections(numbered: &mut [(f64, f64)]) -> Vec<(usize, usize)> {
     }
     out.push((start, numbered.len()));
     out
+}
+
+/// A marker where each section starts, on the line through its beats; the
+/// first starts at beat number `start` (bar 1's line).
+fn line_markers(
+    numbered: &[(f64, f64)],
+    sections: &[(usize, usize)],
+    start: f64,
+) -> Vec<GridMarker> {
+    let mut markers: Vec<GridMarker> = sections
+        .iter()
+        .map(|&(a, b)| {
+            let beats = &numbered[a..b];
+            let line = Line::through(beats).rounded(beats);
+            GridMarker {
+                seconds: line.at(numbered[a].0),
+                bpm: 60.0 / line.period,
+            }
+        })
+        .collect();
+    let (a, b) = sections[0];
+    markers[0].seconds = Line::through(&numbered[a..b])
+        .rounded(&numbered[a..b])
+        .at(start);
+    markers
+}
+
+/// A Flexible grid's markers: on bar lines (beat numbers `bar` mod 4, from
+/// `start`), each where the beats around it put that bar line, with
+/// straight lines between. A stretch grows a bar at a time while the bars
+/// in it stay within [`FLEX_TOLERANCE`] of the line from its first bar line
+/// to the one after its last bar; two bars in a row off it end the stretch
+/// (one bar off on its own, a fill or a stray beat, doesn't).
+fn flexible_markers(numbered: &[(f64, f64)], bar: f64, start: f64) -> Vec<GridMarker> {
+    // The index of each bar's first beat, and the bar's number.
+    let mut bars: Vec<usize> = Vec::new();
+    let mut ids: Vec<f64> = Vec::new();
+    for (i, &(n, _)) in numbered.iter().enumerate() {
+        let id = ((n - bar) / 4.0).floor();
+        if ids.last() != Some(&id) {
+            bars.push(i);
+            ids.push(id);
+        }
+    }
+    bars.push(numbered.len());
+    let count = ids.len();
+    // Where the beats around bar line `k` (k == count: after the last bar)
+    // put it, as (beat number, seconds).
+    let knot = |k: usize| -> (f64, f64) {
+        let n = if k < count {
+            bar + 4.0 * ids[k]
+        } else {
+            bar + 4.0 * (ids[count - 1] + 1.0)
+        };
+        let from = bars[k.saturating_sub(1)];
+        let to = bars[(k + 1).min(count)];
+        let line = Line::through(&numbered[from..to.max(from + 2).min(numbered.len())]);
+        (n, line.at(n))
+    };
+    // Whether bar `k`'s beats keep to the line from `a` to `b`.
+    let on = |a: (f64, f64), b: (f64, f64), k: usize| {
+        let period = (b.1 - a.1) / (b.0 - a.0);
+        let mut off: Vec<f64> = numbered[bars[k]..bars[k + 1]]
+            .iter()
+            .map(|&(n, t)| (t - (a.1 + (n - a.0) * period)).abs())
+            .collect();
+        median(&mut off) <= FLEX_TOLERANCE
+    };
+    let mut knots = vec![knot(0)];
+    let mut first = 0;
+    let mut end = FLEX_MIN_BARS.min(count);
+    while end < count {
+        // Bar `end` joins the stretch unless two bars in a row are off the
+        // line to the bar line after it (the bar after counts too).
+        let (a, b) = (knots[knots.len() - 1], knot(end + 1));
+        let off = |k: usize| k < count && !on(a, b, k);
+        if !(first..=end).any(|k| off(k) && off(k + 1)) {
+            end += 1;
+            continue;
+        }
+        knots.push(knot(end));
+        first = end;
+        end = (first + FLEX_MIN_BARS).min(count);
+    }
+    knots.push(knot(count));
+    // Bar 1's line may be before the first beat.
+    let lead = knots[0];
+    let period0 = (knots[1].1 - lead.1) / (knots[1].0 - lead.0);
+    knots[0] = (start, lead.1 + (start - lead.0) * period0);
+    knots
+        .windows(2)
+        .map(|w| GridMarker {
+            seconds: w[0].1,
+            bpm: 60.0 * (w[1].0 - w[0].0) / (w[1].1 - w[0].1),
+        })
+        .collect()
 }
 
 /// How far `beats` sit from the line through them: the sum of squares.
@@ -507,6 +682,77 @@ mod tests {
             .collect();
         let f = fit(&beats, None, 127.5).unwrap();
         assert_eq!(f.grid.markers()[0].bpm, 127.5, "{:?}", f.grid);
+    }
+
+    #[test]
+    fn fixed_keeps_one_tempo_through_a_change() {
+        let mut beats: Vec<f64> = (0..128).map(|k| k as f64 * 0.5).collect();
+        beats.extend((0..160).map(|k| 64.0 + k as f64 * 60.0 / 126.0));
+        let f = fit_mode(&beats, None, 123.0, GridMode::Fixed).unwrap();
+        assert!(!f.grid.is_dynamic(), "{:?}", f.grid);
+        assert!(
+            f.unsure,
+            "a fixed grid that misses the beats is worth a look"
+        );
+    }
+
+    /// A drummer pushing and pulling between 116 and 124 BPM every 16 bars.
+    fn drummer() -> Vec<f64> {
+        let mut beats = vec![0.2];
+        for k in 1..512 {
+            let bpm = 120.0 + 4.0 * (k as f64 * std::f64::consts::TAU / 64.0).sin();
+            beats.push(beats[k - 1] + 60.0 / bpm);
+        }
+        beats
+    }
+
+    #[test]
+    fn flexible_follows_a_drummer_closer_than_auto() {
+        let beats = drummer();
+        let worst = |g: &BeatGrid| {
+            beats
+                .iter()
+                .map(|&b| (b - g.snap(b, false)).abs())
+                .fold(0.0, f64::max)
+        };
+        let flexible = fit_mode(&beats, None, 120.0, GridMode::Flexible).unwrap();
+        let auto = fit_mode(&beats, None, 120.0, GridMode::Auto).unwrap();
+        assert!(flexible.grid.is_dynamic());
+        assert!(worst(&flexible.grid) < 0.02, "{:?}", flexible.grid);
+        assert!(worst(&auto.grid) > worst(&flexible.grid), "{:?}", auto.grid);
+        assert!(!flexible.unsure);
+    }
+
+    #[test]
+    fn flexible_leaves_a_steady_track_steady() {
+        // Steady 124 BPM, each beat up to 10 ms early or late, as Beat
+        // This!'s 20 ms frames place them.
+        let period = 60.0 / 124.0;
+        let beats: Vec<f64> = (0..600)
+            .map(|k| 0.3 + k as f64 * period + 0.010 * jitter(k))
+            .collect();
+        let f = fit_mode(&beats, None, 124.0, GridMode::Flexible).unwrap();
+        assert!(f.grid.markers().len() <= 2, "{:?}", f.grid);
+        assert!((f.grid.bpm_at(100.0) - 124.0).abs() < 0.05, "{:?}", f.grid);
+    }
+
+    #[test]
+    fn flexible_sections_start_on_bar_lines() {
+        let beats = drummer();
+        let downbeats: Vec<f64> = beats.iter().skip(1).step_by(4).copied().collect();
+        let f = fit_mode(&beats, Some(&downbeats), 120.0, GridMode::Flexible).unwrap();
+        for m in f.grid.markers() {
+            let n = f.grid.beat_at(m.seconds).round();
+            assert_eq!(n.rem_euclid(4.0), 0.0, "{:?}", f.grid);
+        }
+    }
+
+    #[test]
+    fn modes_round_trip_by_name_and_number() {
+        for m in GridMode::ALL {
+            assert_eq!(GridMode::from_name(m.name()), Some(m));
+            assert_eq!(GridMode::from_id(m.id()), Some(m));
+        }
     }
 
     #[test]
