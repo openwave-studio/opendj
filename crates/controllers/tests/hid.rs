@@ -294,7 +294,7 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     assert!(
         reports.iter().all(|r| r.len() == 129 && r[0] == 0),
         "{:x?}",
-        &reports[0]
+        reports[0]
     );
     let kinds: Vec<u8> = reports.iter().map(|r| r[2]).collect();
     assert!(reports.iter().all(|r| r[1] == 0x10));
