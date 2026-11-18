@@ -31,6 +31,7 @@ mod rows;
 mod script;
 pub mod support;
 pub mod view;
+pub mod waves;
 
 use std::path::PathBuf;
 

@@ -464,6 +464,10 @@ pub(crate) struct HidLink {
 /// The deck 3 and 4 switches and the deck shift (see [`Host::route_state`]).
 pub(crate) type RouteState = ([bool; 2], usize);
 
+/// The shortest timer a script can ask for, with `engine.beginFastTimer`:
+/// what a jog screen fed 200 times a second needs (the DDJ-FLX10's).
+pub(crate) const FAST_TIMER_MS: f64 = 5.0;
+
 pub(crate) fn deck_group(deck: usize) -> String {
     format!("[Channel{deck}]")
 }
@@ -542,7 +546,7 @@ impl Host {
     /// `group` with deck 1 or 2 swapped for 3 or 4 when that side is
     /// switched over (`[Channel1]`, its EQ and filter racks and its stems),
     /// then moved along to the deck the device follows.
-    fn layered<'a>(&self, group: &'a str) -> std::borrow::Cow<'a, str> {
+    pub(crate) fn layered<'a>(&self, group: &'a str) -> std::borrow::Cow<'a, str> {
         let out = self.switched(group);
         if let std::borrow::Cow::Owned(s) = crate::routing::shift_group(&out, self.shift) {
             return std::borrow::Cow::Owned(s);
@@ -880,15 +884,19 @@ impl Host {
         out
     }
 
-    pub(crate) fn timer_start(&mut self, ms: f64, one_shot: bool) -> u32 {
+    /// Starts a timer of `ms`, raised to `floor` ms: 20 for
+    /// `engine.beginTimer`, as in Mixxx, and [`FAST_TIMER_MS`] for openDJ's
+    /// `engine.beginFastTimer`.
+    pub(crate) fn timer_start(&mut self, ms: f64, one_shot: bool, floor: f64) -> u32 {
         let id = self.next_timer;
         self.next_timer += 1;
         // Mixxx takes the interval as a 32-bit int and raises it to 20 ms;
         // Infinity converts to 0 there, so it gets 20 ms too.
+        let floor = floor.clamp(FAST_TIMER_MS, 20.0);
         let ms = if ms.is_finite() {
-            ms.clamp(20.0, i32::MAX as f64)
+            ms.clamp(floor, i32::MAX as f64)
         } else {
-            20.0
+            floor
         };
         let interval = Duration::from_secs_f64(ms / 1000.0);
         self.timers.insert(

@@ -1039,6 +1039,24 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         opendj_controllers::jog_feel::set_feel(&key, feel);
     }
     opendj_controllers::routing::load_deck_choices(settings::controller_decks());
+    // Controllers with screens (the DDJ-FLX10's jogs) draw the decks' waveforms.
+    {
+        let loaded = engine.loaded_tracks();
+        opendj_controllers::waves::set_source(Some(std::sync::Arc::new(
+            move |deck, per_second| {
+                let track = loaded
+                    .read()
+                    .ok()
+                    .and_then(|l| l.get(deck).cloned().flatten());
+                track.map_or_else(Vec::new, |t| {
+                    let w = &t.waveform;
+                    w.levels.first().map_or_else(Vec::new, |finest| {
+                        opendj_controllers::waves::resample(finest, w.bins_per_second, per_second)
+                    })
+                })
+            },
+        )));
+    }
     let controllers = match opendj_controllers::default_mappings_dir() {
         Some(dir) => Some(Rc::new(opendj_controllers::Controllers::start(
             registry.clone(),
