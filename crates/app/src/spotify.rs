@@ -68,6 +68,10 @@ pub struct StreamTrack {
     pub artists: Vec<String>,
     pub album: String,
     pub duration: f64,
+    /// The tempo and key the service gives, for those it knows ("Am",
+    /// "F#"); empty otherwise.
+    pub bpm: f64,
+    pub key: String,
 }
 
 impl StreamTrack {
@@ -859,6 +863,7 @@ fn parse_item(item: &Value) -> Option<StreamTrack> {
         artists,
         album: t["album"]["name"].as_str().unwrap_or_default().to_string(),
         duration: t["duration_ms"].as_f64().unwrap_or(0.0) / 1000.0,
+        ..Default::default()
     })
 }
 
@@ -1193,6 +1198,7 @@ mod tests {
             artists: vec!["Faithless".into(), "Rollo".into()],
             album: String::new(),
             duration: 0.0,
+            ..Default::default()
         };
         let m = |title: &str, artist: &str| matches(&sp, &normalize(title), &normalize(artist));
         assert!(m("Insomnia (Extended Mix)", "Faithless"));
@@ -1230,6 +1236,7 @@ mod tests {
             artists: vec![artist.into()],
             album: String::new(),
             duration,
+            ..Default::default()
         }
     }
 

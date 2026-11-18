@@ -607,6 +607,21 @@ fn parse_playlist(v: &Value) -> Option<Playlist> {
 /// Tracks as the add-on lists them (see
 /// [`opendj_plugins::source::SearchSource::browse`]), each with its cover's
 /// address.
+/// TIDAL's key ("CSharp", "MINOR") as openDJ writes keys ("C#m"); empty
+/// when TIDAL doesn't know it or the scale is neither major nor minor.
+fn key_of(key: &Value, scale: &Value) -> String {
+    let note = match key.as_str().unwrap_or_default() {
+        "" | "UNKNOWN" => return String::new(),
+        k => k.replace("Sharp", "#"),
+    };
+    match scale.as_str().unwrap_or_default() {
+        "MAJOR" | "LYDIAN" | "MIXOLYDIAN" | "PENTATONIC_MAJOR" => note,
+        "MINOR" | "AEOLIAN" | "DORIAN" | "PHRYGIAN" | "LOCRIAN" | "HARMONIC_MINOR"
+        | "MELODIC_MINOR" | "PENTATONIC_MINOR" => format!("{note}m"),
+        _ => String::new(),
+    }
+}
+
 fn addon_tracks(list: &Value) -> Vec<(StreamTrack, String)> {
     list.as_array()
         .into_iter()
@@ -632,6 +647,8 @@ fn addon_tracks(list: &Value) -> Vec<(StreamTrack, String)> {
                         .collect(),
                     album: text("album"),
                     duration: t["duration"].as_f64().unwrap_or(0.0),
+                    bpm: t["bpm"].as_f64().unwrap_or(0.0),
+                    key: key_of(&t["key"], &t["keyScale"]),
                 },
                 text("cover"),
             ))
@@ -711,6 +728,8 @@ fn parse_tracks(doc: &Value) -> Vec<StreamTrack> {
                     .next()
                     .unwrap_or_default(),
                 duration: iso_seconds(a["duration"].as_str().unwrap_or_default()),
+                bpm: a["bpm"].as_f64().unwrap_or(0.0),
+                key: key_of(&a["key"], &a["keyScale"]),
                 title,
                 id,
             })
@@ -783,7 +802,7 @@ mod tests {
                 "cover": "c.jpg", "count": 12 }],
             "tracks": [{ "id": 3, "title": "Airbag", "artists": ["Radiohead"],
                 "album": "OK Computer", "duration": 284.0, "isrc": "GBAYE9700084",
-                "cover": "c.jpg" }],
+                "cover": "c.jpg", "bpm": 119.5, "key": "FSharp", "keyScale": "MINOR" }],
         });
         let hits = addon_hits(&found);
         assert_eq!(hits.artists[0].key, "artist:1");
@@ -795,6 +814,19 @@ mod tests {
         assert_eq!(t.page, "https://tidal.com/browse/track/3");
         assert_eq!(t.artists, ["Radiohead"]);
         assert_eq!(cover, "c.jpg");
+        assert_eq!(t.bpm, 119.5);
+        assert_eq!(t.key, "F#m");
+    }
+
+    #[test]
+    fn keys_read_as_opendj_writes_them() {
+        let k = |key: &str, scale: &str| key_of(&serde_json::json!(key), &serde_json::json!(scale));
+        assert_eq!(k("Eb", "MAJOR"), "Eb");
+        assert_eq!(k("CSharp", "MINOR"), "C#m");
+        assert_eq!(k("A", "DORIAN"), "Am");
+        assert_eq!(k("UNKNOWN", "MINOR"), "");
+        assert_eq!(k("G", "BLUES"), "");
+        assert_eq!(key_of(&Value::Null, &Value::Null), "");
     }
 
     #[test]

@@ -87,7 +87,9 @@ Each service is signed in to with your own app, so openDJ ships no keys:
   In the TIDAL source, typing in the search box opens a list of matching
   artists, albums and tracks under it. Click an artist or album to see its
   tracks, or a track to load it onto a deck; press ↵ to list every track
-  found. Clear the box to see the playlist again.
+  found. Clear the box to see the playlist again. TIDAL tracks show the
+  BPM and key TIDAL gives them before they are downloaded; once a track is
+  in the collection, openDJ's own analysis takes over.
 - **Apple Music**: needs an Apple Developer account. Under **Certificates,
   Identifiers & Profiles › Keys**, create a key with **MusicKit** and
   download its `.p8` file. Enter your Team ID, the key's Key ID and the

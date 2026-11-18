@@ -274,6 +274,7 @@ fn parse_show(v: &Value) -> Option<StreamTrack> {
             .unwrap_or_default(),
         duration: v["audio_length"].as_f64().unwrap_or(0.0),
         id: key,
+        ..Default::default()
     })
 }
 
