@@ -981,7 +981,6 @@ mod tests {
     fn plays_before_analysis_then_reloads_from_cache() {
         let dir = std::env::temp_dir().join(format!("opendj-loader-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        cache::TEST_DIR.set(dir.join("cache")).unwrap();
         let path = dir.join("beats.wav");
         let audio = synth::render_with(124.0, 0.25, 40.0, 9);
         let samples: Vec<i16> = audio
@@ -1047,9 +1046,9 @@ mod tests {
         let overview = cache::overview(path).unwrap();
         assert_eq!(overview, analysed.waveform.overview(cache::OVERVIEW_SLICES));
         assert!(overview.iter().any(|s| s[0] > 100));
-        std::fs::remove_dir_all(dir.join("cache/overviews")).unwrap();
+        std::fs::remove_dir_all(cache::test_dir().join("overviews")).unwrap();
         assert_eq!(cache::overview(path).unwrap(), overview);
-        assert!(dir.join("cache/overviews").is_dir());
+        assert!(cache::test_dir().join("overviews").is_dir());
 
         // Analysed on request: past the cache, a grid from an earlier
         // analysis is replaced, and one the DJ edited stays.

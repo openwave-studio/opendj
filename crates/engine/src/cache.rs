@@ -32,24 +32,31 @@ const OVERVIEW_MAGIC: &[u8; 8] = b"ODJOVW02";
 /// Slices in a stored overview: the library's mini waveforms.
 pub const OVERVIEW_SLICES: usize = 256;
 
-/// Where tests keep their cache, instead of the user's.
+/// Where tests keep their cache, instead of the user's: one folder for the
+/// whole test run, so a test never stores in one and loads from another.
 #[cfg(test)]
-pub(crate) static TEST_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+pub(crate) fn test_dir() -> &'static Path {
+    static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    DIR.get_or_init(|| {
+        std::env::temp_dir().join(format!("opendj-test-cache-{}", std::process::id()))
+    })
+}
 
 /// openDJ's cache folder (`OPENDJ_CACHE` overrides it).
 pub fn cache_dir() -> Option<PathBuf> {
     #[cfg(test)]
-    if let Some(dir) = TEST_DIR.get() {
-        return Some(dir.clone());
+    return Some(test_dir().to_path_buf());
+    #[cfg(not(test))]
+    {
+        if let Some(dir) = std::env::var_os("OPENDJ_CACHE") {
+            return Some(PathBuf::from(dir));
+        }
+        let base = crate::paths::cache_base()?;
+        let name = crate::paths::app_folder_name();
+        static MOVED: std::sync::Once = std::sync::Once::new();
+        MOVED.call_once(|| move_old_folder(&base, name));
+        Some(base.join(name))
     }
-    if let Some(dir) = std::env::var_os("OPENDJ_CACHE") {
-        return Some(PathBuf::from(dir));
-    }
-    let base = crate::paths::cache_base()?;
-    let name = crate::paths::app_folder_name();
-    static MOVED: std::sync::Once = std::sync::Once::new();
-    MOVED.call_once(|| move_old_folder(&base, name));
-    Some(base.join(name))
 }
 
 /// Renames the folder an earlier version kept its files in (`mixxx-rs`)
