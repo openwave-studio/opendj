@@ -96,6 +96,9 @@ const MONO_GREY = vec3<f32>(0.40, 0.40, 0.44);
 // 3-Band weights (see three_band): the mids and highs against the lows,
 // the highs' extra share when the overview stacks the bands, and how much
 // darker the mid colour is where the low and the mids overlap.
+// The analyser's lift of the low, mid and high levels (BAND_GAIN in
+// crates/engine/src/analysis.rs).
+const BAND_LIFT = vec3<f32>(1.0, 1.4, 2.0);
 const BAND_MID: f32 = 0.75;
 const BAND_HIGH: f32 = 0.2;
 const BAND_HIGH_STACKED: f32 = 2.5;
@@ -432,10 +435,20 @@ fn over(base: vec3<f32>, c: vec3<f32>, a: f32) -> vec3<f32> {
 // Colour of a column from the balance of its bands, like Mixxx's RGB waveform:
 // bass-heavy is red, mids green, hats and vocals blue.
 fn band_color(s: Slice) -> vec3<f32> {
-    let w = s.rms.xyz * s.rms.xyz + 1e-5;
-    let c = (w.x * p.low_color.rgb + w.y * p.mid_color.rgb + w.z * p.high_color.rgb) / (w.x + w.y + w.z);
-    // Normalise brightness so mixed colours stay as vivid as pure ones.
-    return c / max(max(c.r, max(c.g, c.b)), 0.35);
+    // Each band's level, without the lift the analyser gives the mids and
+    // highs (BAND_GAIN in analysis.rs) so the 3-Band layers read: a quiet
+    // pad over a bassline still leans to the bass, as on other DJ apps.
+    let w = s.rms.xyz * s.rms.xyz / BAND_LIFT + 1e-5;
+    let sum = w.x + w.y + w.z;
+    let c = (w.x * p.low_color.rgb + w.y * p.mid_color.rgb + w.z * p.high_color.rgb) / sum;
+    // Mixed colours stay as vivid as pure ones, at the brightness of the
+    // palette colours they come from, so a darker green stays darker.
+    let v = (w.x * vmax(p.low_color.rgb) + w.y * vmax(p.mid_color.rgb) + w.z * vmax(p.high_color.rgb)) / sum;
+    return c / max(vmax(c), 0.35) * v;
+}
+
+fn vmax(c: vec3<f32>) -> f32 {
+    return max(c.r, max(c.g, c.b));
 }
 
 // Coverage of pixel (x, y) by the number of the bar whose line is the last
