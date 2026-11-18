@@ -104,8 +104,8 @@ PioneerDDJ400.vinylMode = function(deckNum) {
 };
 PioneerDDJ400.alpha = 1.0/8;
 PioneerDDJ400.beta = PioneerDDJ400.alpha/32;
-// openDJ: gentler rim corrections for beatmatching on the DDJ-400.
-PioneerDDJ400.bendScale = 0.175;
+// openDJ: the rim's bend strength (jog_bend's own is tuned for beatmatching).
+PioneerDDJ400.bendScale = 1.0;
 
 // Multiplier for fast seek through track using SHIFT+JOGWHEEL
 PioneerDDJ400.fastSeekScale = 150;
@@ -448,7 +448,7 @@ PioneerDDJ400.cycleTempoRange = function(_channel, _control, value, _status, gro
 // Jog wheels
 //
 
-PioneerDDJ400.jogTurn = function(channel, _control, value, _status, group) {
+PioneerDDJ400.jogTurn = function(channel, control, value, _status, group) {
     const deckNum = channel + 1;
     // wheel center at 64; <64 rew >64 fwd
     let newVal = value - 64;
@@ -468,7 +468,9 @@ PioneerDDJ400.jogTurn = function(channel, _control, value, _status, group) {
         }
     }
 
-    if (engine.isScratching(deckNum)) {
+    // openDJ: the rim (0x21) always bends, even while the deck is still
+    // easing back from a scratch, so twisting it never scratches.
+    if (control !== 0x21 && engine.isScratching(deckNum)) {
         engine.scratchTick(deckNum, newVal);
     } else {
         // openDJ: scale rim and untouched platter ticks for finer pitch bends.

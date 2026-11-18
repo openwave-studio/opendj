@@ -122,15 +122,20 @@ const JOG_SEARCH_SPEED: f64 = 8.0;
 /// so it doesn't flutter between wheel steps.
 const JOG_SEARCH_HOLD: f64 = 0.15;
 /// `jog_bend` comes in ticks of a jog's rim, 720 to a turn as on Pioneer
-/// controllers. As in Mixxx, where a rim tick is a `jog` of 0.8 and a jog
-/// adds a tenth of itself to the rate: each tick a second the rim turns adds
-/// 0.08% of normal speed (a quarter turn a second is about +14%).
-const BEND_PER_TICK_PER_SECOND: f64 = 0.0008;
+/// controllers: each tick a second the rim turns adds 0.014% of normal speed
+/// (a quarter turn a second is about +2.5%, a turn a second +10%), gentle
+/// enough to beatmatch by hand. (It was 0.08%, Mixxx's, which overshoots.)
+const BEND_PER_TICK_PER_SECOND: f64 = 0.00014;
 /// Seconds the rim's speed is averaged over, like Mixxx's jog filter: the
 /// bend follows the hand smoothly and springs back once the rim stops.
 const BEND_SMOOTH: f64 = 0.15;
-/// Track seconds one rim tick moves a paused deck by.
-const BEND_PAUSED_SECONDS: f64 = 0.008;
+/// Rim ticks to a full turn of a jog (Pioneer's 720).
+const RIM_TICKS_PER_TURN: f64 = 720.0;
+/// A full turn of the rim moves a paused deck by one bar of the track, as
+/// in other DJ software; a track without a tempo moves as a 33⅓ rpm record
+/// does, 1.8 s a turn.
+const BEND_PAUSED_BEATS_PER_TURN: f64 = 4.0;
+const BEND_PAUSED_SECONDS_PER_TURN: f64 = 1.8;
 /// How long a clip lights a PeakIndicator, in seconds.
 const PEAK_HOLD: f32 = 0.5;
 /// A control set to a value that is used once, put back to 0.
@@ -1234,7 +1239,7 @@ impl Deck {
             self.c.jog_bend.set(0.0);
         }
         if !self.c.play.get_bool() || dt <= 0.0 {
-            self.jog_pending += ticks * BEND_PAUSED_SECONDS;
+            self.jog_pending += ticks * self.rim_tick_seconds();
             self.bend_rate = 0.0;
             return 0.0;
         }
@@ -1243,6 +1248,20 @@ impl Deck {
             self.bend_rate = 0.0;
         }
         self.bend_rate * BEND_PER_TICK_PER_SECOND
+    }
+
+    /// Track seconds one rim tick moves a paused deck by: a bar a turn.
+    fn rim_tick_seconds(&self) -> f64 {
+        let bpm = self
+            .track
+            .as_ref()
+            .map_or(0.0, |t| t.bpm_at(self.seconds()));
+        let turn = if bpm > 0.0 {
+            BEND_PAUSED_BEATS_PER_TURN * 60.0 / bpm
+        } else {
+            BEND_PAUSED_SECONDS_PER_TURN
+        };
+        turn / RIM_TICKS_PER_TURN
     }
 
     /// The speed that moves on a share of the pending jog this buffer.
@@ -1436,6 +1455,19 @@ pub(crate) const DECLICK_SECONDS: f64 = 0.006;
 /// How long the stems made on load crossfade into high-quality ones once
 /// those are ready, so a muted stem doesn't click at the switch.
 pub(crate) const STEM_UPGRADE_SECONDS: f64 = 0.02;
+
+/// Below this speed, in multiples of normal, a deck fades out with its
+/// speed: there the music is too low to hear anyway, and what is left is the
+/// held sample's level stepping as the deck starts and stops, which clicks.
+const SLOW_FADE_SPEED: f64 = 0.1;
+
+/// The gain for a deck moving at `speed`: 1 from [`SLOW_FADE_SPEED`] up,
+/// easing down to 0 at a standstill.
+#[inline]
+fn slow_gain(speed: f64) -> f32 {
+    let x = (speed.abs() / SLOW_FADE_SPEED).min(1.0) as f32;
+    x * x * (3.0 - 2.0 * x)
+}
 
 /// A short crossfade as a deck goes into the time-stretcher (from playing
 /// as a record) or out of it, over this many output frames. The two differ
@@ -3788,6 +3820,14 @@ impl Engine {
                     }
                     if p.scrub {
                         s = soften_scrub(s, v.abs(), out_rate, &mut d.scrub_tone);
+                    }
+                    // Near a standstill the sound fades with the speed, so
+                    // touching the platter, holding it, and a scratch
+                    // settling to a stop don't click on the held sample.
+                    let g = slow_gain(v);
+                    if g < 1.0 {
+                        s = [s[0] * g, s[1] * g];
+                        send = [send[0] * g, send[1] * g];
                     }
                     let before = d.pos;
                     d.pos += step;
@@ -6620,7 +6660,7 @@ mod tests {
             }
             (seconds() - start) / (n as f64 * dt)
         };
-        // Like jog_bend: about +14%, a little less while it builds up, and
+        // About +14%, a little less while it builds up, and
         // the playhead never jumps.
         let faster = turn(&mut engine, 180.0);
         assert!(faster > 1.1 && faster < 1.15, "clockwise: {faster}");
@@ -6668,9 +6708,9 @@ mod tests {
             }
             (seconds() - start) / (n as f64 * dt)
         };
-        // About +14%, a little less while the bend builds up.
+        // About +2.5%, a little less while the bend builds up.
         let faster = turn(&mut engine, 180.0);
-        assert!(faster > 1.1 && faster < 1.15, "clockwise: {faster}");
+        assert!(faster > 1.018 && faster < 1.026, "clockwise: {faster}");
         assert_eq!(ctl("jog_bend").get(), 0.0);
         // It springs back once the rim stops.
         run(&mut engine, 1.0);
@@ -6682,15 +6722,19 @@ mod tests {
             seconds() - start
         );
         let slower = turn(&mut engine, -180.0);
-        assert!(slower < 0.9 && slower > 0.85, "counterclockwise: {slower}");
-        // Paused, the rim moves the track 8 ms a tick.
+        assert!(
+            slower < 0.982 && slower > 0.974,
+            "counterclockwise: {slower}"
+        );
+        // Paused, a full turn of the rim moves the track one bar: 2 s at
+        // 120 BPM.
         ctl("play").set_bool(false);
         run(&mut engine, 0.5);
         let start = seconds();
-        ctl("jog_bend").set(25.0);
+        ctl("jog_bend").set(720.0);
         run(&mut engine, 0.5);
         assert!(
-            (seconds() - start - 0.2).abs() < 0.01,
+            (seconds() - start - 2.0).abs() < 0.02,
             "{}",
             seconds() - start
         );
@@ -8394,6 +8438,55 @@ mod tests {
             _ => {}
         });
         assert!(scratch < 4.0 * steady, "scratch: {scratch}");
+    }
+
+    #[test]
+    fn touching_and_letting_go_of_the_platter_do_not_click() {
+        let ctl = |reg: &ControlRegistry, k: &str| reg.get("[Channel1]", k).unwrap();
+        let steady = roughness(&play_tone(false, 100, |_, _| {}));
+        // A playing deck: the hand comes down and stops it, holds it still
+        // with a little jitter, then lets go and the deck stops for good.
+        let held = play_tone(false, 100, |reg, n| match n {
+            10 => {
+                ctl(reg, "scratch2_enable").set_bool(true);
+                ctl(reg, "scratch2").set(0.5);
+            }
+            11 => ctl(reg, "scratch2").set(0.1),
+            12..=29 => ctl(reg, "scratch2").set(0.0),
+            30..=59 => ctl(reg, "scratch2").set(match n % 4 {
+                0 => 0.004,
+                2 => -0.003,
+                _ => 0.0,
+            }),
+            60 => {
+                ctl(reg, "play").set_bool(false);
+                ctl(reg, "scratch2").set(0.0);
+            }
+            61 => ctl(reg, "scratch2_enable").set_bool(false),
+            _ => {}
+        });
+        let rough = roughness(&held);
+        assert!(rough < 4.0 * steady, "touch and hold: {rough} vs {steady}");
+        // A scratch that settles to a stop on a paused deck ends quietly.
+        let scratch = play_tone(false, 60, |reg, n| match n {
+            0 => ctl(reg, "play").set_bool(false),
+            10 => {
+                ctl(reg, "scratch2_enable").set_bool(true);
+                ctl(reg, "scratch2").set(0.5);
+            }
+            11..=12 => ctl(reg, "scratch2").set(0.5 * (n - 9) as f64),
+            13..=30 => ctl(reg, "scratch2").set(1.5 * (30 - n) as f64 / 18.0),
+            31 => ctl(reg, "scratch2_enable").set_bool(false),
+            _ => {}
+        });
+        // (Pausing at the start stops at once, as play and stop do.)
+        let rough = roughness(&scratch[2 * 1024..]);
+        assert!(rough < 4.0 * steady, "scratch release: {rough} vs {steady}");
+        // Still audible while scratching.
+        let loud = scratch[15 * 1024..20 * 1024]
+            .iter()
+            .fold(0.0f32, |m, x| m.max(x.abs()));
+        assert!(loud > 0.05, "{loud}");
     }
 
     #[test]
