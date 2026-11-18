@@ -78,6 +78,60 @@ pub struct Frame {
     /// deck, which shows the leading deck's phrases, a thin strip along
     /// the top as well).
     pub phrases: Vec<(f64, PhraseKind)>,
+    /// Tempo labels, earliest first. The scrolling waveform draws a tab
+    /// with the BPM at each; one on or within [`TEMPO_MERGE_BEATS`] of a
+    /// phrase start drawn this frame joins that phrase's flag instead
+    /// ("DROP · 124"). The overview draws a tick along its top at each.
+    /// At most [`MAX_TEMPOS`].
+    pub tempos: Vec<TempoLabel>,
+}
+
+/// Tempo labels the shader draws at once: those in and around the view.
+pub const MAX_TEMPOS: usize = 16;
+
+/// How near a phrase start, in beats, a tempo label joins its flag.
+pub const TEMPO_MERGE_BEATS: f64 = 2.0;
+
+/// A tempo label: where it is and the BPM it shows.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TempoLabel {
+    pub seconds: f64,
+    pub bpm: f64,
+    /// Shown to a tenth of a BPM (while the grid is edited); else whole.
+    pub tenths: bool,
+}
+
+impl TempoLabel {
+    /// The value the shader draws: tenths of a BPM, with the top bit set
+    /// to show the tenth.
+    fn code(self) -> u32 {
+        let tenths = (self.bpm.clamp(0.0, 999.9) * 10.0).round() as u32;
+        if self.tenths {
+            tenths | 1 << 31
+        } else {
+            // Whole BPM, rounded as the whole number would be.
+            self.bpm.clamp(0.0, 999.0).round() as u32 * 10
+        }
+    }
+}
+
+/// Which phrase each tempo label joins (an index into `phrases`), if any:
+/// the nearest start within [`TEMPO_MERGE_BEATS`] of it.
+pub fn tempo_phrases(phrases: &[(f64, PhraseKind)], tempos: &[TempoLabel]) -> Vec<Option<usize>> {
+    tempos
+        .iter()
+        .map(|t| {
+            let reach = TEMPO_MERGE_BEATS * 60.0 / t.bpm.max(1.0) + 1e-3;
+            phrases
+                .iter()
+                .take(MAX_PHRASES)
+                .enumerate()
+                .map(|(i, (s, _))| (i, (s - t.seconds).abs()))
+                .filter(|&(_, d)| d <= reach)
+                .min_by(|a, b| a.1.total_cmp(&b.1))
+                .map(|(i, _)| i)
+        })
+        .collect()
 }
 
 /// Phrases the shader draws at once: far more than a track has, as a phrase
@@ -232,6 +286,14 @@ struct Params {
     /// how many stems (0: not drawn).
     stems: [f32; 4],
     stem_colors: [[f32; 4]; MAX_STEMS],
+    /// The tempo a phrase's flag shows after its name (see
+    /// [`TempoLabel::code`]), 0 for none.
+    phrase_tempo: [[u32; 4]; MAX_PHRASES / 4],
+    /// Each tempo label drawn on its own: where it is, in slices, and its
+    /// value; `tempo_count[0]` of them.
+    tempo_at: [[f32; 4]; MAX_TEMPOS / 4],
+    tempo_value: [[u32; 4]; MAX_TEMPOS / 4],
+    tempo_count: [u32; 4],
 }
 
 /// The colours [`MarkKind::Level`]'s `color` 1 to 8 picks, as sRGB hex.
@@ -919,6 +981,10 @@ impl WaveformView {
             vocal: [0.0; 4],
             stems: [0.0; 4],
             stem_colors: [[0.0; 4]; MAX_STEMS],
+            phrase_tempo: [[0; 4]; MAX_PHRASES / 4],
+            tempo_at: [[0.0; 4]; MAX_TEMPOS / 4],
+            tempo_value: [[0; 4]; MAX_TEMPOS / 4],
+            tempo_count: [0; 4],
         };
         if let (Some(t), Style::Stems) = (track, self.style) {
             params.stems = t.stems;
@@ -979,6 +1045,29 @@ impl WaveformView {
                 params.phrase_start[i / 4][i % 4] = to_bin(*seconds);
                 params.phrase_kind[i / 4][i % 4] = *kind as u32;
                 params.phrase_count = i as u32 + 1;
+            }
+            // The overview marks each label with a tick along its top.
+            if self.mode == Mode::Overview {
+                for (n, t) in f.tempos.iter().take(MAX_TEMPOS).enumerate() {
+                    params.tempo_at[n / 4][n % 4] = to_bin(t.seconds);
+                    params.tempo_value[n / 4][n % 4] = t.code();
+                    params.tempo_count[0] = n as u32 + 1;
+                }
+            } else {
+                let joins = tempo_phrases(&f.phrases, &f.tempos);
+                let mut n = 0;
+                for (t, join) in f.tempos.iter().zip(joins) {
+                    match join {
+                        Some(i) => params.phrase_tempo[i / 4][i % 4] = t.code(),
+                        None if n < MAX_TEMPOS => {
+                            params.tempo_at[n / 4][n % 4] = to_bin(t.seconds);
+                            params.tempo_value[n / 4][n % 4] = t.code();
+                            n += 1;
+                        }
+                        None => {}
+                    }
+                }
+                params.tempo_count[0] = n as u32;
             }
             if let Some(l) = &self.lanes {
                 for (i, m) in l.marks.iter().take(MAX_MARKS).enumerate() {

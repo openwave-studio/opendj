@@ -51,12 +51,7 @@ targets:
             UIWindowSceneSessionRoleApplication:
               - UISceneConfigurationName: Slint
                 UISceneDelegateClassName: SlintWindowSceneDelegate
-    sources:
-      # Mixxx's controller mappings, as a "controllers" folder beside the
-      # executable, where openDJ looks for them.
-      - path: ../../../res/controllers
-        type: folder
-        buildPhase: resources
+    sources: []
     postCompileScripts:
       - script: ./build_for_ios_with_cargo.bash opendj-tablet
         name: Build Rust

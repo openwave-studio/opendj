@@ -1,0 +1,9 @@
+# The controller files the tablet app ships and uses, from res/controllers.
+# For now only the Pioneer DDJ-FLX4 and the Allen & Heath Xone:K2 (openDJ's
+# two-deck mapping); add a controller by adding its files here.
+common-controller-scripts.js
+lodash.mixxx.js
+midi-components-0.0.js
+Pioneer-DDJ-FLX4.midi.xml
+Pioneer-DDJ-FLX4-script.js
+Allen and Heath Xone K2 - 2 Decks.opendj-mapping

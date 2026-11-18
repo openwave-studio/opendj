@@ -27,8 +27,8 @@ use opendj_engine::{
 use opendj_library::Library;
 use opendj_plugins::source::{QueryKind, SourceQuery};
 use opendj_waveform::{
-    steady_grid, wgpu, Extras, Frame, GpuTrack, GridSection, Mode, Palette, PhraseKind,
-    WaveformRenderer, WaveformView, GRID_SECTIONS,
+    steady_grid, wgpu, Extras, Frame, GpuTrack, GridSection, Mode, Palette, PhraseKind, TempoLabel,
+    WaveformRenderer, WaveformView, GRID_SECTIONS, MAX_TEMPOS,
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use smooth::{FrameStats, FrameTimer, SmoothClock};
@@ -1370,6 +1370,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         overview: std::array::from_fn(|_| make(Mode::Overview)),
                         tracks: Default::default(),
                         phrases: Default::default(),
+                        tempos: Default::default(),
                         clocks: Default::default(),
                         frame_timer: Default::default(),
                         frame_stats: Default::default(),
@@ -2634,6 +2635,7 @@ impl Decks {
             slip: Some(h.slip_position.get()).filter(|&s| s >= 0.0),
             gain: wave_look::gain_scale(h.pregain.get()),
             phrases,
+            tempos: Vec::new(),
         }
     }
 }
@@ -2695,6 +2697,10 @@ fn same_deck_info(old: &DeckInfo, new: &DeckInfo) -> bool {
 /// Where each phrase starts and its kind, as the waveforms draw them.
 type Phrases = Vec<(f64, PhraseKind)>;
 
+/// A track's tempo labels: where each is and its tempo (see
+/// `BeatGrid::tempo_labels`).
+type TempoLabels = Arc<[(f64, f64)]>;
+
 /// A track on the GPU, with the waveform, vocal levels and stem levels it
 /// came from.
 type Uploaded = (
@@ -2720,6 +2726,9 @@ struct Gpu {
     /// Each deck's phrases and the track they were found for, found again
     /// when the track changes (a new analysis or a grid edit replaces it).
     phrases: [Option<(Arc<Track>, Phrases)>; NUM_DECKS],
+    /// Each deck's tempo labels, the track and whether its grid was being
+    /// edited when they were picked (every marker then).
+    tempos: [Option<(Arc<Track>, bool, TempoLabels)>; NUM_DECKS],
     /// Each deck's drawn position, steadier than the engine's as read.
     clocks: [SmoothClock; NUM_DECKS],
     /// When each frame will show, steadier than when it is drawn.
@@ -2804,6 +2813,7 @@ impl Gpu {
             slip: None,
             gain: 1.0,
             phrases,
+            tempos: Vec::new(),
         };
         self.scrolling[d].set_lanes(w.lanes);
         self.scrolling[d].set_track(&self.device, &self.renderer, Some(&gpu));
@@ -2865,6 +2875,7 @@ impl Gpu {
             app.global::<PhraseView>().get_visible() && app.get_layout() != PLAYER_LAYOUT;
         // Phrase flags on the scrolling waveforms, live decks' included.
         let show_flags = app.global::<PhraseView>().get_waveform_visible();
+        let player = app.get_layout() == PLAYER_LAYOUT;
         let overview_background = if app.get_layout() == PLAYER_LAYOUT {
             PLAYER_OVERVIEW_BACKGROUND
         } else {
@@ -3084,8 +3095,8 @@ impl Gpu {
             // Grid edit mode (Prep's deck 1 always), while the grid is unlocked.
             let prep_deck = prep_shown && d == 0;
             let h = &decks.0[d];
-            self.scrolling[d]
-                .set_grid_edit((h.beats_edit.get_bool() || prep_deck) && !h.bpmlock.get_bool());
+            let grid_edit = (h.beats_edit.get_bool() || prep_deck) && !h.bpmlock.get_bool();
+            self.scrolling[d].set_grid_edit(grid_edit);
             if window.is_none() {
                 self.scrolling[d].set_lanes(None);
             }
@@ -3095,14 +3106,26 @@ impl Gpu {
                 continue;
             }
             // The overview's phrase bar, or the scrolling waveform's flags.
+            // With the scrolling waveform's tempo labels, where they show.
+            let tempos = match track {
+                Some(t) if wave_look::tempo_labels() => self.tempos(d, t, grid_edit),
+                _ => Arc::from([]),
+            };
             let scrolling_frame = frame.as_ref().map(|f| Frame {
                 phrases: flags,
+                tempos: tempo_labels_near(&tempos, f, f.visible_seconds, grid_edit),
                 ..f.clone()
             });
             // Size follows gain sizes the large waveform only: the overview
             // keeps its height.
             let overview_frame = frame.as_ref().map(|f| Frame {
                 gain: 1.0,
+                // Not on the Player's scrubber, nor while editing.
+                tempos: if grid_edit || player {
+                    Vec::new()
+                } else {
+                    tempo_labels_near(&tempos, f, f64::INFINITY, false)
+                },
                 ..f.clone()
             });
             for (view, frame) in [
@@ -3184,6 +3207,19 @@ impl Gpu {
     /// Deck `d`'s phrases for the waveforms, found once per track: the
     /// library's until its waveform is ready, then found from the waveform
     /// and the grid as they are now.
+    /// Deck `d`'s tempo labels for `t`, every marker while `editing`;
+    /// picked again when the track or editing changes.
+    fn tempos(&mut self, d: usize, t: &Arc<Track>, editing: bool) -> TempoLabels {
+        match &self.tempos[d] {
+            Some((cached, e, l)) if Arc::ptr_eq(cached, t) && *e == editing => l.clone(),
+            _ => {
+                let l: TempoLabels = t.grid.tempo_labels(t.duration, editing).into();
+                self.tempos[d] = Some((t.clone(), editing, l.clone()));
+                l
+            }
+        }
+    }
+
     fn phrases(&mut self, d: usize, t: &Arc<Track>) -> Phrases {
         match &self.phrases[d] {
             Some((cached, p)) if Arc::ptr_eq(cached, t) => p.clone(),
@@ -3194,6 +3230,28 @@ impl Gpu {
             }
         }
     }
+}
+
+/// The tempo labels within `reach` seconds of the play position, at most
+/// as many as a waveform draws; to a tenth of a BPM while the grid is
+/// `editing`.
+fn tempo_labels_near(
+    labels: &[(f64, f64)],
+    f: &Frame,
+    reach: f64,
+    editing: bool,
+) -> Vec<TempoLabel> {
+    let (from, to) = (f.play_seconds - reach, f.play_seconds + reach);
+    labels
+        .iter()
+        .filter(|(s, _)| (from..to).contains(s))
+        .take(MAX_TEMPOS)
+        .map(|&(seconds, bpm)| TempoLabel {
+            seconds,
+            bpm,
+            tenths: editing,
+        })
+        .collect()
 }
 
 /// The tooltip for the phrase at `seconds`: its kind, then its length in

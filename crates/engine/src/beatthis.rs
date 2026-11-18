@@ -15,7 +15,7 @@ use beat_this::{BeatThis, RtenRuntime, Runtime};
 
 use crate::analysis::{tag_tempo, Analysis, TempoHint};
 use crate::beats::BeatGrid;
-use crate::gridfit;
+use crate::gridfit::{self, GridMode};
 use crate::separation::model_or_fetch;
 use crate::track::Audio;
 
@@ -103,27 +103,46 @@ fn detect(audio: &Audio) -> Result<(Vec<f64>, Vec<f64>), String> {
 /// far off on slow, soft music, so it isn't used); the range is the
 /// track's genre's when it has a known one. A tempo from tags (in `hint`,
 /// as [`crate::analysis::analyse`] takes it) stays steady, with bar 1
-/// moved onto a downbeat.
+/// moved onto a downbeat, unless the hint asks for a Flexible grid. The
+/// beats are kept in `analysis`, for [`refit`].
 pub fn refine(
     analysis: &mut Analysis,
     audio: &Audio,
     hint: impl Into<TempoHint>,
 ) -> Result<(), String> {
-    let hint = hint.into();
-    let bpm_hint = hint.bpm;
     let (beats, downbeats) = detect(audio)?;
-    let (beats, bpm) = in_range(beats, &downbeats, hint.range());
-    let fitted =
-        gridfit::fit(&beats, Some(&downbeats), bpm).ok_or("too few beats to fit a grid")?;
-    let grid = match tag_tempo(bpm_hint) {
-        Some(bpm) => BeatGrid::constant(bpm, fitted.grid.markers()[0].seconds),
-        None => fitted.grid,
+    analysis.beats = beats;
+    analysis.downbeats = downbeats;
+    analysis.neural_beats = true;
+    refit(analysis, audio.duration(), hint)
+}
+
+/// Fits `analysis`'s grid again from the beats [`refine`] kept, in the
+/// hint's mode, without listening again; an error when there are none.
+pub fn refit(
+    analysis: &mut Analysis,
+    duration: f64,
+    hint: impl Into<TempoHint>,
+) -> Result<(), String> {
+    let hint = hint.into();
+    if analysis.beats.is_empty() {
+        return Err("no beats kept to fit a grid from".into());
+    }
+    let downbeats = &analysis.downbeats;
+    let (beats, bpm) = in_range(analysis.beats.clone(), downbeats, hint.range());
+    let fitted = gridfit::fit_mode(&beats, Some(downbeats), bpm, hint.mode)
+        .ok_or("too few beats to fit a grid")?;
+    let grid = match tag_tempo(hint.bpm) {
+        Some(bpm) if hint.mode != GridMode::Flexible => {
+            BeatGrid::constant(bpm, fitted.grid.markers()[0].seconds)
+        }
+        _ => fitted.grid,
     };
-    analysis.bpm = grid.main_bpm(audio.duration());
+    analysis.bpm = grid.main_bpm(duration);
     analysis.first_beat = grid.first_beat();
     analysis.grid = grid;
     analysis.grid_unsure = fitted.unsure;
-    analysis.neural_beats = true;
+    analysis.grid_mode = hint.mode;
     Ok(())
 }
 

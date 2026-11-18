@@ -54,9 +54,10 @@ pub const ID_BASE: usize = 1_000_000;
 /// 9 added `tracks.stage` (see [`stages`]).
 /// 10 added `tracks.grid_locked` and `grid_unsure`; imported grids start
 /// locked.
+/// 14 added `tracks.grid_mode`.
 /// 12 takes off the wanted list the streamed tracks imports used to put
 /// there: only the DJ puts tracks on it now.
-const VERSION: i32 = 13;
+const VERSION: i32 = 14;
 
 /// The `source` of grids, keys and markers found by this app's analysis.
 const ANALYSIS: &str = "analysis";
@@ -171,7 +172,7 @@ CREATE TABLE IF NOT EXISTS inbox_log (
 ";
 
 /// Columns added to `tracks` after version 1: name and definition.
-const ADDED_COLUMNS: [(&str, &str); 18] = [
+const ADDED_COLUMNS: [(&str, &str); 19] = [
     ("store", "store TEXT NOT NULL DEFAULT ''"),
     ("store_url", "store_url TEXT"),
     // Where the key came from: 'analysis', 'tags', or another app's name;
@@ -202,6 +203,9 @@ const ADDED_COLUMNS: [(&str, &str); 18] = [
     ("grid_locked", "grid_locked INTEGER NOT NULL DEFAULT 0"),
     // The analysed grid fits the beats poorly: worth a check (version 10).
     ("grid_unsure", "grid_unsure INTEGER NOT NULL DEFAULT 0"),
+    // How the grid follows the tempo, as `GridMode::name`; empty for the
+    // mode set in Settings (version 14).
+    ("grid_mode", "grid_mode TEXT NOT NULL DEFAULT ''"),
 ];
 
 /// Tracks the DJ linked as going well together: `track` links to `linked`. Created on every open rather than by
@@ -755,7 +759,7 @@ impl Library {
                     comment, grouping, labels, play_count, grid, added, key_source,
                     remix, year, track_number, user1, user2, gain, last_played,
                     disc_number, label, composer, remixer, isrc, user_more, stage, grid_source,
-                    grid_locked, grid_unsure
+                    grid_locked, grid_unsure, grid_mode
              FROM tracks WHERE id NOT IN (SELECT track_id FROM removed) ORDER BY id",
         )?;
         let rows = q.query_map([], |r| {
@@ -797,6 +801,7 @@ impl Library {
                         grid_from: grid_source.unwrap_or_default(),
                         grid_locked: r.get(33)?,
                         grid_unsure: r.get(34)?,
+                        grid_mode: opendj_engine::GridMode::from_name(&r.get::<_, String>(35)?),
                         added: r.get(16)?,
                         missing: false,
                         key_detected: key_source.map(|s| s == "analysis"),
@@ -1148,6 +1153,21 @@ impl Library {
         self.db.execute(
             "UPDATE tracks SET grid_locked = ?2 WHERE id = ?1",
             params![row, locked],
+        )?;
+        Ok(())
+    }
+
+    /// Keeps how a track's grid follows its tempo; None for the mode set in
+    /// Settings.
+    pub fn set_grid_mode(
+        &self,
+        id: usize,
+        mode: Option<opendj_engine::GridMode>,
+    ) -> Result<(), Error> {
+        let Some(row) = row_id(id) else { return Ok(()) };
+        self.db.execute(
+            "UPDATE tracks SET grid_mode = ?2 WHERE id = ?1",
+            params![row, mode.map_or("", |m| m.name())],
         )?;
         Ok(())
     }
@@ -3487,6 +3507,23 @@ mod tests {
         assert_eq!(t.grid, BeatGrid::constant(126.0, 0.1));
         assert!(!t.info.grid_unsure);
         assert!(t.info.grid_locked, "the lock stays");
+    }
+
+    #[test]
+    fn a_grid_mode_is_kept_and_searchable() {
+        use opendj_engine::GridMode;
+        let mut lib = Library::in_memory().unwrap();
+        lib.sync(&[file_track("/m/a.mp3", "A"), file_track("/m/b.mp3", "B")])
+            .unwrap();
+        let a = lib.tracks(|_| true).unwrap().remove(0);
+        assert_eq!(a.info.grid_mode, None);
+        lib.set_grid_mode(a.id, Some(GridMode::Flexible)).unwrap();
+        assert_eq!(
+            lib.tracks(|_| true).unwrap()[0].info.grid_mode,
+            Some(GridMode::Flexible)
+        );
+        lib.set_grid_mode(a.id, None).unwrap();
+        assert_eq!(lib.tracks(|_| true).unwrap()[0].info.grid_mode, None);
     }
 
     #[test]

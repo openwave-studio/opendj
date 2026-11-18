@@ -24,7 +24,7 @@ use rustfft::{Fft, FftPlanner};
 
 use crate::beats::BeatGrid;
 use crate::dsp::Isolator;
-use crate::gridfit::{self, Fitted};
+use crate::gridfit::{self, Fitted, GridMode};
 use crate::key::{self, Detector, Key, KeyDetector};
 use crate::keynet::Spectrogram;
 use crate::loudness::{Loudness, LoudnessMeter};
@@ -50,6 +50,13 @@ pub struct Analysis {
     /// The grid comes from Beat This!'s beats (see [`crate::beatthis`])
     /// rather than the DSP beat tracker's.
     pub neural_beats: bool,
+    /// How `grid` was fitted.
+    pub grid_mode: GridMode,
+    /// The beats and downbeats Beat This! found (seconds), kept so the grid
+    /// can be fitted again in another mode without listening again; empty
+    /// without them.
+    pub beats: Vec<f64>,
+    pub downbeats: Vec<f64>,
     /// EBU R128 loudness and peak, for auto gain; None for silence.
     pub loudness: Option<Loudness>,
 }
@@ -84,13 +91,15 @@ pub fn set_bpm_range(lo: f64, hi: f64) {
 pub struct TempoHint {
     pub bpm: Option<f64>,
     pub genre: String,
+    /// How the grid follows the tempo (see [`GridMode`]).
+    pub mode: GridMode,
 }
 
 impl From<Option<f64>> for TempoHint {
     fn from(bpm: Option<f64>) -> Self {
         TempoHint {
             bpm,
-            genre: String::new(),
+            ..TempoHint::default()
         }
     }
 }
@@ -394,7 +403,9 @@ impl Analyser {
         let grid_unsure = fitted.as_ref().is_some_and(|f| f.unsure);
         let grid = match fitted {
             _ if bpm <= 0.0 => BeatGrid::default(),
-            Some(f) if f.grid.is_dynamic() => f.grid,
+            // Fixed keeps one tempo; Flexible waits for Beat This!'s beats,
+            // which are precise enough to follow bar by bar.
+            Some(f) if f.grid.is_dynamic() && hint.mode != GridMode::Fixed => f.grid,
             _ => BeatGrid::constant(bpm, first_beat),
         };
         let (bpm, first_beat) = if grid.is_dynamic() {
@@ -420,6 +431,12 @@ impl Analyser {
             grid,
             grid_unsure,
             neural_beats: false,
+            grid_mode: match hint.mode {
+                GridMode::Fixed => GridMode::Fixed,
+                _ => GridMode::Auto,
+            },
+            beats: Vec::new(),
+            downbeats: Vec::new(),
             loudness: self.loudness.finish(),
         }
     }
@@ -978,6 +995,7 @@ mod tests {
         let hint = TempoHint {
             bpm: None,
             genre: "Pop".into(),
+            ..TempoHint::default()
         };
         assert_eq!(hint.range(), bpm_range());
     }
@@ -987,6 +1005,7 @@ mod tests {
         let hint = |genre: &str| TempoHint {
             bpm: None,
             genre: genre.into(),
+            ..TempoHint::default()
         };
         assert_eq!(hint("").prior(), PRIOR_BPM);
         assert_eq!(hint("Jungle").prior(), 172.0);
@@ -999,6 +1018,7 @@ mod tests {
         let dnb = TempoHint {
             bpm: None,
             genre: "Drum & Bass".into(),
+            ..TempoHint::default()
         };
         assert!((analyse(&audio, dnb).bpm - 174.0).abs() < 0.1);
         assert!((analyse(&audio, None).bpm - 87.0).abs() < 0.1);
@@ -1006,6 +1026,7 @@ mod tests {
         let tagged = TempoHint {
             bpm: Some(87.0),
             genre: "Drum & Bass".into(),
+            ..TempoHint::default()
         };
         assert_eq!(analyse(&audio, tagged).bpm, 87.0);
     }

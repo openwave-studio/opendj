@@ -21,6 +21,7 @@ use crate::dsp::{soft_clip, Isolator, Limiter, Sculpt};
 use crate::effects::{
     fade, fade_step, input_target, ColorFx, EffectRack, StemFx, BLOCK, COLOR_FX, MAIN, TARGETS,
 };
+use crate::gridfit::GridMode;
 use crate::groove::{pick_source, GrooveBox};
 use crate::inputs::{
     Ducker, Input, InputFeed, Routing, AUXILIARIES, INSTRUMENT, MICROPHONE, MIXER, NUM_INPUTS,
@@ -210,6 +211,8 @@ struct Deck {
     /// The `bpmlock` version last seen, so the DJ turning it is told apart
     /// from the engine showing a loaded track's lock.
     bpmlock_seen: u32,
+    /// The `beats_mode` version last seen, likewise.
+    beats_mode_seen: u32,
     /// The metronome: the last grid beat it passed, and the click playing
     /// (samples into it, and its pitch).
     metronome_beat: f64,
@@ -574,6 +577,15 @@ impl Deck {
         self.bpmlock_seen = self.c.bpmlock.version();
     }
 
+    /// Shows the loaded track's grid mode on `beats_mode`, as
+    /// [`Self::show_grid_lock`] shows the lock.
+    fn show_grid_mode(&mut self, track: &Track) {
+        self.c
+            .beats_mode
+            .set(f64::from(track.info.grid_mode().id()));
+        self.beats_mode_seen = self.c.beats_mode.version();
+    }
+
     fn handle_controls(&mut self) {
         let Some(track) = self.track.clone() else {
             return;
@@ -602,6 +614,13 @@ impl Deck {
             let on = self.c.bpmlock.get_bool();
             if on != track.info.grid_locked {
                 self.grid_edit = Some((GridEdit::Lock(on), self.seconds()));
+            }
+        }
+        if self.c.beats_mode.version() != self.beats_mode_seen {
+            self.beats_mode_seen = self.c.beats_mode.version();
+            let mode = GridMode::from_id(self.c.beats_mode.get().round() as u8);
+            if let Some(mode) = mode.filter(|&m| track.info.grid_mode != Some(m)) {
+                self.grid_edit = Some((GridEdit::Mode(mode), self.seconds()));
             }
         }
 
@@ -1899,6 +1918,7 @@ impl Engine {
             tap_at: 0.0,
             tapped: None,
             bpmlock_seen: 0,
+            beats_mode_seen: 0,
             metronome_beat: f64::NAN,
             click: None,
             velocity: 0.0,
@@ -2173,6 +2193,7 @@ impl Engine {
                     d.c.duration.set(track.duration);
                     d.c.track_loaded.set_bool(true);
                     d.show_grid_lock(track.info.grid_locked);
+                    d.show_grid_mode(&track);
                     d.c.beats_edit.set_bool(false);
                     d.c.cue_point.set(track.first_beat);
                     d.c.loop_enabled.set_bool(false);
@@ -2315,6 +2336,7 @@ impl Engine {
                     }
                     let first_beat = track.first_beat;
                     d.show_grid_lock(track.info.grid_locked);
+                    d.show_grid_mode(&track);
                     if let Some(old) = d.track.replace(track) {
                         let _ = self.returned.push(Returned::Done(old));
                     }
@@ -2330,6 +2352,7 @@ impl Engine {
                     };
                     let old = if same {
                         d.show_grid_lock(track.info.grid_locked);
+                        d.show_grid_mode(&track);
                         d.track.replace(track)
                     } else {
                         Some(track)

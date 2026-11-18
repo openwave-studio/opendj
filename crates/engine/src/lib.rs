@@ -23,7 +23,7 @@ pub mod decode;
 pub mod dsp;
 mod effects;
 pub mod engine;
-mod gridfit;
+pub mod gridfit;
 pub mod groove;
 pub mod groove_dice;
 pub mod groove_fills;
@@ -90,6 +90,7 @@ pub use effects::{
     NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
     MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
 };
+pub use gridfit::GridMode;
 pub use output::{
     channel_names, deck_outputs_split, default_output_device, input_devices, output_devices,
     AudioSetup, InputRole, InputRoute, OutputDevice, Role, Route, BUFFER_SIZES, SAMPLE_RATES,

@@ -266,6 +266,35 @@ Tempos are kept within **BPM range** (**Settings › Analysis**, 60 to 180
 BPM unless you change it): a faster reading is halved, a slower one
 doubled.
 
+### Grid modes
+
+Each track's grid follows its tempo in one of three ways:
+
+- **Auto** (the default): one steady tempo unless the track really drifts
+  for a while, as described above.
+- **Fixed**: one tempo for the whole track, always. Use it when Auto split
+  a steady track into sections.
+- **Flexible**: the grid follows the beats bar by bar, so it stays on a live
+  drummer who pushes and pulls the tempo.
+
+Pick a track's mode in the **Edit Grid** popover or the grid menu
+(**Fixed · Auto · Flexible**), or right-click tracks in the list and choose
+**Grid**. The grid changes at once: openDJ keeps the beats it heard, so it
+doesn't need to listen again, and **Undo** brings the old grid back. Tracks
+without a mode of their own use **Grids** in **Settings › Analysis**. A
+locked grid keeps its grid whatever the mode. Search `grid:fixed` or
+`grid:flexible` to list the tracks set to a mode.
+
+Where the tempo changes, the scrolling waveform labels it: a gray tab with
+the new BPM, in whole numbers. A label only appears when the whole number
+changes and at least 16 bars after the last one, so a drifting track shows a
+few labels, not dozens; the first tempo is labelled too, so you can see
+where it went from. When the change comes on or within 2 beats of a phrase
+flag, the BPM joins the flag instead (**DROP · 124**). The overview marks
+each label with a small tick along its top. While you edit the grid, every
+tempo change is labelled, to a tenth of a BPM. Turn them off with **BPM
+labels** in the drop-down on the waveforms button.
+
 The grid menu (click the BPM on a deck) says where the grid came from:
 **Detected**, **Edited** or the app it was imported from. A detected grid
 that fits the beats poorly says **may be off, check by ear**. **Lock grid**
@@ -306,7 +335,8 @@ whatever zoom the waveform is at, and loading another track finishes it.
 In the [Prep layout](layouts.md) the grid is always open for editing while
 it is unlocked, and the metronome turns on by itself there and back off
 once the grid is locked. Controllers and keyboard shortcuts can use
-`edit_grid` (the `beats_edit` control).
+`edit_grid` (the `beats_edit` control), and set the grid mode with
+`beats_mode` (0 Auto, 1 Fixed, 2 Flexible).
 
 To analyse tracks yourself, right-click them and choose **Analyze Track**
 (or **Analyze 12 Tracks** when you picked several), or right-click a

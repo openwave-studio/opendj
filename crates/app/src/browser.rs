@@ -605,6 +605,9 @@ pub struct Browser {
     play: [ControlHandle; NUM_DECKS],
     /// The key each deck plays in, with its shift.
     deck_key: [ControlHandle; NUM_DECKS],
+    /// Each deck's `beats_mode`: a grid mode picked for a track on a deck
+    /// goes through the deck, which fits its grid again.
+    deck_grid_mode: [ControlHandle; NUM_DECKS],
     /// How far, in semitones, tracks are shifted to match keys on load.
     key_match_range: ControlHandle,
     /// The key mixing rule and the reach of the key marks the rows were
@@ -1322,6 +1325,11 @@ impl Browser {
             }),
             deck_key: std::array::from_fn(|d| {
                 registry.get(&deck_group(d), "key").expect("key control")
+            }),
+            deck_grid_mode: std::array::from_fn(|d| {
+                registry
+                    .get(&deck_group(d), "beats_mode")
+                    .expect("grid mode control")
             }),
             key_match_range: registry
                 .get("[Controls]", "key_match_on_load")
@@ -4975,7 +4983,14 @@ impl Browser {
             let edited = t.info.fixed_grid && t.grid != entry.grid && !t.grid.is_empty();
             let key_changed = entry.key != t.key || entry.info.key_detected != t.info.key_detected;
             let lock_changed = entry.info.grid_locked != t.info.grid_locked;
-            if !(analysed || edited || lock_changed || entry.bpm != t.bpm || key_changed) {
+            let mode_changed = entry.info.grid_mode != t.info.grid_mode;
+            if !(analysed
+                || edited
+                || lock_changed
+                || mode_changed
+                || entry.bpm != t.bpm
+                || key_changed)
+            {
                 continue;
             }
             // An analysed grid replacing one the DJ edited or an import
@@ -4986,6 +5001,7 @@ impl Browser {
             e.key = t.key.clone();
             e.info.key_detected = t.info.key_detected;
             e.info.grid_locked = t.info.grid_locked;
+            e.info.grid_mode = t.info.grid_mode;
             if analysed || edited {
                 e.set_grid(t.grid.clone());
                 e.info.fixed_grid = true;
@@ -4999,6 +5015,9 @@ impl Browser {
                 } else {
                     Ok(())
                 };
+                if mode_changed {
+                    result = result.and_then(|()| db.set_grid_mode(t.id, t.info.grid_mode));
+                }
                 if reset {
                     result = result.and_then(|()| db.clear_grid(t.id));
                 }

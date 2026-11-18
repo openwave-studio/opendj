@@ -58,6 +58,10 @@ struct Params {
     vocal: vec4<f32>,                  // vocal levels: first texel, count, finest slices per level, 1 = tint the sung parts
     stems: vec4<f32>,                  // stem levels: first texel (two a level), count, finest slices per level, stems (0 = not drawn)
     stem_colors: array<vec4<f32>, 5>,  // each stem's colour
+    phrase_tempo: array<vec4<u32>, 8>, // the tempo after each phrase's name (as tempo_value), 0 = none
+    tempo_at: array<vec4<f32>, 4>,     // each tempo label on its own, in slices
+    tempo_value: array<vec4<u32>, 4>,  // its BPM in tenths; top bit: show the tenth
+    tempo_count: vec4<u32>,            // x: how many
 };
 
 @group(0) @binding(0) var<uniform> p: Params;
@@ -111,6 +115,9 @@ const PHRASE_COLORS = array<vec3<f32>, 7>(
     vec3<f32>(0.282, 0.773, 0.631), // #48C5A1
     vec3<f32>(0.788, 0.663, 0.306), // #C9A94E
 );
+
+// Tempo labels: a neutral grey tab with white figures.
+const TEMPO_GREY = vec3<f32>(0.333, 0.333, 0.353); // #55555A
 
 // The colours knobs' levels can be drawn in (MarkKind::Level's colour 1 to 8).
 const LEVEL_COLORS = array<vec3<f32>, 8>(
@@ -503,6 +510,74 @@ fn phrase_name(x: f32, y: f32, k: f32, kind: u32, left: f32, top: f32) -> f32 {
     return clamp(dist + 0.5, 0.0, 1.0);
 }
 
+// Coverage of pixel (x, y) by digit `d`, 8 points tall, its pen at `left`
+// and its top at `top`.
+fn digit_at(x: f32, y: f32, k: f32, d: u32, left: f32, top: f32) -> f32 {
+    let s = p.digit.w / (8.0 * k);
+    let ay = (y - top) * s + p.spread;
+    let gx = (x - left) * s + p.spread;
+    if (ay < 0.0 || ay > p.digit.y || gx < 0.0 || gx > p.digit.x) {
+        return 0.0;
+    }
+    let uv = vec2<f32>((f32(d) * p.digit.x + gx) / p.atlas_w, ay / p.atlas_h);
+    let field = textureSampleLevel(digits_atlas, digits_sampler, uv, 0.0).r;
+    let dist = (field - 0.5) * 2.0 * p.spread / s;
+    return clamp(dist + 0.5, 0.0, 1.0);
+}
+
+// How many digits a whole number has.
+fn digit_count(n: u32) -> u32 {
+    var digits = 1u;
+    var rest = n / 10u;
+    while (rest > 0u) {
+        digits = digits + 1u;
+        rest = rest / 10u;
+    }
+    return digits;
+}
+
+// The width of a tempo (see tempo_value) drawn by tempo_text, in pixels.
+fn tempo_width(value: u32, k: f32) -> f32 {
+    let s = p.digit.w / (8.0 * k);
+    let adv = p.digit.z / s;
+    let tenths = value & 0x7fffffffu;
+    var w = f32(digit_count(tenths / 10u)) * adv;
+    if ((value >> 31u) == 1u) {
+        w = w + 2.5 * k + adv;
+    }
+    return w;
+}
+
+// Coverage of pixel (x, y) by a tempo (see tempo_value), 8 points tall, its
+// pen at `left` and its top at `top`: the whole BPM, then a point and the
+// tenth where it is shown.
+fn tempo_text(x: f32, y: f32, k: f32, value: u32, left: f32, top: f32) -> f32 {
+    let s = p.digit.w / (8.0 * k);
+    let adv = p.digit.z / s;
+    let tenths = value & 0x7fffffffu;
+    let whole = tenths / 10u;
+    let n = digit_count(whole);
+    let ax = x - left;
+    if (ax < 0.0) {
+        return 0.0;
+    }
+    let which = u32(floor(ax / adv));
+    if (which < n) {
+        var place = 1u;
+        for (var i = 1u; i < n - which; i = i + 1u) {
+            place = place * 10u;
+        }
+        return digit_at(x, y, k, (whole / place) % 10u, left + f32(which) * adv, top);
+    }
+    if ((value >> 31u) == 0u) {
+        return 0.0;
+    }
+    // The point, a round dot on the baseline, then the tenth.
+    let dot_x = left + f32(n) * adv + 1.25 * k;
+    let dot = clamp(0.9 * k - length(vec2<f32>(x - dot_x, y - (top + 7.2 * k))) + 0.5, 0.0, 1.0);
+    return max(dot, digit_at(x, y, k, tenths % 10u, left + f32(n) * adv + 2.5 * k, top));
+}
+
 // A phrase kind's colour.
 fn phrase_color(kind: u32) -> vec3<f32> {
     return PHRASE_COLORS[min(kind, 6u)];
@@ -809,13 +884,19 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
         let s = p.digit.w / (8.0 * k);
         for (var i = 0u; i < p.phrase_count; i = i + 1u) {
             let sx = bin_x(p.phrase_start[i / 4u][i % 4u]);
-            if (x < sx - 2.0 * k || x > sx + 80.0 * k) { continue; }
+            if (x < sx - 2.0 * k || x > sx + 120.0 * k) { continue; }
             let kind = min(p.phrase_kind[i / 4u][i % 4u], 6u);
             let c = phrase_color(kind);
             color = over(color, c, line(x, sx, 0.75 * k) * 0.9);
             if (tabs && y >= tab_top && y <= tab_top + tab_h) {
                 let text_w = p.word_width[kind / 4u][kind % 4u] / s;
-                let tab_w = text_w + 8.0 * k;
+                // A tempo label that joined the flag: a dot, then its BPM.
+                let tempo = p.phrase_tempo[i / 4u][i % 4u];
+                var tempo_w = 0.0;
+                if (tempo != 0u) {
+                    tempo_w = 8.0 * k + tempo_width(tempo, k);
+                }
+                let tab_w = text_w + tempo_w + 8.0 * k;
                 // How much of this pixel the tab covers. Its sides are
                 // smoothed like the lines, so the tab glides with the name
                 // in it: cut at whole pixels, its edges stepped while the
@@ -827,6 +908,12 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
                     let lum = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
                     let ink = select(vec3<f32>(1.0), vec3<f32>(0.08, 0.07, 0.16), lum > 0.55);
                     color = over(color, ink, phrase_name(x, y, k, kind, sx + 4.0 * k, tab_top + 2.5 * k));
+                    if (tempo != 0u) {
+                        let after = sx + 4.0 * k + text_w;
+                        let mid = clamp(0.9 * k - length(vec2<f32>(x - (after + 4.0 * k), y - (tab_top + 6.5 * k))) + 0.5, 0.0, 1.0);
+                        let digits = tempo_text(x, y, k, tempo, after + 8.0 * k, tab_top + 2.5 * k);
+                        color = over(color, ink, max(mid, digits));
+                    }
                 }
             }
         }
@@ -844,6 +931,37 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
                 let c = phrase_color(p.phrase_kind[i / 4u][i % 4u]);
                 color = over(color, c, 0.9 * (1.0 - edge));
             }
+        }
+    }
+
+    // Tempo labels (scrolling): where the tempo changes, a faint line and
+    // the BPM in a grey tab at the phrase flags' height. One at a phrase
+    // start is in its flag instead.
+    if (p.mode == 0u && p.tempo_count.x > 0u) {
+        let tab_top = 15.0 * k;
+        let tab_h = 13.0 * k;
+        let tabs = p.size.y >= 40.0 * k;
+        for (var i = 0u; i < min(p.tempo_count.x, 16u); i = i + 1u) {
+            let sx = bin_x(p.tempo_at[i / 4u][i % 4u]);
+            if (x < sx - 2.0 * k || x > sx + 60.0 * k) { continue; }
+            color = over(color, TEMPO_GREY, line(x, sx, 0.75 * k) * 0.6);
+            if (tabs && y >= tab_top && y <= tab_top + tab_h) {
+                let value = p.tempo_value[i / 4u][i % 4u];
+                let tab_w = tempo_width(value, k) + 8.0 * k;
+                let cover = clamp(min(x + 0.5, sx + tab_w) - max(x - 0.5, sx), 0.0, 1.0);
+                if (cover > 0.0) {
+                    color = over(color, TEMPO_GREY, 0.92 * cover);
+                    color = over(color, vec3<f32>(1.0), tempo_text(x, y, k, value, sx + 4.0 * k, tab_top + 2.5 * k));
+                }
+            }
+        }
+    }
+
+    // Tempo labels (overview): a short light tick down from the top.
+    if (p.mode == 1u && p.tempo_count.x > 0u && y < 4.0 * k) {
+        for (var i = 0u; i < min(p.tempo_count.x, 16u); i = i + 1u) {
+            let sx = bin_x(p.tempo_at[i / 4u][i % 4u]);
+            color = over(color, vec3<f32>(0.85), line(x, sx, 0.75 * k) * 0.9);
         }
     }
 
