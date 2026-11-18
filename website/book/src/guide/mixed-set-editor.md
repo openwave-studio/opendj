@@ -29,12 +29,19 @@ Every recording from openDJ 0.8 on comes with a control log that the
 editor reads all this from. An older recording, or one with its log
 missing, shows only its waveform and the tracklist from its cue sheet.
 
+## Tracks
+
+The **Tracks** tab, shown first, lists every track with the time it
+starts and how long it plays. The track playing is highlighted; click
+one to go to its start.
+
 ## Transitions
 
 The **Transitions** tab lists each transition with when it started, how
 long it lasted in bars and the style it was mixed in: **Cut**, **Bass
 swap**, **Filter**, **Echo out** or **Smooth**. Click one to hear it from
-4 bars before; the card above the list shows both tracks, where each was
+4 bars before to 4 bars after, then it stops; **Listen** plays it again.
+The card above the list shows both tracks, where each was
 in the track, and whether the beats stayed in time. **‹** and **›** step
 through them.
 
