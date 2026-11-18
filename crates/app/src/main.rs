@@ -880,6 +880,11 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     }
     let sources = sources::Sources::install(&app, library_path.clone());
     browser.borrow_mut().play_sites = sources.borrow().playing_sites();
+    // An add-on that browses TIDAL's catalog signs in for the TIDAL source,
+    // so one sign-in lists, searches and plays.
+    if let Some(catalog) = sources.borrow().catalog("tidal") {
+        browser.borrow_mut().use_catalog("tidal", catalog);
+    }
     {
         // Spotify's "Open in Browser" and "Add to Downloads", the latter
         // when an add-on source searches Spotify links.
@@ -1656,9 +1661,12 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
                 }
+                for update in sources.borrow_mut().take_play_updates() {
+                    browser.borrow_mut().stream_update(update);
+                }
                 let plays = browser.borrow_mut().take_stream_plays();
-                for link in plays {
-                    sources.borrow_mut().play_link(&link);
+                for play in plays {
+                    sources.borrow_mut().play_link(play);
                 }
                 for path in sources.borrow_mut().take_loads() {
                     browser.borrow_mut().load_cached(&path);
@@ -1718,6 +1726,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 );
                 b.learn_deck_phrases(&tracks);
                 b.learn_analysis(&tracks);
+                let fetches = b.deck_fetches();
                 b.poll_prep();
                 b.keep(&tracks, 0.016);
                 let mut host = browser::AutomixHost {
@@ -1772,6 +1781,16 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         let round = |f: f64| ((f * 2000.0).round() / 2000.0) as f32;
                         info.automix_from = round(from);
                         info.automix_to = round(to);
+                    }
+                    // A streamed track downloading to load here shows its
+                    // own name, and how it goes over the waveform.
+                    if let Some(f) = &fetches[d] {
+                        info.title = f.title.as_str().into();
+                        info.artist = f.artist.as_str().into();
+                        info.fetching = true;
+                        info.fetch_note = f.note.as_str().into();
+                        info.fetch_progress = f.progress;
+                        info.fetch_failed = f.failed;
                     }
                     if !deck_rows
                         .row_data(d)
@@ -2568,6 +2587,11 @@ impl Decks {
             // Filled in by the caller, which reads each file once.
             quality: Default::default(),
             lossless: false,
+            // Filled in by the caller, while a streamed track downloads.
+            fetching: false,
+            fetch_note: Default::default(),
+            fetch_progress: 0.0,
+            fetch_failed: false,
         }
     }
 

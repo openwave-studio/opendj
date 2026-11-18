@@ -247,6 +247,33 @@ pub trait SearchSource: Send {
         true
     }
 
+    /// The streaming service whose catalog it browses for the app, e.g.
+    /// "tidal": the app's own source for that service then signs in, lists
+    /// playlists and searches through [`Self::browse`] instead of the
+    /// service's public API, so the DJ signs in once.
+    fn catalog(&self) -> Option<&'static str> {
+        None
+    }
+
+    /// Answers the app's source for [`Self::catalog`]. `ask["ask"]` says
+    /// what it wants:
+    ///
+    /// - `"connect"`: `{ "user", "playlists": [{ "key", "name", "count" }] }`
+    ///   once signed in, or `{ "waiting": link }` while a sign-in waits for
+    ///   the DJ (the app asks again).
+    /// - `"tracks"` with `"key"` (a playlist's key, `"liked"`,
+    ///   `"search:<words>"`, `"album:<id>"` or `"artist:<id>"`): `[track]`.
+    /// - `"lookup"` with `"ids"`: `[track]`.
+    /// - `"search"` with `"words"`: `{ "artists", "albums", "tracks" }`.
+    /// - `"sign_out"`.
+    ///
+    /// A track is `{ "id", "isrc", "title", "artists": [..], "album",
+    /// "duration", "cover" }`; an artist `{ "id", "name", "picture" }`; an
+    /// album `{ "id", "title", "artist", "cover", "count" }`.
+    fn browse(&mut self, _ask: &serde_json::Value) -> Result<serde_json::Value, PluginError> {
+        Err(PluginError::NotSupported)
+    }
+
     /// Whether the DJ can hear a file from its searches before downloading
     /// it, with [`Self::preview`].
     fn previews(&self) -> bool {

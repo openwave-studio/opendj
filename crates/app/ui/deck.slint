@@ -92,6 +92,14 @@ export struct DeckInfo {
     // KBPS", and whether it is lossless; empty when not a file.
     quality: string,
     lossless: bool,
+    // A streamed track is downloading to load here: the title and artist
+    // above are its own, `fetch-note` says how it's going ("Downloading
+    // 42%"), and `fetch-progress` runs from 0 to 1. `fetch-failed` when it
+    // couldn't.
+    fetching: bool,
+    fetch-note: string,
+    fetch-progress: float,
+    fetch-failed: bool,
 }
 
 component Arc inherits Path {
@@ -1380,7 +1388,7 @@ export component Header inherits Rectangle {
                     spacing: 2px;
                     HorizontalLayout {
                         spacing: 8px;
-                        Text { text: groove ? "Groove Box" : looper ? "Looper" : live > 0 ? live-name : info.loaded ? info.title : "Empty deck"; color: Theme.text; font-size: compact ? 14px : 18px; font-weight: 500; overflow: elide; }
+                        Text { text: groove ? "Groove Box" : looper ? "Looper" : live > 0 ? live-name : info.loaded || info.fetching ? info.title : "Empty deck"; color: Theme.text; font-size: compact ? 14px : 18px; font-weight: 500; overflow: elide; }
                         // Loaded a track already played tonight: a lilac note for a few seconds.
                         if played-note != "" && info.loaded && live == 0 && !groove && !looper: VerticalLayout {
                             alignment: center;
@@ -1399,7 +1407,7 @@ export component Header inherits Rectangle {
                         alignment: start;
                         FormatChip { text: InstrumentsUi.format(); tint: tint; compact: compact; }
                     }
-                    if put-back != "": HorizontalLayout {
+                    if put-back != "" && !info.fetching: HorizontalLayout {
                         alignment: start;
                         spacing: 6px;
                         if !compact: Text {
@@ -1423,8 +1431,8 @@ export component Header inherits Rectangle {
                             }
                         }
                     }
-                    if live != 3 && put-back == "": Text {
-                        text: groove ? GrooveUi.kits[groove-kit].name + " kit   |   " + round(groove-bpm * 10) / 10 + (groove-following ? " BPM, in time with the mix" : " BPM")
+                    if live != 3 && (put-back == "" || info.fetching): Text {
+                        text: info.fetching ? (compact ? info.artist : info.artist + "   |   " + info.fetch-note) : groove ? GrooveUi.kits[groove-kit].name + " kit   |   " + round(groove-bpm * 10) / 10 + (groove-following ? " BPM, in time with the mix" : " BPM")
                             : looper ? round(looper-bpm * 10) / 10 + (looper-following ? " BPM, in time with the mix" : " BPM, its own tempo")
                             : live > 0 ? (InstrumentsUi.route(live) != "" ? InstrumentsUi.route(live) : "Live input")
                             : info.loaded ? (compact ? info.artist : info.artist + "   |   " + info.bpm) : compact ? "Drop a track here" : "Drop a track here or double-click one in the browser";

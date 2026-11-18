@@ -45,8 +45,12 @@ openDJ shows what you saved on a streaming service, but doesn't play its
 audio: a track plays on a deck when your collection holds the same track,
 and the others are greyed out. Double-click one to open it on the service's
 own site, or, when an add-on that plays that service's tracks is
-installed, to load it onto a deck through the add-on (it lands in the
-source cache, not your collection); SoundCloud tracks and Mixcloud shows also have a **▶** button
+installed, to download it through the add-on and load it onto a deck.
+Dragging it onto a deck, or **Download** when you right-click it, does
+the same. The deck shows the track's title and artist with the download's
+progress over its waveform until it loads. The file joins your collection
+in the **Inbox** and takes the streamed track's place in every list it
+stood in. SoundCloud tracks and Mixcloud shows also have a **▶** button
 (and **Play on…** when you right-click) that plays them there in your
 browser. Tracks are matched by ISRC when both sides have one, then by
 artist and title. If a match is wrong, right-click the track and pick
@@ -75,9 +79,15 @@ Each service is signed in to with your own app, so openDJ ships no keys:
   `http://127.0.0.1:8898/callback` and paste its client ID.
 - **TIDAL**: create an app at developer.tidal.com with the same redirect
   URI and the scopes `user.read`, `playlists.read`, `collection.read` and
-  `search.read`, and paste its client ID. In the TIDAL source, typing in
-  the search box searches TIDAL's catalog for tracks; clear it to see the
-  playlist again. If you signed in before search came, sign in again.
+  `search.read`, and paste its client ID. If you signed in before search
+  came, sign in again. With an add-on that browses TIDAL installed, the
+  TIDAL source signs in through the add-on instead, so one sign-in lists
+  your playlists, searches and plays.
+
+  In the TIDAL source, typing in the search box opens a list of matching
+  artists, albums and tracks under it. Click an artist or album to see its
+  tracks, or a track to load it onto a deck; press ↵ to list every track
+  found. Clear the box to see the playlist again.
 - **Apple Music**: needs an Apple Developer account. Under **Certificates,
   Identifiers & Profiles › Keys**, create a key with **MusicKit** and
   download its `.p8` file. Enter your Team ID, the key's Key ID and the
@@ -385,7 +395,9 @@ play, so they stay in their lists as placeholders, in their place. A
 placeholder is greyed out and shows its service (**TIDAL**) where the album
 would be. It keeps the artist, title and length the app saved, and the
 service's own track id. Double-click one to open it on the service's site,
-or to load it onto a deck through an add-on that plays that service's tracks.
+or to download it and load it onto a deck through an add-on that plays that
+service's tracks (dragging it onto a deck works too). The download takes
+its place in the list.
 Lists made only of streamed tracks come in too, marked **online only** in
 the list picker.
 

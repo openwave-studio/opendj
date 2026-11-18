@@ -239,6 +239,9 @@ impl Worker {
                     list,
                     error: "Only Spotify can be exported to.".into(),
                 }),
+                // Only TIDAL browses through an add-on, or searches the
+                // catalog.
+                Request::Catalog(_) | Request::Search(_) => {}
                 Request::Disconnect => {
                     if let Some(s) = self.session.take() {
                         s.key.saved("").store(SAVED);
