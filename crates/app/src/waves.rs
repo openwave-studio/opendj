@@ -166,14 +166,14 @@ impl Waves {
 
 /// The lilac shades a slice is drawn in by its tone: deep where the bass
 /// leads, the brand lilac (#B69CFF) for mids, pale where the highs lead,
-/// as the deck waveforms color red, amber and blue.
+/// as the deck waveforms color red, green and blue.
 const DEEP: [f32; 3] = [122.0, 92.0, 214.0]; // #7A5CD6
 const LILAC: [f32; 3] = [182.0, 156.0, 255.0]; // #B69CFF
 const PALE: [f32; 3] = [232.0, 224.0, 255.0]; // #E8E0FF
 
 /// The deck waveforms' colors for the lows, mids and highs.
 const LOW: [f32; 3] = [1.0, 0.22, 0.16];
-const MID: [f32; 3] = [1.0, 0.72, 0.12];
+const MID: [f32; 3] = [0.20, 0.88, 0.26];
 const HIGH: [f32; 3] = [0.30, 0.62, 1.0];
 
 /// The full color for a slice, mixed as the deck waveforms mix it: each
@@ -320,10 +320,10 @@ mod tests {
             let p = buf.as_slice()[HEIGHT / 2 * WIDTH];
             (p.r, p.g, p.b)
         };
-        // Bass red, mids amber, highs blue, as on the decks.
+        // Bass red, mids green, highs blue, as on the decks.
         let (bass, mids, highs) = (color((0, 0)), color((255, 0)), color((0, 255)));
         assert!(bass.0 > 200 && bass.1 < 80 && bass.2 < 80, "{bass:?}");
-        assert!(mids.0 > 200 && mids.1 > 140 && mids.2 < 60, "{mids:?}");
+        assert!(mids.1 > 200 && mids.0 < 100 && mids.2 < 100, "{mids:?}");
         assert!(highs.2 > 200 && highs.0 < 100, "{highs:?}");
     }
 }

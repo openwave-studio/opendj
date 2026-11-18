@@ -260,7 +260,7 @@ pub fn style() -> Style {
     }
 }
 
-/// The band colours: RGB keeps its red, amber and blue; 3-Band uses the
+/// The band colours: RGB keeps its red, green and blue; 3-Band uses the
 /// palette picked.
 pub fn palette() -> Palette {
     match style() {
