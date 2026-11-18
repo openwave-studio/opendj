@@ -50,10 +50,11 @@ openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor open
 **Library and DJing**
 
 - **Played marks**: tracks played in this History session are dimmed with a lilac check. A play counts only when it is heard in the main mix, not in the headphones. Start a new session from History.
-- **TIDAL**: search TIDAL's catalog from the TIDAL source. With a TIDAL add-on that plays, double-click a TIDAL row to load it onto a deck.
-- **Jog wheels** bend the tempo as they do in Mixxx mappings, slip mode lets a back-spin finish before it returns, and Controller Editor › Options sets each controller's pitch bend and scratch feel.
+- **TIDAL**: search TIDAL's catalog from the TIDAL source, with a dropdown of artists, albums and tracks as you type. With a TIDAL add-on that plays, double-click or drag a TIDAL row onto a deck: it downloads into the Inbox, loads, and takes the row's place in your lists.
+- **Jog wheels** bend the tempo as they do in Mixxx mappings, slip mode lets a back-spin finish before it returns, and Controller Editor › Options sets each controller's pitch bend and scratch feel. Touching or letting go of a platter no longer clicks, and on Pioneer DDJ controllers the rim bends gently, moves a paused track one bar a turn, and never scratches.
 - **Tap tempo** fits steady taps and rounds to a whole BPM.
 - The MASTER pill clock shows the time of day.
+- The RGB waveform draws mids green, with purer red lows and blue highs, so bass and mids are easier to tell apart.
 - A finished download shows the quality the source actually sent.
 - Phrase cuts wait for the kick, and phrase tooltips count bars from bar 1.
 - The Info tab's File, Track and Tags tabs are tidier.
@@ -71,6 +72,9 @@ openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor open
 - Picking a LENGTH in Automix during an album takes effect at once, and dragging the Player bar no longer leaves a deck stuck.
 - A hot cue or saved loop pressed on a paused deck plays from it, as on Pioneer gear.
 - Plugins always get a tempo, 120 BPM while no deck gives one, so synths such as Vital no longer crash on presets with tempo-synced parts.
+- Zooming far into the Mixed Set Editor with Show decks on no longer crashes.
+- The plugin host offers CLAP plugins the host features they expect (parameters, state, latency, log and note ports).
+- Instrument rack knobs turn with click and drag again.
 - Control-click a track list heading, or right-click the empty header, to open the column menu.
 - The Prep Checklist scrolls when the side panel is short.
 - Windows draws with DirectX 12 first, falls back to another graphics driver after a start that never draws, and writes a crash report when it fails. Plugin helpers start without a console window.
