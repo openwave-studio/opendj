@@ -871,7 +871,7 @@ fn stream_preview(
         }
     };
     let result = decoder.stream(|_, packet| {
-        for f in packet.chunks_exact(2) {
+        for f in packet.as_chunks::<2>().0 {
             if skip > 0 {
                 skip -= 1;
                 continue;
