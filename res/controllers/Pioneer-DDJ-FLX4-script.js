@@ -609,7 +609,7 @@ PioneerDDJFLX4.cycleTempoRange = function(_channel, _control, value, _status, gr
 // Jog wheels
 //
 
-PioneerDDJFLX4.jogTurn = function(channel, _control, value, _status, group) {
+PioneerDDJFLX4.jogTurn = function(channel, control, value, _status, group) {
     const deckNum = channel + 1;
     // wheel center at 64; <64 rew >64 fwd
     let newVal = value - 64;
@@ -629,7 +629,9 @@ PioneerDDJFLX4.jogTurn = function(channel, _control, value, _status, group) {
         }
     }
 
-    if (engine.isScratching(deckNum)) {
+    // openDJ: the rim (0x21) always bends, even while the deck is still
+    // easing back from a scratch, so twisting it never scratches.
+    if (control !== 0x21 && engine.isScratching(deckNum)) {
         engine.scratchTick(deckNum, newVal);
     } else {
         // openDJ: the rim (and the platter when not touched) bends the

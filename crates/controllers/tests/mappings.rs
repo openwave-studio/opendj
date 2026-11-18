@@ -52,9 +52,9 @@ fn ddj_400_jog_bend_and_vinyl_mode() {
     let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
     for channel in 0..2 {
         let group = format!("[Channel{}]", channel + 1);
-        // Rim and untouched platter send scaled signed ticks, never position nudges.
+        // Rim and untouched platter send signed ticks, never position nudges.
         for control in [0x21, 0x23] {
-            for (value, ticks) in [(65, 0.175), (63, -0.175), (64, 0.0)] {
+            for (value, ticks) in [(65, 1.0), (63, -1.0), (64, 0.0)] {
                 reg.get(&group, "jog_bend").unwrap().set(0.0);
                 c.receive(&[0xB0 + channel, control, value]);
                 assert_eq!(get(&reg, &group, "jog_bend"), ticks);
@@ -65,14 +65,18 @@ fn ddj_400_jog_bend_and_vinyl_mode() {
         c.receive(&[0x90 + channel, 0x36, 127]);
         assert_eq!(get(&reg, &group, "scratch2_enable"), 0.0);
         c.receive(&[0xB0 + channel, 0x22, 66]);
-        assert_eq!(get(&reg, &group, "jog_bend"), 0.35);
+        assert_eq!(get(&reg, &group, "jog_bend"), 2.0);
         c.receive(&[0x90 + channel, 0x36, 0]);
         reg.get(&group, "vinyl_mode").unwrap().set(1.0);
         c.receive(&[0x90 + channel, 0x36, 127]);
         assert_eq!(get(&reg, &group, "scratch2_enable"), 1.0);
         c.receive(&[0xB0 + channel, 0x22, 67]);
-        assert_eq!(get(&reg, &group, "jog_bend"), 0.35);
+        assert_eq!(get(&reg, &group, "jog_bend"), 2.0);
         assert_eq!(get(&reg, &group, "jog"), 0.0);
+        // The rim bends even while the deck is being scratched.
+        reg.get(&group, "jog_bend").unwrap().set(0.0);
+        c.receive(&[0xB0 + channel, 0x21, 61]);
+        assert_eq!(get(&reg, &group, "jog_bend"), -3.0);
         c.receive(&[0x90 + channel, 0x36, 0]);
     }
     assert_eq!(c.errors(), Vec::<String>::new());
@@ -94,7 +98,8 @@ fn ddj_400_slip_release_waits_for_wheel_stop() {
         // Timer creation uses wall time; feed movement over a real idle window.
         for _ in 0..10 {
             std::thread::sleep(Duration::from_millis(20));
-            c.receive(&[0xB0 + channel, 0x21, 63]);
+            // The platter spinning on after the hand let go.
+            c.receive(&[0xB0 + channel, 0x23, 63]);
             c.poll(Instant::now());
             assert_eq!(get(&reg, &group, "scratch2_enable"), 1.0);
         }
