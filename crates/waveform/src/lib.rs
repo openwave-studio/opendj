@@ -325,9 +325,9 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            low: [1.0, 0.22, 0.16, 1.0],
+            low: [1.0, 0.12, 0.10, 1.0],
             mid: [0.20, 0.88, 0.26, 1.0],
-            high: [0.30, 0.62, 1.0, 1.0],
+            high: [0.22, 0.40, 1.0, 1.0],
             background: [0.05, 0.05, 0.055, 1.0],
         }
     }

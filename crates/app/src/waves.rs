@@ -172,9 +172,9 @@ const LILAC: [f32; 3] = [182.0, 156.0, 255.0]; // #B69CFF
 const PALE: [f32; 3] = [232.0, 224.0, 255.0]; // #E8E0FF
 
 /// The deck waveforms' colors for the lows, mids and highs.
-const LOW: [f32; 3] = [1.0, 0.22, 0.16];
+const LOW: [f32; 3] = [1.0, 0.12, 0.10];
 const MID: [f32; 3] = [0.20, 0.88, 0.26];
-const HIGH: [f32; 3] = [0.30, 0.62, 1.0];
+const HIGH: [f32; 3] = [0.22, 0.40, 1.0];
 
 /// The full color for a slice, mixed as the deck waveforms mix it: each
 /// band's color by its share of the power, brought up to full brightness.
