@@ -51,6 +51,31 @@ pub struct Transport {
     pub playing: bool,
 }
 
+/// The tempo plugins are told while no deck gives one.
+pub const RESTING_BPM: f64 = 120.0;
+
+impl Transport {
+    /// What a plugin is told: always a tempo, stopped at [`RESTING_BPM`]
+    /// while no deck gives one. Some plugins (JUCE's CLAP wrapper in Vital)
+    /// crash when a preset with a tempo-synced part plays with no transport,
+    /// and others divide by the tempo.
+    pub fn for_plugins(self) -> Transport {
+        if self.bpm.is_finite() && self.bpm > 0.0 {
+            self
+        } else {
+            Transport {
+                bpm: RESTING_BPM,
+                beat: if self.beat.is_finite() {
+                    self.beat
+                } else {
+                    0.0
+                },
+                playing: false,
+            }
+        }
+    }
+}
+
 /// A plugin's own window, as the helper reports it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Editor {
@@ -804,5 +829,30 @@ impl Drop for Helper {
         self.kill();
         let _ = std::fs::remove_file(&self.shm_path);
         let _ = std::fs::remove_file(&self.state_path);
+    }
+}
+
+#[cfg(test)]
+mod transport_tests {
+    use super::*;
+
+    #[test]
+    fn plugins_always_get_a_tempo() {
+        let none = Transport::default().for_plugins();
+        assert_eq!(none.bpm, RESTING_BPM);
+        assert!(!none.playing);
+        let odd = Transport {
+            bpm: f64::NAN,
+            beat: f64::NAN,
+            playing: true,
+        }
+        .for_plugins();
+        assert_eq!((odd.bpm, odd.beat, odd.playing), (RESTING_BPM, 0.0, false));
+        let deck = Transport {
+            bpm: 124.0,
+            beat: 33.5,
+            playing: true,
+        };
+        assert_eq!(deck.for_plugins(), deck);
     }
 }

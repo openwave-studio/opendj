@@ -70,6 +70,7 @@ openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor open
 
 - Picking a LENGTH in Automix during an album takes effect at once, and dragging the Player bar no longer leaves a deck stuck.
 - A hot cue or saved loop pressed on a paused deck plays from it, as on Pioneer gear.
+- Plugins always get a tempo, 120 BPM while no deck gives one, so synths such as Vital no longer crash on presets with tempo-synced parts.
 - Control-click a track list heading, or right-click the empty header, to open the column menu.
 - The Prep Checklist scrolls when the side panel is short.
 - Windows draws with DirectX 12 first, falls back to another graphics driver after a start that never draws, and writes a crash report when it fails. Plugin helpers start without a console window.

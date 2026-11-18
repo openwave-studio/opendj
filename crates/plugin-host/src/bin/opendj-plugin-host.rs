@@ -406,7 +406,8 @@ fn run_audio(shm: &Shm, mut fx: Box<dyn Effect>) {
             bpm: shm::load_f64(&h.bpm),
             beat: shm::load_f64(&h.beat),
             playing: h.playing.load(Ordering::Relaxed) != 0,
-        };
+        }
+        .for_plugins();
         {
             let [l, r] = &mut output[..] else {
                 unreachable!()
