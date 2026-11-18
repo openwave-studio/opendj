@@ -2697,6 +2697,10 @@ fn same_deck_info(old: &DeckInfo, new: &DeckInfo) -> bool {
 /// Where each phrase starts and its kind, as the waveforms draw them.
 type Phrases = Vec<(f64, PhraseKind)>;
 
+/// A track's tempo labels: where each is and its tempo (see
+/// `BeatGrid::tempo_labels`).
+type TempoLabels = Arc<[(f64, f64)]>;
+
 /// A track on the GPU, with the waveform, vocal levels and stem levels it
 /// came from.
 type Uploaded = (
@@ -2724,7 +2728,7 @@ struct Gpu {
     phrases: [Option<(Arc<Track>, Phrases)>; NUM_DECKS],
     /// Each deck's tempo labels, the track and whether its grid was being
     /// edited when they were picked (every marker then).
-    tempos: [Option<(Arc<Track>, bool, Arc<[(f64, f64)]>)>; NUM_DECKS],
+    tempos: [Option<(Arc<Track>, bool, TempoLabels)>; NUM_DECKS],
     /// Each deck's drawn position, steadier than the engine's as read.
     clocks: [SmoothClock; NUM_DECKS],
     /// When each frame will show, steadier than when it is drawn.
@@ -3205,11 +3209,11 @@ impl Gpu {
     /// and the grid as they are now.
     /// Deck `d`'s tempo labels for `t`, every marker while `editing`;
     /// picked again when the track or editing changes.
-    fn tempos(&mut self, d: usize, t: &Arc<Track>, editing: bool) -> Arc<[(f64, f64)]> {
+    fn tempos(&mut self, d: usize, t: &Arc<Track>, editing: bool) -> TempoLabels {
         match &self.tempos[d] {
             Some((cached, e, l)) if Arc::ptr_eq(cached, t) && *e == editing => l.clone(),
             _ => {
-                let l: Arc<[(f64, f64)]> = t.grid.tempo_labels(t.duration, editing).into();
+                let l: TempoLabels = t.grid.tempo_labels(t.duration, editing).into();
                 self.tempos[d] = Some((t.clone(), editing, l.clone()));
                 l
             }
