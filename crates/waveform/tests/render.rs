@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use opendj_waveform::{
-    steady_grid, wgpu, Extras, Frame, GpuTrack, Mode, Palette, PhraseKind, Style, WaveformRenderer,
-    WaveformView,
+    steady_grid, wgpu, Extras, Frame, GpuTrack, Mode, Palette, PhraseKind, Style, TempoLabel,
+    WaveformRenderer, WaveformView,
 };
 
 /// Builds the coarser levels the way the analyser does (peaks by maximum;
@@ -107,6 +107,7 @@ fn renders_scrolling_and_overview() {
                 hotcues: [Some(5.0), None, None, None, None, None, None, Some(60.0)],
                 slip: None,
                 gain: 1.0,
+                tempos: Vec::new(),
                 phrases: vec![
                     (0.0, PhraseKind::Intro),
                     (20.0, PhraseKind::Drop),
@@ -159,6 +160,7 @@ fn long_tracks_fall_back_to_a_coarser_level() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -208,6 +210,7 @@ fn draws_beat_grid() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -263,6 +266,7 @@ fn draws_bar_numbers() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -323,6 +327,7 @@ fn draws_phrase_bars() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: vec![(0.0, PhraseKind::Intro), (50.0, PhraseKind::Drop)],
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -392,6 +397,7 @@ fn short_overview_draws_no_phrase_bar() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: vec![(0.0, PhraseKind::Intro), (50.0, PhraseKind::Drop)],
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -441,6 +447,7 @@ fn draws_mono_played_rest_and_mix() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -539,6 +546,7 @@ fn draws_live_lanes() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -622,6 +630,7 @@ fn draws_knob_levels() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -690,6 +699,7 @@ fn draws_phrase_flags() {
         slip: None,
         gain: 1.0,
         // The drop starts at x = 768 (2 s right of the middle, 128 px a second).
+        tempos: Vec::new(),
         phrases: vec![(40.0, PhraseKind::Build), (52.0, PhraseKind::Drop)],
     };
     let draw = |view: &mut WaveformView, frame: &Frame| {
@@ -786,6 +796,7 @@ fn peaks_keep_their_height_between_pixels() {
             hotcues: [None; 8],
             slip: None,
             gain: 1.0,
+            tempos: Vec::new(),
             phrases: Vec::new(),
         };
         view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -923,6 +934,7 @@ fn tints_the_sung_parts() {
             hotcues: [None; 8],
             slip: None,
             gain: 1.0,
+            tempos: Vec::new(),
             phrases: Vec::new(),
         };
         view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -980,6 +992,7 @@ fn draws_each_stem_in_its_color() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: Vec::new(),
     };
     let draw = |track: &Arc<GpuTrack>| {
@@ -1064,6 +1077,7 @@ fn three_band_keeps_the_highs_small() {
         hotcues: [None; 8],
         slip: None,
         gain: 1.0,
+        tempos: Vec::new(),
         phrases: vec![],
     };
     view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -1172,6 +1186,7 @@ fn scrolling_stays_crisp_in_every_look() {
                 hotcues: [None; 8],
                 slip: None,
                 gain: 1.0,
+                tempos: Vec::new(),
                 phrases: Vec::new(),
             };
             view.render(&device, &queue, &renderer, Some(&frame), 1.0);
@@ -1207,4 +1222,95 @@ fn scrolling_stays_crisp_in_every_look() {
             );
         }
     }
+}
+
+/// Tempo labels on the scrolling waveform: a grey tab with the BPM where
+/// one stands alone, and the BPM after the name in a phrase's flag when it
+/// is within two beats of the phrase start.
+#[test]
+fn draws_tempo_labels_alone_and_in_phrase_flags() {
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(vec![[0; 8]; 100_000]),
+        1000.0,
+    ));
+    let (w, h) = (512u32, 80u32);
+    let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+    view.set_track(&device, &renderer, Some(&track));
+    // 8 s across 512 pixels around 30 s: 64 pixels a second, 30 s at 256.
+    let label = |seconds, bpm| TempoLabel {
+        seconds,
+        bpm,
+        tenths: false,
+    };
+    let frame = |tempos: Vec<TempoLabel>| Frame {
+        play_seconds: 30.0,
+        visible_seconds: 8.0,
+        duration: 100.0,
+        first_bar_beat: 0.0,
+        grid: steady_grid(120.0, 0.0),
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        phrases: vec![(0.0, PhraseKind::Intro), (32.0, PhraseKind::Drop)],
+        tempos,
+    };
+    let mut draw = |tempos| {
+        view.render(&device, &queue, &renderer, Some(&frame(tempos)), 1.0);
+        read_back(&device, &queue, &view)
+    };
+    let px = |data: &[u8], x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    // The drop's tab along its row: how far its rose colour reaches.
+    let tab_end = |data: &[u8]| {
+        (384..w)
+            .take_while(|&x| {
+                let c = px(data, x, 17);
+                c[0] > c[2] + 30 || c[0] > 200
+            })
+            .last()
+            .unwrap_or(384)
+    };
+    let plain = draw(Vec::new());
+    let grey_at = px(&plain, 196, 17);
+    assert!(grey_at[0] < 40, "no tab before a label: {grey_at:?}");
+    // 29 s stands alone (64 px before 30 s); 32.5 s is one beat after the drop.
+    let both = draw(vec![label(29.0, 124.0), label(32.5, 126.0)]);
+    let grey = px(&both, 194, 17);
+    assert!(
+        (70..110).contains(&grey[0]) && grey[0].abs_diff(grey[2]) < 12,
+        "a grey tab at 29 s: {grey:?}"
+    );
+    // White figures in it.
+    let ink = (196..230).map(|x| px(&both, x, 21)[1]).max().unwrap();
+    assert!(ink > 200, "BPM figures in the tab: {ink}");
+    // The drop's flag grows by the BPM, with no grey tab of its own.
+    let (short, long) = (tab_end(&plain), tab_end(&both));
+    assert!(long > short + 20, "flag {short} -> {long} with its BPM");
+    for x in 384..long {
+        let c = px(&both, x, 17);
+        assert!(
+            !(c[0] < 110 && c[0] > 70 && c[0].abs_diff(c[2]) < 12),
+            "no grey in the flag at {x}"
+        );
+    }
+    // Shown to a tenth: wider than the whole number.
+    let tenth = draw(vec![TempoLabel {
+        tenths: true,
+        ..label(32.5, 126.0)
+    }]);
+    assert!(tab_end(&tenth) > long + 4, "the tenth widens the flag");
 }

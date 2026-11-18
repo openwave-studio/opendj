@@ -283,6 +283,16 @@ without a mode of their own use **Grids** in **Settings › Analysis**. A
 locked grid keeps its grid whatever the mode. Search `grid:fixed` or
 `grid:flexible` to list the tracks set to a mode.
 
+Where the tempo changes, the scrolling waveform labels it: a gray tab with
+the new BPM, in whole numbers. A label only appears when the whole number
+changes and at least 16 bars after the last one, so a drifting track shows a
+few labels, not dozens; the first tempo is labelled too, so you can see
+where it went from. When the change comes on or within 2 beats of a phrase
+flag, the BPM joins the flag instead (**DROP · 124**). The overview marks
+each label with a small tick along its top. While you edit the grid, every
+tempo change is labelled, to a tenth of a BPM. Turn them off with **BPM
+labels** in the drop-down on the waveforms button.
+
 The grid menu (click the BPM on a deck) says where the grid came from:
 **Detected**, **Edited** or the app it was imported from. A detected grid
 that fits the beats poorly says **may be off, check by ear**. **Lock grid**

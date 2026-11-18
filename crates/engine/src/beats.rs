@@ -90,6 +90,12 @@ pub struct BeatGrid {
 /// one before are dropped.
 const MIN_SECTION_BEATS: f64 = 4.0;
 
+/// Fewest beats between two tempo labels on the waveform (16 bars).
+pub const LABEL_MIN_BEATS: f64 = 64.0;
+/// Least change of tempo, in BPM, that gets a new label: a tempo wavering
+/// either side of a half doesn't flip its label back and forth.
+pub const LABEL_MIN_CHANGE: f64 = 0.6;
+
 impl BeatGrid {
     /// A grid through `markers` (in any order). Markers with no usable tempo
     /// are dropped, as are markers that would start a section shorter than
@@ -320,6 +326,48 @@ impl BeatGrid {
         out
     }
 
+    /// Where the waveform labels the tempo, and the tempo there, earliest
+    /// first. With `every`, each marker (while the grid is edited).
+    /// Otherwise only where the whole BPM changes, a change of at least
+    /// [`LABEL_MIN_CHANGE`] from the last label and [`LABEL_MIN_BEATS`]
+    /// after it, so a drifting track shows a few labels, not dozens; a
+    /// change sooner than that is labelled once the gap has passed, if it
+    /// still holds. Nothing for a steady grid; the first marker is
+    /// labelled when anything after it is. Labels end at `duration`.
+    pub fn tempo_labels(&self, duration: f64, every: bool) -> Vec<(f64, f64)> {
+        if every {
+            return self
+                .markers
+                .iter()
+                .filter(|m| m.seconds < duration)
+                .map(|m| (m.seconds, m.bpm))
+                .collect();
+        }
+        let Some(first) = self.markers.first() else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        let (mut beat, mut bpm) = (self.index[0], first.bpm);
+        for k in 1..self.markers.len() {
+            let m = self.markers[k];
+            if m.bpm.round() == bpm.round() || (m.bpm - bpm).abs() < LABEL_MIN_CHANGE {
+                continue;
+            }
+            let at = self.index[k].max(beat + LABEL_MIN_BEATS);
+            let next = self.index.get(k + 1).copied().unwrap_or(f64::INFINITY);
+            let seconds = self.seconds_at(at);
+            if at >= next || seconds >= duration {
+                continue;
+            }
+            out.push((seconds, m.bpm));
+            (beat, bpm) = (at, m.bpm);
+        }
+        if !out.is_empty() {
+            out.insert(0, (first.seconds.max(self.first_beat()), first.bpm));
+        }
+        out
+    }
+
     /// Stores the grid as text: `seconds:bpm` pairs separated by spaces.
     pub fn to_text(&self) -> String {
         self.markers
@@ -472,5 +520,93 @@ mod tests {
         assert_eq!(sections[0], Some((0.0, 120.0, 0.0)));
         assert_eq!(sections[1], Some((10.0, 124.0, 20.0)));
         assert_eq!(sections[2], None);
+    }
+
+    /// A grid with a marker every `bars` bars, at the tempos given.
+    fn stepped(bars: f64, tempos: &[f64]) -> BeatGrid {
+        let mut seconds = 0.5;
+        let mut markers = Vec::new();
+        for &bpm in tempos {
+            markers.push(GridMarker { seconds, bpm });
+            seconds += 4.0 * bars * 60.0 / bpm;
+        }
+        BeatGrid::new(markers)
+    }
+
+    fn label_tempos(labels: &[(f64, f64)]) -> Vec<f64> {
+        labels.iter().map(|l| l.1).collect()
+    }
+
+    #[test]
+    fn a_steady_grid_has_no_tempo_labels() {
+        let g = BeatGrid::constant(124.0, 0.1);
+        assert!(g.tempo_labels(300.0, false).is_empty());
+        // While editing, its one marker is labelled.
+        assert_eq!(g.tempo_labels(300.0, true), vec![(0.1, 124.0)]);
+        // A wobble that stays on the same whole BPM, or within the least
+        // change, gets none either.
+        let g = stepped(16.0, &[124.0, 124.3, 123.8, 124.4]);
+        assert!(g.tempo_labels(600.0, false).is_empty());
+        assert_eq!(g.tempo_labels(600.0, true).len(), 4);
+    }
+
+    #[test]
+    fn tempo_labels_mark_whole_bpm_changes_16_bars_apart() {
+        // 32 bars at 120, then 128 for 32 bars: one change, both labelled.
+        let g = stepped(32.0, &[120.0, 128.0, 128.0]);
+        let labels = g.tempo_labels(600.0, false);
+        assert_eq!(label_tempos(&labels), vec![120.0, 128.0]);
+        assert!(close(labels[1].0, g.markers()[1].seconds));
+        // A drummer drifting a little every 2 bars: a label every 16 bars
+        // at most, never for a change of under a whole BPM.
+        let drift: Vec<f64> = (0..64).map(|i| 118.0 + 0.2 * i as f64).collect();
+        let g = stepped(2.0, &drift);
+        let labels = g.tempo_labels(1e4, false);
+        assert!(
+            labels.len() > 2 && labels.len() <= 64 * 2 / 16 + 1,
+            "{labels:?}"
+        );
+        for w in labels.windows(2) {
+            let beats = g.beat_at(w[1].0) - g.beat_at(w[0].0);
+            assert!(beats >= LABEL_MIN_BEATS - 1e-6, "{labels:?}");
+            assert!((w[1].1 - w[0].1).abs() >= LABEL_MIN_CHANGE);
+        }
+        // Labels stop at the end of the track.
+        assert!(g.tempo_labels(30.0, false).iter().all(|l| l.0 < 30.0));
+    }
+
+    #[test]
+    fn a_change_too_soon_is_labelled_once_the_gap_has_passed() {
+        // 120 for 4 bars, then 126 for 32 bars: the change comes 16 beats
+        // in, so its label waits until beat 64.
+        let g = stepped(4.0, &[120.0]);
+        let at = g.markers()[0].seconds + 16.0 * 60.0 / 120.0;
+        let g = BeatGrid::new(vec![
+            g.markers()[0],
+            GridMarker {
+                seconds: at,
+                bpm: 126.0,
+            },
+            GridMarker {
+                seconds: at + 128.0 * 60.0 / 126.0,
+                bpm: 126.2,
+            },
+        ]);
+        let labels = g.tempo_labels(600.0, false);
+        assert_eq!(label_tempos(&labels), vec![120.0, 126.0]);
+        assert!(close(g.beat_at(labels[1].0), 64.0));
+        // A change that is over before the gap passes gets no label.
+        let g = BeatGrid::new(vec![
+            g.markers()[0],
+            GridMarker {
+                seconds: at,
+                bpm: 126.0,
+            },
+            GridMarker {
+                seconds: at + 16.0 * 60.0 / 126.0,
+                bpm: 120.0,
+            },
+        ]);
+        assert!(g.tempo_labels(600.0, false).is_empty());
     }
 }

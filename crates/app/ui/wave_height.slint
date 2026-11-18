@@ -321,6 +321,18 @@ export component WaveHeightList inherits VerticalLayout {
             root.picked();
         }
     }
+    WaveHeading {
+        text: "BPM LABELS";
+        hint: "The tempo on the large waveforms where it changes, in a gray tab, or after the phrase name when it changes at a phrase. Every grid marker shows while editing the grid.";
+    }
+    WaveSegments {
+        choices: ["Off", "On"];
+        chosen: WaveLook.tempo-labels ? 1 : 0;
+        picked(i) => {
+            WaveLook.pick-tempo-labels(i == 1);
+            root.picked();
+        }
+    }
 }
 
 // The grip on the line under the waveforms. Dragging it stretches the
