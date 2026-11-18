@@ -17,11 +17,11 @@
 
 ## 3. Add or move, and say what happened
 
-- [ ] 3.1 ⌥-drag moves between lists; the drag shows Add N tracks or Move N tracks
-- [ ] 3.2 Note after add, move or remove with Undo; ⌘Z takes it back
-- [ ] 3.3 Tracks already in a playlist are skipped, with Add them again
-- [ ] 3.4 Delete removes picked tracks from the open list; drag to reorder a playlist sorted by #
+- [x] 3.1 ⌥-drag moves between lists; the drag shows Add N tracks or Move N tracks
+- [x] 3.2 Note after add, move or remove with Undo; ⌘Z takes it back
+- [x] 3.3 Tracks already in a playlist are skipped, with Add them again
+- [x] 3.4 Delete removes picked tracks from the open list; drag to reorder a playlist sorted by #
 
 ## 4. Docs
 
-- [ ] 4.1 Update the user guide (Browser)
+- [x] 4.1 Update the user guide (Browser)

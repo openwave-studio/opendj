@@ -631,6 +631,7 @@ impl Browser {
                         restore: Vec::new(),
                         changes: Some(batch),
                         relinked: Vec::new(),
+                        lists: Vec::new(),
                     });
                 }
                 Err(e) => eprintln!("can't log the changes: {e}"),

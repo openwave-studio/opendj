@@ -1814,6 +1814,18 @@ export component AppWindow inherits Window {
     // the keyboard shortcuts, which run openDJscript (⌘1 to ⌘5 rate the
     // picked tracks).
     keys := FocusScope {
+        // ⌥ (Alt) held turns a drop of tracks into a move; seen before
+        // anything with the keys handles them.
+        capture-key-pressed(e) => {
+            TrackDrag.alt-held = e.modifiers.alt || e.text == Key.Alt;
+            reject
+        }
+        capture-key-released(e) => {
+            if e.text == Key.Alt {
+                TrackDrag.alt-held = false;
+            }
+            reject
+        }
         // ← and → bend the deck started last while held, by 2% (4% with
         // Shift), to nudge its beat into line (see key-pressed).
         key-released(e) => {
@@ -1925,6 +1937,12 @@ export component AppWindow inherits Window {
             }
             if (e.text == "f" || e.text == "F") && e.modifiers.control && !e.modifiers.alt && !e.modifiers.shift && !Preferences.open {
                 find();
+                return accept;
+            }
+            // Delete (or Backspace) takes the picked tracks out of the open
+            // list; the side list and text fields take it first themselves.
+            if (e.text == Key.Delete || e.text == Key.Backspace) && !e.modifiers.control && !e.modifiers.alt && !Preferences.open && !folders-focused && LibraryEdit.in-list && browser.first-picked >= 0 {
+                LibraryEdit.remove-from-list(browser.first-picked);
                 return accept;
             }
             // ⌘A (Ctrl+A on Linux and Windows) picks every track in the

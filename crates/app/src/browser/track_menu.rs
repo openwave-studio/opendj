@@ -209,7 +209,7 @@ impl Browser {
         ) else {
             return;
         };
-        self.add_to_playlist(&[index], id);
+        self.add_tracks(&[index], id);
     }
 
     /// The Player bar's ＋, New crate: one with the track on `deck` in it.

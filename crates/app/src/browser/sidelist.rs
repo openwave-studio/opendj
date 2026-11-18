@@ -34,9 +34,14 @@ fn saved_scratch() -> Vec<usize> {
         .unwrap_or_default()
 }
 
+/// Keeps `ids` as the scratch pad's tracks.
+pub(super) fn save_scratch(ids: &[usize]) {
+    crate::settings::set(SCRATCH_KEY, serde_json::json!(ids));
+}
+
 impl Browser {
     /// The list the Sidelist shows, if it still exists.
-    fn sidelist_list(&self) -> Option<i64> {
+    pub(super) fn sidelist_list(&self) -> Option<i64> {
         let id = saved_list()?;
         let lists = self.db.as_ref()?.playlists().ok()?;
         lists.iter().any(|p| p.id == id).then_some(id)

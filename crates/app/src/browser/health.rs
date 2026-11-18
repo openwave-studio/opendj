@@ -1136,6 +1136,7 @@ impl Browser {
                 restore,
                 changes: None,
                 relinked: Vec::new(),
+                lists: Vec::new(),
             });
         }
         self.read_pending_moves();
@@ -1241,6 +1242,7 @@ impl Browser {
             restore: if take_out { ids } else { Vec::new() },
             changes: None,
             relinked: Vec::new(),
+            lists: Vec::new(),
         });
         self.read_pending_moves();
         self.reload_library();
@@ -2562,6 +2564,7 @@ impl Browser {
                 restore: Vec::new(),
                 changes: None,
                 relinked,
+                lists: Vec::new(),
             });
             self.reload_library();
         }

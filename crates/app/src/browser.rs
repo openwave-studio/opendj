@@ -46,6 +46,7 @@ mod inbox_albums;
 mod info;
 mod info_lists;
 mod keep_going;
+mod list_moves;
 mod lyrics;
 mod mix_export;
 mod mixed_set;
@@ -262,6 +263,9 @@ struct Undo {
     /// Missing tracks that were found elsewhere, by id, with the place
     /// they pointed at before.
     relinked: Vec<(usize, PathBuf)>,
+    /// Lists as they were before tracks were added, moved or taken out:
+    /// each list's track ids, `None` for the Sidelist's scratch pad.
+    lists: Vec<(Option<i64>, Vec<usize>)>,
 }
 
 struct Parked {
@@ -759,6 +763,8 @@ pub struct Browser {
     /// The last stage change or merge of copies, which the track menu can
     /// take back.
     undo: Option<Undo>,
+    /// Tracks an add skipped because the playlist had them, to add again.
+    again: Option<(i64, Vec<usize>)>,
     /// Where files whose moves are waiting (file moves off) will go, by
     /// track id, so they show in the stage subfolder they're headed for.
     pending_moves: HashMap<usize, PathBuf>,
@@ -1455,6 +1461,7 @@ impl Browser {
             rekordbox_xml: Default::default(),
             phrases_seen: Default::default(),
             undo: None,
+            again: None,
             pending_moves: HashMap::new(),
             health: Facts::default(),
             cover_scan: CoverScan::start(),
@@ -1633,10 +1640,11 @@ impl Browser {
             DataTransfer::from(SharedString::from(format!("{DECK_PAYLOAD}{deck}")))
         });
         drag.on_accepts(|data| dragged(&data).is_some() || dropped_file(&data).is_some());
+        drag.on_is_rows_drag(|data| matches!(dragged(&data), Some(Dragged::Rows(..))));
         let w = with.clone();
         drag.on_drop(move |deck, data| w(Box::new(move |b| b.load_dropped(deck as usize, &data))));
         let w = with.clone();
-        drag.on_drop_side(move |index, data| {
+        drag.on_drop_side(move |index, data, moving| {
             w(Box::new(move |b| {
                 let tab = b.side_tab();
                 let at = index.max(0) as usize;
@@ -1661,6 +1669,10 @@ impl Browser {
                     for id in ids {
                         b.link(id);
                     }
+                    return;
+                }
+                if tab == sidelist::SIDELIST_TAB {
+                    b.drop_tracks_on_sidelist(&data, at, moving);
                     return;
                 }
                 let list = &mut b.side[tab];
@@ -1969,26 +1981,34 @@ impl Browser {
         });
         // The open list's own rows are already in it, so only the side
         // panel's rows and the decks' tracks go in by dropping on it.
-        edit.on_accepts_list_drop(|data| {
-            matches!(dragged(&data), Some(Dragged::Side(..) | Dragged::Deck(_)))
+        let weak_open = Rc::downgrade(b);
+        edit.on_accepts_list_drop(move |data| {
+            weak_open
+                .upgrade()
+                .and_then(|b| b.try_borrow().ok().map(|b| b.open_list_accepts(&data)))
+                .unwrap_or(false)
         });
         let w = with.clone();
-        edit.on_drop_on_list(move |data| {
-            w(&|b| {
-                if !matches!(dragged(&data), Some(Dragged::Side(..) | Dragged::Deck(_))) {
-                    return;
-                }
-                let Some(n) = b.nodes.get(b.current_node) else {
-                    return;
-                };
-                if !(n.kind == KIND_LIST || n.kind == KIND_CRATE) || n.locked {
-                    return;
-                }
-                if let Some(list) = n.playlist {
-                    let ids = b.dropped_tracks(&data);
-                    b.add_to_playlist(&ids, list);
-                }
+        edit.on_drop_on_list(move |at, data, moving| {
+            w(&|b| match dragged(&data) {
+                // Its own rows, to put the playlist in a new order.
+                Some(Dragged::Rows(first, last)) => b.reorder_open(first, last, at.max(0) as usize),
+                _ => b.drop_tracks_on_open(&data, moving),
             })
+        });
+        let w = with.clone();
+        edit.on_add_again(move || w(&|b| b.add_again()));
+        let weak_badge = Rc::downgrade(b);
+        edit.on_drop_badge(move |i, data, moving| {
+            weak_badge
+                .upgrade()
+                .and_then(|b| {
+                    b.try_borrow()
+                        .ok()
+                        .map(|b| b.drop_badge(i.max(0) as usize, &data, moving))
+                })
+                .unwrap_or_default()
+                .into()
         });
         edit.on_accepts_drop(|_, data| dragged(&data).is_some());
         // Asked while dragging, so it never waits on a busy browser.
@@ -2095,13 +2115,13 @@ impl Browser {
             })
         });
         let w = with.clone();
-        edit.on_drop(move |i, data| {
+        edit.on_drop(move |i, data, moving| {
             w(&|b| {
                 if dragged(&data).is_some() {
-                    let ids = b.dropped_tracks(&data);
                     if let Some(list) = b.own_list_at(i as usize) {
-                        b.add_to_playlist(&ids, list);
+                        b.drop_tracks_on_list(&data, list, moving);
                     } else if let Some((stage, dir)) = b.stage_at(i as usize) {
+                        let ids = b.dropped_tracks(&data);
                         b.change_stage(&ids, stage, dir.as_deref());
                     }
                 }
@@ -2137,10 +2157,7 @@ impl Browser {
         edit.on_remove_from_list(move |row| {
             w(&|b| {
                 let row = row.max(0) as usize;
-                // From the bottom up, so the rows above stay where they are.
-                for r in b.chosen_rows(row, row).into_iter().rev() {
-                    b.remove_row_from_list(r);
-                }
+                b.remove_rows_from_list(row, row);
             })
         });
         let w = with.clone();
@@ -4361,7 +4378,7 @@ impl Browser {
     /// Adds the tracks of rows `first..=last`, in order, to a playlist.
     fn add_rows_to_playlist(&mut self, first: usize, last: usize, playlist: i64) {
         let indices = self.chosen_tracks(first, last);
-        self.add_to_playlist(&indices, playlist);
+        self.add_tracks(&indices, playlist);
     }
 
     /// Adds library tracks (indices into `library`), in order, to a playlist.
@@ -4380,43 +4397,6 @@ impl Browser {
         if self.nodes.get(self.current_node).and_then(|n| n.playlist) == Some(playlist) {
             self.refresh_rows();
         }
-    }
-
-    /// Takes the track at `row` out of the list being shown.
-    fn remove_row_from_list(&mut self, row: usize) {
-        let Some(Contents::Playlist(list)) = self
-            .nodes
-            .get(self.current_node)
-            .map(|n| n.contents.clone())
-        else {
-            return;
-        };
-        let Some(&Some(index)) = self.rows.get(row) else {
-            return;
-        };
-        // Rows may be sorted or filtered: find which entry of the list this
-        // row is (the nth time the track appears).
-        let id = self.library[index].id;
-        let nth = self.rows[..row]
-            .iter()
-            .filter(|r| r.is_some_and(|i| self.library[i].id == id))
-            .count();
-        let Some(db) = &mut self.db else { return };
-        let entries = db.playlist_tracks(list).unwrap_or_default();
-        let Some(position) = entries
-            .iter()
-            .enumerate()
-            .filter(|(_, t)| **t == id)
-            .nth(nth)
-            .map(|(p, _)| p)
-        else {
-            return;
-        };
-        if let Err(e) = db.remove_from_playlist(list, position) {
-            eprintln!("can't remove from the list: {e}");
-        }
-        self.refresh_crates();
-        self.refresh_rows();
     }
 
     /// Changes the library tracks `indices`, then lists the rows once.

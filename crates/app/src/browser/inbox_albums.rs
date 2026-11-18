@@ -314,6 +314,7 @@ impl Browser {
             restore: Vec::new(),
             changes: None,
             relinked: Vec::new(),
+            lists: Vec::new(),
         });
         self.reload_tree(None);
         self.refresh_rows();

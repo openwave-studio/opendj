@@ -305,6 +305,7 @@ impl Browser {
             restore: Vec::new(),
             changes: None,
             relinked: Vec::new(),
+            lists: Vec::new(),
         });
         if stage == Stage::Triage {
             let tracks: Vec<Arc<Track>> = picked
@@ -328,6 +329,10 @@ impl Browser {
         let Some(undo) = self.undo.take() else {
             return;
         };
+        if !undo.lists.is_empty() {
+            self.restore_lists(undo.lists);
+            return;
+        }
         if let Some(batch) = undo.changes {
             self.undo_tag_changes(batch);
             return;

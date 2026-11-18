@@ -261,7 +261,12 @@ export global TrackDrag {
     // straight after it.
     callback drop-player(data: data-transfer);
     // Dropped on the side panel's list, to go in before `index`.
-    callback drop-side(index: int, data: data-transfer);
+    callback drop-side(index: int, data: data-transfer, moving: bool);
+    // ⌥ (Alt) is held: a drop of tracks moves them out of the list they
+    // came from instead of copying them.
+    in-out property <bool> alt-held;
+    // A drag of rows of the track list.
+    pure callback is-rows-drag(data: data-transfer) -> bool;
     // Files dragged in from Finder or a file manager. The system tells the
     // window where the cursor is (in window coordinates) rather than handing
     // the files to a drop area, so each deck checks `files-x` and `files-y`
@@ -422,11 +427,23 @@ export global LibraryEdit {
     callback move-list-to(index: int, target: int);
     // Shows the list at tree row `index` in the Sidelist.
     callback show-in-sidelist(index: int);
-    callback drop(index: int, data: data-transfer);
+    // Tracks dropped on tree row `index`; `moving` (⌥ held) takes them
+    // out of the list they came from.
+    callback drop(index: int, data: data-transfer, moving: bool);
+    // What such a drop would do, shown on the row: "Add 3", "Move 3" or "".
+    pure callback drop-badge(index: int, data: data-transfer, moving: bool) -> string;
     // Tracks from the side panel or a deck dropped on the open list (empty
     // or not) in the track list join it.
     pure callback accepts-list-drop(data: data-transfer) -> bool;
-    callback drop-on-list(data: data-transfer);
+    // The open playlist's own rows dropped before row `index` go there.
+    callback drop-on-list(index: int, data: data-transfer, moving: bool);
+    // After tracks are added, moved or taken out: what happened, shown
+    // under the track list with Undo (and Add them again, when an add
+    // skipped tracks the playlist had). `note-serial` counts up with each.
+    in-out property <string> list-note;
+    in property <bool> note-again;
+    in property <int> note-serial;
+    callback add-again();
     callback set-rating(row: int, rating: int);
     // Gives the row (or all the picked rows) color `color`: one of the
     // colors searched as color:red and so on, in their order, or -1 for
@@ -3462,6 +3479,8 @@ component FolderTree inherits Rectangle {
                     // Where a dragged list would land on this row: 0 before,
                     // 1 into, 2 after; -1 for tracks.
                     property <int> zone: -1;
+                    // For tracks: "Add 3" or "Move 3" (with ⌥).
+                    property <string> badge;
                     property <bool> list-over: drop.has-drag && zone >= 0;
                     y: parent.height - 34px;
                     height: 34px;
@@ -3510,6 +3529,7 @@ component FolderTree inherits Rectangle {
                                 return LibraryEdit.accepts-list-move(i, e.data, cell.zone) ? DragAction.copy : DragAction.none;
                             }
                             cell.zone = -1;
+                            cell.badge = LibraryEdit.drop-badge(i, e.data, TrackDrag.alt-held);
                             (((f.editable && (f.kind == 2 || f.kind == 17)) || f.stage) && LibraryEdit.accepts-drop(i, e.data)) ? DragAction.copy : DragAction.none
                         }
                         dropped(e) => {
@@ -3517,10 +3537,26 @@ component FolderTree inherits Rectangle {
                             if cell.zone >= 0 {
                                 LibraryEdit.drop-list(i, e.data, cell.zone);
                             } else {
-                                LibraryEdit.drop(i, e.data);
+                                LibraryEdit.drop(i, e.data, TrackDrag.alt-held);
                             }
                             TrackDrag.active = false;
                             DragAction.copy
+                        }
+                    }
+                    if drop.has-drag && zone < 0 && badge != "": Rectangle {
+                        x: parent.width - self.width - 8px;
+                        y: (parent.height - self.height) / 2;
+                        width: badge-text.preferred-width + 14px;
+                        height: 20px;
+                        border-radius: 10px;
+                        background: Theme.accent;
+                        badge-text := Text {
+                            text: badge;
+                            color: white;
+                            font-size: 11px;
+                            font-weight: 700;
+                            vertical-alignment: center;
+                            horizontal-alignment: center;
                         }
                     }
                     // The insertion line, at the level the list lands in.
@@ -4855,6 +4891,29 @@ component AlbumGrid inherits Rectangle {
     }
 }
 
+// A word button on the note under the track list.
+component NoteButton inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    width: word.preferred-width + 16px;
+    height: 26px;
+    y: 5px;
+    border-radius: 13px;
+    background: nta.has-hover ? Theme.accent.transparentize(0.75) : transparent;
+    word := Text {
+        text: root.text;
+        color: Theme.lilac-text;
+        font-size: 13px;
+        font-weight: 600;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+    nta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
 component TrackList inherits Rectangle {
     in property <[TrackRow]> rows;
     // Its selection is lilac while it has focus, gray while the folders do.
@@ -5606,17 +5665,82 @@ component TrackList inherits Rectangle {
     }
     // The open list takes tracks dragged onto it from the side panel or a
     // deck, even while it's empty and shows its placeholder.
+    // The playlist's own rows dragged up or down go in a new order there
+    // (only while it's listed by #, with nothing filtered out).
+    property <length> rows-top: lv.absolute-position.y - root.absolute-position.y;
+    property <int> reorder-at: -1;
+    function row-at(y: length) -> int {
+        max(0, min(rows.length, round((y - rows-top - lv.content-y) / row-height)))
+    }
     if LibraryEdit.in-list: list-drop := DropArea {
-        can-drop(e) => { LibraryEdit.accepts-list-drop(e.data) ? DragAction.copy : DragAction.none }
+        can-drop(e) => {
+            if !LibraryEdit.accepts-list-drop(e.data) {
+                return DragAction.none;
+            }
+            reorder-at = TrackDrag.is-rows-drag(e.data) ? row-at(e.position.y) : -1;
+            DragAction.copy
+        }
         dropped(e) => {
-            LibraryEdit.drop-on-list(e.data);
+            LibraryEdit.drop-on-list(row-at(e.position.y), e.data, TrackDrag.alt-held);
+            reorder-at = -1;
             TrackDrag.active = false;
             DragAction.copy
         }
         Rectangle {
             border-radius: 4px;
-            border-width: list-drop.has-drag ? 2px : 0px;
+            border-width: list-drop.has-drag && reorder-at < 0 ? 2px : 0px;
             border-color: Theme.accent;
+        }
+        if list-drop.has-drag && reorder-at >= 0: Rectangle {
+            x: 4px;
+            y: max(rows-top, min(root.height - 2px, rows-top + reorder-at * row-height + lv.content-y - 1px));
+            width: parent.width - 8px;
+            height: 2px;
+            background: Theme.accent;
+        }
+    }
+    // What the last add, move or removal did, with Undo; it goes after a
+    // few seconds.
+    if LibraryEdit.list-note != "": note := Rectangle {
+        property <int> serial: LibraryEdit.note-serial;
+        changed serial => { note-timer.running = false; note-timer.running = true; }
+        x: (parent.width - self.width) / 2;
+        y: parent.height - self.height - 14px;
+        width: min(parent.width - 24px, note-row.preferred-width + 8px);
+        height: 36px;
+        border-radius: 18px;
+        background: Theme.n-2a2a2d;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 12px;
+        drop-shadow-color: #00000080;
+        note-row := HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 6px;
+            spacing: 6px;
+            Text {
+                text: LibraryEdit.list-note;
+                color: Theme.text;
+                font-size: 13px;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            if LibraryEdit.note-again: NoteButton {
+                text: "Add them again";
+                clicked => {
+                    LibraryEdit.add-again();
+                }
+            }
+            if LibraryEdit.undo-text != "": NoteButton {
+                text: "Undo";
+                clicked => {
+                    LibraryEdit.undo-stage();
+                }
+            }
+        }
+        note-timer := Timer {
+            interval: 8s;
+            triggered => { LibraryEdit.list-note = ""; }
         }
     }
 
@@ -6853,7 +6977,7 @@ component SidePanel inherits Rectangle {
                             SidelistUi.show-list(e.data);
                             return DragAction.copy;
                         }
-                        TrackDrag.drop-side(max(0, min(rows.length, round((e.position.y - lv.content-y) / row-height))), e.data);
+                        TrackDrag.drop-side(max(0, min(rows.length, round((e.position.y - lv.content-y) / row-height))), e.data, TrackDrag.alt-held);
                         TrackDrag.active = false;
                         DragAction.copy
                     }

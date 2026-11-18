@@ -595,6 +595,20 @@ the top. Type to find one, or pick **New crate** to make one with the
 tracks in it. **Show in playlist** lists the crates and playlists a track
 is in and opens the one you pick.
 
+Hold <kbd>⌥</kbd> (Alt on Windows and Linux) as you drop tracks dragged out
+of the open list or the Sidelist to **move** them: they go into the list
+you drop them on and leave the one they came from. The row you hover says
+**Add 3** or **Move 3**. A playlist leaves out tracks it already has; the
+note that says so has **Add them again** to add them anyway.
+
+To take tracks out of the open crate or playlist, pick them and press
+Delete, or right-click them for **Remove from this list**. A playlist listed
+by **#** (click the heading), with no search or filter on, can also be put
+in a new order by dragging its rows up or down.
+
+After each add, move or removal a note at the bottom of the list says what
+happened, with **Undo**; ⌘Z (Ctrl+Z) takes it back too.
+
 **Go to Artist** and **Go to Album** on the track menu show the whole
 collection narrowed to that artist (any track they're on) or album, with
 a chip on the filter bar; clear the chip to see everything again.
