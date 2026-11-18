@@ -377,6 +377,13 @@ pub static VERBS: &[Verb] = &[
         "Rate the tracks picked in the browser, or the deck's track; 0 clears",
     ),
     def(
+        "sidelist_add",
+        App,
+        TakesDeck::No,
+        &[],
+        "Add the tracks picked in the browser to the end of the Sidelist",
+    ),
+    def(
         "show_info",
         App,
         TakesDeck::No,

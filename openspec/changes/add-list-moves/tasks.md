@@ -10,10 +10,10 @@
 
 ## 2. Sidelist shows any list
 
-- [ ] 2.1 ▾ picker: Scratch pad or any playlist or crate; drag a list onto the Sidelist tab; Show in Sidelist on the list menu
-- [ ] 2.2 A shown list takes drops at the line, reorders by drag and removes with Delete, saving at once
-- [ ] 2.3 Scratch pad kept across restarts; Save scratch pad as playlist…
-- [ ] 2.4 One key adds the picked tracks to what the Sidelist shows
+- [x] 2.1 ▾ picker: Scratch pad or any playlist or crate; drag a list onto the Sidelist tab; Show in Sidelist on the list menu
+- [x] 2.2 A shown list takes drops at the line, reorders by drag and removes with Delete, saving at once
+- [x] 2.3 Scratch pad kept across restarts; Save scratch pad as playlist…
+- [x] 2.4 One key adds the picked tracks to what the Sidelist shows
 
 ## 3. Add or move, and say what happened
 

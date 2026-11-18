@@ -300,6 +300,29 @@ export struct MoveTarget {
     depth: int,
 }
 
+// A line of a dropdown: a choice, or a heading over the choices below it.
+export struct Choice {
+    text: string,
+    header: bool,
+    value: int,
+}
+
+// The Sidelist: the scratch pad, or one of the DJ's crates or playlists it
+// shows. `choices` are the picker's lines (0 the scratch pad, the lists
+// from 1, -2 to save the scratch pad as a playlist), `current` the one
+// shown and `name` its name.
+export global SidelistUi {
+    in property <[Choice]> choices;
+    in property <int> current;
+    in property <string> name;
+    in property <bool> shows-list;
+    callback pick(value: int);
+    // A list dragged from the tree: whether it can show in the Sidelist,
+    // and showing it there.
+    pure callback accepts-list(data: data-transfer) -> bool;
+    callback show-list(data: data-transfer);
+}
+
 export global LibraryEdit {
     // Colors a crate can have (see CrateColors).
     out property <[color]> list-colors: CrateColors.colors;
@@ -397,6 +420,8 @@ export global LibraryEdit {
     // and moving it to the `target`th of them.
     pure callback move-targets(index: int) -> [MoveTarget];
     callback move-list-to(index: int, target: int);
+    // Shows the list at tree row `index` in the Sidelist.
+    callback show-in-sidelist(index: int);
     callback drop(index: int, data: data-transfer);
     // Tracks from the side panel or a deck dropped on the open list (empty
     // or not) in the track list join it.
@@ -3041,6 +3066,13 @@ component FolderTree inherits Rectangle {
                 }
             }
             if source == 0 && menu-locked: MenuSeparator {}
+            if source == 0 && tab == 0 && (menu-kind == 17 || menu-kind == 2): MenuLine {
+                text: "Show in Sidelist";
+                clicked => {
+                    LibraryEdit.show-in-sidelist(menu-index);
+                    folder-menu.close();
+                }
+            }
             if source == 0 && KeepGoingUi.player && (menu-kind == 17 || menu-kind == 2): MenuLine {
                 text: "Start Radio";
                 clicked => {
@@ -5677,12 +5709,6 @@ component SmallButton inherits Rectangle {
     TourMark { id: root.tour-id; }
 }
 
-// A line of a dropdown: a choice, or a heading over the choices below it.
-struct Choice {
-    text: string,
-    header: bool,
-    value: int,
-}
 
 // A labelled field showing the current choice; clicking opens the choices.
 component Dropdown inherits Rectangle {
@@ -6284,6 +6310,15 @@ component SidePanel inherits Rectangle {
                     }
                 }
                 TourMark { id: i == 0 ? "ui,side_automix" : ""; }
+                // A crate or playlist dropped on the Sidelist tab shows there.
+                if i == 1: DropArea {
+                    can-drop(e) => { SidelistUi.accepts-list(e.data) ? DragAction.copy : DragAction.none }
+                    dropped(e) => {
+                        SidelistUi.show-list(e.data);
+                        tab = 1;
+                        DragAction.copy
+                    }
+                }
             }
         }
         Rectangle {
@@ -6479,6 +6514,13 @@ component SidePanel inherits Rectangle {
                 spacing: 8px;
                 Text { text: ["Automix", "Sidelist", "Related"][tab]; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
                 Text { text: total; color: Theme.label; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                if tab == 1: VerticalLayout {
+                    alignment: center;
+                    SmallButton {
+                        text: SidelistUi.name + " ▾";
+                        clicked => { sidelist-menu.show(); }
+                    }
+                }
                 if tab == 0: VerticalLayout {
                     alignment: center;
                     AutomixButton {
@@ -6604,6 +6646,37 @@ component SidePanel inherits Rectangle {
             }
             if tab == 0 && KeepGoingUi.player && UpNextUi.now-loaded: Text { x: 8px; height: 20px; text: "UP NEXT"; color: Theme.label; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; vertical-alignment: center; }
             EdgeLine { left: 6px; right: 6px; }
+            // What the Sidelist shows: the scratch pad, a crate or a playlist.
+            sidelist-menu := PopupWindow {
+                x: root.width - self.width - 6px;
+                y: 40px;
+                width: 240px;
+                height: min(420px, SidelistUi.choices.length * 26px + 12px);
+                close-policy: close-on-click-outside;
+                MenuBackground {}
+                ListView {
+                    for c in SidelistUi.choices: HorizontalLayout {
+                        padding-left: 6px;
+                        padding-right: 6px;
+                        if c.header: Text {
+                            height: 26px;
+                            text: c.text;
+                            color: Theme.text-dim;
+                            font-size: 10px;
+                            font-weight: 600;
+                            letter-spacing: 0.5px;
+                            vertical-alignment: center;
+                        }
+                        if !c.header: MenuLine {
+                            text: (c.value == SidelistUi.current ? "✓ " : "") + c.text;
+                            clicked => {
+                                SidelistUi.pick(c.value);
+                                sidelist-menu.close();
+                            }
+                        }
+                    }
+                }
+            }
             order-menu := PopupWindow {
                 x: root.width - self.width - 6px;
                 // Just under the Order button.
@@ -6759,7 +6832,7 @@ component SidePanel inherits Rectangle {
                     x: 8px;
                     width: parent.width - 16px;
                     text: tab == 0 ? "Empty. Drag tracks here, or right-click a track and choose Add to Automix."
-                        : tab == 1 ? "Empty. Drag tracks here."
+                        : tab == 1 ? (SidelistUi.shows-list ? "Empty. Drag tracks here to add them to this list." : "Empty. Drag tracks here, or drag a crate or playlist here to show it.")
                         : total == "" ? "Select a track in the browser to see the tracks linked to it and those played next to it."
                         : "Nothing linked yet. Drag tracks here to link them to this one; tracks played next to it in your history show up here too.";
                     color: Theme.text-dim;
@@ -6770,9 +6843,16 @@ component SidePanel inherits Rectangle {
                 drop := DropArea {
                     can-drop(e) => {
                         drag-y = e.position.y;
+                        if tab == 1 && SidelistUi.accepts-list(e.data) {
+                            return DragAction.copy;
+                        }
                         TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
                     }
                     dropped(e) => {
+                        if tab == 1 && SidelistUi.accepts-list(e.data) {
+                            SidelistUi.show-list(e.data);
+                            return DragAction.copy;
+                        }
                         TrackDrag.drop-side(max(0, min(rows.length, round((e.position.y - lv.content-y) / row-height))), e.data);
                         TrackDrag.active = false;
                         DragAction.copy

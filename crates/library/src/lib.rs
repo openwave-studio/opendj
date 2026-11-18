@@ -499,6 +499,9 @@ pub fn snapshot(from: &Path, to: &Path) -> Result<(), Error> {
     Ok(())
 }
 
+/// A track in a list: its row id and when it was added (or played).
+type TrackEntry = (i64, Option<i64>);
+
 impl Library {
     /// Opens (creating if needed) the library at `path`.
     pub fn open(path: &Path) -> Result<Self, Error> {
@@ -1550,6 +1553,86 @@ impl Library {
                 "DELETE FROM playlist_tracks WHERE playlist_id = ?1 AND position = ?2",
                 params![id, p],
             )?;
+        }
+        tx.commit()
+    }
+
+    /// Gives a list the tracks `tracks`, in that order. A track it already
+    /// had keeps when it was added (or played); streamed entries keep their
+    /// place among the entries. A crate keeps each track once.
+    pub fn set_playlist_tracks(&mut self, id: i64, tracks: &[usize]) -> Result<(), Error> {
+        let tx = self.db.transaction()?;
+        let is_crate: bool = tx
+            .prepare("SELECT 1 FROM playlists WHERE id = ?1 AND kind = 5")?
+            .exists([id])?;
+        // Every entry as it is now: a track's row, or a streamed one's.
+        let mut entries: Vec<(i64, Option<TrackEntry>)> = tx
+            .prepare(
+                "SELECT position, track_id, played_at FROM playlist_tracks WHERE playlist_id = ?1",
+            )?
+            .query_map([id], |r| Ok((r.get(0)?, Some((r.get(1)?, r.get(2)?)))))?
+            .collect::<Result<_, _>>()?;
+        let streams: Vec<i64> = tx
+            .prepare("SELECT position FROM list_streams WHERE playlist_id = ?1")?
+            .query_map([id], |r| r.get(0))?
+            .collect::<Result<_, _>>()?;
+        entries.extend(streams.iter().map(|&p| (p, None)));
+        entries.sort_by_key(|e| e.0);
+        // When each track it holds came in, to keep for the same track.
+        let mut kept: HashMap<i64, std::collections::VecDeque<Option<i64>>> = HashMap::new();
+        for (_, e) in &entries {
+            if let Some((track, at)) = e {
+                kept.entry(*track).or_default().push_back(*at);
+            }
+        }
+        let mut seen = HashSet::new();
+        let mut order: Vec<Option<TrackEntry>> = tracks
+            .iter()
+            .filter_map(|&t| row_id(t))
+            .filter(|r| !is_crate || seen.insert(*r))
+            .map(|r| {
+                let at = kept
+                    .get_mut(&r)
+                    .and_then(|q| q.pop_front())
+                    .unwrap_or(Some(now()));
+                Some((r, at))
+            })
+            .collect();
+        // Streamed entries go back where they were, counted among all.
+        let mut stream_old = Vec::new();
+        for (i, (position, e)) in entries.iter().enumerate() {
+            if e.is_none() {
+                let at = i.min(order.len());
+                order.insert(at, None);
+                stream_old.push(*position);
+            }
+        }
+        tx.execute("DELETE FROM playlist_tracks WHERE playlist_id = ?1", [id])?;
+        // Out of the way first, as positions are unique in a list.
+        tx.execute(
+            "UPDATE list_streams SET position = -1 - position WHERE playlist_id = ?1",
+            [id],
+        )?;
+        let mut streams_left = stream_old.into_iter();
+        for (position, e) in order.into_iter().enumerate() {
+            match e {
+                Some((track, at)) => {
+                    tx.execute(
+                        "INSERT INTO playlist_tracks (playlist_id, position, track_id, played_at)
+                         VALUES (?1, ?2, ?3, ?4)",
+                        params![id, position as i64, track, at],
+                    )?;
+                }
+                None => {
+                    if let Some(old) = streams_left.next() {
+                        tx.execute(
+                            "UPDATE list_streams SET position = ?3
+                              WHERE playlist_id = ?1 AND position = ?2",
+                            params![id, -1 - old, position as i64],
+                        )?;
+                    }
+                }
+            }
         }
         tx.commit()
     }
@@ -3718,6 +3801,27 @@ mod tests {
         );
         lib.remove_from_playlist(friday, 1).unwrap();
         assert_eq!(lib.playlist_tracks(friday).unwrap(), [ids[2], ids[2]]);
+        // Rearranged as a whole, a streamed entry keeping its place.
+        lib.db
+            .execute(
+                "INSERT INTO list_streams (playlist_id, position, service, uri)
+                 VALUES (?1, 5, 'spotify', 'spotify:track:x')",
+                [friday],
+            )
+            .unwrap();
+        lib.set_playlist_tracks(friday, &[ids[1], ids[2], ids[0]])
+            .unwrap();
+        assert_eq!(
+            lib.playlist_tracks(friday).unwrap(),
+            [ids[1], ids[2], ids[0]]
+        );
+        let kinds: Vec<bool> = lib
+            .playlist_entries(friday)
+            .unwrap()
+            .iter()
+            .map(|e| matches!(e, ListEntry::Track(_)))
+            .collect();
+        assert_eq!(kinds, [true, true, false, true]);
         lib.rename_playlist(warmup, "Openers").unwrap();
         let names: Vec<String> = lib
             .playlists()

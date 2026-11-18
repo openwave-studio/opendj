@@ -43,6 +43,10 @@ pub const DEFAULTS: &[Shortcut] = &[
         key: "g",
         script: "edit_grid",
     },
+    Shortcut {
+        key: "s",
+        script: "sidelist_add",
+    },
     // Unload deck 1 or 2, as Serato's keys.
     Shortcut {
         key: "alt+shift+left",
@@ -501,6 +505,15 @@ impl Host for AppHost<'_> {
                     return Err(Error::new("Pick a track in the browser first"));
                 }
                 self.browser.show_info(first);
+                Ok(())
+            }
+            "sidelist_add" => {
+                let (first, last) = self.picked;
+                if first < 0 {
+                    return Err(Error::new("Pick a track in the browser first"));
+                }
+                self.browser
+                    .add_rows_to_sidelist(first as usize, last.max(first) as usize);
                 Ok(())
             }
             other => Err(Error::new(format!("'{other}' isn't available here"))),

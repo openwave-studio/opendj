@@ -58,6 +58,7 @@ mod rail_order;
 mod rekordbox_xml;
 mod sets;
 mod side_tabs;
+mod sidelist;
 mod spotify_export;
 mod staging;
 mod streamed;
@@ -83,7 +84,7 @@ use crate::stores::{self, Stores};
 use crate::waves::Waves;
 use crate::{
     fmt_time, AppWindow, ColumnUi, FilesUi, Folder, HealthUi, KeyNotation, LibraryEdit, MoveTarget,
-    SideRow, StoreUi, StreamMatch, TrackDrag, TrackInfo, TrackRow, WantedUi,
+    SideRow, SidelistUi, StoreUi, StreamMatch, TrackDrag, TrackInfo, TrackRow, WantedUi,
 };
 
 /// Sources in the rail that have a tree of their own.
@@ -1644,6 +1645,9 @@ impl Browser {
                     if from == tab {
                         if tab != LINKED_TAB {
                             move_block(&mut b.side[tab], first, last, at);
+                            if tab == sidelist::SIDELIST_TAB {
+                                b.sidelist_changed();
+                            }
                             b.refresh_side();
                         }
                         return;
@@ -1662,6 +1666,9 @@ impl Browser {
                 let list = &mut b.side[tab];
                 let at = at.min(list.len());
                 list.splice(at..at, ids);
+                if tab == sidelist::SIDELIST_TAB {
+                    b.sidelist_changed();
+                }
                 b.refresh_side();
             }))
         });
@@ -1698,6 +1705,9 @@ impl Browser {
                 } else if first < b.side[tab].len() {
                     let end = (last + 1).min(b.side[tab].len());
                     b.side[tab].drain(first..end);
+                    if tab == sidelist::SIDELIST_TAB {
+                        b.sidelist_changed();
+                    }
                     b.refresh_side();
                 }
             }))
@@ -1996,6 +2006,40 @@ impl Browser {
             DataTransfer::from(SharedString::from(format!("{LIST_PAYLOAD}{id}")))
         });
         edit.on_is_list_drag(|data| dragged_list(&data).is_some());
+        let w = with.clone();
+        edit.on_show_in_sidelist(move |i| {
+            w(&|b| {
+                if let Some(list) = b.own_list_at(i.max(0) as usize) {
+                    b.show_in_sidelist(Some(list));
+                }
+            })
+        });
+        let sidelist = app.global::<SidelistUi>();
+        let w = with.clone();
+        sidelist.on_pick(move |v| w(&|b| b.pick_sidelist(v)));
+        let w = weak.clone();
+        sidelist.on_accepts_list(move |data| {
+            let Some(list) = dragged_list(&data) else {
+                return false;
+            };
+            w.upgrade()
+                .and_then(|b| {
+                    b.try_borrow()
+                        .ok()
+                        .map(|b| b.menu_lists.iter().any(|l| l.id == list))
+                })
+                .unwrap_or(false)
+        });
+        let w = with.clone();
+        sidelist.on_show_list(move |data| {
+            if let Some(list) = dragged_list(&data) {
+                w(&|b| {
+                    if b.menu_lists.iter().any(|l| l.id == list) {
+                        b.show_in_sidelist(Some(list));
+                    }
+                })
+            }
+        });
         edit.set_mac(cfg!(target_os = "macos"));
         let w = with.clone();
         edit.on_nudge_list(move |i, steps| w(&|b| b.nudge_list(i.max(0) as usize, steps)));
@@ -3404,7 +3448,8 @@ impl Browser {
         self.index_of = library.iter().enumerate().map(|(i, t)| (t.id, i)).collect();
         self.indexed = library.iter().map(|t| Indexed::new(t)).collect();
         self.library = library;
-        self.side = [Vec::new(), Vec::new()];
+        self.side[0].clear();
+        self.load_sidelist();
         self.folders = crate::settings::stage_folders();
         self.mixed_sets = crate::settings::mixed_sets_folder();
         self.read_pending_moves();
@@ -5186,6 +5231,7 @@ impl Browser {
             path.push(&n.name);
         }
         self.menu_lists = lists;
+        self.refresh_sidelist_ui();
         let in_list = self.nodes.get(self.current_node).is_some_and(|n| {
             (n.kind == KIND_LIST || n.kind == KIND_CRATE) && n.playlist.is_some() && !n.locked
         });
