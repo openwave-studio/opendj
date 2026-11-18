@@ -6707,6 +6707,13 @@ component InstrumentRack inherits Rectangle {
     // One page of knobs; the keyboard or the step sequencer under it.
     property <int> shown: 1;
     property <int> page: min(InstrumentsUi.knob-page, max(0, pages - shown));
+    // How many knobs the page shows, copied only when it changes: a
+    // repeater counting from `count` (read every tick) would rebuild its
+    // knobs each tick and drop a click and drag on them.
+    property <int> page-knobs: max(0, min(8, count - page * 8));
+    property <int> on-page;
+    changed page-knobs => { root.on-page = root.page-knobs; }
+    init => { root.on-page = root.page-knobs; }
     property <int> octave-index: Controls.resolve("[Instrument1]", "octave");
     property <int> octave: Controls.value(octave-index, Controls.tick);
     property <float> left: Controls.value(Controls.resolve(group, "vu_meter_left"), Controls.tick);
@@ -6788,7 +6795,7 @@ component InstrumentRack inherits Rectangle {
                     for r in root.shown: HorizontalLayout {
                         vertical-stretch: 1;
                         alignment: space-around;
-                        for k in max(0, min(8, root.count - (root.page + r) * 8)): VerticalLayout {
+                        for k in root.on-page: VerticalLayout {
                             alignment: center;
                             ParamKnob { index: (root.page + r) * 8 + k; count: root.count; tint: root.hue; knob-size: 35px; }
                         }
