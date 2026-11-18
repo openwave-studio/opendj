@@ -97,16 +97,13 @@ impl Browser {
             .filter(|&row| self.rows.get(row).is_some_and(Option::is_none))
             .filter_map(|row| self.stream_row(row))
             .collect();
-        match picked.as_slice() {
-            [(t, service)] => {
-                let (t, service) = (t.clone(), service.clone());
-                self.play_stream(&t, &service, None);
-            }
-            many => {
-                for (t, service) in many.to_vec() {
-                    self.download_stream(&t, &service);
-                }
-            }
+        if let [(t, service)] = picked.as_slice() {
+            let (t, service) = (t.clone(), service.clone());
+            self.play_stream(&t, &service, None);
+            return;
+        }
+        for (t, service) in picked {
+            self.download_stream(&t, &service);
         }
     }
 

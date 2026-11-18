@@ -19,6 +19,9 @@ use crate::{AppWindow, CatalogRow, CatalogSearch, StoreUi};
 /// How big a result's picture is fetched, in pixels (shown at 34).
 const PICTURE_SIDE: u32 = 80;
 
+/// A square picture's side length and RGBA pixels.
+type Thumbnail = (u32, Vec<u8>);
+
 /// A row of the dropdown: what a click on it does.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) enum Pick {
@@ -39,7 +42,7 @@ pub(super) struct CatalogState {
     pictures: Vec<String>,
     images: HashMap<String, slint::Image>,
     want_picture: Sender<String>,
-    pictures_in: Receiver<(String, Option<(u32, Vec<u8>)>)>,
+    pictures_in: Receiver<(String, Option<Thumbnail>)>,
 }
 
 impl CatalogState {
