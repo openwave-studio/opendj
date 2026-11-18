@@ -234,8 +234,10 @@ component Timeline inherits Rectangle {
     // Spans behind the rows: transitions, the selection, cuts and trims.
     for s in MixedSetUi.spans: Rectangle {
         visible: s.kind == 0 || s.kind >= 3;
-        x: (s.start - vs) / vl * root.width;
-        width: max(2px, (s.end - s.start) / vl * root.width);
+        property <length> x0: max(-8px, (s.start - vs) / vl * root.width);
+        property <length> x1: min(root.width + 8px, (s.end - vs) / vl * root.width);
+        x: x0;
+        width: max(2px, x1 - x0);
         y: 18px;
         height: rows * row-h + (MixedSetUi.show-decks ? 0px : block-h);
         background: s.kind == 0 ? (s.selected ? #b69cff40 : #b69cff1c) : s.kind == 3 ? #ffffff26 : #ff453a2a;
@@ -263,8 +265,13 @@ component Timeline inherits Rectangle {
         y: 18px;
         height: block-h + row-h;
         for b[i] in MixedSetUi.blocks: Rectangle {
-            x: (b.start - vs) / vl * root.width + 1px;
-            width: max(2px, (b.end - b.start) / vl * root.width - 2px);
+            // Cut to the view (plus a little), so a block zoomed far in
+            // never draws wider than the screen: a clipped block is drawn
+            // as a layer, and a layer wider than 16384 px can't be made.
+            property <length> x0: max(-8px, (b.start - vs) / vl * root.width);
+            property <length> x1: min(root.width + 8px, (b.end - vs) / vl * root.width);
+            x: x0 + 1px;
+            width: max(2px, x1 - x0 - 2px);
             y: 0;
             height: block-h - 2px;
             border-radius: 4px;
@@ -318,8 +325,13 @@ component Timeline inherits Rectangle {
         }
         for b[i] in MixedSetUi.blocks: Rectangle {
             property <int> on-row: b.deck;
-            x: (b.start - vs) / vl * root.width + 1px;
-            width: max(2px, (b.end - b.start) / vl * root.width - 2px);
+            // Cut to the view (plus a little), so a block zoomed far in
+            // never draws wider than the screen: a clipped block is drawn
+            // as a layer, and a layer wider than 16384 px can't be made.
+            property <length> x0: max(-8px, (b.start - vs) / vl * root.width);
+            property <length> x1: min(root.width + 8px, (b.end - vs) / vl * root.width);
+            x: x0 + 1px;
+            width: max(2px, x1 - x0 - 2px);
             y: on-row * row-h + 16px;
             height: row-h - 22px;
             border-radius: 4px;
@@ -348,8 +360,10 @@ component Timeline inherits Rectangle {
         }
         for s in MixedSetUi.spans: Rectangle {
             visible: s.kind == 1 || s.kind == 2;
-            x: (s.start - vs) / vl * root.width;
-            width: max(3px, (s.end - s.start) / vl * root.width);
+            property <length> x0: max(-8px, (s.start - vs) / vl * root.width);
+            property <length> x1: min(root.width + 8px, (s.end - vs) / vl * root.width);
+            x: x0;
+            width: max(3px, x1 - x0);
             y: s.deck * row-h + row-h - 18px;
             height: 12px;
             border-radius: 3px;
