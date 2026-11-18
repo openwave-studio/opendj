@@ -13,12 +13,21 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use clack_extensions::audio_ports::{AudioPortInfoBuffer, PluginAudioPorts};
+use clack_extensions::audio_ports::{
+    AudioPortInfoBuffer, AudioPortRescanFlags, HostAudioPorts, HostAudioPortsImpl, PluginAudioPorts,
+};
 use clack_extensions::gui::{
     GuiApiType, GuiConfiguration, GuiSize, HostGui, HostGuiImpl, PluginGui, Window,
 };
-use clack_extensions::latency::PluginLatency;
-use clack_extensions::params::{ParamInfoBuffer, ParamInfoFlags, PluginParams};
+use clack_extensions::latency::{HostLatency, HostLatencyImpl, PluginLatency};
+use clack_extensions::log::{HostLog, HostLogImpl, LogSeverity};
+use clack_extensions::note_ports::{
+    HostNotePorts, HostNotePortsImpl, NoteDialects, NotePortRescanFlags,
+};
+use clack_extensions::params::{
+    HostParams, HostParamsImplMainThread, HostParamsImplShared, ParamClearFlags, ParamInfoBuffer,
+    ParamInfoFlags, ParamRescanFlags, PluginParams,
+};
 #[cfg(all(unix, not(target_os = "macos")))]
 use clack_extensions::posix_fd::{FdFlags, HostPosixFd, HostPosixFdImpl, PluginPosixFd};
 use clack_extensions::preset_discovery::indexer::IndexerImpl;
@@ -28,7 +37,8 @@ use clack_extensions::preset_discovery::prelude::{
     UniversalPluginId,
 };
 use clack_extensions::remote_controls::{PluginRemoteControls, RemoteControlsPageBuffer};
-use clack_extensions::state::PluginState;
+use clack_extensions::state::{HostState, HostStateImpl, PluginState};
+use clack_extensions::thread_check::{HostThreadCheck, HostThreadCheckImpl};
 use clack_extensions::timer::{HostTimer, HostTimerImpl, PluginTimer, TimerId};
 use clack_host::events::event_types::{
     MidiEvent, NoteOffEvent, NoteOnEvent, ParamValueEvent, TransportEvent, TransportFlags,
@@ -290,13 +300,25 @@ fn host_info() -> Result<HostInfo, String> {
 
 struct Host;
 
-#[derive(Default)]
 struct HostShared {
+    /// The helper's main thread, where the instance was made.
+    main_thread: std::thread::ThreadId,
     callback: AtomicBool,
     /// A size the editor asked its window to take.
     resize: Mutex<Option<GuiSize>>,
     /// The plugin closed (or lost) its editor.
     gui_closed: AtomicBool,
+}
+
+impl Default for HostShared {
+    fn default() -> Self {
+        HostShared {
+            main_thread: std::thread::current().id(),
+            callback: AtomicBool::new(false),
+            resize: Mutex::new(None),
+            gui_closed: AtomicBool::new(false),
+        }
+    }
 }
 
 impl<'a> SharedHandler<'a> for HostShared {
@@ -326,6 +348,60 @@ impl HostGuiImpl for HostShared {
     fn closed(&self, _was_destroyed: bool) {
         self.gui_closed.store(true, Ordering::Release);
     }
+}
+
+// The host extensions below do little: the helper processes every block
+// anyway and keeps no automation, so a flush, a rescan or a dirty state
+// needs nothing more. They are here because some plugins (JUCE's CLAP
+// wrapper in Vital among them) call them without checking the host offers
+// them, and crash on a missing one, for instance when a preset loads.
+
+impl HostParamsImplShared for HostShared {
+    fn request_flush(&self) {}
+}
+
+impl HostLogImpl for HostShared {
+    fn log(&self, severity: LogSeverity, message: &str) {
+        // stdout carries the helper's replies; the app logs stderr.
+        eprintln!("plugin log ({severity:?}): {message}");
+    }
+}
+
+impl HostThreadCheckImpl for HostShared {
+    fn is_main_thread(&self) -> bool {
+        std::thread::current().id() == self.main_thread
+    }
+
+    fn is_audio_thread(&self) -> bool {
+        std::thread::current().id() != self.main_thread
+    }
+}
+
+impl HostParamsImplMainThread for HostMain {
+    fn rescan(&self, _flags: ParamRescanFlags) {}
+    fn clear(&self, _param_id: ClapId, _flags: ParamClearFlags) {}
+}
+
+impl HostStateImpl for HostMain {
+    fn mark_dirty(&self) {}
+}
+
+impl HostLatencyImpl for HostMain {
+    fn changed(&self) {}
+}
+
+impl HostAudioPortsImpl for HostMain {
+    fn is_rescan_flag_supported(&self, _flag: AudioPortRescanFlags) -> bool {
+        false
+    }
+    fn rescan(&self, _flags: AudioPortRescanFlags) {}
+}
+
+impl HostNotePortsImpl for HostMain {
+    fn supported_dialects(&self) -> NoteDialects {
+        NoteDialects::CLAP | NoteDialects::MIDI
+    }
+    fn rescan(&self, _flags: NotePortRescanFlags) {}
 }
 
 /// Timers (and, on Linux, file descriptors) the plugin asked for, served
@@ -390,7 +466,16 @@ impl HostHandlers for Host {
     type AudioProcessor<'a> = ();
 
     fn declare_extensions(builder: &mut HostExtensions<Self>, _shared: &Self::Shared<'_>) {
-        builder.register::<HostGui>().register::<HostTimer>();
+        builder
+            .register::<HostGui>()
+            .register::<HostTimer>()
+            .register::<HostParams>()
+            .register::<HostState>()
+            .register::<HostLatency>()
+            .register::<HostLog>()
+            .register::<HostThreadCheck>()
+            .register::<HostAudioPorts>()
+            .register::<HostNotePorts>();
         #[cfg(all(unix, not(target_os = "macos")))]
         builder.register::<HostPosixFd>();
     }
