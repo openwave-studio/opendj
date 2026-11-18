@@ -9,7 +9,8 @@ A DJ with an iPad and a class-compliant controller such as the DDJ-FLX4 has ever
 ## What Changes
 
 - **A new crate, `crates/tablet` (`opendj-tablet`)**: its own small Slint window on openDJ's engine. Two decks, each with title, artist, BPM, remaining time, a whole-track overview (tap to jump) and CUE, PLAY and SYNC; both decks' waveforms stacked full width with beat ticks, scrolling around a centre playhead; a crossfader; and the tracks of one folder in a list with Load A and Load B. Touch targets are at least 44 px.
-- **Controllers**: Mixxx MIDI mappings bundled in the app; the browse knob and LOAD buttons pick and load tracks from the list. With a controller that has its own sound card (four output channels, as on the FLX4) the master plays on 1-2 and the headphones on 3-4.
+- **The desktop look**: the desktop's theme, fonts, logo, buttons and RGB waveform colours, imported from `crates/app/ui` rather than copied.
+- **Controllers**: for now the DDJ-FLX4 (Mixxx's mapping) and the Xone:K2 (openDJ's two-deck mapping), listed in `crates/tablet/controllers.txt` and bundled in the app; the browse knob and LOAD buttons pick and load tracks from the list. With a sound card that has four output channels (as on the FLX4) the master plays on 1-2 and the headphones on 3-4, following when it is plugged in or out.
 - **Music**: the app's Documents folder, which the Files app shows as On My iPad › openDJ; Rescan reads it again.
 - **Audio session**: Playback category (plays with the screen locked and the ringer off), about 5 ms buffers, every output channel the route has.
 - **Waveforms drawn on the CPU** into images, since Slint's wgpu interop is not known to work with the Skia renderer Slint uses on iOS.

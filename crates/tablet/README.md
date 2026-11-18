@@ -1,10 +1,13 @@
 # openDJ for tablets (iPad first)
 
-A very small openDJ on the same engine as the desktop app: two decks, the
-tracks in one folder, play, cue, sync, a crossfader, waveforms, and MIDI
-controllers through their Mixxx mappings (made with the DDJ-FLX4 in mind:
-its browse knob and LOAD buttons pick and load tracks, and with the FLX4
-plugged in the headphones get the cue on its second output pair).
+A very small openDJ on the same engine as the desktop app, in its look
+(the same theme, fonts, logo and waveform colours): two decks, the tracks
+in one folder, play, cue, sync, headphone cue, a crossfader and waveforms.
+
+Controllers, for now: the **Pioneer DDJ-FLX4** (Mixxx's mapping) and the
+**Allen & Heath Xone:K2** (openDJ's two-deck mapping). Their browse knobs
+and LOAD buttons pick and load tracks. Add another by listing its files in
+`controllers.txt`.
 
 Left out on purpose: the library database, crates and playlists, effects
 UI, stems, recording, add-ons, the plugin host and HID controllers.
@@ -43,12 +46,20 @@ developer in **Settings › General › VPN & Device Management** and turn on
 Copy tracks into **Files › On My iPad › openDJ**, then press **Rescan**.
 Subfolders are read too.
 
-## Controller
+## Controllers and audio
 
 Plug the DDJ-FLX4 into the iPad's USB-C port (through a hub with power if
 the iPad can't power it). It is class compliant: the iPad uses it as its
-sound card, and openDJ finds its MIDI within a few seconds. Plug it in
-before opening openDJ: the headphone output is set up at start.
+sound card, and openDJ finds its MIDI within a few seconds. With its four
+output channels the master plays on 1-2 (the FLX4's master out) and the
+headphones on 3-4; openDJ follows when it is plugged in or out, and the
+AUDIO pill at the top shows the routing. Without it, only the master plays
+(on the iPad's speakers or whatever is connected).
+
+The Xone:K2 is MIDI only: use it with the FLX4 or another sound card
+through a USB hub. Set it to its factory settings (Latching Layers off,
+MIDI channel 15). On the desktop, `OPENDJ_CHANNELS=4` tries the
+four-channel routing.
 
 ## Known gaps
 

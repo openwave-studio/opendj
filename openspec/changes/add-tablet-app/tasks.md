@@ -7,6 +7,9 @@
 - [x] 1.3 Audio session: Playback category, short buffers, every output channel
 - [x] 1.4 Shared crates build for iPadOS: Whisper optional, no HID, QuickJS bindgen, plain wgpu stems, Apple thread priority, folders and MIDI device watching
 - [x] 1.5 Xcode project (XcodeGen) and Rust build script; README with install steps
+- [x] 1.6 The desktop look: shared theme and fonts, logo, deck headers with cover or initials, the desktop's RGB waveform colours and bar lines, library headings and rows
+- [x] 1.7 Audio routing: master 1-2, headphones 3-4 on a four-channel controller, re-routed when it is plugged in or out; headphone cue buttons; an AUDIO pill
+- [x] 1.8 Controllers limited to the DDJ-FLX4 and the Xone:K2 two-deck mapping (`controllers.txt`), bundled by the Xcode build; a CONTROLLER pill
 
 ## 2. On the iPad
 
