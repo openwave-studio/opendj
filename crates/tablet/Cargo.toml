@@ -1,0 +1,32 @@
+[package]
+name = "opendj-tablet"
+description = "A very small openDJ for tablets (iPad first): two decks, a folder of tracks, a DDJ-FLX4"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "opendj-tablet"
+path = "src/main.rs"
+
+[dependencies]
+opendj-control = { path = "../control" }
+opendj-controllers = { path = "../controllers" }
+# Without Whisper: word-timed lyrics aren't part of the iPad build.
+opendj-engine = { path = "../engine", default-features = false }
+
+# On the desktop it runs with the app's Slint, to try changes without an
+# iPad. On iPadOS Slint draws with Skia, the renderer its iOS support uses.
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+slint = "~1.18"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+slint = { version = "~1.18", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-skia"] }
+# The audio session: play with the ringer off, and use all four of a
+# controller's output channels (master and headphones).
+objc2-avf-audio = { version = "0.3", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSError", "NSString"] }
+
+[build-dependencies]
+slint-build = "~1.18"

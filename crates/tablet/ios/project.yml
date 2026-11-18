@@ -1,0 +1,66 @@
+# The Xcode project for openDJ on iPad, made with XcodeGen:
+#   cd crates/tablet/ios && xcodegen && open openDJ.xcodeproj
+# See crates/tablet/README.md.
+name: openDJ
+options:
+  bundleIdPrefix: app.opendj
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  ENABLE_USER_SCRIPT_SANDBOXING: NO
+  # Set your team here or in Xcode's Signing & Capabilities tab.
+  DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+targets:
+  openDJ:
+    type: application
+    platform: iOS
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: app.opendj.tablet
+      # iPad first; iPhone works but the layout is for a landscape tablet.
+      TARGETED_DEVICE_FAMILY: "1,2"
+      CODE_SIGN_STYLE: Automatic
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: openDJ
+        CFBundleShortVersionString: "0.8.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        # The app's Documents folder shows in the Files app as
+        # On My iPad › openDJ: copy music there.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        # Keeps playing with the screen locked.
+        UIBackgroundModes: [audio]
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIStatusBarHidden: true
+        CADisableMinimumFrameDurationOnPhone: true
+        UILaunchScreen:
+          ImageRespectSafeAreaInsets: false
+        # The scene lifecycle, which iOS 27 requires; Slint's winit
+        # backend supplies the delegate.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Slint
+                UISceneDelegateClassName: SlintWindowSceneDelegate
+    sources:
+      # Mixxx's controller mappings, as a "controllers" folder beside the
+      # executable, where openDJ looks for them.
+      - path: ../../../res/controllers
+        type: folder
+        buildPhase: resources
+    postCompileScripts:
+      - script: ./build_for_ios_with_cargo.bash opendj-tablet
+        name: Build Rust
+        basedOnDependencyAnalysis: false
+        outputFileLists: []
+        outputFiles:
+          - $TARGET_BUILD_DIR/$EXECUTABLE_PATH

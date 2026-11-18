@@ -900,11 +900,11 @@ fn channel_message(msg: &[u8]) -> Option<[u8; 3]> {
     Some([status, msg[1], if len == 3 { msg[2] } else { 0 }])
 }
 
-/// Waits `time` on the device thread. On macOS the thread's run loop runs
+/// Waits `time` on the device thread. On macOS and iPadOS the thread's run loop runs
 /// meanwhile: CoreMIDI tells this process about devices plugged in or out
 /// through the run loop of the thread that opened MIDI first, and without it
 /// the device list stays as it was at start.
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 fn wait_for_system(time: Duration) {
     use std::ffi::c_void;
     #[link(name = "CoreFoundation", kind = "framework")]
@@ -922,7 +922,7 @@ fn wait_for_system(time: Duration) {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 fn wait_for_system(time: Duration) {
     std::thread::sleep(time);
 }

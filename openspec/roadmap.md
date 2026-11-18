@@ -123,6 +123,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-master-isolator-and-room-eq](changes/add-master-isolator-and-room-eq/proposal.md) (a master Isolator and booth EQ in the MASTER panel, and Room EQ per venue for the main and booth outputs with presets, kept out of recordings; a user request after a review of parametric EQ and live dynamics, 2026-11-14; Room EQ ships in v0.8, the Isolator, booth EQ and guide page moved to v0.9 2026-11-17)
 - [add-instrument-sequencer](changes/add-instrument-sequencer/proposal.md) (a Pigments-style step sequencer in the instrument deck when its keyboard is hidden: pitch, octave, velocity, gate and chance lanes with their own lengths, accent and slide, slots A-D, on the mix's beat and in key; issue #819, a user request, 2026-11-16; moved from v1.x 2026-11-17 to build it now; patterns in presets (2.3) moved to v0.9 2026-11-17)
 - [add-list-moves](changes/add-list-moves/proposal.md) (moving tracks and lists: tree drop line before, into and after with free list order, folders opening on hover, Move to…; the Sidelist shows any playlist or crate; ⌥-drag moves; a note with Undo; a user request, 2026-11-16)
+- [add-tablet-app](changes/add-tablet-app/proposal.md) (a very small iPad app on the same engine: two decks, a folder of tracks, DDJ-FLX4, installed from Xcode for personal use, not the App Store; Android tablets later from the same crate; a user request, 2026-11-18)
 
 ## v1.0 · Ready for any DJ switching over
 
@@ -156,5 +157,5 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 ## Decided against, or dropped for now
 
 - Streaming playback of any kind, partner deals and DRM workarounds.
-- Mobile and iPad apps.
+- Mobile and iPad apps in the App Store (GPL conflict); a small iPad app for personal installs is add-tablet-app.
 - Video mixing (karaoke and lyrics only).

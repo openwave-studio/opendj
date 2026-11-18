@@ -193,10 +193,12 @@ pub fn match_mapping<'a>(
 }
 
 /// Finds the HID devices plugged in, and opens them.
+#[cfg(not(target_os = "ios"))]
 pub(crate) struct Hid {
     api: hidapi::HidApi,
 }
 
+#[cfg(not(target_os = "ios"))]
 impl Hid {
     pub(crate) fn new() -> Result<Self, String> {
         hidapi::HidApi::new()
@@ -238,8 +240,10 @@ impl Hid {
 pub(crate) const BUFFER: usize = 255;
 
 /// An open HID device.
+#[cfg(not(target_os = "ios"))]
 pub(crate) struct Device(hidapi::HidDevice);
 
+#[cfg(not(target_os = "ios"))]
 impl Device {
     /// Waits up to `timeout_ms` for an input report; `Ok(0)` when none came.
     pub(crate) fn read(&self, buf: &mut [u8], timeout_ms: i32) -> Result<usize, String> {
@@ -249,6 +253,7 @@ impl Device {
     }
 }
 
+#[cfg(not(target_os = "ios"))]
 impl Io for Device {
     fn write(&self, report: &[u8]) -> Result<(), String> {
         self.0.write(report).map(|_| ()).map_err(|e| e.to_string())
@@ -273,6 +278,55 @@ impl Io for Device {
         buf[0] = id;
         let n = self.0.get_feature_report(&mut buf).ok()?;
         (n > 1).then(|| buf[1..n].to_vec())
+    }
+}
+
+/// iPadOS: apps can't open HID devices, so none are ever found.
+#[cfg(target_os = "ios")]
+pub(crate) struct Hid;
+
+#[cfg(target_os = "ios")]
+impl Hid {
+    pub(crate) fn new() -> Result<Self, String> {
+        Err("HID controllers aren't available on iPadOS".into())
+    }
+
+    pub(crate) fn scan(&mut self, _vendors: &[u16]) -> Vec<DeviceInfo> {
+        Vec::new()
+    }
+
+    pub(crate) fn open(&self, _d: &DeviceInfo) -> Result<Device, String> {
+        Err("HID controllers aren't available on iPadOS".into())
+    }
+}
+
+/// No HID device can be open on iPadOS.
+#[cfg(target_os = "ios")]
+pub(crate) enum Device {}
+
+#[cfg(target_os = "ios")]
+impl Device {
+    pub(crate) fn read(&self, _buf: &mut [u8], _timeout_ms: i32) -> Result<usize, String> {
+        match *self {}
+    }
+}
+
+#[cfg(target_os = "ios")]
+impl Io for Device {
+    fn write(&self, _report: &[u8]) -> Result<(), String> {
+        match *self {}
+    }
+
+    fn send_feature(&self, _report: &[u8]) -> Result<(), String> {
+        match *self {}
+    }
+
+    fn get_input(&self, _id: u8) -> Option<Vec<u8>> {
+        match *self {}
+    }
+
+    fn get_feature(&self, _id: u8) -> Option<Vec<u8>> {
+        match *self {}
     }
 }
 

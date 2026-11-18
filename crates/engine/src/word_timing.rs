@@ -91,6 +91,17 @@ fn vocals(path: &Path, report: &Report) -> Result<Vec<f32>, String> {
     opendj_separation::resample(&mono, audio.sample_rate, RATE)
 }
 
+/// Without Whisper in the build (the iPad build leaves it out).
+#[cfg(not(feature = "word-timing"))]
+fn listen(
+    _model: &Path,
+    _samples: &[f32],
+    _progress: impl FnMut(i32) + 'static,
+) -> Result<Vec<Heard>, String> {
+    Err("timing words by ear isn't in this build".into())
+}
+
+#[cfg(feature = "word-timing")]
 fn listen(
     model: &Path,
     samples: &[f32],

@@ -1,0 +1,423 @@
+// openDJ for tablets (iPad first): two decks, a folder of tracks and a controller.
+// Landscape, touch first: every control is at least 44 px.
+
+import { ListView, Slider } from "std-widgets.slint";
+
+export struct DeckView {
+    loaded: bool,
+    title: string,
+    artist: string,
+    bpm: string,
+    elapsed: string,
+    remaining: string,
+    playing: bool,
+    cue-lit: bool,
+    sync: bool,
+    // The whole track, drawn once it is analysed.
+    overview: image,
+    // Where the deck is, 0 to 1.
+    playhead: float,
+    // Seconds around the play position, drawn every frame.
+    wave: image,
+}
+
+export struct Row {
+    title: string,
+    artist: string,
+    bpm: string,
+    key: string,
+    time: string,
+}
+
+global Palette {
+    out property <color> window: #0b0c0d;
+    out property <color> panel: #161819;
+    out property <color> row-alt: #101112;
+    out property <color> line: #2a2c2e;
+    out property <color> text: #e8e8ea;
+    out property <color> dim: #9a9ba0;
+    out property <color> lilac: #B69CFF;
+    out property <color> selection: #8C72D9;
+    out property <color> play: #3ccf6a;
+    out property <color> cue: #f0a020;
+}
+
+component Pad inherits Rectangle {
+    in property <string> text;
+    in property <bool> lit;
+    in property <color> lit-color: Palette.lilac;
+    callback down();
+    callback up();
+    min-height: 56px;
+    min-width: 72px;
+    border-radius: 8px;
+    border-width: 2px;
+    border-color: root.lit ? root.lit-color : Palette.line;
+    background: touch.pressed ? Palette.line : (root.lit ? root.lit-color.with-alpha(0.18) : Palette.panel);
+    Text {
+        text: root.text;
+        color: root.lit ? root.lit-color : Palette.text;
+        font-size: 17px;
+        font-weight: 700;
+    }
+    touch := TouchArea {
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.down();
+            } else if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
+                root.up();
+            }
+        }
+    }
+}
+
+component DeckPanel inherits Rectangle {
+    in property <DeckView> deck;
+    in property <string> letter;
+    callback play();
+    callback cue(bool);
+    callback sync();
+    callback seek(float);
+    background: Palette.panel;
+    border-radius: 10px;
+    VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        HorizontalLayout {
+            spacing: 10px;
+            Text {
+                width: 24px;
+                text: root.letter;
+                color: Palette.lilac;
+                font-size: 26px;
+                font-weight: 800;
+                vertical-alignment: center;
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                Text {
+                    text: root.deck.loaded ? root.deck.title : "Empty: pick a track below, then Load";
+                    color: root.deck.loaded ? Palette.text : Palette.dim;
+                    font-size: 17px;
+                    font-weight: 600;
+                    overflow: elide;
+                }
+                Text {
+                    text: root.deck.artist;
+                    color: Palette.dim;
+                    font-size: 14px;
+                    overflow: elide;
+                }
+            }
+            VerticalLayout {
+                width: 96px;
+                alignment: center;
+                Text {
+                    text: root.deck.bpm;
+                    color: Palette.text;
+                    font-size: 22px;
+                    font-weight: 700;
+                    horizontal-alignment: right;
+                }
+                Text {
+                    text: root.deck.remaining;
+                    color: Palette.dim;
+                    font-size: 14px;
+                    horizontal-alignment: right;
+                }
+            }
+        }
+        // The whole track; a tap jumps there.
+        Rectangle {
+            height: 56px;
+            background: Palette.row-alt;
+            border-radius: 4px;
+            clip: true;
+            Image {
+                width: 100%;
+                height: 100%;
+                source: root.deck.overview;
+                image-fit: fill;
+            }
+            Rectangle {
+                x: parent.width * root.deck.playhead - 1px;
+                width: 2px;
+                background: white;
+                visible: root.deck.loaded;
+            }
+            TouchArea {
+                clicked => {
+                    if (root.deck.loaded) {
+                        root.seek(self.mouse-x / self.width);
+                    }
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            Pad {
+                text: "CUE";
+                lit: root.deck.cue-lit;
+                lit-color: Palette.cue;
+                down => {
+                    root.cue(true);
+                }
+                up => {
+                    root.cue(false);
+                }
+            }
+            Pad {
+                text: root.deck.playing ? "PAUSE" : "PLAY";
+                lit: root.deck.playing;
+                lit-color: Palette.play;
+                down => {
+                    root.play();
+                }
+            }
+            Pad {
+                text: "SYNC";
+                lit: root.deck.sync;
+                down => {
+                    root.sync();
+                }
+            }
+        }
+    }
+}
+
+component Waveform inherits Rectangle {
+    in property <DeckView> deck;
+    in property <string> letter;
+    background: Palette.row-alt;
+    clip: true;
+    Image {
+        width: 100%;
+        height: 100%;
+        source: root.deck.wave;
+        image-fit: fill;
+    }
+    // The play position: the middle.
+    Rectangle {
+        x: parent.width / 2 - 1px;
+        width: 2px;
+        background: white;
+    }
+    Text {
+        x: 8px;
+        y: 4px;
+        text: root.letter;
+        color: Palette.lilac;
+        font-size: 15px;
+        font-weight: 800;
+    }
+    Text {
+        x: parent.width - self.width - 8px;
+        y: 4px;
+        text: root.deck.elapsed;
+        color: Palette.dim;
+        font-size: 13px;
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "openDJ";
+    background: Palette.window;
+    preferred-width: 1194px;
+    preferred-height: 834px;
+    in property <[DeckView]> decks: [{}, {}];
+    in property <[Row]> rows;
+    in property <int> selected: -1;
+    in property <string> status;
+    in property <string> folder;
+    in property <float> crossfader;
+    callback play(int);
+    callback cue(int, bool);
+    callback sync(int);
+    callback seek(int, float);
+    callback select(int);
+    callback load(int);
+    callback rescan();
+    callback crossfade(float);
+
+    VerticalLayout {
+        padding-top: 24px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-bottom: 12px;
+        spacing: 10px;
+        // Both decks' waveforms, stacked, to line up beats by eye.
+        Waveform {
+            height: 104px;
+            deck: root.decks[0];
+            letter: "A";
+        }
+        Waveform {
+            height: 104px;
+            deck: root.decks[1];
+            letter: "B";
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            DeckPanel {
+                deck: root.decks[0];
+                letter: "A";
+                play => {
+                    root.play(0);
+                }
+                cue(down) => {
+                    root.cue(0, down);
+                }
+                sync => {
+                    root.sync(0);
+                }
+                seek(at) => {
+                    root.seek(0, at);
+                }
+            }
+            DeckPanel {
+                deck: root.decks[1];
+                letter: "B";
+                play => {
+                    root.play(1);
+                }
+                cue(down) => {
+                    root.cue(1, down);
+                }
+                sync => {
+                    root.sync(1);
+                }
+                seek(at) => {
+                    root.seek(1, at);
+                }
+            }
+        }
+        // The crossfader, for when no controller is plugged in.
+        HorizontalLayout {
+            alignment: center;
+            spacing: 12px;
+            Text {
+                text: "A";
+                color: Palette.dim;
+                vertical-alignment: center;
+            }
+            Slider {
+                width: 320px;
+                height: 44px;
+                minimum: -1;
+                maximum: 1;
+                value: root.crossfader;
+                changed(v) => {
+                    root.crossfade(v);
+                }
+            }
+            Text {
+                text: "B";
+                color: Palette.dim;
+                vertical-alignment: center;
+            }
+        }
+        // The tracks in the folder.
+        HorizontalLayout {
+            spacing: 10px;
+            height: 44px;
+            Text {
+                text: root.status != "" ? root.status : root.folder;
+                color: Palette.dim;
+                font-size: 13px;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Pad {
+                text: "Rescan";
+                min-height: 44px;
+                width: 96px;
+                down => {
+                    root.rescan();
+                }
+            }
+            Pad {
+                text: "Load A";
+                min-height: 44px;
+                width: 96px;
+                down => {
+                    root.load(0);
+                }
+            }
+            Pad {
+                text: "Load B";
+                min-height: 44px;
+                width: 96px;
+                down => {
+                    root.load(1);
+                }
+            }
+        }
+        list := ListView {
+            vertical-stretch: 1;
+            for row[i] in root.rows: Rectangle {
+                height: 48px;
+                background: i == root.selected ? Palette.selection : (Math.mod(i, 2) == 0 ? Palette.panel : Palette.row-alt);
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    spacing: 12px;
+                    Text {
+                        horizontal-stretch: 3;
+                        text: row.title;
+                        color: i == root.selected ? white : Palette.text;
+                        font-size: 16px;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    Text {
+                        horizontal-stretch: 2;
+                        text: row.artist;
+                        color: i == root.selected ? white : Palette.dim;
+                        font-size: 15px;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    Text {
+                        width: 56px;
+                        text: row.bpm;
+                        color: i == root.selected ? white : Palette.dim;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        width: 40px;
+                        text: row.key;
+                        color: i == root.selected ? white : Palette.dim;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        width: 48px;
+                        text: row.time;
+                        color: i == root.selected ? white : Palette.dim;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+                TouchArea {
+                    clicked => {
+                        root.select(i);
+                    }
+                    double-clicked => {
+                        root.select(i);
+                    }
+                }
+            }
+        }
+    }
+
+    // Keeps the picked row in view when the controller's browse knob moves it.
+    public function show-row(index: int) {
+        if (index * 48px < -list.content-y) {
+            list.content-y = -index * 48px;
+        } else if ((index + 1) * 48px > -list.content-y + list.visible-height) {
+            list.content-y = -((index + 1) * 48px - list.visible-height);
+        }
+    }
+}
