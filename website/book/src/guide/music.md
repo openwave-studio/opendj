@@ -568,10 +568,17 @@ Folder**, so folders can hold folders and a folder can hold both. Right-click
 a list for **Make It a Crate** or **Make It a Playlist** (a playlist that
 becomes a crate keeps each track once).
 
-Drag a crate, playlist or folder onto a folder to move it there, or onto
-the **Crates** or **Playlists** heading to take it back to the top (a
-crate's top is Crates, a playlist's is Playlists; a folder can go under
-either).
+Crates, playlists and folders stay in the order you put them. Drag one
+and a lilac line shows where it will land: drop it on the top or bottom
+edge of a row to put it before or after that row, or on the middle of a
+folder (outlined in lilac) to put it first inside. Hold it over a closed
+folder for a moment and the folder opens; near the top or bottom of the
+tree, the tree scrolls. Drop it on the **Crates** or **Playlists** heading
+to take it back to the top (a crate's top is Crates, a playlist's is
+Playlists; a folder can go under either). The list stays selected where it
+landed. Without dragging, right-click a list for **Move to…** (pick a
+folder or the top), **Move Up** or **Move Down**, or press ⌥⌘↑ / ⌥⌘↓
+(Ctrl+Alt+↑ / ↓ on Windows and Linux) while the tree has the keys.
 - **Imported**: other apps' lists (a folder per app) and **Groupings and
   Tags**. They are read-only, because the app's next import makes them
   again, so they show a padlock and dimmer names. To keep an app's lists as

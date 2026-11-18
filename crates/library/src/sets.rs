@@ -132,22 +132,59 @@ impl Library {
     /// Moves a list or folder to the end of `folder`, or to the top of
     /// Crates (`crates`) or Playlists. What's inside a folder moves along.
     pub fn move_playlist(&self, id: i64, folder: Option<i64>, crates: bool) -> Result<(), Error> {
-        let position: i64 = self.db.query_row(
-            "SELECT COALESCE(MAX(position), -1) + 1 FROM playlists WHERE parent IS ?1",
-            [folder],
-            |r| r.get(0),
-        )?;
-        // Only a folder at the top needs marking to sit under Crates.
+        self.place_playlist(id, folder, crates, None)
+    }
+
+    /// Puts a list or folder in `folder` (or at the top of Crates when
+    /// `crates`, else Playlists) right before its list `before`, or at the
+    /// end when there is none. The lists beside it keep their order. What's
+    /// inside a folder moves along.
+    pub fn place_playlist(
+        &self,
+        id: i64,
+        folder: Option<i64>,
+        crates: bool,
+        before: Option<i64>,
+    ) -> Result<(), Error> {
+        let tx = self.db.unchecked_transaction()?;
+        let mut siblings: Vec<i64> = tx
+            .prepare(
+                "SELECT id FROM playlists WHERE parent IS ?1 AND id != ?2 ORDER BY position, id",
+            )?
+            .query_map(rusqlite::params![folder, id], |r| r.get(0))?
+            .collect::<Result<_, _>>()?;
+        let at = before
+            .and_then(|b| siblings.iter().position(|&s| s == b))
+            .unwrap_or(siblings.len());
+        siblings.insert(at, id);
+        // Only a folder at the top needs marking to sit under Crates; a
+        // playlist at the top keeps the mark that keeps it out of Crates.
         let source = match folder {
             None if crates => Some(CRATE_FOLDER),
             _ => None,
         };
-        self.db.execute(
-            "UPDATE playlists SET parent = ?2, position = ?3,
-                    source = CASE WHEN kind = ?5 THEN ?4 ELSE NULL END
+        tx.execute(
+            "UPDATE playlists SET parent = ?2,
+                    source = CASE WHEN kind = ?4 THEN ?3
+                                  WHEN kind = ?5 AND ?2 IS NULL THEN ?6
+                                  WHEN kind = ?5 THEN NULL
+                                  ELSE source END
               WHERE id = ?1",
-            rusqlite::params![id, folder, position, source, PlaylistKind::Folder.to_i64()],
+            rusqlite::params![
+                id,
+                folder,
+                source,
+                PlaylistKind::Folder.to_i64(),
+                PlaylistKind::List.to_i64(),
+                TOP_PLAYLIST
+            ],
         )?;
+        let mut set = tx.prepare("UPDATE playlists SET position = ?2 WHERE id = ?1")?;
+        for (position, sibling) in siblings.iter().enumerate() {
+            set.execute(rusqlite::params![sibling, position as i64])?;
+        }
+        drop(set);
+        tx.commit()?;
         Ok(())
     }
 
@@ -546,6 +583,53 @@ mod tests {
         assert_eq!((g.parent, g.source), (Some(moods), None));
         lib.move_playlist(friday, None, false).unwrap();
         assert_eq!(get(&lib, friday).parent, None);
+    }
+
+    #[test]
+    fn lists_go_where_they_are_dropped() {
+        let (lib, _) = library();
+        let gigs = lib
+            .create_playlist("Gigs", None, PlaylistKind::Folder)
+            .unwrap();
+        let mk = |name| {
+            lib.create_playlist(name, Some(gigs), PlaylistKind::List)
+                .unwrap()
+        };
+        let (warm, peak, close) = (mk("Warm-up"), mk("Peak"), mk("Close"));
+        let order = |lib: &Library| -> Vec<i64> {
+            lib.playlists()
+                .unwrap()
+                .into_iter()
+                .filter(|p| p.parent == Some(gigs))
+                .map(|p| p.id)
+                .collect()
+        };
+        // Before a sibling, then to the end, then first.
+        lib.place_playlist(close, Some(gigs), false, Some(peak))
+            .unwrap();
+        assert_eq!(order(&lib), [warm, close, peak]);
+        lib.place_playlist(warm, Some(gigs), false, None).unwrap();
+        assert_eq!(order(&lib), [close, peak, warm]);
+        lib.place_playlist(warm, Some(gigs), false, Some(close))
+            .unwrap();
+        assert_eq!(order(&lib), [warm, close, peak]);
+        // Out to the top of Playlists: still a playlist, not a crate.
+        lib.place_playlist(peak, None, false, Some(gigs)).unwrap();
+        let p = lib
+            .playlists()
+            .unwrap()
+            .into_iter()
+            .find(|p| p.id == peak)
+            .unwrap();
+        assert_eq!((p.parent, p.source.as_deref()), (None, Some(TOP_PLAYLIST)));
+        let top: Vec<i64> = lib
+            .playlists()
+            .unwrap()
+            .into_iter()
+            .filter(|p| p.id == peak || p.id == gigs)
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(top, [peak, gigs]);
     }
 
     #[test]

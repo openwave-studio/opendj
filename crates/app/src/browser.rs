@@ -82,8 +82,8 @@ use crate::spotify::{self, open_in_browser, Event, Request, Service, StreamTrack
 use crate::stores::{self, Stores};
 use crate::waves::Waves;
 use crate::{
-    fmt_time, AppWindow, ColumnUi, FilesUi, Folder, HealthUi, KeyNotation, LibraryEdit, SideRow,
-    StoreUi, StreamMatch, TrackDrag, TrackInfo, TrackRow, WantedUi,
+    fmt_time, AppWindow, ColumnUi, FilesUi, Folder, HealthUi, KeyNotation, LibraryEdit, MoveTarget,
+    SideRow, StoreUi, StreamMatch, TrackDrag, TrackInfo, TrackRow, WantedUi,
 };
 
 /// Sources in the rail that have a tree of their own.
@@ -1061,6 +1061,35 @@ fn dragged_list(data: &DataTransfer) -> Option<i64> {
         .ok()
 }
 
+/// Where on a tree row a dragged list is: its top edge, its middle or
+/// its bottom edge.
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum DropZone {
+    Before,
+    Into,
+    After,
+}
+
+impl DropZone {
+    fn from_ui(zone: i32) -> Option<Self> {
+        match zone {
+            0 => Some(Self::Before),
+            1 => Some(Self::Into),
+            2 => Some(Self::After),
+            _ => None,
+        }
+    }
+}
+
+/// Where a list goes: in `folder` (None for the top, under Crates when
+/// `crates`), before the list `before` (None for the end).
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct ListPlace {
+    folder: Option<i64>,
+    crates: bool,
+    before: Option<i64>,
+}
+
 /// Where a drag from inside the app comes from.
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Dragged {
@@ -1966,24 +1995,65 @@ impl Browser {
                 .unwrap_or(-1);
             DataTransfer::from(SharedString::from(format!("{LIST_PAYLOAD}{id}")))
         });
-        edit.on_accepts_list_move(move |i, data| {
-            let Some(list) = dragged_list(&data) else {
+        edit.on_is_list_drag(|data| dragged_list(&data).is_some());
+        edit.set_mac(cfg!(target_os = "macos"));
+        let w = with.clone();
+        edit.on_nudge_list(move |i, steps| w(&|b| b.nudge_list(i.max(0) as usize, steps)));
+        let weak_targets = Rc::downgrade(b);
+        edit.on_move_targets(move |i| {
+            let targets: Vec<MoveTarget> = weak_targets
+                .upgrade()
+                .and_then(|b| {
+                    b.try_borrow().ok().map(|b| {
+                        b.move_targets(i.max(0) as usize)
+                            .into_iter()
+                            .map(|(name, depth, _)| MoveTarget {
+                                name: name.into(),
+                                depth,
+                            })
+                            .collect()
+                    })
+                })
+                .unwrap_or_default();
+            ModelRc::new(VecModel::from(targets))
+        });
+        let w = with.clone();
+        edit.on_move_list_to(move |i, k| {
+            w(&|b| {
+                let row = i.max(0) as usize;
+                let (Some(id), Some((_, _, place))) = (
+                    b.own_list_at(row),
+                    b.move_targets(row).into_iter().nth(k.max(0) as usize),
+                ) else {
+                    return;
+                };
+                b.place_list(id, place);
+            })
+        });
+        edit.on_accepts_list_move(move |i, data, zone| {
+            let (Some(list), Some(zone)) = (dragged_list(&data), DropZone::from_ui(zone)) else {
                 return false;
             };
             weak.upgrade()
                 .and_then(|b| {
                     b.try_borrow()
                         .ok()
-                        .map(|b| b.list_move(list, i as usize).is_some())
+                        .map(|b| b.list_move(list, i as usize, zone).is_some())
                 })
                 .unwrap_or(false)
         });
         let w = with.clone();
+        edit.on_drop_list(move |i, data, zone| {
+            w(&|b| {
+                if let (Some(list), Some(zone)) = (dragged_list(&data), DropZone::from_ui(zone)) {
+                    b.move_list(list, i as usize, zone);
+                }
+            })
+        });
+        let w = with.clone();
         edit.on_drop(move |i, data| {
             w(&|b| {
-                if let Some(list) = dragged_list(&data) {
-                    b.move_list(list, i as usize);
-                } else if dragged(&data).is_some() {
+                if dragged(&data).is_some() {
                     let ids = b.dropped_tracks(&data);
                     if let Some(list) = b.own_list_at(i as usize) {
                         b.add_to_playlist(&ids, list);
@@ -3906,11 +3976,18 @@ impl Browser {
     }
 
     /// Where the DJ's list or folder `id` would go, dropped on tree row
-    /// `row`: into the folder there, or to the top of the Crates or
-    /// Playlists heading there. None when it can't: imported, the list
-    /// itself or a folder inside it, a crate's top-level place in
-    /// Playlists or a playlist's in Crates.
-    fn list_move(&self, id: i64, row: usize) -> Option<(Option<i64>, bool)> {
+    /// `row` at `zone` (see [`DropZone`]): the folder it goes in (None for
+    /// the top), whether that top is under Crates, and the list it goes
+    /// before (None for the end). Into a folder or heading it goes first;
+    /// after an open folder, first inside it. None when it can't: imported,
+    /// the list itself or a folder inside it, a crate under Playlists or a
+    /// playlist under Crates.
+    fn list_move(&self, id: i64, row: usize, zone: DropZone) -> Option<ListPlace> {
+        self.list_move_node(id, *self.visible_nodes.get(row)?, zone)
+    }
+
+    /// [`Browser::list_move`] for `nodes[at]`, shown or in a closed folder.
+    fn list_move_node(&self, id: i64, at: usize, zone: DropZone) -> Option<ListPlace> {
         if self.tree != COLLECTION || self.history_tab {
             return None;
         }
@@ -3918,46 +3995,218 @@ impl Browser {
             .nodes
             .iter()
             .find(|n| n.playlist == Some(id) && !n.history && !n.locked)?;
-        let target = self.nodes.get(*self.visible_nodes.get(row)?)?;
-        if target.locked {
+        let target = self.nodes.get(at)?;
+        if target.locked || target.history || target.playlist == Some(id) {
             return None;
         }
+        let lists = self.db.as_ref()?.playlists().ok()?;
+        let parent_of = |l: i64| lists.iter().find(|p| p.id == l).and_then(|p| p.parent);
+        // The first of the DJ's own lists right under tree row `at`.
+        let first_inside = |at: usize| {
+            let depth = self.nodes[at].depth;
+            self.nodes[at + 1..]
+                .iter()
+                .take_while(|n| n.depth > depth)
+                .find(|n| n.depth == depth + 1 && !n.locked && n.playlist.is_some_and(|l| l != id))
+                .and_then(|n| n.playlist)
+        };
+        let fits = |crates: bool| match moved.kind {
+            KIND_FOLDER => true,
+            KIND_CRATE => crates,
+            _ => !crates,
+        };
         if target.kind == KIND_SECTION {
             let crates = target.name == "Crates";
-            let fits = match moved.kind {
-                KIND_FOLDER => true,
-                KIND_CRATE => crates,
-                _ => !crates,
-            };
-            return fits.then_some((None, crates));
+            if zone != DropZone::Into || !fits(crates) {
+                return None;
+            }
+            return Some(ListPlace {
+                folder: None,
+                crates,
+                before: first_inside(at),
+            });
         }
-        if target.kind != KIND_FOLDER {
+        let target_id = target.playlist?;
+        let crates = self.on_crate_side(at);
+        if !fits(crates) {
             return None;
         }
-        let folder = target.playlist?;
+        let place = match zone {
+            DropZone::Into if target.kind == KIND_FOLDER => ListPlace {
+                folder: Some(target_id),
+                crates,
+                before: first_inside(at),
+            },
+            DropZone::After
+                if target.kind == KIND_FOLDER && target.expanded && first_inside(at).is_some() =>
+            {
+                ListPlace {
+                    folder: Some(target_id),
+                    crates,
+                    before: first_inside(at),
+                }
+            }
+            DropZone::Into => return None,
+            // Smart lists at the top show under their own heading, so
+            // nothing lines up beside them there.
+            _ if target.kind == KIND_SMART && parent_of(target_id).is_none() => return None,
+            DropZone::Before => ListPlace {
+                folder: parent_of(target_id),
+                crates,
+                before: Some(target_id),
+            },
+            DropZone::After => {
+                let folder = parent_of(target_id);
+                let siblings: Vec<i64> = lists
+                    .iter()
+                    .filter(|p| p.parent == folder && p.id != id)
+                    .map(|p| p.id)
+                    .collect();
+                let next = siblings
+                    .iter()
+                    .position(|&l| l == target_id)
+                    .and_then(|i| siblings.get(i + 1))
+                    .copied();
+                ListPlace {
+                    folder,
+                    crates,
+                    before: next,
+                }
+            }
+        };
         // Not into itself or a folder inside it.
-        let lists = self.db.as_ref()?.playlists().ok()?;
-        let mut at = Some(folder);
-        while let Some(f) = at {
+        let mut up = place.folder;
+        while let Some(f) = up {
             if f == id {
                 return None;
             }
-            at = lists.iter().find(|p| p.id == f).and_then(|p| p.parent);
+            up = parent_of(f);
         }
-        Some((Some(folder), false))
+        Some(place)
+    }
+
+    /// The places Move to… offers for the list at tree row `row`: the top
+    /// of Crates or Playlists and each of the DJ's folders on that side
+    /// (not the list itself or a folder inside it), each with its name,
+    /// depth and where the list goes there (first).
+    fn move_targets(&self, row: usize) -> Vec<(String, i32, ListPlace)> {
+        let Some(id) = self.own_list_at(row) else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        for (at, n) in self.nodes.iter().enumerate() {
+            if n.history || n.locked {
+                continue;
+            }
+            let name = match n.kind {
+                KIND_SECTION => format!("Top of {}", n.name),
+                KIND_FOLDER if n.playlist.is_some() => n.name.clone(),
+                _ => continue,
+            };
+            if let Some(place) = self.list_move_node(id, at, DropZone::Into) {
+                out.push((
+                    name,
+                    if n.kind == KIND_SECTION { 0 } else { n.depth },
+                    place,
+                ));
+            }
+        }
+        out
+    }
+
+    /// Moves the list at tree row `row` one place up (`steps` -1) or down
+    /// (1) among the lists beside it.
+    fn nudge_list(&mut self, row: usize, steps: i32) {
+        let Some(id) = self.own_list_at(row) else {
+            return;
+        };
+        let Some(&at) = self.visible_nodes.get(row) else {
+            return;
+        };
+        let depth = self.nodes[at].depth;
+        // The list or folder beside it in the tree, at the same level.
+        let beside = if steps < 0 {
+            self.nodes[..at]
+                .iter()
+                .enumerate()
+                .rev()
+                .take_while(|(_, n)| n.depth >= depth)
+                .find(|(_, n)| n.depth == depth)
+                .map(|(i, _)| i)
+        } else {
+            self.nodes[at + 1..]
+                .iter()
+                .enumerate()
+                .take_while(|(_, n)| n.depth >= depth)
+                .find(|(_, n)| n.depth == depth)
+                .map(|(i, _)| at + 1 + i)
+        };
+        let Some(beside) = beside else { return };
+        let Some(other) = self.nodes[beside]
+            .playlist
+            .filter(|_| !self.nodes[beside].locked)
+        else {
+            return;
+        };
+        let Some(lists) = self.db.as_ref().and_then(|db| db.playlists().ok()) else {
+            return;
+        };
+        let folder = lists.iter().find(|p| p.id == id).and_then(|p| p.parent);
+        if lists.iter().find(|p| p.id == other).and_then(|p| p.parent) != folder {
+            return;
+        }
+        let before = if steps < 0 {
+            Some(other)
+        } else {
+            let siblings: Vec<i64> = lists
+                .iter()
+                .filter(|p| p.parent == folder && p.id != id)
+                .map(|p| p.id)
+                .collect();
+            siblings
+                .iter()
+                .position(|&l| l == other)
+                .and_then(|i| siblings.get(i + 1))
+                .copied()
+        };
+        let crates = self.on_crate_side(at);
+        self.place_list(
+            id,
+            ListPlace {
+                folder,
+                crates,
+                before,
+            },
+        );
+    }
+
+    /// Whether tree row `at` (an index into `nodes`) is under Crates.
+    fn on_crate_side(&self, at: usize) -> bool {
+        self.nodes[..at]
+            .iter()
+            .rev()
+            .find(|n| n.kind == KIND_SECTION)
+            .is_some_and(|n| n.name == "Crates")
     }
 
     /// Moves the DJ's list or folder `id` to where dropping it on tree row
-    /// `row` puts it.
-    fn move_list(&mut self, id: i64, row: usize) {
-        let Some((folder, crates)) = self.list_move(id, row) else {
+    /// `row` at `zone` puts it, and shows it there.
+    fn move_list(&mut self, id: i64, row: usize, zone: DropZone) {
+        let Some(place) = self.list_move(id, row, zone) else {
             return;
         };
+        self.place_list(id, place);
+    }
+
+    fn place_list(&mut self, id: i64, place: ListPlace) {
         let Some(db) = &self.db else { return };
-        if let Err(e) = db.move_playlist(id, folder, crates) {
+        if let Err(e) = db.place_playlist(id, place.folder, place.crates, place.before) {
             eprintln!("can't move the list: {e}");
         }
+        // Selected, with the folders above it open, so it doesn't seem to
+        // vanish.
         self.reload_tree(Some(id));
+        self.save_open_folders();
     }
 
     /// Turns the list at `row` into a crate, or a crate into a playlist.

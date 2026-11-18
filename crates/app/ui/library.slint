@@ -293,6 +293,13 @@ export struct MenuTag {
     field: string,
 }
 
+// A place Move to… offers: a folder at `depth`, or the top of Crates or
+// Playlists (depth 0).
+export struct MoveTarget {
+    name: string,
+    depth: int,
+}
+
 export global LibraryEdit {
     // Colors a crate can have (see CrateColors).
     out property <[color]> list-colors: CrateColors.colors;
@@ -374,10 +381,22 @@ export global LibraryEdit {
     // Turns the list at tree row `index` into a crate (true) or a playlist.
     callback set-crate(index: int, crate: bool);
     pure callback accepts-drop(index: int, data: data-transfer) -> bool;
-    // A list or folder picked up at tree row `index`, and whether one
-    // dragged can go on (into) tree row `index`.
+    // A list or folder picked up at tree row `index`; whether a drag
+    // carries one; whether it can go at `zone` of tree row `index` (0
+    // before the row, 1 into it, 2 after it), and dropping it there.
     pure callback list-payload(index: int) -> data-transfer;
-    pure callback accepts-list-move(index: int, data: data-transfer) -> bool;
+    pure callback is-list-drag(data: data-transfer) -> bool;
+    pure callback accepts-list-move(index: int, data: data-transfer, zone: int) -> bool;
+    callback drop-list(index: int, data: data-transfer, zone: int);
+    // Running on macOS, for the keys menus show.
+    in property <bool> mac;
+    // Moves the list at tree row `index` up (-1) or down (1) among the
+    // lists beside it.
+    callback nudge-list(index: int, steps: int);
+    // Where the list at tree row `index` can be moved to with Move to…,
+    // and moving it to the `target`th of them.
+    pure callback move-targets(index: int) -> [MoveTarget];
+    callback move-list-to(index: int, target: int);
     callback drop(index: int, data: data-transfer);
     // Tracks from the side panel or a deck dropped on the open list (empty
     // or not) in the track list join it.
@@ -2768,6 +2787,43 @@ component FolderTree inherits Rectangle {
     callback spotify-connect(client-id: string);
     callback spotify-disconnect();
     callback spotify-refresh();
+    // While something is dragged over the tree: the closed folder it is
+    // over, since when, and the last time it moved, so the folder opens
+    // after a moment as in Finder; and which edge it is near (-1 top,
+    // 1 bottom), so the tree scrolls to the rows past it.
+    property <int> spring-row: -1;
+    property <duration> spring-since;
+    property <duration> drag-last;
+    property <int> drag-edge: 0;
+    function drag-moved(row: int, closed-folder: bool, y: length, height: length) {
+        drag-last = animation-tick();
+        if !closed-folder {
+            spring-row = -1;
+        } else if spring-row != row {
+            spring-row = row;
+            spring-since = animation-tick();
+        }
+        drag-edge = y < 28px ? -1 : y > height - 28px ? 1 : 0;
+    }
+    function drag-ended() {
+        spring-row = -1;
+        drag-edge = 0;
+    }
+    Timer {
+        interval: 100ms;
+        running: spring-row >= 0;
+        triggered => {
+            if animation-tick() - drag-last > 1200ms {
+                spring-row = -1;
+            } else if animation-tick() - spring-since >= 700ms {
+                let row = spring-row;
+                spring-row = -1;
+                if row < folders.length && folders[row].children == 1 {
+                    toggle(row);
+                }
+            }
+        }
+    }
     // The smart list whose search the popup is editing, and the search.
     property <int> rename-index: -1;
     property <string> rename-text;
@@ -3101,6 +3157,31 @@ component FolderTree inherits Rectangle {
                     folder-menu.close();
                 }
             }
+            if menu-editable && tab == 0 && source == 0: MenuLine {
+                text: "Move to…";
+                clicked => {
+                    move-targets = LibraryEdit.move-targets(menu-index);
+                    folder-menu.close();
+                    move-menu.show();
+                }
+            }
+            if menu-editable && tab == 0 && source == 0: MenuLine {
+                text: "Move Up";
+                hint: LibraryEdit.mac ? "⌥⌘↑" : "Ctrl+Alt+↑";
+                clicked => {
+                    LibraryEdit.nudge-list(menu-index, -1);
+                    folder-menu.close();
+                }
+            }
+            if menu-editable && tab == 0 && source == 0: MenuLine {
+                text: "Move Down";
+                hint: LibraryEdit.mac ? "⌥⌘↓" : "Ctrl+Alt+↓";
+                clicked => {
+                    LibraryEdit.nudge-list(menu-index, 1);
+                    folder-menu.close();
+                }
+            }
+            if menu-editable && tab == 0 && source == 0: MenuSeparator {}
             if menu-editable: MenuLine {
                 text: "Rename…";
                 clicked => {
@@ -3123,6 +3204,35 @@ component FolderTree inherits Rectangle {
                 clicked => {
                     LibraryEdit.delete(menu-index);
                     folder-menu.close();
+                }
+            }
+        }
+    }
+
+    // Move to…: the folders the list can go in, and the tops of Crates
+    // and Playlists, as the tree shows them.
+    property <[MoveTarget]> move-targets;
+    move-menu := PopupWindow {
+        x: 40px;
+        y: menu-y;
+        width: 230px;
+        height: min(360px, move-targets.length * 26px + 40px);
+        close-policy: close-on-click-outside;
+        MenuBackground {}
+        VerticalLayout {
+            padding: 6px;
+            spacing: 2px;
+            Text { text: "Move \"" + menu-name + "\" to"; color: Theme.text-dim; font-size: 12px; height: 22px; vertical-alignment: center; overflow: elide; x: 10px; width: parent.width - 20px; }
+            ListView {
+                for t[k] in move-targets: HorizontalLayout {
+                    padding-left: t.depth * 14px;
+                    MenuLine {
+                        text: t.name;
+                        clicked => {
+                            LibraryEdit.move-list-to(menu-index, k);
+                            move-menu.close();
+                        }
+                    }
                 }
             }
         }
@@ -3292,9 +3402,21 @@ component FolderTree inherits Rectangle {
                     }
                 }
             }
-            ListView {
+            // Scrolls while a drag waits near the top or bottom edge.
+            Timer {
+                interval: 30ms;
+                running: drag-edge != 0;
+                triggered => {
+                    if animation-tick() - drag-last > 1500ms {
+                        drag-edge = 0;
+                    } else {
+                        tree-list.content-y = min(0px, max(tree-list.content-y - drag-edge * 8px, tree-list.visible-height - tree-list.content-height));
+                    }
+                }
+            }
+            tree-list := ListView {
                 gutter: true;
-                for f[i] in folders: Rectangle {
+                for f[i] in folders: row := Rectangle {
                     // A line sets the Crates heading apart from the collection.
                     height: f.separator ? 45px : 34px;
                     if f.separator: Rectangle {
@@ -3304,11 +3426,17 @@ component FolderTree inherits Rectangle {
                         height: 1px;
                         background: Theme.border;
                     }
-                    Rectangle {
+                    cell := Rectangle {
+                    // Where a dragged list would land on this row: 0 before,
+                    // 1 into, 2 after; -1 for tracks.
+                    property <int> zone: -1;
+                    property <bool> list-over: drop.has-drag && zone >= 0;
                     y: parent.height - 34px;
                     height: 34px;
                     border-radius: Theme.radius;
-                    background: drop.has-drag ? Theme.selection.transparentize(0.4) : i == current ? (focused ? Theme.selection : Theme.selection-idle) : (ta.has-hover ? Theme.n-232326 : transparent);
+                    border-width: list-over && zone == 1 ? 2px : 0px;
+                    border-color: Theme.accent;
+                    background: list-over ? (zone == 1 ? Theme.accent.transparentize(0.88) : (i == current ? (focused ? Theme.selection : Theme.selection-idle) : transparent)) : drop.has-drag ? Theme.selection.transparentize(0.4) : i == current ? (focused ? Theme.selection : Theme.selection-idle) : (ta.has-hover ? Theme.n-232326 : transparent);
                     // The DJ's own lists and folders drag onto a folder, or a
                     // heading, to move there.
                     DragArea {
@@ -3338,12 +3466,47 @@ component FolderTree inherits Rectangle {
                     }
                     // Tracks dragged from the list onto one of the DJ's lists or
                     // crates join it; dropped on a stage, they move there.
+                    // A dragged list or folder goes before, into or after
+                    // the row, by which part of it the pointer is over.
                     drop := DropArea {
-                        can-drop(e) => { (((f.editable && (f.kind == 2 || f.kind == 17)) || f.stage) && LibraryEdit.accepts-drop(i, e.data)) || ((f.kind == 1 || f.kind == 18) && LibraryEdit.accepts-list-move(i, e.data)) ? DragAction.copy : DragAction.none }
+                        can-drop(e) => {
+                            drag-moved(i, f.children == 1, row.y + cell.y + e.position.y + tree-list.content-y, tree-list.visible-height);
+                            if LibraryEdit.is-list-drag(e.data) {
+                                cell.zone = f.kind == 18 ? 1
+                                    : f.kind == 1 ? (e.position.y < 10px ? 0 : e.position.y > 24px ? 2 : 1)
+                                    : (e.position.y < 17px ? 0 : 2);
+                                return LibraryEdit.accepts-list-move(i, e.data, cell.zone) ? DragAction.copy : DragAction.none;
+                            }
+                            cell.zone = -1;
+                            (((f.editable && (f.kind == 2 || f.kind == 17)) || f.stage) && LibraryEdit.accepts-drop(i, e.data)) ? DragAction.copy : DragAction.none
+                        }
                         dropped(e) => {
-                            LibraryEdit.drop(i, e.data);
+                            drag-ended();
+                            if cell.zone >= 0 {
+                                LibraryEdit.drop-list(i, e.data, cell.zone);
+                            } else {
+                                LibraryEdit.drop(i, e.data);
+                            }
                             TrackDrag.active = false;
                             DragAction.copy
+                        }
+                    }
+                    // The insertion line, at the level the list lands in.
+                    if list-over && zone != 1: Rectangle {
+                        x: 4px + f.depth * 16px + (zone == 2 && f.kind == 1 && f.children == 2 ? 16px : 0px);
+                        y: zone == 0 ? -1px : parent.height - 1px;
+                        width: parent.width - self.x - 4px;
+                        height: 2px;
+                        border-radius: 1px;
+                        background: Theme.accent;
+                        Rectangle {
+                            x: -4px;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 4px;
+                            border-width: 2px;
+                            border-color: Theme.accent;
+                            background: Theme.panel;
                         }
                     }
                     HorizontalLayout {
