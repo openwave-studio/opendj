@@ -6857,7 +6857,7 @@ dependencies = [
  "demucs-core",
  "half",
  "matrixmultiply",
- "pollster 0.4.0",
+ "pollster",
  "realfft",
  "safetensors 0.8.0",
 ]
@@ -6896,7 +6896,7 @@ version = "0.8.0"
 dependencies = [
  "ab_glyph",
  "bytemuck",
- "pollster 0.4.0",
+ "pollster",
  "wgpu 30.0.1",
 ]
 
@@ -7264,12 +7264,6 @@ dependencies = [
  "rustix 1.1.5",
  "windows-sys 0.61.2",
 ]
-
-[[package]]
-name = "pollster"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f3a9f18d041e6d0e102a0a46750538147e5e8992d3b4873aaafee2520b00ce3"
 
 [[package]]
 name = "pollster"
@@ -9101,7 +9095,7 @@ dependencies = [
  "core-graphics 0.25.0",
  "dispatch",
  "objc",
- "pollster 1.0.1",
+ "pollster",
  "thiserror 2.0.21",
  "windows 0.62.2",
  "zbus 5.19.0",
