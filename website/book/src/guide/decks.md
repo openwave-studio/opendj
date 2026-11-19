@@ -274,8 +274,11 @@ button still switches it for its deck.
 **Pitch bend** nudges a deck's beat into line by ear: it plays a little
 faster or slower while you bend and springs back when you stop. Turn a
 controller's jog rim, drag round the on-screen jog's rim, or hold **«** or
-**»** beside the jog (2%, or 4% with Shift). <kbd>←</kbd> and <kbd>→</kbd>
-bend the deck you started last, the one you're mixing in.
+**»** beside the jog (2%, or 4% with Shift). On the keyboard, hold
+<kbd>W</kbd> or <kbd>E</kbd> to bend deck 1 slower or faster, and <kbd>U</kbd>
+or <kbd>I</kbd> for deck 2. <kbd>←</kbd> and <kbd>→</kbd> bend the deck you
+started last, the one you're mixing in, while the browser doesn't have the
+keys (press <kbd>Esc</kbd> to take them back from it).
 Every controller's rim bends the tempo this way, including the mappings
 that come from Mixxx, and **SHIFT** + jog searches through the track.
 

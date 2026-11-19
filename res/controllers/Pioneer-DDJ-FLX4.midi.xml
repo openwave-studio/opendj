@@ -36,9 +36,9 @@
                 </options>
             </control>
             <control>
-                <description>BROWSE - press - Move cursor between track list and tree view</description>
+                <description>BROWSE - press - Navigate right into folders or content</description>
                 <group>[Library]</group>
-                <key>MoveFocusForward</key> <!-- missing function to open Folder -->
+                <key>MoveFocusForward</key>
                 <status>0x96</status>
                 <midino>0x41</midino>
                 <options>
@@ -46,9 +46,9 @@
                 </options>
             </control>
             <control>
-              <description>BROWSE +SHIFT - press - Move cursor between track list and tree view</description>
+              <description>BROWSE +SHIFT - press - Navigate left to parent or sources</description>
                 <group>[Library]</group>
-                <key>MoveFocusBackward</key> <!-- missing function to close Folder -->
+                <key>MoveFocusBackward</key>
                 <status>0x96</status>
                 <midino>0x42</midino>
                 <options>

@@ -48,6 +48,30 @@ fn settle(c: &mut Controller, ms: u64) {
 }
 
 #[test]
+fn ddj_400_browse_keeps_signed_steps_and_distinct_press_directions() {
+    let (reg, mut controller) = load("Pioneer-DDJ-400.midi.xml");
+    let vertical = reg.free("[Library]", "MoveVertical");
+    let forward = reg.free("[Library]", "MoveFocusForward");
+    let backward = reg.free("[Library]", "MoveFocusBackward");
+
+    controller.receive(&[0xB6, 0x40, 0x01]);
+    controller.receive(&[0xB6, 0x40, 0x03]);
+    controller.receive(&[0xB6, 0x40, 0x7F]);
+    assert_eq!(vertical.get(), 3.0);
+    vertical.set(0.0);
+    controller.receive(&[0xB6, 0x40, 0x7E]);
+    assert_eq!(vertical.get(), -2.0);
+
+    controller.receive(&[0x96, 0x41, 0x7F]);
+    controller.receive(&[0x96, 0x41, 0x00]);
+    controller.receive(&[0x96, 0x42, 0x7F]);
+    controller.receive(&[0x96, 0x42, 0x00]);
+    assert_eq!(forward.get(), 1.0);
+    assert_eq!(backward.get(), 1.0);
+    assert!(controller.errors().is_empty());
+}
+
+#[test]
 fn ddj_400_jog_bend_and_vinyl_mode() {
     let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
     for channel in 0..2 {

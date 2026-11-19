@@ -9,9 +9,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use slint::{ComponentHandle, VecModel};
+use slint::{ComponentHandle, Model, VecModel};
 
-use crate::{AppWindow, RailOrder};
+use crate::{AppWindow, HealthUi, RailOrder};
 
 /// openDJ's own sources after Collection, in their first order.
 const BUILT_IN: [&str; 4] = ["Files", "Albums", "Recordings", "Jam"];
@@ -77,8 +77,61 @@ fn publish(app: &AppWindow) {
     ui.set_external(Rc::new(VecModel::from(external)).into());
 }
 
+fn visible_entries(app: &AppWindow) -> Vec<i32> {
+    let ui = app.global::<RailOrder>();
+    let shown = app.get_sources_shown();
+    let mut entries = vec![0];
+    if app.global::<HealthUi>().get_rail_shown() {
+        entries.push(-1);
+    }
+    entries.extend(
+        ui.get_built_in()
+            .iter()
+            .chain(ui.get_external().iter())
+            .filter(|&i| {
+                usize::try_from(i)
+                    .ok()
+                    .and_then(|i| shown.row_data(i))
+                    .unwrap_or(false)
+            }),
+    );
+    entries
+}
+
+fn adjacent(entries: &[i32], current: i32, steps: i32) -> i32 {
+    if entries.is_empty() {
+        return 0;
+    }
+    let at = entries
+        .iter()
+        .position(|&entry| entry == current)
+        .unwrap_or(0);
+    let target = (at as i64 + steps as i64).clamp(0, entries.len() as i64 - 1);
+    entries[target as usize]
+}
+
 /// Loads the saved order and answers the menu's drags.
 pub(super) fn install(app: &AppWindow) {
+    let weak = app.as_weak();
+    app.global::<RailOrder>()
+        .on_adjacent(move |source, health, steps| {
+            let Some(app) = weak.upgrade() else { return 0 };
+            adjacent(
+                &visible_entries(&app),
+                if source == 0 && health { -1 } else { source },
+                steps,
+            )
+        });
+    let weak = app.as_weak();
+    app.global::<RailOrder>()
+        .on_position(move |source, health| {
+            let Some(app) = weak.upgrade() else { return 0 };
+            let current = if source == 0 && health { -1 } else { source };
+            visible_entries(&app)
+                .iter()
+                .position(|&entry| entry == current)
+                .unwrap_or(0) as i32
+        });
     // Add-on sources that work behind another source never show in the
     // rail or its menu (see `SearchSource::in_rail`).
     let off_rail = crate::sources::off_rail_sources();
@@ -112,6 +165,17 @@ pub(super) fn install(app: &AppWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keyboard_navigation_follows_visible_order_and_stops_at_edges() {
+        let entries = [0, -1, 9, 1, 14];
+        assert_eq!(adjacent(&entries, 0, -1), 0);
+        assert_eq!(adjacent(&entries, 0, 1), -1);
+        assert_eq!(adjacent(&entries, -1, 1), 9);
+        assert_eq!(adjacent(&entries, 14, 1), 14);
+        assert_eq!(adjacent(&[0, 1], 0, 1), 1);
+        assert_eq!(adjacent(&[], 0, 1), 0);
+    }
 
     fn s(names: &[&str]) -> Vec<String> {
         names.iter().map(|n| n.to_string()).collect()
