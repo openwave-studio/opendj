@@ -375,7 +375,8 @@ pub struct Lanes {
 /// far more than any overview needs.
 const MAX_LEVELS: usize = 16;
 
-/// Band colours; by default bass red, mids green, highs blue.
+/// Band colours; by default dark to light: bass deep red, mids amber,
+/// highs ice blue, so brightness follows the sound (darker = heavier).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Palette {
     pub low: [f32; 4],
@@ -387,9 +388,10 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            low: [1.0, 0.12, 0.10, 1.0],
-            mid: [0.20, 0.69, 0.31, 1.0],
-            high: [0.22, 0.40, 1.0, 1.0],
+            // Dark to light: deep red #C8372D, amber #F0A830, ice blue #B4E4FF.
+            low: [0.784, 0.216, 0.176, 1.0],
+            mid: [0.941, 0.659, 0.188, 1.0],
+            high: [0.706, 0.894, 1.0, 1.0],
             background: [0.05, 0.05, 0.055, 1.0],
         }
     }

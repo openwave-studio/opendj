@@ -1603,8 +1603,8 @@ impl Prefs {
                             MENU,
                             "List waveforms",
                             "The small waveforms in the track list: shades of lilac, \
-                             or the full color of the deck waveforms (red lows, green \
-                             mids, blue highs).",
+                             or the full color of the deck waveforms (deep red lows, \
+                             amber mids, ice-blue highs).",
                         )
                     },
                 ]);

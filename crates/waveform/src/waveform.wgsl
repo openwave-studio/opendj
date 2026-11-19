@@ -433,7 +433,7 @@ fn over(base: vec3<f32>, c: vec3<f32>, a: f32) -> vec3<f32> {
 }
 
 // Colour of a column from the balance of its bands, like Mixxx's RGB waveform:
-// bass-heavy is red, mids green, hats and vocals blue.
+// bass-heavy is deep red, mids amber, hats and vocals ice blue.
 fn band_color(s: Slice) -> vec3<f32> {
     // Each band's level, without the lift the analyser gives the mids and
     // highs (BAND_GAIN in analysis.rs) so the 3-Band layers read: a quiet
@@ -442,7 +442,7 @@ fn band_color(s: Slice) -> vec3<f32> {
     let sum = w.x + w.y + w.z;
     let c = (w.x * p.low_color.rgb + w.y * p.mid_color.rgb + w.z * p.high_color.rgb) / sum;
     // Mixed colours stay as vivid as pure ones, at the brightness of the
-    // palette colours they come from, so a darker green stays darker.
+    // palette colours they come from, so the deep red lows stay darker than the ice-blue highs.
     let v = (w.x * vmax(p.low_color.rgb) + w.y * vmax(p.mid_color.rgb) + w.z * vmax(p.high_color.rgb)) / sum;
     return c / max(vmax(c), 0.35) * v;
 }
@@ -655,9 +655,10 @@ fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
         // RGB, and Stems for a track without them.
         let c = band_color(s);
         let rms_h = height(body(s.rms.w, s.peak.w)) * span;
-        // One solid shape (the RMS body, without a peak outline), slightly
-        // brighter towards the centre.
-        let shade = 0.82 + 0.18 * clamp(1.0 - d / max(rms_h, 1.0), 0.0, 1.0);
+        // One solid shape (the RMS body, without a peak outline): a bright
+        // core fading darker towards the edges, for depth.
+        let t = clamp(1.0 - d / max(rms_h, 1.0), 0.0, 1.0);
+        let shade = 0.6 + 0.4 * sqrt(t);
         color = over(color, c * shade, fill(rms_h, d));
     } else {
         color = three_band(color, s, d, span);
