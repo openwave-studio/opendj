@@ -166,15 +166,15 @@ impl Waves {
 
 /// The lilac shades a slice is drawn in by its tone: deep where the bass
 /// leads, the brand lilac (#B69CFF) for mids, pale where the highs lead,
-/// as the deck waveforms color red, green and blue.
+/// as the deck waveforms color deep red, amber and ice blue.
 const DEEP: [f32; 3] = [122.0, 92.0, 214.0]; // #7A5CD6
 const LILAC: [f32; 3] = [182.0, 156.0, 255.0]; // #B69CFF
 const PALE: [f32; 3] = [232.0, 224.0, 255.0]; // #E8E0FF
 
 /// The deck waveforms' colors for the lows, mids and highs.
-const LOW: [f32; 3] = [1.0, 0.12, 0.10];
-const MID: [f32; 3] = [0.20, 0.69, 0.31];
-const HIGH: [f32; 3] = [0.22, 0.40, 1.0];
+const LOW: [f32; 3] = [0.784, 0.216, 0.176];
+const MID: [f32; 3] = [0.941, 0.659, 0.188];
+const HIGH: [f32; 3] = [0.706, 0.894, 1.0];
 
 /// The analyser's lift of the low, mid and high levels (`BAND_GAIN` in the
 /// engine's analysis), which the stored power shares include.
@@ -349,13 +349,16 @@ mod tests {
             let p = buf.as_slice()[HEIGHT / 2 * WIDTH];
             (p.r, p.g, p.b)
         };
-        // Bass red, mids green, highs blue, as on the decks.
+        // Dark to light, as on the decks: bass deep red, mids amber, highs
+        // ice blue, each brighter than the last.
         let (bass, mids, highs) = (color((0, 0)), color((255, 0)), color((0, 255)));
-        assert!(bass.0 > 200 && bass.1 < 80 && bass.2 < 80, "{bass:?}");
-        assert!(mids.1 > 150 && mids.0 < 80 && mids.2 < 100, "{mids:?}");
-        assert!(highs.2 > 200 && highs.0 < 100, "{highs:?}");
+        assert!(bass.0 > 150 && bass.1 < 80 && bass.2 < 80, "{bass:?}");
+        assert!(mids.0 > 200 && mids.1 > 130 && mids.2 < 80, "{mids:?}");
+        assert!(highs.2 > 220 && highs.1 > 190 && highs.0 > 150, "{highs:?}");
+        let sum = |c: (u8, u8, u8)| c.0 as u32 + c.1 as u32 + c.2 as u32;
+        assert!(sum(bass) < sum(mids) && sum(mids) < sum(highs));
         // Bass and mids at the same level (the mids lifted in the stored
-        // shares) blend to orange, not to a bright yellow-green.
+        // shares) blend to orange.
         let both = color((169, 0));
         assert!(both.0 > both.1 && both.1 > both.2, "{both:?}");
     }

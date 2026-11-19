@@ -60,6 +60,19 @@ pub enum Fix {
     Cut { start: f64, end: f64 },
     /// Bring the whole mix to `lufs`, true peaks under `ceiling` dBTP.
     Loudness { lufs: f64, ceiling: f64 },
+    /// A transition mixed again (see [`crate::set_render`]): `file` holds
+    /// `start..end` of the set rendered with the change, spliced in with a
+    /// short crossfade at each end.
+    Mix {
+        start: f64,
+        end: f64,
+        file: PathBuf,
+        /// Index into the timeline's transitions.
+        transition: usize,
+        bars: f64,
+        /// The style's name, e.g. "Bass swap".
+        style: String,
+    },
 }
 
 impl Fix {
@@ -84,6 +97,16 @@ impl Fix {
             Fix::Loudness { lufs, ceiling } => {
                 json!({ "fix": "loudness", "lufs": lufs, "ceiling": ceiling })
             }
+            Fix::Mix {
+                start,
+                end,
+                file,
+                transition,
+                bars,
+                style,
+            } => json!({ "fix": "mix", "start": start, "end": end,
+                         "file": file.display().to_string(), "transition": transition,
+                         "bars": bars, "style": style }),
         }
     }
 
@@ -110,6 +133,14 @@ impl Fix {
             "loudness" => Fix::Loudness {
                 lufs: f("lufs")?,
                 ceiling: f("ceiling").unwrap_or(-1.0),
+            },
+            "mix" => Fix::Mix {
+                start: f("start")?,
+                end: f("end")?,
+                file: PathBuf::from(v["file"].as_str()?),
+                transition: v["transition"].as_u64()? as usize,
+                bars: f("bars").unwrap_or(0.0),
+                style: v["style"].as_str().unwrap_or_default().to_string(),
             },
             _ => return None,
         })
@@ -168,6 +199,27 @@ impl Edits {
             } => Some((start, end, fade_in, fade_out)),
             _ => None,
         })
+    }
+
+    /// The last mix of each transition mixed again: (start, end, file,
+    /// transition), in order of start.
+    pub fn mixes(&self) -> Vec<(f64, f64, &Path, usize)> {
+        let mut out: Vec<(f64, f64, &Path, usize)> = Vec::new();
+        for f in &self.fixes {
+            if let Fix::Mix {
+                start,
+                end,
+                file,
+                transition,
+                ..
+            } = f
+            {
+                out.retain(|m| m.3 != *transition);
+                out.push((*start, *end, file.as_path(), *transition));
+            }
+        }
+        out.sort_by(|a, b| a.0.total_cmp(&b.0));
+        out
     }
 
     /// The last loudness preset, if any: (LUFS, ceiling dBTP).
@@ -331,6 +383,23 @@ fn apply(
     mut out: impl FnMut([f32; 2]),
 ) {
     let removed = edits.removed(f64::INFINITY);
+    // Transitions mixed again, read whole: each is a stretch of seconds.
+    let mixes: Vec<(usize, Vec<[f32; 2]>)> = edits
+        .mixes()
+        .into_iter()
+        .filter_map(|(start, _, file, _)| {
+            let audio = match crate::decode::decode(file) {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("can't read the mixed transition {}: {e}", file.display());
+                    return None;
+                }
+            };
+            let frames: Vec<[f32; 2]> = audio.decoded_chunks().flatten().copied().collect();
+            Some(((start * rate).round() as usize, frames))
+        })
+        .collect();
+    let seam = ((crate::set_render::SEAM * rate) as usize).max(1);
     let w = ((CUT_CROSSFADE * rate).round() as usize).max(1);
     // The last `w` frames kept, held back for a crossfade at a cut.
     let mut held: VecDeque<[f32; 2]> = VecDeque::with_capacity(w + 1);
@@ -340,6 +409,10 @@ fn apply(
     let mut entered = false;
     for (i, x) in frames.into_iter().enumerate() {
         let t = i as f64 / rate;
+        let x = match mixes.iter().find(|(at, m)| i >= *at && i < at + m.len()) {
+            Some((at, m)) => crate::set_render::blend(x, m, i - at, seam),
+            None => x,
+        };
         while next < removed.len() && t >= removed[next].end {
             if entered && removed[next].crossfade {
                 fading = Some(0);

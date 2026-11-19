@@ -6,15 +6,16 @@ set -euvx
 
 export PATH="$HOME/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
+# Xcode's Debug builds use the workspace's `fast` profile: unoptimised
+# Rust draws the waveforms too slowly to scroll smoothly.
 if [[ "${CONFIGURATION:-Release}" == "Debug" ]]; then
-    PROFILE=debug
-    RELEASE=""
+    PROFILE=fast
 else
     PROFILE=release
-    RELEASE="--release"
 fi
 # Symbols, for a dSYM and readable crash reports.
 export CARGO_PROFILE_RELEASE_DEBUG="${CARGO_PROFILE_RELEASE_DEBUG:-1}"
+export CARGO_PROFILE_FAST_DEBUG="${CARGO_PROFILE_FAST_DEBUG:-1}"
 # Keep Xcode's builds apart from the desktop ones in target/.
 export CARGO_TARGET_DIR="$DERIVED_FILE_DIR/cargo"
 
@@ -31,7 +32,7 @@ for ARCH in $ARCHS; do
         x86_64) TARGET=x86_64-apple-ios ;;
         *) echo "unsupported architecture $ARCH" >&2; exit 1 ;;
     esac
-    cargo build $RELEASE --target "$TARGET" --bin "$1" "${@:2}"
+    cargo build --profile "$PROFILE" --target "$TARGET" --bin "$1" "${@:2}"
     EXECUTABLES+=("$CARGO_TARGET_DIR/$TARGET/$PROFILE/$1")
 done
 

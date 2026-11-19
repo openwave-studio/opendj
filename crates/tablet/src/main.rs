@@ -11,10 +11,12 @@
 //! changes without an iPad. See `crates/tablet/README.md` for the iPad
 //! build.
 
+mod folder;
 mod session;
 mod wave;
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -22,7 +24,7 @@ use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
 use opendj_engine::{deck_group, AudioEngine, AudioSetup, Role, Route, Track};
-use slint::{ComponentHandle, Image, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};
 
 slint::include_modules!();
 
@@ -38,12 +40,15 @@ const SPAN: f64 = 8.0;
 /// How long an alert stays in the status line.
 const ALERT_TIME: Duration = Duration::from_secs(6);
 
-/// Where the tracks are: `OPENDJ_MUSIC` if set; on iPadOS the app's own
-/// Documents folder, which the Files app shows as On My iPad › openDJ;
-/// elsewhere the user's Music folder.
+/// Where the tracks are: `OPENDJ_MUSIC` if set; on iPadOS the folder
+/// picked with Folder, else the app's own Documents folder, which the Files
+/// app shows as On My iPad › openDJ; elsewhere the user's Music folder.
 fn music_folder() -> PathBuf {
     if let Some(dir) = std::env::var_os("OPENDJ_MUSIC").filter(|d| !d.is_empty()) {
         return PathBuf::from(dir);
+    }
+    if let Some(dir) = folder::restore() {
+        return dir;
     }
     let home = opendj_engine::paths::home_dir().unwrap_or_default();
     if cfg!(target_os = "ios") {
@@ -57,6 +62,15 @@ fn music_folder() -> PathBuf {
 fn clock(seconds: f64) -> String {
     let s = seconds.max(0.0).round() as u64;
     format!("{}:{:02}", s / 60, s % 60)
+}
+
+/// The folder's name, for the track list's heading.
+fn folder_name(folder: &std::path::Path) -> String {
+    folder
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .filter(|n| n != "Documents" || !cfg!(target_os = "ios"))
+        .unwrap_or_else(|| "On My iPad".into())
 }
 
 /// Takes the presses or steps a controller has left on `c`.
@@ -178,39 +192,79 @@ struct State {
     /// Each deck's cover, and the track (by address) it is for.
     covers: [(usize, Option<Image>); DECKS],
     status: Option<(String, Instant)>,
+    /// The folder the tracks are in.
+    folder: PathBuf,
+    /// Tracks still in iCloud Drive, being downloaded.
+    cloud: HashSet<PathBuf>,
 }
 
-fn rows(tracks: &[Arc<Track>]) -> ModelRc<Row> {
+fn path_of(track: &Track) -> Option<&std::path::Path> {
+    match &track.source {
+        opendj_engine::Source::File(p) => Some(p),
+        _ => None,
+    }
+}
+
+fn row(t: &Track, in_cloud: bool) -> Row {
+    Row {
+        title: t.title.clone().into(),
+        artist: t.artist.clone().into(),
+        bpm: if t.bpm > 0.0 {
+            format!("{:.0}", t.bpm).into()
+        } else {
+            SharedString::new()
+        },
+        key: t.key.clone().into(),
+        time: if in_cloud {
+            "iCloud".into()
+        } else {
+            clock(t.duration).into()
+        },
+    }
+}
+
+fn rows(tracks: &[Arc<Track>], cloud: &HashSet<PathBuf>) -> ModelRc<Row> {
     let rows: Vec<Row> = tracks
         .iter()
-        .map(|t| Row {
-            title: t.title.clone().into(),
-            artist: t.artist.clone().into(),
-            bpm: if t.bpm > 0.0 {
-                format!("{:.0}", t.bpm).into()
-            } else {
-                SharedString::new()
-            },
-            key: t.key.clone().into(),
-            time: clock(t.duration).into(),
-        })
+        .map(|t| row(t, path_of(t).is_some_and(|p| cloud.contains(p))))
         .collect();
     ModelRc::new(VecModel::from(rows))
 }
 
-/// Reads the folder's tracks off the UI thread, then lists them.
-fn scan(window: slint::Weak<AppWindow>, state: Rc<RefCell<State>>, folder: PathBuf) {
+/// What the status line says about the iCloud downloads.
+fn cloud_status(n: usize) -> SharedString {
+    match n {
+        0 => SharedString::new(),
+        1 => "1 track is downloading from iCloud".into(),
+        n => format!("{n} tracks are downloading from iCloud").into(),
+    }
+}
+
+/// Reads the folder's tracks off the UI thread, then lists them. Tracks
+/// still in iCloud are listed by name and asked for.
+fn scan(window: slint::Weak<AppWindow>, state: Rc<RefCell<State>>) {
+    let folder = state.borrow().folder.clone();
     if let Some(w) = window.upgrade() {
         w.set_status("Reading your tracks…".into());
+        w.set_folder(folder_name(&folder).into());
     }
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let mut tracks = opendj_engine::scan::scan(&folder, 0);
+        let (files, cloud) = folder::audio_files(&folder);
+        let mut tracks: Vec<Arc<Track>> = files
+            .iter()
+            .enumerate()
+            .map(|(i, p)| Arc::new(opendj_engine::scan::read_track(i, p)))
+            .collect();
         tracks.sort_by(|a, b| {
             (a.artist.to_lowercase(), a.title.to_lowercase())
                 .cmp(&(b.artist.to_lowercase(), b.title.to_lowercase()))
         });
-        let _ = tx.send(tracks);
+        let cloud: HashSet<PathBuf> = cloud.into_iter().collect();
+        let _ = tx.send((tracks, cloud.clone()));
+        for path in &cloud {
+            folder::download(path);
+        }
     });
     // Polled rather than sent across: the tracks stay on this thread.
     let timer = Rc::new(slint::Timer::default());
@@ -219,26 +273,62 @@ fn scan(window: slint::Weak<AppWindow>, state: Rc<RefCell<State>>, folder: PathB
         slint::TimerMode::Repeated,
         Duration::from_millis(100),
         move || {
-            let Ok(tracks) = rx.try_recv() else {
+            let Ok((tracks, cloud)) = rx.try_recv() else {
                 return;
             };
             keep.stop();
             let Some(w) = window.upgrade() else {
                 return;
             };
-            w.set_rows(rows(&tracks));
+            w.set_rows(rows(&tracks, &cloud));
             let mut s = state.borrow_mut();
             s.selected = (!tracks.is_empty()).then_some(0);
             w.set_selected(s.selected.map_or(-1, |i| i as i32));
             w.set_status(if tracks.is_empty() {
-                "No tracks yet: copy music into openDJ's folder in the Files app, then Rescan"
-                    .into()
+                if folder::CAN_PICK {
+                    "No tracks here: tap Folder to pick your music, or copy it into openDJ's folder in the Files app"
+                        .into()
+                } else {
+                    "No tracks yet: copy music into the folder, then Rescan".into()
+                }
             } else {
-                SharedString::new()
+                cloud_status(cloud.len())
             });
             s.tracks = tracks;
+            s.cloud = cloud;
         },
     );
+}
+
+/// Re-reads the iCloud tracks that have downloaded since the last look,
+/// in place, so the list doesn't jump.
+fn arrived(w: &AppWindow, s: &mut State) {
+    if s.cloud.is_empty() {
+        return;
+    }
+    let here: Vec<PathBuf> = s
+        .cloud
+        .iter()
+        .filter(|p| folder::is_here(p))
+        .cloned()
+        .collect();
+    if here.is_empty() {
+        return;
+    }
+    let model = w.get_rows();
+    for (i, t) in s.tracks.iter_mut().enumerate() {
+        if path_of(t).is_some_and(|p| here.iter().any(|h| h == p)) {
+            let path = path_of(t).map(|p| p.to_path_buf()).unwrap_or_default();
+            *t = Arc::new(opendj_engine::scan::read_track(t.id, &path));
+            model.set_row_data(i, row(t, false));
+        }
+    }
+    for p in &here {
+        s.cloud.remove(p);
+    }
+    if s.status.is_none() {
+        w.set_status(cloud_status(s.cloud.len()));
+    }
 }
 
 fn main() -> Result<(), slint::PlatformError> {
@@ -280,8 +370,7 @@ fn main() -> Result<(), slint::PlatformError> {
     };
 
     let window = AppWindow::new()?;
-    let folder = music_folder();
-    window.set_folder(format!("Tracks in {}", folder.display()).into());
+    window.set_can_pick_folder(folder::CAN_PICK);
     window.set_outputs(outputs_text(channels).into());
     window.set_phones(channels >= 4);
 
@@ -291,6 +380,8 @@ fn main() -> Result<(), slint::PlatformError> {
         overviews: Default::default(),
         covers: Default::default(),
         status: None,
+        folder: music_folder(),
+        cloud: HashSet::new(),
     }));
 
     let load = {
@@ -300,6 +391,13 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(track) = s.selected.and_then(|i| s.tracks.get(i)) else {
                 return;
             };
+            if let Some(path) = path_of(track).filter(|p| s.cloud.contains(*p)) {
+                folder::download(path);
+                if let Some(w) = window.upgrade() {
+                    w.set_status("That track is still downloading from iCloud".into());
+                }
+                return;
+            }
             if !engine.load_track(deck, track.clone()) {
                 if let Some(w) = window.upgrade() {
                     w.set_status("That deck is playing: pause it first".into());
@@ -349,10 +447,11 @@ fn main() -> Result<(), slint::PlatformError> {
         window.on_load(move |d| load(d as usize));
     }
     {
-        let (window_weak, state, folder) = (window.as_weak(), state.clone(), folder.clone());
-        window.on_rescan(move || scan(window_weak.clone(), state.clone(), folder.clone()));
+        let (window_weak, state) = (window.as_weak(), state.clone());
+        window.on_rescan(move || scan(window_weak.clone(), state.clone()));
     }
-    scan(window.as_weak(), state.clone(), folder);
+    window.on_pick_folder(folder::pick);
+    scan(window.as_weak(), state.clone());
 
     // Every frame: the controller's browsing, the decks, the waveforms.
     let frame = slint::Timer::default();
@@ -381,6 +480,16 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                     }
                     return;
+                }
+
+                // A folder just picked: list its tracks.
+                if let Some(picked) = folder::take_picked() {
+                    state.borrow_mut().folder = picked;
+                    scan(window_weak.clone(), state.clone());
+                }
+                // Every few seconds: the iCloud tracks that have arrived.
+                if frames.is_multiple_of(240) {
+                    arrived(&w, &mut state.borrow_mut());
                 }
 
                 // The browse knob and the LOAD buttons.

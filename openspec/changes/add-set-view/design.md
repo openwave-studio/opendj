@@ -14,7 +14,7 @@ The 5 ms log is good enough here because only the edited stretch is rebuilt. A c
 
 ### Change a transition
 
-Length in bars (2, 4, 8, 16, 32) and a curve from the Automix styles (Smooth, Bass swap, Filter, Cut). The logged fader, crossfader, EQ and filter moves of both decks inside the transition are replaced by the style's moves over the new length, centred where the recorded one was; the outgoing track plays on as long as needed (its file, its logged rate). Back to as played drops the edit.
+Length in bars (2, 4, 8, 16, 32) and a curve from the Automix styles (Smooth, Bass swap, Filter, Cut). The logged fader, crossfader, EQ and filter moves of both decks inside the transition are replaced by the style's moves over the new length, from where the incoming track came in (it still comes in on the same bar); the outgoing track plays on as long as needed (its file, its logged rate). The rendered window (4 bars either side) is kept as a file beside the recording, so Listen plays it and Save edited mix splices it in. Back to as played drops the edit.
 
 ### Swap a track
 

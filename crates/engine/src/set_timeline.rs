@@ -469,6 +469,33 @@ impl SetTimeline {
         SetTimeline::parse(&text)
     }
 
+    /// Every logged control's value at `t`, as `(name, value)`.
+    pub fn values_at(&self, t: f64) -> Vec<(&str, f64)> {
+        self.values
+            .0
+            .keys()
+            .map(|name| (name.as_str(), self.values.at(name, t, 0.0)))
+            .collect()
+    }
+
+    /// The control changes after `from` up to `to`, in time order, as
+    /// `(seconds, name, value)`.
+    pub fn changes_between(&self, from: f64, to: f64) -> Vec<(f64, &str, f64)> {
+        let mut out: Vec<(f64, &str, f64)> = self
+            .values
+            .0
+            .iter()
+            .flat_map(|(name, points)| {
+                points
+                    .iter()
+                    .filter(move |p| p.0 > from && p.0 <= to)
+                    .map(move |p| (p.0, name.as_str(), p.1))
+            })
+            .collect();
+        out.sort_by(|a, b| a.0.total_cmp(&b.0));
+        out
+    }
+
     /// A control's value at `t` seconds into the recording, e.g.
     /// `value_at("[Channel1],volume", 30.0)`.
     pub fn value_at(&self, control: &str, t: f64) -> Option<f64> {
