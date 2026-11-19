@@ -35,6 +35,12 @@ Each effect has:
   reverb's decay, the filter's resonance, the bitcrusher's bit depth, the
   noise's sweep, the drive's tone, the ladder's resonance, the hall's decay.
 - **D/W**, how much of the effect you hear over the dry track.
+- **Band**, under the effect: **All** for the whole sound, or **Low**,
+  **Mid** or **High** to put the effect on that band only. The other bands
+  play on untouched, so an echo on **High** echoes the hi-hats while the
+  kick and bass stay dry. The bands are the mixer EQ's, in the waveform's
+  colors: low red, mid amber, high blue. In 4-Deck the band is the small
+  pill beside D/W. A plugin in the slot hears only its band too.
 
 A deck's effects start as **Reverb**, **Echo** and **Gate**. They play one
 after another, so you can stack them.
@@ -64,6 +70,24 @@ that deck.
 | Hall | A big, smooth concert hall, with pre-delay |
 | Rev Roll | Repeats a short slice backwards |
 | Filter Echo | An echo whose repeats get thinner (or darker) |
+
+## Release
+
+The Beat FX row ends with **Release**: pick how it lets go, then hold the
+round button beside it. Every effect on every deck and the Beat FX stops at
+once.
+
+- **Echo**: the effects stop taking in the music, and their echoes and
+  reverb ring out over the next beats.
+- **Brake**: the main mix also slows to a stop over a beat, like a
+  turntable switched off. It comes back when you let go of the button.
+- **Spin**: the main mix spins back for a beat, then comes back when you
+  let go.
+- **Cut**: the main mix is silent while you hold the button, and the
+  effects stop dead.
+
+Controllers and OSC reach it as `[Master],fx_release` and
+`[Master],fx_release_mode` (0 Echo, 1 Brake, 2 Spin, 3 Cut).
 
 Switching an effect off fades it out quickly. On a DDJ-FLX4,
 **SHIFT** + **BEAT FX ON/OFF** releases the Beat FX instead: it stops

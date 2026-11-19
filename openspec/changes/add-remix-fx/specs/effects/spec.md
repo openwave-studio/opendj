@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: Band FX
-Every effect slot SHALL have a band choice, any of LOW, MID and HIGH, shown as L · M · H chips in the FX bar. With no band chosen the slot SHALL process the whole signal as before. With bands chosen, the slot SHALL split its input at the channel isolator's crossover frequencies, run only the chosen bands through its effect, built-in or plugin, and add the other bands back unchanged. With the effect bypassed, the split SHALL sum back flat.
+Every effect slot SHALL have a band choice, any of LOW, MID and HIGH, shown as a Band value pill in a third row of the FX bar (an icon-only pill on 4-Deck) in the waveform's band colours. With no band chosen the slot SHALL process the whole signal as before. With bands chosen, the slot SHALL split its input at the channel isolator's crossover frequencies, run only the chosen bands through its effect, built-in or plugin, and add the other bands back unchanged. With the effect bypassed, the split SHALL sum back flat.
 
 #### Scenario: Echo on the highs
-- **WHEN** a deck's first slot holds Echo with only H lit and the effect is on
+- **WHEN** a deck's first slot holds Echo with Band set to High and the effect is on
 - **THEN** only the hi-hats and highs echo, and the kick and bass play dry
 
 #### Scenario: No band chosen
-- **WHEN** no chip is lit
+- **WHEN** Band is All
 - **THEN** the effect sounds exactly as it did before band FX existed
 
 ### Requirement: Release

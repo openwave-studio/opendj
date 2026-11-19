@@ -56,6 +56,11 @@ export global Theme {
     // Lilac used as text or a thin mark: the brand lilac on dark, a deeper
     // lilac on light, where #b69cff on white is too faint to read.
     out property <color> lilac-text: root.light ? #6a4bd4 : root.lilac;
+    // The low, mid and high bands, as the waveforms draw them (deeper on
+    // light, where the ice blue would vanish on white).
+    out property <color> band-low: root.light ? #b02f26 : #c8372d;
+    out property <color> band-mid: root.light ? #a86d0a : #f0a830;
+    out property <color> band-high: root.light ? #2a78ad : #b4e4ff;
     // The large waveforms' and overviews' background: dark in both
     // appearances, as the waveform colours are made for black.
     out property <color> wave-well: #0d0d0e;
@@ -202,6 +207,11 @@ export global Theme {
     out property <color> n-a0a0a8: root.light ? #66666b : #a0a0a8;
     out property <color> n-a1a1a6: root.light ? #6a6a6d : #a1a1a6;
     out property <color> n-a8a8ad: root.light ? #636366 : #a8a8ad;
+    out property <color> n-ff6b70: root.light ? #d93a40 : #ff6b70;
+    out property <color> n-6e58a8: root.light ? #8c72d9 : #6e58a8;
+    out property <color> n-2c2c31: root.light ? #d6d4e0 : #2c2c31;
+    out property <color> n-38373d: root.light ? #ebe9f3 : #38373d;
+    out property <color> n-313036: root.light ? #e4e1f0 : #313036;
     out property <color> n-a9aaab: root.light ? #676868 : #a9aaab;
     out property <color> n-b0b0b5: root.light ? #5c5c5e : #b0b0b5;
     out property <color> n-bbbbbb: root.light ? #585858 : #bbbbbb;

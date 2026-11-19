@@ -1588,7 +1588,7 @@ export component AppWindow inherits Window {
         : lite ? lite-row + (PadsUi.visible ? 1px + LiteUi.bar-height : 0px)
         : four ? (four-pads ? 330px : 247px) + 1px + 48px
         : prep ? 280px : 0px;
-    property <length> other-rows: 52px + 1px + 1px + deck-rows + 1px + (fx-bar-shown ? (four ? 96px : 68px) + 1px : 0px) + 1px + 36px;
+    property <length> other-rows: 52px + 1px + 1px + deck-rows + 1px + (fx-bar-shown ? (four ? 96px : 100px) + 1px : 0px) + 1px + 36px;
     // A short window gives way in order: the waveforms step down first
     // (wave-level), keeping about five tracks in the library. When even the
     // lowest step leaves fewer than about three, 4-Deck's pads fold, then
@@ -1596,7 +1596,7 @@ export component AppWindow inherits Window {
     // FX while folded shows it anyway, until the window has room again.
     property <length> rows-floor: 170px;
     property <length> fold-room: LibraryEdit.window-height - 92px - strip-heights[0] - rows-floor;
-    property <length> fx-row: four ? 97px : 68px + 1px;
+    property <length> fx-row: four ? 97px : 100px + 1px;
     // A deck playing the Mixer or an instrument keeps the pads' room: its
     // strips or keys fill it.
     property <bool> four-live: (!decks[0].loaded && InstrumentsUi.live(0) > 0) || (!decks[1].loaded && InstrumentsUi.live(1) > 0)
@@ -2318,7 +2318,7 @@ export component AppWindow inherits Window {
             // bar hides it.
             FxBar {
                 four: four;
-                height: library-expanded || !fx-bar-shown || player ? 0px : four ? 96px : 68px;
+                height: library-expanded || !fx-bar-shown || player ? 0px : four ? 96px : 100px;
                 visible: !library-expanded && fx-bar-shown && !player;
             }
 

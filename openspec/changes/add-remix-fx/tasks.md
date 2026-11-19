@@ -2,13 +2,15 @@
 
 ## 1. Band FX
 
-- [ ] 1.1 engine: `BandSplit` shared with the isolator; `band` mask on every slot; dry bands added back; plugin slots get the band-limited buffer; tests (flat sum with the effect bypassed, only the chosen band changes)
-- [ ] 1.2 app: L · M · H chips on every slot in the FX bar (deck FX, Beat FX, Pad FX, Mic/Aux); screenshot
+- [x] 1.1 engine: `band` mask on every slot (0 whole signal, 1 low, 2 mid, 4 high); the chosen bands split at the isolator's crossovers and the rest (input minus the chosen bands) added back, so the bands sum exactly; plugin slots get the band-limited buffer; tests (flat sum with the effect bypassed, only the chosen band changes)
+- [x] 1.2 app: a third FX bar row with a Band value pill and titled list on every 2-Deck slot and the Beat FX, an icon-only pill on 4-Deck rows; band colours as the waveform's low, mid and high; screenshot
 
 ## 2. Release
 
-- [ ] 2.1 engine: `[RemixN],release`, `release_mode` (Echo, Brake, Spin, Cut), `release_time`, `[Master],fx_release`; Backspin effect; tests (tails keep ringing, no clicks)
-- [ ] 2.2 app: RELEASE on the Remix deck and in the FX bar; Shift + Beat FX ON releases on Pioneer mappings where the button is free
+- [x] 2.1 engine: `[Master],fx_release` (all units at once) and `fx_release_mode` (Echo, Brake, Spin, Cut) with the main mix's brake, spin and cut; tests
+- [x] 2.2 app: Release value pill and hold-to-release button in the Beat FX row
+- [ ] 2.3 `[RemixN],release`, `release_mode`, `release_time` on the Remix deck (with step 3); Backspin as a slot effect (needs a slot that keeps history while off)
+- [ ] 2.4 Shift + Beat FX ON releases on Pioneer mappings where the button is free
 
 ## 3. Remix deck
 
