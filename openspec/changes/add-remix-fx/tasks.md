@@ -12,7 +12,7 @@
 
 ## 3. Remix deck
 
-- [ ] 3.1 engine `remix.rs`: Remix deck kind, `[RemixN]` with `source` and `mode` (Send, Insert), isolate and lever lanes, `isolate_effect`, `lever_effect`; idle Send adds nothing, idle Insert is bit-identical; tests
+- [ ] 3.1 engine `remix.rs`: Remix deck kind (one at a time; moving keeps settings), `[RemixN]` with `source` and `mode` (Send, Insert), isolate and lever lanes, `isolate_effect`, `lever_effect`; idle Send adds nothing, idle Insert is bit-identical; tests
 - [ ] 3.2 new effects: Ducker, Repeat, Solo, Rhythm, Tape Echo (in any slot too); bench numbers
 - [ ] 3.3 scenes: `scene`, `scene_up`, `scene_down`, `scene_time`, `scene_color`; Rise Echo, Crush Echo, Spiral Down; five scenes each side; tests
 - [ ] 3.4 Stretch lever effect
@@ -29,7 +29,7 @@
 ## 6. Controllers and remote
 
 - [ ] 6.1 MIDI Fighter Twister Remix mapping (bank 1 the first Remix deck, bank 2 decks; ring colours and values; SHIFT layer); mapping tests; supported-controls.txt
-- [ ] 6.2 Remote page Remix tab: multi-touch levers with latch, isolate sliders with centre snap, SCENE strip, roll pad and pads, RELEASE; tablet and phone layouts; OSC addresses listed in the guide
+- [ ] 6.2 Remote page Remix tab in the wheel layout: isolate knobs into the SCENE wheel, multi-touch levers with latch, release lever, pads and roll-rate strip, BPM/TAP/QUANTIZE; tablet and stacked phone layouts; OSC addresses listed in the guide
 
 ## 7. Docs
 
