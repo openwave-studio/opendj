@@ -942,7 +942,9 @@ pub(crate) fn alias(
 }
 
 /// Detects presses of a momentary control. Also catches a press and release that
-/// both happened between two ticks, which a plain "was it down" check would miss.
+/// both happened between two ticks, which a plain "was it down" check would miss,
+/// and a press while still down (a write of 1 over 1, which counts as a release
+/// and a press).
 #[derive(Default, Clone, Copy)]
 pub(crate) struct Edge {
     down: bool,
@@ -953,9 +955,35 @@ impl Edge {
     pub(crate) fn pressed(&mut self, c: &ControlHandle) -> bool {
         let (down, version) = (c.get_bool(), c.version());
         let changes = version.wrapping_sub(self.version);
-        let pressed = (down && !self.down) || (!down && changes >= 2);
+        let pressed = (down && !self.down) || changes >= 2;
         self.down = down;
         self.version = version;
         pressed
+    }
+}
+
+#[cfg(test)]
+mod edge_tests {
+    use super::*;
+
+    #[test]
+    fn edge_sees_a_press_while_still_down() {
+        let reg = ControlRegistry::new();
+        let c = reg.push("[Channel1]", "beatsync");
+        let mut edge = Edge::default();
+        assert!(!edge.pressed(&c));
+        c.set(1.0);
+        assert!(edge.pressed(&c));
+        assert!(!edge.pressed(&c), "held is one press");
+        // Released and pressed again between two ticks.
+        c.set(0.0);
+        c.set(1.0);
+        assert!(edge.pressed(&c));
+        // Pressed and released between two ticks.
+        c.set(0.0);
+        assert!(!edge.pressed(&c));
+        c.set(1.0);
+        c.set(0.0);
+        assert!(edge.pressed(&c));
     }
 }

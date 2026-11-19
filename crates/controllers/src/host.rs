@@ -172,6 +172,13 @@ impl Target {
                     }
                 } else if RELATIVE.contains(&h.key().item.as_str()) {
                     h.set(h.get() + v);
+                } else if h.behavior() == Behavior::Push && v > 0.0 && h.get_bool() {
+                    // Mixxx acts on every write of a push control, and
+                    // scripts set triggers such as `beatsync`, `loop_halve`
+                    // or `reloop_toggle` to 1 without setting them back to
+                    // 0: a write over a held push is a release and a press.
+                    h.set(0.0);
+                    h.set(v);
                 } else {
                     h.set(v);
                 }
