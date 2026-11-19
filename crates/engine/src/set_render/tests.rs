@@ -31,6 +31,9 @@ fn script() -> Vec<(f64, &'static str, f64)> {
         s.push((12.0 + 4.0 * f, "[Channel1],volume", 1.0 - f));
     }
     s.push((17.0, "[Channel1],play", 0.0));
+    // A dip later on, well after the transition.
+    s.push((30.0, "[Channel2],volume", 0.2));
+    s.push((31.0, "[Channel2],volume", 1.0));
     s.sort_by(|a, b| a.0.total_cmp(&b.0));
     s
 }
@@ -219,4 +222,141 @@ fn splices_with_a_crossfade() {
     assert!(rec[300][0] > 0.9, "the seam fades: {}", rec[300][0]);
     assert_eq!(rec[500], [0.0; 2]);
     assert_eq!(rec[700], [1.0; 2]);
+}
+
+/// A tone on a grid at `bpm`.
+fn tone_at(hz: f64, seconds: f64, bpm: f64) -> Arc<Track> {
+    let mut t = (*tone(hz, seconds)).clone();
+    t.set_grid(BeatGrid::constant(bpm, 0.0));
+    Arc::new(t)
+}
+
+fn swap_b_for(title: &str, bpm: f64) -> SetEdits {
+    SetEdits {
+        swaps: vec![Swap {
+            slot: 1,
+            track: LoadedTrack {
+                title: title.into(),
+                path: Some("c.wav".into()),
+                bpm,
+                ..Default::default()
+            },
+        }],
+        ..Default::default()
+    }
+}
+
+#[test]
+fn a_swapped_track_plays_in_its_place_at_the_sets_tempo() {
+    let (a, b) = (tone(220.0, 45.0), tone(330.0, 45.0));
+    let c = tone_at(400.0, 45.0, 150.0);
+    let (mut recording, timeline) = record(&a, &b);
+    assert_eq!(
+        slot_track(&timeline, 1),
+        Some(timeline.transitions[0].to_track)
+    );
+    let edits = swap_b_for("C", 150.0);
+    let mut tracks = |t: &LoadedTrack| -> Result<Arc<Track>, String> {
+        Ok(match t.title.as_str() {
+            "A" => a.clone(),
+            "B" => b.clone(),
+            _ => c.clone(),
+        })
+    };
+    let (window, render) =
+        render_target(&timeline, &edits, Target::Swap(1), SR, &mut tracks).unwrap();
+    assert!(window.from < timeline.transitions[0].start, "{window:?}");
+    assert!((window.to - timeline.length).abs() < 1e-6, "{window:?}");
+    splice(&mut recording, &render, window.from, SR);
+
+    // Slowed from 150 to the set's 120 BPM: 400 Hz sounds at 320 Hz.
+    let later = at(&recording, 25.0, 0.5);
+    assert!(level(later, 320.0) > 0.1, "{}", level(later, 320.0));
+    assert!(level(later, 330.0) < 0.01, "{}", level(later, 330.0));
+    // The outgoing track and the recorded fade are as they were.
+    let before = at(&recording, 4.0, 0.5);
+    assert!(level(before, 220.0) > 0.15 && level(before, 320.0) < 0.002);
+    let during = at(&recording, 14.0, 0.5);
+    assert!(level(during, 220.0) > 0.03 && level(during, 320.0) > 0.1);
+}
+
+#[test]
+fn a_replacement_too_short_for_the_stretch_is_refused() {
+    let (a, b) = (tone(220.0, 45.0), tone(330.0, 45.0));
+    let c = tone_at(400.0, 10.0, 120.0);
+    let (_, timeline) = record(&a, &b);
+    let mut tracks = |t: &LoadedTrack| -> Result<Arc<Track>, String> {
+        Ok(match t.title.as_str() {
+            "A" => a.clone(),
+            "B" => b.clone(),
+            _ => c.clone(),
+        })
+    };
+    let err = check_edit(
+        &timeline,
+        &swap_b_for("C", 120.0),
+        Target::Swap(1),
+        &mut tracks,
+    )
+    .unwrap_err();
+    assert!(err.contains("0:10 long"), "{err}");
+}
+
+#[test]
+fn a_transition_next_to_a_swap_is_mixed_with_the_replacement() {
+    let (a, b) = (tone(220.0, 45.0), tone(330.0, 45.0));
+    let c = tone_at(400.0, 45.0, 120.0);
+    let (_, timeline) = record(&a, &b);
+    let mut edits = swap_b_for("C", 120.0);
+    edits.transitions.push(TransitionEdit {
+        transition: 0,
+        bars: 4.0,
+        style: Style::Smooth,
+    });
+    let mut tracks = |t: &LoadedTrack| -> Result<Arc<Track>, String> {
+        Ok(match t.title.as_str() {
+            "A" => a.clone(),
+            "B" => b.clone(),
+            _ => c.clone(),
+        })
+    };
+    let (window, render) =
+        render_target(&timeline, &edits, Target::Transition(0), SR, &mut tracks).unwrap();
+    let after = at(&render, window.to - window.from - 1.0, 0.5);
+    assert!(level(after, 400.0) > 0.1, "{}", level(after, 400.0));
+    assert!(level(after, 330.0) < 0.01);
+}
+
+#[test]
+fn moves_after_an_edited_transition_play_as_recorded() {
+    let (a, b) = (tone(220.0, 45.0), tone(330.0, 45.0));
+    let c = tone_at(400.0, 45.0, 120.0);
+    let (_, timeline) = record(&a, &b);
+    let mut edits = swap_b_for("C", 120.0);
+    edits.transitions.push(TransitionEdit {
+        transition: 0,
+        bars: 2.0,
+        style: Style::Smooth,
+    });
+    let mut tracks = |t: &LoadedTrack| -> Result<Arc<Track>, String> {
+        Ok(match t.title.as_str() {
+            "A" => a.clone(),
+            "B" => b.clone(),
+            _ => c.clone(),
+        })
+    };
+    let (window, render) =
+        render_target(&timeline, &edits, Target::Swap(1), SR, &mut tracks).unwrap();
+    let at_set = |t: f64| at(&render, t - window.from, 0.5);
+    // Shorter than recorded: the outgoing track is gone at 13 s, though
+    // the recorded fade ran to 16 s.
+    assert!(
+        level(at_set(13.5), 220.0) < 0.002,
+        "{}",
+        level(at_set(13.5), 220.0)
+    );
+    // The dip at 30 s is the log's, kept.
+    let full = level(at_set(25.0), 400.0);
+    let dipped = level(at_set(30.2), 400.0);
+    assert!(dipped < full * 0.3, "{dipped} vs {full}");
 }

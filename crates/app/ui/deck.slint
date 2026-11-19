@@ -2371,6 +2371,9 @@ component PadTabs inherits Rectangle {
     // a tab by its place (`pad_tab`).
     in property <int> deck-number;
     in property <[string]> names;
+    // One word each, for tabs too narrow for the names (a 1280-wide window).
+    in property <[string]> short-names;
+    property <bool> narrow: root.width / 4 < 64px;
     in property <[int]> slots;
     in-out property <int> selected;
     // Puts `panel` in tab `tab`.
@@ -2392,7 +2395,7 @@ component PadTabs inherits Rectangle {
             min-width: 0px;
             preferred-width: 0px;
             background: i == selected ? Theme.panel-raised : Theme.well;
-            Text { text: names[slots[i]]; color: i == selected ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 600; overflow: elide; }
+            HorizontalLayout { padding-left: 2px; padding-right: 2px; Text { min-width: 0px; preferred-width: 0px; max-width: 10000px; horizontal-stretch: 1; text: narrow ? short-names[slots[i]] : names[slots[i]]; color: i == selected ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 600; horizontal-alignment: center; overflow: elide; } }
             TouchArea {
                 pointer-event(e) => {
                     if e.kind != PointerEventKind.down {
@@ -2647,7 +2650,7 @@ export component Pads inherits HorizontalLayout {
         horizontal-stretch: 1;
         // The tabs sit right on the grid.
         spacing: 0px;
-        PadTabs { deck-number: deck + 1; names: ["HOT CUES", "PAD FX 1", "BEAT JUMP", "SAMPLER", "STEMS", "BEAT LOOP", "PAD FX 2", "KEYBOARD", "KEY SHIFT", "LOOP ROLL", "SLICER", "FREEZE"]; slots: slots; selected <=> tab; pick(t, p) => { Controls.set-value(slot-index[t], p); } first: tab >= 4 ? 4 : 0; }
+        PadTabs { deck-number: deck + 1; names: ["HOT CUES", "PAD FX 1", "BEAT JUMP", "SAMPLER", "STEMS", "BEAT LOOP", "PAD FX 2", "KEYBOARD", "KEY SHIFT", "LOOP ROLL", "SLICER", "FREEZE"]; short-names: ["CUES", "FX 1", "JUMP", "SMPL", "STEMS", "LOOP", "FX 2", "KEYS", "SHIFT", "ROLL", "SLICER", "FREEZE"]; slots: slots; selected <=> tab; pick(t, p) => { Controls.set-value(slot-index[t], p); } first: tab >= 4 ? 4 : 0; }
         if page == 3: SamplerPanel { bank: sampler-page; vertical-stretch: 1; }
         // The black background shows through the 1px gaps as the grid lines.
         if page != 3: Rectangle {

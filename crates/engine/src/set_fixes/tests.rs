@@ -156,6 +156,17 @@ fn edits_round_trip_as_json() {
                 bars: 16.0,
                 style: "Bass swap".into(),
             },
+            Fix::Swap {
+                start: 600.0,
+                end: 900.0,
+                file: PathBuf::from("/rec/openDJ 2026-11-16 20.00.track 4 swapped.wav"),
+                slot: 3,
+                path: PathBuf::from("/music/Kessler - Hollow Light.flac"),
+                artist: "Kessler".into(),
+                title: "Hollow Light".into(),
+                bpm: 124.0,
+                key: "8A".into(),
+            },
         ],
     };
     assert_eq!(Edits::from_json(&edits.to_json()).unwrap(), edits);
@@ -244,4 +255,59 @@ fn a_mixed_transition_is_spliced_in() {
     };
     assert_eq!(twice.mixes().len(), 1);
     std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn a_swap_is_spliced_under_the_transitions_mixed_again() {
+    let edits = Edits {
+        fixes: vec![
+            Fix::Mix {
+                start: 10.0,
+                end: 20.0,
+                file: PathBuf::from("mix.wav"),
+                transition: 0,
+                bars: 8.0,
+                style: "Smooth".into(),
+            },
+            Fix::Swap {
+                start: 5.0,
+                end: 60.0,
+                file: PathBuf::from("swap.wav"),
+                slot: 1,
+                path: PathBuf::from("c.flac"),
+                artist: "Okto".into(),
+                title: "Last Call".into(),
+                bpm: 122.0,
+                key: "5A".into(),
+            },
+        ],
+    };
+    let order: Vec<_> = edits
+        .splices()
+        .into_iter()
+        .map(|s| s.1.to_path_buf())
+        .collect();
+    assert_eq!(order, [PathBuf::from("swap.wav"), PathBuf::from("mix.wav")]);
+    assert_eq!(edits.swap_of(1), Some(("Okto", "Last Call")));
+    let e = edits.set_edits();
+    assert_eq!(e.swaps.len(), 1);
+    assert_eq!(e.swaps[0].track.path, Some(PathBuf::from("c.flac")));
+    assert_eq!(e.transitions[0].style, crate::set_timeline::Style::Smooth);
+
+    // The tracklist names the track swapped in.
+    let chapters = [
+        crate::set_chapters::Chapter {
+            start: 0.0,
+            artist: "A".into(),
+            title: "One".into(),
+        },
+        crate::set_chapters::Chapter {
+            start: 30.0,
+            artist: "B".into(),
+            title: "Two".into(),
+        },
+    ];
+    let followed = crate::set_chapters::follow(&chapters, &edits, 100.0);
+    assert_eq!(followed[1].name(), "Okto - Last Call");
+    assert_eq!(followed[0].name(), "A - One");
 }

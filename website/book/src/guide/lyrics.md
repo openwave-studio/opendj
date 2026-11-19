@@ -92,11 +92,13 @@ any time.
 
 ## Karaoke screen
 
-**Karaoke** in the Lyrics tab (or **Karaoke Screen** at the top right of
-Player mode's karaoke) opens the lyrics in a window of their own, for a TV,
+**View › Karaoke Screen** (**⇧⌘K**, Ctrl+Shift+K on Linux and Windows)
+opens the lyrics in a window of their own from any layout, as do
+**Karaoke** in the Lyrics tab and **Karaoke Screen** at the top right of
+Player mode's karaoke. It is for a TV,
 a projector or a second display. When another display is connected, the
 window opens full screen there. Double-click it, or press F, to switch full
-screen on or off; Esc leaves full screen. Close it with Karaoke again, or
+screen on or off; Esc leaves full screen. Close it the same ways, or with
 its window's close button.
 
 Move the mouse over the karaoke screen and two buttons show at the top

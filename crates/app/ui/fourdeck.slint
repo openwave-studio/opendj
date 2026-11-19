@@ -88,6 +88,9 @@ export component DeckStrip inherits Rectangle {
     in property <int> deck;
     in property <DeckInfo> info;
     in property <image> overview;
+    // The pad grid: off when the DJ hid it, or while the window is too
+    // short for it (main.slint folds it).
+    in property <bool> pads-shown: PadsUi.visible;
     out property <length> overview-width: header.overview-width;
     out property <length> overview-height: header.overview-height;
     property <string> group: "[Channel" + (deck + 1) + "]";
@@ -202,7 +205,7 @@ export component DeckStrip inherits Rectangle {
                         Text { text: "LOOP"; color: Theme.text-dim; font-size: 9px; font-weight: 600; letter-spacing: 0.5px; horizontal-alignment: center; }
                     }
                 }
-                if live == 0 && PadsUi.visible: Pads { deck: deck; group: group; info: info; vertical-stretch: 1; min-height: 77px; }
+                if live == 0 && pads-shown: Pads { deck: deck; group: group; info: info; vertical-stretch: 1; min-height: 77px; }
             }
         }
     }

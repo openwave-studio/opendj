@@ -29,6 +29,7 @@ pub enum Action {
     ExportMixcloud,
     RecordMix,
     MiniPlayer,
+    KaraokeScreen,
     ZoomIn,
     ZoomOut,
     ResetZoom,
@@ -81,7 +82,7 @@ const UPDATE_CHECK: &str = "update_check";
 const USER_GUIDE: &str = "https://opendj.app/docs";
 
 impl Action {
-    const ALL: [Action; 32] = [
+    const ALL: [Action; 33] = [
         Action::Settings,
         Action::Quit,
         Action::Undo,
@@ -93,6 +94,7 @@ impl Action {
         Action::ExportRekordboxXml,
         Action::RecordMix,
         Action::MiniPlayer,
+        Action::KaraokeScreen,
         Action::ZoomIn,
         Action::ZoomOut,
         Action::ResetZoom,
@@ -152,6 +154,7 @@ impl Action {
                 | Action::CheckForUpdates
                 | Action::RecordMix
                 | Action::MiniPlayer
+                | Action::KaraokeScreen
                 | Action::ZoomIn
                 | Action::ZoomOut
                 | Action::ResetZoom
@@ -251,6 +254,13 @@ pub const MENUS: &[Menu] = &[
             Entry::Item {
                 action: Action::MiniPlayer,
                 title: "Mini Player",
+                key: None,
+            },
+            // Opens or closes the karaoke screen from any layout; ⇧⌘K
+            // (Ctrl+Shift+K) is the window's key, as for the mini player.
+            Entry::Item {
+                action: Action::KaraokeScreen,
+                title: "Karaoke Screen",
                 key: None,
             },
             Entry::Separator,
@@ -581,6 +591,10 @@ pub fn run(app: &AppWindow, action: Action) {
         Action::ExportMixcloud => crate::export_mixcloud(app),
         // [Recording],toggle_recording, as the REC button and controllers.
         Action::MiniPlayer => app.invoke_mini_player(),
+        Action::KaraokeScreen => {
+            let lyrics = app.global::<crate::LyricsUi>();
+            lyrics.invoke_set_karaoke(!lyrics.get_karaoke());
+        }
         Action::ZoomIn => crate::waveform_zoom::step(app, 1),
         Action::ZoomOut => crate::waveform_zoom::step(app, -1),
         Action::ResetZoom => crate::waveform_zoom::reset(app),

@@ -41,6 +41,9 @@ first build takes a while (Skia and the engine). On the iPad, allow the
 developer in **Settings › General › VPN & Device Management** and turn on
 **Settings › Privacy & Security › Developer Mode** if asked.
 
+After pulling changes to `ios/project.yml` (or `ios/Assets.xcassets`), run
+`xcodegen` again in `crates/tablet/ios`, then **Run**.
+
 ## Music
 
 Tap **Folder** and pick the folder your music is in: in iCloud Drive, On

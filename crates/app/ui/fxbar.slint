@@ -206,6 +206,170 @@ component DwKnob inherits Rectangle {
 
 // One effect: the effect chooser on top, ON, beats or slider and D/W under it.
 
+// Three short bars, high on top and low at the bottom: the bands an effect
+// works on, each lit in its band's color, or all lilac for the whole signal.
+component BandIcon inherits Rectangle {
+    // The slot's `band`: 0 the whole signal, else 1 low + 2 mid + 4 high.
+    in property <int> mask;
+    width: 10px;
+    height: 8px;
+    for i in 3: Rectangle {
+        property <int> bit: i == 0 ? 4 : i == 1 ? 2 : 1;
+        property <bool> lit: mask == 0 || mask == 7 || mod(floor(mask / bit), 2) == 1;
+        x: 0px;
+        y: i * 3px;
+        width: 10px;
+        height: 2px;
+        border-radius: 1px;
+        background: !lit ? Theme.n-48484c
+            : mask == 0 || mask == 7 ? Theme.lilac-text
+            : i == 0 ? Theme.band-high : i == 1 ? Theme.band-mid : Theme.band-low;
+    }
+}
+
+// The name and color of a band choice.
+component BandWord inherits Text {
+    in property <int> mask;
+    text: mask == 1 ? "Low" : mask == 2 ? "Mid" : mask == 4 ? "High"
+        : mask == 3 ? "Low+Mid" : mask == 6 ? "Mid+High" : mask == 5 ? "Low+High" : "All";
+    color: mask == 1 ? Theme.band-low : mask == 2 ? Theme.band-mid : mask == 4 ? Theme.band-high : Theme.lilac-text;
+    font-size: 12px;
+    font-weight: 500;
+    vertical-alignment: center;
+}
+
+// A dark value pill: what is set, in its color, and ▾ for a titled list.
+// It outlines on hover.
+component ValuePill inherits Rectangle {
+    in property <bool> open;
+    callback clicked();
+    height: 22px;
+    border-radius: 7px;
+    background: Theme.light ? #ffffff : ta.has-hover || open ? #17151e : #111113;
+    border-width: 1px;
+    border-color: ta.has-hover || open ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    @children
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The small ▾ in a value pill.
+component PillCaret inherits Path {
+    width: 7px;
+    height: 4px;
+    viewbox-width: 7;
+    viewbox-height: 4;
+    commands: "M 0 0 L 7 0 L 3.5 4 Z";
+    fill: Theme.lilac-text.with-alpha(0.7);
+}
+
+// A row in a titled list: lit (tinted, the text in its color) when it is
+// the one set, a lighter row under the pointer.
+component ListRow inherits Rectangle {
+    in property <bool> selected;
+    callback clicked();
+    height: 28px;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.n-38373d : selected ? Theme.n-313036 : transparent;
+    @children
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The titled list a value pill opens.
+component TitledList inherits Rectangle {
+    in property <string> title;
+    background: Theme.light ? #ffffff : #262629;
+    border-radius: 9px;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 14px;
+    drop-shadow-color: Theme.s-000000a0;
+    VerticalLayout {
+        padding: 8px;
+        padding-top: 10px;
+        spacing: 1px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: 13px;
+            font-weight: 700;
+            height: 24px;
+            vertical-alignment: top;
+            x: 8px;
+        }
+        @children
+    }
+}
+
+// Band: a value pill for the bands an effect works on, with a titled list
+// of Whole signal, Low, Mid and High. The effect plays on the bands chosen
+// and the others pass by it, as on the RMX's band levers.
+component BandPill inherits HorizontalLayout {
+    in property <string> fx;
+    in property <bool> with-label: true;
+    // Only the mark, for 4-Deck's one-line effects.
+    in property <bool> compact;
+    property <int> band-index: Controls.resolve(fx, "band");
+    property <int> mask: Controls.value(band-index, Controls.tick);
+    spacing: 6px;
+    if with-label: Text {
+        text: "Band";
+        color: Theme.n-a8a8ad;
+        font-size: 11.5px;
+        vertical-alignment: center;
+    }
+    VerticalLayout {
+        alignment: center;
+        pill := ValuePill {
+            open: false;
+            clicked => { list.show(); }
+            HorizontalLayout {
+                padding-left: 9px;
+                padding-right: 9px;
+                spacing: 5px;
+                VerticalLayout { alignment: center; BandIcon { mask: mask; } }
+                if !compact: BandWord { mask: mask; }
+                VerticalLayout { alignment: center; PillCaret { } }
+            }
+            MapMark { key: root.fx + ",band"; }
+        }
+    }
+    list := PopupWindow {
+        x: 0px;
+        y: pill.y + pill.height + 4px;
+        width: 172px;
+        close-policy: close-on-click-outside;
+        TitledList {
+            title: "Band";
+            for b[i] in [0, 1, 2, 4]: ListRow {
+                selected: (mask == 7 ? 0 : mask) == b;
+                clicked => {
+                    Controls.set-value(band-index, b);
+                    list.close();
+                }
+                HorizontalLayout {
+                    padding-left: 8px;
+                    spacing: 10px;
+                    VerticalLayout { alignment: center; BandIcon { mask: b; } }
+                    Text {
+                        property <bool> chosen: (mask == 7 ? 0 : mask) == b;
+                        text: b == 0 ? "Whole signal" : b == 1 ? "Low" : b == 2 ? "Mid" : "High";
+                        color: chosen ? (b == 1 ? Theme.band-low : b == 2 ? Theme.band-mid : b == 4 ? Theme.band-high : Theme.lilac-text) : Theme.text;
+                        font-size: 13px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}
+
 // The effect's name and ▾, opening the list of effects under it. Picking
 // one loads it and turns it on; picking the loaded one turns it on or off.
 // A change from anywhere else (a controller, the ‹ › arrows, OSC) makes the
@@ -427,6 +591,7 @@ component FxControls inherits HorizontalLayout {
         if beats <= 0 && param >= 0: ParamSlider { width: parent.width; height: parent.height; index: Controls.resolve(fx, "parameter" + (param + 1)); }
         if beats <= 0 && param >= 0: MapMark { width: parent.width; height: parent.height; key: root.fx + ",parameter" + (param + 1); }
     }
+    if with-name: BandPill { fx: fx; with-label: false; compact: true; }
     HorizontalLayout {
         horizontal-stretch: 0;
         spacing: 2px;
@@ -466,6 +631,14 @@ component FxCell inherits Rectangle {
         }
         Rectangle { height: 1px; background: Theme.edge; }
         FxControls { height: 37px; fx: fx; tint: tint; }
+        Rectangle { height: 1px; background: Theme.edge; }
+        HorizontalLayout {
+            height: 31px;
+            padding-left: 10px;
+            padding-right: 10px;
+            alignment: start;
+            BandPill { fx: fx; }
+        }
     }
     // The name, for the step that picks another effect.
     TourMark { id: root.fx; y: 0px; height: 30px; }
@@ -499,6 +672,99 @@ component TextToggle inherits Text {
     font-weight: 600;
     vertical-alignment: center;
     ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Release: how `[Master],fx_release` lets go (a value pill with Echo,
+// Brake, Spin and Cut) and a round button that does it while held. Every
+// effect stops; Echo lets the echoes ring out, Brake slows the main mix to a
+// stop and Spin spins it back for a beat (both come back on letting go),
+// Cut mutes it while held.
+component ReleaseControls inherits HorizontalLayout {
+    property <int> mode-index: Controls.resolve("[Master]", "fx_release_mode");
+    property <int> fire-index: Controls.resolve("[Master]", "fx_release");
+    property <int> mode: Controls.value(mode-index, Controls.tick);
+    property <bool> held: Controls.value(fire-index, Controls.tick) > 0;
+    spacing: 6px;
+    Text {
+        text: "Release";
+        color: Theme.n-a8a8ad;
+        font-size: 11.5px;
+        vertical-alignment: center;
+    }
+    VerticalLayout {
+        alignment: center;
+        pill := ValuePill {
+            clicked => { list.show(); }
+            HorizontalLayout {
+                padding-left: 9px;
+                padding-right: 9px;
+                spacing: 5px;
+                Text {
+                    text: mode == 1 ? "Brake" : mode == 2 ? "Spin" : mode == 3 ? "Cut" : "Echo";
+                    color: Theme.lilac-text;
+                    font-size: 12px;
+                    font-weight: 500;
+                    vertical-alignment: center;
+                }
+                VerticalLayout { alignment: center; PillCaret { } }
+            }
+            MapMark { key: "[Master],fx_release_mode"; }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        Rectangle {
+            width: 22px;
+            height: 22px;
+            border-radius: 11px;
+            background: held ? Theme.n-ff6b70.with-alpha(0.25) : fta.has-hover ? #2a1a1c : Theme.light ? #ffffff : #111113;
+            border-width: 1px;
+            border-color: held || fta.has-hover ? Theme.n-ff6b70 : Theme.n-ff6b70.with-alpha(0.45);
+            Path {
+                width: 10px;
+                height: 11px;
+                viewbox-width: 10;
+                viewbox-height: 11;
+                commands: "M 5 1 L 5 7 M 2 4.5 L 5 7.5 L 8 4.5 M 1.5 10 L 8.5 10";
+                stroke: Theme.n-ff6b70;
+                stroke-width: 1.5px;
+                stroke-line-cap: round;
+                fill: transparent;
+            }
+            fta := TouchArea {
+                mouse-cursor: pointer;
+                changed pressed => {
+                    Controls.set-value(fire-index, self.pressed ? 1 : 0);
+                }
+            }
+            MapMark { key: "[Master],fx_release"; }
+        }
+    }
+    list := PopupWindow {
+        x: pill.x;
+        y: pill.y + pill.height + 4px;
+        width: 160px;
+        close-policy: close-on-click-outside;
+        TitledList {
+            title: "Release";
+            for m[i] in ["Echo", "Brake", "Spin", "Cut"]: ListRow {
+                selected: mode == i;
+                clicked => {
+                    Controls.set-value(mode-index, i);
+                    list.close();
+                }
+                HorizontalLayout {
+                    padding-left: 8px;
+                    Text {
+                        text: m;
+                        color: mode == i ? Theme.lilac-text : Theme.text;
+                        font-size: 13px;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
 }
 
 // The middle, as wide as the mixer: BEAT FX, the effect (its list under
@@ -537,6 +803,16 @@ component BeatFxSection inherits Rectangle {
         }
         Rectangle { height: 1px; background: Theme.edge; }
         FxControls { height: 37px; fx: fx; tint: Theme.accent; }
+        if !four: Rectangle { height: 1px; background: Theme.edge; }
+        if !four: HorizontalLayout {
+            height: 31px;
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 6px;
+            BandPill { fx: fx; with-label: false; }
+            Rectangle { horizontal-stretch: 1; }
+            ReleaseControls { }
+        }
     }
     TourMark { id: root.unit; }
 }
@@ -546,7 +822,7 @@ export component FxBar inherits Rectangle {
     // deck's effects stacked.
     in property <bool> four;
     background: Theme.n-000000;
-    height: four ? 96px : 68px;
+    height: four ? 96px : 100px;
     if !four: HorizontalLayout {
         spacing: 1px;
         // As wide as the decks above, either side of the mixer.

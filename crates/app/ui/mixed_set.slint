@@ -6,6 +6,7 @@
 // `view-start` to `view-start + view-len` of it.
 import { Theme } from "theme.slint";
 import { Switch } from "controls.slint";
+import { SearchField } from "preferences.slint";
 
 // A track on the timeline: on its deck's row with Show decks on, above
 // the waveform in the simple view.
@@ -52,6 +53,18 @@ export struct SetTrackRow {
     at: string,
     // "6:12".
     length: string,
+    // Swapped for another track (the row shows the replacement).
+    swapped: bool,
+}
+
+// A track from the library to swap in.
+export struct SetSwapRow {
+    title: string,
+    artist: string,
+    // "124 BPM · 8A".
+    info: string,
+    // "Same key, +1%", or empty.
+    hint: string,
 }
 
 export struct SetFindingRow {
@@ -110,6 +123,16 @@ export global MixedSetUi {
     in property <[SetTrackRow]> tracks;
     // The track under the playhead, from 0.
     in property <int> playing-track: -1;
+    // The track picked in the tracklist, to swap, from 0.
+    in-out property <int> selected-track: -1;
+    // Whether tracks can be swapped (the set has a control log).
+    in property <bool> can-swap;
+    in-out property <string> swap-query;
+    in property <[SetSwapRow]> swap-rows;
+    in property <bool> swapping;
+    // "Swapped for Artist - Title", or empty when as played.
+    in property <string> track-swapped;
+    in property <string> swap-note;
     in property <[SetTransitionRow]> transitions;
     in property <int> selected-transition: -1;
     // The selected transition, in more words.
@@ -156,6 +179,9 @@ export global MixedSetUi {
     callback select-transition(int);
     callback mix-transition();
     callback unmix-transition();
+    callback swap-search();
+    callback swap-track(int);
+    callback unswap-track();
     callback step-transition(int);
     callback tick-pair(int, bool);
     callback save-pairs();
@@ -839,11 +865,17 @@ component TracksTab inherits VerticalLayout {
         list := VerticalLayout {
             for t[i] in MixedSetUi.tracks: Rectangle {
                 property <bool> now: i == MixedSetUi.playing-track;
+                property <bool> picked: i == MixedSetUi.selected-track;
                 height: 40px;
                 border-radius: 6px;
+                border-width: picked ? 1px : 0;
+                border-color: Theme.accent;
                 background: now ? Theme.selection : ta.has-hover ? Theme.n-2c2c30 : transparent;
                 ta := TouchArea {
-                    clicked => { MixedSetUi.select-track(i); }
+                    clicked => {
+                        MixedSetUi.selected-track = i;
+                        MixedSetUi.select-track(i);
+                    }
                 }
                 HorizontalLayout {
                     padding-left: 8px;
@@ -865,9 +897,9 @@ component TracksTab inherits VerticalLayout {
                             font-size: 12px;
                             overflow: elide;
                         }
-                        if t.artist != "": Text {
-                            text: t.artist;
-                            color: now ? #ffffffb0 : Theme.text-dim;
+                        if t.artist != "" || t.swapped: Text {
+                            text: t.swapped ? (t.artist != "" ? t.artist + " · swapped in" : "Swapped in") : t.artist;
+                            color: now ? #ffffffb0 : t.swapped ? Theme.lilac-text : Theme.text-dim;
                             font-size: 10px;
                             overflow: elide;
                         }
@@ -893,6 +925,104 @@ component TracksTab inherits VerticalLayout {
                 text: "No tracklist: the recording has no control log or cue sheet.";
                 color: Theme.text-dim;
                 font-size: 12px;
+                wrap: word-wrap;
+            }
+        }
+    }
+    if MixedSetUi.can-swap && MixedSetUi.selected-track >= 0: Rectangle {
+        background: Theme.panel-raised;
+        border-radius: 8px;
+        height: swap.preferred-height;
+        swap := VerticalLayout {
+            padding: 12px;
+            spacing: 6px;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: "Swap track " + (MixedSetUi.selected-track + 1);
+                    color: Theme.text;
+                    font-size: 13px;
+                    font-weight: 700;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                }
+                if MixedSetUi.track-swapped != "": Button {
+                    text: "As played";
+                    enabled: !MixedSetUi.swapping;
+                    clicked => { MixedSetUi.unswap-track(); }
+                }
+            }
+            if MixedSetUi.track-swapped != "": Text {
+                text: MixedSetUi.track-swapped;
+                color: Theme.lilac-text;
+                font-size: 11px;
+                font-weight: 600;
+                overflow: elide;
+            }
+            Text {
+                text: "Plays the same stretch on the same beats, with its transitions mixed as recorded. Best matches first.";
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
+            }
+            SearchField {
+                placeholder: "Search the library";
+                text <=> MixedSetUi.swap-query;
+                edited => { MixedSetUi.swap-search(); }
+            }
+            for r[i] in MixedSetUi.swap-rows: Rectangle {
+                height: 34px;
+                border-radius: 6px;
+                background: sa.has-hover && !MixedSetUi.swapping ? Theme.n-2c2c30 : transparent;
+                sa := TouchArea {
+                    mouse-cursor: MixedSetUi.swapping ? default : pointer;
+                    clicked => {
+                        if !MixedSetUi.swapping {
+                            MixedSetUi.swap-track(i);
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    spacing: 8px;
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: r.title;
+                            color: Theme.text;
+                            font-size: 12px;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: r.artist;
+                            color: Theme.text-dim;
+                            font-size: 10px;
+                            overflow: elide;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: r.info;
+                            color: Theme.text;
+                            font-size: 11px;
+                            horizontal-alignment: right;
+                        }
+                        Text {
+                            text: r.hint;
+                            color: Theme.lilac-text;
+                            font-size: 10px;
+                            horizontal-alignment: right;
+                        }
+                    }
+                }
+            }
+            if MixedSetUi.swapping || MixedSetUi.swap-note != "": Text {
+                text: MixedSetUi.swapping ? "Swapping… the new stretch plays when it's ready." : MixedSetUi.swap-note;
+                color: Theme.text-dim;
+                font-size: 10px;
                 wrap: word-wrap;
             }
         }
