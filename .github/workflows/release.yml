@@ -3,9 +3,18 @@ name: Release
 # Pushing a tag such as v0.1.0 builds the macOS, Linux and Windows downloads and
 # publishes them as a GitHub release. On a pull request that changes the
 # packaging, the same builds run without publishing.
+#
+# Every night, when main has new commits, the same builds replace the files of
+# the "nightly" pre-release (releases/tag/nightly), so a fix can be shared
+# before the next version. Run this workflow by hand on main to publish a
+# nightly right away. Pre-releases never become "Latest", so the README's
+# download link and the app's update check keep pointing at the last version.
 on:
   push:
     tags: ["v*"]
+  schedule:
+    # 10:00 UTC, the middle of the night in the Americas.
+    - cron: "0 10 * * *"
   pull_request:
     paths:
       - .github/workflows/release.yml
@@ -13,6 +22,11 @@ on:
       - res/windows/**
       - res/macos/opendj.entitlements
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: Publish as the nightly pre-release (main only)
+        type: boolean
+        default: true
 
 # A new push to a pull request cancels the packaging run for the push before it.
 concurrency:
@@ -24,9 +38,17 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.v.outputs.version }}
+      # The build in brackets after the version in About openDJ on macOS
+      # (the app itself always reports the Cargo.toml version).
+      build: ${{ steps.v.outputs.build }}
+      nightly: ${{ steps.v.outputs.nightly }}
+      # Nothing to do: main hasn't changed since the last nightly.
+      skip: ${{ steps.v.outputs.skip }}
     steps:
       - uses: actions/checkout@v7
       - id: v
+        env:
+          NIGHTLY: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.nightly)) }}
         run: |
           cargo=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
           # The app reports the Cargo.toml version (Settings, bug reports,
@@ -37,13 +59,31 @@ jobs:
             echo "::error::Tag $GITHUB_REF_NAME doesn't match version $cargo in Cargo.toml. Merge the prepare PR that bumps it, then tag again."
             exit 1
           fi
-          echo "version=$cargo" >> "$GITHUB_OUTPUT"
+          if [ "$NIGHTLY" = true ]; then
+            sha=$(git rev-parse --short HEAD)
+            # The scheduled run skips a night without new commits on main;
+            # a run by hand always builds.
+            last=$(git ls-remote origin refs/tags/nightly | cut -f1)
+            if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
+              echo "Nightly is already at $sha."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            fi
+            # e.g. 0.9.0-nightly.20261120.abc1234: names the downloads, sorts
+            # by date for apt and dnf, and says which commit it is.
+            echo "version=$cargo-nightly.$(date -u +%Y%m%d).$sha" >> "$GITHUB_OUTPUT"
+            echo "build=nightly $sha" >> "$GITHUB_OUTPUT"
+            echo "nightly=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$cargo" >> "$GITHUB_OUTPUT"
+            echo "build=$cargo" >> "$GITHUB_OUTPUT"
+          fi
 
   macos:
     # One app for both Apple Silicon and Intel Macs.
     # Signed with the project's Developer ID and notarized when the secrets below
     # are set (see docs/macos-signing.md); otherwise ad-hoc signed as before.
     needs: version
+    if: needs.version.outputs.skip != 'true'
     runs-on: macos-15
     env:
       MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
@@ -88,7 +128,7 @@ jobs:
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/cert.p12"
           echo "MACOS_SIGN_IDENTITY=Developer ID Application" >> "$GITHUB_ENV"
-      - run: scripts/bundle-macos.sh dist/opendj "${{ needs.version.outputs.version }}"
+      - run: scripts/bundle-macos.sh dist/opendj "" "${{ needs.version.outputs.build }}"
       - name: Notarize
         if: env.MACOS_SIGN_IDENTITY != '' && env.APPLE_APP_PASSWORD != ''
         run: |
@@ -114,6 +154,7 @@ jobs:
     # Built on the oldest supported Ubuntu, so the binary runs on any distro
     # with glibc 2.35 or newer.
     needs: version
+    if: needs.version.outputs.skip != 'true'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v7
@@ -137,6 +178,7 @@ jobs:
     # A setup .exe (per-user, no admin) and a portable zip, for x64 PCs.
     # Unsigned until a code signing certificate is set up (docs/windows.md).
     needs: version
+    if: needs.version.outputs.skip != 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -177,3 +219,44 @@ jobs:
           # the README's download link skips those.
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: dist/*
+
+  nightly:
+    # Replaces the "nightly" pre-release with this build: the old one and its
+    # tag are deleted, then made again at this commit, so the page only ever
+    # holds one set of downloads.
+    if: needs.version.outputs.nightly == 'true' && needs.version.outputs.skip != 'true'
+    needs: [version, macos, linux, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish
+        run: |
+          stable=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          {
+            echo "Built every night from \`main\` when it has new commits: the newest fixes and features, before they're in a release. Not as well tested as a release."
+            echo
+            echo "**Version:** $VERSION (commit $GITHUB_SHA, $(date -u '+%Y-%m-%d %H:%M UTC'))"
+            if [ -n "$stable" ]; then
+              echo
+              echo "**Changes since $stable:** https://github.com/$GITHUB_REPOSITORY/compare/$stable...$GITHUB_SHA"
+            fi
+            echo
+            echo "The app's update check only offers releases, so install a newer nightly by downloading it again from this page."
+          } > notes.md
+          gh release delete nightly --cleanup-tag --yes 2>/dev/null || true
+          gh release create nightly dist/* \
+            --target "$GITHUB_SHA" \
+            --title "openDJ nightly ($VERSION)" \
+            --notes-file notes.md \
+            --prerelease --latest=false
