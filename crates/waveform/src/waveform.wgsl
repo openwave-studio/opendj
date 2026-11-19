@@ -632,6 +632,26 @@ fn three_band(base: vec3<f32>, s: Slice, d: f32, span: f32) -> vec3<f32> {
 }
 
 // Column `s`'s waveform over `base`, at `d` pixels from the centre line.
+// How tall the one-shape looks draw a slice, 0 to 1. Zoomed out, levels
+// are squashed (stored as square roots, then curved by `height`) so quiet
+// parts stay readable. Zoomed in, the shape moves towards the slice's true
+// loudness, so the gaps between hits and between bass cycles stay open
+// instead of filling in to a solid block.
+fn shape(s: Slice) -> f32 {
+    let squashed = height(body(s.rms.w, s.peak.w));
+    let loud = clamp(pow(s.peak.w * s.peak.w, 0.85) * 0.94 * p.gain, 0.0, 1.0);
+    return mix(squashed, loud, close_zoom());
+}
+
+// 0 for the overview and zoomed-out scrolling, rising to 1 once a screen
+// pixel covers about one slice (a millisecond) or less.
+fn close_zoom() -> f32 {
+    if (p.mode != 0u) {
+        return 0.0;
+    }
+    return 1.0 - smoothstep(1.0, 4.0, p.bins_per_pixel);
+}
+
 fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
     var color = base;
     if (p.style == 2u) {
@@ -643,18 +663,18 @@ fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
         } else if (p.mix_end_bin > p.mix_start_bin && bin >= p.mix_start_bin && bin <= p.mix_end_bin) {
             c = MONO_MIX;
         }
-        let rms_h = height(body(s.rms.w, s.peak.w)) * span;
+        let rms_h = shape(s) * span;
         color = over(color, c, fill(rms_h, d));
     } else if (p.style == 3u) {
         // Blue: one shape, lighter where the highs are loud.
         let highs = clamp(s.rms.z / max(s.rms.w, 0.05) * 1.2, 0.0, 1.0);
         let c = mix(BLUE_BODY, BLUE_HIGHS, highs * 0.8);
-        let rms_h = height(body(s.rms.w, s.peak.w)) * span;
+        let rms_h = shape(s) * span;
         color = over(color, c, fill(rms_h, d));
     } else if (p.style == 0u || p.style == 4u) {
         // RGB, and Stems for a track without them.
         let c = band_color(s);
-        let rms_h = height(body(s.rms.w, s.peak.w)) * span;
+        let rms_h = shape(s) * span;
         // One solid shape (the RMS body, without a peak outline): a bright
         // core fading darker towards the edges, for depth.
         let t = clamp(1.0 - d / max(rms_h, 1.0), 0.0, 1.0);
