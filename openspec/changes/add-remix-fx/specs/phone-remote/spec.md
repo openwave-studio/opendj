@@ -1,12 +1,16 @@
 ## ADDED Requirements
 
 ### Requirement: Remix tab
-The remote page SHALL have a Remix tab that plays the Remix deck. On a tablet in landscape it SHALL use the wheel layout: the three ISOLATE knobs in a panel pointing into a large SCENE wheel whose upper half lists the Build Up scenes and lower half the Break Down scenes around a centre knob that stays where it is left (double tap = centre), the source and Send/Insert, BPM with TAP and QUANTIZE along the top, a release lever at the right edge, three LEVER strips that spring back when let go and stay on when dragged below their notch, a roll pad (left to right = roll rate, up = pitch) beside the four sample pads, OVERDUB, the sample effect, and RELEASE with its mode. Several fingers SHALL work at once. On a phone the same controls SHALL stack, the wheel on top. The layout SHALL use openDJ's own colours, shapes and names. Hits and rolls SHALL land on the beat grid in openDJ, so network delay only moves them to the next grid step.
+The remote page SHALL have a Remix tab that plays the Remix deck. On a tablet in landscape it SHALL use the wheel layout: the three ISOLATE knobs in a panel pointing into a large SCENE wheel whose upper half lists the Build Up scenes and lower half the Break Down scenes around a centre knob that stays where it is left (double tap = centre), the source and Send/Insert, BPM with TAP and QUANTIZE along the top, a release lever at the right edge, a LEVER under each ISOLATE knob (press and hold = on while held, like pushing a lever up; drag it down = on and held, like pushing a lever down; tap a held lever to let it go; depth from the lever's depth control), a roll pad (left to right = roll rate, up = pitch) beside the four sample pads, OVERDUB, the sample effect, and RELEASE with its mode. Several fingers SHALL work at once. On a phone the same controls SHALL stack, the wheel on top. The layout SHALL use openDJ's own colours, shapes and names. Hits and rolls SHALL land on the beat grid in openDJ, so network delay only moves them to the next grid step.
 
 #### Scenario: Two hands
 - **WHEN** one finger holds LEVER HIGH while another holds the kick pad and slides on the roll pad
 - **THEN** the highs echo and the kick rolls at the rate under the finger, both on the beat
 
 #### Scenario: Latch a lever
-- **WHEN** a LEVER strip is dragged below its notch and let go
+- **WHEN** a LEVER is dragged down and let go
 - **THEN** it stays on until tapped again
+
+#### Scenario: Press and hold a lever
+- **WHEN** a LEVER is pressed and held without dragging
+- **THEN** its effect is on until the finger lifts
