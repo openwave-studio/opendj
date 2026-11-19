@@ -30,7 +30,7 @@ Each band's ISOLATE knob SHALL have a centre where it does nothing. Turned left,
 
 #### Scenario: Cut the bass
 - **WHEN** ISOLATE LOW is turned fully left
-- **THEN** the routed channel's lows are silent and the mids and highs are unchanged
+- **THEN** the source's lows are silent and the mids and highs are unchanged
 
 #### Scenario: Duck the mids
 - **WHEN** the Isolate effect is Ducker and ISOLATE MID is turned right
