@@ -120,6 +120,7 @@ mod update;
 mod vocal_pass;
 mod wall_clock;
 mod wave_look;
+mod wave_samples;
 mod waveform_height;
 mod waveform_zoom;
 mod waves;
@@ -1387,6 +1388,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         scrolling: std::array::from_fn(|_| make(Mode::Scrolling)),
                         overview: std::array::from_fn(|_| make(Mode::Overview)),
                         tracks: Default::default(),
+                        samples: Default::default(),
                         phrases: Default::default(),
                         tempos: Default::default(),
                         clocks: Default::default(),
@@ -2741,6 +2743,8 @@ struct Gpu {
     /// being analysed its waveform grows, and each new version is uploaded
     /// again, as it is once its vocals are found.
     tracks: [Option<Uploaded>; NUM_DECKS],
+    /// Each deck's decoded audio, for the real wave when zoomed right in.
+    samples: [Option<Arc<wave_samples::DeckSamples>>; NUM_DECKS],
     /// Each deck's phrases and the track they were found for, found again
     /// when the track changes (a new analysis or a grid edit replaces it).
     phrases: [Option<(Arc<Track>, Phrases)>; NUM_DECKS],
@@ -3146,6 +3150,15 @@ impl Gpu {
                 },
                 ..f.clone()
             });
+            // The decoded audio, for the real wave up close.
+            let audio = track.and_then(|t| t.audio.as_ref());
+            let samples = match (audio, &self.samples[d]) {
+                (Some(a), Some(s)) if Arc::ptr_eq(a, s.audio()) => Some(s.clone()),
+                (Some(a), _) => Some(wave_samples::DeckSamples::new(a.clone())),
+                (None, _) => None,
+            };
+            self.samples[d] = samples.clone();
+            self.scrolling[d].set_samples(samples.map(|s| s as Arc<dyn opendj_waveform::Samples>));
             for (view, frame) in [
                 (&mut self.scrolling[d], scrolling_frame.as_ref()),
                 (&mut self.overview[d], overview_frame.as_ref()),

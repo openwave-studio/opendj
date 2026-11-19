@@ -1314,3 +1314,116 @@ fn draws_tempo_labels_alone_and_in_phrase_flags() {
     }]);
     assert!(tab_end(&tenth) > long + 4, "the tenth widens the flag");
 }
+
+/// A 50 Hz sine of 48 000 frames a second at full scale, for the real wave.
+struct Sine;
+
+impl opendj_waveform::Samples for Sine {
+    fn sample_rate(&self) -> f64 {
+        48_000.0
+    }
+    fn len(&self) -> usize {
+        48_000 * 60
+    }
+    fn ready(&self) -> usize {
+        self.len()
+    }
+    fn min_max(&self, from: usize, to: usize) -> [f32; 2] {
+        (from..to)
+            .map(|i| (i as f64 * std::f64::consts::TAU * 50.0 / 48_000.0).sin() as f32)
+            .fold([f32::MAX, f32::MIN], |[lo, hi], v| [lo.min(v), hi.max(v)])
+    }
+    fn top(&self) -> Option<f32> {
+        Some(1.0)
+    }
+}
+
+/// Zoomed right in, the real wave swings above and below the centre line
+/// with the audio, where the summary is mirrored; zoomed out (or without
+/// the audio) it stays mirrored.
+#[test]
+fn draws_the_real_wave_zoomed_right_in() {
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    // A summary of a loud steady tone: every slice at full level.
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(vec![[200, 120, 60, 255, 140, 80, 40, 180]; 60_000]),
+        1000.0,
+    ));
+    let (w, h) = (1024u32, 120u32);
+    // How much ink there is above and below the centre line, in the column
+    // at `x`.
+    let halves = |px: &[u8], x: u32| -> (f64, f64) {
+        let ink = |y: u32| -> f64 {
+            let i = ((y * w + x) * 4) as usize;
+            (0..3).map(|c| px[i + c].abs_diff(px[c]) as f64).sum()
+        };
+        let above = (2..h / 2 - 3).map(ink).sum();
+        let below = (h / 2 + 3..h - 2).map(ink).sum();
+        (above, below)
+    };
+    let frame = |visible: f64| Frame {
+        play_seconds: 30.0,
+        visible_seconds: visible,
+        duration: 60.0,
+        first_bar_beat: 0.0,
+        grid: steady_grid(0.0, 0.0),
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        tempos: Vec::new(),
+        phrases: Vec::new(),
+    };
+    for style in [Style::Rgb, Style::Blue, Style::Mono] {
+        let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+        view.set_style(style);
+        view.set_track(&device, &renderer, Some(&track));
+        view.set_samples(Some(Arc::new(Sine)));
+        // 0.4 s across: 20 cycles, about 51 pixels each. A column where
+        // the wave is high draws above the line only, one where it is low
+        // below only.
+        view.render(&device, &queue, &renderer, Some(&frame(0.4)), 1.0);
+        let px = read_back(&device, &queue, &view);
+        let (mut up, mut down) = (0, 0);
+        for x in 0..w {
+            let (a, b) = halves(&px, x);
+            if a > 4.0 * b.max(1.0) {
+                up += 1;
+            } else if b > 4.0 * a.max(1.0) {
+                down += 1;
+            }
+        }
+        assert!(up > 300 && down > 300, "{style:?}: {up} up, {down} down");
+        // 30 s across: the summary, mirrored about the line.
+        view.render(&device, &queue, &renderer, Some(&frame(30.0)), 1.0);
+        let px = read_back(&device, &queue, &view);
+        for x in (0..w).step_by(37) {
+            let (a, b) = halves(&px, x);
+            assert!(
+                (a - b).abs() <= 0.05 * a.max(b),
+                "{style:?} at {x}: {a} {b}"
+            );
+        }
+        // Zoomed in without the audio: the summary too.
+        view.set_samples(None);
+        view.render(&device, &queue, &renderer, Some(&frame(0.4)), 1.0);
+        let px = read_back(&device, &queue, &view);
+        for x in (0..w).step_by(37) {
+            let (a, b) = halves(&px, x);
+            assert!(
+                (a - b).abs() <= 0.05 * a.max(b),
+                "{style:?} at {x}: {a} {b}"
+            );
+        }
+    }
+}
