@@ -10,6 +10,7 @@ import { ControlButton, ControlKnob, Controls, CueHeadphones } from "controls.sl
 import { DeckInfo, Header, PlayButton } from "deck.slint";
 import { CueList } from "cues.slint";
 import { WaveZoom } from "zoom.slint";
+import { LibraryEdit } from "library.slint";
 
 export global PrepUi {
     // Whether the Prep layout is offered (off until v0.6).
@@ -236,6 +237,9 @@ component ZoomButton inherits Rectangle {
 
 // The stage, the waveform zoom and Play Ready, next track, over the pads.
 component ReadyBar inherits HorizontalLayout {
+    // On a narrow window (1280 wide): no tracks-left count, and a
+    // shorter Play Ready button, so the bar fits beside the zoom.
+    in property <bool> narrow;
     spacing: 8px;
     height: 30px;
     Rectangle {
@@ -251,7 +255,7 @@ component ReadyBar inherits HorizontalLayout {
             font-weight: 600;
         }
     }
-    Text {
+    if !narrow: Text {
         text: PrepUi.left == 1 ? "1 track In Prep" : PrepUi.left + " tracks In Prep";
         color: Theme.text-dim;
         font-size: 12px;
@@ -288,7 +292,7 @@ component ReadyBar inherits HorizontalLayout {
         background: all-done
             ? (ready-touch.pressed ? Theme.stage-ready.darker(0.2) : ready-touch.has-hover ? Theme.stage-ready.brighter(0.1) : Theme.stage-ready)
             : (ready-touch.pressed ? Theme.stage-ready.with-alpha(0.3) : ready-touch.has-hover ? Theme.stage-ready.with-alpha(0.2) : Theme.stage-ready.with-alpha(0.1));
-        ready-text := Text { text: "✓ Play Ready, next  ⏎"; color: all-done ? Theme.n-0e0e10 : Theme.stage-ready; font-size: 13px; font-weight: 700; }
+        ready-text := Text { text: narrow ? "✓ Play Ready  ⏎" : "✓ Play Ready, next  ⏎"; color: all-done ? Theme.n-0e0e10 : Theme.stage-ready; font-size: 13px; font-weight: 700; }
         ready-touch := TouchArea { mouse-cursor: pointer; clicked => { PrepUi.ready(); } }
     }
 }
@@ -322,7 +326,8 @@ export component PrepDeck inherits Rectangle {
                 VerticalLayout {
                     padding: 10px;
                     spacing: 8px;
-                    ReadyBar { }
+                    // The bar needs about 640 px: 1,420 less the two panels at its left.
+                    ReadyBar { narrow: LibraryEdit.window-width < 1420px; }
                     HorizontalLayout {
                         spacing: 6px;
                         for n in 4: PrepPad { group: group; number: n + 1; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }

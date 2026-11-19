@@ -1307,24 +1307,32 @@ component WaveformsButton inherits Rectangle {
 // Shows or hides the FX bar under the decks: "FX", lit while it shows.
 component FxButton inherits Rectangle {
     in-out property <bool> on;
+    // Folded away by a short window: it looks off, and a press shows it.
+    in property <bool> folded;
+    callback unfold();
+    property <bool> lit: on && !folded;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : on ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? Theme.accent : transparent;
+    border-color: lit ? Theme.accent : transparent;
     height: 36px;
     y: 8px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 11px;
         padding-right: 11px;
-        Text { text: "FX"; color: on ? Theme.lilac-text : Theme.text-dim; font-size: 14px; font-weight: 700; font-italic: true; vertical-alignment: center; }
+        Text { text: "FX"; color: lit ? Theme.lilac-text : Theme.text-dim; font-size: 14px; font-weight: 700; font-italic: true; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
-            on = !on;
-            changed-to(on);
+            if folded {
+                unfold();
+            } else {
+                on = !on;
+                changed-to(on);
+            }
         }
     }
     TourMark { id: "ui,fx_button"; }
@@ -1335,11 +1343,15 @@ component FxButton inherits Rectangle {
 // 4-Deck strips get shorter and the browser gets the room.
 component PadsButton inherits Rectangle {
     in-out property <bool> on;
+    // Folded away by a short window: it looks off, and a press shows it.
+    in property <bool> folded;
+    callback unfold();
+    property <bool> lit: on && !folded;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : on ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? Theme.accent : transparent;
+    border-color: lit ? Theme.accent : transparent;
     height: 36px;
     y: 8px;
     horizontal-stretch: 0;
@@ -1356,7 +1368,7 @@ component PadsButton inherits Rectangle {
                     width: 4px;
                     height: 4px;
                     border-radius: 1px;
-                    background: on ? Theme.accent : Theme.text-dim;
+                    background: lit ? Theme.accent : Theme.text-dim;
                 }
             }
         }
@@ -1364,8 +1376,12 @@ component PadsButton inherits Rectangle {
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
-            on = !on;
-            changed-to(on);
+            if folded {
+                unfold();
+            } else {
+                on = !on;
+                changed-to(on);
+            }
         }
     }
     TourMark { id: "ui,pads_button"; }
@@ -1467,7 +1483,7 @@ export component AppWindow inherits Window {
     preferred-width: 1680px;
     preferred-height: 1050px;
     min-width: 1280px;
-    min-height: 800px;
+    min-height: 720px;
     background: Theme.n-000000;
     default-font-family: Theme.font-family;
 
@@ -1570,9 +1586,32 @@ export component AppWindow inherits Window {
     // decks, the FX bar and the footer, with the lines between.
     property <length> deck-rows: layout == 0 ? LiteUi.deck-height + 1px + LiteUi.bar-height
         : lite ? lite-row + (PadsUi.visible ? 1px + LiteUi.bar-height : 0px)
-        : four ? (PadsUi.visible ? 330px : 247px) + 1px + 48px
+        : four ? (four-pads ? 330px : 247px) + 1px + 48px
         : prep ? 280px : 0px;
-    property <length> other-rows: 52px + 1px + 1px + deck-rows + 1px + (fx-bar-visible && !prep ? (four ? 96px : 68px) + 1px : 0px) + 1px + 36px;
+    property <length> other-rows: 52px + 1px + 1px + deck-rows + 1px + (fx-bar-shown ? (four ? 96px : 68px) + 1px : 0px) + 1px + 36px;
+    // A short window gives way in order: the waveforms step down first
+    // (wave-level), keeping about five tracks in the library. When even the
+    // lowest step leaves fewer than about three, 4-Deck's pads fold, then
+    // the FX bar. Both come back when the window grows. Pressing PADS or
+    // FX while folded shows it anyway, until the window has room again.
+    property <length> rows-floor: 170px;
+    property <length> fold-room: LibraryEdit.window-height - 92px - strip-heights[0] - rows-floor;
+    property <length> fx-row: four ? 97px : 68px + 1px;
+    // A deck playing the Mixer or an instrument keeps the pads' room: its
+    // strips or keys fill it.
+    property <bool> four-live: (!decks[0].loaded && InstrumentsUi.live(0) > 0) || (!decks[1].loaded && InstrumentsUi.live(1) > 0)
+        || (!decks[2].loaded && InstrumentsUi.live(2) > 0) || (!decks[3].loaded && InstrumentsUi.live(3) > 0);
+    property <bool> pads-short: four && PadsUi.visible && !four-live && fold-room < 379px + (fx-bar-visible ? fx-row : 0px);
+    changed pads-short => { if !pads-short { pads-unfold = false; } }
+    property <bool> pads-unfold;
+    property <bool> pads-folded: pads-short && !pads-unfold;
+    property <bool> four-pads: PadsUi.visible && !pads-folded;
+    property <length> deck-room: four ? (four-pads ? 330px : 247px) + 1px + 48px : deck-rows;
+    property <bool> fx-short: fx-bar-visible && !prep && !player && !library-expanded && fold-room < deck-room + fx-row;
+    changed fx-short => { if !fx-short { fx-unfold = false; } }
+    property <bool> fx-unfold;
+    property <bool> fx-folded: fx-short && !fx-unfold;
+    property <bool> fx-bar-shown: fx-bar-visible && !prep && !fx-folded;
     // The library keeps room for about five tracks under its header: a
     // step with less shows the highest one that fits, but never below 3
     // unless the DJ chose less. The chosen one comes back
@@ -1587,7 +1626,9 @@ export component AppWindow inherits Window {
     property <float> slide-at: clamp(WaveHeight.slide, 1, max(wave-fits, 1));
     property <int> slide-low: floor(slide-at);
     property <length> slide-height: strip-heights[slide-low - 1] + (strip-heights[min(slide-low, 9)] - strip-heights[slide-low - 1]) * (slide-at - slide-low);
-    property <int> wave-level: min(WaveHeight.level, max(wave-fits, min(WaveHeight.level, WaveHeight.default-level)));
+    // The chosen step, or the highest that leaves the library about five
+    // tracks on a short window, down to the lowest step.
+    property <int> wave-level: min(WaveHeight.level, wave-fits);
     // From whichever layout's deck A is showing.
     // 2-Deck measures the overviews on deck 1, or on deck 2 while deck 1
     // is a Mixer deck: that has no overview, and its zero height would draw
@@ -2050,8 +2091,8 @@ export component AppWindow inherits Window {
                     // Prep always shows its waveform and never the FX bar,
                     // so neither button is offered there.
                     if !player && layout != 3: WaveformsButton { on <=> root.waveforms-visible; fits: wave-fits; changed-to(on) => { waveforms-visible-changed(on); } }
-                    if !player && layout != 3: FxButton { on <=> root.fx-bar-visible; changed-to(on) => { fx-bar-visible-changed(on); } }
-                    if layout == 2 || layout == 4: PadsButton { on <=> root.pads-visible; changed-to(on) => { pads-visible-changed(on); } }
+                    if !player && layout != 3: FxButton { on <=> root.fx-bar-visible; folded: fx-folded; unfold => { fx-unfold = true; } changed-to(on) => { fx-bar-visible-changed(on); } }
+                    if layout == 2 || layout == 4: PadsButton { on <=> root.pads-visible; folded: pads-folded; unfold => { pads-unfold = true; } changed-to(on) => { pads-visible-changed(on); } }
                     if layout == 4: JogsButton { on <=> root.jogs-visible; changed-to(on) => { jogs-visible-changed(on); } }
                     if !player: Rectangle { horizontal-stretch: 1; }
                     // Between the pills, centred on the window (as the
@@ -2234,12 +2275,12 @@ export component AppWindow inherits Window {
                 // layouts.
                 HorizontalLayout {
                     spacing: 1px;
-                    height: four ? (PadsUi.visible ? 330px : 247px) : 0px;
+                    height: four ? (four-pads ? 330px : 247px) : 0px;
                     visible: four;
-                    DeckStrip { deck: 2; info: decks[2]; overview: overview-3; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
-                    strip-1 := DeckStrip { deck: 0; info: decks[0]; overview: overview-1; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
-                    DeckStrip { deck: 1; info: decks[1]; overview: overview-2; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
-                    DeckStrip { deck: 3; info: decks[3]; overview: overview-4; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    DeckStrip { deck: 2; info: decks[2]; overview: overview-3; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    strip-1 := DeckStrip { deck: 0; info: decks[0]; overview: overview-1; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    DeckStrip { deck: 1; info: decks[1]; overview: overview-2; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    DeckStrip { deck: 3; info: decks[3]; overview: overview-4; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
                 }
 
                 // Over the expanded library: the deck headers either side of
@@ -2277,11 +2318,11 @@ export component AppWindow inherits Window {
             // bar hides it.
             FxBar {
                 four: four;
-                height: library-expanded || !fx-bar-visible || player || prep ? 0px : four ? 96px : 68px;
-                visible: !library-expanded && fx-bar-visible && !player && !prep;
+                height: library-expanded || !fx-bar-shown || player ? 0px : four ? 96px : 68px;
+                visible: !library-expanded && fx-bar-shown && !player;
             }
 
-            Rectangle { height: !library-expanded && fx-bar-visible && !player && !prep ? 1px : 0px; }
+            Rectangle { height: !library-expanded && fx-bar-shown && !player ? 1px : 0px; }
 
             browser := Browser {
                 vertical-stretch: 1;
