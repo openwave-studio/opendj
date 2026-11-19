@@ -121,6 +121,16 @@ export global MixedSetUi {
     in property <string> detail-style;
     in property <string> detail-sync;
     in property <int> pair-count;
+    // Mixing the selected transition again: index into bar-choices and
+    // style-choices, and what has been done.
+    in-out property <int> edit-bars: 2;
+    in-out property <int> edit-style;
+    in property <[string]> bar-choices: ["2", "4", "8", "16", "32"];
+    in property <[string]> style-choices: ["Smooth", "Bass swap", "Filter", "Cut"];
+    in property <bool> mixing;
+    // "Mixed again: 16 bars, Bass swap", or empty when as played.
+    in property <string> detail-mixed;
+    in property <string> edit-note;
     in property <[SetFindingRow]> findings;
     in property <bool> checking;
     in property <[SetFixRow]> fixes;
@@ -144,6 +154,8 @@ export global MixedSetUi {
     callback select-block(int);
     callback select-track(int);
     callback select-transition(int);
+    callback mix-transition();
+    callback unmix-transition();
     callback step-transition(int);
     callback tick-pair(int, bool);
     callback save-pairs();
@@ -213,6 +225,32 @@ component Tab inherits Rectangle {
         background: on ? Theme.accent : transparent;
     }
     TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A small choice in a row of them.
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> on;
+    callback clicked();
+    height: 24px;
+    min-width: cl.preferred-width;
+    border-radius: 12px;
+    background: on ? Theme.accent : ta.has-hover ? Theme.n-3a3a3e : Theme.n-2c2c30;
+    cl := HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 9px;
+        Text {
+            text: root.text;
+            color: on ? #000000 : Theme.text;
+            font-size: 11px;
+            font-weight: on ? 700 : 500;
+            vertical-alignment: center;
+        }
+    }
+    ta := TouchArea {
         mouse-cursor: pointer;
         clicked => { root.clicked(); }
     }
@@ -655,6 +693,69 @@ component TransitionsTab inherits VerticalLayout {
             if MixedSetUi.detail-sync != "": KeyValue {
                 key: "Beats";
                 value: MixedSetUi.detail-sync;
+            }
+            Rectangle {
+                height: 1px;
+                background: Theme.separator;
+            }
+            Text {
+                text: MixedSetUi.detail-mixed != "" ? MixedSetUi.detail-mixed : "Mix it again";
+                color: MixedSetUi.detail-mixed != "" ? Theme.lilac-text : Theme.text-dim;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                alignment: start;
+                Text {
+                    text: "Bars";
+                    color: Theme.text-dim;
+                    font-size: 11px;
+                    width: 44px;
+                    vertical-alignment: center;
+                }
+                for b[i] in MixedSetUi.bar-choices: Chip {
+                    text: b;
+                    on: i == MixedSetUi.edit-bars;
+                    clicked => { MixedSetUi.edit-bars = i; }
+                }
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                alignment: start;
+                Text {
+                    text: "Curve";
+                    color: Theme.text-dim;
+                    font-size: 11px;
+                    width: 44px;
+                    vertical-alignment: center;
+                }
+                for c[i] in MixedSetUi.style-choices: Chip {
+                    text: c;
+                    on: i == MixedSetUi.edit-style;
+                    clicked => { MixedSetUi.edit-style = i; }
+                }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: start;
+                Button {
+                    text: MixedSetUi.mixing ? "Mixing…" : "Mix it this way";
+                    primary: true;
+                    enabled: !MixedSetUi.mixing;
+                    clicked => { MixedSetUi.mix-transition(); }
+                }
+                if MixedSetUi.detail-mixed != "": Button {
+                    text: "As played";
+                    enabled: !MixedSetUi.mixing;
+                    clicked => { MixedSetUi.unmix-transition(); }
+                }
+            }
+            if MixedSetUi.edit-note != "": Text {
+                text: MixedSetUi.edit-note;
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
             }
         }
     }

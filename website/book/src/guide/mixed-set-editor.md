@@ -45,6 +45,21 @@ The card above the list shows both tracks, where each was
 in the track, and whether the beats stayed in time. **‹** and **›** step
 through them.
 
+### Mix a transition again
+
+Pick a transition, then under **Mix it again** choose how many **Bars**
+it lasts and its **Curve**: **Smooth**, **Bass swap**, **Filter** or
+**Cut**. **Mix it this way** plays that stretch of the set again through
+openDJ from what you did on the decks, with the new transition, and plays
+it for you straight away, 4 bars either side. The incoming track still
+comes in on the same bar; the outgoing one plays on as long as the new
+transition needs. **As played** goes back to the recording.
+
+Only that stretch is mixed again: the rest of the set stays exactly as
+recorded. The track files must still be where they were when you played
+the set. A transition mixed again is kept with your fixes, and **Save
+edited mix** writes it into the new file.
+
 ### Pair mixes
 
 Tick a transition and press **Save pair mixes** to keep it as a pair mix:

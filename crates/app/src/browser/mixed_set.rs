@@ -23,7 +23,8 @@ use opendj_engine::preview::PREVIEW_GROUP;
 use opendj_engine::set_chapters::{self, clock, Chapter, YoutubeNote};
 use opendj_engine::set_checks::{self, Finding, Severity, Stretch, TrackGrid};
 use opendj_engine::set_fixes::{self, Edits, Fix, Rendered, LOUDNESS_PRESETS};
-use opendj_engine::set_timeline::{CueTrack, LaneKind, Recording, SetTimeline};
+use opendj_engine::set_render::{self, TransitionEdit};
+use opendj_engine::set_timeline::{CueTrack, LaneKind, Recording, SetTimeline, Style};
 use opendj_engine::Waveform;
 use opendj_library::pair_mixes::PairMix;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -66,8 +67,15 @@ enum Said {
     Measured(Rendered),
     /// The edited mix is written.
     Saved(PathBuf, Rendered),
+    /// A transition is mixed again.
+    Mixed(Fix),
     Failed(String),
 }
+
+/// The lengths a transition can be mixed again at, in bars.
+const BAR_CHOICES: [f64; 5] = [2.0, 4.0, 8.0, 16.0, 32.0];
+/// The curves it can be mixed again with, as the editor lists them.
+const STYLE_CHOICES: [Style; 4] = [Style::Smooth, Style::BassSwap, Style::Filter, Style::Cut];
 
 /// The preview player's controls, which play the set back.
 struct Player {
@@ -113,6 +121,15 @@ struct Open {
     shown_position: (f32, bool),
     /// Seconds: where listening to a transition stops.
     listen_until: Option<f64>,
+    /// A transition mixed again being played from its own file: where the
+    /// file starts in the set and how long it is, in seconds, and the file.
+    listen_mix: Option<(f64, f64, PathBuf)>,
+    /// A transition being mixed again.
+    mixing: bool,
+    /// Why it couldn't be, or what to know about it.
+    edit_note: String,
+    /// The transition whose choices were last set in the card.
+    shown_edit: std::cell::Cell<Option<usize>>,
     /// The track playing, as last shown in the Tracks tab.
     shown_track: i32,
     /// The recording's waveform, once read.
@@ -195,6 +212,10 @@ impl Browser {
         ui.on_select_transition(move |i| w(&|b| b.set_select_transition(i as usize)));
         let w = with.clone();
         ui.on_select_track(move |i| w(&|b| b.set_select_track(i as usize)));
+        let w = with.clone();
+        ui.on_mix_transition(move || w(&|b| b.set_mix_transition()));
+        let w = with.clone();
+        ui.on_unmix_transition(move || w(&|b| b.set_unmix_transition()));
         let w = with.clone();
         ui.on_step_transition(move |d| w(&|b| b.set_step_transition(d)));
         let w = with.clone();
@@ -380,6 +401,10 @@ impl Browser {
             row_of,
             show_decks: true,
             listen_until: None,
+            listen_mix: None,
+            mixing: false,
+            edit_note: String::new(),
+            shown_edit: Default::default(),
             shown_track: -1,
             selection: None,
             block: None,
@@ -600,6 +625,14 @@ impl Browser {
         };
         if p.play.get_bool() {
             p.play.set_bool(false);
+        } else if let Some((_, len, file)) = self
+            .mixed_set
+            .open
+            .as_ref()
+            .and_then(|o| o.listen_mix.clone())
+        {
+            let at = p.position.get();
+            self.engine.preview_stream(file, at * len, true);
         } else {
             // Streamed again from where it is: after the end it starts over.
             self.set_seek(p.position.get(), true);
@@ -612,6 +645,7 @@ impl Browser {
             return;
         };
         o.listen_until = None;
+        o.listen_mix = None;
         let play = play || p.play.get_bool();
         let at = at.clamp(0.0, 1.0);
         // Shown there at once; the stream catches up a moment later.
@@ -674,6 +708,26 @@ impl Browser {
             return;
         };
         o.transition = Some(i);
+        o.edit_note.clear();
+        // Mixed again: heard from its own file, a few bars either side.
+        if let Some((start, end, file, _)) = o
+            .edits
+            .mixes()
+            .into_iter()
+            .find(|m| m.3 == i)
+            .map(|(s, e, f, t)| (s, e, f.to_path_buf(), t))
+        {
+            self.show_mixed_set();
+            self.set_seek(
+                start / self.mixed_set.open.as_ref().map_or(1.0, |o| o.length),
+                false,
+            );
+            self.engine.preview_stream(file.clone(), 0.0, true);
+            if let Some(o) = &mut self.mixed_set.open {
+                o.listen_mix = Some((start, end - start, file));
+            }
+            return;
+        }
         let bar = bar_seconds(t, x.from_track, x.start);
         let at = (x.start - TRANSITION_LEAD_BARS * bar).max(0.0) / o.length;
         // Heard with a few bars either side, then it stops.
@@ -683,6 +737,82 @@ impl Browser {
         if let Some(o) = &mut self.mixed_set.open {
             o.listen_until = Some(until);
         }
+    }
+
+    /// Mixes the selected transition again with the length and curve
+    /// picked, in the background.
+    fn set_mix_transition(&mut self) {
+        let Some(app) = self.app.upgrade() else {
+            return;
+        };
+        let ui = app.global::<MixedSetUi>();
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let (Some(i), Some(t)) = (o.transition, &o.timeline) else {
+            return;
+        };
+        if o.mixing {
+            return;
+        }
+        let bars = BAR_CHOICES[(ui.get_edit_bars().max(0) as usize).min(BAR_CHOICES.len() - 1)];
+        let style =
+            STYLE_CHOICES[(ui.get_edit_style().max(0) as usize).min(STYLE_CHOICES.len() - 1)];
+        let edit = TransitionEdit {
+            transition: i,
+            bars,
+            style,
+        };
+        // Refused at once if it can't fit.
+        if let Err(e) = set_render::transition_window(t, &edit) {
+            o.edit_note = e;
+            self.show_mixed_set();
+            return;
+        }
+        o.mixing = true;
+        o.edit_note = "Mixing it again from the set's log…".into();
+        let (audio, timeline, tell) = (o.audio.clone(), t.clone(), o.tell.clone());
+        let stamp = chrono::Local::now().format("%H%M%S");
+        let dest = mix_path(&audio, i, &stamp.to_string());
+        std::thread::spawn(move || {
+            let said = match set_render::render_transition(&audio, &timeline, &edit, &dest) {
+                Ok((start, end)) => Said::Mixed(Fix::Mix {
+                    start,
+                    end,
+                    file: dest,
+                    transition: i,
+                    bars,
+                    style: style.name().to_string(),
+                }),
+                Err(e) => Said::Failed(format!("Couldn't mix the transition again: {e}")),
+            };
+            let _ = tell.send(said);
+        });
+        self.show_mixed_set();
+    }
+
+    /// Back to the selected transition as it was played.
+    fn set_unmix_transition(&mut self) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let Some(i) = o.transition else { return };
+        let mut files = Vec::new();
+        o.edits.fixes.retain(|f| match f {
+            Fix::Mix {
+                transition, file, ..
+            } if *transition == i => {
+                files.push(file.clone());
+                false
+            }
+            _ => true,
+        });
+        o.listen_mix = None;
+        o.edit_note.clear();
+        for f in files {
+            let _ = std::fs::remove_file(f);
+        }
+        self.edits_changed();
     }
 
     /// Jumps to the start of track `i` in the tracklist.
@@ -981,6 +1111,7 @@ impl Browser {
         };
         let ui = app.global::<MixedSetUi>();
         let mut changed = false;
+        let mut mixed = None;
         loop {
             match o.said.try_recv() {
                 Ok(Said::Read { waveform, findings }) => {
@@ -1019,7 +1150,23 @@ impl Browser {
                     self.add_recordings(&[path]);
                     break;
                 }
+                Ok(Said::Mixed(fix)) => {
+                    o.mixing = false;
+                    o.edit_note =
+                        "Kept with your fixes: Save edited mix writes it into a new file.".into();
+                    let i = match &fix {
+                        Fix::Mix { transition, .. } => *transition,
+                        _ => 0,
+                    };
+                    o.edits.fixes.push(fix);
+                    mixed = Some(i);
+                    changed = true;
+                }
                 Ok(Said::Failed(e)) => {
+                    if o.mixing {
+                        o.mixing = false;
+                        o.edit_note = e.clone();
+                    }
                     o.saving = false;
                     o.measuring = false;
                     o.checking = false;
@@ -1051,7 +1198,11 @@ impl Browser {
             }
         }
         if let Some(p) = &self.mixed_set.player {
-            let at = p.position.get() as f32;
+            let at = match &o.listen_mix {
+                // A transition mixed again plays from its own file.
+                Some((start, len, _)) => ((start + p.position.get() * len) / o.length) as f32,
+                None => p.position.get() as f32,
+            };
             let playing = p.play.get_bool();
             // Only just past the end: until the new stream comes in, the
             // player still says where the old one was.
@@ -1083,7 +1234,11 @@ impl Browser {
                 }
             }
         }
-        if changed {
+        if let Some(i) = mixed {
+            self.edits_changed();
+            // Heard straight away.
+            self.set_select_transition(i);
+        } else if changed {
             self.show_mixed_set();
         }
     }
@@ -1125,15 +1280,18 @@ impl Browser {
                 selected,
             };
         if let Some(t) = &o.timeline {
+            let mixes = o.edits.mixes();
             for (i, x) in t.transitions.iter().enumerate() {
-                spans.push(span(
-                    x.start,
-                    x.end,
-                    0,
-                    x.style.name(),
-                    0,
-                    o.transition == Some(i),
-                ));
+                let label = match mixed_again(&o.edits, i) {
+                    Some((bars, style)) => format!("{style} · {bars} bars (new)"),
+                    None => x.style.name().to_string(),
+                };
+                let end = mixes
+                    .iter()
+                    .find(|m| m.3 == i)
+                    .and_then(|_| mixed_end(&o.edits, i, t))
+                    .unwrap_or(x.end);
+                spans.push(span(x.start, end, 0, &label, 0, o.transition == Some(i)));
             }
             let row = |d: usize| o.row_of.get(d).copied().unwrap_or(0);
             for l in &t.loops {
@@ -1223,6 +1381,48 @@ impl Browser {
                     ui.set_detail_at(clock(x.start).into());
                     ui.set_detail_length(transition_length(x).into());
                     ui.set_detail_style(x.style.name().into());
+                    let i = o.transition.unwrap_or(0);
+                    let (bars, style) = match mixed_again(&o.edits, i) {
+                        Some((bars, style)) => {
+                            ui.set_detail_mixed(
+                                format!("Mixed again: {bars} bars, {style}").into(),
+                            );
+                            (
+                                bars,
+                                STYLE_CHOICES
+                                    .iter()
+                                    .position(|s| s.name() == style)
+                                    .unwrap_or(0),
+                            )
+                        }
+                        None => {
+                            ui.set_detail_mixed(SharedString::new());
+                            (
+                                x.bars.unwrap_or(4.0),
+                                STYLE_CHOICES
+                                    .iter()
+                                    .position(|s| *s == x.style)
+                                    .unwrap_or(0),
+                            )
+                        }
+                    };
+                    if o.shown_edit.get() != Some(i) {
+                        // The choices start at what it is now.
+                        o.shown_edit.set(Some(i));
+                        let nearest = BAR_CHOICES
+                            .iter()
+                            .enumerate()
+                            .min_by(|a, b| {
+                                (a.1.ln() - bars.max(1.0).ln())
+                                    .abs()
+                                    .total_cmp(&(b.1.ln() - bars.max(1.0).ln()).abs())
+                            })
+                            .map_or(1, |(k, _)| k);
+                        ui.set_edit_bars(nearest as i32);
+                        ui.set_edit_style(style as i32);
+                    }
+                    ui.set_mixing(o.mixing);
+                    ui.set_edit_note(o.edit_note.as_str().into());
                     ui.set_detail_sync(
                         o.log_findings
                             .iter()
@@ -1368,6 +1568,37 @@ fn bar_seconds(t: &SetTimeline, track: usize, at: f64) -> f64 {
     }
 }
 
+/// How transition `i` was mixed again, if it was: bars and style name.
+fn mixed_again(edits: &Edits, i: usize) -> Option<(f64, String)> {
+    edits.fixes.iter().rev().find_map(|f| match f {
+        Fix::Mix {
+            transition,
+            bars,
+            style,
+            ..
+        } if *transition == i => Some((*bars, style.clone())),
+        _ => None,
+    })
+}
+
+/// Where transition `i`, mixed again, ends in the set.
+fn mixed_end(edits: &Edits, i: usize, t: &SetTimeline) -> Option<f64> {
+    let (bars, style) = mixed_again(edits, i)?;
+    let x = t.transitions.get(i)?;
+    if style == Style::Cut.name() {
+        return Some(x.start + 0.05);
+    }
+    Some(x.start + bars * set_render::bar_seconds(t, x.to_track, x.start))
+}
+
+/// A new file for transition `i` mixed again, beside the recording.
+fn mix_path(audio: &Path, i: usize, stamp: &str) -> PathBuf {
+    let edits = set_fixes::edits_path(audio);
+    let name = edits.file_name().unwrap_or_default().to_string_lossy();
+    let stem = name.strip_suffix(".edits.json").unwrap_or(&name);
+    edits.with_file_name(format!("{stem}.transition {} {stamp}.wav", i + 1))
+}
+
 fn transition_length(x: &opendj_engine::set_timeline::Transition) -> String {
     match x.bars {
         Some(b) if b >= 0.95 => format!("{} bars", b.round()),
@@ -1403,6 +1634,15 @@ fn fix_row(f: &Fix) -> SetFixRow {
         Fix::Loudness { lufs, ceiling } => (
             "Loudness".to_string(),
             format!("{lufs} LUFS, peaks under {ceiling} dBTP"),
+        ),
+        Fix::Mix {
+            transition,
+            bars,
+            style,
+            ..
+        } => (
+            format!("Transition {}", transition + 1),
+            format!("Mixed again: {bars} bars, {style}"),
         ),
     };
     SetFixRow {
