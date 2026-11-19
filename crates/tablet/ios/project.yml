@@ -19,6 +19,8 @@ targets:
       # iPad first; iPhone works but the layout is for a landscape tablet.
       TARGETED_DEVICE_FAMILY: "1,2"
       CODE_SIGN_STYLE: Automatic
+      # The home-screen icon: the desktop app's, full-bleed (Assets.xcassets).
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: Info.plist
       properties:
@@ -41,7 +43,9 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIStatusBarHidden: true
         CADisableMinimumFrameDurationOnPhone: true
+        # The icon's dark background while the app starts.
         UILaunchScreen:
+          UIColorName: LaunchBackground
           ImageRespectSafeAreaInsets: false
         # The scene lifecycle, which iOS 27 requires; Slint's winit
         # backend supplies the delegate.
@@ -51,7 +55,8 @@ targets:
             UIWindowSceneSessionRoleApplication:
               - UISceneConfigurationName: Slint
                 UISceneDelegateClassName: SlintWindowSceneDelegate
-    sources: []
+    sources:
+      - path: Assets.xcassets
     postCompileScripts:
       - script: ./build_for_ios_with_cargo.bash opendj-tablet
         name: Build Rust
