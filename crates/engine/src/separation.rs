@@ -265,15 +265,31 @@ pub fn separate_fast(
 /// Separates the file at `path` into high-quality stems with HTDemucs,
 /// leaving four FLAC files at the track's own rate where
 /// [`crate::stems::find`] looks. Uses the GPU (Metal on macOS, Vulkan on
-/// Linux). Without the model, or when it fails, the Demucs command does it
-/// if it is installed.
+/// Linux), or the CPU once the GPU has failed. Without the model, or when
+/// both fail, the Demucs command does it if it is installed.
 pub fn separate_hq(path: &Path) -> Result<StemSource, String> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    // A GPU failure can leave burn's locks poisoned for the rest of the
+    // run, so after one the CPU does the separating.
+    static GPU_FAILED: AtomicBool = AtomicBool::new(false);
     let weights = match model_or_fetch(HTDEMUCS, &MODELS) {
         Ok(w) => w,
         Err(e) => return crate::stems::run_demucs(path).map_err(|_| e),
     };
-    let result = std::panic::catch_unwind(|| htdemucs(path, &weights))
-        .unwrap_or_else(|_| Err("the GPU separation crashed".into()));
+    let mut result = Err(String::new());
+    if !GPU_FAILED.load(Ordering::Relaxed) {
+        if let Some(dir) = crate::cache::cache_dir() {
+            opendj_separation::set_gpu_cache_dir(dir.join("gpu"));
+        }
+        result = caught(|| htdemucs::<opendj_separation::Gpu>(path, &weights));
+        if let Err(e) = &result {
+            eprintln!("HTDemucs on the GPU: {e}; using the CPU");
+            GPU_FAILED.store(true, Ordering::Relaxed);
+        }
+    }
+    if result.is_err() {
+        result = caught(|| htdemucs::<opendj_separation::Cpu>(path, &weights));
+    }
     match result {
         Ok(s) => Ok(s),
         Err(e) => {
@@ -283,14 +299,29 @@ pub fn separate_hq(path: &Path) -> Result<StemSource, String> {
     }
 }
 
-fn htdemucs(path: &Path, weights: &Path) -> Result<StemSource, String> {
+/// Runs `f`, turning a panic into an error with its message.
+fn caught<T>(f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)).unwrap_or_else(|p| {
+        let msg = p
+            .downcast_ref::<&str>()
+            .map(|s| s.to_string())
+            .or_else(|| p.downcast_ref::<String>().cloned())
+            .unwrap_or_default();
+        Err(format!("the separation crashed: {msg}"))
+    })
+}
+
+fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
+    path: &Path,
+    weights: &Path,
+) -> Result<StemSource, String> {
     use opendj_separation::htdemucs::HtDemucs;
     let audio = crate::decode::decode(path)?;
     let rate = audio.sample_rate;
     let [l, r] = channels(&audio);
     let bytes = std::fs::read(weights).map_err(|e| format!("{}: {e}", weights.display()))?;
-    let device = Default::default();
-    let model = HtDemucs::<opendj_separation::Gpu>::load(&bytes, &device)?;
+    let device = B::Device::default();
+    let model = HtDemucs::<B>::load(&bytes, &device)?;
     let stems = model.separate([&l, &r])?;
     let model_rate = opendj_separation::SAMPLE_RATE;
     let dir = crate::cache::stems_dir(path).ok_or("no cache folder")?;
