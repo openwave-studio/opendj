@@ -7289,6 +7289,19 @@ component SidePanel inherits Rectangle {
 }
 
 export component Browser inherits HorizontalLayout {
+    // A window under 1440 wide: the lists panel folds into the rail and
+    // the side panel opens over the track list, so the list keeps its
+    // columns.
+    in property <bool> narrow;
+    // The DJ folded the lists panel (a second click on the open source).
+    in-out property <bool> lists-folded;
+    property <bool> lists-docked: !narrow && !lists-folded;
+    // The folded lists panel, slid out over the track list.
+    in-out property <bool> lists-out;
+    // The source whose lists the panel shows, to tell a second click.
+    property <int> lists-for: source;
+    // A click in the track list while the side panel is over it.
+    callback side-dismissed();
     in property <[Folder]> folders;
     in property <int> current-folder;
     in property <[TrackRow]> rows;
@@ -7378,6 +7391,15 @@ export component Browser inherits HorizontalLayout {
         source <=> source;
         shown <=> sources-shown;
         picked(s) => {
+            // A second click on the open source folds or unfolds the lists;
+            // folded, a click slides them out over the track list.
+            if s == lists-for && !narrow {
+                lists-folded = !lists-folded;
+                lists-out = false;
+            } else if !lists-docked {
+                lists-out = s == lists-for ? !lists-out : true;
+            }
+            lists-for = s;
             // History lives under the collection: other sources open on
             // their lists.
             if s != 0 && library-tab == 1 {
@@ -7413,24 +7435,43 @@ export component Browser inherits HorizontalLayout {
     }
     // The Jam source: its page over the tree and the list.
     property <bool> instruments-source: source == 12;
-    if !plugin-source && !instruments-source && !now-playing: FolderTree {
-        folders: folders;
-        current: current-folder;
-        focused: folders-focused;
-        source: source;
-        tab <=> library-tab;
-        spotify-connected: spotify-connected;
-        spotify-user: spotify-user;
-        spotify-status: spotify-status;
-        spotify-client-id <=> spotify-client-id;
-        select(i) => {
-            folders-focused = true;
-            select-folder(i);
+    // Folded, the panel takes no width and slides out over the track
+    // list (raised above it with z).
+    if !plugin-source && !instruments-source && !now-playing: Rectangle {
+        width: lists-docked ? 270px : 0px;
+        z: 2;
+        Rectangle {
+            x: 0;
+            width: 270px;
+            height: parent.height;
+            clip: true;
+            visible: lists-docked || lists-out;
+            // A dark edge where it lies over the track list.
+            if !lists-docked: Rectangle { x: parent.width - 1px; width: 1px; background: Theme.n-000000; z: 1; }
+            FolderTree {
+                x: lists-docked || lists-out ? 0px : -270px;
+                animate x { duration: 150ms; easing: ease-out; }
+                height: parent.height;
+                folders: folders;
+                current: current-folder;
+                focused: folders-focused;
+                source: source;
+                tab <=> library-tab;
+                spotify-connected: spotify-connected;
+                spotify-user: spotify-user;
+                spotify-status: spotify-status;
+                spotify-client-id <=> spotify-client-id;
+                select(i) => {
+                    folders-focused = true;
+                    select-folder(i);
+                    lists-out = false;
+                }
+                toggle(i) => { toggle-folder(i); }
+                spotify-connect(id) => { spotify-connect(id); }
+                spotify-disconnect => { spotify-disconnect(); }
+                spotify-refresh => { spotify-refresh(); }
+            }
         }
-        toggle(i) => { toggle-folder(i); }
-        spotify-connect(id) => { spotify-connect(id); }
-        spotify-disconnect => { spotify-disconnect(); }
-        spotify-refresh => { spotify-refresh(); }
     }
     // The Collection Health page, or the bar over one check's tracks.
     property <bool> cleanup-page: source == 0 && (CleanupUi.open || CleanupUi.genres-open || ListsUi.open);
@@ -7468,6 +7509,10 @@ export component Browser inherits HorizontalLayout {
             took-focus => {
                 folders-focused = false;
                 list-clicked();
+                lists-out = false;
+                if narrow {
+                    side-dismissed();
+                }
             }
         }
         if health-page: HealthPanel {
@@ -7524,25 +7569,34 @@ export component Browser inherits HorizontalLayout {
         }
     }
     // Shown and hidden from the footer's right-hand button.
-    if side-visible: SidePanel {
-        rows: side-rows;
-        total: side-total;
-        tab <=> side-tab;
-        activate(r) => { side-activate(r); }
-        remove(first, last) => { side-remove(first, last); }
-        automix-on: automix-on;
-        automix-status: automix-status;
-        automix-length: automix-length;
-        automix-style: automix-style;
-        automix-toggle => { automix-toggle(); }
-        automix-mix-now => { automix-mix-now(); }
-        automix-skip => { automix-skip(); }
-        automix-order(i) => { automix-order(i); }
-        automix-order-undo => { automix-order-undo(); }
-        automix-order-note <=> automix-order-note;
-        automix-set-length(i) => { automix-set-length(i); }
-        automix-set-style(i) => { automix-set-style(i); }
-        automix-repeat: automix-repeat;
-        automix-set-repeat(on) => { automix-set-repeat(on); }
+    // On a narrow window the panel takes no width and lies over the
+    // track list's right side instead (raised above it with z).
+    if side-visible: Rectangle {
+        width: narrow ? 0px : side.width;
+        z: 2;
+        if narrow: Rectangle { x: -side.width - 1px; width: 1px; background: Theme.n-000000; }
+        side := SidePanel {
+            x: narrow ? -self.width : 0px;
+            height: parent.height;
+            rows: side-rows;
+            total: side-total;
+            tab <=> side-tab;
+            activate(r) => { side-activate(r); }
+            remove(first, last) => { side-remove(first, last); }
+            automix-on: automix-on;
+            automix-status: automix-status;
+            automix-length: automix-length;
+            automix-style: automix-style;
+            automix-toggle => { automix-toggle(); }
+            automix-mix-now => { automix-mix-now(); }
+            automix-skip => { automix-skip(); }
+            automix-order(i) => { automix-order(i); }
+            automix-order-undo => { automix-order-undo(); }
+            automix-order-note <=> automix-order-note;
+            automix-set-length(i) => { automix-set-length(i); }
+            automix-set-style(i) => { automix-set-style(i); }
+            automix-repeat: automix-repeat;
+            automix-set-repeat(on) => { automix-set-repeat(on); }
+        }
     }
 }

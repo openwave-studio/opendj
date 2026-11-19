@@ -1536,6 +1536,19 @@ export component AppWindow inherits Window {
     // Footer toggles: the library over the decks, and the side panel.
     in-out property <bool> library-expanded: false;
     in-out property <bool> side-panel-visible: true;
+    // Under 1440 wide (not in Player) the side panel lies over the track
+    // list: it starts closed, and the window growing back brings back
+    // whatever it was before.
+    property <bool> browser-narrow: !player && LibraryEdit.window-width < 1440px;
+    property <bool> side-before: true;
+    changed browser-narrow => {
+        if browser-narrow {
+            side-before = side-panel-visible;
+            side-panel-visible = false;
+        } else {
+            side-panel-visible = side-before || side-panel-visible;
+        }
+    }
     in property <bool> automix-on;
     in property <string> automix-status;
     in property <int> automix-length;
@@ -2325,6 +2338,8 @@ export component AppWindow inherits Window {
             Rectangle { height: !library-expanded && fx-bar-shown && !player ? 1px : 0px; }
 
             browser := Browser {
+                narrow: browser-narrow;
+                side-dismissed => { side-panel-visible = false; }
                 vertical-stretch: 1;
                 folders: folders;
                 current-folder: current-folder;
