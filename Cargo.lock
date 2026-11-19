@@ -979,6 +979,7 @@ dependencies = [
  "burn-router",
  "burn-store",
  "burn-wgpu",
+ "cubecl",
 ]
 
 [[package]]
