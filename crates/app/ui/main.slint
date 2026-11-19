@@ -1988,6 +1988,11 @@ export component AppWindow inherits Window {
                 mini-player();
                 return accept;
             }
+            // ⇧⌘K (Ctrl+Shift+K): the karaoke screen, from any layout.
+            if (e.text == "k" || e.text == "K") && e.modifiers.control && e.modifiers.shift && !e.modifiers.alt && !Preferences.open {
+                LyricsUi.set-karaoke(!LyricsUi.karaoke);
+                return accept;
+            }
             // ⌘F (Ctrl+F on Linux and Windows) goes to the library search.
             // ⌘= (or ⌘+) and ⌘− zoom the large waveforms, ⌘0 resets them.
             if (e.text == "=" || e.text == "+" || e.text == "-" || e.text == "0") && e.modifiers.control && !e.modifiers.alt && !Preferences.open {
