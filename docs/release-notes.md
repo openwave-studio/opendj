@@ -1,8 +1,9 @@
-openDJ 0.8.1 fixes a crash on Windows: 0.8.0 closed with a stack overflow before its window opened. Everything from 0.8.0 is below.
+openDJ 0.8.1 fixes a crash on Windows, where 0.8.0 closed before its window opened, and High Quality stems, which failed in the installed app. Everything from 0.8.0 is below.
 
 ## Fixed in 0.8.1
 
 - **Windows**: openDJ starts again. Starting the audio engine needed more memory for the main thread than Windows gives a program by default, so 0.8.0 crashed at startup on every Windows PC. macOS and Linux were not affected.
+- **High Quality stems** work in the installed app. The graphics card kept its tuning files in the folder the app was started from, which the installed app can't write to, so preparing High Quality stems failed and kept failing until openDJ restarted. They now go in openDJ's cache folder, and if the graphics card still fails, the stems are made on the processor instead.
 
 ## New in 0.8.0
 
