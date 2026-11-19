@@ -1,9 +1,15 @@
-openDJ 0.8.1 fixes a crash on Windows, where 0.8.0 closed before its window opened, and High Quality stems, which failed in the installed app. Everything from 0.8.0 is below.
+openDJ 0.8.1 fixes a crash on Windows, where 0.8.0 closed before its window opened, and High Quality stems, which failed in the installed app, and gives the RGB waveforms new colors and more detail up close. Everything from 0.8.0 is below.
 
 ## Fixed in 0.8.1
 
 - **Windows**: openDJ starts again. Starting the audio engine needed more memory for the main thread than Windows gives a program by default, so 0.8.0 crashed at startup on every Windows PC. macOS and Linux were not affected.
 - **High Quality stems** work in the installed app. The graphics card kept its tuning files in the folder the app was started from, which the installed app can't write to, so preparing High Quality stems failed and kept failing until openDJ restarted. They now go in openDJ's cache folder, and if the graphics card still fails, the stems are made on the processor instead.
+
+## Waveforms in 0.8.1
+
+- **New RGB colors**: deep red bass, amber mids and ice-blue highs, with a bright core that shades toward the edges. Bass keeps its share of the color under soft pads and vocals. The track list's full-color mini waveforms use the same colors.
+- **True loudness up close**: zoomed in, quiet parts look quiet and hits stand out, instead of everything filling the height.
+- **The real wave when zoomed right in**: at the closest zoom levels a deck's waveform draws the track's own samples, so bass cycles swing above and below the center line and the gaps between hits open up.
 
 ## New in 0.8.0
 
