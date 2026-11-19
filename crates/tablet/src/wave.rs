@@ -69,11 +69,21 @@ fn blank(width: u32, height: u32) -> SharedPixelBuffer<Rgba8Pixel> {
 fn column(pixels: &mut [Rgba8Pixel], width: u32, height: u32, x: u32, reach: f32, c: [f32; 3]) {
     let half = height as f32 / 2.0;
     let edge = reach * half;
-    for y in 0..height {
+    if edge <= 0.0 {
+        return;
+    }
+    let solid = pixel(c);
+    // Only the rows the column reaches; inside it the colour is solid, and
+    // only its two edge pixels are blended.
+    let top = (half - edge - 1.0).floor().max(0.0) as u32;
+    let bottom = ((half + edge + 1.0).ceil() as u32).min(height);
+    for y in top..bottom {
         let d = (y as f32 + 0.5 - half).abs();
         let cover = (edge - d + 0.5).clamp(0.0, 1.0);
-        if cover > 0.0 {
-            let p = &mut pixels[(y * width + x) as usize];
+        let p = &mut pixels[(y * width + x) as usize];
+        if cover >= 1.0 {
+            *p = solid;
+        } else if cover > 0.0 {
             let base = [p.r as f32 / 255.0, p.g as f32 / 255.0, p.b as f32 / 255.0];
             *p = pixel(mix(base, c, cover));
         }
@@ -195,6 +205,17 @@ pub fn detail(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn column_fills_its_rows_only() {
+        let mut px = vec![pixel(WELL); 10 * 40];
+        column(&mut px, 10, 40, 3, 0.5, [1.0, 0.0, 0.0]);
+        let at = |y: usize| px[y * 10 + 3];
+        assert_eq!(at(20), pixel([1.0, 0.0, 0.0]));
+        assert_eq!(at(0), pixel(WELL));
+        assert_eq!(at(39), pixel(WELL));
+        assert_eq!(px[20 * 10 + 2], pixel(WELL));
+    }
+
     use super::*;
     use opendj_engine::Waveform;
     use std::sync::Arc;
