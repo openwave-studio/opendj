@@ -459,7 +459,10 @@ export component AppWindow inherits Window {
     in property <[Row]> rows;
     in property <int> selected: -1;
     in property <string> status;
+    /// The music folder's name.
     in property <string> folder;
+    /// Whether there is a folder picker (iPadOS).
+    in property <bool> can-pick-folder;
     in property <float> crossfader;
     // What's connected: controllers by name, and where the audio goes.
     in property <string> controllers;
@@ -473,6 +476,7 @@ export component AppWindow inherits Window {
     callback select(int);
     callback load(int);
     callback rescan();
+    callback pick-folder();
     callback crossfade(float);
 
     VerticalLayout {
@@ -498,6 +502,15 @@ export component AppWindow inherits Window {
                 }
                 Rectangle {
                     horizontal-stretch: 1;
+                }
+                if root.can-pick-folder: Button {
+                    text: "Folder";
+                    min-height: 32px;
+                    font-size: 13px;
+                    width: 84px;
+                    down => {
+                        root.pick-folder();
+                    }
                 }
                 Button {
                     text: "Rescan";
@@ -632,11 +645,13 @@ export component AppWindow inherits Window {
                     padding-bottom: 6px;
                     spacing: 10px;
                     Text {
-                        text: "Collection";
+                        text: root.folder != "" ? root.folder : "Collection";
                         color: Theme.text;
                         font-size: 17px;
                         font-weight: 600;
                         vertical-alignment: center;
+                        overflow: elide;
+                        max-width: 280px;
                     }
                     Text {
                         text: root.status != "" ? root.status : root.rows.length + " Songs";

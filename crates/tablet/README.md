@@ -43,8 +43,14 @@ developer in **Settings › General › VPN & Device Management** and turn on
 
 ## Music
 
-Copy tracks into **Files › On My iPad › openDJ**, then press **Rescan**.
-Subfolders are read too.
+Tap **Folder** and pick the folder your music is in: in iCloud Drive, On
+My iPad, or a USB drive. openDJ remembers it. Subfolders are read too.
+Tracks in iCloud Drive that aren't on the iPad yet show **iCloud** as their
+length and download in the background; they load once they're here. Pick
+a smaller folder if the iPad is short of space.
+
+Or copy tracks into **Files › On My iPad › openDJ** (from a Mac: Finder ›
+the iPad › Files › openDJ), then press **Rescan**.
 
 ## Controllers and audio
 
@@ -63,8 +69,6 @@ four-channel routing.
 
 ## Known gaps
 
-- Folders outside the app (iCloud Drive, USB drives) need a folder picker
-  with security-scoped bookmarks: next step.
 - No layout for iPhone yet; it runs there, cramped.
 - Android would reuse this crate; it needs Android MIDI, an APK build and
   the Storage Access Framework.

@@ -26,9 +26,12 @@ slint = { version = "~1.18", default-features = false, features = ["std", "compa
 # The audio session: play with the ringer off, and use all four of a
 # controller's output channels (master and headphones).
 objc2-avf-audio = { version = "0.3", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes"] }
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSError", "NSString"] }
-# Whether the app is in the background, where it mustn't draw.
-objc2-ui-kit = { version = "0.3", default-features = false, features = ["std", "UIApplication", "UIResponder"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSArray", "NSData", "NSEnumerator", "NSError", "NSFileManager", "NSSet", "NSString", "NSURL"] }
+# Whether the app is in the background, where it mustn't draw; the folder
+# picker, and access to the picked folder (in iCloud Drive, say).
+objc2 = "0.6"
+objc2-ui-kit = { version = "0.3", default-features = false, features = ["std", "UIApplication", "UIResponder", "UIDocumentPickerViewController", "UIViewController", "UIView", "UIWindow", "UIScene", "UIWindowScene", "objc2-uniform-type-identifiers"] }
+objc2-uniform-type-identifiers = { version = "0.3", default-features = false, features = ["std", "UTType", "UTCoreTypes"] }
 
 [build-dependencies]
 slint-build = "~1.18"

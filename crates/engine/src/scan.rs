@@ -68,7 +68,14 @@ pub fn is_cloud_only(path: &Path) -> bool {
         const SF_DATALESS: u32 = 0x4000_0000;
         std::fs::symlink_metadata(path).is_ok_and(|m| m.st_flags() & SF_DATALESS != 0)
     }
-    #[cfg(not(target_os = "macos"))]
+    // iPadOS marks them the same way.
+    #[cfg(target_os = "ios")]
+    {
+        use std::os::ios::fs::MetadataExt;
+        const SF_DATALESS: u32 = 0x4000_0000;
+        std::fs::symlink_metadata(path).is_ok_and(|m| m.st_flags() & SF_DATALESS != 0)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
     {
         let _ = path;
         false
