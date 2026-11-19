@@ -18,6 +18,7 @@ use crate::controls::{
     SCULPT_DEFAULTS,
 };
 use crate::dsp::{soft_clip, Isolator, Limiter, Sculpt};
+use crate::effects::remix::{self, RemixControls, RemixDeck, Source};
 use crate::effects::{
     fade, fade_step, input_target, ColorFx, EffectRack, StemFx, BLOCK, COLOR_FX, MAIN, TARGETS,
 };
@@ -1744,6 +1745,12 @@ pub struct Engine {
     loopers: Loopers,
     looper_buf: Vec<Vec<[f32; 2]>>,
     looper_seen: [bool; NUM_DECKS],
+    /// Each deck's `[RemixN]` controls, the one Remix deck's sound (only
+    /// one deck is the Remix deck at a time), and each deck's
+    /// `[RemixN],enabled` as last seen, to tell when one is picked.
+    remix_controls: Vec<RemixControls>,
+    remix: Box<RemixDeck>,
+    remix_seen: [bool; NUM_DECKS],
     last_main: Vec<[f32; 2]>,
     last_main_len: usize,
     looper_supply: Option<crate::looper::LooperSupply>,
@@ -2075,6 +2082,11 @@ impl Engine {
                 loopers,
                 looper_buf: vec![vec![[0.0; 2]; BLOCK]; NUM_DECKS],
                 looper_seen: [false; NUM_DECKS],
+                remix_controls: (0..NUM_DECKS)
+                    .map(|d| RemixControls::new(registry, d))
+                    .collect(),
+                remix: Box::new(RemixDeck::new(sample_rate)),
+                remix_seen: [false; NUM_DECKS],
                 last_main: vec![[0.0; 2]; BLOCK],
                 last_main_len: 0,
                 looper_supply: Some(looper_supply),
@@ -2471,6 +2483,54 @@ impl Engine {
             }
             self.live_seen[deck] = self.decks[deck].live_input();
             self.groove_seen[deck] = self.grooves[deck].enabled();
+        }
+    }
+
+    /// The deck that is the Remix deck, if any.
+    fn remix_deck(&self) -> Option<usize> {
+        self.remix_controls
+            .iter()
+            .position(|c| c.enabled.get_bool())
+    }
+
+    /// Keeps one Remix deck: picking Remix on a deck moves it there with
+    /// its settings, takes the deck from its track, input, Groove Box or
+    /// Looper, and picking one of those on the Remix deck turns it back
+    /// into that.
+    fn remix_decks(&mut self) {
+        for deck in 0..NUM_DECKS {
+            let on = self.remix_controls[deck].enabled.get_bool();
+            if on && !self.remix_seen[deck] {
+                for other in (0..NUM_DECKS).filter(|&k| k != deck) {
+                    if self.remix_controls[other].enabled.get_bool() {
+                        self.remix_controls[other].enabled.set_bool(false);
+                        self.remix_seen[other] = false;
+                        let (to, from) = (&self.remix_controls[deck], &self.remix_controls[other]);
+                        to.take_settings(from);
+                    }
+                }
+                self.grooves[deck].c.enabled.set_bool(false);
+                self.groove_seen[deck] = false;
+                self.loopers.loopers[deck].c.enabled.set_bool(false);
+                self.looper_seen[deck] = false;
+                let d = &mut self.decks[deck];
+                d.c.live_input.set(0.0);
+                self.live_seen[deck] = 0;
+                d.c.play.set_bool(false);
+                if let Some(track) = d.unload() {
+                    let _ = self.returned.push(Returned::Ejected { deck, track });
+                }
+            } else if on {
+                let d = &self.decks[deck];
+                let taken = d.track.is_some()
+                    || d.live_input() > 0
+                    || self.grooves[deck].enabled()
+                    || self.loopers.loopers[deck].enabled();
+                if taken {
+                    self.remix_controls[deck].enabled.set_bool(false);
+                }
+            }
+            self.remix_seen[deck] = self.remix_controls[deck].enabled.get_bool();
         }
     }
 
@@ -3105,6 +3165,7 @@ impl Engine {
         self.apply_commands();
         self.eject();
         self.live_inputs();
+        self.remix_decks();
         for d in &mut self.decks {
             d.change_rate_range();
         }
@@ -3177,6 +3238,16 @@ impl Engine {
                 None
             }
         }));
+        // The Remix deck follows its source deck's grid, else the main mix's.
+        if let Some(r) = self.remix_deck() {
+            let c = &self.remix_controls[r];
+            let follow = match remix::source(c.source.get()) {
+                Some(Source::Deck(k)) if k != r => k,
+                _ => main_deck,
+            };
+            let d = &self.decks[follow];
+            self.remix.prepare(c, d.beat_seconds(), grid(d));
+        }
         let main_transport = self.decks[main_deck].transport();
         self.fx.set_transport(std::array::from_fn(|t| {
             if t >= MAIN {
@@ -3779,15 +3850,31 @@ impl Engine {
                 }
             }
         }
+        // The Remix deck plays its source's channel after the source's EQ,
+        // so it comes after every other deck in the frame loop.
+        let remix_at = self.remix_deck();
+        let remix_src = remix_at.and_then(|r| {
+            remix::source(self.remix_controls[r].source.get()).filter(|&s| s != Source::Deck(r))
+        });
+        let mut order: [usize; NUM_DECKS] = std::array::from_fn(|i| i);
+        if let Some(r) = remix_at {
+            order[r..].rotate_left(1);
+        }
         for (i, wave) in self.live_waves.iter_mut().enumerate() {
-            if live_on[i] == 0 && !mixer_on[i] && !groove_on[i] && !looper_on[i] {
+            if live_on[i] == 0
+                && !mixer_on[i]
+                && !groove_on[i]
+                && !looper_on[i]
+                && remix_at != Some(i)
+            {
                 wave.idle();
             }
         }
         for f in 0..frames {
             let r = (f + 1) as f32 / frames as f32;
             let lerp = |(a, b): (f32, f32)| a + (b - a) * r;
-            for (i, d) in self.decks.iter_mut().enumerate() {
+            for &i in &order {
+                let d = &mut self.decks[i];
                 let p = &plans[i];
                 let mut s = [0.0f32; 2];
                 let mut send = [0.0f32; 2];
@@ -3887,6 +3974,18 @@ impl Engine {
                 if looper_on[i] {
                     s = looper_buf[i][f];
                 }
+                if remix_at == Some(i) {
+                    let x = match remix_src {
+                        Some(Source::Deck(k)) => deck_buf[k][f],
+                        Some(Source::Input(k)) => self.inputs[k].raw[f],
+                        None => [0.0; 2],
+                    };
+                    s = self.remix.play(x);
+                    // Insert: the source is heard only through the Remix deck.
+                    if let (true, Some(Source::Deck(k))) = (self.remix.insert(), remix_src) {
+                        deck_buf[k][f] = [0.0; 2];
+                    }
+                }
                 // The Mixer's strips with FX off, kept apart (see below).
                 let mut dry = None;
                 if live_on[i] > 0 || mixer_on[i] {
@@ -3919,7 +4018,12 @@ impl Engine {
                 let dry = dry.map(|x| [x[0] * pre, x[1] * pre]);
                 // A live deck's sound for its waveform, after the trim and
                 // before the EQ, as a track's waveform shows the track.
-                if live_on[i] > 0 || mixer_on[i] || groove_on[i] || looper_on[i] {
+                if live_on[i] > 0
+                    || mixer_on[i]
+                    || groove_on[i]
+                    || looper_on[i]
+                    || remix_at == Some(i)
+                {
                     let heard = dry.map_or(s, |x| [s[0] + x[0], s[1] + x[1]]);
                     self.live_waves[i].push(heard);
                 }
@@ -8559,6 +8663,62 @@ mod tests {
         load(&mut input, 1, short_track(120.0, 4.0));
         run(&mut engine, 0.05);
         assert!(!g("enabled").get_bool());
+    }
+
+    #[test]
+    fn a_remix_deck_sends_or_inserts_its_source() {
+        let (reg, mut engine, mut input) = setup();
+        let ch = |n: usize, k: &str| reg.get(&format!("[Channel{n}]"), k).unwrap();
+        let rx = |k: &str| reg.get("[Remix2]", k).unwrap();
+        load(&mut input, 0, short_track(120.0, 20.0));
+        run(&mut engine, 0.05);
+        rx("enabled").set_bool(true);
+        ch(1, "play").set_bool(true);
+        assert!(run(&mut engine, 0.5) > 0.05, "deck 1 plays");
+        // Send, idle: deck 1 plays on its channel and deck 2 adds nothing.
+        ch(1, "volume").set(0.0);
+        run(&mut engine, 0.1);
+        assert!(run(&mut engine, 0.5) < 1e-4, "nothing from the Remix deck");
+        // Insert: deck 1 is heard through channel 2, its own fader down.
+        rx("mode").set(1.0);
+        run(&mut engine, 0.1);
+        assert!(
+            run(&mut engine, 0.5) > 0.05,
+            "deck 1 through the Remix deck"
+        );
+        // ... and only there: channel 2's fader down silences it.
+        ch(1, "volume").set(1.0);
+        ch(2, "volume").set(0.0);
+        run(&mut engine, 0.1);
+        assert!(
+            run(&mut engine, 0.5) < 1e-4,
+            "deck 1's own channel is quiet"
+        );
+    }
+
+    #[test]
+    fn one_remix_deck_moves_with_its_settings() {
+        let (reg, mut engine, mut input) = setup();
+        let rx = |n: usize, k: &str| reg.get(&format!("[Remix{n}]"), k).unwrap();
+        rx(2, "enabled").set_bool(true);
+        rx(2, "mode").set(1.0);
+        rx(2, "isolate_low").set(-0.5);
+        run(&mut engine, 0.01);
+        load(&mut input, 3, short_track(120.0, 4.0));
+        run(&mut engine, 0.01);
+        assert!(reg.get("[Channel4]", "track_loaded").unwrap().get_bool());
+        rx(4, "enabled").set_bool(true);
+        run(&mut engine, 0.01);
+        assert!(!rx(2, "enabled").get_bool(), "deck 2 is a track deck again");
+        assert!(rx(4, "enabled").get_bool());
+        assert_eq!(rx(4, "mode").get(), 1.0);
+        assert_eq!(rx(4, "isolate_low").get(), -0.5);
+        assert_eq!(rx(4, "source").get(), 1.0, "it still listens to deck 1");
+        assert!(!reg.get("[Channel4]", "track_loaded").unwrap().get_bool());
+        // A Groove Box picked on it takes the deck back.
+        reg.get("[Groove4]", "enabled").unwrap().set_bool(true);
+        run(&mut engine, 0.01);
+        assert!(!rx(4, "enabled").get_bool());
     }
 
     #[test]

@@ -12,9 +12,9 @@ in ─► BandSplit (LR4 246 Hz / 2.48 kHz + all-pass)
                          sample pads ─► sample effect ──────────────────────────────────────────┘
 ```
 
-- Bands with nothing on skip their effects. In Send mode, with every band idle and SCENE at centre, the dry copy is not added (the deck plays only effects and pads), so the mix sounds exactly as before. In Insert mode the idle deck passes the source through bit-identical (tested).
-- Source: `[RemixN],source` 1-4 a deck (not itself), 5 mic, 6-8 aux; `[RemixN],mode` 0 Send, 1 Insert. Tempo from the source deck's grid, else the sync leader.
-- `BandSplit` is the channel `Isolator` without the gains: low = LP(246), mid = LP(2484)·HP(246), high = HP(2484), low through the upper crossover's all-pass so the sum is flat. It is shared with per-slot band FX.
+- Bands with nothing on skip their effects. In Send mode the deck plays only what each lane adds (lane output minus its band) and pads, so idle it adds exactly nothing. Turning a band down (ISOLATE left, Solo) does nothing in Send: the source's channel still plays the band, and the band played upside down would not cancel it because the crossovers shift its phase. In Insert mode the idle deck passes the source through bit-identical (tested), and fades over 5 ms to the bands' sum when anything comes on.
+- Source: `[RemixN],source` 1-4 a deck (not itself), 5 mic, 6-13 aux 1-8; `[RemixN],mode` 0 Send, 1 Insert. Tempo from the source deck's grid, else the sync leader.
+- The split is the channel `Isolator`'s `split()`: low = LP(246), mid = LP(2484)·HP(246), high = HP(2484), low through the upper crossover's all-pass so the sum is flat. In the mixer the Remix deck runs after every other deck in the frame loop, so its source's frame (after EQ, filter and sculpt) is ready; in Insert it then zeroes the source's frame.
 
 ## Band FX on slots
 

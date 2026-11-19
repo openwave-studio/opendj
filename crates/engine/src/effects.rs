@@ -3791,6 +3791,7 @@ impl ReleaseStage {
 }
 
 mod extra;
+pub(crate) mod remix;
 
 #[cfg(test)]
 mod bench;
