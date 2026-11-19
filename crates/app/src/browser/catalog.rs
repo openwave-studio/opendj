@@ -113,6 +113,13 @@ pub(super) fn rows_of(hits: Hits) -> Vec<(Pick, CatalogRow, String)> {
             let secs = t.duration.round() as u64;
             detail.push_str(&format!(" · {}:{:02}", secs / 60, secs % 60));
         }
+        if t.bpm > 0.0 {
+            detail.push_str(&format!(" · {:.0} BPM", t.bpm));
+        }
+        if !t.key.is_empty() {
+            detail.push_str(" · ");
+            detail.push_str(&t.key);
+        }
         let row = CatalogRow {
             kind: 0,
             title: t.title.as_str().into(),

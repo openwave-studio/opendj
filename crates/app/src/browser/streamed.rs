@@ -51,6 +51,7 @@ fn stream_track(s: &StreamedTrack) -> StreamTrack {
         },
         album: s.service_name().to_string(),
         duration: s.duration,
+        ..Default::default()
     }
 }
 

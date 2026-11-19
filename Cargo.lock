@@ -6868,6 +6868,7 @@ version = "0.8.0"
 dependencies = [
  "objc2-avf-audio",
  "objc2-foundation 0.3.2",
+ "objc2-ui-kit 0.3.2",
  "opendj-control",
  "opendj-controllers",
  "opendj-engine",

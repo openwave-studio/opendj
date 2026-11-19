@@ -25,6 +25,9 @@ Controller Editor: an HID mapping is all script. The S4 MK3's screens stay
 dark. On Linux they need openDJ's udev rule first; see the
 [Traktor Kontrol S2 MK3](../controllers/traktor-kontrol-s2-mk3.md) page. The
 Traktor Kontrol X1 (first model) is a MIDI controller and has a MIDI mapping.
+The Pioneer DDJ-FLX10 is both: a MIDI controller whose jog screens take
+waveforms over HID, from a second mapping listed as "Pioneer DDJ-FLX10 jog
+screens".
 
 The **Pioneer DDJ-FLX4** has a page of its own: [Pioneer DDJ-FLX4](controllers/ddj-flx4.md).
 
