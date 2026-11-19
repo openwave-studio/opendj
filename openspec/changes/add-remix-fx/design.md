@@ -2,7 +2,7 @@
 
 ## Signal path
 
-The Remix FX unit is an insert at the Beat FX's point in the routed channel (post-fader on a deck, before the main limiter on MST). Inside:
+The Remix deck is a deck kind like the Groove Box. Its input is a copy of its source taken after the source's EQ and before its fader (Send), or the source itself with the source's own channel muted (Insert). Its output goes through its own channel (EQ, fader, crossfader, deck FX). Inside:
 
 ```
 in ─► BandSplit (LR4 246 Hz / 2.48 kHz + all-pass)
@@ -12,7 +12,8 @@ in ─► BandSplit (LR4 246 Hz / 2.48 kHz + all-pass)
                          sample pads ─► sample effect ──────────────────────────────────────────┘
 ```
 
-- Bands with nothing on skip their effects; with every band idle and SCENE at centre the unit passes the input straight through (bit-identical, tested).
+- Bands with nothing on skip their effects. In Send mode, with every band idle and SCENE at centre, the dry copy is not added (the deck plays only effects and pads), so the mix sounds exactly as before. In Insert mode the idle deck passes the source through bit-identical (tested).
+- Source: `[RemixN],source` 1-4 a deck (not itself), 5 mic, 6-8 aux; `[RemixN],mode` 0 Send, 1 Insert. Tempo from the source deck's grid, else the sync leader.
 - `BandSplit` is the channel `Isolator` without the gains: low = LP(246), mid = LP(2484)·HP(246), high = HP(2484), low through the upper crossover's all-pass so the sum is flat. It is shared with per-slot band FX.
 
 ## Band FX on slots
@@ -35,14 +36,14 @@ Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle satu
 
 ## Release
 
-`release` (button): every effect on the routed channels stops taking input on the next sample. Mode `release_mode`: 0 Echo (tails keep ringing; wet-only for up to 8 s), 1 Brake (deck slows to stop over `release_time` beats via the Brake effect on the main path), 2 Spin (Backspin effect for one beat, then the music resumes), 3 Cut (music muted while held, effects stay, all off on release). `[Master],fx_release` does the same on every channel.
+`release` (button): every effect on the Remix deck and its source stops taking input on the next sample. Mode `release_mode`: 0 Echo (tails keep ringing; wet-only for up to 8 s), 1 Brake (deck slows to stop over `release_time` beats via the Brake effect on the main path), 2 Spin (Backspin effect for one beat, then the music resumes), 3 Cut (music muted while held, effects stay, all off on release). `[Master],fx_release` does the same on every channel.
 
 ## Sample pads
 
-`pad1..4` (press/release), `pad_bank` (sample pack bank or a Groove Box kit), `roll_rate` (0 off, 1-8 the rates), `roll_rate2` (second held rate for groove rolls: hits on both grids, accents where they meet), `pad1..4_pitch` (±12 semitones), `overdub` (toggle; a 1-bar loop recorded on the grid, layered, `overdub_undo` removes the last pass, `overdub_clear`), `sample_fx` (choice) and `sample_fx_amount`. Hits use the sampler's voices on a pad bus that feeds the unit's output, not the band split.
+`pad1..4` (press/release), `pad_bank` (sample pack bank or a Groove Box kit), `roll_rate` (0 off, 1-8 the rates), `roll_rate2` (second held rate for groove rolls: hits on both grids, accents where they meet), `pad1..4_pitch` (±12 semitones), `overdub` (toggle; a 1-bar loop recorded on the grid, layered, `overdub_undo` removes the last pass, `overdub_clear`), `sample_fx` (choice) and `sample_fx_amount`. Hits use the sampler's voices on a pad bus mixed into the Remix deck's output after the band split, so they follow its fader.
 
 ## Controllers and remote
 
-- Twister mapping: own JS mapping, bank 1 = Remix, bank 2 = 4-deck as today. Encoders absolute CC on channel 1; pushes on channel 2; ring colour (channel 2 values) and ring value fed back from the controls at 30 Hz. Centre detent for ISOLATE and SCENE is a Twister utility setting; the guide says how.
-- Remote: a Remix tab in `crates/remote/page.html`; controls go over the existing WebSocket as `[RemixFX],key` sets; multi-touch with pointer events (one pointer per lever, pads and roll pad at once); actions are quantized in the engine, so Wi-Fi latency only moves a hit to the next grid point. Layout switches between tablet (≥ 900 px wide) and phone (stacked: levers + release, then pads).
-- OSC: `/remixfx/<key>` come for free from the control names.
+- Twister mapping: own JS mapping, bank 1 = the first deck with Remix loaded, bank 2 = 4-deck as today. Encoders absolute CC on channel 1; pushes on channel 2; ring colour (channel 2 values) and ring value fed back from the controls at 30 Hz. Centre detent for ISOLATE and SCENE is a Twister utility setting; the guide says how.
+- Remote: a Remix tab in `crates/remote/page.html`; controls go over the existing WebSocket as `[RemixN],key` sets for the Remix deck; multi-touch with pointer events (one pointer per lever, pads and roll pad at once); actions are quantized in the engine, so Wi-Fi latency only moves a hit to the next grid point. Layout switches between tablet (≥ 900 px wide) and phone (stacked: levers + release, then pads).
+- OSC: `/remixN/<key>` come for free from the control names.

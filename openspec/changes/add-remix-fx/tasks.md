@@ -7,12 +7,12 @@
 
 ## 2. Release
 
-- [ ] 2.1 engine: `[RemixFX],release`, `release_mode` (Echo, Brake, Spin, Cut), `release_time`, `[Master],fx_release`; Backspin effect; tests (tails keep ringing, no clicks)
-- [ ] 2.2 app: RELEASE in the FX bar; Shift + Beat FX ON releases on Pioneer mappings where the button is free
+- [ ] 2.1 engine: `[RemixN],release`, `release_mode` (Echo, Brake, Spin, Cut), `release_time`, `[Master],fx_release`; Backspin effect; tests (tails keep ringing, no clicks)
+- [ ] 2.2 app: RELEASE on the Remix deck and in the FX bar; Shift + Beat FX ON releases on Pioneer mappings where the button is free
 
-## 3. Remix FX unit
+## 3. Remix deck
 
-- [ ] 3.1 engine `remix.rs`: `[RemixFX]` with `route`, isolate and lever lanes, `isolate_effect`, `lever_effect`, `level`; idle passthrough is bit-identical; tests
+- [ ] 3.1 engine `remix.rs`: Remix deck kind, `[RemixN]` with `source` and `mode` (Send, Insert), isolate and lever lanes, `isolate_effect`, `lever_effect`; idle Send adds nothing, idle Insert is bit-identical; tests
 - [ ] 3.2 new effects: Ducker, Repeat, Solo, Rhythm, Tape Echo (in any slot too); bench numbers
 - [ ] 3.3 scenes: `scene`, `scene_up`, `scene_down`, `scene_time`, `scene_color`; Rise Echo, Crush Echo, Spiral Down; five scenes each side; tests
 - [ ] 3.4 Stretch lever effect
@@ -24,11 +24,11 @@
 
 ## 5. On screen
 
-- [ ] 5.1 FX bar DECK FX · REMIX tabs; REMIX layout as in the mockups (2-Deck and 4-Deck); screenshots
+- [ ] 5.1 Remix in the deck ☰ menu; Remix deck layout (source, Send/Insert, lanes, SCENE wheel, pads, RELEASE) in 2-Deck and slim header in 4-Deck; live waveform; screenshots
 
 ## 6. Controllers and remote
 
-- [ ] 6.1 MIDI Fighter Twister Remix mapping (bank 1 Remix, bank 2 decks; ring colours and values; SHIFT layer); mapping tests; supported-controls.txt
+- [ ] 6.1 MIDI Fighter Twister Remix mapping (bank 1 the first Remix deck, bank 2 decks; ring colours and values; SHIFT layer); mapping tests; supported-controls.txt
 - [ ] 6.2 Remote page Remix tab: multi-touch levers with latch, isolate sliders with centre snap, SCENE strip, roll pad and pads, RELEASE; tablet and phone layouts; OSC addresses listed in the guide
 
 ## 7. Docs
