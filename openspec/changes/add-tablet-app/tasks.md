@@ -13,11 +13,11 @@
 
 ## 2. On the iPad
 
-- [ ] 2.1 Build with Xcode on a Mac and install on an iPad
+- [x] 2.1 Build with Xcode on a Mac and install on an iPad
 - [ ] 2.2 Play a set with the DDJ-FLX4: sound, headphone cue, browse and load, jogs and pitch
 
 ## 3. Next steps
 
-- [ ] 3.1 Pick a folder anywhere (iCloud Drive, USB drives) with security-scoped bookmarks; download iCloud files before loading
+- [x] 3.1 Pick a folder anywhere (iCloud Drive, USB drives) with security-scoped bookmarks; download iCloud files before loading
 - [ ] 3.2 iPhone layout
 - [ ] 3.3 Android tablet build: entry point, APK, Android MIDI, Storage Access Framework

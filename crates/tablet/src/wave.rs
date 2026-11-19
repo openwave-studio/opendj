@@ -17,10 +17,15 @@ const WELL: [f32; 3] = [
     0x0d as f32 / 255.0,
     0x0e as f32 / 255.0,
 ];
-/// Bass, mids and highs, as the desktop's default RGB palette.
-const LOW: [f32; 3] = [1.0, 0.12, 0.10];
-const MID: [f32; 3] = [0.20, 0.88, 0.26];
-const HIGH: [f32; 3] = [0.22, 0.40, 1.0];
+/// Bass, mids and highs, as the desktop's default RGB palette: dark to
+/// light, deep red #C8372D, amber #F0A830, ice blue #B4E4FF, so brightness
+/// follows the sound (darker = heavier).
+const LOW: [f32; 3] = [0.784, 0.216, 0.176];
+const MID: [f32; 3] = [0.941, 0.659, 0.188];
+const HIGH: [f32; 3] = [0.706, 0.894, 1.0];
+/// The analyser lifts the mids and highs; the colours leave that out, so
+/// a quiet pad over a bassline still leans to the bass (`BAND_LIFT`).
+const LIFT: [f32; 3] = [1.0, 1.4, 2.0];
 
 /// A stored level (a square root, 0..255) as a linear level.
 fn level(b: u8) -> f32 {
@@ -33,15 +38,43 @@ fn height(v: f32) -> f32 {
     (v.powf(0.8) * 0.94).clamp(0.0, 1.0)
 }
 
-/// The colour of a column from the balance of its bands, like Mixxx's RGB
-/// waveform; brightness normalised so mixed colours stay vivid.
+fn vmax(c: [f32; 3]) -> f32 {
+    c[0].max(c[1]).max(c[2])
+}
+
+/// The colour of a column from the balance of its bands' levels, as the
+/// desktop shader's `band_color`: mixed colours stay as vivid as pure ones,
+/// at the brightness of the palette colours they come from, so the deep
+/// red lows stay darker than the ice-blue highs.
 fn band_colour(low: f32, mid: f32, high: f32) -> [f32; 3] {
-    let w = [low * low + 1e-5, mid * mid + 1e-5, high * high + 1e-5];
+    let w = [
+        low * low / LIFT[0] + 1e-5,
+        mid * mid / LIFT[1] + 1e-5,
+        high * high / LIFT[2] + 1e-5,
+    ];
     let sum = w[0] + w[1] + w[2];
     let c: [f32; 3] =
         std::array::from_fn(|k| (w[0] * LOW[k] + w[1] * MID[k] + w[2] * HIGH[k]) / sum);
-    let top = c[0].max(c[1]).max(c[2]).max(0.35);
-    c.map(|v| v / top)
+    let v = (w[0] * vmax(LOW) + w[1] * vmax(MID) + w[2] * vmax(HIGH)) / sum;
+    let top = vmax(c).max(0.35);
+    c.map(|x| x / top * v)
+}
+
+/// How tall a slice draws, 0..1, as the desktop shader's `shape`: zoomed
+/// out, the squashed height that keeps quiet parts readable; zoomed in
+/// (`close` 1), the slice's true loudness, so the gaps between hits and
+/// bass cycles stay open instead of filling into a solid block.
+fn shape(body: f32, peak: f32, close: f32) -> f32 {
+    let squashed = height(body);
+    let loud = ((peak * peak).powf(0.85) * 0.94).clamp(0.0, 1.0);
+    squashed + (loud - squashed) * close
+}
+
+/// 0 zoomed out, rising to 1 once a pixel covers about one finest slice
+/// (a millisecond) or less: the shader's `close_zoom`.
+fn close_zoom(bins_per_pixel: f64) -> f32 {
+    let t = ((bins_per_pixel - 1.0) / 3.0).clamp(0.0, 1.0);
+    (1.0 - t * t * (3.0 - 2.0 * t)) as f32
 }
 
 fn pixel(c: [f32; 3]) -> Rgba8Pixel {
@@ -65,17 +98,33 @@ fn blank(width: u32, height: u32) -> SharedPixelBuffer<Rgba8Pixel> {
 }
 
 /// A column centred on the middle row, reaching `reach` (0..1) of the half
-/// height, with a soft edge.
+/// height, with a soft edge: a bright core fading darker towards the edges,
+/// for depth, as the desktop's RGB look.
 fn column(pixels: &mut [Rgba8Pixel], width: u32, height: u32, x: u32, reach: f32, c: [f32; 3]) {
     let half = height as f32 / 2.0;
     let edge = reach * half;
-    for y in 0..height {
+    if edge <= 0.0 {
+        return;
+    }
+    // Only the rows the column reaches; only its two edge pixels are
+    // blended with what's under them.
+    let top = (half - edge - 1.0).floor().max(0.0) as u32;
+    let bottom = ((half + edge + 1.0).ceil() as u32).min(height);
+    for y in top..bottom {
         let d = (y as f32 + 0.5 - half).abs();
         let cover = (edge - d + 0.5).clamp(0.0, 1.0);
-        if cover > 0.0 {
-            let p = &mut pixels[(y * width + x) as usize];
+        if cover <= 0.0 {
+            continue;
+        }
+        let t = (1.0 - d / edge.max(1.0)).clamp(0.0, 1.0);
+        let shade = 0.6 + 0.4 * t.sqrt();
+        let shaded = c.map(|v| v * shade);
+        let p = &mut pixels[(y * width + x) as usize];
+        if cover >= 1.0 {
+            *p = pixel(shaded);
+        } else {
             let base = [p.r as f32 / 255.0, p.g as f32 / 255.0, p.b as f32 / 255.0];
-            *p = pixel(mix(base, c, cover));
+            *p = pixel(mix(base, shaded, cover));
         }
     }
 }
@@ -129,6 +178,7 @@ pub fn detail(
     // The coarsest level that still has a slice per pixel, so a column
     // never has to look at many slices.
     let finest_per_pixel = per_pixel * waveform.bins_per_second;
+    let close = close_zoom(finest_per_pixel);
     let level_index = (finest_per_pixel.max(1.0).log2().floor() as usize)
         .min(waveform.levels.len().saturating_sub(1));
     if let Some(bins) = waveform.levels.get(level_index).filter(|b| !b.is_empty()) {
@@ -148,7 +198,7 @@ pub fn detail(
             let top = |k: usize| level(part.iter().map(|b| b[k]).max().unwrap_or(0));
             let body = (top(7) * 2.0).min(top(3));
             let c = band_colour(top(4), top(5), top(6));
-            column(pixels, width, height, x, self::height(body), c);
+            column(pixels, width, height, x, shape(body, top(3), close), c);
         }
     }
     // Bars and beats.
@@ -195,6 +245,18 @@ pub fn detail(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn column_fills_its_rows_only() {
+        let mut px = vec![pixel(WELL); 10 * 40];
+        column(&mut px, 10, 40, 3, 0.5, [1.0, 0.0, 0.0]);
+        let at = |y: usize| px[y * 10 + 3];
+        assert!(at(20).r > 200 && at(20).g == 0);
+        assert!(at(12).r < at(20).r, "darker towards the edge");
+        assert_eq!(at(0), pixel(WELL));
+        assert_eq!(at(39), pixel(WELL));
+        assert_eq!(px[20 * 10 + 2], pixel(WELL));
+    }
+
     use super::*;
     use opendj_engine::Waveform;
     use std::sync::Arc;
@@ -232,9 +294,20 @@ mod tests {
     }
 
     #[test]
-    fn bass_heavy_is_red() {
-        let c = band_colour(1.0, 0.1, 0.1);
-        assert!(c[0] > 0.9 && c[1] < 0.3 && c[2] < 0.3);
+    fn bass_heavy_is_deep_red_and_darker_than_highs() {
+        let low = band_colour(1.0, 0.05, 0.05);
+        assert!((low[0] - LOW[0]).abs() < 0.03 && low[1] < 0.3 && low[2] < 0.3);
+        let high = band_colour(0.05, 0.05, 1.0);
+        assert!(vmax(high) > vmax(low));
+    }
+
+    #[test]
+    fn opens_up_when_zoomed_in() {
+        // A quiet slice: squashed high zoomed out, its true level up close.
+        assert!(shape(0.1, 0.1, 0.0) > 0.1);
+        assert!(shape(0.1, 0.1, 1.0) < 0.03);
+        assert_eq!(close_zoom(8.0), 0.0);
+        assert_eq!(close_zoom(1.0), 1.0);
     }
 
     #[test]

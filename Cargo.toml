@@ -80,6 +80,10 @@ opt-level = 2
 [profile.fast.package.opendj-separation]
 opt-level = 2
 
+# The tablet app draws its waveforms on the CPU every frame.
+[profile.fast.package.opendj-tablet]
+opt-level = 2
+
 # femtovg (Slint's renderer) with a fix for its pipeline cache, which threw
 # away pipelines each flush and rebuilt them every frame. See
 # third_party/femtovg/OPENDJ.md.

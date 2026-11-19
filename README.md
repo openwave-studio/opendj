@@ -1,6 +1,6 @@
 # openDJ
 
-**[Download the latest release](https://github.com/openwave-studio/opendj/releases/latest)** · [All releases](https://github.com/openwave-studio/opendj/releases)
+**[Download the latest release](https://github.com/openwave-studio/opendj/releases/latest)** · [Nightly build](https://github.com/openwave-studio/opendj/releases/tag/nightly) · [All releases](https://github.com/openwave-studio/opendj/releases)
 
 openDJ is a free, open-source DJ app for macOS, Linux and Windows (preview).
 It's built to be fast, pleasant to use, and to have a great automix, for DJs

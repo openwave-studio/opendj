@@ -61,6 +61,7 @@ pub mod seq;
 pub mod set_chapters;
 pub mod set_checks;
 pub mod set_fixes;
+pub mod set_render;
 pub mod set_timeline;
 pub mod stems;
 pub mod synth;

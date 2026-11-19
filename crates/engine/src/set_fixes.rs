@@ -60,6 +60,34 @@ pub enum Fix {
     Cut { start: f64, end: f64 },
     /// Bring the whole mix to `lufs`, true peaks under `ceiling` dBTP.
     Loudness { lufs: f64, ceiling: f64 },
+    /// A transition mixed again (see [`crate::set_render`]): `file` holds
+    /// `start..end` of the set rendered with the change, spliced in with a
+    /// short crossfade at each end.
+    Mix {
+        start: f64,
+        end: f64,
+        file: PathBuf,
+        /// Index into the timeline's transitions.
+        transition: usize,
+        bars: f64,
+        /// The style's name, e.g. "Bass swap".
+        style: String,
+    },
+    /// A track swapped for another (see [`crate::set_render::Swap`]):
+    /// `file` holds `start..end` of the set rendered with it.
+    Swap {
+        start: f64,
+        end: f64,
+        file: PathBuf,
+        /// Which track of the set, from 0.
+        slot: usize,
+        /// The replacement.
+        path: PathBuf,
+        artist: String,
+        title: String,
+        bpm: f64,
+        key: String,
+    },
 }
 
 impl Fix {
@@ -84,6 +112,30 @@ impl Fix {
             Fix::Loudness { lufs, ceiling } => {
                 json!({ "fix": "loudness", "lufs": lufs, "ceiling": ceiling })
             }
+            Fix::Mix {
+                start,
+                end,
+                file,
+                transition,
+                bars,
+                style,
+            } => json!({ "fix": "mix", "start": start, "end": end,
+                         "file": file.display().to_string(), "transition": transition,
+                         "bars": bars, "style": style }),
+            Fix::Swap {
+                start,
+                end,
+                file,
+                slot,
+                path,
+                artist,
+                title,
+                bpm,
+                key,
+            } => json!({ "fix": "swap", "start": start, "end": end,
+                         "file": file.display().to_string(), "slot": slot,
+                         "path": path.display().to_string(), "artist": artist,
+                         "title": title, "bpm": bpm, "key": key }),
         }
     }
 
@@ -110,6 +162,25 @@ impl Fix {
             "loudness" => Fix::Loudness {
                 lufs: f("lufs")?,
                 ceiling: f("ceiling").unwrap_or(-1.0),
+            },
+            "mix" => Fix::Mix {
+                start: f("start")?,
+                end: f("end")?,
+                file: PathBuf::from(v["file"].as_str()?),
+                transition: v["transition"].as_u64()? as usize,
+                bars: f("bars").unwrap_or(0.0),
+                style: v["style"].as_str().unwrap_or_default().to_string(),
+            },
+            "swap" => Fix::Swap {
+                start: f("start")?,
+                end: f("end")?,
+                file: PathBuf::from(v["file"].as_str()?),
+                slot: v["slot"].as_u64()? as usize,
+                path: PathBuf::from(v["path"].as_str()?),
+                artist: v["artist"].as_str().unwrap_or_default().to_string(),
+                title: v["title"].as_str().unwrap_or_default().to_string(),
+                bpm: f("bpm").unwrap_or(0.0),
+                key: v["key"].as_str().unwrap_or_default().to_string(),
             },
             _ => return None,
         })
@@ -168,6 +239,128 @@ impl Edits {
             } => Some((start, end, fade_in, fade_out)),
             _ => None,
         })
+    }
+
+    /// The last mix of each transition mixed again: (start, end, file,
+    /// transition), in order of start.
+    pub fn mixes(&self) -> Vec<(f64, f64, &Path, usize)> {
+        let mut out: Vec<(f64, f64, &Path, usize)> = Vec::new();
+        for f in &self.fixes {
+            if let Fix::Mix {
+                start,
+                end,
+                file,
+                transition,
+                ..
+            } = f
+            {
+                out.retain(|m| m.3 != *transition);
+                out.push((*start, *end, file.as_path(), *transition));
+            }
+        }
+        out.sort_by(|a, b| a.0.total_cmp(&b.0));
+        out
+    }
+
+    /// The last swap of each track swapped: (start, end, file, slot), in
+    /// order of start.
+    pub fn swaps(&self) -> Vec<(f64, f64, &Path, usize)> {
+        let mut out: Vec<(f64, f64, &Path, usize)> = Vec::new();
+        for f in &self.fixes {
+            if let Fix::Swap {
+                start,
+                end,
+                file,
+                slot,
+                ..
+            } = f
+            {
+                out.retain(|m| m.3 != *slot);
+                out.push((*start, *end, file.as_path(), *slot));
+            }
+        }
+        out.sort_by(|a, b| a.0.total_cmp(&b.0));
+        out
+    }
+
+    /// The rendered stretches to splice in, in the order to lay them: the
+    /// swaps, then the transitions mixed again over them.
+    pub fn splices(&self) -> Vec<(f64, &Path)> {
+        self.swaps()
+            .into_iter()
+            .chain(self.mixes())
+            .map(|(start, _, file, _)| (start, file))
+            .collect()
+    }
+
+    /// The track swapped in for the set's `slot`th track: (artist, title).
+    pub fn swap_of(&self, slot: usize) -> Option<(&str, &str)> {
+        self.fixes.iter().rev().find_map(|f| match f {
+            Fix::Swap {
+                slot: s,
+                artist,
+                title,
+                ..
+            } if *s == slot => Some((artist.as_str(), title.as_str())),
+            _ => None,
+        })
+    }
+
+    /// The swaps and transitions mixed again, for rendering.
+    pub fn set_edits(&self) -> crate::set_render::SetEdits {
+        use crate::set_timeline::{LoadedTrack, Style};
+        let mut out = crate::set_render::SetEdits::default();
+        for f in &self.fixes {
+            match f {
+                Fix::Mix {
+                    transition,
+                    bars,
+                    style,
+                    ..
+                } => {
+                    out.transitions.retain(|e| e.transition != *transition);
+                    let style = [
+                        Style::Smooth,
+                        Style::BassSwap,
+                        Style::Filter,
+                        Style::Cut,
+                        Style::EchoOut,
+                    ]
+                    .into_iter()
+                    .find(|s| s.name() == style)
+                    .unwrap_or(Style::Smooth);
+                    out.transitions.push(crate::set_render::TransitionEdit {
+                        transition: *transition,
+                        bars: *bars,
+                        style,
+                    });
+                }
+                Fix::Swap {
+                    slot,
+                    path,
+                    artist,
+                    title,
+                    bpm,
+                    key,
+                    ..
+                } => {
+                    out.swaps.retain(|s| s.slot != *slot);
+                    out.swaps.push(crate::set_render::Swap {
+                        slot: *slot,
+                        track: LoadedTrack {
+                            artist: artist.clone(),
+                            title: title.clone(),
+                            path: Some(path.clone()),
+                            bpm: *bpm,
+                            key: key.clone(),
+                            ..Default::default()
+                        },
+                    });
+                }
+                _ => {}
+            }
+        }
+        out
     }
 
     /// The last loudness preset, if any: (LUFS, ceiling dBTP).
@@ -331,6 +524,24 @@ fn apply(
     mut out: impl FnMut([f32; 2]),
 ) {
     let removed = edits.removed(f64::INFINITY);
+    // Swapped tracks and transitions mixed again, read whole: each is a
+    // stretch of seconds.
+    let mixes: Vec<(usize, Vec<[f32; 2]>)> = edits
+        .splices()
+        .into_iter()
+        .filter_map(|(start, file)| {
+            let audio = match crate::decode::decode(file) {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("can't read the edited stretch {}: {e}", file.display());
+                    return None;
+                }
+            };
+            let frames: Vec<[f32; 2]> = audio.decoded_chunks().flatten().copied().collect();
+            Some(((start * rate).round() as usize, frames))
+        })
+        .collect();
+    let seam = ((crate::set_render::SEAM * rate) as usize).max(1);
     let w = ((CUT_CROSSFADE * rate).round() as usize).max(1);
     // The last `w` frames kept, held back for a crossfade at a cut.
     let mut held: VecDeque<[f32; 2]> = VecDeque::with_capacity(w + 1);
@@ -340,6 +551,10 @@ fn apply(
     let mut entered = false;
     for (i, x) in frames.into_iter().enumerate() {
         let t = i as f64 / rate;
+        let x = mixes
+            .iter()
+            .filter(|(at, m)| i >= *at && i < at + m.len())
+            .fold(x, |x, (at, m)| crate::set_render::blend(x, m, i - at, seam));
         while next < removed.len() && t >= removed[next].end {
             if entered && removed[next].crossfade {
                 fading = Some(0);

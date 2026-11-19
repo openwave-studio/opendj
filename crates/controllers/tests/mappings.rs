@@ -1815,3 +1815,38 @@ fn ddj_400_secondary_pad_modes() {
     }
     assert_eq!(c.errors(), Vec::<String>::new());
 }
+
+#[test]
+fn numark_ns4fx_sync_loops_and_crossfader_assign() {
+    let (reg, mut c) = load("Numark NS4FX.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+    let version = |key: &str| reg.get("[Channel1]", key).unwrap().version();
+
+    // A tap of SYNC syncs once, every time.
+    for i in 0..3 {
+        let before = version("beatsync");
+        c.receive(&[0x90, 0x02, 0x7F]);
+        c.receive(&[0x80, 0x02, 0x00]);
+        assert_ne!(version("beatsync"), before, "tap {i} of SYNC syncs");
+    }
+    assert_eq!(get(&reg, "[Channel1]", "sync_enabled"), 0.0);
+
+    // 1/2 and x2 halve and double the loop, every time.
+    for key_note in [("loop_halve", 0x34), ("loop_double", 0x35)] {
+        for i in 0..3 {
+            let before = version(key_note.0);
+            c.receive(&[0x94, key_note.1, 0x7F]);
+            c.receive(&[0x84, key_note.1, 0x00]);
+            assert_ne!(version(key_note.0), before, "press {i} of {}", key_note.0);
+        }
+    }
+
+    // The A / off / B switch sets the deck's crossfader side.
+    c.receive(&[0xB0, 0x1E, 0x01]);
+    assert_eq!(get(&reg, "[Channel1]", "orientation"), 0.0);
+    c.receive(&[0xB0, 0x1E, 0x02]);
+    assert_eq!(get(&reg, "[Channel1]", "orientation"), 2.0);
+    c.receive(&[0xB0, 0x1E, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "orientation"), 1.0);
+}

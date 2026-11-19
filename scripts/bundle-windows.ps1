@@ -18,6 +18,17 @@ function Sign($file) {
   }
 }
 
+# The main thread's stack reserve, from the exe's PE header: crates/app/build.rs
+# sets 8 MB, as macOS and Linux give. With Windows' default 1 MB the app
+# crashes with a stack overflow at startup.
+$fs = [IO.File]::OpenRead($Binary)
+$head = New-Object byte[] 4096
+[void]$fs.Read($head, 0, $head.Length)
+$fs.Close()
+$pe = [BitConverter]::ToInt32($head, 0x3C)
+$reserve = [BitConverter]::ToUInt64($head, $pe + 24 + 72)
+if ($reserve -lt 8MB) { throw "$Binary reserves $reserve bytes of stack, not 8 MB" }
+
 New-Item -ItemType Directory -Force dist | Out-Null
 $stage = "dist/openDJ"
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }

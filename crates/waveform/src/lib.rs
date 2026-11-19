@@ -9,8 +9,15 @@
 //!
 //! This follows the approach of Mixxx's `allshader` renderers
 //! (`src/waveform/renderers/allshader`), on wgpu instead of OpenGL.
+//!
+//! Zoomed right in, a scrolling view given the track's audio (see
+//! [`WaveformView::set_samples`]) draws the real wave instead (see
+//! [`detail`]).
 
 use std::sync::Arc;
+
+pub mod detail;
+pub use detail::Samples;
 
 use bytemuck::{Pod, Zeroable};
 pub use wgpu;
@@ -269,7 +276,10 @@ struct Params {
     grid_edit: u32,
     /// Scrolling: where the play line is, as a fraction of the width.
     needle: f32,
-    _pad: [u32; 2],
+    /// 1: the detail texture holds this frame's columns of real audio.
+    detail: f32,
+    /// 1 / the track's loudest sample, as the summary is scaled.
+    detail_scale: f32,
     /// Bit `n` set: lane `n` (from the bottom) is tinted.
     lane_tint: [u32; 4],
     mark_color: [f32; 4],
@@ -484,6 +494,16 @@ impl WaveformRenderer {
                     binding: 3,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
                     count: None,
                 },
             ],
@@ -775,6 +795,11 @@ pub struct WaveformView {
     grid_edit: bool,
     /// Lanes of marks over the waveform (see [`WaveformView::set_lanes`]).
     lanes: Option<Lanes>,
+    /// The real wave's columns (scrolling views), and the texture they go
+    /// to: [`DETAIL_ROW`] columns a row, a row for 1×1 on overviews.
+    detail: detail::Columns,
+    detail_texture: wgpu::Texture,
+    detail_upload: Vec<[f32; 2]>,
 }
 
 impl WaveformView {
@@ -786,6 +811,10 @@ impl WaveformView {
             mapped_at_creation: false,
         });
         let empty = bins_texture(device, 1);
+        let detail_texture = match mode {
+            Mode::Scrolling => detail_texture(device, DETAIL_ROW, DETAIL_ROWS),
+            Mode::Overview => detail_texture(device, 1, 1),
+        };
         Self {
             mode,
             style: Style::default(),
@@ -802,7 +831,18 @@ impl WaveformView {
             live: false,
             grid_edit: false,
             lanes: None,
+            detail: detail::Columns::default(),
+            detail_texture,
+            detail_upload: Vec::new(),
         }
+    }
+
+    /// The track's audio, for drawing the real wave when a scrolling view
+    /// is zoomed right in (a screen pixel a millisecond or less); none for
+    /// the summary alone. Set it with the track: the audio must be the one
+    /// the view's [`GpuTrack`] was made from.
+    pub fn set_samples(&mut self, samples: Option<Arc<dyn Samples>>) {
+        self.detail.set_samples(samples);
     }
 
     pub fn set_style(&mut self, style: Style) {
@@ -900,7 +940,13 @@ impl WaveformView {
                 if matches!(&self.track, Some((cur, _)) if Arc::ptr_eq(cur, t)) {
                     return;
                 }
-                let bind = bind_group(device, renderer, &self.params, &t.texture);
+                let bind = bind_group(
+                    device,
+                    renderer,
+                    &self.params,
+                    &t.texture,
+                    &self.detail_texture,
+                );
                 self.track = Some((t.clone(), bind));
             }
         }
@@ -974,7 +1020,8 @@ impl WaveformView {
             } else {
                 0.5
             },
-            _pad: [0; 2],
+            detail: 0.0,
+            detail_scale: 1.0,
             lane_tint: [0; 4],
             mark_color: [0.0; 4],
             lit_color: [0.0; 4],
@@ -1081,6 +1128,7 @@ impl WaveformView {
             if f.duration > 60.0 && self.style != Style::Mono {
                 params.minute_bins = to_bin(60.0);
             }
+            self.detail_columns(queue, &mut params, bins_per_second);
         }
         queue.write_buffer(&self.params, 0, bytemuck::bytes_of(&params));
 
@@ -1088,7 +1136,13 @@ impl WaveformView {
         let bind = match &self.track {
             Some((_, bind)) => bind,
             None => {
-                fallback = bind_group(device, renderer, &self.params, &self.empty);
+                fallback = bind_group(
+                    device,
+                    renderer,
+                    &self.params,
+                    &self.empty,
+                    &self.detail_texture,
+                );
                 &fallback
             }
         };
@@ -1121,6 +1175,86 @@ impl WaveformView {
         }
         queue.submit(Some(encoder.finish()));
     }
+}
+
+impl WaveformView {
+    /// Zoomed right in on a scrolling view with the track's audio: works
+    /// out the real wave's columns on screen and hands them to the shader.
+    fn detail_columns(&mut self, queue: &wgpu::Queue, params: &mut Params, bins_per_second: f64) {
+        let stems = self.style == Style::Stems && params.stems[3] > 0.5;
+        let top = self
+            .detail
+            .samples()
+            .and_then(|s| s.top())
+            .filter(|t| *t > 0.0);
+        let w = params.bins_per_pixel;
+        let Some(top) = top.filter(|_| {
+            self.mode == Mode::Scrolling
+                && self.style != Style::Bands
+                && !stems
+                && w < DETAIL_FROM_BINS_PER_PIXEL
+                && w > 0.0
+        }) else {
+            return;
+        };
+        // The column at the left edge, as the shader's view_bin() snaps
+        // the picture (WGSL's round() rounds halves to even).
+        let cx = params.size[0] * params.needle;
+        let first = (params.play_bin / w - cx).round_ties_even() as i64;
+        let count = (self.size.0 as usize).min((DETAIL_ROW * DETAIL_ROWS) as usize);
+        let cols = self.detail.update(first, count, w, bins_per_second);
+        let rows = count.div_ceil(DETAIL_ROW as usize);
+        self.detail_upload.clear();
+        self.detail_upload.extend_from_slice(cols);
+        self.detail_upload
+            .resize(rows * DETAIL_ROW as usize, detail::UNKNOWN);
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.detail_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            bytemuck::cast_slice(&self.detail_upload),
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(DETAIL_ROW * 8),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d {
+                width: DETAIL_ROW,
+                height: rows as u32,
+                depth_or_array_layers: 1,
+            },
+        );
+        params.detail = 1.0;
+        params.detail_scale = 1.0 / top;
+    }
+}
+
+/// Columns a row of the detail texture; matches `DETAIL_ROW` in the shader.
+const DETAIL_ROW: u32 = 2048;
+/// Rows of it: enough for the widest view (see [`WaveformView::resize`]).
+const DETAIL_ROWS: u32 = 4;
+/// The real wave is drawn below this many slices a pixel, fading in to
+/// 1 (`close_zoom` in the shader).
+const DETAIL_FROM_BINS_PER_PIXEL: f32 = 4.0;
+
+fn detail_texture(device: &wgpu::Device, width: u32, height: u32) -> wgpu::Texture {
+    device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("waveform detail"),
+        size: wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rg32Float,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    })
 }
 
 fn create_texture(device: &wgpu::Device, width: u32, height: u32) -> wgpu::Texture {
@@ -1168,8 +1302,10 @@ fn bind_group(
     renderer: &WaveformRenderer,
     params: &wgpu::Buffer,
     bins: &wgpu::Texture,
+    detail: &wgpu::Texture,
 ) -> wgpu::BindGroup {
     let view = bins.create_view(&wgpu::TextureViewDescriptor::default());
+    let detail = detail.create_view(&wgpu::TextureViewDescriptor::default());
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("waveform"),
         layout: &renderer.layout,
@@ -1189,6 +1325,10 @@ fn bind_group(
             wgpu::BindGroupEntry {
                 binding: 3,
                 resource: wgpu::BindingResource::Sampler(&renderer.digits.sampler),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: wgpu::BindingResource::TextureView(&detail),
             },
         ],
     })

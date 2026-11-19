@@ -50,6 +50,8 @@ struct Params {
     half: u32,                         // 1: drawn from the bottom edge up
     grid_edit: u32,                    // 1: the grid is being edited: drawn louder, over the waveform too
     needle: f32,                       // scrolling: where the play line is, as a fraction of the width
+    detail: f32,                       // 1: the detail texture holds this frame's columns of real audio
+    detail_scale: f32,                 // 1 / the track's loudest sample, as the summary is scaled
     lane_tint: vec4<u32>,              // bit n: row n tinted (a scale note)
     mark_color: vec4<f32>,
     lit_color: vec4<f32>,
@@ -70,7 +72,12 @@ struct Params {
 // side in the first row of cells, then a row for each phrase name, by kind.
 @group(0) @binding(2) var digits_atlas: texture_2d<f32>;
 @group(0) @binding(3) var digits_sampler: sampler;
+// Scrolling, zoomed right in: the real audio's lowest and highest sample
+// under each screen column (column x at x % DETAIL_ROW, x / DETAIL_ROW);
+// min > max where it isn't known yet.
+@group(0) @binding(4) var detail: texture_2d<f32>;
 const ROW: u32 = 2048u;
+const DETAIL_ROW: i32 = 2048;
 
 // Hotcue colours, matching the pads in the skin.
 const HOTCUE_COLORS = array<vec3<f32>, 8>(
@@ -652,38 +659,74 @@ fn close_zoom() -> f32 {
     return 1.0 - smoothstep(1.0, 4.0, p.bins_per_pixel);
 }
 
-fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
-    var color = base;
+// The colour a style draws a slice in; alpha 1 where it shades darker
+// towards its edges, for depth.
+fn wave_ink(s: Slice, bin: f32) -> vec4<f32> {
     if (p.style == 2u) {
-        // Mono: played in lilac, the mix zone in a dim lilac, the rest
-        // grey, as one solid shape (the RMS body, without a peak outline).
+        // Mono: played in lilac, the mix zone in a dim lilac, the rest grey.
         var c = MONO_GREY;
         if (bin < p.play_bin) {
             c = MONO_LILAC;
         } else if (p.mix_end_bin > p.mix_start_bin && bin >= p.mix_start_bin && bin <= p.mix_end_bin) {
             c = MONO_MIX;
         }
-        let rms_h = shape(s) * span;
-        color = over(color, c, fill(rms_h, d));
-    } else if (p.style == 3u) {
-        // Blue: one shape, lighter where the highs are loud.
-        let highs = clamp(s.rms.z / max(s.rms.w, 0.05) * 1.2, 0.0, 1.0);
-        let c = mix(BLUE_BODY, BLUE_HIGHS, highs * 0.8);
-        let rms_h = shape(s) * span;
-        color = over(color, c, fill(rms_h, d));
-    } else if (p.style == 0u || p.style == 4u) {
-        // RGB, and Stems for a track without them.
-        let c = band_color(s);
-        let rms_h = shape(s) * span;
-        // One solid shape (the RMS body, without a peak outline): a bright
-        // core fading darker towards the edges, for depth.
-        let t = clamp(1.0 - d / max(rms_h, 1.0), 0.0, 1.0);
-        let shade = 0.6 + 0.4 * sqrt(t);
-        color = over(color, c * shade, fill(rms_h, d));
-    } else {
-        color = three_band(color, s, d, span);
+        return vec4<f32>(c, 0.0);
     }
-    return color;
+    if (p.style == 3u) {
+        // Blue: lighter where the highs are loud.
+        let highs = clamp(s.rms.z / max(s.rms.w, 0.05) * 1.2, 0.0, 1.0);
+        return vec4<f32>(mix(BLUE_BODY, BLUE_HIGHS, highs * 0.8), 0.0);
+    }
+    // RGB, and Stems for a track without them.
+    return vec4<f32>(band_color(s), 1.0);
+}
+
+// A bright core fading darker towards the edges; `t` is how far out the
+// pixel is, from 0 at the core to 1 on the edge.
+fn shaded(ink: vec4<f32>, t: f32) -> vec3<f32> {
+    if (ink.a < 0.5) {
+        return ink.rgb;
+    }
+    return ink.rgb * (0.6 + 0.4 * sqrt(clamp(1.0 - t, 0.0, 1.0)));
+}
+
+fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
+    if (p.style == 1u) {
+        return three_band(base, s, d, span);
+    }
+    // One solid shape (the RMS body, without a peak outline).
+    let ink = wave_ink(s, bin);
+    let rms_h = shape(s) * span;
+    return over(base, shaded(ink, d / max(rms_h, 1.0)), fill(rms_h, d));
+}
+
+// The real audio under pixel column x: its lowest and highest sample.
+fn detail_at(x: f32) -> vec2<f32> {
+    let i = i32(floor(x));
+    return textureLoad(detail, vec2<i32>(i % DETAIL_ROW, i / DETAIL_ROW), 0).xy;
+}
+
+// A sample's height, signed, on the same curve as the zoomed-in summary.
+fn sample_height(v: f32) -> f32 {
+    let a = max(abs(v) * p.detail_scale, 1e-9);
+    return sign(v) * clamp(pow(a, 0.85) * 0.94 * p.gain, 0.0, 1.0);
+}
+
+// The real wave, zoomed right in: the column's samples from lowest to
+// highest, above and below the centre line as they swing (for a half
+// waveform, the larger swing up from the bottom edge). `yy` is pixels above
+// the centre line.
+fn detail_wave(base: vec3<f32>, s: Slice, bin: f32, yy: f32, d: f32, span: f32, mm: vec2<f32>) -> vec3<f32> {
+    let ink = wave_ink(s, bin);
+    let lo = sample_height(mm.x) * span;
+    let hi = sample_height(mm.y) * span;
+    if (p.half == 1u) {
+        let edge = max(-lo, hi);
+        return over(base, shaded(ink, d / max(edge, 1.0)), fill(edge, d));
+    }
+    let cover = clamp(hi - yy + 1.0, 0.0, 1.0) * clamp(yy - lo + 1.0, 0.0, 1.0);
+    let reach = max(select(-lo, hi, yy > 0.0), 1.0);
+    return over(base, shaded(ink, abs(yy) / reach), cover);
 }
 
 @fragment
@@ -778,7 +821,17 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
             let hb = stems_range(cols.start + cols.width, cols.start + 2.0 * cols.width);
             color = mix(stems_wave(color, ha, d, span), stems_wave(color, hb, d, span), cols.t);
         } else {
-            color = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
+            let summary = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
+            // Zoomed right in, the real wave takes over from the summary.
+            var real = summary;
+            let k_detail = select(0.0, close_zoom(), p.detail > 0.5 && p.style != 1u);
+            if (k_detail > 0.0) {
+                let mm = detail_at(x);
+                if (mm.x <= mm.y) {
+                    real = detail_wave(color, cols.a, bin, half_h - y, d, span, mm);
+                }
+            }
+            color = mix(summary, real, k_detail);
         }
     }
 

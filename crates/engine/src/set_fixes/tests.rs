@@ -148,6 +148,25 @@ fn edits_round_trip_as_json() {
                 lufs: -14.0,
                 ceiling: -1.0,
             },
+            Fix::Mix {
+                start: 400.0,
+                end: 432.5,
+                file: PathBuf::from("/rec/openDJ 2026-11-16 20.00.mix-3-1.wav"),
+                transition: 3,
+                bars: 16.0,
+                style: "Bass swap".into(),
+            },
+            Fix::Swap {
+                start: 600.0,
+                end: 900.0,
+                file: PathBuf::from("/rec/openDJ 2026-11-16 20.00.track 4 swapped.wav"),
+                slot: 3,
+                path: PathBuf::from("/music/Kessler - Hollow Light.flac"),
+                artist: "Kessler".into(),
+                title: "Hollow Light".into(),
+                bpm: 124.0,
+                key: "8A".into(),
+            },
         ],
     };
     assert_eq!(Edits::from_json(&edits.to_json()).unwrap(), edits);
@@ -204,4 +223,91 @@ fn renders_a_file() {
     assert!((r.seconds - expected as f64 / 48_000.0).abs() < 1e-9);
     assert!((r.after_lufs.unwrap() + 14.0).abs() < 0.5, "{r:?}");
     std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn a_mixed_transition_is_spliced_in() {
+    let dir = std::env::temp_dir().join(format!("opendj-set-mix-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    // 2 s mixed again at 0.25, over a recording at 0.5.
+    let file = dir.join("mix.wav");
+    let samples = vec![(0.25 * 32768.0) as i16; 2000];
+    crate::decode::tests::write_wav(&file, 1000, 1, &samples);
+    let mix = |transition| Fix::Mix {
+        start: 3.0,
+        end: 5.0,
+        file: file.clone(),
+        transition,
+        bars: 8.0,
+        style: "Smooth".into(),
+    };
+    let edits = Edits {
+        fixes: vec![mix(0)],
+    };
+    let (out, _) = run(&level(10.0, 0.5), &edits);
+    assert_eq!(out.len(), 10_000);
+    assert!((at(&out, 2.0) - 0.5).abs() < 1e-6);
+    assert!((at(&out, 4.0) - 0.25).abs() < 1e-3, "{}", at(&out, 4.0));
+    assert!((at(&out, 6.0) - 0.5).abs() < 1e-6);
+    // Mixed again later, the later one counts.
+    let twice = Edits {
+        fixes: vec![mix(1), mix(1)],
+    };
+    assert_eq!(twice.mixes().len(), 1);
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn a_swap_is_spliced_under_the_transitions_mixed_again() {
+    let edits = Edits {
+        fixes: vec![
+            Fix::Mix {
+                start: 10.0,
+                end: 20.0,
+                file: PathBuf::from("mix.wav"),
+                transition: 0,
+                bars: 8.0,
+                style: "Smooth".into(),
+            },
+            Fix::Swap {
+                start: 5.0,
+                end: 60.0,
+                file: PathBuf::from("swap.wav"),
+                slot: 1,
+                path: PathBuf::from("c.flac"),
+                artist: "Okto".into(),
+                title: "Last Call".into(),
+                bpm: 122.0,
+                key: "5A".into(),
+            },
+        ],
+    };
+    let order: Vec<_> = edits
+        .splices()
+        .into_iter()
+        .map(|s| s.1.to_path_buf())
+        .collect();
+    assert_eq!(order, [PathBuf::from("swap.wav"), PathBuf::from("mix.wav")]);
+    assert_eq!(edits.swap_of(1), Some(("Okto", "Last Call")));
+    let e = edits.set_edits();
+    assert_eq!(e.swaps.len(), 1);
+    assert_eq!(e.swaps[0].track.path, Some(PathBuf::from("c.flac")));
+    assert_eq!(e.transitions[0].style, crate::set_timeline::Style::Smooth);
+
+    // The tracklist names the track swapped in.
+    let chapters = [
+        crate::set_chapters::Chapter {
+            start: 0.0,
+            artist: "A".into(),
+            title: "One".into(),
+        },
+        crate::set_chapters::Chapter {
+            start: 30.0,
+            artist: "B".into(),
+            title: "Two".into(),
+        },
+    ];
+    let followed = crate::set_chapters::follow(&chapters, &edits, 100.0);
+    assert_eq!(followed[1].name(), "Okto - Last Call");
+    assert_eq!(followed[0].name(), "A - One");
 }
