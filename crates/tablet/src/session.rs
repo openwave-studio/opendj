@@ -57,3 +57,22 @@ pub fn channels() -> u16 {
         .and_then(|c| c.parse().ok())
         .unwrap_or(2)
 }
+
+/// Whether the app is on screen. iPadOS stops an app that draws with the
+/// GPU while in the background (the music keeps playing there), so the
+/// frame timer skips drawing until it is back.
+#[cfg(target_os = "ios")]
+pub fn on_screen() -> bool {
+    use objc2_foundation::MainThreadMarker;
+    use objc2_ui_kit::{UIApplication, UIApplicationState};
+    let Some(mtm) = MainThreadMarker::new() else {
+        return true;
+    };
+    UIApplication::sharedApplication(mtm).applicationState() != UIApplicationState::Background
+}
+
+/// On the desktop a hidden window just isn't drawn.
+#[cfg(not(target_os = "ios"))]
+pub fn on_screen() -> bool {
+    true
+}

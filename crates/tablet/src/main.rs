@@ -370,6 +370,18 @@ fn main() -> Result<(), slint::PlatformError> {
                 };
                 frames = frames.wrapping_add(1);
                 let now = Instant::now();
+                // In the background (the music playing on), only follow
+                // the audio route: iPadOS stops an app that draws there.
+                if !session::on_screen() {
+                    if frames.is_multiple_of(30) {
+                        let now_channels = session::channels();
+                        if now_channels != channels {
+                            channels = now_channels;
+                            engine.set_outputs(&audio_setup(channels));
+                        }
+                    }
+                    return;
+                }
 
                 // The browse knob and the LOAD buttons.
                 let steps: f64 = browse.iter().map(|(c, sign)| take(c) * sign).sum();
@@ -414,9 +426,9 @@ fn main() -> Result<(), slint::PlatformError> {
                     if now_channels != channels {
                         channels = now_channels;
                         engine.set_outputs(&audio_setup(channels));
-                        w.set_outputs(outputs_text(channels).into());
-                        w.set_phones(channels >= 4);
                     }
+                    w.set_outputs(outputs_text(channels).into());
+                    w.set_phones(channels >= 4);
                 }
 
                 // The decks, drawn at the window's real pixel size.

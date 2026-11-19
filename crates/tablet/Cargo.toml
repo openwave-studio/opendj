@@ -27,6 +27,8 @@ slint = { version = "~1.18", default-features = false, features = ["std", "compa
 # controller's output channels (master and headphones).
 objc2-avf-audio = { version = "0.3", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSError", "NSString"] }
+# Whether the app is in the background, where it mustn't draw.
+objc2-ui-kit = { version = "0.3", default-features = false, features = ["std", "UIApplication", "UIResponder"] }
 
 [build-dependencies]
 slint-build = "~1.18"
