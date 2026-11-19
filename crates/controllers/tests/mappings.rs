@@ -118,19 +118,113 @@ fn ddj_400_slip_release_waits_for_wheel_stop() {
         c.receive(&[0x90 + channel, 0x36, 127]);
         c.receive(&[0xB0 + channel, 0x22, 60]);
         c.receive(&[0x90 + channel, 0x36, 0]);
+        c.receive(&[0xB0 + channel, 0x21, 44]);
         assert_eq!(get(&reg, &group, "scratch2_enable"), 1.0);
         // Timer creation uses wall time; feed movement over a real idle window.
         for _ in 0..10 {
             std::thread::sleep(Duration::from_millis(20));
-            // The platter spinning on after the hand let go.
-            c.receive(&[0xB0 + channel, 0x23, 63]);
+            // The DDJ-400 reports the released platter on the rim CC.
+            c.receive(&[0xB0 + channel, 0x21, 44]);
             c.poll(Instant::now());
             assert_eq!(get(&reg, &group, "scratch2_enable"), 1.0);
         }
+        assert!(get(&reg, &group, "scratch2") < 0.0);
+        assert_eq!(get(&reg, &group, "jog_bend"), 0.0);
         settle(&mut c, 100);
         assert_eq!(get(&reg, &group, "scratch2_enable"), 0.0);
+        // A touch and release without motion leaves the rim available for bending.
+        c.receive(&[0x90 + channel, 0x36, 127]);
+        c.receive(&[0x90 + channel, 0x36, 0]);
+        c.receive(&[0xB0 + channel, 0x21, 65]);
+        assert_eq!(get(&reg, &group, "jog_bend"), 1.0);
         assert_eq!(c.errors(), Vec::<String>::new());
     }
+}
+
+#[test]
+fn ddj_400_backspin_follows_the_wheel_without_slip() {
+    for channel in 0..2 {
+        let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
+        let group = format!("[Channel{}]", channel + 1);
+        for key in ["vinyl_mode", "track_loaded", "play"] {
+            reg.get(&group, key).unwrap().set(1.0);
+        }
+        reg.get(&group, "slip_enabled").unwrap().set(0.0);
+        c.receive(&[0x90 + channel, 0x36, 127]);
+        c.receive(&[0xB0 + channel, 0x22, 48]);
+        c.receive(&[0x90 + channel, 0x36, 0]);
+        c.receive(&[0xB0 + channel, 0x21, 44]);
+
+        // The spinning platter sends rim messages after release, even
+        // beyond the initial 80 ms release window.
+        for _ in 0..10 {
+            std::thread::sleep(Duration::from_millis(10));
+            c.receive(&[0xB0 + channel, 0x21, 44]);
+            c.poll(Instant::now());
+            assert_eq!(get(&reg, &group, "scratch2_enable"), 1.0);
+        }
+        assert!(get(&reg, &group, "scratch2") < -0.5);
+        assert_eq!(get(&reg, &group, "jog_bend"), 0.0);
+
+        // Between the last movement and the idle deadline, the deck still
+        // follows the slowing platter instead of ramping up to playback.
+        settle(&mut c, 60);
+        assert!(get(&reg, &group, "scratch2") < 0.25);
+        settle(&mut c, 100);
+        assert_eq!(get(&reg, &group, "scratch2_enable"), 1.0);
+        c.receive(&[0xB0 + channel, 0x21, 65]);
+        assert_eq!(get(&reg, &group, "jog_bend"), 1.0);
+        settle(&mut c, 500);
+        assert_eq!(get(&reg, &group, "scratch2_enable"), 0.0);
+        assert_eq!(get(&reg, &group, "play"), 1.0);
+        assert!(c.errors().is_empty());
+    }
+}
+
+#[test]
+fn ddj_400_stopped_release_resumes_playback_and_allows_rim_bend() {
+    for (wait_before_release, wait_after_release) in [(45, 0), (0, 25)] {
+        let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
+        let group = "[Channel1]";
+        for key in ["vinyl_mode", "track_loaded", "play"] {
+            reg.get(group, key).unwrap().set(1.0);
+        }
+        reg.get(group, "slip_enabled").unwrap().set(0.0);
+        c.receive(&[0x90, 0x36, 127]);
+        c.receive(&[0xB0, 0x22, 63]);
+        std::thread::sleep(Duration::from_millis(wait_before_release));
+        c.poll(Instant::now());
+        c.receive(&[0x90, 0x36, 0]);
+        c.receive(&[0xB0, 0x21, 64]); // A neutral message never confirms a coast.
+        std::thread::sleep(Duration::from_millis(wait_after_release));
+
+        c.receive(&[0xB0, 0x21, 67]);
+        assert_eq!(get(&reg, group, "jog_bend"), 3.0);
+        settle(&mut c, 65);
+        assert!(get(&reg, group, "scratch2") > 0.5);
+    }
+}
+
+#[test]
+fn ddj_400_normalizes_coasting_ticks_to_platter_ticks() {
+    let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");
+    for channel in 0..2 {
+        let group = format!("[Channel{}]", channel + 1);
+        for key in ["vinyl_mode", "track_loaded"] {
+            reg.get(&group, key).unwrap().set(1.0);
+        }
+        c.receive(&[0x90 + channel, 0x36, 127]);
+        c.receive(&[0xB0 + channel, 0x22, 56]);
+    }
+    c.receive(&[0x90, 0x36, 0]);
+    // At the same wheel speed, the released wheel reports roughly 2.5x
+    // the touched platter's ticks. Both decks should scratch at the same rate.
+    c.receive(&[0xB0, 0x21, 44]);
+    c.receive(&[0xB1, 0x22, 56]);
+    settle(&mut c, 5);
+    let held_rate = get(&reg, "[Channel2]", "scratch2");
+    assert!(held_rate < 0.0);
+    assert_eq!(get(&reg, "[Channel1]", "scratch2"), held_rate);
 }
 
 #[test]

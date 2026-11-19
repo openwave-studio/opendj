@@ -16,8 +16,9 @@ The rim and untouched platter make gentle corrections to the playback speed, ret
 to normal when the wheel stops. On a paused deck they move through the track.
 Touching the platter scratches when **Settings › Decks › Vinyl mode** is on
 for that deck. With Vinyl mode off, the platter bends speed too.
-With Slip enabled, the track returns to where it would have reached once
-you release the platter and the wheel stops moving.
+Release a spinning platter and the deck follows it until the wheel stops.
+With Slip on, playback then returns to where the track would have reached.
+With Slip off, playback resumes from where the backspin left it.
 **SHIFT + platter** searches quickly through the track.
 
 ## When you try it

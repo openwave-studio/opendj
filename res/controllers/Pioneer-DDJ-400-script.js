@@ -106,6 +106,9 @@ PioneerDDJ400.alpha = 1.0/8;
 PioneerDDJ400.beta = PioneerDDJ400.alpha/32;
 // openDJ: the rim's bend strength (jog_bend's own is tuned for beatmatching).
 PioneerDDJ400.bendScale = 1.0;
+// openDJ: at lift-off the DDJ-400 reports about 2.5 times as many ticks
+// over MIDI CC 0x21 as over the touched platter's CC 0x22.
+PioneerDDJ400.coastScale = 0.4;
 
 // Multiplier for fast seek through track using SHIFT+JOGWHEEL
 PioneerDDJ400.fastSeekScale = 150;
@@ -468,10 +471,10 @@ PioneerDDJ400.jogTurn = function(channel, control, value, _status, group) {
         }
     }
 
-    // openDJ: the rim (0x21) always bends, even while the deck is still
-    // easing back from a scratch, so twisting it never scratches.
-    if (control !== 0x21 && engine.isScratching(deckNum)) {
-        engine.scratchTick(deckNum, newVal);
+    // openDJ: the DDJ-400 sends 0x21 for both the rim and a platter still
+    // spinning after touch release. Follow it only during the coasting phase.
+    if (engine.isScratching(deckNum) && (control !== 0x21 || engine.isScratchCoasting(deckNum))) {
+        engine.scratchTick(deckNum, control === 0x21 ? newVal * PioneerDDJ400.coastScale : newVal);
     } else {
         // openDJ: scale rim and untouched platter ticks for finer pitch bends.
         engine.setValue(group, "jog_bend", newVal * PioneerDDJ400.bendScale);
@@ -498,9 +501,8 @@ PioneerDDJ400.jogTouch = function(channel, _control, value) {
     if (value !== 0 && PioneerDDJ400.vinylMode(deckNum)) {
         engine.scratchEnable(deckNum, 720, 33+1/3, this.alpha, this.beta);
     } else {
-        // openDJ: in slip mode the engine follows the wheel until it is
-        // still before slip returns (every controller).
-        engine.scratchDisable(deckNum);
+        // openDJ: on touch release, follow the spinning platter before resuming playback.
+        engine.scratchDisable(deckNum, true, value === 0);
     }
 };
 

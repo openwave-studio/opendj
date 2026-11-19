@@ -144,8 +144,12 @@
                 Number(alpha) || 0, Number(beta) || 0, ramp === undefined ? true : !!ramp);
         },
         scratchTick: (deck, interval) => native.scratchTick(Number(deck), Number(interval)),
-        scratchDisable: (deck, ramp) => native.scratchDisable(Number(deck), ramp === undefined ? true : !!ramp),
+        // openDJ: followWheel defers the release ramp while a let-go platter still sends ticks.
+        scratchDisable: (deck, ramp, followWheel) =>
+            native.scratchDisable(Number(deck), ramp === undefined ? true : !!ramp, !!followWheel),
         isScratching: deck => native.isScratching(Number(deck)),
+        // openDJ: the scratch can still accept movement after touch release.
+        isScratchCoasting: deck => native.isScratchCoasting(Number(deck)),
         brake: (deck, activate, factor, rate) =>
             native.ramp(Number(deck), "brake", !!activate, factor === undefined ? 1 : Number(factor),
                 rate === undefined ? 1 : Number(rate)),
