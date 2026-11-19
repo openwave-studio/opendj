@@ -24,7 +24,7 @@
 
 ## 5. On screen
 
-- [ ] 5.1 Remix in the deck ☰ menu; Remix deck layout (source, Send/Insert, lanes, SCENE wheel, pads, RELEASE) in 2-Deck and slim header in 4-Deck; live waveform; screenshots
+- [ ] 5.1 Remix in the deck ☰ menu; Remix deck layout in 2-Deck (WHEEL tab: SCENE wheel, ISOLATE knobs with LEVERs, RELEASE; PADS tab: pads, OVERDUB, roll rates), BIG mode over the library in the wheel layout, slim header in 4-Deck; live waveform; screenshots
 
 ## 6. Controllers and remote
 
