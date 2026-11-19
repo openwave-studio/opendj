@@ -60,6 +60,21 @@ recorded. The track files must still be where they were when you played
 the set. A transition mixed again is kept with your fixes, and **Save
 edited mix** writes it into the new file.
 
+### Swap a track
+
+On the **Tracks** tab, click a track, then pick another from the list
+under **Swap track**. The list shows tracks from your library that fit
+the set's tempo there, best key and tempo matches first; type to search
+it. The new track plays the same stretch of the set, sped up or slowed
+down to the set's tempo, its beats and bars on the old track's, and comes
+in and goes out with the same fader and EQ moves you made. It plays for
+you as soon as it's ready, and the tracklist and exports take its name.
+**As played** puts the old track back.
+
+A track shorter than the stretch it has to fill, or too far from the
+set's tempo, is refused. A transition you mixed again next to it is
+mixed again with the new track.
+
 ### Pair mixes
 
 Tick a transition and press **Save pair mixes** to keep it as a pair mix:

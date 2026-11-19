@@ -67,7 +67,20 @@ pub fn from_cue(tracks: &[CueTrack]) -> Vec<Chapter> {
 pub fn follow(chapters: &[Chapter], edits: &Edits, length: f64) -> Vec<Chapter> {
     let end = edits.map_time(length - 1e-6);
     let mut out: Vec<Chapter> = Vec::new();
-    for c in chapters {
+    for (slot, c) in chapters.iter().enumerate() {
+        // A track swapped for another is named after it.
+        let swapped;
+        let c = match edits.swap_of(slot) {
+            Some((artist, title)) => {
+                swapped = Chapter {
+                    artist: artist.to_string(),
+                    title: title.to_string(),
+                    ..c.clone()
+                };
+                &swapped
+            }
+            None => c,
+        };
         // Inside a cut or before a trim: from the first moment kept after.
         let start = edits
             .next_kept(c.start)

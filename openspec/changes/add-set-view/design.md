@@ -18,7 +18,7 @@ Length in bars (2, 4, 8, 16, 32) and a curve from the Automix styles (Smooth, Ba
 
 ### Swap a track
 
-The replacement starts on the same bar of the set as the track it replaces and plays for the same stretch, at the rate that matches the set's tempo there (its BPM to the replaced track's BPM times the logged rate). Its first beat lands on the replaced track's first heard downbeat; it starts from its own first phrase, or its cue, if it has no phrases. Its transitions in and out are made again in their recorded style and length. A replacement shorter than the stretch is refused with its length shown. Picker: the library, compatible tempo and key first (as Automix suggests).
+The replacement plays the same stretch of the set as the track it replaces (from where that one came in to where it stopped), at the speed that matches the set's tempo there (the replaced track's BPM at its logged speed over the replacement's BPM; 0.75 to 1.34 times its own). It starts from its first bar, on the same beat of the bar the replaced track was on when it came in, so beats and bars line up. The logged fader, EQ and filter moves are kept, so its transitions in and out keep their recorded style and length; the deck's tempo fader is set to the matching speed. Loops and jumps of the replaced track are not carried over. A replacement shorter than the stretch, or too far from the tempo, is refused with the reason shown. Transitions mixed again next to it are rendered again with it, and its own stretch is spliced in under them. Picker: the library, compatible tempo and key first (as Automix suggests).
 
 ## Whole-set render (later)
 

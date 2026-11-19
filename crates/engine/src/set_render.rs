@@ -42,6 +42,25 @@ pub struct Window {
     /// (deck, seconds): the deck keeps playing until then even if the
     /// recording stopped it sooner.
     pub play_until: Vec<(usize, f64)>,
+    /// (control, from, to): where the edit takes a control over from the
+    /// log. Empty: each control `changes` sets, from its first change to
+    /// its last.
+    pub held: Vec<(String, f64, f64)>,
+}
+
+/// Each control `changes` sets, from its first change to its last.
+pub fn spans(changes: &[Change]) -> Vec<(String, f64, f64)> {
+    let mut out: Vec<(String, f64, f64)> = Vec::new();
+    for (t, name, _) in changes {
+        match out.iter_mut().find(|s| &s.0 == name) {
+            Some(s) => {
+                s.1 = s.1.min(*t);
+                s.2 = s.2.max(*t);
+            }
+            None => out.push((name.clone(), *t, *t)),
+        }
+    }
+    out
 }
 
 /// Renders `window` of `timeline` at `rate`. `track` gives the playable
@@ -128,6 +147,12 @@ pub fn render(
     for (name, v) in timeline.values_at(start) {
         set(name, v);
     }
+    // Where the edit holds controls instead of the log.
+    let held = if window.held.is_empty() {
+        spans(&window.changes)
+    } else {
+        window.held.clone()
+    };
     let mut changes: Vec<(f64, &str, f64)> = timeline
         .changes_between(start, window.from)
         .into_iter()
@@ -139,14 +164,17 @@ pub fn render(
         )
         .collect();
     if !window.changes.is_empty() {
-        // The log's changes in the window, except the controls the edit
-        // sets there.
-        let edited = |name: &str| window.changes.iter().any(|c| c.1 == name);
+        // The log's changes in the window, except where the edit holds
+        // the control.
+        let holds = |name: &str, t: f64| {
+            held.iter()
+                .any(|h| h.0 == name && t >= h.1 - 1e-9 && t <= h.2 + 1e-9)
+        };
         changes.extend(
             timeline
                 .changes_between(window.from, window.to)
                 .into_iter()
-                .filter(|c| !edited(c.1)),
+                .filter(|c| !holds(c.1, c.0)),
         );
         changes.extend(
             window
@@ -155,16 +183,20 @@ pub fn render(
                 .filter(|c| c.0 > window.from - 1e-9 && c.0 <= window.to)
                 .map(|c| (c.0, c.1.as_str(), c.2)),
         );
-        // The edited controls as they stand at `from`, before the edit's
-        // own changes.
-        for name in window
-            .changes
+        // A control the edit already holds at `from` (a swapped track's
+        // tempo) as the edit last set it.
+        for (name, _, _) in held
             .iter()
-            .map(|c| c.1.as_str())
-            .collect::<std::collections::BTreeSet<_>>()
+            .filter(|h| h.1 < window.from && h.2 >= window.from)
         {
-            if let Some(v) = timeline.value_at(name, window.from) {
-                changes.push((window.from - 1e-9, name, v));
+            let earlier = window
+                .changes
+                .iter()
+                .filter(|c| &c.1 == name && c.0 <= window.from - 1e-9)
+                .max_by(|a, b| a.0.total_cmp(&b.0))
+                .map(|c| c.2);
+            if let Some(v) = earlier.or_else(|| timeline.value_at(name, window.from)) {
+                changes.push((window.from - 1e-9, name.as_str(), v));
             }
         }
     }
@@ -340,46 +372,15 @@ pub fn playable(t: &LoadedTrack) -> Result<Arc<Track>, String> {
     Ok(Arc::new(track))
 }
 
-/// Renders `edit` of the set recorded at `audio` (its log beside it) into
-/// `dest` as a WAV, for [`crate::set_fixes::Fix::Mix`]. Returns the window
-/// it covers, in seconds.
-pub fn render_transition(
-    audio: &std::path::Path,
-    timeline: &SetTimeline,
-    edit: &TransitionEdit,
-    dest: &std::path::Path,
-) -> Result<(f64, f64), String> {
-    let mut rate = 0u32;
-    let _ = crate::decode::Decoder::open(audio)?.stream(|r, _| {
-        rate = r;
-        false
-    });
-    if rate == 0 {
-        return Err(format!("{}: no audio decoded", audio.display()));
-    }
-    let window = transition_window(timeline, edit)?;
-    let mut tracks: std::collections::HashMap<usize, Arc<Track>> = Default::default();
-    let frames = render(timeline, &window, rate, &mut |t| {
-        let i = timeline
-            .tracks
-            .iter()
-            .position(|x| x == t)
-            .unwrap_or(usize::MAX);
-        if let Some(t) = tracks.get(&i) {
-            return Ok(t.clone());
-        }
-        let p = playable(t)?;
-        tracks.insert(i, p.clone());
-        Ok(p)
-    })?;
+/// Writes `frames` to `dest` as a 24-bit WAV.
+fn write_wav(dest: &std::path::Path, frames: &[[f32; 2]], rate: u32) -> Result<(), String> {
     let err = |e: std::io::Error| format!("{}: {e}", dest.display());
     let mut sink =
         crate::recorder::audio_sink(dest, crate::recorder::RecordFormat::Wav, 24, rate as f64)
             .map_err(err)?;
     let flat: Vec<f32> = frames.iter().flatten().copied().collect();
     sink.write(&flat).map_err(err)?;
-    sink.finish().map_err(err)?;
-    Ok((window.from, window.from + frames.len() as f64 / rate as f64))
+    sink.finish().map_err(err)
 }
 
 /// A transition mixed again: `bars` long from where the incoming track
@@ -444,6 +445,7 @@ pub fn transition_window(t: &SetTimeline, edit: &TransitionEdit) -> Result<Windo
         to,
         changes: mix(t, x, s, e, edit.style),
         play_until: vec![(x.from_deck, e)],
+        held: Vec::new(),
     })
 }
 
@@ -535,14 +537,35 @@ fn mix(t: &SetTimeline, x: &Transition, s: f64, e: f64, style: Style) -> Vec<Cha
         }
     }
     if by_crossfader {
-        c.push((e, xf, xb));
+        c.push((e, xf.clone(), xb));
     }
     c.push((e + 1e-3, vol(out), 0.0));
     c.push((e + 2e-3, filter(out), out_filter));
     c.push((e + 2e-3, low(out), out_low));
+    // Held until the recorded transition is over too, so its moves past a
+    // shorter new one aren't heard; from there on the log plays as it was.
+    let hold = e.max(x.end) + 3e-3;
+    c.push((hold, vol(out), 0.0));
+    c.push((hold, filter(out), out_filter));
+    c.push((hold, low(out), out_low));
+    c.push((
+        hold,
+        vol(inc),
+        if by_crossfader {
+            v(&vol(inc), after, 1.0)
+        } else {
+            in_level
+        },
+    ));
+    c.push((hold, low(inc), in_low));
+    c.push((hold, filter(inc), in_filter));
+    c.push((hold, xf.clone(), if by_crossfader { xb } else { xa }));
     c.sort_by(|a, b| a.0.total_cmp(&b.0));
     c
 }
+
+mod swap;
+pub use swap::*;
 
 #[cfg(test)]
 mod tests;

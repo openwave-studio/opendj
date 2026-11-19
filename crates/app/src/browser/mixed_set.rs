@@ -23,8 +23,8 @@ use opendj_engine::preview::PREVIEW_GROUP;
 use opendj_engine::set_chapters::{self, clock, Chapter, YoutubeNote};
 use opendj_engine::set_checks::{self, Finding, Severity, Stretch, TrackGrid};
 use opendj_engine::set_fixes::{self, Edits, Fix, Rendered, LOUDNESS_PRESETS};
-use opendj_engine::set_render::{self, TransitionEdit};
-use opendj_engine::set_timeline::{CueTrack, LaneKind, Recording, SetTimeline, Style};
+use opendj_engine::set_render::{self, Swap, Target, TransitionEdit};
+use opendj_engine::set_timeline::{CueTrack, LaneKind, LoadedTrack, Recording, SetTimeline, Style};
 use opendj_engine::Waveform;
 use opendj_library::pair_mixes::PairMix;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
@@ -32,7 +32,7 @@ use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use super::{file_path, Browser, MIXED_SETS};
 use crate::{
     files, AppWindow, FilesUi, MixedSetUi, SetBlock, SetFindingRow, SetFixRow, SetLane, SetSpan,
-    SetTrackRow, SetTransitionRow,
+    SetSwapRow, SetTrackRow, SetTransitionRow,
 };
 
 /// Waveform slices a second: fine enough for a view of a few seconds.
@@ -67,10 +67,29 @@ enum Said {
     Measured(Rendered),
     /// The edited mix is written.
     Saved(PathBuf, Rendered),
-    /// A transition is mixed again.
-    Mixed(Fix),
+    /// Transitions mixed again or tracks swapped: their new fixes, and
+    /// what to play once they are in.
+    Edited(Vec<Fix>, Focus),
     Failed(String),
 }
+
+/// What to play once an edit is rendered.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Focus {
+    Transition(usize),
+    /// A track of the set (its slot).
+    Track(usize),
+    Nothing,
+}
+
+/// One stretch to render in the background.
+enum Job {
+    Mix(TransitionEdit),
+    Swap(Swap),
+}
+
+/// Replacement tracks offered at once.
+const SWAP_ROWS: usize = 8;
 
 /// The lengths a transition can be mixed again at, in bars.
 const BAR_CHOICES: [f64; 5] = [2.0, 4.0, 8.0, 16.0, 32.0];
@@ -128,6 +147,13 @@ struct Open {
     mixing: bool,
     /// Why it couldn't be, or what to know about it.
     edit_note: String,
+    /// A track being swapped.
+    swapping: bool,
+    swap_note: String,
+    /// The library tracks offered to swap in (indexes into the library),
+    /// and the slot they were picked for.
+    swap_candidates: Vec<usize>,
+    swap_for: Option<usize>,
     /// The transition whose choices were last set in the card.
     shown_edit: std::cell::Cell<Option<usize>>,
     /// The track playing, as last shown in the Tracks tab.
@@ -212,6 +238,12 @@ impl Browser {
         ui.on_select_transition(move |i| w(&|b| b.set_select_transition(i as usize)));
         let w = with.clone();
         ui.on_select_track(move |i| w(&|b| b.set_select_track(i as usize)));
+        let w = with.clone();
+        ui.on_swap_search(move || w(&|b| b.swap_search()));
+        let w = with.clone();
+        ui.on_swap_track(move |i| w(&|b| b.set_swap_track(i as usize)));
+        let w = with.clone();
+        ui.on_unswap_track(move || w(&|b| b.set_unswap_track()));
         let w = with.clone();
         ui.on_mix_transition(move || w(&|b| b.set_mix_transition()));
         let w = with.clone();
@@ -404,6 +436,10 @@ impl Browser {
             listen_mix: None,
             mixing: false,
             edit_note: String::new(),
+            swapping: false,
+            swap_note: String::new(),
+            swap_candidates: Vec::new(),
+            swap_for: None,
             shown_edit: Default::default(),
             shown_track: -1,
             selection: None,
@@ -511,7 +547,11 @@ impl Browser {
         }
         self.engine.preview(None, false);
         if let Some(app) = self.app.upgrade() {
-            app.global::<MixedSetUi>().set_open(false);
+            let ui = app.global::<MixedSetUi>();
+            ui.set_open(false);
+            ui.set_selected_track(-1);
+            ui.set_swap_query(SharedString::new());
+            ui.set_swap_rows(ModelRc::default());
         }
     }
 
@@ -771,23 +811,7 @@ impl Browser {
         }
         o.mixing = true;
         o.edit_note = "Mixing it again from the set's log…".into();
-        let (audio, timeline, tell) = (o.audio.clone(), t.clone(), o.tell.clone());
-        let stamp = chrono::Local::now().format("%H%M%S");
-        let dest = mix_path(&audio, i, &stamp.to_string());
-        std::thread::spawn(move || {
-            let said = match set_render::render_transition(&audio, &timeline, &edit, &dest) {
-                Ok((start, end)) => Said::Mixed(Fix::Mix {
-                    start,
-                    end,
-                    file: dest,
-                    transition: i,
-                    bars,
-                    style: style.name().to_string(),
-                }),
-                Err(e) => Said::Failed(format!("Couldn't mix the transition again: {e}")),
-            };
-            let _ = tell.send(said);
-        });
+        spawn_edits(o, vec![Job::Mix(edit)], Focus::Transition(i));
         self.show_mixed_set();
     }
 
@@ -822,7 +846,204 @@ impl Browser {
         };
         let Some(c) = o.chapters.get(i) else { return };
         let at = c.start / o.length.max(1e-9);
+        let swapped = o
+            .edits
+            .swaps()
+            .into_iter()
+            .find(|w| w.3 == i)
+            .map(|(s, e, f, _)| (s, e, f.to_path_buf()));
         self.set_seek(at, false);
+        if let Some((start, end, file)) = swapped {
+            self.listen_file(start, end, file);
+        }
+        self.swap_search();
+    }
+
+    /// Plays an edited stretch from its own file.
+    fn listen_file(&mut self, start: f64, end: f64, file: PathBuf) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let at = start / o.length.max(1e-9);
+        if let Some(p) = &self.mixed_set.player {
+            p.position.set(at);
+        }
+        self.engine.preview_stream(file.clone(), 0.0, true);
+        o.listen_until = None;
+        o.listen_mix = Some((start, end - start, file));
+    }
+
+    /// The library tracks to offer for the track picked in the
+    /// tracklist: those that fit its tempo, best key and tempo matches
+    /// first, narrowed by the search.
+    fn swap_search(&mut self) {
+        let Some(app) = self.app.upgrade() else {
+            return;
+        };
+        let ui = app.global::<MixedSetUi>();
+        let mixing = self.key_rules.0;
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let slot = ui.get_selected_track();
+        let Some(t) = &o.timeline else { return };
+        if slot < 0 {
+            return;
+        }
+        let slot = slot as usize;
+        if o.swap_for != Some(slot) {
+            o.swap_note.clear();
+        }
+        o.swap_for = Some(slot);
+        let Some(k) = set_render::slot_track(t, slot) else {
+            return;
+        };
+        let lt = &t.tracks[k];
+        let speed = t
+            .clips
+            .iter()
+            .find(|c| c.track == k)
+            .map_or(1.0, |c| c.speed);
+        let tempo = lt.bpm * speed;
+        let key = opendj_engine::key::Key::parse(&lt.key);
+        let words: Vec<String> = ui
+            .get_swap_query()
+            .to_lowercase()
+            .split_whitespace()
+            .map(str::to_string)
+            .collect();
+        let mut scored: Vec<(f64, usize)> = self
+            .library
+            .iter()
+            .enumerate()
+            .filter_map(|(i, tr)| {
+                let path = file_path(tr)?;
+                if lt.path.as_deref() == Some(path) || tr.bpm <= 0.0 {
+                    return None;
+                }
+                let hay = format!("{} {}", tr.artist, tr.title).to_lowercase();
+                if !words.iter().all(|w| hay.contains(w.as_str())) {
+                    return None;
+                }
+                let change = if tempo > 0.0 {
+                    tempo / tr.bpm - 1.0
+                } else {
+                    0.0
+                };
+                if change.abs() > 0.25 {
+                    return None;
+                }
+                let steps = match (key, opendj_engine::key::Key::parse(&tr.key)) {
+                    (Some(a), Some(b)) => crate::automix_order::key_steps(a, b, mixing) as f64,
+                    _ => 4.0,
+                };
+                Some((steps + change.abs() * 100.0 / 6.0, i))
+            })
+            .collect();
+        scored.sort_by(|a, b| a.0.total_cmp(&b.0));
+        o.swap_candidates = scored.iter().take(SWAP_ROWS).map(|x| x.1).collect();
+        let rows: Vec<SetSwapRow> = o
+            .swap_candidates
+            .iter()
+            .map(|&i| {
+                let tr = &self.library[i];
+                let change = if tempo > 0.0 {
+                    (tempo / tr.bpm - 1.0) * 100.0
+                } else {
+                    0.0
+                };
+                let fits = match (key, opendj_engine::key::Key::parse(&tr.key)) {
+                    (Some(a), Some(b)) if a == b => "Same key",
+                    (Some(a), Some(b)) if a.mixes(b, mixing) => "Key fits",
+                    _ => "",
+                };
+                let tempo_text = if change.abs() < 0.5 {
+                    "same tempo".to_string()
+                } else {
+                    format!("{change:+.0}%")
+                };
+                let hint = if fits.is_empty() {
+                    tempo_text
+                } else {
+                    format!("{fits}, {tempo_text}")
+                };
+                let info = if tr.key.is_empty() {
+                    format!("{:.0} BPM", tr.bpm)
+                } else {
+                    format!("{:.0} BPM · {}", tr.bpm, tr.key)
+                };
+                SetSwapRow {
+                    title: tr.title.as_str().into(),
+                    artist: tr.artist.as_str().into(),
+                    info: info.into(),
+                    hint: hint.into(),
+                }
+            })
+            .collect();
+        ui.set_swap_rows(ModelRc::new(VecModel::from(rows)));
+        self.show_mixed_set();
+    }
+
+    /// Swaps the track picked in the tracklist for offer `i`, in the
+    /// background; the transitions mixed again next to it are mixed again
+    /// with the replacement.
+    fn set_swap_track(&mut self, i: usize) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let (Some(slot), Some(&lib)) = (o.swap_for, o.swap_candidates.get(i)) else {
+            return;
+        };
+        if o.swapping || o.timeline.is_none() {
+            return;
+        }
+        let tr = &self.library[lib];
+        let Some(path) = file_path(tr) else { return };
+        let swap = Swap {
+            slot,
+            track: LoadedTrack {
+                artist: tr.artist.clone(),
+                title: tr.title.clone(),
+                path: Some(path.to_path_buf()),
+                bpm: tr.bpm,
+                key: tr.key.clone(),
+                ..Default::default()
+            },
+        };
+        let mut jobs = vec![Job::Swap(swap)];
+        jobs.extend(mixes_around(o, slot));
+        o.swapping = true;
+        o.swap_note.clear();
+        spawn_edits(o, jobs, Focus::Track(slot));
+        self.show_mixed_set();
+    }
+
+    /// Back to the picked track as it was played.
+    fn set_unswap_track(&mut self) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let Some(slot) = o.swap_for else { return };
+        let mut files = Vec::new();
+        o.edits.fixes.retain(|f| match f {
+            Fix::Swap { slot: s, file, .. } if *s == slot => {
+                files.push(file.clone());
+                false
+            }
+            _ => true,
+        });
+        for f in files {
+            let _ = std::fs::remove_file(f);
+        }
+        o.listen_mix = None;
+        o.swap_note.clear();
+        // Transitions mixed again next to it, mixed again with it back.
+        let jobs = mixes_around(o, slot);
+        if !jobs.is_empty() {
+            o.swapping = true;
+            spawn_edits(o, jobs, Focus::Nothing);
+        }
+        self.edits_changed();
     }
 
     fn set_step_transition(&mut self, step: i32) {
@@ -1150,22 +1371,30 @@ impl Browser {
                     self.add_recordings(&[path]);
                     break;
                 }
-                Ok(Said::Mixed(fix)) => {
-                    o.mixing = false;
-                    o.edit_note =
-                        "Kept with your fixes: Save edited mix writes it into a new file.".into();
-                    let i = match &fix {
-                        Fix::Mix { transition, .. } => *transition,
-                        _ => 0,
-                    };
-                    o.edits.fixes.push(fix);
-                    mixed = Some(i);
+                Ok(Said::Edited(fixes, focus)) => {
+                    let kept = "Kept with your fixes: Save edited mix writes it into a new file.";
+                    if o.mixing {
+                        o.mixing = false;
+                        o.edit_note = kept.into();
+                    }
+                    if o.swapping {
+                        o.swapping = false;
+                        o.swap_note = kept.into();
+                    }
+                    for fix in fixes {
+                        replace_fix(&mut o.edits, fix);
+                    }
+                    mixed = Some(focus);
                     changed = true;
                 }
                 Ok(Said::Failed(e)) => {
                     if o.mixing {
                         o.mixing = false;
                         o.edit_note = e.clone();
+                    }
+                    if o.swapping {
+                        o.swapping = false;
+                        o.swap_note = e.clone();
                     }
                     o.saving = false;
                     o.measuring = false;
@@ -1234,10 +1463,25 @@ impl Browser {
                 }
             }
         }
-        if let Some(i) = mixed {
+        if let Some(focus) = mixed {
             self.edits_changed();
             // Heard straight away.
-            self.set_select_transition(i);
+            match focus {
+                Focus::Transition(i) => self.set_select_transition(i),
+                Focus::Track(slot) => {
+                    let swapped = self.mixed_set.open.as_ref().and_then(|o| {
+                        o.edits
+                            .swaps()
+                            .into_iter()
+                            .find(|w| w.3 == slot)
+                            .map(|(s, e, f, _)| (s, e, f.to_path_buf()))
+                    });
+                    if let Some((start, end, file)) = swapped {
+                        self.listen_file(start, end, file);
+                    }
+                }
+                Focus::Nothing => {}
+            }
         } else if changed {
             self.show_mixed_set();
         }
@@ -1448,16 +1692,39 @@ impl Browser {
                 .enumerate()
                 .map(|(i, c)| {
                     let end = o.chapters.get(i + 1).map_or(o.length, |n| n.start);
+                    let swap = o.edits.swap_of(i);
+                    let (artist, title) = swap.unwrap_or((&c.artist, &c.title));
                     SetTrackRow {
                         number: i as i32 + 1,
-                        title: c.title.as_str().into(),
-                        artist: c.artist.as_str().into(),
+                        title: title.into(),
+                        artist: artist.into(),
                         at: clock(c.start).into(),
                         length: clock((end - c.start).max(0.0)).into(),
+                        swapped: swap.is_some(),
                     }
                 })
                 .collect::<Vec<_>>(),
         )));
+
+        // Swapping the picked track.
+        ui.set_can_swap(o.timeline.is_some());
+        ui.set_swapping(o.swapping);
+        ui.set_swap_note(o.swap_note.as_str().into());
+        ui.set_track_swapped(
+            o.swap_for
+                .and_then(|slot| o.edits.swap_of(slot))
+                .map(|(artist, title)| {
+                    let name = Chapter {
+                        start: 0.0,
+                        artist: artist.to_string(),
+                        title: title.to_string(),
+                    }
+                    .name();
+                    format!("Swapped for {name}")
+                })
+                .unwrap_or_default()
+                .into(),
+        );
 
         // Check my mix.
         ui.set_checking(o.checking);
@@ -1591,12 +1858,141 @@ fn mixed_end(edits: &Edits, i: usize, t: &SetTimeline) -> Option<f64> {
     Some(x.start + bars * set_render::bar_seconds(t, x.to_track, x.start))
 }
 
-/// A new file for transition `i` mixed again, beside the recording.
+/// Renders `jobs` in the background with all the set's edits (the new
+/// ones in place of any they replace), then says [`Said::Edited`].
+fn spawn_edits(o: &Open, jobs: Vec<Job>, focus: Focus) {
+    let Some(t) = &o.timeline else { return };
+    let mut edits = o.edits.set_edits();
+    for j in &jobs {
+        match j {
+            Job::Mix(e) => {
+                edits.transitions.retain(|x| x.transition != e.transition);
+                edits.transitions.push(*e);
+            }
+            Job::Swap(w) => {
+                edits.swaps.retain(|x| x.slot != w.slot);
+                edits.swaps.push(w.clone());
+            }
+        }
+    }
+    let (audio, timeline, tell) = (o.audio.clone(), t.clone(), o.tell.clone());
+    let stamp = chrono::Local::now().format("%H%M%S").to_string();
+    std::thread::spawn(move || {
+        let mut fixes = Vec::new();
+        for j in jobs {
+            let made = match j {
+                Job::Mix(e) => {
+                    let dest = mix_path(&audio, e.transition, &stamp);
+                    set_render::render_edits(
+                        &audio,
+                        &timeline,
+                        &edits,
+                        Target::Transition(e.transition),
+                        &dest,
+                    )
+                    .map(|(start, end)| Fix::Mix {
+                        start,
+                        end,
+                        file: dest,
+                        transition: e.transition,
+                        bars: e.bars,
+                        style: e.style.name().to_string(),
+                    })
+                    .map_err(|e| format!("Couldn't mix the transition again: {e}"))
+                }
+                Job::Swap(w) => {
+                    let dest = swap_path(&audio, w.slot, &stamp);
+                    set_render::render_edits(&audio, &timeline, &edits, Target::Swap(w.slot), &dest)
+                        .map(|(start, end)| Fix::Swap {
+                            start,
+                            end,
+                            file: dest,
+                            slot: w.slot,
+                            path: w.track.path.clone().unwrap_or_default(),
+                            artist: w.track.artist.clone(),
+                            title: w.track.title.clone(),
+                            bpm: w.track.bpm,
+                            key: w.track.key.clone(),
+                        })
+                        .map_err(|e| format!("Couldn't swap the track: {e}"))
+                }
+            };
+            match made {
+                Ok(f) => fixes.push(f),
+                Err(e) => {
+                    for f in &fixes {
+                        if let Fix::Mix { file, .. } | Fix::Swap { file, .. } = f {
+                            let _ = std::fs::remove_file(file);
+                        }
+                    }
+                    let _ = tell.send(Said::Failed(e));
+                    return;
+                }
+            }
+        }
+        let _ = tell.send(Said::Edited(fixes, focus));
+    });
+}
+
+/// The transitions into and out of the set's `slot`th track that were
+/// mixed again, to mix again with whatever plays there now.
+fn mixes_around(o: &Open, slot: usize) -> Vec<Job> {
+    let Some(t) = &o.timeline else {
+        return Vec::new();
+    };
+    let (into, out) = set_render::transitions_around(t, slot);
+    let edits = o.edits.set_edits();
+    [into, out]
+        .into_iter()
+        .flatten()
+        .filter_map(|i| edits.transitions.iter().find(|e| e.transition == i))
+        .map(|e| Job::Mix(*e))
+        .collect()
+}
+
+/// Puts `fix` in, in place of an earlier mix of the same transition or
+/// swap of the same track (whose file goes).
+fn replace_fix(edits: &mut Edits, fix: Fix) {
+    let same = |f: &Fix| match (f, &fix) {
+        (Fix::Mix { transition: a, .. }, Fix::Mix { transition: b, .. }) => a == b,
+        (Fix::Swap { slot: a, .. }, Fix::Swap { slot: b, .. }) => a == b,
+        _ => false,
+    };
+    let new_file = match &fix {
+        Fix::Mix { file, .. } | Fix::Swap { file, .. } => Some(file.clone()),
+        _ => None,
+    };
+    let at = edits.fixes.iter().position(&same);
+    for f in edits.fixes.iter().filter(|f| same(f)) {
+        if let Fix::Mix { file, .. } | Fix::Swap { file, .. } = f {
+            if Some(file) != new_file.as_ref() {
+                let _ = std::fs::remove_file(file);
+            }
+        }
+    }
+    edits.fixes.retain(|f| !same(f));
+    match at {
+        Some(i) => edits.fixes.insert(i.min(edits.fixes.len()), fix),
+        None => edits.fixes.push(fix),
+    }
+}
+
+/// A new file for the set's `slot`th track swapped, beside the recording
+/// (hidden, so the library doesn't list it as a recording).
+fn swap_path(audio: &Path, slot: usize, stamp: &str) -> PathBuf {
+    let edits = set_fixes::edits_path(audio);
+    let name = edits.file_name().unwrap_or_default().to_string_lossy();
+    let stem = name.strip_suffix(".edits.json").unwrap_or(&name);
+    edits.with_file_name(format!(".{stem}.track {} swapped {stamp}.wav", slot + 1))
+}
+
+/// A new file for transition `i` mixed again, beside the recording
+/// (hidden, so the library doesn't list it as a recording).
 fn mix_path(audio: &Path, i: usize, stamp: &str) -> PathBuf {
     let edits = set_fixes::edits_path(audio);
     let name = edits.file_name().unwrap_or_default().to_string_lossy();
     let stem = name.strip_suffix(".edits.json").unwrap_or(&name);
-    edits.with_file_name(format!("{stem}.transition {} {stamp}.wav", i + 1))
+    edits.with_file_name(format!(".{stem}.transition {} {stamp}.wav", i + 1))
 }
 
 fn transition_length(x: &opendj_engine::set_timeline::Transition) -> String {
@@ -1643,6 +2039,23 @@ fn fix_row(f: &Fix) -> SetFixRow {
         } => (
             format!("Transition {}", transition + 1),
             format!("Mixed again: {bars} bars, {style}"),
+        ),
+        Fix::Swap {
+            slot,
+            artist,
+            title,
+            ..
+        } => (
+            format!("Track {}", slot + 1),
+            format!(
+                "Swapped for {}",
+                Chapter {
+                    start: 0.0,
+                    artist: artist.clone(),
+                    title: title.clone()
+                }
+                .name()
+            ),
         ),
     };
     SetFixRow {

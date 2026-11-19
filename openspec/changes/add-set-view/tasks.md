@@ -4,8 +4,8 @@
 
 - [x] 1.1 Local render: replay a stretch of the log through an offline engine and splice it into the recording at one-deck seams on a beat (short crossfade); an unedited stretch spliced back is not heard
 - [x] 1.2 Change a transition: length in bars and curve (the Automix styles), Listen with a few bars either side, back to as played; undo
-- [ ] 1.3 Swap a track: pick a replacement from the library, beatmatched on the same bar for the same stretch, both transitions made again in their recorded style and length
-- [ ] 1.4 Save edited mix with transition and swap edits, tracklist and chapters following them
+- [x] 1.3 Swap a track: pick a replacement from the library, beatmatched on the same bar for the same stretch, both transitions made again in their recorded style and length
+- [x] 1.4 Save edited mix with transition and swap edits, tracklist and chapters following them
 
 ## 2. Advanced editing
 
