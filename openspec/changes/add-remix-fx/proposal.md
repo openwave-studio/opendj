@@ -43,7 +43,7 @@ Hardware remix stations sit on a mixer's send/return and turn a few big gestures
 - Mapping hardware remix units themselves (one has no MIDI; the older one is discontinued and untested here).
 - An external hardware FX slot (send/return through an audio interface): add-fx-pre-post-and-headphone.
 - Saving and sharing user scenes: a later step once FX presets exist.
-- The tablet app (`crates/tablet`) showing the Remix page: later, from the same layout.
+- The tablet app (`crates/tablet`) running the Remix deck on the iPad itself: later, from the same wheel layout. The browser remote comes first (a user decision, 2026-11-19).
 
 ## Impact
 

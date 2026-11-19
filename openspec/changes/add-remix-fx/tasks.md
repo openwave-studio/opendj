@@ -29,7 +29,7 @@
 ## 6. Controllers and remote
 
 - [ ] 6.1 MIDI Fighter Twister Remix mapping (bank 1 the first Remix deck, bank 2 decks; ring colours and values; SHIFT layer); mapping tests; supported-controls.txt
-- [ ] 6.2 Remote page Remix tab in the wheel layout: isolate knobs into the SCENE wheel, multi-touch levers with latch, release lever, pads and roll-rate strip, BPM/TAP/QUANTIZE; tablet and stacked phone layouts; OSC addresses listed in the guide
+- [ ] 6.2 Remote page Remix tab in the wheel layout: isolate knobs into the SCENE wheel, multi-touch levers with latch, release lever, pads and roll-rate strip, BPM/TAP/QUANTIZE; tablet and stacked phone layouts; a latency readout (ms) with a warning when the connection is jittery; OSC addresses listed in the guide
 
 ## 7. Docs
 
