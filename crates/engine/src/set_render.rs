@@ -243,9 +243,7 @@ pub fn render(
             .unwrap_or(usize::MAX);
         let n = BLOCK.min(frames - frame).min(next - frame);
         engine.process(&mut buf[..n * 2], 2);
-        for f in buf[..n * 2].chunks_exact(2) {
-            out.push([f[0], f[1]]);
-        }
+        out.extend_from_slice(buf[..n * 2].as_chunks::<2>().0);
         frame += n;
     }
     Ok(out.split_off(skip.min(out.len())))

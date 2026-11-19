@@ -94,7 +94,7 @@ fn record(a: &Arc<Track>, b: &Arc<Track>) -> (Vec<[f32; 2]>, SetTimeline) {
         });
         let n = BLOCK.min(frames - frame).min(next - frame);
         engine.process(&mut buf[..n * 2], 2);
-        out.extend(buf[..n * 2].chunks_exact(2).map(|f| [f[0], f[1]]));
+        out.extend_from_slice(buf[..n * 2].as_chunks::<2>().0);
         frame += n;
     }
     log.push(json!({"t": SET, "end": true}));
