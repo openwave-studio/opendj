@@ -173,17 +173,32 @@ const PALE: [f32; 3] = [232.0, 224.0, 255.0]; // #E8E0FF
 
 /// The deck waveforms' colors for the lows, mids and highs.
 const LOW: [f32; 3] = [1.0, 0.12, 0.10];
-const MID: [f32; 3] = [0.20, 0.88, 0.26];
+const MID: [f32; 3] = [0.20, 0.69, 0.31];
 const HIGH: [f32; 3] = [0.22, 0.40, 1.0];
 
+/// The analyser's lift of the low, mid and high levels (`BAND_GAIN` in the
+/// engine's analysis), which the stored power shares include.
+const BAND_LIFT: [f32; 3] = [1.0, 1.4, 2.0];
+
 /// The full color for a slice, mixed as the deck waveforms mix it: each
-/// band's color by its share of the power, brought up to full brightness.
+/// band's color by its level without the analyser's lift, as vivid as a
+/// pure color and as bright as the colors it comes from.
 fn full(mid: u8, high: u8) -> [f32; 3] {
     let (mid, high) = (mid as f32 / 255.0, high as f32 / 255.0);
     let low = (1.0 - mid - high).max(0.0);
-    let c: [f32; 3] = std::array::from_fn(|i| low * LOW[i] + mid * MID[i] + high * HIGH[i]);
+    // Power shares to levels, without the lift.
+    let shares = [low, mid, high];
+    let w: [f32; 3] = std::array::from_fn(|k| shares[k].sqrt() / BAND_LIFT[k]);
+    let sum = (w[0] + w[1] + w[2]).max(1e-5);
+    let colors = [LOW, MID, HIGH];
+    let c: [f32; 3] =
+        std::array::from_fn(|i| (0..3).map(|k| w[k] * colors[k][i]).sum::<f32>() / sum);
+    let value = (0..3)
+        .map(|k| w[k] * colors[k].iter().copied().fold(0.0, f32::max))
+        .sum::<f32>()
+        / sum;
     let top = c[0].max(c[1]).max(c[2]).max(0.35);
-    c.map(|v| (v / top).min(1.0) * 255.0)
+    c.map(|v| (v / top * value).min(1.0) * 255.0)
 }
 
 /// The shade for a slice whose mids and highs have these shares of its
@@ -337,7 +352,11 @@ mod tests {
         // Bass red, mids green, highs blue, as on the decks.
         let (bass, mids, highs) = (color((0, 0)), color((255, 0)), color((0, 255)));
         assert!(bass.0 > 200 && bass.1 < 80 && bass.2 < 80, "{bass:?}");
-        assert!(mids.1 > 200 && mids.0 < 100 && mids.2 < 100, "{mids:?}");
+        assert!(mids.1 > 150 && mids.0 < 80 && mids.2 < 100, "{mids:?}");
         assert!(highs.2 > 200 && highs.0 < 100, "{highs:?}");
+        // Bass and mids at the same level (the mids lifted in the stored
+        // shares) blend to orange, not to a bright yellow-green.
+        let both = color((169, 0));
+        assert!(both.0 > both.1 && both.1 > both.2, "{both:?}");
     }
 }

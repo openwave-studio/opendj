@@ -453,6 +453,7 @@ fn parse_song(v: &Value) -> Option<StreamTrack> {
             .unwrap_or_default(),
         album: a["albumName"].as_str().unwrap_or_default().to_string(),
         duration: a["durationInMillis"].as_f64().unwrap_or(0.0) / 1000.0,
+        ..Default::default()
     })
 }
 

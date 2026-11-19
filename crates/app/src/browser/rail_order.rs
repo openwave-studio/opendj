@@ -79,9 +79,13 @@ fn publish(app: &AppWindow) {
 
 /// Loads the saved order and answers the menu's drags.
 pub(super) fn install(app: &AppWindow) {
+    // Add-on sources that work behind another source never show in the
+    // rail or its menu (see `SearchSource::in_rail`).
+    let off_rail = crate::sources::off_rail_sources();
     let addons: Vec<String> = super::all_source_names()
         .into_iter()
         .skip(super::SOURCE_NAMES.len())
+        .filter(|n| !off_rail.contains(n))
         .collect();
     let saved = crate::settings::rail_order().unwrap_or_default();
     ORDER.with(|o| *o.borrow_mut() = sections(&saved, &addons));

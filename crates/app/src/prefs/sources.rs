@@ -76,13 +76,28 @@ impl Prefs {
             for &(source, name, id) in crate::browser::STREAMS.iter() {
                 let signed_in = crate::spotify::Saved::load(&format!("{id}.json"))
                     .is_some_and(|s| !s.refresh_token.is_empty());
-                let (status, detail) = if signed_in {
+                let addon = self.behind_services.contains(&id);
+                let (status, detail) = if addon {
+                    (1, "Through its add-on".to_string())
+                } else if signed_in {
                     (1, "Signed in".to_string())
                 } else {
                     (0, "Not signed in".to_string())
                 };
                 items.push(row(source, name, status, &detail, fold(source)));
-                if open(source) {
+                if open(source) && addon {
+                    items.push(item(
+                        "",
+                        NOTE,
+                        "",
+                        &format!(
+                            "An add-on signs in to {name} for you: sign in from {name} in \
+                             the rail. Your playlists and search show there, and a \
+                             double-click, a drag onto a deck or Download fetches a track \
+                             into your Inbox."
+                        ),
+                    ));
+                } else if open(source) {
                     items.push(item(
                         "",
                         NOTE,

@@ -397,24 +397,30 @@ pub fn list_mappings(dir: &Path) -> Vec<(String, PathBuf)> {
 
 /// The HID controllers plugged in, each with a port name of its own and the
 /// mapping Automatic picks: the device's name for itself, or the mapping's,
-/// numbered if two are alike.
-fn hid_ports(
+/// numbered if two are alike. A device that is also a MIDI port running a
+/// MIDI mapping (the DDJ-FLX10, whose jog screens are HID) takes the HID
+/// mapping's name, so the two are told apart and each can be turned off.
+fn hid_ports<'a>(
     devices: Vec<hid::DeviceInfo>,
-    mappings: &[hid::HidMapping],
-) -> Vec<(String, hid::DeviceInfo, &hid::HidMapping)> {
+    mappings: &'a [hid::HidMapping],
+    midi_ports: &[String],
+) -> Vec<(String, hid::DeviceInfo, &'a hid::HidMapping)> {
     let mut out: Vec<(String, hid::DeviceInfo, &hid::HidMapping)> = Vec::new();
     for d in devices {
         let Some(m) = hid::match_mapping(&d, mappings) else {
             continue;
         };
-        let base = if d.product.is_empty() {
+        let midi_twin = midi_ports
+            .iter()
+            .any(|p| *p == d.product || device_key(p) == device_key(&d.product));
+        let base = if d.product.is_empty() || midi_twin {
             m.0.clone()
         } else {
             d.product.clone()
         };
         let mut name = base.clone();
         let mut n = 1;
-        while out.iter().any(|(p, _, _)| *p == name) {
+        while out.iter().any(|(p, _, _)| *p == name) || midi_ports.contains(&name) {
             n += 1;
             name = format!("{base} #{n}");
         }
@@ -563,16 +569,21 @@ fn watch_devices(
                 .filter(|n| !n.contains(CLIENT) && !n.contains("Midi Through"))
                 .collect();
             ports.extend(stand_ins.iter().map(|s| s.name.clone()));
-            let found = match hid_api.as_mut() {
-                Some(h) => hid_ports(h.scan(&hid_vendors), &hid_mappings),
-                None => Vec::new(),
-            };
             let mut picked: Vec<(String, Option<PathBuf>)> = {
                 let choices = shared.choices.lock().unwrap();
                 ports
                     .iter()
                     .map(|p| (p.clone(), pick_mapping(p, &dir, &mappings, &choices)))
                     .collect()
+            };
+            let mapped: Vec<String> = picked
+                .iter()
+                .filter(|(_, m)| m.is_some())
+                .map(|(p, _)| p.clone())
+                .collect();
+            let found = match hid_api.as_mut() {
+                Some(h) => hid_ports(h.scan(&hid_vendors), &hid_mappings, &mapped),
+                None => Vec::new(),
             };
             {
                 let choices = shared.choices.lock().unwrap();
@@ -1288,5 +1299,38 @@ mod tests {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");
         }
         assert_eq!(name("Generic USB MIDI 1"), None);
+    }
+
+    #[test]
+    fn hid_twins_of_mapped_midi_ports_take_the_mapping_name() {
+        let mappings = vec![(
+            "Pioneer DDJ-FLX10 jog screens".to_string(),
+            PathBuf::from("Pioneer-DDJ-FLX10-screens.hid.xml"),
+            vec![hid::Product {
+                vendor_id: 0x2b73,
+                product_id: 0x0041,
+                interface: Some(5),
+                ..Default::default()
+            }],
+        )];
+        let device = hid::DeviceInfo {
+            vendor_id: 0x2b73,
+            product_id: 0x0041,
+            interface: 5,
+            product: "DDJ-FLX10".into(),
+            ..Default::default()
+        };
+        let named = |midi: &[&str]| {
+            let midi: Vec<String> = midi.iter().map(|s| s.to_string()).collect();
+            hid_ports(vec![device.clone()], &mappings, &midi)
+                .into_iter()
+                .map(|(p, _, _)| p)
+                .collect::<Vec<_>>()
+        };
+        // macOS and Windows name the MIDI port as the device names itself.
+        assert_eq!(named(&["DDJ-FLX10"]), ["Pioneer DDJ-FLX10 jog screens"]);
+        // Linux adds the port's own name and numbers.
+        assert_eq!(named(&["DDJ-FLX10:DDJ-FLX10 MIDI 1 24:0"]), ["DDJ-FLX10"]);
+        assert_eq!(named(&[]), ["DDJ-FLX10"]);
     }
 }

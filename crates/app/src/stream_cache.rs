@@ -17,7 +17,7 @@ use serde_json::{json, Value};
 use crate::spotify::{Playlist, StreamTrack};
 
 /// Bumped when what is kept changes shape; older files are ignored.
-const FORMAT: u64 = 1;
+const FORMAT: u64 = 2;
 
 /// What is kept of a service.
 #[derive(Debug, Default, PartialEq)]
@@ -107,6 +107,8 @@ fn to_bytes(kept: &Kept) -> Vec<u8> {
                         "artists": t.artists,
                         "album": t.album,
                         "duration": t.duration,
+                        "bpm": t.bpm,
+                        "key": t.key,
                     })
                 })
                 .collect();
@@ -168,6 +170,8 @@ fn from_bytes(bytes: &[u8]) -> Option<Kept> {
                     .collect(),
                 album: text(&t["album"]),
                 duration: t["duration"].as_f64().unwrap_or(0.0),
+                bpm: t["bpm"].as_f64().unwrap_or(0.0),
+                key: text(&t["key"]),
             })
             .collect();
         kept.tracks.insert(key.clone(), tracks);
@@ -210,6 +214,8 @@ mod tests {
                 artists: vec!["Rick Astley".into()],
                 album: "Whenever You Need Somebody".into(),
                 duration: 213.5,
+                bpm: 113.0,
+                key: "Ab".into(),
             }],
         );
         kept.versions.insert("37i9".into(), "snap1".into());

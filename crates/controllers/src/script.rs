@@ -371,8 +371,12 @@ fn natives<'js>(ctx: &Ctx<'js>, host: &Rc<RefCell<Host>>) -> rquickjs::Result<Ob
     native!("routeNote", |h, channel: u8, from: u8, to: u8| h
         .route_note(channel, from, to));
     native!("log", |h, m: String| h.log(&m));
-    native!("timerStart", |h, ms: f64, one_shot: bool| h
-        .timer_start(ms, one_shot));
+    native!("timerStart", |h, ms: f64, one_shot: bool, floor: f64| h
+        .timer_start(ms, one_shot, floor));
+    // openDJ: a deck's waveform summary, for controllers with screens.
+    native!("waveform", |h, g: String, per_second: f64| {
+        crate::waves::for_group(&h.layered(&g), per_second)
+    });
     native!("timerStop", |h, id: u32| h.timer_stop(id));
     native!("softTakeover", |h, g: String, k: String, on: bool| h
         .soft_takeover(&g, &k, on));

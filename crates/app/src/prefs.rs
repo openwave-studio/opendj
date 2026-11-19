@@ -590,6 +590,8 @@ pub struct Prefs {
     plugins: Vec<Box<dyn Plugin>>,
     /// Whether each of `plugins` plays from a cache: the DJ's own server.
     plugin_plays: Vec<bool>,
+    /// openDJ's own services an add-on works behind ("tidal").
+    behind_services: Vec<&'static str>,
     /// The source open on Settings › Sources, by its place in the rail.
     open_source: Option<i32>,
     /// What the last Clear or Sign out on Settings › Sources did.
@@ -664,9 +666,19 @@ impl Prefs {
         let (chosen_tx, chosen_rx) = mpsc::channel();
         let (tested_tx, tested_rx) = mpsc::channel();
         let (backup_tx, backup_rx) = mpsc::channel();
+        // An add-on that works behind one of openDJ's own services (see
+        // `SearchSource::catalog`) shows as that service, not on its own.
+        let mut behind_services = Vec::new();
         let mut plugins: Vec<Box<dyn Plugin>> = crate::stores::configured()
             .into_iter()
             .filter(|p| !p.settings().is_empty())
+            .filter_map(|mut p| match p.source().and_then(|s| s.catalog()) {
+                Some(service) => {
+                    behind_services.push(service);
+                    None
+                }
+                None => Some(p),
+            })
             .collect();
         let plugin_plays = plugins
             .iter_mut()
@@ -701,6 +713,7 @@ impl Prefs {
             ports: Vec::new(),
             plugins,
             plugin_plays,
+            behind_services,
             open_source: None,
             sources_note: String::new(),
             rail_names: crate::browser::all_source_names(),

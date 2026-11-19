@@ -58,6 +58,16 @@
         return callback;
     };
 
+    const startTimer = function(interval, callback, oneShot, floor) {
+        const fn = typeof callback === "string" ? new Function(callback) : callback;
+        if (typeof fn !== "function") {
+            throw new Error("Invalid timer callback provided to engine.beginTimer");
+        }
+        const id = native.timerStart(Math.max(floor, Number(interval) || 0), !!oneShot, floor);
+        timers.set(id, {fn, oneShot: !!oneShot});
+        return id;
+    };
+
     globalThis.engine = {
         getValue: (group, name) => native.get(String(group), String(name)),
         setValue(group, name, value) {
@@ -104,13 +114,20 @@
         trigger: (group, name) => native.trigger(String(group), String(name)),
         log: message => native.log(String(message)),
         beginTimer(interval, callback, oneShot) {
-            const fn = typeof callback === "string" ? new Function(callback) : callback;
-            if (typeof fn !== "function") {
-                throw new Error("Invalid timer callback provided to engine.beginTimer");
-            }
-            const id = native.timerStart(Math.max(20, Number(interval) || 0), !!oneShot);
-            timers.set(id, {fn, oneShot: !!oneShot});
-            return id;
+            return startTimer(interval, callback, oneShot, 20);
+        },
+        // openDJ: like beginTimer, down to 5 ms rather than 20, for screens
+        // that want a steady stream (the DDJ-FLX10's jog screens).
+        beginFastTimer(interval, callback, oneShot) {
+            return startTimer(interval, callback, oneShot, 5);
+        },
+        // openDJ: the waveform of the track on `group`'s deck, `perSecond`
+        // entries a second, as a Uint8Array of four bytes an entry: the
+        // peak of the low, mid and high bands and of the whole signal, each
+        // 0 to 255 on a square-root scale. Empty with no track, or before
+        // its analysis has started; shorter than the track while it runs.
+        getWaveform(group, perSecond) {
+            return new Uint8Array(native.waveform(String(group), Number(perSecond) || 150));
         },
         stopTimer(id) {
             if (timers.delete(id)) {

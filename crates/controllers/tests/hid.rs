@@ -230,3 +230,128 @@ fn maschine_mikro_mk3_knows_the_kits() {
         assert!(script.contains(&line), "missing {line}");
     }
 }
+
+/// The DDJ-FLX10's jog screens: the HID mapping says it runs, the MIDI
+/// mapping switches the screens over with SysEx, and the HID mapping then
+/// streams each loaded deck's state and loads its waveform.
+#[test]
+fn ddj_flx10_jog_screens_show_the_waveform() {
+    // Ten seconds of red (bass only), at full height.
+    opendj_controllers::waves::set_source(Some(Arc::new(|deck, per_second| {
+        if deck == 0 {
+            vec![[255, 0, 0, 255]; (10.0 * per_second) as usize]
+        } else {
+            Vec::new()
+        }
+    })));
+    let reg = ControlRegistry::new();
+    let _engine = opendj_engine::engine::Engine::new(&reg, 44_100.0);
+    let dir = default_mappings_dir().unwrap();
+    let mut midi = Controller::new(
+        "DDJ-FLX10",
+        Mapping::load(&dir.join("Pioneer-DDJ-FLX10.midi.xml")).unwrap(),
+        reg.clone(),
+    )
+    .unwrap();
+    let mut screens = Controller::new_hid(
+        "Pioneer DDJ-FLX10 jog screens",
+        Mapping::load(&dir.join("Pioneer-DDJ-FLX10-screens.hid.xml")).unwrap(),
+        reg.clone(),
+        Rc::new(FakeDevice::default()),
+    )
+    .unwrap();
+    let set = |key: &str, v: f64| reg.get("[Channel1]", key).unwrap().force(v);
+    set("duration", 10.0);
+    set("playposition", 0.5);
+    set("bpm", 128.5);
+    set("key", 22.0); // A minor
+    set("track_loaded", 1.0);
+
+    // Nothing goes to the screens until the MIDI side has switched them.
+    let start = Instant::now();
+    for i in 0..400 {
+        let t = start + Duration::from_millis(i);
+        midi.poll(t);
+        screens.poll(t);
+    }
+    let sysex: Vec<Vec<u8>> = midi
+        .take_output()
+        .into_iter()
+        .filter(|m| m[0] == 0xF0)
+        .collect();
+    let enter = [
+        0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00, 0x03, 0x01, 0xF7,
+    ];
+    assert!(sysex.contains(&enter.to_vec()), "{sysex:x?}");
+    let keepalive = [
+        0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00, 0x50, 0x31, 0xF7,
+    ];
+    assert!(sysex.contains(&keepalive.to_vec()), "kept in HID mode");
+
+    let reports = screens.take_reports();
+    assert!(!reports.is_empty());
+    // Report ID 0 then 128 bytes, deck 1 only.
+    assert!(
+        reports.iter().all(|r| r.len() == 129 && r[0] == 0),
+        "{:x?}",
+        reports[0]
+    );
+    let kinds: Vec<u8> = reports.iter().map(|r| r[2]).collect();
+    assert!(reports.iter().all(|r| r[1] == 0x10));
+
+    // State first, then the load in order.
+    assert_eq!(kinds[0], 0x27);
+    let load: Vec<u8> = kinds.iter().copied().filter(|&k| k != 0x27).collect();
+    let mut expected = vec![0x30, 0x39, 0x39, 0x39, 0x35, 0x35, 0x35];
+    expected.extend(std::iter::repeat_n(0x36, 1500usize.div_ceil(19)));
+    expected.push(0x2F);
+    assert_eq!(&load[..expected.len()], &expected[..], "{load:x?}");
+    // Then entries at the playhead now and then (5 s in = entry 750).
+    let trickle = reports.iter().rev().find(|r| r[2] == 0x36).unwrap();
+    assert_eq!(
+        u32::from_le_bytes([trickle[11], trickle[12], trickle[13], trickle[14]]),
+        750
+    );
+
+    let state = &reports[0][1..];
+    assert_eq!(&state[5..7], &[0, 5], "five seconds played");
+    assert_eq!(&state[9..11], &[0, 10], "a ten-second track");
+    assert_eq!((state[13], state[14]), (128, 0x80), "128.5 BPM");
+    assert_eq!(state[29], 0x82, "8A");
+    assert_eq!(state[31], 0x02, "deck 1");
+
+    let length = reports.iter().find(|r| r[2] == 0x30).unwrap();
+    assert_eq!(&length[7..9], &[0, 10]);
+    let count = reports.iter().find(|r| r[2] == 0x35).unwrap();
+    assert_eq!(u16::from_le_bytes([count[3], count[4]]), 1500);
+    let labels = reports.iter().find(|r| r[2] == 0x39).unwrap();
+    assert_eq!(&labels[8..15], b"HOT CUE");
+    // Red at full brightness, full height: (7 << 13) | (31 << 2).
+    let first = reports.iter().find(|r| r[2] == 0x36).unwrap();
+    assert_eq!(&first[11..15], &[0, 0, 0, 0], "from entry 0");
+    assert_eq!(&first[15..17], &0xE07Cu16.to_le_bytes());
+    assert_eq!(first[7], 19);
+
+    // Unplugged or turned off: the MIDI displays come back.
+    screens.shutdown();
+    screens.poll(Instant::now());
+    let mut t = Instant::now();
+    for _ in 0..100 {
+        t += Duration::from_millis(1);
+        midi.poll(t);
+    }
+    let _ = midi.take_output();
+    for _ in 0..400 {
+        t += Duration::from_millis(1);
+        midi.poll(t);
+    }
+    let out = midi.take_output();
+    assert!(
+        !out.iter().any(|m| m[..] == keepalive[..]),
+        "keepalive stopped"
+    );
+    assert!(out.iter().any(|m| m[0] == 0xBF), "MIDI jog displays again");
+    assert_eq!(midi.errors(), Vec::<String>::new());
+    assert_eq!(screens.errors(), Vec::<String>::new());
+    opendj_controllers::waves::set_source(None);
+}
