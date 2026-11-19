@@ -1,6 +1,12 @@
-openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor opens a recorded set as a timeline: check the mix, fix it, and export it with chapters. Collection Health is rebuilt around one row per check, with duplicates found by sound and new Tags and Lists pages. Beat FX work the same on every controller, the instrument deck is redesigned with a step sequencer, a Room EQ tunes the main and booth outputs to the venue, and the karaoke screen can show the cover beside the lyrics.
+openDJ 0.8.1 fixes a crash on Windows: 0.8.0 closed with a stack overflow before its window opened. Everything from 0.8.0 is below.
 
-## What's new
+## Fixed in 0.8.1
+
+- **Windows**: openDJ starts again. Starting the audio engine needed more memory for the main thread than Windows gives a program by default, so 0.8.0 crashed at startup on every Windows PC. macOS and Linux were not affected.
+
+## New in 0.8.0
+
+openDJ 0.8.0 takes a set from the booth to the studio. The Mixed Set Editor opens a recorded set as a timeline: check the mix, fix it, and export it with chapters. Collection Health is rebuilt around one row per check, with duplicates found by sound and new Tags and Lists pages. Beat FX work the same on every controller, the instrument deck is redesigned with a step sequencer, a Room EQ tunes the main and booth outputs to the venue, and the karaoke screen can show the cover beside the lyrics.
 
 **Mixed Set Editor**
 
