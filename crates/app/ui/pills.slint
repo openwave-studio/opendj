@@ -1,6 +1,10 @@
-// The Pigments-style pieces the FX bar and the Remix deck share: dark
-// value pills that open titled lists, and the band mark.
+// The shared Pigments-style controls: dark value pills that open titled
+// lists, ‹ › stepper pills, power buttons, arc knobs and the band mark.
+// Screens use these rather than drawing their own; colors and sizes come
+// from Theme.
 import { Theme } from "theme.slint";
+import { KnobArc } from "controls.slint";
+import { MapMark } from "mapmark.slint";
 
 // Three short bars, high on top and low at the bottom: the bands an effect
 // works on, each lit in its band's color, or all lilac for the whole signal.
@@ -30,7 +34,7 @@ export component ValuePill inherits Rectangle {
     callback clicked();
     height: 22px;
     border-radius: 7px;
-    background: Theme.light ? #ffffff : ta.has-hover || open ? #17151e : #111113;
+    background: ta.has-hover || open ? Theme.pill-hover : Theme.pill;
     border-width: 1px;
     border-color: ta.has-hover || open ? Theme.n-6e58a8 : Theme.n-2c2c31;
     animate border-color { duration: 120ms; }
@@ -69,7 +73,7 @@ export component ListRow inherits Rectangle {
 // The titled list a value pill opens.
 export component TitledList inherits Rectangle {
     in property <string> title;
-    background: Theme.light ? #ffffff : #262629;
+    background: Theme.pill-list;
     border-radius: 9px;
     border-width: 1px;
     border-color: Theme.border;
@@ -90,4 +94,122 @@ export component TitledList inherits Rectangle {
         }
         @children
     }
+}
+
+// ‹ or › in a stepper pill. `map-key` names its control for Map mode.
+export component StepArrow inherits Rectangle {
+    in property <bool> next;
+    in property <bool> enabled: true;
+    in property <string> map-key;
+    callback clicked();
+    width: 22px;
+    Path {
+        width: 5px;
+        height: 9px;
+        viewbox-width: 5;
+        viewbox-height: 9;
+        commands: root.next ? "M 1 1 L 4 4.5 L 1 8" : "M 4 1 L 1 4.5 L 4 8";
+        stroke: !root.enabled ? Theme.n-3a3a3e : ta.pressed ? Theme.text-dim : ta.has-hover ? Theme.text : Theme.n-a8a8ad;
+        stroke-width: 1.5px;
+        stroke-line-cap: round;
+        fill: transparent;
+    }
+    ta := TouchArea {
+        mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
+        clicked => {
+            if root.enabled {
+                root.clicked();
+            }
+        }
+    }
+    if root.map-key != "": MapMark { key: root.map-key; }
+}
+
+// ‹ value ›: a dark pill stepping a value either way, the value (its
+// children) between the arrows. A press on the value opens its list, where
+// it has one; a stepper pill shows no ▾.
+export component StepperPill inherits Rectangle {
+    in property <bool> prev-enabled: true;
+    in property <bool> next-enabled: true;
+    in property <string> prev-key;
+    in property <string> next-key;
+    callback prev();
+    callback next();
+    height: 24px;
+    min-width: 0px;
+    border-radius: 7px;
+    background: Theme.pill;
+    border-width: 1px;
+    border-color: Theme.n-2c2c31;
+    HorizontalLayout {
+        StepArrow { enabled: root.prev-enabled; map-key: root.prev-key; clicked => { root.prev(); } }
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            @children
+        }
+        StepArrow { next: true; enabled: root.next-enabled; map-key: root.next-key; clicked => { root.next(); } }
+    }
+}
+
+// A round power button: lit in lilac while on; dim when there is nothing
+// to turn on.
+export component PowerButton inherits Rectangle {
+    in property <bool> on;
+    in property <bool> active: true;
+    in property <length> size: 26px;
+    callback clicked();
+    width: size;
+    height: size;
+    border-radius: size / 2;
+    background: on ? Theme.accent.with-alpha(ta.has-hover ? 0.32 : 0.2) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.pill;
+    border-width: 1.5px;
+    border-color: on ? Theme.accent : Theme.n-48484c;
+    Path {
+        width: root.size * 0.5;
+        height: root.size * 0.5;
+        viewbox-width: 20;
+        viewbox-height: 20;
+        commands: "M 10 2 L 10 9 M 5.4 5 A 7 7 0 1 0 14.6 5";
+        stroke: root.on ? Theme.lilac-text : root.active ? Theme.n-a8a8ad : Theme.n-58585d;
+        stroke-width: 2px;
+        stroke-line-cap: round;
+        fill: transparent;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            if root.active {
+                root.clicked();
+            }
+        }
+    }
+    @children
+}
+
+// An arc knob's look: a thick ring, filled in the tint from `origin` as far
+// as `value` (both 0..1 over the sweep). The screen adds the dragging.
+export component ArcKnob inherits Rectangle {
+    in property <float> value;
+    in property <float> origin: 0;
+    in property <color> tint: Theme.accent;
+    in property <length> size: 24px;
+    in property <bool> hover;
+    width: size;
+    height: size;
+    KnobArc {
+        r: 40;
+        from: -135deg;
+        to: 135deg;
+        stroke: root.hover ? Theme.n-48484c : Theme.n-2c2c31;
+        stroke-width: max(3px, root.size / 7);
+    }
+    if abs(root.value - root.origin) > 0.004: KnobArc {
+        r: 40;
+        from: -135deg + root.origin * 270deg;
+        to: -135deg + root.value * 270deg;
+        stroke: root.tint;
+        stroke-width: max(3px, root.size / 7);
+    }
+    @children
 }
