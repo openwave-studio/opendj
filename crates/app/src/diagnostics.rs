@@ -260,9 +260,12 @@ pub fn platform() -> String {
 /// The graphics adapter the window renders with, once it is known.
 static GRAPHICS: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
 
+/// Lists the controllers plugged in now.
+type ControllerList = Box<dyn Fn() -> Vec<String>>;
+
 thread_local! {
-    /// Lists the controllers plugged in now, for bug reports.
-    static CONTROLLERS: std::cell::RefCell<Option<Box<dyn Fn() -> Vec<String>>>> =
+    /// Where bug reports read the controllers plugged in now.
+    static CONTROLLERS: std::cell::RefCell<Option<ControllerList>> =
         const { std::cell::RefCell::new(None) };
 }
 
