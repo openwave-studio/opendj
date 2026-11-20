@@ -1254,9 +1254,80 @@ fn ddj_grv6_decks_beat_fx_and_groove_circuit() {
     assert_eq!(get(&reg, "[Channel1_Stem5]", "mute"), 0.0);
     c.receive(&[0xB0, 0x12, 0x00]);
     assert_eq!(get(&reg, "[Channel1_Stem1]", "volume"), 0.0);
+    c.receive(&[0xB0, 0x12, 0x7F]);
+
+    // DRUM ROLL rolls the drums alone through the stem effect, DRUM TRANS
+    // chops them; let go, the stem effect is back as it was.
     c.receive(&[0x90, 0x05, 0x7F]);
-    assert_eq!(get(&reg, "[Channel1]", "beatlooproll_0.25_activate"), 1.0);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 3.0);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx_beats"), 0.25);
+    for stem in [1, 5] {
+        let fx = format!("[QuickEffectRack1_[Channel1_Stem{stem}]]");
+        assert_eq!(get(&reg, &fx, "enabled"), 1.0);
+    }
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel1_Stem4]]", "enabled"),
+        0.0
+    );
+    assert_eq!(get(&reg, "[Channel1]", "beatlooproll_0.25_activate"), 0.0);
     c.receive(&[0x90, 0x05, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 1.0);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel1_Stem1]]", "enabled"),
+        0.0
+    );
+    c.receive(&[0x90, 0x33, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 4.0);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx_beats"), 1.0);
+    c.receive(&[0x90, 0x33, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 1.0);
+    // Without stems the whole deck rolls.
+    c.receive(&[0x91, 0x05, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "beatlooproll_0.25_activate"), 1.0);
+    c.receive(&[0x91, 0x05, 0x00]);
+
+    // SHIFT + DRUM SWAP: Bank B takes out the other stems; Single ends the
+    // swap before, Multi adds them up.
+    c.receive(&[0x90, 0x2D, 0x7F]);
+    c.receive(&[0x90, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 1.0);
+    c.receive(&[0x90, 0x00, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem2]", "mute"), 1.0);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 0.0);
+    c.receive(&[0x90, 0x2F, 0x7F]);
+    c.receive(&[0x90, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem2]", "mute"), 1.0);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 1.0);
+    c.poll(Instant::now());
+    let out = c.take_output();
+    for lit in [0x2D, 0x2F] {
+        assert!(
+            out.iter().any(|m| m[..] == [0x90, lit, 0x7F]),
+            "SHIFT light {lit:x}: {out:x?}"
+        );
+    }
+
+    // CAPTURE grabs bars into an open Looper deck; SHIFT steps the length.
+    let bars = get(&reg, "[Looper1]", "capture_bars");
+    c.receive(&[0x90, 0x2B, 0x7F]);
+    assert_ne!(get(&reg, "[Looper3]", "capture_bars"), bars);
+    reg.get("[Looper3]", "enabled").unwrap().set(1.0);
+    let capture = reg.get("[Looper3]", "capture").unwrap();
+    let version = capture.version();
+    c.receive(&[0x90, 0x08, 0x7F]);
+    assert!(
+        capture.version().wrapping_sub(version) >= 2,
+        "CAPTURE pushed"
+    );
+
+    // The BEAT FX beat lights show the effect's length.
+    reg.get(fx, "beats").unwrap().set(4.0);
+    c.poll(Instant::now());
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB4, 0x64, 0x07]),
+        "4 beats: {out:x?}"
+    );
 
     // LOAD lights follow the decks; the jog ring is on channel 16.
     reg.get("[Channel1]", "track_loaded").unwrap().set(1.0);

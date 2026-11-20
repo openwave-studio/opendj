@@ -19,15 +19,21 @@ so it works the same way where they share controls.
 - **GROOVE CIRCUIT** works on the deck's drum stems, so it needs a track
   with stems. **GAIN** sets the drums' level. **DRUM SWAP** 1-4 mute the kick,
   the hi-hats, all the drums or everything but the drums (lit while on;
-  press again to bring them back). **DRUM ROLL** rolls 1/8, 1/4, 1/2 and 1 beat. **DRUM RELEASE**
-  mutes the drums while held and lets an echo of them ring out (SHIFT:
-  echo or reverb).
+  press again to bring them back). With SHIFT they pick **Bank A** (those
+  four) or **Bank B** (the bass, the instruments, the vocals, or everything
+  but the vocals), and **Single** (one swap at a time) or **Multi** (they
+  add up). **DRUM ROLL** rolls just the drums, 1/8, 1/4, 1/2 or 1 beat,
+  while the rest plays on (without stems, the whole deck rolls); with SHIFT
+  (**DRUM TRANS**) it chops them in time instead. **DRUM RELEASE** mutes
+  the drums while held and lets an echo of them ring out (SHIFT: echo or
+  reverb). **CAPTURE** grabs the last bars of the mix into an open Looper
+  deck (SHIFT, **Length**: 1, 2, 4 or 8 bars).
 - **PART ISOLATOR** turns the vocal, instrument and drum stems up and down
   with its knobs.
 - **BEAT FX** runs openDJ's Beat FX: **BEAT FX SELECT** picks the nearest
   openDJ effect, **CH SELECT** sends it to one channel or, on MASTER, all
   four, **LEVEL/DEPTH** sets the amount, **ON/OFF** turns it on and
-  **BEAT ◀ ▶** halve and double its length.
+  **BEAT ◀ ▶** halve and double its length, shown on the beat lights.
 - **SOUND COLOR FX** turns the COLOR knobs' effect on and off for every
   channel (SHIFT: next effect).
 - **KEY LOCK**, **SLIP**, **VINYL** and **QUANTIZE** do what they say.
@@ -39,7 +45,7 @@ so it works the same way where they share controls.
 - The rotary selector, pushed and tilted, moves round the library;
   **PREVIEW** adds the track to Automix.
 
-Not mapped yet: CAPTURE, CUE/LOOP MEMORY, MASTER CUE, the mic and the
+Not mapped yet: CUE/LOOP MEMORY, MASTER CUE, the mic and the
 fader start messages.
 
 ## When you try it
@@ -48,8 +54,11 @@ fader start messages.
   check PLAY, CUE, the pads and the jog wheel follow.
 - Move every mixer knob and fader on all four channels.
 - Try every pad mode, with and without SHIFT, and check the pad colours.
-- With a track that has stems, try each GROOVE CIRCUIT control and the
-  PART ISOLATOR knobs.
+- With a track that has stems, try each GROOVE CIRCUIT control, with and
+  without SHIFT, and the PART ISOLATOR knobs. Do the DRUM ROLL and DRUM
+  TRANS buttons light while held, and do the SHIFT lights show the bank
+  and Single or Multi?
+- Step **BEAT ◀ ▶** and check the beat lights follow.
 - Turn on the Beat FX, turn **BEAT FX SELECT** and **CH SELECT** through
   every position, and press SOUND COLOR FX with and without SHIFT.
 - Scratch and nudge with the platter and the rim: a full turn of the

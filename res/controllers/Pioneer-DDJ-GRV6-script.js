@@ -29,11 +29,18 @@
 //  drums of a 4-stem track), so it needs a track with stems:
 //    GAIN is the drums' level (centre: as recorded),
 //    DRUM SWAP 1 to 4 take out the kick, the hi-hats, all the drums, or
-//      everything but the drums (lit while they do; press again to undo),
-//    DRUM ROLL 1 to 4 roll the deck while held (1/8, 1/4, 1/2 and 1 beat),
+//      everything but the drums (lit while they do; press again to undo);
+//      SHIFT + DRUM SWAP picks Bank A (those) or Bank B (the bass, the
+//      instruments, the vocals, everything but the vocals), and Single
+//      (one swap at a time) or Multi (they add up),
+//    DRUM ROLL 1 to 4 roll the drums while held (1/8, 1/4, 1/2 and 1
+//      beat; the whole deck without stems), SHIFT (DRUM TRANS) chops them,
 //    DRUM RELEASE echoes the drums out while held and brings them back
 //      dry when let go (SHIFT, FX SELECT: echo or reverb).
-//  CAPTURE does nothing yet: openDJ can't record a drum loop into a slot.
+//  CAPTURE grabs the last bars of the mix into an open Looper deck (SHIFT,
+//  Length: 1, 2, 4 or 8 bars); openDJ has no drum slots to fill.
+//
+//  The BEAT FX display's beat lights show the effect's length.
 //
 //  The jog rings show the playhead going round as on a 33 1/3 record.
 //
@@ -47,9 +54,7 @@
 //  disagree in one place: tilting the SMART ROTARY SELECTOR right sends
 //  note 0x3E (rekordbox), not 0x2E (the list); both are mapped.
 //
-//  Not mapped yet: CAPTURE (SHIFT: Length), the DRUM SWAP and DRUM ROLL
-//  SHIFT layers (Bank A/B, Single/Multi, Drum Trans), CUE/LOOP MEMORY,
-//  DUAL, MASTER CUE, the MONO/STEREO switch and the fader start messages.
+//  Not mapped yet: CUE/LOOP MEMORY, DUAL, MASTER CUE, the MONO/STEREO switch and the fader start messages.
 
 var PioneerDDJGRV6 = {};
 
@@ -168,6 +173,8 @@ PioneerDDJGRV6.toggleLight = function(midiIn, active) {
 
 PioneerDDJGRV6.init = function() {
     const decks = PioneerDDJGRV6.decks;
+    engine.makeConnection(PioneerDDJGRV6.beatFxSlot, "beats", PioneerDDJGRV6.beatFxBeatsLight);
+    engine.trigger(PioneerDDJGRV6.beatFxSlot, "beats");
     decks.forEach(function(group) {
         engine.makeConnection(group, "vu_meter", PioneerDDJGRV6.vuMeterUpdate);
         midi.sendShortMsg(0xB0 + PioneerDDJGRV6.deckIndex(group), 0x02, 0);
@@ -326,7 +333,25 @@ PioneerDDJGRV6.shifted = function() {
     return PioneerDDJGRV6.shiftButtonDown.some(function(down) { return down; });
 };
 
-// The GRV6's BEAT FX has no lights of its own to follow the unit.
+// The BEAT FX display's beat lights (channel 5, CC 0x64) show the effect's
+// length: 1/4, 1/2, 3/4, 1, 2, 4, 8, 16 or 32 beats.
+PioneerDDJGRV6.beatFxBeatCodes = [
+    [0.25, 0x03], [0.5, 0x04], [0.75, 0x21], [1, 0x05], [2, 0x06],
+    [4, 0x07], [8, 0x08], [16, 0x09], [32, 0x0A],
+];
+
+PioneerDDJGRV6.beatFxBeatsLight = function(value) {
+    let code = 0x03;
+    let best = Infinity;
+    PioneerDDJGRV6.beatFxBeatCodes.forEach(function(pair) {
+        const off = Math.abs(Math.log2(Math.max(value, 0.0625) / pair[0]));
+        if (off < best) {
+            best = off;
+            code = pair[1];
+        }
+    });
+    midi.sendShortMsg(0xB4, 0x64, code);
+};
 
 PioneerDDJGRV6.beatFxLevelDepthRotate = function(_channel, _control, value) {
     engine.setParameter(PioneerDDJGRV6.beatFxSlot, "meta", value / 0x7F);
@@ -1364,19 +1389,37 @@ PioneerDDJGRV6.grooveGain = function(_channel, _control, value, _status, group) 
 // DRUM SWAP 1 to 4: which stems each takes out (1 kick, 2 bass,
 // 3 instruments, 4 vocals, 5 hi-hats); 0 means the drums, whatever the
 // track has. A track with only four stems has one drums stem, so 1 and 2
-// both take it out.
-PioneerDDJGRV6.drumSwaps = {
-    0x00: [1],          // the kick
-    0x01: [5],          // the hi-hats
-    0x02: [0],          // all the drums
-    0x03: [2, 3, 4],    // everything but the drums
-};
+// both take it out. openDJ has no drum samples to swap in, so a swap takes
+// stems out: Bank A (SHIFT + DRUM SWAP 1) the drums, Bank B (SHIFT + DRUM
+// SWAP 2) the rest.
+PioneerDDJGRV6.drumSwapBanks = [
+    {
+        0x00: [1],          // the kick
+        0x01: [5],          // the hi-hats
+        0x02: [0],          // all the drums
+        0x03: [2, 3, 4],    // everything but the drums
+    },
+    {
+        0x00: [2],          // the bass
+        0x01: [3],          // the instruments
+        0x02: [4],          // the vocals
+        0x03: [0, 2, 3],    // everything but the vocals
+    },
+];
+PioneerDDJGRV6.drumSwaps = PioneerDDJGRV6.drumSwapBanks[0];
+
+// Each deck's bank (0 A, 1 B), and whether its swaps add up (Multi, SHIFT
+// + DRUM SWAP 4) or each one ends the others (Single, SHIFT + DRUM SWAP 3,
+// as the GRV6 starts).
+PioneerDDJGRV6.drumSwapBank = [0, 0, 0, 0];
+PioneerDDJGRV6.drumSwapMulti = [false, false, false, false];
 
 PioneerDDJGRV6.drumSwapStems = function(group, control) {
     const count = engine.getValue(group, "stem_count");
     const drums = PioneerDDJGRV6.drumStems(group);
+    const bank = PioneerDDJGRV6.drumSwapBanks[PioneerDDJGRV6.drumSwapBank[PioneerDDJGRV6.deckIndex(group)]];
     let stems = [];
-    PioneerDDJGRV6.drumSwaps[control].forEach(function(stem) {
+    bank[control].forEach(function(stem) {
         if (stem === 0) {
             stems = stems.concat(drums);
         } else if (stem === 5 && count < 5) {
@@ -1400,19 +1443,116 @@ PioneerDDJGRV6.drumSwapPressed = function(_channel, control, value, _status, gro
     if (!value) { return; }
     const stems = PioneerDDJGRV6.drumSwapStems(group, control);
     const mute = PioneerDDJGRV6.drumSwapOn(group, control) ? 0 : 1;
+    if (mute && !PioneerDDJGRV6.drumSwapMulti[PioneerDDJGRV6.deckIndex(group)]) {
+        // Single: the swap on before ends.
+        for (let stem = 1; stem <= engine.getValue(group, "stem_count"); ++stem) {
+            engine.setValue(PioneerDDJGRV6.stemGroup(group, stem), "mute", 0);
+        }
+    }
     stems.forEach(function(stem) {
         engine.setValue(PioneerDDJGRV6.stemGroup(group, stem), "mute", mute);
     });
 };
 
+// SHIFT + DRUM SWAP: Bank A, Bank B, Single, Multi.
+PioneerDDJGRV6.drumSwapShiftPressed = function(_channel, control, value, _status, group) {
+    if (!value) { return; }
+    const deck = PioneerDDJGRV6.deckIndex(group);
+    if (control <= 0x2D) {
+        PioneerDDJGRV6.drumSwapBank[deck] = control - 0x2C;
+    } else {
+        PioneerDDJGRV6.drumSwapMulti[deck] = control === 0x2F;
+    }
+    PioneerDDJGRV6.drumSwapLights(0, group);
+};
+
+// DRUM SWAP lights its swaps that are on; with SHIFT, the bank and mode.
 PioneerDDJGRV6.drumSwapLights = function(_value, group) {
     const channel = group.match(/\[Channel\d+/)[0] + "]";
     const status = PioneerDDJGRV6.deckStatus(channel);
+    const deck = PioneerDDJGRV6.deckIndex(channel);
+    const multi = PioneerDDJGRV6.drumSwapMulti[deck];
+    const shiftLit = [
+        PioneerDDJGRV6.drumSwapBank[deck] === 0,
+        PioneerDDJGRV6.drumSwapBank[deck] === 1,
+        !multi,
+        multi,
+    ];
     Object.keys(PioneerDDJGRV6.drumSwaps).forEach(function(control) {
         const on = PioneerDDJGRV6.drumSwapOn(channel, Number(control)) ? 0x7F : 0x00;
         midi.sendShortMsg(status, Number(control), on);
-        midi.sendShortMsg(status, Number(control) + 0x2C, on);
+        midi.sendShortMsg(status, Number(control) + 0x2C, shiftLit[Number(control)] ? 0x7F : 0x00);
     });
+};
+
+// DRUM ROLL 1 to 4, held: the drums roll 1/8, 1/4, 1/2 or 1 beat while the
+// rest plays on, through the deck's stem effect (Roll). SHIFT + DRUM ROLL
+// (DRUM TRANS) chops the drums in time instead (Trans). Without stems the
+// whole deck rolls, and DRUM TRANS does nothing.
+PioneerDDJGRV6.drumRollBeats = [0.125, 0.25, 0.5, 1];
+// Per deck: the button rolling (its note), and the stem effect to go back to.
+PioneerDDJGRV6.drumRollHeld = [0, 0, 0, 0];
+PioneerDDJGRV6.drumRollSavedFx = [1, 1, 1, 1];
+
+PioneerDDJGRV6.drumStemFx = function(group, control, value, effect, beats) {
+    const deck = PioneerDDJGRV6.deckIndex(group);
+    const drums = PioneerDDJGRV6.drumStems(group);
+    if (value) {
+        if (!PioneerDDJGRV6.drumRollHeld[deck]) {
+            PioneerDDJGRV6.drumRollSavedFx[deck] = engine.getValue(group, "stem_fx");
+        }
+        PioneerDDJGRV6.drumRollHeld[deck] = control;
+        engine.setValue(group, "stem_fx", effect);
+        engine.setValue(group, "stem_fx_beats", beats);
+    } else if (PioneerDDJGRV6.drumRollHeld[deck] !== control) {
+        return;
+    }
+    drums.forEach(function(stem) {
+        engine.setValue(PioneerDDJGRV6.stemFxGroup(group, stem), "enabled", value ? 1 : 0);
+    });
+    midi.sendShortMsg(PioneerDDJGRV6.deckStatus(group), control, value ? 0x7F : 0x00);
+    if (!value) {
+        PioneerDDJGRV6.drumRollHeld[deck] = 0;
+        engine.setValue(group, "stem_fx", PioneerDDJGRV6.drumRollSavedFx[deck]);
+    }
+};
+
+PioneerDDJGRV6.drumRollPressed = function(_channel, control, value, _status, group) {
+    const beats = PioneerDDJGRV6.drumRollBeats[control - 0x04];
+    if (!PioneerDDJGRV6.drumStems(group).length) {
+        engine.setValue(group, "beatlooproll_" + beats + "_activate", value ? 1 : 0);
+        return;
+    }
+    PioneerDDJGRV6.drumStemFx(group, control, value, 3, beats);
+};
+
+PioneerDDJGRV6.drumTransPressed = function(_channel, control, value, _status, group) {
+    if (!PioneerDDJGRV6.drumStems(group).length) { return; }
+    PioneerDDJGRV6.drumStemFx(group, control, value, 4, PioneerDDJGRV6.drumRollBeats[control - 0x30]);
+};
+
+// CAPTURE: openDJ has no drum slots to capture into; it grabs the last
+// bars of the mix into the first open Looper deck, as its CAPTURE does.
+// SHIFT + CAPTURE (Length) steps how many bars: 1, 2, 4, 8.
+PioneerDDJGRV6.capturePressed = function(_channel, _control, value) {
+    if (!value) { return; }
+    for (let n = 1; n <= 4; ++n) {
+        const looper = "[Looper" + n + "]";
+        if (engine.getValue(looper, "enabled")) {
+            engine.setValue(looper, "capture", 1);
+            engine.setValue(looper, "capture", 0);
+            return;
+        }
+    }
+};
+
+PioneerDDJGRV6.captureLengthPressed = function(_channel, _control, value) {
+    if (!value) { return; }
+    const bars = engine.getValue("[Looper1]", "capture_bars");
+    const next = bars >= 8 ? 1 : bars * 2;
+    for (let n = 1; n <= 4; ++n) {
+        engine.setValue("[Looper" + n + "]", "capture_bars", next);
+    }
 };
 
 // DRUM RELEASE, held (at ON, or latched at LOCK): the drums go into the

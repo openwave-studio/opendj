@@ -6580,43 +6580,43 @@
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 1 (DECK1) - hold - 0.125 beat loop roll</description>
+                <description>DRUM ROLL 1 (DECK1) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel1]</group>
-                <key>beatlooproll_0.125_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x90</status>
                 <midino>0x04</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 2 (DECK1) - hold - 0.25 beat loop roll</description>
+                <description>DRUM ROLL 2 (DECK1) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel1]</group>
-                <key>beatlooproll_0.25_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x90</status>
                 <midino>0x05</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 3 (DECK1) - hold - 0.5 beat loop roll</description>
+                <description>DRUM ROLL 3 (DECK1) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel1]</group>
-                <key>beatlooproll_0.5_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x90</status>
                 <midino>0x06</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 4 (DECK1) - hold - 1 beat loop roll</description>
+                <description>DRUM ROLL 4 (DECK1) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel1]</group>
-                <key>beatlooproll_1_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x90</status>
                 <midino>0x07</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
@@ -6860,43 +6860,43 @@
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 1 (DECK2) - hold - 0.125 beat loop roll</description>
+                <description>DRUM ROLL 1 (DECK2) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel2]</group>
-                <key>beatlooproll_0.125_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x91</status>
                 <midino>0x04</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 2 (DECK2) - hold - 0.25 beat loop roll</description>
+                <description>DRUM ROLL 2 (DECK2) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel2]</group>
-                <key>beatlooproll_0.25_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x91</status>
                 <midino>0x05</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 3 (DECK2) - hold - 0.5 beat loop roll</description>
+                <description>DRUM ROLL 3 (DECK2) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel2]</group>
-                <key>beatlooproll_0.5_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x91</status>
                 <midino>0x06</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 4 (DECK2) - hold - 1 beat loop roll</description>
+                <description>DRUM ROLL 4 (DECK2) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel2]</group>
-                <key>beatlooproll_1_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x91</status>
                 <midino>0x07</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
@@ -7140,43 +7140,43 @@
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 1 (DECK3) - hold - 0.125 beat loop roll</description>
+                <description>DRUM ROLL 1 (DECK3) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel3]</group>
-                <key>beatlooproll_0.125_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x92</status>
                 <midino>0x04</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 2 (DECK3) - hold - 0.25 beat loop roll</description>
+                <description>DRUM ROLL 2 (DECK3) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel3]</group>
-                <key>beatlooproll_0.25_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x92</status>
                 <midino>0x05</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 3 (DECK3) - hold - 0.5 beat loop roll</description>
+                <description>DRUM ROLL 3 (DECK3) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel3]</group>
-                <key>beatlooproll_0.5_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x92</status>
                 <midino>0x06</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 4 (DECK3) - hold - 1 beat loop roll</description>
+                <description>DRUM ROLL 4 (DECK3) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel3]</group>
-                <key>beatlooproll_1_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x92</status>
                 <midino>0x07</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
@@ -7420,43 +7420,43 @@
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 1 (DECK4) - hold - 0.125 beat loop roll</description>
+                <description>DRUM ROLL 1 (DECK4) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel4]</group>
-                <key>beatlooproll_0.125_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x93</status>
                 <midino>0x04</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 2 (DECK4) - hold - 0.25 beat loop roll</description>
+                <description>DRUM ROLL 2 (DECK4) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel4]</group>
-                <key>beatlooproll_0.25_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x93</status>
                 <midino>0x05</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 3 (DECK4) - hold - 0.5 beat loop roll</description>
+                <description>DRUM ROLL 3 (DECK4) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel4]</group>
-                <key>beatlooproll_0.5_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x93</status>
                 <midino>0x06</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
-                <description>DRUM ROLL 4 (DECK4) - hold - 1 beat loop roll</description>
+                <description>DRUM ROLL 4 (DECK4) - hold - roll the drums (openDJ: the whole deck without stems)</description>
                 <group>[Channel4]</group>
-                <key>beatlooproll_1_activate</key>
+                <key>PioneerDDJGRV6.drumRollPressed</key>
                 <status>0x93</status>
                 <midino>0x07</midino>
                 <options>
-                    <Normal/>
+                    <Script-Binding/>
                 </options>
             </control>
             <control>
@@ -7945,6 +7945,406 @@
                 <key>PioneerDDJGRV6.beatFxChannelSelect</key>
                 <status>0x94</status>
                 <midino>0x1E</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 1 +SHIFT (DECK1) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x90</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 2 +SHIFT (DECK1) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x90</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 3 +SHIFT (DECK1) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x90</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 4 +SHIFT (DECK1) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 1 +SHIFT (DECK1) - press - Bank A</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x90</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 2 +SHIFT (DECK1) - press - Bank B</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x90</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 3 +SHIFT (DECK1) - press - Single mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x90</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 4 +SHIFT (DECK1) - press - Multi mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x90</status>
+                <midino>0x2F</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE (DECK1) - press - capture the last bars into an open Looper deck</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.capturePressed</key>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE +SHIFT (DECK1) - press - Length: 1, 2, 4 or 8 bars</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJGRV6.captureLengthPressed</key>
+                <status>0x90</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 1 +SHIFT (DECK2) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x91</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 2 +SHIFT (DECK2) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x91</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 3 +SHIFT (DECK2) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x91</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 4 +SHIFT (DECK2) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x91</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 1 +SHIFT (DECK2) - press - Bank A</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x91</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 2 +SHIFT (DECK2) - press - Bank B</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x91</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 3 +SHIFT (DECK2) - press - Single mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x91</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 4 +SHIFT (DECK2) - press - Multi mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x91</status>
+                <midino>0x2F</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE (DECK2) - press - capture the last bars into an open Looper deck</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.capturePressed</key>
+                <status>0x91</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE +SHIFT (DECK2) - press - Length: 1, 2, 4 or 8 bars</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJGRV6.captureLengthPressed</key>
+                <status>0x91</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 1 +SHIFT (DECK3) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x92</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 2 +SHIFT (DECK3) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x92</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 3 +SHIFT (DECK3) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x92</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 4 +SHIFT (DECK3) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x92</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 1 +SHIFT (DECK3) - press - Bank A</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x92</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 2 +SHIFT (DECK3) - press - Bank B</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x92</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 3 +SHIFT (DECK3) - press - Single mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x92</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 4 +SHIFT (DECK3) - press - Multi mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x92</status>
+                <midino>0x2F</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE (DECK3) - press - capture the last bars into an open Looper deck</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.capturePressed</key>
+                <status>0x92</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE +SHIFT (DECK3) - press - Length: 1, 2, 4 or 8 bars</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJGRV6.captureLengthPressed</key>
+                <status>0x92</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 1 +SHIFT (DECK4) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x93</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 2 +SHIFT (DECK4) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x93</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 3 +SHIFT (DECK4) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x93</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM ROLL 4 +SHIFT (DECK4) - hold - DRUM TRANS: chop the drums in time</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumTransPressed</key>
+                <status>0x93</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 1 +SHIFT (DECK4) - press - Bank A</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x93</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 2 +SHIFT (DECK4) - press - Bank B</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x93</status>
+                <midino>0x2D</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 3 +SHIFT (DECK4) - press - Single mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x93</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>DRUM SWAP 4 +SHIFT (DECK4) - press - Multi mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.drumSwapShiftPressed</key>
+                <status>0x93</status>
+                <midino>0x2F</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE (DECK4) - press - capture the last bars into an open Looper deck</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.capturePressed</key>
+                <status>0x93</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>CAPTURE +SHIFT (DECK4) - press - Length: 1, 2, 4 or 8 bars</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJGRV6.captureLengthPressed</key>
+                <status>0x93</status>
+                <midino>0x2B</midino>
                 <options>
                     <Script-Binding/>
                 </options>
