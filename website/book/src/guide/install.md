@@ -3,6 +3,11 @@
 Download openDJ from the [download page](https://opendj.app/#download) or the
 [latest release on GitHub](https://github.com/openwave-studio/opendj/releases/latest).
 
+To try fixes before they're in a release, the
+[nightly build](https://github.com/openwave-studio/opendj/releases/tag/nightly) is
+made every night from the newest code. It is less tested and doesn't update
+itself: download it again for a newer one.
+
 ## macOS
 
 Apple Silicon and Intel, macOS 11 or newer.
