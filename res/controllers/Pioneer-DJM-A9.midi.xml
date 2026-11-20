@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>Pioneer DJM-A9</name>
+        <author>openDJ</author>
+        <description>openDJ mapping for the Pioneer DJM-A9 as an external mixer: its channel faders, crossfader and crossfader assign and INPUT SELECT tell openDJ which decks are on air, while the mixer does the mixing. Beta: written from the mixer's MIDI messages, not yet tried on the hardware.</description>
+    </info>
+    <controller id="DJM-A9">
+        <scriptfiles>
+            <file functionprefix="PioneerDJM" filename="Pioneer-DJM-script.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <description>INPUT SELECT CH1 - USB A - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputUsbA</key>
+                <status>0x90</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - USB A - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputUsbA</key>
+                <status>0x90</status>
+                <midino>0x39</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - USB A - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputUsbA</key>
+                <status>0x90</status>
+                <midino>0x3D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - USB A - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputUsbA</key>
+                <status>0x90</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - USB B - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputUsbB</key>
+                <status>0x90</status>
+                <midino>0x42</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - USB B - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputUsbB</key>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - USB B - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputUsbB</key>
+                <status>0x90</status>
+                <midino>0x46</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - USB B - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputUsbB</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - DIGITAL - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - DIGITAL - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - DIGITAL - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x3A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - DIGITAL - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x3E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - LINE - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - LINE - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - LINE - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x3B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - LINE - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x3F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - PHONO - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x34</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - PHONO - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x38</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - PHONO - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x3C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - PHONO - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x40</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - RETURN - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - RETURN - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - RETURN - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - RETURN - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - USB - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - USB - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x4B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - USB - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x4C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - USB - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x4D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH1 - BLUETOOTH - sets whether the channel plays this computer</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x51</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH2 - BLUETOOTH - sets whether the channel plays this computer</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x52</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH3 - BLUETOOTH - sets whether the channel plays this computer</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x53</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>INPUT SELECT CH4 - BLUETOOTH - sets whether the channel plays this computer</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.inputOther</key>
+                <status>0x90</status>
+                <midino>0x54</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER CH1 - slide - channel volume</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.fader</key>
+                <status>0xB0</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER CH2 - slide - channel volume</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.fader</key>
+                <status>0xB0</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER CH3 - slide - channel volume</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.fader</key>
+                <status>0xB0</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CH FADER CH4 - slide - channel volume</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.fader</key>
+                <status>0xB0</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH1 - switch - puts the channel on side A, THRU or B</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.crossfaderAssign</key>
+                <status>0xB0</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH2 - switch - puts the channel on side A, THRU or B</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.crossfaderAssign</key>
+                <status>0xB0</status>
+                <midino>0x42</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH3 - switch - puts the channel on side A, THRU or B</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.crossfaderAssign</key>
+                <status>0xB0</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER ASSIGN CH4 - switch - puts the channel on side A, THRU or B</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.crossfaderAssign</key>
+                <status>0xB0</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER - slide - crossfade</description>
+                <group>[Master]</group>
+                <key>PioneerDJM.crossfader</key>
+                <status>0xB0</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>USB A - connected - this computer is on the mixer's USB A port</description>
+                <group>[Master]</group>
+                <key>PioneerDJM.usbPortA</key>
+                <status>0x90</status>
+                <midino>0x4E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>USB B - connected - this computer is on the mixer's USB B port</description>
+                <group>[Master]</group>
+                <key>PioneerDJM.usbPortB</key>
+                <status>0x90</status>
+                <midino>0x4F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+        </controls>
+        <outputs>
+
+        </outputs>
+    </controller>
+</MixxxControllerPreset>

@@ -1,0 +1,16 @@
+{
+ "file": "AlphaTheta-euphonia.midi.xml",
+ "width": 764,
+ "height": 782,
+ "panels": [[2, 18, 760, 760, 18]],
+ "controls": [
+  {"id": "ch1-input", "label": "INPUT SELECT 1", "kind": "switch", "round": false, "x": 99, "y": 56, "w": 60, "h": 26, "midi": ["USB A|90 35", "DIGITAL|90 32", "LINE|90 33", "PHONO|90 34"]},
+  {"id": "ch2-input", "label": "INPUT SELECT 2", "kind": "switch", "round": false, "x": 266, "y": 56, "w": 60, "h": 26, "midi": ["USB A|90 39", "DIGITAL|90 36", "LINE|90 37", "PHONO|90 38"]},
+  {"id": "ch3-input", "label": "INPUT SELECT 3", "kind": "switch", "round": false, "x": 434, "y": 56, "w": 60, "h": 26, "midi": ["USB A|90 3D", "DIGITAL|90 3A", "LINE|90 3B", "PHONO|90 3C"]},
+  {"id": "ch4-input", "label": "INPUT SELECT 4", "kind": "switch", "round": false, "x": 601, "y": 56, "w": 60, "h": 26, "midi": ["USB A|90 41", "DIGITAL|90 3E", "LINE|90 3F", "PHONO|90 40"]},
+  {"id": "ch1-fader", "label": "VOLUME 1", "kind": "knob", "round": true, "x": 99, "y": 550, "w": 60, "h": 60, "midi": ["B0 11"]},
+  {"id": "ch2-fader", "label": "VOLUME 2", "kind": "knob", "round": true, "x": 266, "y": 550, "w": 60, "h": 60, "midi": ["B0 12"]},
+  {"id": "ch3-fader", "label": "VOLUME 3", "kind": "knob", "round": true, "x": 434, "y": 550, "w": 60, "h": 60, "midi": ["Deck 3|B0 13"]},
+  {"id": "ch4-fader", "label": "VOLUME 4", "kind": "knob", "round": true, "x": 601, "y": 550, "w": 60, "h": 60, "midi": ["Deck 4|B0 14"]}
+ ]
+}

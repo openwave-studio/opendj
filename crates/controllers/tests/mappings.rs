@@ -2148,58 +2148,144 @@ fn numark_ns4fx_sync_loops_and_crossfader_assign() {
     assert_eq!(get(&reg, "[Channel1]", "orientation"), 1.0);
 }
 
-/// Every Numark mapping on the support list takes each of its messages,
-/// pressed and released or turned, without a script error.
 #[test]
-fn numark_mappings_take_every_message_cleanly() {
-    for c in opendj_controllers::support::all() {
-        let Some(file) = c.file.filter(|_| c.name.starts_with("Numark")) else {
-            continue;
-        };
-        let (_reg, mut ctl) = load(&file);
-        settle(&mut ctl, 50);
-        every_message_runs_cleanly(&file, &mut ctl);
-        ctl.shutdown();
-    }
+fn djm_club_mixers_follow_faders_and_input_select() {
+    let (reg, mut c) = load("Pioneer-DJM-900NXS2.midi.xml");
+    // CH3 fader (B0 13) up: on air while INPUT SELECT is on USB A.
+    c.receive(&[0xB0, 0x13, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 1.0);
+    // INPUT SELECT CH3 to PHONO (90 3C): the room no longer hears deck 3.
+    c.receive(&[0x90, 0x3C, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 0.0);
+    // Back to USB A (90 3D).
+    c.receive(&[0x90, 0x3D, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 1.0);
+    // This computer on USB B (90 4F): channel 3 still plays USB A.
+    c.receive(&[0x90, 0x4F, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 0.0);
+    c.receive(&[0x90, 0x46, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 1.0);
+    // Crossfader and crossfader assign.
+    c.receive(&[0xB0, 0x0B, 0x00]);
+    assert_eq!(get(&reg, "[Master]", "crossfader"), -1.0);
+    c.receive(&[0xB0, 0x44, 0x7F]);
+    assert_eq!(get(&reg, "[Channel4]", "orientation"), 2.0);
+    c.receive(&[0xB0, 0x41, 0x40]);
+    assert_eq!(get(&reg, "[Channel1]", "orientation"), 1.0);
+
+    // The euphonia's rotary volumes.
+    let (reg, mut c) = load("AlphaTheta-euphonia.midi.xml");
+    c.receive(&[0xB0, 0x11, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "volume"), 1.0);
+    c.receive(&[0x90, 0x33, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "volume"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
 }
 
-/// The NS4FX's pad mode buttons send a second note when pressed again;
-/// Mixxx's mapping only listened for it on deck 1. Also checks its loop
-/// in and out buttons and the pads after an unfinished pad mode.
 #[test]
-fn numark_ns4fx_second_pad_mode_on_every_deck() {
-    let (reg, mut c) = load("Numark NS4FX.midi.xml");
-    settle(&mut c, 50);
+fn djm_s9_pads_loops_effects_and_14_bit_faders() {
+    let (reg, mut c) = load("Pioneer-DJM-S9.midi.xml");
+    settle(&mut c, 20);
     c.take_output();
-    for status in [0x94u8, 0x95, 0x96, 0x97] {
-        // Roll is the AUTO LOOP button's second press.
-        c.receive(&[status, 0x06, 0x7F]);
-        c.receive(&[status - 0x10, 0x06, 0x00]);
-        let out = c.take_output();
-        assert!(
-            out.iter()
-                .any(|m| m.len() == 3 && m[0] == status && m[1] == 0x06 && m[2] == 0x7F),
-            "{status:02X}: {out:02X?}"
-        );
-    }
-    // The right-hand decks send loop in and loop out on swapped notes,
-    // as djay Pro's built-in NS4FX mapping also has them.
-    for (status, group, note) in [(0x94u8, "[Channel1]", 0x36u8), (0x95, "[Channel2]", 0x37)] {
-        let loop_in = reg.get(group, "loop_in").unwrap();
-        let loop_out = reg.get(group, "loop_out").unwrap();
-        let (i, o) = (loop_in.version(), loop_out.version());
-        c.receive(&[status, note, 0x7F]);
-        c.receive(&[status - 0x10, note, 0x00]);
-        assert_ne!(loop_in.version(), i, "{group} loop in");
-        assert_eq!(loop_out.version(), o, "{group} loop out untouched");
-    }
-    // Pitch play isn't there yet, so its pads stay hot cues.
-    c.receive(&[0x94, 0x02, 0x7F]);
-    let hotcue = reg.get("[Channel1]", "hotcue_1_activate").unwrap();
-    let before = hotcue.version();
-    c.receive(&[0x94, 0x14, 0x7F]);
-    c.receive(&[0x84, 0x14, 0x00]);
-    assert_ne!(hotcue.version(), before);
+
+    // Pads on channel 8 (deck 1) and 9 (deck 2), a mode on each 0x10.
+    c.receive(&[0x97, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "hotcue_3_activate"), 1.0);
+    c.receive(&[0x97, 0x02, 0x00]);
+    c.receive(&[0x98, 0x0A, 0x7F]);
+    c.receive(&[0x98, 0x0A, 0x00]);
+    c.receive(&[0x98, 0x13, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "beatlooproll_0.5_activate"), 1.0);
+    c.receive(&[0x98, 0x13, 0x00]);
+    c.receive(&[0x97, 0x30, 0x7F]);
+    assert_eq!(get(&reg, "[Sampler1]", "cue_gotoandplay"), 1.0);
+    c.receive(&[0x97, 0x30, 0x00]);
+    c.receive(&[0x97, 0x41, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "beatjump_1_forward"), 1.0);
+    c.receive(&[0x97, 0x41, 0x00]);
+
+    // Pad mode buttons light, one at a time.
+    c.receive(&[0x90, 0x1B, 0x7F]);
+    c.receive(&[0x90, 0x1E, 0x7F]);
+    let out = c.take_output();
+    assert!(out.iter().any(|m| m[..] == [0x90, 0x1E, 0x7F]), "{out:x?}");
+    assert!(out.iter().any(|m| m[..] == [0x90, 0x1B, 0x00]), "{out:x?}");
+
+    // Hot cue lights.
+    reg.get("[Channel1]", "hotcue_2_status").unwrap().set(1.0);
+    settle(&mut c, 20);
+    let out = c.take_output();
+    assert!(out.iter().any(|m| m[..] == [0x97, 0x01, 0x7F]), "{out:x?}");
+
+    // Loops: 4 BEAT on 0x14, HALF/DOUBLE.
+    c.receive(&[0x90, 0x14, 0x7F]);
+    c.receive(&[0x90, 0x14, 0x00]);
+    c.receive(&[0x90, 0x12, 0x7F]);
+    c.receive(&[0x90, 0x12, 0x00]);
+
+    // 14-bit channel fader B0 13/33 and crossfader B6 1F/3F.
+    c.receive(&[0xB1, 0x13, 0x40]);
+    c.receive(&[0xB1, 0x33, 0x00]);
+    let v = get(&reg, "[Channel2]", "volume");
+    assert!(v > 0.3 && v < 0.7, "{v}");
+    c.receive(&[0xB6, 0x1F, 0x7F]);
+    c.receive(&[0xB6, 0x3F, 0x7F]);
+    assert_eq!(get(&reg, "[Master]", "crossfader"), 1.0);
+
+    // The CH1 FX lever holds effect 1-2 on channel 1.
+    c.receive(&[0x94, 0x48, 0x7F]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1_Effect2]", "enabled"),
+        1.0
+    );
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1]", "group_[Channel1]_enable"),
+        1.0
+    );
+    c.receive(&[0x94, 0x48, 0x00]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1_Effect2]", "enabled"),
+        0.0
+    );
+
+    // Browser and LOAD.
+    c.receive(&[0x96, 0x46, 0x7F]);
+    c.receive(&[0x96, 0x46, 0x00]);
+    c.receive(&[0xB6, 0x40, 0x01]);
+    settle(&mut c, 20);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
+fn djm_t1_and_plx_crss12_decks_and_pads() {
+    let (reg, mut c) = load("Pioneer-DJM-T1.midi.xml");
+    c.receive(&[0x90, 0x04, 0x7F]);
+    c.receive(&[0x90, 0x04, 0x00]);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0);
+    c.receive(&[0x90, 0x1F, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "hotcue_2_activate"), 1.0);
+    c.receive(&[0x90, 0x1F, 0x00]);
+    let on = get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable");
+    c.receive(&[0x90, 0x09, 0x7F]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable"),
+        1.0 - on
+    );
+    let size = get(&reg, "[Channel1]", "beatloop_size");
+    c.receive(&[0xB0, 0x09, 0x01]);
+    assert_eq!(get(&reg, "[Channel1]", "beatloop_size"), size * 2.0);
+    c.receive(&[0xB0, 0x16, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "volume"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+
+    // The PLX-CRSS12 set to deck 2: pads on channel 9.
+    let (reg, mut c) = load("Pioneer-PLX-CRSS12.midi.xml");
+    c.receive(&[0x98, 0x07, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "hotcue_8_activate"), 1.0);
+    c.receive(&[0x98, 0x07, 0x00]);
+    c.receive(&[0x97, 0x10, 0x7F]);
+    assert_eq!(get(&reg, "[Sampler1]", "cue_gotoandplay"), 1.0);
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
@@ -2426,6 +2512,61 @@ fn ddj_sb_and_sb2() {
         every_message_runs_cleanly(file, &mut c);
         c.shutdown();
     }
+}
+
+/// Every Numark mapping on the support list takes each of its messages,
+/// pressed and released or turned, without a script error.
+#[test]
+fn numark_mappings_take_every_message_cleanly() {
+    for c in opendj_controllers::support::all() {
+        let Some(file) = c.file.filter(|_| c.name.starts_with("Numark")) else {
+            continue;
+        };
+        let (_reg, mut ctl) = load(&file);
+        settle(&mut ctl, 50);
+        every_message_runs_cleanly(&file, &mut ctl);
+        ctl.shutdown();
+    }
+}
+
+/// The NS4FX's pad mode buttons send a second note when pressed again;
+/// Mixxx's mapping only listened for it on deck 1. Also checks its loop
+/// in and out buttons and the pads after an unfinished pad mode.
+#[test]
+fn numark_ns4fx_second_pad_mode_on_every_deck() {
+    let (reg, mut c) = load("Numark NS4FX.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+    for status in [0x94u8, 0x95, 0x96, 0x97] {
+        // Roll is the AUTO LOOP button's second press.
+        c.receive(&[status, 0x06, 0x7F]);
+        c.receive(&[status - 0x10, 0x06, 0x00]);
+        let out = c.take_output();
+        assert!(
+            out.iter()
+                .any(|m| m.len() == 3 && m[0] == status && m[1] == 0x06 && m[2] == 0x7F),
+            "{status:02X}: {out:02X?}"
+        );
+    }
+    // The right-hand decks send loop in and loop out on swapped notes,
+    // as djay Pro's built-in NS4FX mapping also has them.
+    for (status, group, note) in [(0x94u8, "[Channel1]", 0x36u8), (0x95, "[Channel2]", 0x37)] {
+        let loop_in = reg.get(group, "loop_in").unwrap();
+        let loop_out = reg.get(group, "loop_out").unwrap();
+        let (i, o) = (loop_in.version(), loop_out.version());
+        c.receive(&[status, note, 0x7F]);
+        c.receive(&[status - 0x10, note, 0x00]);
+        assert_ne!(loop_in.version(), i, "{group} loop in");
+        assert_eq!(loop_out.version(), o, "{group} loop out untouched");
+    }
+    // Pitch play isn't there yet, so its pads stay hot cues.
+    c.receive(&[0x94, 0x02, 0x7F]);
+    let hotcue = reg.get("[Channel1]", "hotcue_1_activate").unwrap();
+    let before = hotcue.version();
+    c.receive(&[0x94, 0x14, 0x7F]);
+    c.receive(&[0x84, 0x14, 0x00]);
+    assert_ne!(hotcue.version(), before);
+    assert_eq!(c.errors(), Vec::<String>::new());
 }
 
 /// The Party Mix MKII mapping uses the MKII's own notes (from djay Pro's
