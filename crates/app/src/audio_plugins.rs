@@ -607,7 +607,11 @@ fn plugin_groups(chosen: &[Found], names: &[String]) -> (Vec<FxGroup>, Vec<FxRow
             .enumerate()
             .filter(|(_, (f, _))| maker(f) == *m)
             .map(|(i, (f, n))| {
-                (n.clone(), AVAILABLE_EFFECTS.len() + i, plugin_kind(&f.features, &f.name))
+                (
+                    n.clone(),
+                    AVAILABLE_EFFECTS.len() + i,
+                    plugin_kind(&f.features, &f.name),
+                )
             })
             .collect();
         groups.push(FxGroup {
