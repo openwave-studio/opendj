@@ -134,7 +134,7 @@ impl Browser {
             .map(|p| p.name)
             .collect();
         let taken: Vec<&str> = taken.iter().map(String::as_str).collect();
-        let name = super::untaken_name("Sidelist", &taken);
+        let name = super::untaken_name("Shortlist", &taken);
         let made = db
             .create_top_playlist(&name)
             .and_then(|list| db.add_to_playlist(list, &ids).map(|_| list));
@@ -163,7 +163,7 @@ impl Browser {
         };
         // The DJ's lists are only known while the collection's tree is up.
         if self.tree == COLLECTION && !self.menu_lists.is_empty() {
-            let mut choices = vec![choice("Working list".into(), false, 0)];
+            let mut choices = vec![choice("Shortlist".into(), false, 0)];
             choices.push(choice("PLAYLISTS".into(), true, -1));
             for (i, l) in self.menu_lists.iter().enumerate() {
                 if !l.is_crate {
@@ -178,7 +178,7 @@ impl Browser {
             if shown.is_none() && !self.side[SIDELIST_TAB].is_empty() {
                 choices.push(choice(String::new(), true, -1));
                 choices.push(choice(
-                    "Save Working List as Playlist".into(),
+                    "Save Shortlist as Playlist".into(),
                     false,
                     SAVE_SCRATCH,
                 ));
@@ -195,7 +195,7 @@ impl Browser {
                 });
                 (name.unwrap_or_default(), at.map_or(-1, |i| i as i32 + 1))
             }
-            None => ("Working list".to_string(), 0),
+            None => ("Shortlist".to_string(), 0),
         };
         ui.set_name(SharedString::from(name));
         ui.set_current(current);
