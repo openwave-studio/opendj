@@ -1,7 +1,7 @@
 // The Remix deck's WHEEL screen (`[RemixN]`): the source it plays and how
 // (Send adds only what its effects add, Insert plays the source through
-// it), an ISOLATE knob and a LEVER for each band down the side, and the
-// SCENE wheel: right plays the Build Up scene picked on the wheel's right
+// it), an ISOLATE knob and a LEVER for each band, side by side on an arrow
+// pointing at the SCENE wheel: right plays the Build Up scene picked on the wheel's right
 // half, left the Break Down scene on its left half, more as it turns.
 // TIME and COLOR shape the scenes' echoes and filters.
 import { Theme } from "theme.slint";
@@ -247,10 +247,10 @@ component Lever inherits VerticalLayout {
     }
 }
 
-// One band's ISOLATE knob and LEVER. Left of centre turns the band down
-// (in Insert; in Send the source's own channel still plays it), right adds
-// the Isolate effect to it.
-component BandLane inherits HorizontalLayout {
+// One band's ISOLATE knob over its LEVER. Left of centre turns the band
+// down (in Insert; in Send the source's own channel still plays it), right
+// adds the Isolate effect to it.
+component BandLane inherits VerticalLayout {
     in property <string> group;
     // 0 low, 1 mid, 2 high.
     in property <int> band;
@@ -258,10 +258,10 @@ component BandLane inherits HorizontalLayout {
     property <string> key: band == 0 ? "low" : band == 1 ? "mid" : "high";
     property <color> tint: band == 0 ? Theme.band-low : band == 1 ? Theme.band-mid : Theme.band-high;
     property <float> isolate: Controls.value(Controls.resolve(group, "isolate_" + key), Controls.tick);
-    spacing: 6px;
-    VerticalLayout {
+    alignment: center;
+    spacing: 2px;
+    HorizontalLayout {
         alignment: center;
-        spacing: 0px;
         ControlKnob {
             group: root.group;
             key: "isolate_" + root.key;
@@ -270,16 +270,58 @@ component BandLane inherits HorizontalLayout {
             look: 3;
             arc-color: root.isolate >= 0 ? root.tint : root.insert ? Theme.danger : Theme.n-58585d;
         }
-        Text {
-            text: root.key.to-uppercase();
-            color: root.tint;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-            horizontal-alignment: center;
+    }
+    Text {
+        text: root.key.to-uppercase();
+        color: root.tint;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        horizontal-alignment: center;
+    }
+    Rectangle { height: 4px; }
+    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; }
+}
+
+// The three bands side by side, LOW to HIGH, on a panel that points at
+// the SCENE wheel, with the effects their knobs and levers add above.
+component IsolateArrow inherits VerticalLayout {
+    in property <string> group;
+    in property <bool> insert;
+    property <length> tip: 22px;
+    alignment: center;
+    spacing: 8px;
+    HorizontalLayout {
+        spacing: 12px;
+        alignment: start;
+        RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
+        RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+    }
+    arrow := Rectangle {
+        Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: self.width / 1px;
+            viewbox-height: self.height / 1px;
+            fill: Theme.panel-raised;
+            stroke: Theme.n-6e58a8;
+            stroke-width: 1px;
+            MoveTo { x: 0.5; y: 0.5; }
+            LineTo { x: (arrow.width - root.tip) / 1px; y: 0.5; }
+            LineTo { x: arrow.width / 1px - 0.5; y: arrow.height / 2px; }
+            LineTo { x: (arrow.width - root.tip) / 1px; y: arrow.height / 1px - 0.5; }
+            LineTo { x: 0.5; y: arrow.height / 1px - 0.5; }
+            Close { }
+        }
+        HorizontalLayout {
+            padding-left: 12px;
+            padding-right: root.tip + 8px;
+            padding-top: 8px;
+            padding-bottom: 6px;
+            spacing: 14px;
+            for b in [0, 1, 2]: BandLane { group: root.group; band: b; insert: root.insert; }
         }
     }
-    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; }
 }
 
 // A slice of the SCENE wheel's ring, in a 100 x 100 box, clockwise from
@@ -456,7 +498,8 @@ component SceneWheel inherits Rectangle {
             }
         }
         scroll-event(e) => {
-            Controls.set-value(root.scene-index, clamp(root.scene + (e.delta-y > 0 ? 0.04 : -0.04), -1, 1));
+            // A notch moves it a step of 1/50; a trackpad, finer.
+            Controls.set-value(root.scene-index, clamp(root.scene + clamp(e.delta-y / 1500px, -0.02, 0.02), -1, 1));
             accept
         }
     }
@@ -512,10 +555,7 @@ export component RemixPanel inherits Rectangle {
         HorizontalLayout {
             vertical-stretch: 1;
             spacing: 10px;
-            VerticalLayout {
-                alignment: space-around;
-                for b in [2, 1, 0]: BandLane { group: root.group; band: b; insert: root.insert; }
-            }
+            IsolateArrow { group: root.group; insert: root.insert; }
             SceneWheel { group: root.group; horizontal-stretch: 1; }
             SceneShape { group: root.group; width: 96px; }
         }

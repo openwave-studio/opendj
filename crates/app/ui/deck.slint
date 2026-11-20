@@ -10,7 +10,7 @@ import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, 
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
 import { StepperPill, SwitchPill } from "pills.slint";
-import { RemixEffectPill, RemixMode, RemixPanel, RemixSource, RemixUi } from "remix.slint";
+import { RemixMode, RemixPanel, RemixSource } from "remix.slint";
 import { InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
@@ -6276,9 +6276,8 @@ component GrooveTitle inherits Rectangle {
     }
 }
 
-// The Remix deck's slim title: REMIX, what it plays and SEND or INSERT on
-// the left; the Isolate and Lever effects and ⏏ (unload the deck) on the
-// right.
+// The Remix deck's slim title: REMIX and what it plays on the left;
+// SEND or INSERT and ⏏ (unload the deck) on the right.
 component RemixTitle inherits Rectangle {
     in property <int> deck;
     property <string> group: "[Remix" + (deck + 1) + "]";
@@ -6291,10 +6290,8 @@ component RemixTitle inherits Rectangle {
         VerticalLayout { alignment: center; DeckMenuButton { deck: root.deck; kind: 3; } }
         Text { text: "REMIX"; color: Theme.lilac-text; font-size: 12px; font-weight: 700; letter-spacing: 1px; vertical-alignment: center; }
         RemixSource { deck: root.deck; group: root.group; }
-        VerticalLayout { alignment: center; RemixMode { group: root.group; } }
         Rectangle { horizontal-stretch: 1; }
-        RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
-        RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+        VerticalLayout { alignment: center; RemixMode { group: root.group; } }
         VerticalLayout {
             alignment: center;
             TitleButton {
