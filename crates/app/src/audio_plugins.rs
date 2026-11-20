@@ -503,15 +503,18 @@ fn plugin_kind(features: &[String], name: &str) -> usize {
         .map_or(OTHER, |(kind, _)| *kind)
 }
 
+/// An effect in the menu: its label, its place in EffectList.names and its
+/// kind.
+type MenuItem = (String, usize, usize);
+
 /// Menu lines for `items` (a label, its place in EffectList.names and its
 /// kind): a heading per kind, in [`KINDS`] order, then its effects A to Z.
 /// The kinds are split over two columns of about the same length, kept in
 /// order.
-fn grouped(items: Vec<(String, usize, usize)>) -> Vec<FxRow> {
-    let mut groups: Vec<(usize, Vec<&(String, usize, usize)>)> = Vec::new();
+fn grouped(items: Vec<MenuItem>) -> Vec<FxRow> {
+    let mut groups: Vec<(usize, Vec<&MenuItem>)> = Vec::new();
     for k in 0..KINDS.len() {
-        let mut these: Vec<&(String, usize, usize)> =
-            items.iter().filter(|(_, _, i)| *i == k).collect();
+        let mut these: Vec<&MenuItem> = items.iter().filter(|(_, _, i)| *i == k).collect();
         if these.is_empty() {
             continue;
         }
@@ -601,7 +604,7 @@ fn plugin_groups(chosen: &[Found], names: &[String]) -> (Vec<FxGroup>, Vec<FxRow
     let mut rows = Vec::new();
     for m in &makers {
         let key = format!("m:{m}");
-        let items: Vec<(String, usize, usize)> = chosen
+        let items: Vec<MenuItem> = chosen
             .iter()
             .zip(names)
             .enumerate()
