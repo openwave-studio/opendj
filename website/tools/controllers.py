@@ -129,6 +129,24 @@ def md(text):
     return html.escape(" ".join(text.split()), quote=False).replace("|", "\\|")
 
 
+# Makers as the popular list groups them: Pioneer DJ became AlphaTheta, so
+# their gear sits together, and Traktor gear comes under Native Instruments.
+MAKERS = [("Pioneer", "Pioneer DJ and AlphaTheta"), ("AlphaTheta", "Pioneer DJ and AlphaTheta"),
+          ("Native Instruments", "Native Instruments"), ("Allen & Heath", "Allen & Heath"),
+          ("DJ TechTools", "DJ TechTools")]
+
+
+def maker(name):
+    for prefix, label in MAKERS:
+        if name.startswith(prefix):
+            return label
+    return name.split()[0]
+
+
+def natural(text):
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", text)]
+
+
 def slug(path):
     name = (path.name.replace(".midi.xml", "").replace(".hid.xml", "")
             .replace(".opendj-mapping", "").replace(".xml", ""))
@@ -379,15 +397,23 @@ def main():
              "openDJ looks after these itself: each has a picture in the Controller Editor and "
              "a guide. **Beta** means nobody has tried it in openDJ on the real controller yet; "
              f"if you have one, [tell us how it goes]({ISSUE_URL}). It becomes **Supported** "
-             "once it has been tried and its mapping is settled.", "",
-             "| Controller | Status | Notes |", "|---|---|---|"]
+             "once it has been tried and its mapping is settled.", ""]
     by_file = {m.path.name: m for m in mappings}
     labels = {"supported": "Supported", "beta": "Beta", "planned": "Coming soon"}
+    by_maker = {}
     for c in looked_after:
-        m = by_file.get(c["file"] or "")
-        name = f"[{md(c['name'])}]({slug(m.path)}.md)" if m else md(c["name"])
-        index.append(f"| {name} | {labels[c['status']]} | {md(c['note']) or '–'} |")
-    index += ["", "## Every mapping", "",
+        by_maker.setdefault(maker(c["name"]), []).append(c)
+    for name_of_maker in sorted(by_maker, key=str.lower):
+        index += [f"### {md(name_of_maker)}", "",
+                  "| Controller | Status | Notes |", "|---|---|---|"]
+        # Coming soon last, the rest by name with numbers in order (DDJ-200 before DDJ-1000).
+        for c in sorted(by_maker[name_of_maker],
+                        key=lambda c: (c["status"] == "planned", natural(c["name"]))):
+            m = by_file.get(c["file"] or "")
+            name = f"[{md(c['name'])}]({slug(m.path)}.md)" if m else md(c["name"])
+            index.append(f"| {name} | {labels[c['status']]} | {md(c['note']) or '–'} |")
+        index.append("")
+    index += ["## Every mapping", "",
               "| Controller | Mapping by | Controls listed |", "|---|---|---|"]
     entries = []
     for m in mappings:

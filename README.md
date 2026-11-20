@@ -32,10 +32,14 @@ just starting out and for more experienced DJs alike.
 ## Controllers
 
 openDJ uses [Mixxx](https://mixxx.org)'s controller mappings, so most MIDI
-controllers that Mixxx supports work as soon as they're plugged in, and
-ships its own mappings for some (DDJ-FLX6, XDJ-RX3, Xone K2). USB HID
-controllers with a Mixxx HID mapping work too: Native Instruments' Traktor
-Kontrol S2 (MK1 to MK3), S3, S4 (MK2, MK3), F1, Z1 and MX2. Quit Traktor
+controllers that Mixxx supports work as soon as they're plugged in, over 200
+in all. It also looks after about 80 popular controllers itself, each with a
+picture in the Controller Editor and a guide, many with its own mapping
+written from the maker's MIDI list: Pioneer DJ and AlphaTheta DDJ, XDJ and
+DJM gear, Native Instruments Traktor Kontrol, Numark, Hercules, Xone:K2 and
+Midi Fighter Twister ([full list](https://opendj.app/docs/controllers/)).
+USB HID controllers work too: Native Instruments' Traktor Kontrol S2, S3, S4,
+S5, S8, D2, F1, X1 MK3, Z1 and MX2, and the Maschine Mikro MK3. Quit Traktor
 first; on Linux, the .deb and .rpm set up the USB permissions, or add the
 udev rule that comes with the other downloads. The Controller Editor maps
 anything else, with a wizard for controllers that have no mapping.
