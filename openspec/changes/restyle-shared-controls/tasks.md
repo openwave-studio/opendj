@@ -17,7 +17,7 @@
 
 ## 4. Mixer and menus
 
-- [ ] 4.1 Mixer: centre-out EQ arcs in band colours, EQ / Sculpt / Stems switch pill, round headphone cue, FX assign switch pills
+- [ ] 4.1 Mixer: centre-out EQ arcs in band colours, EQ / Sculpt / Stems switch pill, round headphone cue, FX assign switch pills, new fader caps for channel, tempo and crossfader
 - [ ] 4.2 Titled menus everywhere
 
 ## 5. Panels and Settings
@@ -27,7 +27,7 @@
 
 ## 6. Top bar
 
-- [ ] 6.1 Rec and Mic pills, after screenshots are reviewed
+- [ ] 6.1 Rec and Mic pills, the master knob with vertical meters and its Master panel on right-click, after screenshots are reviewed
 
 ## 7. Docs
 
