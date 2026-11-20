@@ -2085,7 +2085,7 @@ impl Engine {
                 remix_controls: (0..NUM_DECKS)
                     .map(|d| RemixControls::new(registry, d))
                     .collect(),
-                remix: Box::new(RemixDeck::new(sample_rate)),
+                remix: Box::new(RemixDeck::new(sample_rate, kits.clone())),
                 remix_seen: [false; NUM_DECKS],
                 last_main: vec![[0.0; 2]; BLOCK],
                 last_main_len: 0,
