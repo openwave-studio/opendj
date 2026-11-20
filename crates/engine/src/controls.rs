@@ -111,9 +111,11 @@ pub(crate) struct DeckControls {
     /// Stems in the loaded track (0 without stems).
     pub(crate) stem_count: ControlHandle,
     pub(crate) stems: [StemControls; crate::stems::MAX_STEMS],
-    /// The effect sent stems go into: 1 Echo, 2 Reverb (see
-    /// [`crate::effects::STEM_FX`]).
+    /// The effect sent stems go into: 1 Echo, 2 Reverb, 3 Roll, 4 Trans
+    /// (see [`crate::effects::STEM_FX`]).
     pub(crate) stem_fx: ControlHandle,
+    /// Beats Roll and Trans repeat or chop, 1/16 to 1.
+    pub(crate) stem_fx_beats: ControlHandle,
     pub(crate) play: ControlHandle,
     /// Gapless playback: the deck (1 to 4) that starts on the very sample
     /// this deck's track ends, or 0. Cleared once it has started.
@@ -399,6 +401,7 @@ impl DeckControls {
                 crate::effects::STEM_FX.len() as f64,
                 Behavior::Free,
             ),
+            stem_fx_beats: reg.create(g, "stem_fx_beats", 0.5, 0.0625, 1.0, Behavior::Free),
             play: reg.toggle(g, "play"),
             play_next: reg.create(g, "play_next", 0.0, 0.0, 4.0, Behavior::Free),
             pfl: reg.toggle(g, "pfl"),
