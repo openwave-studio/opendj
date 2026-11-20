@@ -1,7 +1,5 @@
-// Traktor Kontrol S8, played as Traktor plays it: two deck sections (see
-// Traktor-Kontrol-Deck-Section.js), the left on decks A and C with effect
-// unit 1, the right on B and D with unit 2, either side of a four-channel
-// mixer. openDJ's own mapping, written from the S8's published HID report
+// Traktor Kontrol S8, played as Traktor plays it: two deck sections and a
+// four-channel mixer (see Traktor-Kontrol-S5-S8.js). openDJ's own mapping, written from the S8's published HID report
 // layout and Native Instruments' manual. Its displays stay dark.
 //
 // That published layout is incomplete, so this mapping is partial:
@@ -42,24 +40,10 @@
 // FILTER ON lights go in feature report 0xF4: [0x26, mask] and [0x25, mask],
 // A 0x01, B 0x02, C 0x04, D 0x08.
 
-var TraktorS8 = {};
-
-TraktorS8.ON = 0x7F;
-TraktorS8.DIM = 0x0A;
-
-// Mixer channels A-D: [byte, mask] of CUE, FILTER ON, FX 1 and FX 2, the
-// crossfader assign left and right, the mixer lights of FX 1 and 2.
-TraktorS8.CHANNELS = [
-    {cue: [20, 0x08], filter: [20, 0x02], fx: [[22, 0x20], [22, 0x40]], xf: [0x20, 0x10], leds: [46, 47]},
-    {cue: [23, 0x20], filter: [23, 0x08], fx: [[25, 0x10], [25, 0x20]], xf: [0x08, 0x04], leds: [50, 51]},
-    {cue: [20, 0x04], filter: [20, 0x01], fx: [[22, 0x08], [22, 0x10]], xf: [0x80, 0x40], leds: [44, 45]},
-    {cue: [23, 0x40], filter: [23, 0x10], fx: [[25, 0x40], [25, 0x80]], xf: [0x02, 0x01], leds: [52, 53]},
-];
-
-TraktorS8.section = function(side) {
+var TraktorS8Section = function(side) {
     var o = 8 * side;
     var at = function(b, m) { return [b + o, m]; };
-    return new TraktorKontrolDeck({
+    return {
         bd: side === 1,
         buttons: {
             shift: at(9, 0x80), deck: at(8, 0x04), flux: at(8, 0x10),
@@ -78,196 +62,32 @@ TraktorS8.section = function(side) {
         faders: 17 + 8 * side,
         fx: 43 + 8 * side,
         ledReport: 0x80 + side, ledLength: 118, bgr: false, deckLeds: null,
-    });
-};
-
-TraktorS8.init = function() {
-    this.sections = [this.section(0), this.section(1)];
-    this.buttons = null;
-    this.knobs = null;
-    this.mixerLeds = new Uint8Array(73);
-    this.sentCue = -1;
-    this.sentFilter = -1;
-    this.lastShift = false;
-    this.connections = [];
-    TraktorKontrolDeck.softTakeover();
-    for (var d = 1; d <= 4; d++) {
-        var deck = "[Channel" + d + "]";
-        var eq = "[EqualizerRack1_" + deck + "_Effect1]";
-        engine.softTakeover(deck, "pregain", true);
-        engine.softTakeover(deck, "volume", true);
-        engine.softTakeover("[QuickEffectRack1_" + deck + "]", "super1", true);
-        for (var p = 1; p <= 3; p++) {
-            engine.softTakeover(eq, "parameter" + p, true);
-        }
-    }
-    var self = this;
-    TraktorKontrolDeck.connect(this.connections,
-        function() { self.lightAll(); },
-        function() { self.sections.forEach(function(s) { s.lightStrip(); }); });
-    for (var c = 1; c <= 4; c++) {
-        var ch = "[Channel" + c + "]";
-        this.connections.push(engine.makeConnection(ch, "pfl", function() { self.lightMixer(); }));
-        this.connections.push(engine.makeConnection(ch, "quantize", function() { self.lightMixer(); }));
-        this.connections.push(engine.makeConnection("[QuickEffectRack1_" + ch + "]", "enabled",
-            function() { self.lightMixer(); }));
-    }
-    this.lightAll();
-};
-
-TraktorS8.shutdown = function() {
-    this.sections.forEach(function(s) {
-        s.leds = new Uint8Array(118);
-        s.send();
-    });
-    this.mixerLeds = new Uint8Array(73);
-    controller.sendOutputReport(0x82, this.mixerLeds.buffer);
-    this.sendFeature(0x26, 0);
-    this.sendFeature(0x25, 0);
-};
-
-TraktorS8.shift = function() {
-    return this.sections[0].shift || this.sections[1].shift;
-};
-
-TraktorS8.incomingData = function(data) {
-    var last;
-    if (data[0] === 0x01 && data.length >= 41) {
-        last = this.buttons;
-        this.buttons = Array.prototype.slice.call(data, 0, 41);
-        if (last !== null) {
-            this.sections[0].buttons(data, last);
-            this.sections[1].buttons(data, last);
-            this.mixerButtons(data, last);
-        }
-    } else if (data[0] === 0x02 && data.length >= 109) {
-        last = this.knobs;
-        this.knobs = Array.prototype.slice.call(data, 0, 109);
-        if (last !== null) {
-            this.sections[0].sliders(data, last);
-            this.sections[1].sliders(data, last);
-            this.mixerKnobs(data, last);
-        }
-    }
-};
-
-// --- Mixer -------------------------------------------------------------------
-
-TraktorS8.mixerButtons = function(data, last) {
-    var pressed = function(at) {
-        return (data[at[0]] & at[1]) !== 0 && (last[at[0]] & at[1]) === 0;
     };
-    var shift = this.shift();
-    for (var n = 0; n < 4; n++) {
-        var deck = "[Channel" + (n + 1) + "]";
-        var c = this.CHANNELS[n];
-        if (pressed(c.cue)) {
-            script.toggleControl(deck, "pfl");
-        }
-        if (pressed(c.filter)) {
-            script.toggleControl("[QuickEffectRack1_" + deck + "]", "enabled");
-        }
-        // FX 1 and 2 send the channel to effect units 1 and 2 (SHIFT: 3 and 4).
-        for (var f = 0; f < 2; f++) {
-            if (pressed(c.fx[f])) {
-                script.toggleControl("[EffectRack1_EffectUnit" + (f + 1 + (shift ? 2 : 0)) + "]",
-                    "group_" + deck + "_enable");
-            }
-        }
-        var xf = data[24] & (c.xf[0] | c.xf[1]);
-        if (xf !== (last[24] & (c.xf[0] | c.xf[1]))) {
-            engine.setValue(deck, "orientation", xf & c.xf[0] ? 0 : (xf & c.xf[1] ? 2 : 1));
-        }
-    }
-    if (pressed([25, 0x08])) {
-        var on = engine.getValue("[Channel1]", "quantize") ? 0 : 1;
-        for (var d = 1; d <= 4; d++) {
-            engine.setValue("[Channel" + d + "]", "quantize", on);
-        }
-    }
-    if (pressed([22, 0x04])) {
-        script.toggleControl("[Microphone]", "talkover");
-    }
-    // The mixer's FX lights follow SHIFT (units 3 and 4).
-    if (shift !== this.lastShift) {
-        this.lastShift = shift;
-        this.lightMixer();
-    }
 };
 
-TraktorS8.mixerKnobs = function(data, last) {
-    var word = function(bytes, at) {
-        return (bytes[at] | (bytes[at + 1] << 8)) & 0x0FFF;
+// Channels A-D. Low EQ on C and D follows the other channels' pattern.
+var TraktorS8Channel = function(n, cue, filter, fx, xf, fxLeds) {
+    var base = 69 + 10 * n;
+    return {
+        cue: cue, filter: filter, fx: fx, xf: xf, fxLeds: fxLeds, cueLed: null, filterLed: null,
+        knobs: [base, base + 2, base + 4, base + 6, base + 8],
+        fader: 33 + 2 * n,
     };
-    var moved = function(at) {
-        return word(data, at) !== word(last, at);
-    };
-    var value = function(at) {
-        return Math.min(word(data, at) / 4078, 1);
-    };
-    for (var n = 0; n < 4; n++) {
-        var deck = "[Channel" + (n + 1) + "]";
-        var eq = "[EqualizerRack1_" + deck + "_Effect1]";
-        var base = 69 + 10 * n;
-        var knobs = [
-            [base, deck, "pregain"], [base + 2, eq, "parameter3"], [base + 4, eq, "parameter2"],
-            [base + 6, eq, "parameter1"], [base + 8, "[QuickEffectRack1_" + deck + "]", "super1"],
-            [33 + 2 * n, deck, "volume"],
-        ];
-        knobs.forEach(function(k) {
-            if (moved(k[0])) {
-                engine.setParameter(k[1], k[2], value(k[0]));
-            }
-        });
-    }
-    if (moved(41)) {
-        engine.setParameter("[Master]", "crossfader", value(41));
-    }
 };
 
-// --- Lights ------------------------------------------------------------------
-
-TraktorS8.sendFeature = function(command, mask) {
-    var report = new Uint8Array(33);
-    report[0] = command;
-    report[1] = mask;
-    controller.sendFeatureReport(0xF4, report.buffer);
-};
-
-TraktorS8.lightMixer = function() {
-    var self = this;
-    var on = function(v) { return v ? self.ON : self.DIM; };
-    var shift = this.shift();
-    var cue = 0;
-    var filter = 0;
-    for (var n = 0; n < 4; n++) {
-        var deck = "[Channel" + (n + 1) + "]";
-        var c = this.CHANNELS[n];
-        for (var f = 0; f < 2; f++) {
-            var unit = "[EffectRack1_EffectUnit" + (f + 1 + (shift ? 2 : 0)) + "]";
-            this.mixerLeds[c.leds[f]] = on(engine.getValue(unit, "group_" + deck + "_enable"));
-        }
-        if (engine.getValue(deck, "pfl")) {
-            cue |= 1 << n;
-        }
-        if (engine.getValue("[QuickEffectRack1_" + deck + "]", "enabled")) {
-            filter |= 1 << n;
-        }
-    }
-    this.mixerLeds[48] = this.DIM;
-    this.mixerLeds[49] = on(engine.getValue("[Channel1]", "quantize"));
-    controller.sendOutputReport(0x82, this.mixerLeds.buffer);
-    if (cue !== this.sentCue) {
-        this.sentCue = cue;
-        this.sendFeature(0x26, cue);
-    }
-    if (filter !== this.sentFilter) {
-        this.sentFilter = filter;
-        this.sendFeature(0x25, filter);
-    }
-};
-
-TraktorS8.lightAll = function() {
-    this.sections.forEach(function(s) { s.lightAll(); });
-    this.lightMixer();
-};
+var TraktorS8 = new TraktorKontrolMixerController({
+    buttonsLength: 41,
+    slidersLength: 109,
+    sections: [TraktorS8Section(0), TraktorS8Section(1)],
+    channels: [
+        TraktorS8Channel(0, [20, 0x08], [20, 0x02], [[22, 0x20], [22, 0x40]], [0x20, 0x10], [46, 47]),
+        TraktorS8Channel(1, [23, 0x20], [23, 0x08], [[25, 0x10], [25, 0x20]], [0x08, 0x04], [50, 51]),
+        TraktorS8Channel(2, [20, 0x04], [20, 0x01], [[22, 0x08], [22, 0x10]], [0x80, 0x40], [44, 45]),
+        TraktorS8Channel(3, [23, 0x40], [23, 0x10], [[25, 0x40], [25, 0x80]], [0x02, 0x01], [52, 53]),
+    ],
+    xfByte: 24,
+    crossfader: 41,
+    quantize: [25, 0x08],
+    mic: [22, 0x04],
+    mixerLeds: 73, snapLed: 48, quantLed: 49,
+});

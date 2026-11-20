@@ -672,3 +672,47 @@ fn traktor_kontrol_s8_plays_as_traktor() {
     }
     assert_eq!(c.errors(), Vec::<String>::new());
 }
+
+/// The S5 as the S8 without the performance section: decks A and C on the
+/// left, B and D on the right; CUE lights in the mixer's own LED report.
+#[test]
+fn traktor_kontrol_s5_plays_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol S5.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 30];
+    idle[0] = 0x01;
+    let mut knobs = vec![0u8; 79];
+    knobs[0] = 0x02;
+    c.receive_report(&idle);
+    c.receive_report(&knobs);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "left PLAY on deck A");
+    tap(&mut c, &idle, 8, 0x04);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel3]", "play"),
+        1.0,
+        "left DECK, then PLAY on deck C"
+    );
+    let _ = c.take_reports();
+    tap(&mut c, &idle, 23, 0x20);
+    assert_eq!(get(&reg, "[Channel2]", "pfl"), 1.0, "CUE B");
+    let reports = c.take_reports();
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.len() == 74 && r[0] == 0x82 && r[2] == 0x7F),
+        "CUE B lights"
+    );
+    let mut xfader = knobs.clone();
+    xfader[25] = 0xF7;
+    xfader[26] = 0x07;
+    c.receive_report(&xfader);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Master]", "crossfader"),
+        0.0,
+        "crossfader centred"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+}

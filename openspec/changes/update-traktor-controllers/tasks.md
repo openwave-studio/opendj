@@ -15,5 +15,5 @@
 ## 4. New controllers
 - [x] 4.1 X1 MK3 and Z1 MK2 HID mappings, pictures and guides
 - [x] 4.2 D2 HID mapping, picture and guide (screen stays dark)
-- [ ] 4.3 S5 and S8 HID mappings, pictures and guides (their published report layouts are incomplete: no browse or loop encoders)
+- [x] 4.3 S5 and S8 HID mappings, pictures and guides, partial (their published report layouts are incomplete: no browse or loop encoders)
 - [ ] 4.4 Testers try them on the hardware

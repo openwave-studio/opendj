@@ -11,6 +11,7 @@
   <controller id="Traktor">
     <scriptfiles>
       <file filename="Traktor-Kontrol-Deck-Section.js" functionprefix="" />
+      <file filename="Traktor-Kontrol-S5-S8.js" functionprefix="" />
       <file filename="Traktor-Kontrol-S8.js" functionprefix="TraktorS8" />
     </scriptfiles>
   </controller>

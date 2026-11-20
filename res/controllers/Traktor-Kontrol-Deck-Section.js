@@ -14,9 +14,11 @@
 //               assign (A-D, or null)
 //   encoders    byte with browse (high nibble) and loop (low nibble), or null
 //   strip       first byte of the touch strip (16 bits, 0 untouched, 1-1024)
-//   knobs       first byte of the endless performance knobs (16-bit counters)
+//   knobs       first byte of the endless performance knobs (16-bit
+//               counters), or null without them
 //   knobTurn    counts in a turn; knobWrap, where the counter wraps
-//   faders, fx  first bytes of the faders and FX knobs (12 bits, 0-4078)
+//   faders, fx  first bytes of the performance faders (or null) and FX
+//               knobs (12 bits, 0-4078); buttons.on is null without faders
 //   ledReport   the LED report's ID, ledLength its length
 //   bgr         true when the pads take blue, green, red
 //   deckLeds    offset of the A-D lights, or null
@@ -122,7 +124,9 @@ TraktorKontrolDeck.prototype.buttons = function(data, last) {
                 this.unitButton(this.unit(false), i);
             }
         });
-        button(b.on[n], function(down) { this.onButton(i, down); });
+        if (b.on) {
+            button(b.on[n], function(down) { this.onButton(i, down); });
+        }
         button([b.hotcue, b.loop, b.freeze, b.remix][n], function(down) {
             if (down) {
                 this.mode = i;
@@ -208,21 +212,26 @@ TraktorKontrolDeck.prototype.sliders = function(data, last) {
     };
     var l = this.layout;
     for (var n = 0; n < 4; n++) {
-        // Performance knobs: endless counters.
-        var at = l.knobs + 2 * n;
-        var turned = word(data, at) - word(last, at);
-        if (turned > l.knobWrap / 2) {
-            turned -= l.knobWrap;
-        } else if (turned < -l.knobWrap / 2) {
-            turned += l.knobWrap;
+        var at;
+        if (l.knobs !== null) {
+            // Performance knobs: endless counters.
+            at = l.knobs + 2 * n;
+            var turned = word(data, at) - word(last, at);
+            if (turned > l.knobWrap / 2) {
+                turned -= l.knobWrap;
+            } else if (turned < -l.knobWrap / 2) {
+                turned += l.knobWrap;
+            }
+            if (turned !== 0) {
+                this.performanceKnob(n, turned / l.knobTurn);
+            }
         }
-        if (turned !== 0) {
-            this.performanceKnob(n, turned / l.knobTurn);
-        }
-        at = l.faders + 2 * n;
-        var fader = word(data, at) & 0x0FFF;
-        if (fader !== (word(last, at) & 0x0FFF)) {
-            this.fader(n, Math.min(fader / 4078, 1));
+        if (l.faders !== null) {
+            at = l.faders + 2 * n;
+            var fader = word(data, at) & 0x0FFF;
+            if (fader !== (word(last, at) & 0x0FFF)) {
+                this.fader(n, Math.min(fader / 4078, 1));
+            }
         }
         at = l.fx + 2 * n;
         var fx = word(data, at) & 0x0FFF;
