@@ -163,15 +163,6 @@
                 </options>
             </control>
             <control>
-                <group>[EffectRack1_EffectUnit2_Effect1]</group>
-                <key>NS4FX.effects[2].enableButtons[1].input</key>
-                <status>0x99</status>
-                <midino>0x00</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Library]</group>
                 <key>NS4FX.browse.knob.input</key>
                 <status>0xBF</status>
@@ -424,15 +415,6 @@
                 </options>
             </control>
             <control>
-                <group>[EffectRack1_EffectUnit2_Effect3]</group>
-                <key>NS4FX.effects[2].enableButtons[3].input</key>
-                <status>0x99</status>
-                <midino>0x02</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].load.input</key>
                 <status>0x9F</status>
@@ -509,15 +491,6 @@
                 <key>NS4FX.effectUnit.rightSwitch</key>
                 <status>0xB9</status>
                 <midino>0x03</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>NS4FX.effects[1].bpmTap.input</key>
-                <status>0x98</status>
-                <midino>0x04</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -1025,16 +998,6 @@
                 </options>
             </control>
             <control>
-                <group>[EffectRack1_EffectUnit2_Effect1]</group>
-                <key>NS4FX.effects[2].enableButtons[1].input</key>
-                <description>shift fx1</description>
-                <status>0x99</status>
-                <midino>0x0B</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>NS4FX.decks[1].pitch_bend_down.input</key>
                 <status>0x80</status>
@@ -1101,16 +1064,6 @@
                 <group>[Channel4]</group>
                 <key>NS4FX.decks[4].pitch_bend_down.input</key>
                 <status>0x93</status>
-                <midino>0x0C</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[EffectRack1_EffectUnit2_Effect2]</group>
-                <key>NS4FX.effects[2].enableButtons[2].input</key>
-                <description>shift fx2</description>
-                <status>0x99</status>
                 <midino>0x0C</midino>
                 <options>
                     <script-binding/>
@@ -3333,6 +3286,132 @@
                 <midino>0x41</midino>
                 <options>
                     <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].padMode.pad_pitchplay.input</key>
+                <status>0x95</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].padMode.pad_roll.input</key>
+                <status>0x95</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].padMode.pad_slicer.input</key>
+                <status>0x95</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>NS4FX.decks[2].padMode.pad_scratchbanks.input</key>
+                <status>0x95</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].padMode.pad_pitchplay.input</key>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].padMode.pad_roll.input</key>
+                <status>0x96</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].padMode.pad_slicer.input</key>
+                <status>0x96</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>NS4FX.decks[3].padMode.pad_scratchbanks.input</key>
+                <status>0x96</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].padMode.pad_pitchplay.input</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].padMode.pad_roll.input</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].padMode.pad_slicer.input</key>
+                <status>0x97</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>NS4FX.decks[4].padMode.pad_scratchbanks.input</key>
+                <status>0x97</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>NS4FX.effectUnit.dryWetKnob.input</key>
+                <status>0xB9</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB1</status>
+                <midino>0x08</midino>
+                <options>
+                    <invert/>
                 </options>
             </control>
         </controls>

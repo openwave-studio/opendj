@@ -1170,18 +1170,31 @@ NS4FX.Deck = function(number, midi_chan) {
             // LED updates are handled by the connections within each stem button.
             buttons = this.stems_buttons;
         } else if (padmode === "pitchplay") {
-            print("not implemented yet");
+            // No pitch play yet: the pads stay hot cues.
+            deck.hotcue_buttons.updateLEDs();
+            buttons = this.hotcue_buttons;
         } else if (padmode === "roll") {
             buttons = this.roll_buttons;
         } else if (padmode === "slicer") {
             buttons = this.slicer_buttons;
         } else if (padmode === "scratchbanks") {
-            print("not implemented yet");
+            // No scratch banks yet: the pads stay samplers.
+            deck.sampler_buttons.updateLEDs(`[Channel${this.number}]`);
+            buttons = this.sampler_buttons;
+        }
+        if (buttons === undefined) {
+            return;
         }
         this.hotcues.forEachComponent(function(component) {
             component.disconnect();
         });
         this.hotcues = buttons;
+        // Modes with fewer than eight pads ignore the others.
+        for (let i = 1; i <= 8; i++) {
+            if (this.hotcues[i] === undefined) {
+                this.hotcues[i] = {input: function() {}};
+            }
+        }
         this.hotcues.reconnectComponents();
     };
     this.hotcues = new components.ComponentContainer();
@@ -1482,8 +1495,9 @@ NS4FX.Deck = function(number, midi_chan) {
                 }
             }),
 
+            // The right-hand decks send loop in and out on swapped notes.
             loop_in: new components.Button({
-                midi: [0x94 + midi_chan, 0x36],
+                midi: [0x94 + midi_chan, midi_chan % 2 ? 0x37 : 0x36],
                 input: function(_channel, _control, value, _status) {
                     if (value === 0x7F) { // Button pressed
                         engine.setValue(this.group, "loop_in", 1);
@@ -1499,7 +1513,7 @@ NS4FX.Deck = function(number, midi_chan) {
             }),
 
             loop_out: new components.Button({
-                midi: [0x94 + midi_chan, 0x37],
+                midi: [0x94 + midi_chan, midi_chan % 2 ? 0x36 : 0x37],
                 input: function(_channel, _control, value, _status) {
                     if (value === 0x7F) { // Button pressed
                         engine.setValue(this.group, "loop_out", 1);

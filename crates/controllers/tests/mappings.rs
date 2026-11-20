@@ -2639,3 +2639,87 @@ fn xdj_aero_deck_fx_runs_an_effect_unit_per_deck() {
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
+
+/// Every Numark mapping on the support list takes each of its messages,
+/// pressed and released or turned, without a script error.
+#[test]
+fn numark_mappings_take_every_message_cleanly() {
+    for c in opendj_controllers::support::all() {
+        let Some(file) = c.file.filter(|_| c.name.starts_with("Numark")) else {
+            continue;
+        };
+        let (_reg, mut ctl) = load(&file);
+        settle(&mut ctl, 50);
+        every_message_runs_cleanly(&file, &mut ctl);
+        ctl.shutdown();
+    }
+}
+
+/// The NS4FX's pad mode buttons send a second note when pressed again;
+/// Mixxx's mapping only listened for it on deck 1. Also checks its loop
+/// in and out buttons and the pads after an unfinished pad mode.
+#[test]
+fn numark_ns4fx_second_pad_mode_on_every_deck() {
+    let (reg, mut c) = load("Numark NS4FX.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+    for status in [0x94u8, 0x95, 0x96, 0x97] {
+        // Roll is the AUTO LOOP button's second press.
+        c.receive(&[status, 0x06, 0x7F]);
+        c.receive(&[status - 0x10, 0x06, 0x00]);
+        let out = c.take_output();
+        assert!(
+            out.iter()
+                .any(|m| m.len() == 3 && m[0] == status && m[1] == 0x06 && m[2] == 0x7F),
+            "{status:02X}: {out:02X?}"
+        );
+    }
+    // The right-hand decks send loop in and loop out on swapped notes,
+    // as djay Pro's built-in NS4FX mapping also has them.
+    for (status, group, note) in [(0x94u8, "[Channel1]", 0x36u8), (0x95, "[Channel2]", 0x37)] {
+        let loop_in = reg.get(group, "loop_in").unwrap();
+        let loop_out = reg.get(group, "loop_out").unwrap();
+        let (i, o) = (loop_in.version(), loop_out.version());
+        c.receive(&[status, note, 0x7F]);
+        c.receive(&[status - 0x10, note, 0x00]);
+        assert_ne!(loop_in.version(), i, "{group} loop in");
+        assert_eq!(loop_out.version(), o, "{group} loop out untouched");
+    }
+    // Pitch play isn't there yet, so its pads stay hot cues.
+    c.receive(&[0x94, 0x02, 0x7F]);
+    let hotcue = reg.get("[Channel1]", "hotcue_1_activate").unwrap();
+    let before = hotcue.version();
+    c.receive(&[0x94, 0x14, 0x7F]);
+    c.receive(&[0x84, 0x14, 0x00]);
+    assert_ne!(hotcue.version(), before);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// The Party Mix MKII mapping uses the MKII's own notes (from djay Pro's
+/// built-in mapping): pad modes, the FILTER knob and the pads' second notes.
+#[test]
+fn numark_party_mix_mkii_notes() {
+    let (reg, mut c) = load("Numark-Party-Mix-MKII.midi.xml");
+    settle(&mut c, 50);
+    // FILTER turns the deck's quick effect.
+    for v in (0..=0x40u8).rev() {
+        c.receive(&[0xB0, 0x1A, v]);
+    }
+    let filter = reg.get("[QuickEffectRack1_[Channel1]]", "super1").unwrap();
+    assert!(filter.get_parameter() < 0.05, "{}", filter.get_parameter());
+    // A pad's second note deletes its hot cue in CUE mode.
+    let clear = reg.get("[Channel1]", "hotcue_1_clear").unwrap();
+    let before = clear.version();
+    c.receive(&[0x94, 0x1C, 0x7F]);
+    c.receive(&[0x84, 0x1C, 0x00]);
+    assert_ne!(clear.version(), before);
+    // 0x0E is LOOP on the MKII: the first pad then sets a four-beat loop.
+    c.receive(&[0x94, 0x0E, 0x7F]);
+    let looped = reg.get("[Channel1]", "beatloop_4_toggle").unwrap();
+    let before = looped.version();
+    c.receive(&[0x94, 0x14, 0x7F]);
+    c.receive(&[0x84, 0x14, 0x00]);
+    assert_ne!(looped.version(), before);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
