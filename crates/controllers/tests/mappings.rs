@@ -1878,10 +1878,13 @@ fn numark_ns4fx_sync_loops_and_crossfader_assign() {
 /// The all-in-ones sharing Pioneer-all-in-one-script.js: each deck plays
 /// from its own channel, the faders and hot cues follow, and every bound
 /// message runs without script errors.
+/// A unit to try: its file, PLAY note, CH FADER 1 and HOT CUE 1 as
+/// (status, number); (0, 0) for none.
+type AllInOne = (&'static str, u8, (u8, u8), (u8, u8));
+
 #[test]
 fn pioneer_all_in_ones_play_mix_and_run_every_control() {
-    // (file, PLAY note, CH FADER 1 (status, number), HOT CUE 1 (status, number))
-    let units: [(&str, u8, (u8, u8), (u8, u8)); 8] = [
+    let units: [AllInOne; 8] = [
         ("Pioneer-XDJ-RX.midi.xml", 0x00, (0xB4, 0x11), (0x90, 0x18)),
         ("Pioneer-XDJ-RX2.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
         ("Pioneer-XDJ-RR.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
