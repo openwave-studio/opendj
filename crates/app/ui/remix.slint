@@ -198,55 +198,53 @@ component Lever inherits VerticalLayout {
     property <bool> on: Controls.value(index, Controls.tick) > 0;
     property <bool> was-on;
     property <bool> long;
+    // As wide as the band's knob, right under it.
+    in property <length> size: 40px;
     alignment: center;
-    spacing: 3px;
-    Rectangle {
-        width: 30px;
-        height: 36px;
-        border-radius: 7px;
-        background: Theme.pill;
-        border-width: 1px;
-        border-color: root.on ? root.tint : ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
-        // The handle: up while off, down and lit while on.
+    HorizontalLayout {
+        alignment: center;
         Rectangle {
-            x: 4px;
-            y: root.on ? parent.height - self.height - 4px : 4px;
-            width: parent.width - 8px;
-            height: 13px;
-            border-radius: 5px;
-            background: root.on ? root.tint : Theme.n-48484c;
-            animate y { duration: 60ms; }
-        }
-        hold := Timer {
-            interval: 300ms;
-            running: false;
-            triggered => {
-                root.long = true;
-                self.running = false;
+            width: root.size;
+            height: 42px;
+            border-radius: 7px;
+            background: Theme.pill;
+            border-width: 1px;
+            border-color: root.on ? root.tint : ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+            // The handle: up while off, down and lit while on.
+            Rectangle {
+                x: 4px;
+                y: root.on ? parent.height - self.height - 4px : 4px;
+                width: parent.width - 8px;
+                height: 16px;
+                border-radius: 5px;
+                background: root.on ? root.tint : Theme.n-48484c;
+                animate y { duration: 60ms; }
             }
-        }
-        ta := TouchArea {
-            mouse-cursor: pointer;
-            pointer-event(e) => {
-                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
-                    root.was-on = root.on;
-                    root.long = false;
-                    Controls.set-value(root.index, root.was-on ? 0 : 1);
-                    hold.running = !root.was-on;
-                } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
-                    hold.running = false;
-                    if !root.was-on && root.long {
-                        Controls.set-value(root.index, 0);
+            hold := Timer {
+                interval: 300ms;
+                running: false;
+                triggered => {
+                    root.long = true;
+                    self.running = false;
+                }
+            }
+            ta := TouchArea {
+                mouse-cursor: pointer;
+                pointer-event(e) => {
+                    if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                        root.was-on = root.on;
+                        root.long = false;
+                        Controls.set-value(root.index, root.was-on ? 0 : 1);
+                        hold.running = !root.was-on;
+                    } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                        hold.running = false;
+                        if !root.was-on && root.long {
+                            Controls.set-value(root.index, 0);
+                        }
                     }
                 }
             }
         }
-    }
-    Text {
-        text: !root.on ? "off" : ta.pressed && root.long ? "held" : "latched";
-        color: root.on ? root.tint : Theme.text-dim;
-        font-size: 10px;
-        horizontal-alignment: center;
     }
 }
 
@@ -282,7 +280,8 @@ component BandLane inherits VerticalLayout {
         letter-spacing: 0.8px;
         horizontal-alignment: center;
     }
-    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; }
+    Rectangle { height: 2px; }
+    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; size: 40px; }
 }
 
 // The three bands side by side, LOW to HIGH, on a panel whose tip
