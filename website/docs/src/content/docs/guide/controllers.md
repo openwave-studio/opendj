@@ -78,7 +78,7 @@ what it does, and the MIDI message it sends. They're grouped into sections
 as Hot cues and Loops under Pads. Click a heading to open or close it. Search
 the list by any of those words.
 
-- **Picture.** For the [popular controllers](../controllers/index.html#popular-controllers),
+- **Picture.** For the [popular controllers](../controllers/index.md#popular-controllers),
   a drawing of the controller is on the left, with every control in about the
   place it sits. Point at a part to name it, and click it to list only what
   it does, with the messages it sends and the lights it shows.
@@ -197,11 +197,11 @@ in the Controller Editor and a guide page:
   MK3, Z1 MK2, Traktor MX2 and Maschine Mikro MK3.
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,
   DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7.
-- **Others:** Hercules DJControl Inpulse 500, Allen & Heath Xone:K2 and DJ
-  TechTools Midi Fighter Twister.
+- **Hercules:** DJControl Inpulse 200, 300 and 500, Jogvision and Mix.
+- **Others:** Allen & Heath Xone:K2 and DJ TechTools Midi Fighter Twister.
 
 The DDJ-REV1, DDJ-1000 and DDJ-REV7 are coming.
-[Supported controllers](../controllers/index.html#popular-controllers) has
+[Supported controllers](../controllers/index.md#popular-controllers) has
 the whole list with notes on each.
 
 They're marked **Beta** in **Settings › Controllers** and the editor until
@@ -210,7 +210,7 @@ someone has tried the mapping in openDJ on the real controller, and
 of them, try it and
 [tell us how it goes](https://github.com/openwave-studio/opendj/issues/new?template=controller.yml).
 
-[Supported controllers](../controllers/index.html) lists every controller with
+[Supported controllers](../controllers/index.md) lists every controller with
 a mapping, and what each control does where the mapping describes it.
 
 If your controller doesn't work right,
