@@ -196,6 +196,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+      # cpal's ASIO support needs Steinberg's ASIO SDK. Its build script
+      # downloads the SDK itself but expects the zip's old folder layout;
+      # find the folder with common/ and host/pc/ and point it there.
+      - name: ASIO SDK
+        shell: pwsh
+        run: |
+          $zip = "$env:RUNNER_TEMP\asiosdk.zip"
+          $dir = "$env:RUNNER_TEMP\asiosdk"
+          Invoke-WebRequest https://www.steinberg.net/asiosdk -OutFile $zip
+          Expand-Archive $zip -DestinationPath $dir
+          $common = Get-ChildItem $dir -Recurse -Directory -Filter common |
+            Where-Object { Test-Path (Join-Path $_.Parent.FullName 'host\pc') } |
+            Select-Object -First 1
+          if (-not $common) {
+            Get-ChildItem $dir -Recurse -Depth 3 | ForEach-Object FullName
+            throw "No common\ next to host\pc\ in the ASIO SDK"
+          }
+          "CPAL_ASIO_DIR=$($common.Parent.FullName)" >> $env:GITHUB_ENV
       # The runner image version (an environment variable expressions can't read).
       - run: echo "IMAGE_VERSION=$env:ImageVersion" >> $env:GITHUB_ENV
         shell: pwsh

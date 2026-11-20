@@ -196,8 +196,8 @@ in the Controller Editor and a guide page:
 - **Denon DJ:** MC7000, MC6000MK2, MC4000, MC3000, DN-SC2000 and DN-HS5500.
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,
   DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7.
-- **Others:** Hercules DJControl Inpulse 500, Allen & Heath Xone:K2 and DJ
-  TechTools Midi Fighter Twister.
+- **Hercules:** DJControl Inpulse 200, 300 and 500, Jogvision and Mix.
+- **Others:** Allen & Heath Xone:K2 and DJ TechTools Midi Fighter Twister.
 
 The DDJ-REV1, DDJ-1000 and DDJ-REV7 are coming.
 [Supported controllers](../controllers/index.html#popular-controllers) has
