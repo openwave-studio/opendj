@@ -148,16 +148,6 @@
             <control>
                 <group>[Channel1]</group>
                 <key>PioneerDDJSP1.w13</key>
-                <description>Touch detection for Needle Search Deck 1, Touch: left SHIFT NEEDLE SEARCH (Deck 1 active)</description>
-                <status>0x90</status>
-                <midino>0x44</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w14</key>
                 <description>Shift Deck 1, Button: left SHIFT (Deck 1 active)</description>
                 <status>0x96</status>
                 <midino>0x40</midino>
@@ -167,17 +157,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w15</key>
-                <description>Jog touch (No Vinyl Mode) Deck 1, left JOGDIAL (Deck 1 active)</description>
-                <status>0x90</status>
-                <midino>0x35</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w16</key>
+                <key>PioneerDDJSP1.w14</key>
                 <description>Set and enable/exit beatloop with length of beatloop_size Deck 1, Button: left AUTOLOOP (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x0D</midino>
@@ -187,7 +167,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w17</key>
+                <key>PioneerDDJSP1.w15</key>
                 <description>Quantize Deck 1, Button: left SHIFT SYNC (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x5C</midino>
@@ -197,7 +177,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w18</key>
+                <key>PioneerDDJSP1.w16</key>
                 <description>Sync Deck 1, Button: left SYNC (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x58</midino>
@@ -207,7 +187,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w19</key>
+                <key>PioneerDDJSP1.w17</key>
                 <description>Slip Deck 1, Button: left SLIP (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x40</midino>
@@ -217,7 +197,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w20</key>
+                <key>PioneerDDJSP1.w18</key>
                 <description>ReverseRoll Deck 1, Button: left CENSOR (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x15</midino>
@@ -227,7 +207,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w21</key>
+                <key>PioneerDDJSP1.w19</key>
                 <description>Play track backwards (reverse play) Deck 1, Button: SHIFT &amp; left CENSOR (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x38</midino>
@@ -237,7 +217,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w22</key>
+                <key>PioneerDDJSP1.w20</key>
                 <description>Beatjump amount of beatjump_size forwards, Button: PARAMETER1 RIGHT (in HOTCUE-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x2C</midino>
@@ -247,7 +227,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w23</key>
+                <key>PioneerDDJSP1.w21</key>
                 <description>Beatjump amount of beatjump_size backwards, Button: PARAMETER1 LEFT (in HOTCUE-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x24</midino>
@@ -257,7 +237,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w24</key>
+                <key>PioneerDDJSP1.w22</key>
                 <description>Double beatjump_size, Button: PARAMETER2 RIGHT (in HOTCUE-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x09</midino>
@@ -267,7 +247,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w25</key>
+                <key>PioneerDDJSP1.w23</key>
                 <description>Halve beatjump_size, Button: PARAMETER2 LEFT (in HOTCUE-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x01</midino>
@@ -277,7 +257,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w26</key>
+                <key>PioneerDDJSP1.w24</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x2D</midino>
@@ -287,7 +267,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w27</key>
+                <key>PioneerDDJSP1.w25</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x25</midino>
@@ -297,7 +277,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w28</key>
+                <key>PioneerDDJSP1.w26</key>
                 <description>Change Slicer quantization (increment), Button: PARAMETER1 RIGHT (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x2E</midino>
@@ -307,7 +287,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w29</key>
+                <key>PioneerDDJSP1.w27</key>
                 <description>Change Slicer quantization (decrement), Button: PARAMETER1 LEFT (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x26</midino>
@@ -317,7 +297,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w30</key>
+                <key>PioneerDDJSP1.w28</key>
                 <description>Change Slicer domain (increment), Button: PARAMETER2 RIGHT (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x7B</midino>
@@ -327,7 +307,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w31</key>
+                <key>PioneerDDJSP1.w29</key>
                 <description>Change Slicer domain (decrement), Button: PARAMETER2 LEFT (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x03</midino>
@@ -337,7 +317,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w32</key>
+                <key>PioneerDDJSP1.w30</key>
                 <description>Change Sampler bank (increment), Button: PARAMETER1 RIGHT (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x2F</midino>
@@ -347,7 +327,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w33</key>
+                <key>PioneerDDJSP1.w31</key>
                 <description>Change Sampler bank (decrement), Button: PARAMETER1 LEFT (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x27</midino>
@@ -357,7 +337,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w34</key>
+                <key>PioneerDDJSP1.w32</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x31</midino>
@@ -367,7 +347,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w35</key>
+                <key>PioneerDDJSP1.w33</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x29</midino>
@@ -377,7 +357,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w36</key>
+                <key>PioneerDDJSP1.w34</key>
                 <description>Hot-Cue 1 Deck 1, Button: PAD1 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x00</midino>
@@ -387,7 +367,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w37</key>
+                <key>PioneerDDJSP1.w35</key>
                 <description>Hot-Cue 2 Deck 1, Button: PAD2 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x01</midino>
@@ -397,7 +377,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w38</key>
+                <key>PioneerDDJSP1.w36</key>
                 <description>Hot-Cue 3 Deck 1, Button: PAD3 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x02</midino>
@@ -407,7 +387,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w39</key>
+                <key>PioneerDDJSP1.w37</key>
                 <description>Hot-Cue 4 Deck 1, Button: PAD4 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x03</midino>
@@ -417,7 +397,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w40</key>
+                <key>PioneerDDJSP1.w38</key>
                 <description>Hot-Cue 5 Deck 1, Button: PAD5 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x04</midino>
@@ -427,7 +407,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w41</key>
+                <key>PioneerDDJSP1.w39</key>
                 <description>Hot-Cue 6 Deck 1, Button: PAD6 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x05</midino>
@@ -437,7 +417,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w42</key>
+                <key>PioneerDDJSP1.w40</key>
                 <description>Hot-Cue 7 Deck 1, Button: PAD7 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x06</midino>
@@ -447,7 +427,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w43</key>
+                <key>PioneerDDJSP1.w41</key>
                 <description>Hot-Cue 8 Deck 1, Button: PAD8 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x07</midino>
@@ -457,7 +437,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w44</key>
+                <key>PioneerDDJSP1.w42</key>
                 <description>Clear Hot-Cue 1 Deck 1, Button: SHIFT &amp; PAD1 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x08</midino>
@@ -467,7 +447,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w45</key>
+                <key>PioneerDDJSP1.w43</key>
                 <description>Clear Hot-Cue 2 Deck 1, Button: SHIFT &amp; PAD2 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x09</midino>
@@ -477,7 +457,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w46</key>
+                <key>PioneerDDJSP1.w44</key>
                 <description>Clear Hot-Cue 3 Deck 1, Button: SHIFT &amp; PAD3 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x0A</midino>
@@ -487,7 +467,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w47</key>
+                <key>PioneerDDJSP1.w45</key>
                 <description>Clear Hot-Cue 4 Deck 1, Button: SHIFT &amp; PAD4 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x0B</midino>
@@ -497,7 +477,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w48</key>
+                <key>PioneerDDJSP1.w46</key>
                 <description>Clear Hot-Cue 5 Deck 1, Button: SHIFT &amp; PAD5 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x0C</midino>
@@ -507,7 +487,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w49</key>
+                <key>PioneerDDJSP1.w47</key>
                 <description>Clear Hot-Cue 6 Deck 1, Button: SHIFT &amp; PAD6 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x0D</midino>
@@ -517,7 +497,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w50</key>
+                <key>PioneerDDJSP1.w48</key>
                 <description>Clear Hot-Cue 7 Deck 1, Button: SHIFT &amp; PAD7 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x0E</midino>
@@ -527,7 +507,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w51</key>
+                <key>PioneerDDJSP1.w49</key>
                 <description>Clear Hot-Cue 8 Deck 1, Button: SHIFT &amp; PAD8 (in HOT-CUE-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x0F</midino>
@@ -537,7 +517,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w52</key>
+                <key>PioneerDDJSP1.w50</key>
                 <description>Auto-Roll Deck 1, Button: PAD1 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x10</midino>
@@ -547,7 +527,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w53</key>
+                <key>PioneerDDJSP1.w51</key>
                 <description>Auto-Roll Deck 1, Button: PAD2 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x11</midino>
@@ -557,7 +537,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w54</key>
+                <key>PioneerDDJSP1.w52</key>
                 <description>Auto-Roll Deck 1, Button: PAD3 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x12</midino>
@@ -567,7 +547,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w55</key>
+                <key>PioneerDDJSP1.w53</key>
                 <description>Auto-Roll Deck 1, Button: PAD4 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x13</midino>
@@ -577,7 +557,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w56</key>
+                <key>PioneerDDJSP1.w54</key>
                 <description>Auto-Roll Deck 1, Button: PAD5 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x14</midino>
@@ -587,7 +567,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w57</key>
+                <key>PioneerDDJSP1.w55</key>
                 <description>Auto-Roll Deck 1, Button: PAD6 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x15</midino>
@@ -597,7 +577,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w58</key>
+                <key>PioneerDDJSP1.w56</key>
                 <description>Auto-Roll Deck 1, Button: PAD7 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x16</midino>
@@ -607,7 +587,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w59</key>
+                <key>PioneerDDJSP1.w57</key>
                 <description>Auto-Roll Deck 1, Button: PAD8 (in ROLL-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x17</midino>
@@ -617,7 +597,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w60</key>
+                <key>PioneerDDJSP1.w58</key>
                 <description>Slicer beatjump/loop Beat 1 Deck 1, Button: PAD1 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x20</midino>
@@ -627,7 +607,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w61</key>
+                <key>PioneerDDJSP1.w59</key>
                 <description>Slicer beatjump/loop Beat 2 Deck 1, Button: PAD2 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x21</midino>
@@ -637,7 +617,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w62</key>
+                <key>PioneerDDJSP1.w60</key>
                 <description>Slicer beatjump/loop Beat 3 Deck 1, Button: PAD3 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x22</midino>
@@ -647,7 +627,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w63</key>
+                <key>PioneerDDJSP1.w61</key>
                 <description>Slicer beatjump/loop Beat 4 Deck 1, Button: PAD4 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x23</midino>
@@ -657,7 +637,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w64</key>
+                <key>PioneerDDJSP1.w62</key>
                 <description>Slicer beatjump/loop Beat 5 Deck 1, Button: PAD5 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x24</midino>
@@ -667,7 +647,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w65</key>
+                <key>PioneerDDJSP1.w63</key>
                 <description>Slicer beatjump/loop Beat 6 Deck 1, Button: PAD6 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x25</midino>
@@ -677,7 +657,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w66</key>
+                <key>PioneerDDJSP1.w64</key>
                 <description>Slicer beatjump/loop Beat 7 Deck 1, Button: PAD7 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x26</midino>
@@ -687,7 +667,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w67</key>
+                <key>PioneerDDJSP1.w65</key>
                 <description>Slicer beatjump/loop Beat 8 Deck 1, Button: PAD8 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x27</midino>
@@ -697,7 +677,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w68</key>
+                <key>PioneerDDJSP1.w66</key>
                 <description>Sampler 1 play, Button: PAD1 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x30</midino>
@@ -707,7 +687,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w69</key>
+                <key>PioneerDDJSP1.w67</key>
                 <description>Sampler 1 play with velocity volume, Button: PAD1 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x70</midino>
@@ -717,7 +697,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w70</key>
+                <key>PioneerDDJSP1.w68</key>
                 <description>Sampler 1 stop, Button: SHIFT &amp; PAD1 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x38</midino>
@@ -727,7 +707,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w71</key>
+                <key>PioneerDDJSP1.w69</key>
                 <description>Sampler 2 play, Button: PAD2 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x31</midino>
@@ -737,7 +717,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w72</key>
+                <key>PioneerDDJSP1.w70</key>
                 <description>Sampler 2 play with velocity volume, Button: PAD2 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x71</midino>
@@ -747,7 +727,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w73</key>
+                <key>PioneerDDJSP1.w71</key>
                 <description>Sampler 2 stop, Button: SHIFT &amp; PAD2 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x39</midino>
@@ -757,7 +737,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w74</key>
+                <key>PioneerDDJSP1.w72</key>
                 <description>Sampler 3 play, Button: PAD3 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x32</midino>
@@ -767,7 +747,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w75</key>
+                <key>PioneerDDJSP1.w73</key>
                 <description>Sampler 3 play with velocity volume, Button: PAD3 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x72</midino>
@@ -777,7 +757,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w76</key>
+                <key>PioneerDDJSP1.w74</key>
                 <description>Sampler 3 stop, Button: SHIFT &amp; PAD3 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x3A</midino>
@@ -787,7 +767,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w77</key>
+                <key>PioneerDDJSP1.w75</key>
                 <description>Sampler 4 play, Button: PAD4 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x33</midino>
@@ -797,7 +777,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w78</key>
+                <key>PioneerDDJSP1.w76</key>
                 <description>Sampler 4 play with velocity volume, Button: PAD4 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x73</midino>
@@ -807,7 +787,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w79</key>
+                <key>PioneerDDJSP1.w77</key>
                 <description>Sampler 4 stop, Button: SHIFT &amp; PAD4 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x3B</midino>
@@ -817,7 +797,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w80</key>
+                <key>PioneerDDJSP1.w78</key>
                 <description>Sampler 5 play, Button: PAD5 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x34</midino>
@@ -827,7 +807,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w81</key>
+                <key>PioneerDDJSP1.w79</key>
                 <description>Sampler 5 play with velocity volume, Button: PAD5 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x74</midino>
@@ -837,7 +817,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w82</key>
+                <key>PioneerDDJSP1.w80</key>
                 <description>Sampler 5 stop, Button: SHIFT &amp; PAD5 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x3C</midino>
@@ -847,7 +827,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w83</key>
+                <key>PioneerDDJSP1.w81</key>
                 <description>Sampler 6 play, Button: PAD6 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x35</midino>
@@ -857,7 +837,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w84</key>
+                <key>PioneerDDJSP1.w82</key>
                 <description>Sampler 6 play with velocity volume, Button: PAD6 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x75</midino>
@@ -867,7 +847,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w85</key>
+                <key>PioneerDDJSP1.w83</key>
                 <description>Sampler 6 stop, Button: SHIFT &amp; PAD6 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x3D</midino>
@@ -877,7 +857,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w86</key>
+                <key>PioneerDDJSP1.w84</key>
                 <description>Sampler 7 play, Button: PAD7 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x36</midino>
@@ -887,7 +867,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w87</key>
+                <key>PioneerDDJSP1.w85</key>
                 <description>Sampler 7 play with velocity volume, Button: PAD7 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x76</midino>
@@ -897,7 +877,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w88</key>
+                <key>PioneerDDJSP1.w86</key>
                 <description>Sampler 7 stop, Button: SHIFT &amp; PAD7 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x3E</midino>
@@ -907,7 +887,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w89</key>
+                <key>PioneerDDJSP1.w87</key>
                 <description>Sampler 8 play, Button: PAD8 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x37</midino>
@@ -917,7 +897,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w90</key>
+                <key>PioneerDDJSP1.w88</key>
                 <description>Sampler 8 play with velocity volume, Button: PAD8 (in SAMPLER-Mode, VELOCITY active, Deck 1 active)</description>
                 <status>0xB7</status>
                 <midino>0x77</midino>
@@ -927,7 +907,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w91</key>
+                <key>PioneerDDJSP1.w89</key>
                 <description>Sampler 8 stop, Button: SHIFT &amp; PAD8 (in SAMPLER-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x3F</midino>
@@ -937,7 +917,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w92</key>
+                <key>PioneerDDJSP1.w90</key>
                 <description>Beatloop Deck 1, Button: PAD1 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x50</midino>
@@ -947,7 +927,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w93</key>
+                <key>PioneerDDJSP1.w91</key>
                 <description>Beatloop Deck 1, Button: PAD2 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x51</midino>
@@ -957,7 +937,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w94</key>
+                <key>PioneerDDJSP1.w92</key>
                 <description>Beatloop Deck 1, Button: PAD3 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x52</midino>
@@ -967,7 +947,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w95</key>
+                <key>PioneerDDJSP1.w93</key>
                 <description>Beatloop Deck 1, Button: PAD4 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x53</midino>
@@ -977,7 +957,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w96</key>
+                <key>PioneerDDJSP1.w94</key>
                 <description>Beatloop Deck 1, Button: PAD5 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x54</midino>
@@ -987,7 +967,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w97</key>
+                <key>PioneerDDJSP1.w95</key>
                 <description>Beatloop Deck 1, Button: PAD6 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x55</midino>
@@ -997,7 +977,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w98</key>
+                <key>PioneerDDJSP1.w96</key>
                 <description>Beatloop Deck 1, Button: PAD7 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x56</midino>
@@ -1007,7 +987,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w99</key>
+                <key>PioneerDDJSP1.w97</key>
                 <description>Beatloop Deck 1, Button: PAD8 (in GROUP2-Mode, Deck 1 active)</description>
                 <status>0x97</status>
                 <midino>0x57</midino>
@@ -1017,7 +997,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w100</key>
+                <key>PioneerDDJSP1.w98</key>
                 <description>Set PAD-Mode, Button: HOT CUE LEFT (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x1B</midino>
@@ -1027,7 +1007,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w101</key>
+                <key>PioneerDDJSP1.w99</key>
                 <description>Set PAD-Mode, Button: ROLL LEFT (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x1E</midino>
@@ -1037,7 +1017,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w102</key>
+                <key>PioneerDDJSP1.w100</key>
                 <description>Set PAD-Mode, Button: SLICER LEFT (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x20</midino>
@@ -1047,7 +1027,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w103</key>
+                <key>PioneerDDJSP1.w101</key>
                 <description>Set PAD-Mode, Button: SAMPLER LEFT (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x22</midino>
@@ -1057,7 +1037,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>PioneerDDJSP1.w104</key>
+                <key>PioneerDDJSP1.w102</key>
                 <description>Set PAD-Mode, Button: SHIFT ROLL LEFT (Deck 1 active)</description>
                 <status>0x90</status>
                 <midino>0x6B</midino>
@@ -1067,7 +1047,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w105</key>
+                <key>PioneerDDJSP1.w103</key>
                 <description>Load selected Deck 2, Button: LOAD Deck 2</description>
                 <status>0x96</status>
                 <midino>0x47</midino>
@@ -1077,7 +1057,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w106</key>
+                <key>PioneerDDJSP1.w104</key>
                 <description>Effect Unit 1 assignment Deck 2, Button: FX1 assign Deck 2</description>
                 <status>0x96</status>
                 <midino>0x4D</midino>
@@ -1087,7 +1067,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w107</key>
+                <key>PioneerDDJSP1.w105</key>
                 <description>Effect Unit 2 assignment Deck 2, Button: FX2 assign Deck 2</description>
                 <status>0x96</status>
                 <midino>0x51</midino>
@@ -1097,17 +1077,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w108</key>
-                <description>Touch detection for Needle Search Deck 2, Touch: right SHIFT NEEDLE SEARCH (Deck 2 active)</description>
-                <status>0x91</status>
-                <midino>0x44</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w109</key>
+                <key>PioneerDDJSP1.w106</key>
                 <description>Shift Deck 2, Button: right SHIFT (Deck 2 active)</description>
                 <status>0x96</status>
                 <midino>0x40</midino>
@@ -1117,17 +1087,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w110</key>
-                <description>Jog touch (No Vinyl Mode) Deck 2, right JOGDIAL (Deck 2 active)</description>
-                <status>0x91</status>
-                <midino>0x35</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w111</key>
+                <key>PioneerDDJSP1.w107</key>
                 <description>Set and enable/exit beatloop with length of beatloop_size Deck 2, Button: right AUTOLOOP (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x0D</midino>
@@ -1137,7 +1097,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w112</key>
+                <key>PioneerDDJSP1.w108</key>
                 <description>Quantize Deck 2, Button: right SHIFT SYNC (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x5C</midino>
@@ -1147,7 +1107,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w113</key>
+                <key>PioneerDDJSP1.w109</key>
                 <description>Sync Deck 2, Button: right SYNC (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x58</midino>
@@ -1157,7 +1117,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w114</key>
+                <key>PioneerDDJSP1.w110</key>
                 <description>Slip Deck 2, Button: right SLIP (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x40</midino>
@@ -1167,7 +1127,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w115</key>
+                <key>PioneerDDJSP1.w111</key>
                 <description>ReverseRoll Deck 2, Button: right CENSOR (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x15</midino>
@@ -1177,7 +1137,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w116</key>
+                <key>PioneerDDJSP1.w112</key>
                 <description>Play track backwards (reverse play) Deck 2, Button: SHIFT &amp; right CENSOR (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x38</midino>
@@ -1187,7 +1147,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w117</key>
+                <key>PioneerDDJSP1.w113</key>
                 <description>Beatjump amount of beatjump_size forwards, Button: PARAMETER1 RIGHT (in HOTCUE-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x2C</midino>
@@ -1197,7 +1157,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w118</key>
+                <key>PioneerDDJSP1.w114</key>
                 <description>Beatjump amount of beatjump_size backwards, Button: PARAMETER1 LEFT (in HOTCUE-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x24</midino>
@@ -1207,7 +1167,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w119</key>
+                <key>PioneerDDJSP1.w115</key>
                 <description>Double beatjump_size, Button: PARAMETER2 RIGHT (in HOTCUE-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x09</midino>
@@ -1217,7 +1177,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w120</key>
+                <key>PioneerDDJSP1.w116</key>
                 <description>Halve beatjump_size, Button: PARAMETER2 LEFT (in HOTCUE-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x01</midino>
@@ -1227,7 +1187,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w121</key>
+                <key>PioneerDDJSP1.w117</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x2D</midino>
@@ -1237,7 +1197,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w122</key>
+                <key>PioneerDDJSP1.w118</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x25</midino>
@@ -1247,7 +1207,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w123</key>
+                <key>PioneerDDJSP1.w119</key>
                 <description>Change Slicer quantization (increment), Button: PARAMETER1 RIGHT (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x2E</midino>
@@ -1257,7 +1217,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w124</key>
+                <key>PioneerDDJSP1.w120</key>
                 <description>Change Slicer quantization (decrement), Button: PARAMETER1 LEFT (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x26</midino>
@@ -1267,7 +1227,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w125</key>
+                <key>PioneerDDJSP1.w121</key>
                 <description>Change Slicer domain (increment), Button: PARAMETER2 RIGHT (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x7B</midino>
@@ -1277,7 +1237,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w126</key>
+                <key>PioneerDDJSP1.w122</key>
                 <description>Change Slicer domain (decrement), Button: PARAMETER2 LEFT (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x03</midino>
@@ -1287,7 +1247,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w127</key>
+                <key>PioneerDDJSP1.w123</key>
                 <description>Change Sampler bank (increment), Button: PARAMETER1 RIGHT (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x2F</midino>
@@ -1297,7 +1257,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w128</key>
+                <key>PioneerDDJSP1.w124</key>
                 <description>Change Sampler bank (decrement), Button: PARAMETER1 LEFT (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x27</midino>
@@ -1307,7 +1267,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w129</key>
+                <key>PioneerDDJSP1.w125</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x31</midino>
@@ -1317,7 +1277,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w130</key>
+                <key>PioneerDDJSP1.w126</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x29</midino>
@@ -1327,7 +1287,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w131</key>
+                <key>PioneerDDJSP1.w127</key>
                 <description>Hot-Cue 1 Deck 2, Button: PAD1 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x00</midino>
@@ -1337,7 +1297,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w132</key>
+                <key>PioneerDDJSP1.w128</key>
                 <description>Hot-Cue 2 Deck 2, Button: PAD2 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x01</midino>
@@ -1347,7 +1307,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w133</key>
+                <key>PioneerDDJSP1.w129</key>
                 <description>Hot-Cue 3 Deck 2, Button: PAD3 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x02</midino>
@@ -1357,7 +1317,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w134</key>
+                <key>PioneerDDJSP1.w130</key>
                 <description>Hot-Cue 4 Deck 2, Button: PAD4 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x03</midino>
@@ -1367,7 +1327,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w135</key>
+                <key>PioneerDDJSP1.w131</key>
                 <description>Hot-Cue 5 Deck 2, Button: PAD5 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x04</midino>
@@ -1377,7 +1337,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w136</key>
+                <key>PioneerDDJSP1.w132</key>
                 <description>Hot-Cue 6 Deck 2, Button: PAD6 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x05</midino>
@@ -1387,7 +1347,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w137</key>
+                <key>PioneerDDJSP1.w133</key>
                 <description>Hot-Cue 7 Deck 2, Button: PAD7 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x06</midino>
@@ -1397,7 +1357,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w138</key>
+                <key>PioneerDDJSP1.w134</key>
                 <description>Hot-Cue 8 Deck 2, Button: PAD8 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x07</midino>
@@ -1407,7 +1367,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w139</key>
+                <key>PioneerDDJSP1.w135</key>
                 <description>Clear Hot-Cue 1 Deck 2, Button: SHIFT &amp; PAD1 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x08</midino>
@@ -1417,7 +1377,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w140</key>
+                <key>PioneerDDJSP1.w136</key>
                 <description>Clear Hot-Cue 2 Deck 2, Button: SHIFT &amp; PAD2 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x09</midino>
@@ -1427,7 +1387,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w141</key>
+                <key>PioneerDDJSP1.w137</key>
                 <description>Clear Hot-Cue 3 Deck 2, Button: SHIFT &amp; PAD3 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x0A</midino>
@@ -1437,7 +1397,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w142</key>
+                <key>PioneerDDJSP1.w138</key>
                 <description>Clear Hot-Cue 4 Deck 2, Button: SHIFT &amp; PAD4 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x0B</midino>
@@ -1447,7 +1407,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w143</key>
+                <key>PioneerDDJSP1.w139</key>
                 <description>Clear Hot-Cue 5 Deck 2, Button: SHIFT &amp; PAD5 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x0C</midino>
@@ -1457,7 +1417,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w144</key>
+                <key>PioneerDDJSP1.w140</key>
                 <description>Clear Hot-Cue 6 Deck 2, Button: SHIFT &amp; PAD6 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x0D</midino>
@@ -1467,7 +1427,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w145</key>
+                <key>PioneerDDJSP1.w141</key>
                 <description>Clear Hot-Cue 7 Deck 2, Button: SHIFT &amp; PAD7 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x0E</midino>
@@ -1477,7 +1437,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w146</key>
+                <key>PioneerDDJSP1.w142</key>
                 <description>Clear Hot-Cue 8 Deck 2, Button: SHIFT &amp; PAD8 (in HOT-CUE-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x0F</midino>
@@ -1487,7 +1447,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w147</key>
+                <key>PioneerDDJSP1.w143</key>
                 <description>Auto-Roll 1/16 Deck 2, Button: PAD1 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x10</midino>
@@ -1497,7 +1457,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w148</key>
+                <key>PioneerDDJSP1.w144</key>
                 <description>Auto-Roll 1/8 Deck 2, Button: PAD2 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x11</midino>
@@ -1507,7 +1467,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w149</key>
+                <key>PioneerDDJSP1.w145</key>
                 <description>Auto-Roll 1/4 Deck 2, Button: PAD3 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x12</midino>
@@ -1517,7 +1477,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w150</key>
+                <key>PioneerDDJSP1.w146</key>
                 <description>Auto-Roll 1/2 Deck 2, Button: PAD4 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x13</midino>
@@ -1527,7 +1487,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w151</key>
+                <key>PioneerDDJSP1.w147</key>
                 <description>Auto-Roll 1 Deck 2, Button: PAD5 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x14</midino>
@@ -1537,7 +1497,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w152</key>
+                <key>PioneerDDJSP1.w148</key>
                 <description>Auto-Roll 2 Deck 2, Button: PAD6 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x15</midino>
@@ -1547,7 +1507,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w153</key>
+                <key>PioneerDDJSP1.w149</key>
                 <description>Auto-Roll 4 Deck 2, Button: PAD7 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x16</midino>
@@ -1557,7 +1517,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w154</key>
+                <key>PioneerDDJSP1.w150</key>
                 <description>Auto-Roll 8 Deck 2, Button: PAD8 (in ROLL-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x17</midino>
@@ -1567,7 +1527,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w155</key>
+                <key>PioneerDDJSP1.w151</key>
                 <description>Slicer beatjump/loop Beat 1 Deck 2, Button: PAD1 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x20</midino>
@@ -1577,7 +1537,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w156</key>
+                <key>PioneerDDJSP1.w152</key>
                 <description>Slicer beatjump/loop Beat 2 Deck 2, Button: PAD2 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x21</midino>
@@ -1587,7 +1547,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w157</key>
+                <key>PioneerDDJSP1.w153</key>
                 <description>Slicer beatjump/loop Beat 3 Deck 2, Button: PAD3 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x22</midino>
@@ -1597,7 +1557,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w158</key>
+                <key>PioneerDDJSP1.w154</key>
                 <description>Slicer beatjump/loop Beat 4 Deck 2, Button: PAD4 (in SLICER-Mode, Deck 1 active)</description>
                 <status>0x98</status>
                 <midino>0x23</midino>
@@ -1607,7 +1567,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w159</key>
+                <key>PioneerDDJSP1.w155</key>
                 <description>Slicer beatjump/loop Beat 5 Deck 2, Button: PAD5 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x24</midino>
@@ -1617,7 +1577,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w160</key>
+                <key>PioneerDDJSP1.w156</key>
                 <description>Slicer beatjump/loop Beat 6 Deck 2, Button: PAD6 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x25</midino>
@@ -1627,7 +1587,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w161</key>
+                <key>PioneerDDJSP1.w157</key>
                 <description>Slicer beatjump/loop Beat 7 Deck 2, Button: PAD7 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x26</midino>
@@ -1637,7 +1597,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w162</key>
+                <key>PioneerDDJSP1.w158</key>
                 <description>Slicer beatjump/loop Beat 8 Deck 2, Button: PAD8 (in SLICER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x27</midino>
@@ -1647,7 +1607,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w163</key>
+                <key>PioneerDDJSP1.w159</key>
                 <description>Sampler 1 play, Button: PAD1 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x30</midino>
@@ -1657,7 +1617,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w164</key>
+                <key>PioneerDDJSP1.w160</key>
                 <description>Sampler 1 play with velocity volume, Button: PAD1 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x70</midino>
@@ -1667,7 +1627,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w165</key>
+                <key>PioneerDDJSP1.w161</key>
                 <description>Sampler 1 stop, Button: SHIFT &amp; PAD1 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x38</midino>
@@ -1677,7 +1637,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w166</key>
+                <key>PioneerDDJSP1.w162</key>
                 <description>Sampler 2 play, Button: PAD2 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x31</midino>
@@ -1687,7 +1647,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w167</key>
+                <key>PioneerDDJSP1.w163</key>
                 <description>Sampler 2 play with velocity volume, Button: PAD2 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x71</midino>
@@ -1697,7 +1657,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w168</key>
+                <key>PioneerDDJSP1.w164</key>
                 <description>Sampler 2 stop, Button: SHIFT &amp; PAD2 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x39</midino>
@@ -1707,7 +1667,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w169</key>
+                <key>PioneerDDJSP1.w165</key>
                 <description>Sampler 3 play, Button: PAD3 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x32</midino>
@@ -1717,7 +1677,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w170</key>
+                <key>PioneerDDJSP1.w166</key>
                 <description>Sampler 3 play with velocity volume, Button: PAD3 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x72</midino>
@@ -1727,7 +1687,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w171</key>
+                <key>PioneerDDJSP1.w167</key>
                 <description>Sampler 3 stop, Button: SHIFT &amp; PAD3 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x3A</midino>
@@ -1737,7 +1697,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w172</key>
+                <key>PioneerDDJSP1.w168</key>
                 <description>Sampler 4 play, Button: PAD4 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x33</midino>
@@ -1747,7 +1707,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w173</key>
+                <key>PioneerDDJSP1.w169</key>
                 <description>Sampler 4 play with velocity volume, Button: PAD4 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x73</midino>
@@ -1757,7 +1717,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w174</key>
+                <key>PioneerDDJSP1.w170</key>
                 <description>Sampler 4 stop, Button: SHIFT &amp; PAD4 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x3B</midino>
@@ -1767,7 +1727,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w175</key>
+                <key>PioneerDDJSP1.w171</key>
                 <description>Sampler 5 play, Button: PAD5 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x34</midino>
@@ -1777,7 +1737,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w176</key>
+                <key>PioneerDDJSP1.w172</key>
                 <description>Sampler 5 play with velocity volume, Button: PAD5 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x74</midino>
@@ -1787,7 +1747,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w177</key>
+                <key>PioneerDDJSP1.w173</key>
                 <description>Sampler 5 stop, Button: SHIFT &amp; PAD5 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x3C</midino>
@@ -1797,7 +1757,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w178</key>
+                <key>PioneerDDJSP1.w174</key>
                 <description>Sampler 6 play, Button: PAD6 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x35</midino>
@@ -1807,7 +1767,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w179</key>
+                <key>PioneerDDJSP1.w175</key>
                 <description>Sampler 6 play with velocity volume, Button: PAD6 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x75</midino>
@@ -1817,7 +1777,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w180</key>
+                <key>PioneerDDJSP1.w176</key>
                 <description>Sampler 6 stop, Button: SHIFT &amp; PAD6 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x3D</midino>
@@ -1827,7 +1787,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w181</key>
+                <key>PioneerDDJSP1.w177</key>
                 <description>Sampler 7 play, Button: PAD7 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x36</midino>
@@ -1837,7 +1797,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w182</key>
+                <key>PioneerDDJSP1.w178</key>
                 <description>Sampler 7 play with velocity volume, Button: PAD7 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x76</midino>
@@ -1847,7 +1807,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w183</key>
+                <key>PioneerDDJSP1.w179</key>
                 <description>Sampler 7 stop, Button: SHIFT &amp; PAD7 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x3E</midino>
@@ -1857,7 +1817,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w184</key>
+                <key>PioneerDDJSP1.w180</key>
                 <description>Sampler 8 play, Button: PAD8 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x37</midino>
@@ -1867,7 +1827,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w185</key>
+                <key>PioneerDDJSP1.w181</key>
                 <description>Sampler 8 play with velocity volume, Button: PAD8 (in SAMPLER-Mode, VELOCITY active, Deck 2 active)</description>
                 <status>0xB8</status>
                 <midino>0x77</midino>
@@ -1877,7 +1837,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w186</key>
+                <key>PioneerDDJSP1.w182</key>
                 <description>Sampler 8 stop, Button: SHIFT &amp; PAD8 (in SAMPLER-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x3F</midino>
@@ -1887,7 +1847,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w187</key>
+                <key>PioneerDDJSP1.w183</key>
                 <description>Beatloop Deck 2, Button: PAD1 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x50</midino>
@@ -1897,7 +1857,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w188</key>
+                <key>PioneerDDJSP1.w184</key>
                 <description>Beatloop Deck 2, Button: PAD2 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x51</midino>
@@ -1907,7 +1867,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w189</key>
+                <key>PioneerDDJSP1.w185</key>
                 <description>Beatloop Deck 2, Button: PAD3 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x52</midino>
@@ -1917,7 +1877,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w190</key>
+                <key>PioneerDDJSP1.w186</key>
                 <description>Beatloop Deck 2, Button: PAD4 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x53</midino>
@@ -1927,7 +1887,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w191</key>
+                <key>PioneerDDJSP1.w187</key>
                 <description>Beatloop Deck 2, Button: PAD5 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x54</midino>
@@ -1937,7 +1897,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w192</key>
+                <key>PioneerDDJSP1.w188</key>
                 <description>Beatloop Deck 2, Button: PAD6 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x55</midino>
@@ -1947,7 +1907,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w193</key>
+                <key>PioneerDDJSP1.w189</key>
                 <description>Beatloop Deck 2, Button: PAD7 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x56</midino>
@@ -1957,7 +1917,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w194</key>
+                <key>PioneerDDJSP1.w190</key>
                 <description>Beatloop Deck 2, Button: PAD8 (in GROUP2-Mode, Deck 2 active)</description>
                 <status>0x98</status>
                 <midino>0x57</midino>
@@ -1967,7 +1927,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w195</key>
+                <key>PioneerDDJSP1.w191</key>
                 <description>Set PAD-Mode, Button: HOT CUE RIGHT (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x1B</midino>
@@ -1977,7 +1937,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w196</key>
+                <key>PioneerDDJSP1.w192</key>
                 <description>Set PAD-Mode, Button: ROLL RIGHT (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x1E</midino>
@@ -1987,7 +1947,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w197</key>
+                <key>PioneerDDJSP1.w193</key>
                 <description>Set PAD-Mode, Button: SLICER RIGHT (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x20</midino>
@@ -1997,7 +1957,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w198</key>
+                <key>PioneerDDJSP1.w194</key>
                 <description>Set PAD-Mode, Button: SAMPLER RIGHT (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x22</midino>
@@ -2007,7 +1967,7 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>PioneerDDJSP1.w199</key>
+                <key>PioneerDDJSP1.w195</key>
                 <description>Set PAD-Mode, Button: SHIFT ROLL RIGHT (Deck 2 active)</description>
                 <status>0x91</status>
                 <midino>0x6B</midino>
@@ -2017,7 +1977,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w200</key>
+                <key>PioneerDDJSP1.w196</key>
                 <description>Load selected Deck 3, Button: LOAD Deck 3</description>
                 <status>0x96</status>
                 <midino>0x48</midino>
@@ -2027,7 +1987,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w201</key>
+                <key>PioneerDDJSP1.w197</key>
                 <description>Effect Unit 3 assignment Deck 3, Button: FX1 assign Deck 3</description>
                 <status>0x96</status>
                 <midino>0x4E</midino>
@@ -2037,7 +1997,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w202</key>
+                <key>PioneerDDJSP1.w198</key>
                 <description>Effect Unit 4 assignment Deck 3, Button: FX2 assign Deck 3</description>
                 <status>0x96</status>
                 <midino>0x52</midino>
@@ -2047,17 +2007,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w203</key>
-                <description>Touch detection for Needle Search Deck 3, Touch: left SHIFT NEEDLE SEARCH (Deck 3 active)</description>
-                <status>0x92</status>
-                <midino>0x44</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w204</key>
+                <key>PioneerDDJSP1.w199</key>
                 <description>Shift Deck 3, Button: left SHIFT (Deck 3 active)</description>
                 <status>0x96</status>
                 <midino>0x40</midino>
@@ -2065,19 +2015,9 @@
                     <script-binding/>
                 </options>
             </control>
-             <control>
-                <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w205</key>
-                <description>Jog touch (No Vinyl Mode) Deck 3, left JOGDIAL (Deck 3 active)</description>
-                <status>0x92</status>
-                <midino>0x35</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w206</key>
+                <key>PioneerDDJSP1.w200</key>
                 <description>Set and enable/exit beatloop with length of beatloop_size Deck 3, Button: left AUTOLOOP (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x0D</midino>
@@ -2087,7 +2027,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w207</key>
+                <key>PioneerDDJSP1.w201</key>
                 <description>Quantize Deck 3, Button: left SHIFT SYNC (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x5C</midino>
@@ -2097,7 +2037,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w208</key>
+                <key>PioneerDDJSP1.w202</key>
                 <description>Sync Deck 3, Button: left SYNC (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x58</midino>
@@ -2107,7 +2047,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w209</key>
+                <key>PioneerDDJSP1.w203</key>
                 <description>Slip Deck 3, Button: left SLIP (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x40</midino>
@@ -2117,7 +2057,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w210</key>
+                <key>PioneerDDJSP1.w204</key>
                 <description>ReverseRoll Deck 3, Button: left CENSOR (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x15</midino>
@@ -2127,7 +2067,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w211</key>
+                <key>PioneerDDJSP1.w205</key>
                 <description>Play track backwards (reverse play) Deck 3, Button: SHIFT &amp; left CENSOR (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x38</midino>
@@ -2137,7 +2077,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w212</key>
+                <key>PioneerDDJSP1.w206</key>
                 <description>Beatjump amount of beatjump_size forwards, Button: PARAMETER1 RIGHT (in HOTCUE-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x2C</midino>
@@ -2147,7 +2087,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w213</key>
+                <key>PioneerDDJSP1.w207</key>
                 <description>Beatjump amount of beatjump_size backwards, Button: PARAMETER1 LEFT (in HOTCUE-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x24</midino>
@@ -2157,7 +2097,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w214</key>
+                <key>PioneerDDJSP1.w208</key>
                 <description>Double beatjump_size, Button: PARAMETER2 RIGHT (in HOTCUE-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x09</midino>
@@ -2167,7 +2107,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w215</key>
+                <key>PioneerDDJSP1.w209</key>
                 <description>Halve beatjump_size, Button: PARAMETER2 LEFT (in HOTCUE-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x01</midino>
@@ -2177,7 +2117,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w216</key>
+                <key>PioneerDDJSP1.w210</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x2D</midino>
@@ -2187,7 +2127,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w217</key>
+                <key>PioneerDDJSP1.w211</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x25</midino>
@@ -2197,7 +2137,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w218</key>
+                <key>PioneerDDJSP1.w212</key>
                 <description>Change Slicer quantization (increment), Button: PARAMETER1 RIGHT (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x2E</midino>
@@ -2207,7 +2147,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w219</key>
+                <key>PioneerDDJSP1.w213</key>
                 <description>Change Slicer quantization (decrement), Button: PARAMETER1 LEFT (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x26</midino>
@@ -2217,7 +2157,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w220</key>
+                <key>PioneerDDJSP1.w214</key>
                 <description>Change Slicer domain (increment), Button: PARAMETER2 RIGHT (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x7B</midino>
@@ -2227,7 +2167,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w221</key>
+                <key>PioneerDDJSP1.w215</key>
                 <description>Change Slicer domain (decrement), Button: PARAMETER2 LEFT (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x03</midino>
@@ -2237,7 +2177,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w222</key>
+                <key>PioneerDDJSP1.w216</key>
                 <description>Change Sampler bank (increment), Button: PARAMETER1 RIGHT (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x2F</midino>
@@ -2247,7 +2187,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w223</key>
+                <key>PioneerDDJSP1.w217</key>
                 <description>Change Sampler bank (decrement), Button: PARAMETER1 LEFT (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x27</midino>
@@ -2257,7 +2197,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w224</key>
+                <key>PioneerDDJSP1.w218</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x31</midino>
@@ -2267,7 +2207,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w225</key>
+                <key>PioneerDDJSP1.w219</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x29</midino>
@@ -2277,7 +2217,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w226</key>
+                <key>PioneerDDJSP1.w220</key>
                 <description>Hot-Cue 1 Deck 3, Button: PAD1 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x00</midino>
@@ -2287,7 +2227,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w227</key>
+                <key>PioneerDDJSP1.w221</key>
                 <description>Hot-Cue 2 Deck 3, Button: PAD2 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x01</midino>
@@ -2297,7 +2237,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w228</key>
+                <key>PioneerDDJSP1.w222</key>
                 <description>Hot-Cue 3 Deck 3, Button: PAD3 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x02</midino>
@@ -2307,7 +2247,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w229</key>
+                <key>PioneerDDJSP1.w223</key>
                 <description>Hot-Cue 4 Deck 3, Button: PAD4 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x03</midino>
@@ -2317,7 +2257,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w230</key>
+                <key>PioneerDDJSP1.w224</key>
                 <description>Hot-Cue 5 Deck 3, Button: PAD5 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x04</midino>
@@ -2327,7 +2267,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w231</key>
+                <key>PioneerDDJSP1.w225</key>
                 <description>Hot-Cue 6 Deck 3, Button: PAD6 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x05</midino>
@@ -2337,7 +2277,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w232</key>
+                <key>PioneerDDJSP1.w226</key>
                 <description>Hot-Cue 7 Deck 3, Button: PAD7 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x06</midino>
@@ -2347,7 +2287,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w233</key>
+                <key>PioneerDDJSP1.w227</key>
                 <description>Hot-Cue 8 Deck 3, Button: PAD8 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x07</midino>
@@ -2357,7 +2297,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w234</key>
+                <key>PioneerDDJSP1.w228</key>
                 <description>Clear Hot-Cue 1 Deck 3, Button: SHIFT &amp; PAD1 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x08</midino>
@@ -2367,7 +2307,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w235</key>
+                <key>PioneerDDJSP1.w229</key>
                 <description>Clear Hot-Cue 2 Deck 3, Button: SHIFT &amp; PAD2 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x09</midino>
@@ -2377,7 +2317,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w236</key>
+                <key>PioneerDDJSP1.w230</key>
                 <description>Clear Hot-Cue 3 Deck 3, Button: SHIFT &amp; PAD3 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x0A</midino>
@@ -2387,7 +2327,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w237</key>
+                <key>PioneerDDJSP1.w231</key>
                 <description>Clear Hot-Cue 4 Deck 3, Button: SHIFT &amp; PAD4 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x0B</midino>
@@ -2397,7 +2337,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w238</key>
+                <key>PioneerDDJSP1.w232</key>
                 <description>Clear Hot-Cue 5 Deck 3, Button: SHIFT &amp; PAD5 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x0C</midino>
@@ -2407,7 +2347,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w239</key>
+                <key>PioneerDDJSP1.w233</key>
                 <description>Clear Hot-Cue 6 Deck 3, Button: SHIFT &amp; PAD6 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x0D</midino>
@@ -2417,7 +2357,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w240</key>
+                <key>PioneerDDJSP1.w234</key>
                 <description>Clear Hot-Cue 7 Deck 3, Button: SHIFT &amp; PAD7 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x0E</midino>
@@ -2427,7 +2367,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w241</key>
+                <key>PioneerDDJSP1.w235</key>
                 <description>Clear Hot-Cue 8 Deck 3, Button: SHIFT &amp; PAD8 (in HOT-CUE-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x0F</midino>
@@ -2437,7 +2377,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w242</key>
+                <key>PioneerDDJSP1.w236</key>
                 <description>Auto-Roll 1/16 Deck 3, Button: PAD1 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x10</midino>
@@ -2447,7 +2387,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w243</key>
+                <key>PioneerDDJSP1.w237</key>
                 <description>Auto-Roll 1/8 Deck 3, Button: PAD2 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x11</midino>
@@ -2457,7 +2397,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w244</key>
+                <key>PioneerDDJSP1.w238</key>
                 <description>Auto-Roll 1/4 Deck 3, Button: PAD3 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x12</midino>
@@ -2467,7 +2407,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w245</key>
+                <key>PioneerDDJSP1.w239</key>
                 <description>Auto-Roll 1/2 Deck 3, Button: PAD4 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x13</midino>
@@ -2477,7 +2417,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w246</key>
+                <key>PioneerDDJSP1.w240</key>
                 <description>Auto-Roll 1 Deck 3, Button: PAD5 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x14</midino>
@@ -2487,7 +2427,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w247</key>
+                <key>PioneerDDJSP1.w241</key>
                 <description>Auto-Roll 2 Deck 3, Button: PAD6 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x15</midino>
@@ -2497,7 +2437,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w248</key>
+                <key>PioneerDDJSP1.w242</key>
                 <description>Auto-Roll 4 Deck 3, Button: PAD7 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x16</midino>
@@ -2507,7 +2447,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w249</key>
+                <key>PioneerDDJSP1.w243</key>
                 <description>Auto-Roll 8 Deck 3, Button: PAD8 (in ROLL-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x17</midino>
@@ -2517,7 +2457,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w250</key>
+                <key>PioneerDDJSP1.w244</key>
                 <description>Slicer beatjump/loop Beat 1 Deck 3, Button: PAD1 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x20</midino>
@@ -2527,7 +2467,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w251</key>
+                <key>PioneerDDJSP1.w245</key>
                 <description>Slicer beatjump/loop Beat 2 Deck 3, Button: PAD2 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x21</midino>
@@ -2537,7 +2477,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w252</key>
+                <key>PioneerDDJSP1.w246</key>
                 <description>Slicer beatjump/loop Beat 3 Deck 3, Button: PAD3 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x22</midino>
@@ -2547,7 +2487,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w253</key>
+                <key>PioneerDDJSP1.w247</key>
                 <description>Slicer beatjump/loop Beat 4 Deck 3, Button: PAD4 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x23</midino>
@@ -2557,7 +2497,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w254</key>
+                <key>PioneerDDJSP1.w248</key>
                 <description>Slicer beatjump/loop Beat 5 Deck 3, Button: PAD5 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x24</midino>
@@ -2567,7 +2507,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w255</key>
+                <key>PioneerDDJSP1.w249</key>
                 <description>Slicer beatjump/loop Beat 6 Deck 3, Button: PAD6 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x25</midino>
@@ -2577,7 +2517,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w256</key>
+                <key>PioneerDDJSP1.w250</key>
                 <description>Slicer beatjump/loop Beat 7 Deck 3, Button: PAD7 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x26</midino>
@@ -2587,7 +2527,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w257</key>
+                <key>PioneerDDJSP1.w251</key>
                 <description>Slicer beatjump/loop Beat 8 Deck 3, Button: PAD8 (in SLICER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x27</midino>
@@ -2597,7 +2537,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w258</key>
+                <key>PioneerDDJSP1.w252</key>
                 <description>Sampler 1 play, Button: PAD1 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x30</midino>
@@ -2607,7 +2547,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w259</key>
+                <key>PioneerDDJSP1.w253</key>
                 <description>Sampler 1 play with velocity volume, Button: PAD1 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x70</midino>
@@ -2617,7 +2557,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w260</key>
+                <key>PioneerDDJSP1.w254</key>
                 <description>Sampler 1 stop, Button: SHIFT &amp; PAD1 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x38</midino>
@@ -2627,7 +2567,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w261</key>
+                <key>PioneerDDJSP1.w255</key>
                 <description>Sampler 2 play, Button: PAD2 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x31</midino>
@@ -2637,7 +2577,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w262</key>
+                <key>PioneerDDJSP1.w256</key>
                 <description>Sampler 2 play with velocity volume, Button: PAD2 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x71</midino>
@@ -2647,7 +2587,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w263</key>
+                <key>PioneerDDJSP1.w257</key>
                 <description>Sampler 2 stop, Button: SHIFT &amp; PAD2 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x39</midino>
@@ -2657,7 +2597,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w264</key>
+                <key>PioneerDDJSP1.w258</key>
                 <description>Sampler 3 play, Button: PAD3 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x32</midino>
@@ -2667,7 +2607,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w265</key>
+                <key>PioneerDDJSP1.w259</key>
                 <description>Sampler 3 play with velocity volume, Button: PAD3 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x72</midino>
@@ -2677,7 +2617,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w266</key>
+                <key>PioneerDDJSP1.w260</key>
                 <description>Sampler 3 stop, Button: SHIFT &amp; PAD3 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x3A</midino>
@@ -2687,7 +2627,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w267</key>
+                <key>PioneerDDJSP1.w261</key>
                 <description>Sampler 4 play, Button: PAD4 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x33</midino>
@@ -2697,7 +2637,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w268</key>
+                <key>PioneerDDJSP1.w262</key>
                 <description>Sampler 4 play with velocity volume, Button: PAD4 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x73</midino>
@@ -2707,7 +2647,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w269</key>
+                <key>PioneerDDJSP1.w263</key>
                 <description>Sampler 4 stop, Button: SHIFT &amp; PAD4 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x3B</midino>
@@ -2717,7 +2657,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w270</key>
+                <key>PioneerDDJSP1.w264</key>
                 <description>Sampler 5 play, Button: PAD5 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x34</midino>
@@ -2727,7 +2667,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w271</key>
+                <key>PioneerDDJSP1.w265</key>
                 <description>Sampler 5 play with velocity volume, Button: PAD5 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x74</midino>
@@ -2737,7 +2677,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w272</key>
+                <key>PioneerDDJSP1.w266</key>
                 <description>Sampler 5 stop, Button: SHIFT &amp; PAD5 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x3C</midino>
@@ -2747,7 +2687,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w273</key>
+                <key>PioneerDDJSP1.w267</key>
                 <description>Sampler 6 play, Button: PAD6 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x35</midino>
@@ -2757,7 +2697,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w274</key>
+                <key>PioneerDDJSP1.w268</key>
                 <description>Sampler 6 play with velocity volume, Button: PAD6 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x75</midino>
@@ -2767,7 +2707,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w275</key>
+                <key>PioneerDDJSP1.w269</key>
                 <description>Sampler 6 stop, Button: SHIFT &amp; PAD6 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x3D</midino>
@@ -2777,7 +2717,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w276</key>
+                <key>PioneerDDJSP1.w270</key>
                 <description>Sampler 7 play, Button: PAD7 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x36</midino>
@@ -2787,7 +2727,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w277</key>
+                <key>PioneerDDJSP1.w271</key>
                 <description>Sampler 7 play with velocity volume, Button: PAD7 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x76</midino>
@@ -2797,7 +2737,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w278</key>
+                <key>PioneerDDJSP1.w272</key>
                 <description>Sampler 7 stop, Button: SHIFT &amp; PAD7 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x3E</midino>
@@ -2807,7 +2747,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w279</key>
+                <key>PioneerDDJSP1.w273</key>
                 <description>Sampler 8 play, Button: PAD8 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x37</midino>
@@ -2817,7 +2757,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w280</key>
+                <key>PioneerDDJSP1.w274</key>
                 <description>Sampler 8 play with velocity volume, Button: PAD8 (in SAMPLER-Mode, VELOCITY active, Deck 3 active)</description>
                 <status>0xB9</status>
                 <midino>0x77</midino>
@@ -2827,7 +2767,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w281</key>
+                <key>PioneerDDJSP1.w275</key>
                 <description>Sampler 8 stop, Button: SHIFT &amp; PAD8 (in SAMPLER-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x3F</midino>
@@ -2837,7 +2777,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w282</key>
+                <key>PioneerDDJSP1.w276</key>
                 <description>Beatloop Deck 3, Button: PAD1 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x50</midino>
@@ -2847,7 +2787,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w283</key>
+                <key>PioneerDDJSP1.w277</key>
                 <description>Beatloop Deck 3, Button: PAD2 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x51</midino>
@@ -2857,7 +2797,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w284</key>
+                <key>PioneerDDJSP1.w278</key>
                 <description>Beatloop Deck 3, Button: PAD3 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x52</midino>
@@ -2867,7 +2807,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w285</key>
+                <key>PioneerDDJSP1.w279</key>
                 <description>Beatloop Deck 3, Button: PAD4 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x53</midino>
@@ -2877,7 +2817,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w286</key>
+                <key>PioneerDDJSP1.w280</key>
                 <description>Beatloop Deck 3, Button: PAD5 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x54</midino>
@@ -2887,7 +2827,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w287</key>
+                <key>PioneerDDJSP1.w281</key>
                 <description>Beatloop Deck 3, Button: PAD6 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x55</midino>
@@ -2897,7 +2837,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w288</key>
+                <key>PioneerDDJSP1.w282</key>
                 <description>Beatloop Deck 3, Button: PAD7 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x56</midino>
@@ -2907,7 +2847,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w289</key>
+                <key>PioneerDDJSP1.w283</key>
                 <description>Beatloop Deck 3, Button: PAD8 (in GROUP2-Mode, Deck 3 active)</description>
                 <status>0x99</status>
                 <midino>0x57</midino>
@@ -2917,7 +2857,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w290</key>
+                <key>PioneerDDJSP1.w284</key>
                 <description>Set PAD-Mode, Button: HOT CUE LEFT (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x1B</midino>
@@ -2927,7 +2867,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w291</key>
+                <key>PioneerDDJSP1.w285</key>
                 <description>Set PAD-Mode, Button: ROLL LEFT (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x1E</midino>
@@ -2937,7 +2877,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w292</key>
+                <key>PioneerDDJSP1.w286</key>
                 <description>Set PAD-Mode, Button: SLICER LEFT (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x20</midino>
@@ -2947,7 +2887,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w293</key>
+                <key>PioneerDDJSP1.w287</key>
                 <description>Set PAD-Mode, Button: SAMPLER LEFT (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x22</midino>
@@ -2957,7 +2897,7 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>PioneerDDJSP1.w294</key>
+                <key>PioneerDDJSP1.w288</key>
                 <description>Set PAD-Mode, Button: SHIFT ROLL LEFT (Deck 3 active)</description>
                 <status>0x92</status>
                 <midino>0x6B</midino>
@@ -2967,7 +2907,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w295</key>
+                <key>PioneerDDJSP1.w289</key>
                 <description>Load selected Deck 4, Button: LOAD Deck 4</description>
                 <status>0x96</status>
                 <midino>0x49</midino>
@@ -2977,7 +2917,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w296</key>
+                <key>PioneerDDJSP1.w290</key>
                 <description>Effect Unit 3 assignment Deck 4, Button: FX1 assign Deck 4</description>
                 <status>0x96</status>
                 <midino>0x4F</midino>
@@ -2987,7 +2927,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w297</key>
+                <key>PioneerDDJSP1.w291</key>
                 <description>Effect Unit 4 assignment Deck 4, Button: FX2 assign Deck 4</description>
                 <status>0x96</status>
                 <midino>0x53</midino>
@@ -2997,17 +2937,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w298</key>
-                <description>Touch detection for Needle Search Deck 4, Touch: right SHIFT NEEDLE SEARCH (Deck 4 active)</description>
-                <status>0x93</status>
-                <midino>0x44</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w299</key>
+                <key>PioneerDDJSP1.w292</key>
                 <description>Shift Deck 4, Button: right SHIFT (Deck 4 active)</description>
                 <status>0x96</status>
                 <midino>0x40</midino>
@@ -3017,17 +2947,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w300</key>
-                <description>Jog touch (No Vinyl Mode) Deck 4, right JOGDIAL (Deck 4 active)</description>
-                <status>0x93</status>
-                <midino>0x35</midino>
-                <options>
-                    <script-binding/>
-                </options>
-            </control>
-            <control>
-                <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w301</key>
+                <key>PioneerDDJSP1.w293</key>
                 <description>Set and enable/exit beatloop with length of beatloop_size Deck 4, Button: right AUTOLOOP (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x0D</midino>
@@ -3037,7 +2957,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w302</key>
+                <key>PioneerDDJSP1.w294</key>
                 <description>Quantize Deck 4, Button: right SHIFT SYNC (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x5C</midino>
@@ -3047,7 +2967,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w303</key>
+                <key>PioneerDDJSP1.w295</key>
                 <description>Sync Deck 4, Button: right SYNC (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x58</midino>
@@ -3057,7 +2977,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w304</key>
+                <key>PioneerDDJSP1.w296</key>
                 <description>Slip Deck 4, Button: right SLIP (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x40</midino>
@@ -3067,7 +2987,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w305</key>
+                <key>PioneerDDJSP1.w297</key>
                 <description>ReverseRoll Deck 4, Button: right CENSOR (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x15</midino>
@@ -3077,7 +2997,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w306</key>
+                <key>PioneerDDJSP1.w298</key>
                 <description>Play track backwards (reverse play) Deck 4, Button: SHIFT &amp; right CENSOR (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x38</midino>
@@ -3087,7 +3007,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w307</key>
+                <key>PioneerDDJSP1.w299</key>
                 <description>Beatjump amount of beatjump_size forwards, Button: PARAMETER1 RIGHT (in HOTCUE-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x2C</midino>
@@ -3097,7 +3017,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w308</key>
+                <key>PioneerDDJSP1.w300</key>
                 <description>Beatjump amount of beatjump_size backwards, Button: PARAMETER1 LEFT (in HOTCUE-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x24</midino>
@@ -3107,7 +3027,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w309</key>
+                <key>PioneerDDJSP1.w301</key>
                 <description>Double beatjump_size, Button: PARAMETER2 RIGHT (in HOTCUE-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x09</midino>
@@ -3117,7 +3037,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w310</key>
+                <key>PioneerDDJSP1.w302</key>
                 <description>Halve beatjump_size, Button: PARAMETER2 LEFT (in HOTCUE-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x01</midino>
@@ -3127,7 +3047,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w311</key>
+                <key>PioneerDDJSP1.w303</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x2D</midino>
@@ -3137,7 +3057,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w312</key>
+                <key>PioneerDDJSP1.w304</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x25</midino>
@@ -3147,7 +3067,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w313</key>
+                <key>PioneerDDJSP1.w305</key>
                 <description>Change Slicer quantization (increment), Button: PARAMETER1 RIGHT (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x2E</midino>
@@ -3157,7 +3077,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w314</key>
+                <key>PioneerDDJSP1.w306</key>
                 <description>Change Slicer quantization (decrement), Button: PARAMETER1 LEFT (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x26</midino>
@@ -3167,7 +3087,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w315</key>
+                <key>PioneerDDJSP1.w307</key>
                 <description>Change Slicer domain (increment), Button: PARAMETER2 RIGHT (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x7B</midino>
@@ -3177,7 +3097,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w316</key>
+                <key>PioneerDDJSP1.w308</key>
                 <description>Change Slicer domain (decrement), Button: PARAMETER2 LEFT (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x03</midino>
@@ -3187,7 +3107,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w317</key>
+                <key>PioneerDDJSP1.w309</key>
                 <description>Change Sampler bank (increment), Button: PARAMETER1 RIGHT (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x2F</midino>
@@ -3197,7 +3117,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w318</key>
+                <key>PioneerDDJSP1.w310</key>
                 <description>Change Sampler bank (decrement), Button: PARAMETER1 LEFT (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x27</midino>
@@ -3207,7 +3127,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w319</key>
+                <key>PioneerDDJSP1.w311</key>
                 <description>Change Pad-Parameter Set (increment), Button: PARAMETER1 RIGHT (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x31</midino>
@@ -3217,7 +3137,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w320</key>
+                <key>PioneerDDJSP1.w312</key>
                 <description>Change Pad-Parameter Set (decrement), Button: PARAMETER1 LEFT (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x29</midino>
@@ -3227,7 +3147,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w321</key>
+                <key>PioneerDDJSP1.w313</key>
                 <description>Hot-Cue 1 Deck 4, Button: PAD1 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x00</midino>
@@ -3237,7 +3157,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w322</key>
+                <key>PioneerDDJSP1.w314</key>
                 <description>Hot-Cue 2 Deck 4, Button: PAD2 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x01</midino>
@@ -3247,7 +3167,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w323</key>
+                <key>PioneerDDJSP1.w315</key>
                 <description>Hot-Cue 3 Deck 4, Button: PAD3 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x02</midino>
@@ -3257,7 +3177,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w324</key>
+                <key>PioneerDDJSP1.w316</key>
                 <description>Hot-Cue 4 Deck 4, Button: PAD4 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x03</midino>
@@ -3267,7 +3187,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w325</key>
+                <key>PioneerDDJSP1.w317</key>
                 <description>Hot-Cue 5 Deck 4, Button: PAD5 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x04</midino>
@@ -3277,7 +3197,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w326</key>
+                <key>PioneerDDJSP1.w318</key>
                 <description>Hot-Cue 6 Deck 4, Button: PAD6 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x05</midino>
@@ -3287,7 +3207,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w327</key>
+                <key>PioneerDDJSP1.w319</key>
                 <description>Hot-Cue 7 Deck 4, Button: PAD7 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x06</midino>
@@ -3297,7 +3217,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w328</key>
+                <key>PioneerDDJSP1.w320</key>
                 <description>Hot-Cue 8 Deck 4, Button: PAD8 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x07</midino>
@@ -3307,7 +3227,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w329</key>
+                <key>PioneerDDJSP1.w321</key>
                 <description>Clear Hot-Cue 1 Deck 4, Button: SHIFT &amp; PAD1 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x08</midino>
@@ -3317,7 +3237,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w330</key>
+                <key>PioneerDDJSP1.w322</key>
                 <description>Clear Hot-Cue 2 Deck 4, Button: SHIFT &amp; PAD2 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x09</midino>
@@ -3327,7 +3247,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w331</key>
+                <key>PioneerDDJSP1.w323</key>
                 <description>Clear Hot-Cue 3 Deck 4, Button: SHIFT &amp; PAD3 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x0A</midino>
@@ -3337,7 +3257,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w332</key>
+                <key>PioneerDDJSP1.w324</key>
                 <description>Clear Hot-Cue 4 Deck 4, Button: SHIFT &amp; PAD4 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x0B</midino>
@@ -3347,7 +3267,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w333</key>
+                <key>PioneerDDJSP1.w325</key>
                 <description>Clear Hot-Cue 5 Deck 4, Button: SHIFT &amp; PAD5 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x0C</midino>
@@ -3357,7 +3277,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w334</key>
+                <key>PioneerDDJSP1.w326</key>
                 <description>Clear Hot-Cue 6 Deck 4, Button: SHIFT &amp; PAD6 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x0D</midino>
@@ -3367,7 +3287,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w335</key>
+                <key>PioneerDDJSP1.w327</key>
                 <description>Clear Hot-Cue 7 Deck 4, Button: SHIFT &amp; PAD7 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x0E</midino>
@@ -3377,7 +3297,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w336</key>
+                <key>PioneerDDJSP1.w328</key>
                 <description>Clear Hot-Cue 8 Deck 4, Button: SHIFT &amp; PAD8 (in HOT-CUE-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x0F</midino>
@@ -3387,7 +3307,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w337</key>
+                <key>PioneerDDJSP1.w329</key>
                 <description>Auto-Roll 1/16 Deck 4, Button: PAD1 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x10</midino>
@@ -3397,7 +3317,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w338</key>
+                <key>PioneerDDJSP1.w330</key>
                 <description>Auto-Roll 1/8 Deck 4, Button: PAD2 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x11</midino>
@@ -3407,7 +3327,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w339</key>
+                <key>PioneerDDJSP1.w331</key>
                 <description>Auto-Roll 1/4 Deck 4, Button: PAD3 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x12</midino>
@@ -3417,7 +3337,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w340</key>
+                <key>PioneerDDJSP1.w332</key>
                 <description>Auto-Roll 1/2 Deck 4, Button: PAD4 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x13</midino>
@@ -3427,7 +3347,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w341</key>
+                <key>PioneerDDJSP1.w333</key>
                 <description>Auto-Roll 1 Deck 4, Button: PAD5 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x14</midino>
@@ -3437,7 +3357,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w342</key>
+                <key>PioneerDDJSP1.w334</key>
                 <description>Auto-Roll 2 Deck 4, Button: PAD6 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x15</midino>
@@ -3447,7 +3367,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w343</key>
+                <key>PioneerDDJSP1.w335</key>
                 <description>Auto-Roll 4 Deck 4, Button: PAD7 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x16</midino>
@@ -3457,7 +3377,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w344</key>
+                <key>PioneerDDJSP1.w336</key>
                 <description>Auto-Roll 8 Deck 4, Button: PAD8 (in ROLL-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x17</midino>
@@ -3467,7 +3387,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w345</key>
+                <key>PioneerDDJSP1.w337</key>
                 <description>Slicer beatjump/loop Beat 1 Deck 4, Button: PAD1 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x20</midino>
@@ -3477,7 +3397,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w346</key>
+                <key>PioneerDDJSP1.w338</key>
                 <description>Slicer beatjump/loop Beat 2 Deck 4, Button: PAD2 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x21</midino>
@@ -3487,7 +3407,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w347</key>
+                <key>PioneerDDJSP1.w339</key>
                 <description>Slicer beatjump/loop Beat 3 Deck 4, Button: PAD3 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x22</midino>
@@ -3497,7 +3417,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w348</key>
+                <key>PioneerDDJSP1.w340</key>
                 <description>Slicer beatjump/loop Beat 4 Deck 4, Button: PAD4 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x23</midino>
@@ -3507,7 +3427,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w349</key>
+                <key>PioneerDDJSP1.w341</key>
                 <description>Slicer beatjump/loop Beat 5 Deck 4, Button: PAD5 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x24</midino>
@@ -3517,7 +3437,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w350</key>
+                <key>PioneerDDJSP1.w342</key>
                 <description>Slicer beatjump/loop Beat 6 Deck 4, Button: PAD6 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x25</midino>
@@ -3527,7 +3447,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w351</key>
+                <key>PioneerDDJSP1.w343</key>
                 <description>Slicer beatjump/loop Beat 7 Deck 4, Button: PAD7 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x26</midino>
@@ -3537,7 +3457,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w352</key>
+                <key>PioneerDDJSP1.w344</key>
                 <description>Slicer beatjump/loop Beat 8 Deck 4, Button: PAD8 (in SLICER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x27</midino>
@@ -3547,7 +3467,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w353</key>
+                <key>PioneerDDJSP1.w345</key>
                 <description>Sampler 1 play, Button: PAD1 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x30</midino>
@@ -3557,7 +3477,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w354</key>
+                <key>PioneerDDJSP1.w346</key>
                 <description>Sampler 1 play with velocity volume, Button: PAD1 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x70</midino>
@@ -3567,7 +3487,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w355</key>
+                <key>PioneerDDJSP1.w347</key>
                 <description>Sampler 1 stop, Button: SHIFT &amp; PAD1 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x38</midino>
@@ -3577,7 +3497,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w356</key>
+                <key>PioneerDDJSP1.w348</key>
                 <description>Sampler 2 play, Button: PAD2 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x31</midino>
@@ -3587,7 +3507,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w357</key>
+                <key>PioneerDDJSP1.w349</key>
                 <description>Sampler 2 play with velocity volume, Button: PAD2 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x71</midino>
@@ -3597,7 +3517,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w358</key>
+                <key>PioneerDDJSP1.w350</key>
                 <description>Sampler 2 stop, Button: SHIFT &amp; PAD2 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x39</midino>
@@ -3607,7 +3527,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w359</key>
+                <key>PioneerDDJSP1.w351</key>
                 <description>Sampler 3 play, Button: PAD3 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x32</midino>
@@ -3617,7 +3537,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w360</key>
+                <key>PioneerDDJSP1.w352</key>
                 <description>Sampler 3 play with velocity volume, Button: PAD3 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x72</midino>
@@ -3627,7 +3547,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w361</key>
+                <key>PioneerDDJSP1.w353</key>
                 <description>Sampler 3 stop, Button: SHIFT &amp; PAD3 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x3A</midino>
@@ -3637,7 +3557,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w362</key>
+                <key>PioneerDDJSP1.w354</key>
                 <description>Sampler 4 play, Button: PAD4 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x33</midino>
@@ -3647,7 +3567,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w363</key>
+                <key>PioneerDDJSP1.w355</key>
                 <description>Sampler 4 play with velocity volume, Button: PAD4 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x73</midino>
@@ -3657,7 +3577,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w364</key>
+                <key>PioneerDDJSP1.w356</key>
                 <description>Sampler 4 stop, Button: SHIFT &amp; PAD4 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x3B</midino>
@@ -3667,7 +3587,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w365</key>
+                <key>PioneerDDJSP1.w357</key>
                 <description>Sampler 5 play, Button: PAD5 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x34</midino>
@@ -3677,7 +3597,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w366</key>
+                <key>PioneerDDJSP1.w358</key>
                 <description>Sampler 5 play with velocity volume, Button: PAD5 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x74</midino>
@@ -3687,7 +3607,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w367</key>
+                <key>PioneerDDJSP1.w359</key>
                 <description>Sampler 5 stop, Button: SHIFT &amp; PAD5 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x3C</midino>
@@ -3697,7 +3617,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w368</key>
+                <key>PioneerDDJSP1.w360</key>
                 <description>Sampler 6 play, Button: PAD6 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x35</midino>
@@ -3707,7 +3627,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w369</key>
+                <key>PioneerDDJSP1.w361</key>
                 <description>Sampler 6 play with velocity volume, Button: PAD6 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x75</midino>
@@ -3717,7 +3637,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w370</key>
+                <key>PioneerDDJSP1.w362</key>
                 <description>Sampler 6 stop, Button: SHIFT &amp; PAD6 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x3D</midino>
@@ -3727,7 +3647,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w371</key>
+                <key>PioneerDDJSP1.w363</key>
                 <description>Sampler 7 play, Button: PAD7 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x36</midino>
@@ -3737,7 +3657,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w372</key>
+                <key>PioneerDDJSP1.w364</key>
                 <description>Sampler 7 play with velocity volume, Button: PAD7 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x76</midino>
@@ -3747,7 +3667,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w373</key>
+                <key>PioneerDDJSP1.w365</key>
                 <description>Sampler 7 stop, Button: SHIFT &amp; PAD7 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x3E</midino>
@@ -3757,7 +3677,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w374</key>
+                <key>PioneerDDJSP1.w366</key>
                 <description>Sampler 8 play, Button: PAD8 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x37</midino>
@@ -3767,7 +3687,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w375</key>
+                <key>PioneerDDJSP1.w367</key>
                 <description>Sampler 8 play with velocity volume, Button: PAD8 (in SAMPLER-Mode, VELOCITY active, Deck 4 active)</description>
                 <status>0xBA</status>
                 <midino>0x77</midino>
@@ -3777,7 +3697,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w376</key>
+                <key>PioneerDDJSP1.w368</key>
                 <description>Sampler 8 stop, Button: SHIFT &amp; PAD8 (in SAMPLER-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x3F</midino>
@@ -3787,7 +3707,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w377</key>
+                <key>PioneerDDJSP1.w369</key>
                 <description>Beatloop Deck 4, Button: PAD1 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x50</midino>
@@ -3797,7 +3717,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w378</key>
+                <key>PioneerDDJSP1.w370</key>
                 <description>Beatloop Deck 4, Button: PAD2 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x51</midino>
@@ -3807,7 +3727,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w379</key>
+                <key>PioneerDDJSP1.w371</key>
                 <description>Beatloop Deck 4, Button: PAD3 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x52</midino>
@@ -3817,7 +3737,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w380</key>
+                <key>PioneerDDJSP1.w372</key>
                 <description>Beatloop Deck 4, Button: PAD4 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x53</midino>
@@ -3827,7 +3747,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w381</key>
+                <key>PioneerDDJSP1.w373</key>
                 <description>Beatloop Deck 4, Button: PAD5 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x54</midino>
@@ -3837,7 +3757,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w382</key>
+                <key>PioneerDDJSP1.w374</key>
                 <description>Beatloop Deck 4, Button: PAD6 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x55</midino>
@@ -3847,7 +3767,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w383</key>
+                <key>PioneerDDJSP1.w375</key>
                 <description>Beatloop Deck 4, Button: PAD7 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x56</midino>
@@ -3857,7 +3777,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w384</key>
+                <key>PioneerDDJSP1.w376</key>
                 <description>Beatloop Deck 4, Button: PAD8 (in GROUP2-Mode, Deck 4 active)</description>
                 <status>0x9A</status>
                 <midino>0x57</midino>
@@ -3867,7 +3787,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w385</key>
+                <key>PioneerDDJSP1.w377</key>
                 <description>Set PAD-Mode, Button: HOT CUE RIGHT (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x1B</midino>
@@ -3877,7 +3797,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w386</key>
+                <key>PioneerDDJSP1.w378</key>
                 <description>Set PAD-Mode, Button: ROLL RIGHT (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x1E</midino>
@@ -3887,7 +3807,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w387</key>
+                <key>PioneerDDJSP1.w379</key>
                 <description>Set PAD-Mode, Button: SLICER RIGHT (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x20</midino>
@@ -3897,7 +3817,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w388</key>
+                <key>PioneerDDJSP1.w380</key>
                 <description>Set PAD-Mode, Button: SAMPLER RIGHT (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x22</midino>
@@ -3907,7 +3827,7 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>PioneerDDJSP1.w389</key>
+                <key>PioneerDDJSP1.w381</key>
                 <description>Set PAD-Mode, Button: SHIFT ROLL RIGHT (Deck 4 active)</description>
                 <status>0x93</status>
                 <midino>0x6B</midino>
@@ -3917,7 +3837,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w390</key>
+                <key>PioneerDDJSP1.w382</key>
                 <description>Enable (if effectFocusButton pressed: Focus) Effect 1 of Effect Unit 1, Button: FX1-1 ON</description>
                 <status>0x94</status>
                 <midino>0x47</midino>
@@ -3927,7 +3847,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w391</key>
+                <key>PioneerDDJSP1.w383</key>
                 <description>Enable (if effectFocusButton pressed: Focus) Effect 2 of Effect Unit 1, Button: FX1-2 ON</description>
                 <status>0x94</status>
                 <midino>0x48</midino>
@@ -3937,7 +3857,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w392</key>
+                <key>PioneerDDJSP1.w384</key>
                 <description>Enable (if effectFocusButton pressed: Focus) Effect 3 of Effect Unit 1, Button: FX1-3 ON</description>
                 <status>0x94</status>
                 <midino>0x49</midino>
@@ -3947,7 +3867,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w393</key>
+                <key>PioneerDDJSP1.w385</key>
                 <description>Press hold: Enables effect focus selection, Shortpress: Toggles effect focus mode of EffectUnit 1, Button: FX1 TAP</description>
                 <status>0x94</status>
                 <midino>0x4A</midino>
@@ -3957,7 +3877,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w394</key>
+                <key>PioneerDDJSP1.w386</key>
                 <description>Switch between EffectUnits, Button: SHIFT &amp; FX1 TAP</description>
                 <status>0x94</status>
                 <midino>0x66</midino>
@@ -3967,7 +3887,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w395</key>
+                <key>PioneerDDJSP1.w387</key>
                 <description>Dry/Wet Mixing Ratio of Effect Unit 1, Knob: FX1 BEATS</description>
                 <status>0xB4</status>
                 <midino>0x00</midino>
@@ -3977,7 +3897,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w396</key>
+                <key>PioneerDDJSP1.w388</key>
                 <description>Super1 Parameter of Effect Unit 1, Knob: SHIFT &amp; FX1 BEATS</description>
                 <status>0xB4</status>
                 <midino>0x10</midino>
@@ -3987,7 +3907,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w397</key>
+                <key>PioneerDDJSP1.w389</key>
                 <description>FX1 Effect 1 Meta (MSB), Knob: FX1-1</description>
                 <status>0xB4</status>
                 <midino>0x02</midino>
@@ -3997,7 +3917,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w398</key>
+                <key>PioneerDDJSP1.w390</key>
                 <description>FX1 Effect 1 Meta (LSB), Knob: FX1-1</description>
                 <status>0xB4</status>
                 <midino>0x22</midino>
@@ -4007,7 +3927,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w399</key>
+                <key>PioneerDDJSP1.w391</key>
                 <description>FX1 Effect 1 Select (MSB), Knob: SHIFT + FX1-1</description>
                 <status>0xB4</status>
                 <midino>0x12</midino>
@@ -4017,7 +3937,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w400</key>
+                <key>PioneerDDJSP1.w392</key>
                 <description>FX1 Effect 1 Select (LSB), Knob: SHIFT + FX1-1</description>
                 <status>0xB4</status>
                 <midino>0x32</midino>
@@ -4027,7 +3947,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w401</key>
+                <key>PioneerDDJSP1.w393</key>
                 <description>FX1 Effect 2 Meta (MSB), Knob: FX1-2</description>
                 <status>0xB4</status>
                 <midino>0x04</midino>
@@ -4037,7 +3957,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w402</key>
+                <key>PioneerDDJSP1.w394</key>
                 <description>FX1 Effect 2 Meta (LSB), Knob: FX1-2</description>
                 <status>0xB4</status>
                 <midino>0x24</midino>
@@ -4047,7 +3967,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w403</key>
+                <key>PioneerDDJSP1.w395</key>
                 <description>FX1 Effect 2 Select (MSB), Knob: SHIFT + FX1-2</description>
                 <status>0xB4</status>
                 <midino>0x14</midino>
@@ -4057,7 +3977,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w404</key>
+                <key>PioneerDDJSP1.w396</key>
                 <description>FX1 Effect 2 Select (LSB), Knob: SHIFT + FX1-2</description>
                 <status>0xB4</status>
                 <midino>0x34</midino>
@@ -4067,7 +3987,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w405</key>
+                <key>PioneerDDJSP1.w397</key>
                 <description>FX1 Effect 3 Meta (MSB), Knob: FX1-3</description>
                 <status>0xB4</status>
                 <midino>0x06</midino>
@@ -4077,7 +3997,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w406</key>
+                <key>PioneerDDJSP1.w398</key>
                 <description>FX1 Effect 3 Meta (LSB), Knob: FX1-3</description>
                 <status>0xB4</status>
                 <midino>0x26</midino>
@@ -4087,7 +4007,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w407</key>
+                <key>PioneerDDJSP1.w399</key>
                 <description>FX1 Effect 3 Select (MSB), Knob: SHIFT + FX1-3</description>
                 <status>0xB4</status>
                 <midino>0x16</midino>
@@ -4097,7 +4017,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit1]</group>
-                <key>PioneerDDJSP1.w408</key>
+                <key>PioneerDDJSP1.w400</key>
                 <description>FX1 Effect 3 Select (LSB), Knob: SHIFT + FX1-3</description>
                 <status>0xB4</status>
                 <midino>0x36</midino>
@@ -4107,7 +4027,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w409</key>
+                <key>PioneerDDJSP1.w401</key>
                 <description>Enable (if effectFocusButton pressed: Focus) Effect 1 of Effect Unit 2, Button: FX2-1 ON</description>
                 <status>0x95</status>
                 <midino>0x47</midino>
@@ -4117,7 +4037,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w410</key>
+                <key>PioneerDDJSP1.w402</key>
                 <description>Enable (if effectFocusButton pressed: Focus) Effect 2 of Effect Unit 2, Button: FX2-2 ON</description>
                 <status>0x95</status>
                 <midino>0x48</midino>
@@ -4127,7 +4047,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w411</key>
+                <key>PioneerDDJSP1.w403</key>
                 <description>Enable (if effectFocusButton pressed: Focus) Effect 3 of Effect Unit 2, Button: FX2-3 ON</description>
                 <status>0x95</status>
                 <midino>0x49</midino>
@@ -4137,7 +4057,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w412</key>
+                <key>PioneerDDJSP1.w404</key>
                 <description>Press hold: Enables effect focus selection, Shortpress: Toggles effect focus mode of EffectUnit 2, Button: FX2 TAP</description>
                 <status>0x95</status>
                 <midino>0x4A</midino>
@@ -4147,7 +4067,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w413</key>
+                <key>PioneerDDJSP1.w405</key>
                 <description>Switch between EffectUnits, Button: SHIFT &amp; FX2 TAP</description>
                 <status>0x95</status>
                 <midino>0x66</midino>
@@ -4157,7 +4077,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w414</key>
+                <key>PioneerDDJSP1.w406</key>
                 <description>Dry/Wet Mixing Ratio of Effect Unit 2, Knob: FX2 BEATS</description>
                 <status>0xB5</status>
                 <midino>0x00</midino>
@@ -4167,7 +4087,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w415</key>
+                <key>PioneerDDJSP1.w407</key>
                 <description>Super1 Parameter of Effect Unit 2, Knob: SHIFT &amp; FX2 BEATS</description>
                 <status>0xB5</status>
                 <midino>0x10</midino>
@@ -4177,7 +4097,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w416</key>
+                <key>PioneerDDJSP1.w408</key>
                 <description>FX2 Effect 1 Meta (MSB), Knob: FX2-1</description>
                 <status>0xB5</status>
                 <midino>0x02</midino>
@@ -4187,7 +4107,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w417</key>
+                <key>PioneerDDJSP1.w409</key>
                 <description>FX2 Effect 1 Meta (LSB), Knob: FX2-1</description>
                 <status>0xB5</status>
                 <midino>0x22</midino>
@@ -4197,7 +4117,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w418</key>
+                <key>PioneerDDJSP1.w410</key>
                 <description>FX2 Effect 1 Select (MSB), Knob: SHIFT + FX2-1</description>
                 <status>0xB5</status>
                 <midino>0x12</midino>
@@ -4207,7 +4127,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w419</key>
+                <key>PioneerDDJSP1.w411</key>
                 <description>FX2 Effect 1 Select (LSB), Knob: SHIFT + FX2-1</description>
                 <status>0xB5</status>
                 <midino>0x32</midino>
@@ -4217,7 +4137,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w420</key>
+                <key>PioneerDDJSP1.w412</key>
                 <description>FX2 Effect 2 Meta (MSB), Knob: FX2-2</description>
                 <status>0xB5</status>
                 <midino>0x04</midino>
@@ -4227,7 +4147,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w421</key>
+                <key>PioneerDDJSP1.w413</key>
                 <description>FX2 Effect 2 Meta (LSB), Knob: FX2-2</description>
                 <status>0xB5</status>
                 <midino>0x24</midino>
@@ -4237,7 +4157,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w422</key>
+                <key>PioneerDDJSP1.w414</key>
                 <description>FX2 Effect 2 Select (MSB), Knob: SHIFT + FX2-2</description>
                 <status>0xB5</status>
                 <midino>0x14</midino>
@@ -4247,7 +4167,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w423</key>
+                <key>PioneerDDJSP1.w415</key>
                 <description>FX2 Effect 2 Select (LSB), Knob: SHIFT + FX2-2</description>
                 <status>0xB5</status>
                 <midino>0x34</midino>
@@ -4257,7 +4177,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w424</key>
+                <key>PioneerDDJSP1.w416</key>
                 <description>FX2 Effect 3 Meta (MSB), Knob: FX2-3</description>
                 <status>0xB5</status>
                 <midino>0x06</midino>
@@ -4267,7 +4187,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w425</key>
+                <key>PioneerDDJSP1.w417</key>
                 <description>FX2 Effect 3 Meta (LSB), Knob: FX2-3</description>
                 <status>0xB5</status>
                 <midino>0x26</midino>
@@ -4277,7 +4197,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w426</key>
+                <key>PioneerDDJSP1.w418</key>
                 <description>FX2 Effect 3 Select (MSB), Knob: SHIFT + FX2-3</description>
                 <status>0xB5</status>
                 <midino>0x16</midino>
@@ -4287,7 +4207,7 @@
             </control>
             <control>
                 <group>[EffectRack1_EffectUnit2]</group>
-                <key>PioneerDDJSP1.w427</key>
+                <key>PioneerDDJSP1.w419</key>
                 <description>FX2 Effect 3 Select (LSB), Knob: SHIFT + FX2-3</description>
                 <status>0xB5</status>
                 <midino>0x36</midino>
