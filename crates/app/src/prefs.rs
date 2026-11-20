@@ -1583,6 +1583,29 @@ impl Prefs {
                              computer's light or dark setting.",
                     )
                 }]);
+                items.extend([PrefItem {
+                    choices: strings(&crate::ui_scale::LABELS),
+                    chosen: crate::ui_scale::step() as i32,
+                    ..item(
+                        crate::ui_scale::KEY,
+                        SEGMENTED,
+                        "Interface scale",
+                        "Makes everything smaller to fit a small screen, or larger to \
+                         read from further away. A step too large for this screen \
+                         uses the largest that fits.",
+                    )
+                }]);
+                items.extend([PrefItem {
+                    choices: strings(&crate::list_text::LABELS),
+                    chosen: crate::list_text::size() as i32,
+                    ..item(
+                        crate::list_text::KEY,
+                        SEGMENTED,
+                        "List text",
+                        "Larger text in the track list, the lists and the side panel, \
+                         with taller rows to match.",
+                    )
+                }]);
                 items.extend([
                     switch(
                         crate::wave_look::GAIN_KEY,
@@ -3052,6 +3075,16 @@ impl Prefs {
             crate::appearance::KEY => {
                 if let Some(app) = self.app.upgrade() {
                     crate::appearance::choose(&app, index);
+                }
+            }
+            crate::list_text::KEY => {
+                if let Some(app) = self.app.upgrade() {
+                    crate::list_text::choose(&app, index);
+                }
+            }
+            crate::ui_scale::KEY => {
+                if let Some(app) = self.app.upgrade() {
+                    crate::ui_scale::choose(&app, index);
                 }
             }
             crate::track_end::STYLE_KEY => crate::track_end::choose_style(index),

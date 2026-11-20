@@ -46,6 +46,44 @@ pub fn install() -> Option<&'static str> {
     (!fonts.is_empty()).then_some(FAMILY)
 }
 
+/// The bundled interface font.
+const INTER: &[u8] = include_bytes!("../ui/fonts/InterTabular-Regular.otf");
+
+/// The interface font's file, as `install` picks it: the one it adapts if
+/// there is one, else the bundled font.
+fn font_data() -> &'static [u8] {
+    static DATA: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
+    DATA.get_or_init(|| {
+        std::env::var_os("OPENDJ_UI_FONT")
+            .map(std::path::PathBuf::from)
+            .or_else(|| cfg!(target_os = "macos").then(|| SYSTEM_FONT.into()))
+            .and_then(|p| std::fs::read(p).ok())
+            .filter(|d| FontRef::new(d).is_ok())
+            .unwrap_or_else(|| INTER.to_vec())
+    })
+}
+
+/// About how wide `text` is in the interface font at `size` pixels: the
+/// glyphs' advances, without kerning. For sizing columns to fit.
+pub fn text_width(text: &str, size: f32) -> f32 {
+    let Ok(font) = FontRef::new(font_data()) else {
+        return text.chars().count() as f32 * size * 0.6;
+    };
+    let charmap = font.charmap();
+    let metrics = font.glyph_metrics(
+        skrifa::instance::Size::new(size),
+        skrifa::instance::LocationRef::default(),
+    );
+    text.chars()
+        .map(|c| {
+            charmap
+                .map(c)
+                .and_then(|g| metrics.advance_width(g))
+                .unwrap_or(size * 0.6)
+        })
+        .sum()
+}
+
 /// `data` (a TrueType or OpenType font) with tabular digits by default,
 /// renamed to `family`.
 pub fn tabular(data: &[u8], family: &str) -> Result<Vec<u8>, String> {
@@ -140,8 +178,6 @@ fn renamed(font: &FontRef, family: &str) -> Result<Name, read_fonts::ReadError> 
 mod tests {
     use super::*;
 
-    const INTER: &[u8] = include_bytes!("../ui/fonts/InterTabular-Regular.otf");
-
     #[test]
     fn digits_become_one_width_and_the_family_is_renamed() {
         // Stock Inter, where installed, has proportional digits to fix.
@@ -169,5 +205,13 @@ mod tests {
             charmap.map('a'),
             FontRef::new(input).unwrap().charmap().map('a')
         );
+    }
+
+    #[test]
+    fn wider_text_measures_wider() {
+        let short = text_width("Bpm", 15.0);
+        assert!(short > 15.0 && short < 60.0, "{short}");
+        assert!(text_width("Bpm Bpm", 15.0) > short * 2.0);
+        assert_eq!(text_width("", 15.0), 0.0);
     }
 }

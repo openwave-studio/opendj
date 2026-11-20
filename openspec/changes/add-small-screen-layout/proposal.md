@@ -10,9 +10,10 @@ openDJ should work on laptops from the last five years. The tightest common scre
 
 - Lists panel: clicking the open source's rail icon again folds the panel into the rail. Folded, a click on the rail icon slides it out over the track list; it slides back after a list is picked, on Escape or on a click in the track list. Below 1440 wide it starts folded. Its edge drags from 200 to 360 px.
 - Side panel: below 1440 wide it slides in over the track list instead of taking width from it, opened from the footer button as today. Its edge drags from 280 to 480 px. A track dragged to the window's right edge slides it open so the drop lands on Automix or the Sidelist.
-- Splitter: a line between the decks and the library drags the library taller or shorter, stepping the waveforms down and then folding the FX bar; a double-click expands or restores the library.
 - Mixer deck: an edge fade and a ‹ › pair show that more strips are off to the side.
-- UI scale: Settings › Interface gets a scale from 85% to 125%; on first start, a screen whose usable area is under 1280 × 720 gets 90%.
+- UI scale: Settings › Appearance gets an interface scale from 85% to 125%; on first start, a screen whose usable area is under 1280 × 720 gets 90%.
+- List text: Settings › Appearance › List text makes the track list's, lists panel's and side panel's text larger or smaller (Small to Extra large), rows growing with it, for DJs who find the lists hard to read.
+- No splitter between the decks and the library: the waveforms and pads already give way on short windows and the waveform height is set from the wave menu, so a second control for the same room was dropped.
 - Widths and folded states are kept per layout; an automatic fold comes back when the window grows, a fold the DJ made stays.
 
 ## Capabilities
@@ -20,7 +21,7 @@ openDJ should work on laptops from the last five years. The tightest common scre
 ### Modified Capabilities
 
 - `track-browser`: Side panel, Lists panel
-- `app-layout`: Compact view, Window size
+- `app-layout`: Window size, List text
 
 ## Out of Scope
 

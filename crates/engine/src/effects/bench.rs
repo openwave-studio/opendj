@@ -441,6 +441,7 @@ fn turning_any_knob_all_the_way_does_not_click() {
         Kind::Ladder,
         Kind::Hall,
         Kind::FilterEcho,
+        Kind::TapeEcho,
     ] {
         for k in 0..MAX_PARAMETERS {
             // Leave the beat lengths alone: those are switches, and their

@@ -52,6 +52,7 @@ mod lyrics;
 mod mix_export;
 mod mixed_set;
 mod pages;
+mod panels;
 mod picks;
 mod played;
 mod playlist_files;
@@ -1767,6 +1768,7 @@ impl Browser {
         app.set_sources_shown(std::rc::Rc::new(slint::VecModel::from(shown)).into());
         side_tabs::install(app);
         rail_order::install(app);
+        panels::install(app);
         // Collection Health's rail button hides the same way.
         app.global::<HealthUi>()
             .set_rail_shown(!hidden.iter().any(|h| h == HEALTH_RAIL_NAME));
@@ -1995,7 +1997,7 @@ impl Browser {
             row.get()
         });
         let weak_top = Rc::downgrade(b);
-        edit.on_tree_row_top(move |row| {
+        edit.on_tree_row_top(move |row, height| {
             weak_top
                 .upgrade()
                 .and_then(|b| {
@@ -2003,7 +2005,7 @@ impl Browser {
                         b.visible_nodes
                             .iter()
                             .take(row.max(0) as usize)
-                            .map(|&n| if b.nodes[n].separator { 45.0 } else { 34.0 })
+                            .map(|&n| height + if b.nodes[n].separator { 11.0 } else { 0.0 })
                             .sum::<f32>()
                     })
                 })
