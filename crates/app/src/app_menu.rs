@@ -620,7 +620,7 @@ pub fn run(app: &AppWindow, action: Action) {
             crate::spotify::open_in_browser(USER_GUIDE);
         }
         Action::ReportProblem => {
-            crate::spotify::open_in_browser(&crate::diagnostics::issue_url("bug_report.yml"));
+            crate::spotify::open_in_browser(&crate::diagnostics::bug_report_url());
         }
         Action::SuggestFeature => {
             crate::spotify::open_in_browser(&crate::diagnostics::issue_url("feature_request.yml"));

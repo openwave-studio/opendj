@@ -63,28 +63,75 @@
     .catch(function () {});
 })();
 
-// Latest releases list: the four newest releases from GitHub, leaving out
-// pre-releases (the rolling nightly, stem models, betas). Without JS
-// (or if GitHub's API is unreachable) the list written in the page stays.
+// Latest releases list and the download section's previous versions, from
+// GitHub, leaving out pre-releases (the rolling nightly, stem models,
+// betas). Without JS (or if GitHub's API is unreachable) the lists written
+// in the page stay.
 (function () {
-  var list = document.querySelector("[data-releases]");
-  if (!list) return;
+  var latest = document.querySelector("[data-releases]");
+  var previous = document.querySelector("[data-previous]");
+  if (!latest && !previous) return;
+  function fill(list, rels) {
+    if (!list || !rels.length) return;
+    list.textContent = "";
+    rels.forEach(function (rel) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = rel.html_url;
+      a.textContent = "openDJ " + (rel.tag_name || "").replace(/^v/, "");
+      var date = document.createElement("span");
+      date.textContent = new Date(rel.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      li.append(a, " ", date);
+      list.appendChild(li);
+    });
+  }
   fetch("https://api.github.com/repos/openwave-studio/opendj/releases?per_page=20")
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (rels) {
-      rels = rels.filter(function (rel) { return !rel.prerelease && !rel.draft; }).slice(0, 4);
-      if (!rels.length) return;
-      list.textContent = "";
-      rels.forEach(function (rel) {
-        var li = document.createElement("li");
-        var a = document.createElement("a");
-        a.href = rel.html_url;
-        a.textContent = "openDJ " + (rel.tag_name || "").replace(/^v/, "");
-        var date = document.createElement("span");
-        date.textContent = new Date(rel.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-        li.append(a, " ", date);
-        list.appendChild(li);
+      rels = rels.filter(function (rel) { return !rel.prerelease && !rel.draft; });
+      fill(latest, rels.slice(0, 4));
+      fill(previous, rels.slice(1, 4));
+    })
+    .catch(function () {});
+})();
+
+// Nightly: named after the release it leads up to, plus "Alpha", as its
+// files are (openDJ-0.9.0-nightly.20261120.abc1234-macos.zip). Shows when
+// and from which commit it was built, and links its files directly.
+(function () {
+  var lane = document.getElementById("nightly");
+  if (!lane) return;
+  var patterns = {
+    macos: /macos.*\.zip$/i,
+    appimage: /\.AppImage$/,
+    deb: /\.deb$/i,
+    winsetup: /windows.*setup\.exe$/i
+  };
+  fetch("https://api.github.com/repos/openwave-studio/opendj/releases/tags/nightly")
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (rel) {
+      var found = null;
+      (rel.assets || []).forEach(function (asset) {
+        var m = asset.name.match(/(\d+\.\d+\.\d+)-nightly\.(\d{8})\.([0-9a-f]+)/);
+        if (m && !found) found = m;
+        Object.keys(patterns).forEach(function (key) {
+          if (patterns[key].test(asset.name)) {
+            lane.querySelectorAll('[data-nightly-asset="' + key + '"]').forEach(function (a) { a.href = asset.browser_download_url; });
+          }
+        });
       });
+      if (!found) return;
+      lane.querySelector("[data-nightly-version]").textContent = found[1] + " Alpha";
+      var d = found[2];
+      var built = new Date(Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8)));
+      var meta = lane.querySelector("[data-nightly-meta]");
+      meta.textContent = "Built " + built.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) + " from commit ";
+      var commit = document.createElement("a");
+      commit.href = "https://github.com/openwave-studio/opendj/commit/" + found[3];
+      var code = document.createElement("code");
+      code.textContent = found[3];
+      commit.appendChild(code);
+      meta.appendChild(commit);
     })
     .catch(function () {});
 })();

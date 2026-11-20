@@ -16,8 +16,8 @@
   <meta property="og:image:height" content="640">
   <meta property="og:url" content="https://opendj.app/">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="stylesheet" href="style.css?v=202611110731">
-  <link rel="stylesheet" href="home.css?v=202611110731">
+  <link rel="stylesheet" href="style.css?v=202611201900">
+  <link rel="stylesheet" href="home.css?v=202611201900">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -32,7 +32,7 @@
       <a href="#features">Features</a>
       <a href="#screenshots">Screenshots</a>
       <a href="docs/">Docs</a>
-      <a href="#releases">Releases</a>
+      <a href="releases/">Releases</a>
       <a href="#about">About</a>
       <a href="https://github.com/openwave-studio/opendj">GitHub</a>
     </nav>
@@ -83,23 +83,41 @@
 
     <section id="download">
       <h2>Download</h2>
-      <p class="small"><span class="soon">Stable</span> <span data-version-text>The latest release.</span> Want fixes before they're released? The <a href="https://github.com/openwave-studio/opendj/releases/tag/nightly">nightly dev build</a> is made every night from the newest code, and is less tested.</p>
+      <p class="lane-head"><span class="soon">Stable</span> <span data-version-text>The latest release.</span> Tested, and updates itself. <a href="releases/" data-release-notes>What's new</a></p>
       <div class="dl">
         <div class="dl-card" data-os="mac"><h3>macOS</h3><p>Apple Silicon and Intel, macOS 11 or newer. Signed and notarized, updates itself.</p><a class="btn btn-primary btn-sm" data-asset="macos" href="https://github.com/openwave-studio/opendj/releases/latest">Download for Mac</a></div>
         <div class="dl-card" data-os="windows"><h3>Windows <span class="soon">Preview</span></h3><p>64-bit Windows 10 or 11. Not signed yet: More info → Run anyway.</p><a class="btn btn-primary btn-sm" data-asset="winsetup" href="https://github.com/openwave-studio/opendj/releases/latest">Installer</a><div class="alt"><a data-asset="winzip" href="https://github.com/openwave-studio/opendj/releases/latest">Portable .zip</a></div></div>
         <div class="dl-card" data-os="linux"><h3>Linux</h3><p>x86_64, glibc 2.35 or newer (Ubuntu 22.04+, Fedora 36+, Debian 12+).</p><a class="btn btn-primary btn-sm" data-asset="appimage" href="https://github.com/openwave-studio/opendj/releases/latest">AppImage</a><div class="alt"><a data-asset="deb" href="https://github.com/openwave-studio/opendj/releases/latest">.deb</a><a data-asset="rpm" href="https://github.com/openwave-studio/opendj/releases/latest">.rpm</a><a data-asset="tarball" href="https://github.com/openwave-studio/opendj/releases/latest">.tar.gz</a></div></div>
       </div>
-      <p class="small"><a href="https://github.com/openwave-studio/opendj/releases">All releases</a> · <a href="https://github.com/openwave-studio/opendj#building-from-source">Build from source</a></p>
+      <div class="lanes">
+        <div class="lane" id="nightly">
+          <h3>Nightly <span class="tag-alpha" data-nightly-version>Alpha</span></h3>
+          <p>Built every night from the newest code, so you can try fixes and features before they're released. Less tested, and doesn't update itself: download it again for a newer one.</p>
+          <p class="meta" data-nightly-meta>Rebuilt every night from main.</p>
+          <div class="links"><a data-nightly-asset="macos" href="https://github.com/openwave-studio/opendj/releases/tag/nightly">Mac</a><a data-nightly-asset="winsetup" href="https://github.com/openwave-studio/opendj/releases/tag/nightly">Windows</a><a data-nightly-asset="appimage" href="https://github.com/openwave-studio/opendj/releases/tag/nightly">Linux AppImage</a><a data-nightly-asset="deb" href="https://github.com/openwave-studio/opendj/releases/tag/nightly">.deb</a><a href="https://github.com/openwave-studio/opendj/releases/tag/nightly">All files</a></div>
+        </div>
+        <div class="lane" id="previous">
+          <h3>Previous versions</h3>
+          <p>Every release stays available, with its release notes.</p>
+          <ul class="rel" data-previous>
+            <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.8.0">openDJ 0.8.0</a> <span>18 Nov 2026</span></li>
+            <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.7.0">openDJ 0.7.0</a> <span>15 Nov 2026</span></li>
+            <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.6.0">openDJ 0.6.0</a> <span>10 Nov 2026</span></li>
+          </ul>
+          <div class="links"><a href="https://github.com/openwave-studio/opendj/releases">All releases</a><a href="https://github.com/openwave-studio/opendj#building-from-source">Build from source</a></div>
+        </div>
+      </div>
     </section>
 
     <section class="two">
       <div id="releases">
         <h2>Latest releases</h2>
+        <p class="small"><a href="releases/">What's new in each version →</a></p>
         <ul class="rel" data-releases>
+          <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.8.1">openDJ 0.8.1</a> <span>19 Nov 2026</span></li>
+          <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.8.0">openDJ 0.8.0</a> <span>18 Nov 2026</span></li>
+          <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.7.0">openDJ 0.7.0</a> <span>15 Nov 2026</span></li>
           <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.6.0">openDJ 0.6.0</a> <span>10 Nov 2026</span></li>
-          <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.5.1">openDJ 0.5.1</a> <span>6 Nov 2026</span></li>
-          <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.5.0">openDJ 0.5.0</a> <span>5 Nov 2026</span></li>
-          <li><a href="https://github.com/openwave-studio/opendj/releases/tag/v0.4.6">openDJ 0.4.6</a> <span>31 Oct 2026</span></li>
         </ul>
       </div>
       <div id="about">
@@ -129,7 +147,7 @@
       <a href="#features">Features</a>
       <a href="#screenshots">Screenshots</a>
       <a href="#download">Download</a>
-      <a href="https://github.com/openwave-studio/opendj/releases">Release notes</a>
+      <a href="releases/">Release notes</a>
     </div>
     <div class="footer-col">
       <h4>Learn</h4>
@@ -151,6 +169,6 @@
   </div>
 </footer>
 
-<script src="main.js?v=202611110731" defer></script>
+<script src="main.js?v=202611201900" defer></script>
 </body>
 </html>
