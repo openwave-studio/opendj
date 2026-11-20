@@ -704,9 +704,9 @@ export component CueHeadphones inherits Rectangle {
     border-radius: self.height / 2;
     border-width: 1.5px;
     border-color: lit ? Theme.accent : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
-    background: lit ? Theme.accent.with-alpha(0.22) : touch.pressed ? Theme.control-pressed : Theme.pill;
-    drop-shadow-blur: lit ? 8px : 0px;
-    drop-shadow-color: Theme.accent.with-alpha(0.55);
+    background: lit ? (touch.has-hover ? Theme.lit-fill-hover : Theme.lit-fill) : touch.pressed ? Theme.control-pressed : Theme.pill;
+    drop-shadow-blur: lit ? Theme.glow-blur : 0px;
+    drop-shadow-color: Theme.glow;
     HeadphoneIcon { size: 14px; tint: icon-color; }
     touch := TouchArea {
         mouse-cursor: pointer;

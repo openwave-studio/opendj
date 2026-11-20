@@ -163,7 +163,10 @@ export component PowerButton inherits Rectangle {
     width: size;
     height: size;
     border-radius: size / 2;
-    background: on ? Theme.accent.with-alpha(ta.has-hover ? 0.32 : 0.2) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.pill;
+    background: on ? (ta.has-hover ? Theme.lit-fill-hover : Theme.lit-fill) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.pill;
+    // The shared glow of a lit round button (see Theme.glow).
+    drop-shadow-blur: on ? Theme.glow-blur : 0px;
+    drop-shadow-color: Theme.glow;
     border-width: 1.5px;
     border-color: on ? Theme.accent : Theme.n-48484c;
     Path {

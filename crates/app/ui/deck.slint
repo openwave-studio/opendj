@@ -4820,8 +4820,8 @@ component NoteFxHead inherits HorizontalLayout {
             height: 8px;
             border-radius: 4px;
             background: root.on ? Theme.accent : Theme.n-3a3a3d;
-            drop-shadow-blur: root.on ? 6px : 0px;
-            drop-shadow-color: Theme.accent;
+            drop-shadow-blur: root.on ? Theme.glow-blur : 0px;
+            drop-shadow-color: Theme.glow;
         }
         TouchArea { mouse-cursor: pointer; clicked => { root.toggled(); } }
     }
@@ -6455,8 +6455,8 @@ component NoteFxPill inherits Rectangle {
                 height: 7px;
                 border-radius: 3.5px;
                 background: root.on ? Theme.accent : Theme.n-6a6a70;
-                drop-shadow-blur: root.on ? 5px : 0px;
-                drop-shadow-color: Theme.accent;
+                drop-shadow-blur: root.on ? Theme.glow-blur : 0px;
+                drop-shadow-color: Theme.glow;
             }
             TouchArea { mouse-cursor: pointer; clicked => { root.toggled(); } }
         }
