@@ -467,6 +467,7 @@
 [Channel1],start_stop
 [Channel1],stem_count
 [Channel1],stem_fx
+[Channel1],stem_fx_beats
 [Channel1],stem_fx_mode
 [Channel1],sync_enabled
 [Channel1],sync_key
@@ -786,6 +787,7 @@
 [Channel2],start_stop
 [Channel2],stem_count
 [Channel2],stem_fx
+[Channel2],stem_fx_beats
 [Channel2],stem_fx_mode
 [Channel2],sync_enabled
 [Channel2],sync_key
@@ -1105,6 +1107,7 @@
 [Channel3],start_stop
 [Channel3],stem_count
 [Channel3],stem_fx
+[Channel3],stem_fx_beats
 [Channel3],stem_fx_mode
 [Channel3],sync_enabled
 [Channel3],sync_key
@@ -1424,6 +1427,7 @@
 [Channel4],start_stop
 [Channel4],stem_count
 [Channel4],stem_fx
+[Channel4],stem_fx_beats
 [Channel4],stem_fx_mode
 [Channel4],sync_enabled
 [Channel4],sync_key
