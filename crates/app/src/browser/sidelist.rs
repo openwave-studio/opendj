@@ -1,5 +1,5 @@
 //! The Sidelist: a scratch pad kept across restarts, or one of the DJ's
-//! playlists or crates shown beside the track list, so a list can be built
+//! playlists shown beside the track list, so a list can be built
 //! while browsing anywhere else. What is dropped, reordered or removed there
 //! goes straight into the list it shows.
 
@@ -44,7 +44,11 @@ impl Browser {
     pub(super) fn sidelist_list(&self) -> Option<i64> {
         let id = saved_list()?;
         let lists = self.db.as_ref()?.playlists().ok()?;
-        lists.iter().any(|p| p.id == id).then_some(id)
+        // Playlists only: crates are big collections, not lists to work on.
+        lists
+            .iter()
+            .any(|p| p.id == id && p.kind != opendj_library::PlaylistKind::Crate)
+            .then_some(id)
     }
 
     /// Fills the Sidelist from the list it shows, or the scratch pad.
@@ -144,8 +148,8 @@ impl Browser {
         }
     }
 
-    /// Fills the Sidelist's picker: the scratch pad, then the DJ's crates
-    /// and playlists, with the one shown marked.
+    /// Fills the Sidelist's picker: the scratch pad, then the DJ's
+    /// playlists, with the one shown marked.
     pub(super) fn refresh_sidelist_ui(&self) {
         let Some(app) = self.app.upgrade() else {
             return;
@@ -160,21 +164,15 @@ impl Browser {
         // The DJ's lists are only known while the collection's tree is up.
         if self.tree == COLLECTION && !self.menu_lists.is_empty() {
             let mut choices = vec![choice("Scratch pad".into(), false, 0)];
-            for crates in [true, false] {
-                choices.push(choice(
-                    if crates { "CRATES" } else { "PLAYLISTS" }.into(),
-                    true,
-                    -1,
-                ));
-                for (i, l) in self.menu_lists.iter().enumerate() {
-                    if l.is_crate == crates {
-                        let text = if l.folder.is_empty() {
-                            l.name.clone()
-                        } else {
-                            format!("{} › {}", l.folder, l.name)
-                        };
-                        choices.push(choice(text, false, i as i32 + 1));
-                    }
+            choices.push(choice("PLAYLISTS".into(), true, -1));
+            for (i, l) in self.menu_lists.iter().enumerate() {
+                if !l.is_crate {
+                    let text = if l.folder.is_empty() {
+                        l.name.clone()
+                    } else {
+                        format!("{} › {}", l.folder, l.name)
+                    };
+                    choices.push(choice(text, false, i as i32 + 1));
                 }
             }
             if shown.is_none() && !self.side[SIDELIST_TAB].is_empty() {

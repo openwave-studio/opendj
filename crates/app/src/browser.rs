@@ -2116,7 +2116,7 @@ impl Browser {
                 .and_then(|b| {
                     b.try_borrow()
                         .ok()
-                        .map(|b| b.menu_lists.iter().any(|l| l.id == list))
+                        .map(|b| b.menu_lists.iter().any(|l| l.id == list && !l.is_crate))
                 })
                 .unwrap_or(false)
         });
@@ -2124,7 +2124,7 @@ impl Browser {
         sidelist.on_show_list(move |data| {
             if let Some(list) = dragged_list(&data) {
                 w(&|b| {
-                    if b.menu_lists.iter().any(|l| l.id == list) {
+                    if b.menu_lists.iter().any(|l| l.id == list && !l.is_crate) {
                         b.show_in_sidelist(Some(list));
                     }
                 })

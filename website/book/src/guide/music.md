@@ -676,7 +676,7 @@ you quit. Drag tracks
 into it, or pick tracks and press <kbd>S</kbd>; drag its rows to change
 their order, and Delete takes the picked ones out.
 
-To work on one of your crates or playlists there instead, drag it from
+To work on one of your playlists there instead, drag it from
 the tree onto the Sidelist tab, or right-click it and choose **Show in
 Sidelist**. The button by the Sidelist's title names the list it shows
 and switches to another, or back to the scratch pad. What you drop,

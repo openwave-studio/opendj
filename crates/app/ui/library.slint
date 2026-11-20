@@ -3339,7 +3339,7 @@ component FolderTree inherits Rectangle {
                 }
             }
             if source == 0 && menu-locked: MenuSeparator {}
-            if source == 0 && tab == 0 && (menu-kind == 17 || menu-kind == 2): MenuLine {
+            if source == 0 && tab == 0 && menu-kind == 2: MenuLine {
                 text: "Show in Sidelist";
                 clicked => {
                     LibraryEdit.show-in-sidelist(menu-index);
@@ -6739,7 +6739,7 @@ component SidePanel inherits Rectangle {
                     }
                 }
                 TourMark { id: i == 0 ? "ui,side_automix" : ""; }
-                // A crate or playlist dropped on the Sidelist tab shows there.
+                // A playlist dropped on the Sidelist tab shows there.
                 if i == 1: DropArea {
                     can-drop(e) => { SidelistUi.accepts-list(e.data) ? DragAction.copy : DragAction.none }
                     dropped(e) => {
@@ -7082,7 +7082,7 @@ component SidePanel inherits Rectangle {
             }
             if tab == 0 && KeepGoingUi.player && UpNextUi.now-loaded: Text { x: 8px; height: 20px; text: "UP NEXT"; color: Theme.label; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; vertical-alignment: center; }
             EdgeLine { left: 6px; right: 6px; }
-            // What the Sidelist shows: the scratch pad, a crate or a playlist.
+            // What the Sidelist shows: the scratch pad or a playlist.
             sidelist-menu := PopupWindow {
                 x: root.width - self.width - 6px;
                 y: 40px;
@@ -7268,7 +7268,7 @@ component SidePanel inherits Rectangle {
                     x: 8px;
                     width: parent.width - 16px;
                     text: tab == 0 ? "Empty. Drag tracks here, or right-click a track and choose Add to Automix."
-                        : tab == 1 ? (SidelistUi.shows-list ? "Empty. Drag tracks here to add them to this list." : "Empty. Drag tracks here, or drag a crate or playlist here to show it.")
+                        : tab == 1 ? (SidelistUi.shows-list ? "Empty. Drag tracks here to add them to this list." : "Empty. Drag tracks here, or drag a playlist here to show it.")
                         : total == "" ? "Select a track in the browser to see the tracks linked to it and those played next to it."
                         : "Nothing linked yet. Drag tracks here to link them to this one; tracks played next to it in your history show up here too.";
                     color: Theme.text-dim;
