@@ -18,16 +18,21 @@ When a controller goes away, openDJ lets go of whatever it held on a deck: a
 touched jog, a brake or spinback, reverse, or a pitch bend button.
 
 USB HID controllers work too: Native Instruments' Traktor Kontrol S2 (MK1,
-MK2 and MK3), S3, S4 (MK2 and MK3), F1, Z1 and MX2 run Mixxx's HID mappings,
-picked by the device itself rather than its name. They're listed with the
-MIDI controllers, can be turned off there, and have no picture or list in the
-Controller Editor: an HID mapping is all script. The S4 MK3's screens stay
-dark. On Linux they need openDJ's udev rule first; see the
-[Traktor Kontrol S2 MK3](../controllers/traktor-kontrol-s2-mk3.md) page. The
-Traktor Kontrol X1 (first model) is a MIDI controller and has a MIDI mapping.
-The Pioneer DDJ-FLX10 is both: a MIDI controller whose jog screens take
-waveforms over HID, from a second mapping listed as "Pioneer DDJ-FLX10 jog
-screens".
+MK2 and MK3), S3, S4 (MK2 and MK3), S5, S8, D2, F1, X1 MK3, Z1 (and MK2)
+and MX2, and the Maschine Mikro MK3 for the [Groove Box](groove-box.md).
+Their mapping is picked by the device itself rather than its name. They're
+listed with the MIDI controllers and can be turned off there. An HID mapping
+is all script, so it can't be changed in the Controller Editor, but the
+popular ones have a picture there that says what each control does. The S4
+MK3's, S5's, S8's and D2's screens stay dark. On Linux they need openDJ's udev rule
+first; see the [Traktor Kontrol S2 MK3](../controllers/traktor-kontrol-s2-mk3.md)
+page. The Traktor Kontrol X1 (first model) is a MIDI controller and has a
+MIDI mapping. The Pioneer DDJ-FLX10 is both: a MIDI controller whose jog
+screens take waveforms over HID, from a second mapping listed as "Pioneer
+DDJ-FLX10 jog screens".
+
+Pioneer's CDJ and XDJ players in HID mode (such as the CDJ-3000) don't work:
+they only talk to software Pioneer has licensed.
 
 The **Pioneer DDJ-FLX4** has a page of its own: [Pioneer DDJ-FLX4](controllers/ddj-flx4.md).
 
@@ -177,12 +182,25 @@ anything by clicking a control on screen.
 
 ## Popular controllers
 
-openDJ looks after a list of popular controllers itself: the DDJ-FLX4,
-DDJ-FLX6, DDJ-400, DDJ-200, DDJ-SB3, Numark's Mixtrack Platinum FX, Mixtrack
-Pro FX, NS4FX, Mixstream Pro, DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7,
-DJControl Inpulse 500, Xone K2 and Midi Fighter Twister so far, with the
-DDJ-REV1, DDJ-1000, DDJ-FLX10, DDJ-GRV6 and Traktor Kontrol S2 MK3 coming.
-Each has a drawing in the Controller Editor and a guide page.
+openDJ looks after a list of popular controllers itself, each with a drawing
+in the Controller Editor and a guide page:
+
+- **Pioneer DJ and AlphaTheta:** DDJ-FLX2, FLX4, FLX6, FLX10, GRV6, REV5,
+  200, 400, 800, the DDJ-SB, SB2, SB3, SR, SP1, SX, SX2, RB, RR, RX, RZ, RZX,
+  SZ, ERGO, WeGO (1 to 4), XP1 and XP2; the XDJ-RX, RX2, RX3, RR, XZ, AZ,
+  AERO, R1 and AN, the OPUS-QUAD and OMNIS-DUO; the DJM-250MK2, 450, 750MK2,
+  900NXS2, A9, V5, V10, TOUR1, S7, S9, S11 and T1 mixers, the euphonia and
+  the PLX-CRSS12.
+- **Native Instruments:** Traktor Kontrol S2 MK3, S3, S4 MK3, S5, S8, D2, X1
+  MK3, Z1 MK2, Traktor MX2 and Maschine Mikro MK3.
+- **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,
+  DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7.
+- **Others:** Hercules DJControl Inpulse 500, Allen & Heath Xone:K2 and DJ
+  TechTools Midi Fighter Twister.
+
+The DDJ-REV1, DDJ-1000 and DDJ-REV7 are coming.
+[Supported controllers](../controllers/index.html#popular-controllers) has
+the whole list with notes on each.
 
 They're marked **Beta** in **Settings › Controllers** and the editor until
 someone has tried the mapping in openDJ on the real controller, and
