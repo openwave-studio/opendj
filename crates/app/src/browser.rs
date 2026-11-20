@@ -4101,18 +4101,14 @@ impl Browser {
         }
     }
 
-    /// Where the DJ's list or folder `id` would go, dropped on tree row
-    /// `row` at `zone` (see [`DropZone`]): the folder it goes in (None for
+    /// Where the DJ's list or folder `id` would go, dropped on tree node
+    /// `at` at `zone` (see [`DropZone`]): the folder it goes in (None for
     /// the top), whether that top is under Crates, and the list it goes
     /// before (None for the end). Into a folder or heading it goes first;
     /// after an open folder, first inside it. None when it can't: imported,
     /// the list itself or a folder inside it, a crate under Playlists or a
-    /// playlist under Crates.
-    fn list_move(&self, id: i64, row: usize, zone: DropZone) -> Option<ListPlace> {
-        self.list_move_node(id, *self.visible_nodes.get(row)?, zone)
-    }
-
-    /// [`Browser::list_move`] for `nodes[at]`, shown or in a closed folder.
+    /// playlist under Crates. `at` indexes `nodes`, shown or in a closed
+    /// folder.
     fn list_move_node(&self, id: i64, at: usize, zone: DropZone) -> Option<ListPlace> {
         if self.tree != COLLECTION || self.history_tab {
             return None;
@@ -6522,7 +6518,7 @@ impl Browser {
                 if total >= 3600.0 {
                     total_time(total)
                 } else {
-                    short_time(total)
+                    short_time(total).to_string()
                 },
                 ids.len(),
                 if ids.len() == 1 { "" } else { "s" }
