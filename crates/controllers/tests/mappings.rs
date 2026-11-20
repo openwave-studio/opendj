@@ -1238,12 +1238,18 @@ fn ddj_grv6_decks_beat_fx_and_groove_circuit() {
     assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 0.0);
     c.poll(Instant::now());
     let out = c.take_output();
-    assert!(out.iter().any(|m| m[..] == [0x90, 0x02, 0x7F]), "DRUM SWAP 3 lit: {out:x?}");
+    assert!(
+        out.iter().any(|m| m[..] == [0x90, 0x02, 0x7F]),
+        "DRUM SWAP 3 lit: {out:x?}"
+    );
     c.receive(&[0x90, 0x02, 0x7F]);
     assert_eq!(get(&reg, "[Channel1_Stem1]", "mute"), 0.0);
     c.receive(&[0x90, 0x24, 0x7F]);
     assert_eq!(get(&reg, "[Channel1_Stem5]", "mute"), 1.0);
-    assert_eq!(get(&reg, "[QuickEffectRack1_[Channel1_Stem5]]", "enabled"), 1.0);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel1_Stem5]]", "enabled"),
+        1.0
+    );
     c.receive(&[0x90, 0x24, 0x00]);
     assert_eq!(get(&reg, "[Channel1_Stem5]", "mute"), 0.0);
     c.receive(&[0xB0, 0x12, 0x00]);
@@ -1260,7 +1266,10 @@ fn ddj_grv6_decks_beat_fx_and_groove_circuit() {
         .set(0.5 / 180.0);
     settle(&mut c, 100);
     let out = c.take_output();
-    assert!(out.iter().any(|m| m[..] == [0x9F, 0x00, 0x7F]), "LOAD 1 lit: {out:x?}");
+    assert!(
+        out.iter().any(|m| m[..] == [0x9F, 0x00, 0x7F]),
+        "LOAD 1 lit: {out:x?}"
+    );
     assert!(
         out.iter().any(|m| m[0] == 0xBF && m[1] == 0x00 && m[2] > 0),
         "jog ring moved: {out:x?}"
