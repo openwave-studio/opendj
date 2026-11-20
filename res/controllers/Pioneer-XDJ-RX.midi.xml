@@ -1,0 +1,2143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>Pioneer XDJ-RX</name>
+        <author>openDJ</author>
+        <description>openDJ mapping for the XDJ-RX all-in-one in PC control (MIDI) mode: two decks, the mixer, Beat FX and Sound Color FX, hot cue, pad FX and auto loop pads. Beta: written from AlphaTheta's XDJ-RX list of MIDI messages and rekordbox's XDJ-RX mapping, not yet tried on the hardware.</description>
+        <manual>pioneer_xdj_rx</manual>
+    </info>
+    <controller id="XDJ-RX">
+        <scriptfiles>
+            <file functionprefix="" filename="Pioneer-all-in-one-script.js"/>
+            <file functionprefix="PioneerXDJRX" filename="Pioneer-XDJ-RX-script.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <description>Browse</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB0</status>
+                <midino>0x4F</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Shift</description>
+                <group>[Library]</group>
+                <key>PioneerXDJRX.waveformZoom</key>
+                <status>0xB0</status>
+                <midino>0x60</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press</description>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press+Shift</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x90</status>
+                <midino>0x61</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x90</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x91</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Back</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x90</status>
+                <midino>0x32</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>AddToTagList</description>
+                <group>[Library]</group>
+                <key>AutoDjAddBottom</key>
+                <status>0x90</status>
+                <midino>0x30</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.play</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.play</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.toStart</key>
+                <status>0x90</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.toStart</key>
+                <status>0x91</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogBend</key>
+                <status>0xB0</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogBend</key>
+                <status>0xB1</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelSearch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelSearch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.tempoSliderMSB</key>
+                <status>0xB0</status>
+                <midino>0x1D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.tempoSliderLSB</key>
+                <status>0xB0</status>
+                <midino>0x3D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.tempoSliderMSB</key>
+                <status>0xB1</status>
+                <midino>0x1D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.tempoSliderLSB</key>
+                <status>0xB1</status>
+                <midino>0x3D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.keylock</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.keylock</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.tempoRange</key>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.tempoRange</key>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Quantize (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.quantize</key>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.sync</key>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.sync</key>
+                <status>0x91</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.master</key>
+                <status>0x90</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.master</key>
+                <status>0x91</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.master</key>
+                <status>0x90</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.master</key>
+                <status>0x91</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LoopIn (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>loop_in</key>
+                <status>0x90</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LoopIn (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>loop_in</key>
+                <status>0x91</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LoopIn+LongPress (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.loopAdjust</key>
+                <status>0x90</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LoopIn+LongPress (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.loopAdjust</key>
+                <status>0x91</status>
+                <midino>0x45</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LoopOut (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>loop_out</key>
+                <status>0x90</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LoopOut (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>loop_out</key>
+                <status>0x91</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>ReloopExit (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.reloop</key>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>ReloopExit (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.reloop</key>
+                <status>0x91</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Reverse (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.reverse</key>
+                <status>0x90</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Reverse (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.reverse</key>
+                <status>0x91</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.jogMode</key>
+                <status>0x90</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.jogMode</key>
+                <status>0x91</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Slip (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.slip</key>
+                <status>0x90</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Slip (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.slip</key>
+                <status>0x91</status>
+                <midino>0x2C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 auto loop 1 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_1_toggle</key>
+                <status>0x90</status>
+                <midino>0x55</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 auto loop 1 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_1_toggle</key>
+                <status>0x91</status>
+                <midino>0x55</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 auto loop 2 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_2_toggle</key>
+                <status>0x90</status>
+                <midino>0x56</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 auto loop 2 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_2_toggle</key>
+                <status>0x91</status>
+                <midino>0x56</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 auto loop 4 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_4_toggle</key>
+                <status>0x90</status>
+                <midino>0x57</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 auto loop 4 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_4_toggle</key>
+                <status>0x91</status>
+                <midino>0x57</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 auto loop 8 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_8_toggle</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 auto loop 8 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_8_toggle</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 auto loop 1 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_1_toggle</key>
+                <status>0x90</status>
+                <midino>0x6A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 auto loop 1 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_1_toggle</key>
+                <status>0x91</status>
+                <midino>0x6A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 auto loop 2 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_2_toggle</key>
+                <status>0x90</status>
+                <midino>0x69</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 auto loop 2 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_2_toggle</key>
+                <status>0x91</status>
+                <midino>0x69</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 auto loop 4 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_4_toggle</key>
+                <status>0x90</status>
+                <midino>0x68</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 auto loop 4 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_4_toggle</key>
+                <status>0x91</status>
+                <midino>0x68</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 auto loop 8 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>beatloop_8_toggle</key>
+                <status>0x90</status>
+                <midino>0x67</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 auto loop 8 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>beatloop_8_toggle</key>
+                <status>0x91</status>
+                <midino>0x67</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TrackNext (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.quickJumpForward</key>
+                <status>0x90</status>
+                <midino>0x04</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackNext (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.quickJumpForward</key>
+                <status>0x91</status>
+                <midino>0x04</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackPrev (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.quickJumpBack</key>
+                <status>0x90</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackPrev (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.quickJumpBack</key>
+                <status>0x91</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SearchFwd (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.searchForward</key>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SearchFwd (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.searchForward</key>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SearchRev (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.searchBack</key>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SearchRev (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.searchBack</key>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CallNext (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.loopDouble</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CallNext (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.loopDouble</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CallPrev (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.loopHalve</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CallPrev (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.loopHalve</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CrossFader</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB4</status>
+                <midino>0x0B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x11</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x12</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x01</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x06</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x02</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x07</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x08</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x04</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x09</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.pfl</key>
+                <status>0xB4</status>
+                <midino>0x46</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.pfl</key>
+                <status>0xB4</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterLevel</description>
+                <group>[Master]</group>
+                <key>gain</key>
+                <status>0xB4</status>
+                <midino>0x18</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphonesMix</description>
+                <group>[Master]</group>
+                <key>head_mix</key>
+                <status>0xB4</status>
+                <midino>0x1B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphonesVolume</description>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <status>0xB4</status>
+                <midino>0x1A</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>FX1-1</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxLevel</key>
+                <status>0xB4</status>
+                <midino>0x5B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1-1On</description>
+                <group>[EffectRack1_EffectUnit5_Effect1]</group>
+                <key>PioneerXDJRX.beatFxOnOff</key>
+                <status>0xB4</status>
+                <midino>0x40</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1BeatDown</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxBeatsDown</key>
+                <status>0xB4</status>
+                <midino>0x4C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1BeatUp</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxBeatsUp</key>
+                <status>0xB4</status>
+                <midino>0x4D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1Tap</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxTap</key>
+                <status>0xB4</status>
+                <midino>0x4E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX DELAY</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x2A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX ECHO</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX SPIRAL</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX REVERB</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX TRANS</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX FLANGER</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT FX ROLL</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>PioneerXDJRX.beatFxSelect</key>
+                <status>0xB4</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 1)</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x05</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 2)</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x0A</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE</description>
+                <group>[Master]</group>
+                <key>PioneerXDJRX.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x55</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX CRUSH</description>
+                <group>[Master]</group>
+                <key>PioneerXDJRX.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x56</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER</description>
+                <group>[Master]</group>
+                <key>PioneerXDJRX.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x57</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x90</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x91</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x90</status>
+                <midino>0x63</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x91</status>
+                <midino>0x63</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Pad FX (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad1</key>
+                <status>0x90</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Pad FX (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad1</key>
+                <status>0x91</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x90</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x91</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x90</status>
+                <midino>0x64</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x91</status>
+                <midino>0x64</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Pad FX (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad2</key>
+                <status>0x90</status>
+                <midino>0x15</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Pad FX (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad2</key>
+                <status>0x91</status>
+                <midino>0x15</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x90</status>
+                <midino>0x65</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x91</status>
+                <midino>0x65</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Pad FX (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad3</key>
+                <status>0x90</status>
+                <midino>0x16</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Pad FX (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad3</key>
+                <status>0x91</status>
+                <midino>0x16</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x90</status>
+                <midino>0x66</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x91</status>
+                <midino>0x66</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Pad FX (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad4</key>
+                <status>0x90</status>
+                <midino>0x17</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Pad FX (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad4</key>
+                <status>0x91</status>
+                <midino>0x17</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x90</status>
+                <midino>0x25</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x91</status>
+                <midino>0x25</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x90</status>
+                <midino>0x6F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x91</status>
+                <midino>0x6F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Pad FX SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad1</key>
+                <status>0x90</status>
+                <midino>0x73</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Pad FX SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad1</key>
+                <status>0x91</status>
+                <midino>0x73</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x90</status>
+                <midino>0x26</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x91</status>
+                <midino>0x26</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x90</status>
+                <midino>0x70</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x91</status>
+                <midino>0x70</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Pad FX SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad2</key>
+                <status>0x90</status>
+                <midino>0x74</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Pad FX SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad2</key>
+                <status>0x91</status>
+                <midino>0x74</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x90</status>
+                <midino>0x27</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x91</status>
+                <midino>0x27</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x90</status>
+                <midino>0x71</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x91</status>
+                <midino>0x71</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Pad FX SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad3</key>
+                <status>0x90</status>
+                <midino>0x75</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Pad FX SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad3</key>
+                <status>0x91</status>
+                <midino>0x75</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x90</status>
+                <midino>0x28</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x91</status>
+                <midino>0x28</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x90</status>
+                <midino>0x72</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x91</status>
+                <midino>0x72</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Pad FX SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.rollPad4</key>
+                <status>0x90</status>
+                <midino>0x76</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Pad FX SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.rollPad4</key>
+                <status>0x91</status>
+                <midino>0x76</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HotCueMode (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.padModePressed</key>
+                <status>0x90</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HotCueMode (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.padModePressed</key>
+                <status>0x91</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoopMode (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.padModePressed</key>
+                <status>0x90</status>
+                <midino>0x23</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoopMode (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.padModePressed</key>
+                <status>0x91</status>
+                <midino>0x23</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SlicerMode (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJRX.padModePressed</key>
+                <status>0x90</status>
+                <midino>0x24</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SlicerMode (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJRX.padModePressed</key>
+                <status>0x91</status>
+                <midino>0x24</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>keylock</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>keylock</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <status>0x91</status>
+                <midino>0x1F</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_leader</key>
+                <status>0x90</status>
+                <midino>0x1E</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_leader</key>
+                <status>0x91</status>
+                <midino>0x1E</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>loop_enabled</key>
+                <status>0x90</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>loop_enabled</key>
+                <status>0x91</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>loop_enabled</key>
+                <status>0x90</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>loop_enabled</key>
+                <status>0x91</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>loop_enabled</key>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>loop_enabled</key>
+                <status>0x91</status>
+                <midino>0x08</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>reverse</key>
+                <status>0x90</status>
+                <midino>0x21</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>reverse</key>
+                <status>0x91</status>
+                <midino>0x21</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>slip_enabled</key>
+                <status>0x90</status>
+                <midino>0x2C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>slip_enabled</key>
+                <status>0x91</status>
+                <midino>0x2C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_1_enabled</key>
+                <status>0x90</status>
+                <midino>0x55</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_1_enabled</key>
+                <status>0x91</status>
+                <midino>0x55</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_2_enabled</key>
+                <status>0x90</status>
+                <midino>0x56</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_2_enabled</key>
+                <status>0x91</status>
+                <midino>0x56</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_4_enabled</key>
+                <status>0x90</status>
+                <midino>0x57</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_4_enabled</key>
+                <status>0x91</status>
+                <midino>0x57</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_8_enabled</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_8_enabled</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_1_enabled</key>
+                <status>0x90</status>
+                <midino>0x6A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_1_enabled</key>
+                <status>0x91</status>
+                <midino>0x6A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_2_enabled</key>
+                <status>0x90</status>
+                <midino>0x69</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_2_enabled</key>
+                <status>0x91</status>
+                <midino>0x69</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_4_enabled</key>
+                <status>0x90</status>
+                <midino>0x68</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_4_enabled</key>
+                <status>0x91</status>
+                <midino>0x68</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_8_enabled</key>
+                <status>0x90</status>
+                <midino>0x67</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_8_enabled</key>
+                <status>0x91</status>
+                <midino>0x67</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit5_Effect1]</group>
+                <key>enabled</key>
+                <status>0xB4</status>
+                <midino>0x40</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_1_status</key>
+                <status>0x90</status>
+                <midino>0x18</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_1_status</key>
+                <status>0x91</status>
+                <midino>0x18</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_2_status</key>
+                <status>0x90</status>
+                <midino>0x19</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_2_status</key>
+                <status>0x91</status>
+                <midino>0x19</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_3_status</key>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_3_status</key>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_4_status</key>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_4_status</key>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_5_status</key>
+                <status>0x90</status>
+                <midino>0x25</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_5_status</key>
+                <status>0x91</status>
+                <midino>0x25</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_6_status</key>
+                <status>0x90</status>
+                <midino>0x26</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_6_status</key>
+                <status>0x91</status>
+                <midino>0x26</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_7_status</key>
+                <status>0x90</status>
+                <midino>0x27</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_7_status</key>
+                <status>0x91</status>
+                <midino>0x27</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_8_status</key>
+                <status>0x90</status>
+                <midino>0x28</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_8_status</key>
+                <status>0x91</status>
+                <midino>0x28</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>
