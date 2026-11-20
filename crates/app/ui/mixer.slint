@@ -6,6 +6,7 @@ import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { Caption, Controls, ControlButton, ControlFader, ControlKnob, Crossfader, CueHeadphones, StereoMeter, VuMeter } from "controls.slint";
 import { EffectList } from "deck.slint";
+import { SwitchPill } from "pills.slint";
 
 // One output route in the settings table.
 export struct OutputRow {
@@ -439,7 +440,7 @@ export global MixerMode {
     // PlayDifferently's Model 1 (low-pass, sculpt frequency and cut/boost,
     // high-pass).
     in-out property <int> mode: 0;
-    out property <[string]> names: ["EQ", "STEMS", "SCULPT"];
+    out property <[string]> names: ["EQ", "Stems", "Sculpt"];
 }
 
 // A mixer knob, centred in its grid cell.
@@ -452,10 +453,11 @@ export component Knob inherits HorizontalLayout {
     // and volumes.
     in property <float> origin: 0.5;
     in property <int> look: 0;
+    in property <color> arc-color: Theme.knob-arc;
     in property <length> size: 30px;
     in property <string> tour-id;
     alignment: center;
-    ControlKnob { group: group; key: key; label: label; bipolar: true; origin: origin; look: look; size: size; tint: tint; tour-id: tour-id; }
+    ControlKnob { group: group; key: key; label: label; bipolar: true; origin: origin; look: look; arc-color: arc-color; size: size; tint: tint; tour-id: tour-id; }
 }
 
 // One of the four knobs down a side of the mixer (`place` 0 is the top), as
@@ -488,19 +490,25 @@ export component SideKnob inherits Rectangle {
             key: ["parameter3", "parameter2", "parameter1", "super1"][place];
             tour-id: self.group + "," + self.key;
             // The filter knob plays the chosen Color FX, and says which.
-            label: place == 3 ? (cfx >= 1 && cfx <= EffectList.color-fx.length ? EffectList.color-fx[cfx - 1].to-uppercase() : "CFX") : ["HIGH", "MID", "LOW"][place];
+            label: place == 3 ? (cfx >= 1 && cfx <= EffectList.color-fx.length ? EffectList.color-fx[cfx - 1] : "Filter") : ["High", "Mid", "Low"][place];
+            // Arc knobs from the centre, each band in its waveform colour.
+            look: 3;
+            arc-color: [Theme.band-high, Theme.band-mid, Theme.band-low, Theme.accent][place];
         }
         if mode == 1: Knob {
             size: size;
             group: stem;
             key: "volume";
-            label: ["HIHAT", "VOCAL", "KICK", "BASS"][place];
+            label: ["Hi-hat", "Vocal", "Kick", "Bass"][place];
+            origin: 0;
+            look: 3;
+            arc-color: Theme.accent;
         }
         if mode == 2: Knob {
             size: size;
             group: sculpt;
             key: ["lpf", "freq", "gain", "hpf"][place];
-            label: ["LPF", "FREQ", "CUT/BOOST", "HPF"][place];
+            label: ["LPF", "Freq", "Cut/Boost", "HPF"][place];
             origin: [1, 0.5, 0.5, 0][place];
             look: place == 1 || place == 2 ? 1 : 2;
         }
@@ -514,54 +522,19 @@ export component SideKnob inherits Rectangle {
     }
 }
 
-// The knob mode menu, over the mixer's meters.
+// The knob mode over the mixer's meters: one switch pill, EQ → Stems →
+// Sculpt, each press stepping on.
 export component ModeMenu inherits Rectangle {
-    height: 24px;
-    // Just the name and an arrow, with no box round them.
-    HorizontalLayout {
-        alignment: center;
-        spacing: 3px;
-        Text { text: MixerMode.names[MixerMode.mode]; color: ta.has-hover ? Theme.text : Theme.label; font-size: 9px; font-weight: 700; vertical-alignment: center; }
-        Path {
-            width: 6px;
-            height: 4px;
-            y: (parent.height - self.height) / 2;
-            commands: "M 0 0 L 3 3.5 L 6 0";
-            stroke: ta.has-hover ? Theme.text : Theme.text-dim;
-            stroke-width: 1.2px;
-            fill: transparent;
-        }
-    }
-    ta := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
-    menu := PopupWindow {
-        x: (root.width - 96px) / 2;
-        y: root.height + 2px;
-        width: 96px;
-        close-policy: close-on-click-outside;
-        Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius;
-            border-width: 1px;
-            border-color: Theme.border;
-            drop-shadow-blur: 12px;
-            drop-shadow-color: Theme.s-000000a0;
-        }
-        VerticalLayout {
-            padding: 5px;
-            for name[i] in MixerMode.names: Rectangle {
-                height: 24px;
-                border-radius: 4px;
-                background: i == MixerMode.mode ? Theme.accent.with-alpha(0.35) : ita.has-hover ? Theme.n-3a3a3d : transparent;
-                Text { x: 8px; text: name; color: Theme.text; font-size: 12px; font-weight: i == MixerMode.mode ? 700 : 500; vertical-alignment: center; height: parent.height; }
-                ita := TouchArea {
-                    clicked => {
-                        MixerMode.mode = i;
-                        // Controllers' EQ knobs follow the mode.
-                        Controls.set-value(Controls.resolve("[Mixer]", "knob_mode"), i);
-                        menu.close();
-                    }
-                }
-            }
+    height: 22px;
+    SwitchPill {
+        width: root.width;
+        height: root.height;
+        font-size: 11px;
+        text: MixerMode.names[MixerMode.mode];
+        clicked => {
+            MixerMode.mode = mod(MixerMode.mode + 1, MixerMode.names.length);
+            // Controllers' EQ knobs follow the mode.
+            Controls.set-value(Controls.resolve("[Mixer]", "knob_mode"), MixerMode.mode);
         }
     }
 }
@@ -572,7 +545,7 @@ component Channel inherits VerticalLayout {
     in property <string> group;
     in property <color> tint;
     spacing: 6px;
-    Knob { group: group; key: "pregain"; label: "GAIN"; size: 24px; }
+    Knob { group: group; key: "pregain"; label: "Gain"; size: 24px; look: 3; arc-color: Theme.accent; }
     HorizontalLayout {
         alignment: center;
         vertical-stretch: 1;
@@ -605,7 +578,7 @@ component ChannelGrid inherits HorizontalLayout {
         // faders: below the gain knobs, above the cue buttons.
         VerticalLayout {
             padding-bottom: 34px;
-            ModeMenu { width: 40px; }
+            ModeMenu { width: 48px; }
             HorizontalLayout {
                 alignment: center;
                 spacing: 4px;

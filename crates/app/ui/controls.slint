@@ -338,6 +338,9 @@ export component ControlButton inherits Rectangle {
     in property <bool> outline-when-lit: false;
     // Show that outline without lighting the label.
     in property <bool> outline: false;
+    // The Tron look's switch pill: a dark pill, its word lilac (and a
+    // lilac edge) while on, grey while off. Takes over from the looks above.
+    in property <bool> pill: false;
     // Draw a headphone icon instead of the text, for headphone cue (PFL).
     in property <bool> headphones: false;
     // Or a filled icon: SVG path commands in a 20 x 20 box. Glyphs like ❚❚
@@ -359,25 +362,28 @@ export component ControlButton inherits Rectangle {
     callback right-clicked();
     property <int> shift-index: shift-key == "" ? -1 : Controls.resolve(group, shift-key);
     property <bool> shift-held;
-    property <color> label-color: lit ? (fill-when-lit ? #ffffff : root.tint) : Theme.text;
+    property <color> label-color: pill ? (lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.pill-off-text)
+        : lit ? (fill-when-lit ? #ffffff : root.tint) : Theme.text;
     property <int> index: Controls.resolve(group, key);
     property <int> light-index: Controls.resolve(group, light-key);
     property <bool> lit: Controls.value(light-index, Controls.tick) > 0;
 
     preferred-width: 28px;
     preferred-height: 22px;
-    border-radius: Theme.radius;
-    background: lit && fill-when-lit ? root.tint
+    border-radius: pill ? 7px : Theme.radius;
+    background: pill ? (touch.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.12) : touch.has-hover ? Theme.pill-hover : Theme.pill)
+        : lit && fill-when-lit ? root.tint
         : touch.pressed ? Theme.control-pressed
         : lit && !outline-when-lit ? root.tint.with-alpha(0.14)
         : touch.has-hover ? Theme.n-1d1d20 : Theme.control;
-    border-width: (lit && outline-when-lit) || outline ? 2px : 1px;
-    border-color: lit || outline ? root.tint : Theme.border;
+    border-width: pill ? 1px : (lit && outline-when-lit) || outline ? 2px : 1px;
+    border-color: pill ? (lit ? Theme.n-6e58a8 : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31)
+        : lit || outline ? root.tint : Theme.border;
 
     if !headphones && icon == "": Text {
         text: root.text;
         font-size: root.font-size;
-        font-weight: 700;
+        font-weight: pill ? 500 : 700;
         color: label-color;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -499,19 +505,20 @@ export component ControlFader inherits Rectangle {
     for i in ticks: Rectangle {
         property <length> along: handle / 2 + travel * i / (ticks - 1);
         property <bool> major: i == 0 || i == ticks - 1 || (center-mark && i * 2 == ticks - 1);
-        x: vertical ? 0px : along;
-        y: vertical ? along : 0px;
-        width: vertical ? root.width : 1px;
-        height: vertical ? 1px : root.height;
-        background: major ? Theme.n-55555a : Theme.tick;
+        // Softer ticks: the minor ones short, either side of the slot.
+        x: vertical ? (major ? 0px : root.width * 0.2) : along;
+        y: vertical ? along : (major ? 0px : root.height * 0.2);
+        width: vertical ? (major ? root.width : root.width * 0.6) : 1px;
+        height: vertical ? 1px : (major ? root.height : root.height * 0.6);
+        background: major ? Theme.n-55555a.with-alpha(0.8) : Theme.tick.with-alpha(0.6);
     }
     // Slot
     Rectangle {
-        x: vertical ? (parent.width - 4px) / 2 : handle / 2;
-        y: vertical ? handle / 2 : (parent.height - 4px) / 2;
-        width: vertical ? 4px : travel;
-        height: vertical ? travel : 4px;
-        border-radius: 2px;
+        x: vertical ? (parent.width - 3px) / 2 : handle / 2;
+        y: vertical ? handle / 2 : (parent.height - 3px) / 2;
+        width: vertical ? 3px : travel;
+        height: vertical ? travel : 3px;
+        border-radius: 1.5px;
         background: glowing && !locked ? glow : Theme.n-050506;
         border-width: 1px;
         border-color: locked ? Theme.automix.with-alpha(0.6) : glowing ? glow : Theme.n-2a2a2d;
@@ -544,18 +551,20 @@ export component ControlFader inherits Rectangle {
         y: vertical ? (1 - pos) * travel : 2px;
         width: vertical ? parent.width - 4px : handle;
         height: vertical ? handle : parent.height - 4px;
+        // The Tron look's refined cap: graphite, a lilac line across it.
         border-radius: 4px;
         background: vertical
-            ? @linear-gradient(180deg, #b0b0b5 0%, #8a8a8f 45%, #5f5f64 100%)
-            : @linear-gradient(90deg, #b0b0b5 0%, #8a8a8f 45%, #5f5f64 100%);
+            ? @linear-gradient(180deg, Theme.fader-cap-top 0%, Theme.fader-cap-bottom 100%)
+            : @linear-gradient(90deg, Theme.fader-cap-top 0%, Theme.fader-cap-bottom 100%);
         border-width: 1px;
-        border-color: locked ? Theme.automix : touch.pressed ? root.tint : Theme.n-2a2a2d;
+        border-color: locked ? Theme.automix : touch.pressed || touch.has-hover ? Theme.n-6e58a8 : Theme.fader-cap-edge;
         drop-shadow-blur: 4px;
         drop-shadow-color: Theme.s-000000a0;
         Rectangle {
-            width: vertical ? parent.width - 8px : 1px;
-            height: vertical ? 1px : parent.height - 8px;
-            background: Theme.n-2a2a2d;
+            width: vertical ? parent.width - 8px : 2px;
+            height: vertical ? 2px : parent.height - 8px;
+            border-radius: 1px;
+            background: Theme.lilac-text;
         }
     }
     touch := TouchArea {
@@ -684,19 +693,21 @@ export component CueHeadphones inherits Rectangle {
     // Names it for the guided tour (see TourMark).
     in property <string> tour-id;
     in property <string> group;
-    // The fill while on: the deck's color.
+    // Kept for callers: the Tron look lights it lilac whatever the deck.
     in property <color> tint: Theme.accent;
     property <int> index: Controls.resolve(group, "pfl");
     property <bool> lit: Controls.value(index, Controls.tick) > 0;
-    property <color> icon-color: lit ? #ffffff : touch.has-hover ? Theme.text : Theme.text-dim;
-    // A button as wide as a channel fader, lit while cueing.
-    width: 36px;
-    height: 22px;
-    border-radius: Theme.radius;
-    border-width: 1px;
-    border-color: lit ? root.tint : Theme.border;
-    background: lit ? root.tint : touch.pressed ? Theme.control-pressed : Theme.control;
-    HeadphoneIcon { size: 16px; tint: icon-color; }
+    property <color> icon-color: lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.text-dim;
+    // A round button under the fader, glowing lilac while cueing.
+    width: 26px;
+    height: 26px;
+    border-radius: self.height / 2;
+    border-width: 1.5px;
+    border-color: lit ? Theme.accent : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    background: lit ? Theme.accent.with-alpha(0.22) : touch.pressed ? Theme.control-pressed : Theme.pill;
+    drop-shadow-blur: lit ? 8px : 0px;
+    drop-shadow-color: Theme.accent.with-alpha(0.55);
+    HeadphoneIcon { size: 14px; tint: icon-color; }
     touch := TouchArea {
         mouse-cursor: pointer;
         clicked => { Controls.set-value(index, lit ? 0 : 1); }
@@ -857,9 +868,9 @@ export component SyncButton inherits Rectangle {
         group: group;
         key: "sync_enabled";
         shift-key: "beatsync";
-        text: "SYNC";
+        text: "Sync";
         tint: tint;
-        outline-when-lit: true;
+        pill: true;
         font-size: root.font-size;
         right-clicked => { menu.show(); }
     }
@@ -946,16 +957,17 @@ export component MasterBadge inherits Rectangle {
     property <bool> tip-mine;
     height: 18px;
     preferred-width: label.preferred-width + (root.font-size >= 10px ? 12px : 10px);
-    border-radius: self.height / 2;
+    // A switch pill: lilac while this deck leads, with a lilac fill too
+    // while it is pinned there.
+    border-radius: min(7px, self.height / 2);
     border-width: 1px;
-    border-color: leading ? Theme.accent : touch.has-hover ? Theme.n-48484c : Theme.border;
-    background: pinned ? Theme.accent : leading ? Theme.accent.with-alpha(0.14) : transparent;
+    border-color: leading ? Theme.n-6e58a8 : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    background: pinned ? Theme.accent.with-alpha(0.28) : leading ? Theme.accent.with-alpha(0.12) : Theme.pill;
     label := Text {
-        text: "MASTER";
-        color: pinned ? #000000 : leading ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.text-dim;
-        font-size: root.font-size;
-        font-weight: 700;
-        letter-spacing: 0.4px;
+        text: "Master";
+        color: leading ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.pill-off-text;
+        font-size: root.font-size + 1px;
+        font-weight: 500;
         horizontal-alignment: center;
         vertical-alignment: center;
     }
@@ -974,7 +986,7 @@ export component MasterBadge inherits Rectangle {
         running: touch.has-hover && !tip-mine;
         triggered => {
             tip-mine = true;
-            HoverTip.title = "MASTER";
+            HoverTip.title = "Master";
             HoverTip.body = pinned ? "Synced decks follow this deck. Click to let openDJ pick the master again"
                 : leading ? "Synced decks follow this deck. Click to keep it the master"
                 : "Click to make this deck the master that synced decks follow";
