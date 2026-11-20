@@ -41,6 +41,11 @@ export global Theme {
     out property <color> pill-off-text: root.light ? #8e8c96 : #6f6d78;
     // Section titles.
     out property <color> section-title: root.light ? #4a4852 : #d9d6e4;
+    // A fader's cap (top and bottom of its shading) and its edge: graphite,
+    // with a lilac line across its middle.
+    out property <color> fader-cap-top: root.light ? #fbfbfd : #4a4a50;
+    out property <color> fader-cap-bottom: root.light ? #dcdbe3 : #26262b;
+    out property <color> fader-cap-edge: root.light ? #b9b7c4 : #55555c;
     out property <color> wheel-slice: root.light ? #f0eff4 : #151517;
     // The library browser's background, and its rows, which alternate
     // between two tones.
@@ -150,6 +155,11 @@ export global Theme {
     out property <length> font-normal: 13px;
     out property <length> font-large: 17px;
     out property <length> font-xl: 24px;
+
+    // Play while playing (green) and CUE while held or at the cue point
+    // (yellow), as on players, whatever the deck's own colour.
+    out property <color> play-lit: root.light ? #1f9d3a : #30d158;
+    out property <color> cue-lit: root.light ? #b38600 : #ffcc00;
 
     // Hotcue colors: blue, green, yellow, orange, red, pink, purple, teal.
     // Same order as the waveform shader.
