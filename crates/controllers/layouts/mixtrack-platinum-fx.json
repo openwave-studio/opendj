@@ -80,8 +80,8 @@
   {"id": "master", "label": "MASTER GAIN", "kind": "knob", "round": true, "x": 1532, "y": 37, "w": 36, "h": 36, "midi": ["BE 23"]},
   {"id": "cue-mix", "label": "CUE MIX", "kind": "knob", "round": true, "x": 785, "y": 515, "w": 30, "h": 30, "midi": ["BF 0D"]},
   {"id": "cue-gain", "label": "CUE GAIN", "kind": "knob", "round": true, "x": 785, "y": 447, "w": 30, "h": 30, "midi": ["BF 0C"]},
-  {"id": "fx-beats", "label": "BEATS", "kind": "knob", "round": true, "x": 840, "y": 125, "w": 30, "h": 30, "midi": ["B8 05"]},
-  {"id": "fx-wet", "label": "FX WET/DRY", "kind": "knob", "round": true, "x": 735, "y": 125, "w": 30, "h": 30, "midi": ["B8 04"]},
+  {"id": "fx-beats", "label": "BEATS", "kind": "knob", "round": true, "x": 840, "y": 125, "w": 30, "h": 30, "midi": ["B8 05", "B9 05"]},
+  {"id": "fx-wet", "label": "FX WET/DRY", "kind": "knob", "round": true, "x": 735, "y": 125, "w": 30, "h": 30, "midi": ["B8 04", "B9 04"]},
   {"id": "tap", "label": "TAP", "kind": "button", "round": false, "x": 793, "y": 160, "w": 30, "h": 24, "midi": ["Deck 1|98 09", "Deck 2|99 09"]},
   {"id": "xfader", "label": "CROSSFADER", "kind": "fader", "round": false, "x": 720, "y": 620, "w": 160, "h": 62, "midi": ["B1 08", "BF 08"]}
  ]

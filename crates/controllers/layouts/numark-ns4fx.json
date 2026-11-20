@@ -89,7 +89,7 @@
   {"id": "l-load", "label": "LOAD", "kind": "button", "round": true, "x": 723, "y": 38, "w": 24, "h": 24, "midi": ["9F 02", "Deck 3|9F 04"]},
   {"id": "r-load", "label": "LOAD", "kind": "button", "round": true, "x": 853, "y": 38, "w": 24, "h": 24, "midi": ["9F 03", "Deck 4|9F 05"]},
   {"id": "browse", "label": "BROWSE", "kind": "encoder", "round": true, "x": 775, "y": 23, "w": 50, "h": 50, "midi": ["BF 00", "SHIFT|BF 01", "Press|9F 06", "SHIFT press|9F 07"]},
-  {"id": "fx-wet", "label": "FX WET/DRY", "kind": "knob", "round": true, "x": 738, "y": 126, "w": 28, "h": 28, "midi": ["B8 04"]},
+  {"id": "fx-wet", "label": "FX WET/DRY", "kind": "knob", "round": true, "x": 738, "y": 126, "w": 28, "h": 28, "midi": ["B8 04", "B9 04"]},
   {"id": "fx-beats", "label": "BEATS", "kind": "knob", "round": true, "x": 834, "y": 126, "w": 28, "h": 28, "midi": ["B8 05", "B9 05"]},
   {"id": "tap", "label": "TAP", "kind": "button", "round": false, "x": 790, "y": 180, "w": 25, "h": 22, "midi": ["98 09", "99 09"]},
   {"id": "fx-hpf", "label": "HPF", "kind": "button", "round": false, "x": 733, "y": 223, "w": 40, "h": 22, "midi": ["98 00"]},
@@ -102,7 +102,7 @@
   {"id": "r-fx-paddle", "label": "FX ON (RIGHT)", "kind": "switch", "round": false, "x": 822, "y": 315, "w": 52, "h": 85, "midi": ["B9 03"]},
   {"id": "cue-gain", "label": "CUE GAIN", "kind": "knob", "round": true, "x": 789, "y": 441, "w": 28, "h": 28, "midi": ["BF 0C"]},
   {"id": "cue-mix", "label": "CUE MIX", "kind": "knob", "round": true, "x": 789, "y": 506, "w": 28, "h": 28, "midi": ["BF 0D"]},
-  {"id": "xfader", "label": "CROSSFADER", "kind": "fader", "round": false, "x": 725, "y": 590, "w": 145, "h": 55, "midi": ["BF 08"]},
+  {"id": "xfader", "label": "CROSSFADER", "kind": "fader", "round": false, "x": 725, "y": 590, "w": 145, "h": 55, "midi": ["BF 08", "B1 08"]},
   {"id": "main", "label": "MAIN", "kind": "knob", "round": true, "x": 1533, "y": 26, "w": 28, "h": 28, "midi": ["BF 0A"]}
  ]
 }

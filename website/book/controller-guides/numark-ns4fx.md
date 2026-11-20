@@ -21,6 +21,8 @@ openDJ on a real NS4FX yet, so tell us how it goes.
   back to start, rewind and fast forward.
 - **Loops:** **LOOP** turns an auto loop on or off (SHIFT: reloop), **1/2**
   and **X2** halve and double it, and with SHIFT set the loop in and out.
+  The right side sends those two the other way round, and the mapping
+  follows it, as djay Pro's built-in mapping does.
 - **Effects:** the six buttons pick the effect, **FX WET/DRY** and
   **BEATS** set it, and each side's paddle turns it on (up latches, down
   holds). **TAP** taps the tempo.
@@ -30,5 +32,6 @@ openDJ on a real NS4FX yet, so tell us how it goes.
 
 - Play, scratch and nudge all four decks with **LAYER**.
 - Try every pad mode, and each mode button's second press.
-- Set a loop with SHIFT + **1/2** and SHIFT + **X2** on both sides.
+- Set a loop with SHIFT + **1/2** and SHIFT + **X2** on both sides, and
+  check which one sets the loop in on the right.
 - Pick effects and turn them on with both paddles.

@@ -1495,8 +1495,9 @@ NS4FX.Deck = function(number, midi_chan) {
                 }
             }),
 
+            // The right-hand decks send loop in and out on swapped notes.
             loop_in: new components.Button({
-                midi: [0x94 + midi_chan, 0x36],
+                midi: [0x94 + midi_chan, midi_chan % 2 ? 0x37 : 0x36],
                 input: function(_channel, _control, value, _status) {
                     if (value === 0x7F) { // Button pressed
                         engine.setValue(this.group, "loop_in", 1);
@@ -1512,7 +1513,7 @@ NS4FX.Deck = function(number, midi_chan) {
             }),
 
             loop_out: new components.Button({
-                midi: [0x94 + midi_chan, 0x37],
+                midi: [0x94 + midi_chan, midi_chan % 2 ? 0x36 : 0x37],
                 input: function(_channel, _control, value, _status) {
                     if (value === 0x7F) { // Button pressed
                         engine.setValue(this.group, "loop_out", 1);

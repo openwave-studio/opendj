@@ -2182,14 +2182,14 @@ fn numark_ns4fx_second_pad_mode_on_every_deck() {
             "{status:02X}: {out:02X?}"
         );
     }
-    // SHIFT + 1/2 sets the loop in and SHIFT + x2 the loop out on both
-    // sides, as Numark's manual and the script's own lights have it.
-    for (status, group) in [(0x94u8, "[Channel1]"), (0x95, "[Channel2]")] {
+    // The right-hand decks send loop in and loop out on swapped notes,
+    // as djay Pro's built-in NS4FX mapping also has them.
+    for (status, group, note) in [(0x94u8, "[Channel1]", 0x36u8), (0x95, "[Channel2]", 0x37)] {
         let loop_in = reg.get(group, "loop_in").unwrap();
         let loop_out = reg.get(group, "loop_out").unwrap();
         let (i, o) = (loop_in.version(), loop_out.version());
-        c.receive(&[status, 0x36, 0x7F]);
-        c.receive(&[status - 0x10, 0x36, 0x00]);
+        c.receive(&[status, note, 0x7F]);
+        c.receive(&[status - 0x10, note, 0x00]);
         assert_ne!(loop_in.version(), i, "{group} loop in");
         assert_eq!(loop_out.version(), o, "{group} loop out untouched");
     }
@@ -2426,4 +2426,33 @@ fn ddj_sb_and_sb2() {
         every_message_runs_cleanly(file, &mut c);
         c.shutdown();
     }
+}
+
+/// The Party Mix MKII mapping uses the MKII's own notes (from djay Pro's
+/// built-in mapping): pad modes, the FILTER knob and the pads' second notes.
+#[test]
+fn numark_party_mix_mkii_notes() {
+    let (reg, mut c) = load("Numark-Party-Mix-MKII.midi.xml");
+    settle(&mut c, 50);
+    // FILTER turns the deck's quick effect.
+    for v in (0..=0x40u8).rev() {
+        c.receive(&[0xB0, 0x1A, v]);
+    }
+    let filter = reg.get("[QuickEffectRack1_[Channel1]]", "super1").unwrap();
+    assert!(filter.get_parameter() < 0.05, "{}", filter.get_parameter());
+    // A pad's second note deletes its hot cue in CUE mode.
+    let clear = reg.get("[Channel1]", "hotcue_1_clear").unwrap();
+    let before = clear.version();
+    c.receive(&[0x94, 0x1C, 0x7F]);
+    c.receive(&[0x84, 0x1C, 0x00]);
+    assert_ne!(clear.version(), before);
+    // 0x0E is LOOP on the MKII: the first pad then sets a four-beat loop.
+    c.receive(&[0x94, 0x0E, 0x7F]);
+    let looped = reg.get("[Channel1]", "beatloop_4_toggle").unwrap();
+    let before = looped.version();
+    c.receive(&[0x94, 0x14, 0x7F]);
+    c.receive(&[0x84, 0x14, 0x00]);
+    assert_ne!(looped.version(), before);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
 }
