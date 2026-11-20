@@ -67,6 +67,7 @@ mod keep_going;
 mod lastfm;
 mod layouts;
 mod list_picker;
+mod list_text;
 mod live_trace;
 mod lookup;
 mod lrclib;
@@ -116,6 +117,7 @@ mod track_end;
 mod transport;
 mod tutorials;
 mod ui_font;
+mod ui_scale;
 mod update;
 mod vocal_pass;
 mod wall_clock;
@@ -662,9 +664,17 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         instrument_art::install(&app, move || std::mem::take(&mut *dropped.borrow_mut()));
         // Dark, Light or Match system, as last picked.
         appearance::install(&app);
+        list_text::install(&app);
         let theme_app = app.as_weak();
         app.window().on_winit_window_event(move |window, event| {
             file_drop.window_event(window, event);
+            // Moved to a screen with another scale: the interface scale
+            // goes back on top of it.
+            if let slint::winit_030::winit::event::WindowEvent::ScaleFactorChanged { .. } = event {
+                if let Some(app) = theme_app.upgrade() {
+                    ui_scale::screen_changed(&app);
+                }
+            }
             if let slint::winit_030::winit::event::WindowEvent::ThemeChanged(theme) = event {
                 if let Some(app) = theme_app.upgrade() {
                     appearance::system_changed(&app, *theme);
@@ -1877,6 +1887,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     // Until the first frame is drawn, a crash counts against these graphics.
     graphics_choice.arm();
     app.show()?;
+    // The DJ's interface scale, once the window knows its screen.
+    ui_scale::install(&app, first_run);
     fit_to_screen(&app);
     app.run()?;
     // Keeps each plugin's sound (tweaks made in its window) for next time:

@@ -8,15 +8,12 @@
 - [ ] 1.4 A track dragged to the right edge slides the side panel open
 - [x] 1.5 Escape closes a slid-out panel
 
-## 2. Library height
+## 2. Mixer deck strips
 
-- [ ] 2.1 Splitter between the decks and the library: drag steps the waveforms, then folds the FX bar; double-click expands or restores
+- [x] 2.1 Edge fade and ‹ › when strips run off the side
 
-## 3. Mixer deck strips
+## 3. UI scale and list text
 
-- [x] 3.1 Edge fade and ‹ › when strips run off the side
-
-## 4. UI scale
-
-- [ ] 4.1 Settings › Interface scale, 85% to 125%
-- [ ] 4.2 First start on a screen with less than 1280 × 720 usable picks 90%
+- [x] 3.1 Settings › Appearance › Interface scale, 85% to 125% (the largest step that fits the screen)
+- [x] 3.2 First start on a screen with less than 1280 × 720 usable picks 90%
+- [x] 3.3 Settings › Appearance › List text, Small to Extra large, for the track list, lists panel and side panel

@@ -150,6 +150,14 @@ export global ColumnUi {
     callback set-color-mode(mode: int);
 }
 
+// Settings › Appearance › List text: how big the text is in the track
+// list, the lists panel and the side panel's lists. Rows grow with it.
+// 0 Small, 1 Normal, 2 Large, 3 Extra large.
+export global ListText {
+    in property <int> size: 1;
+    out property <float> scale: size == 0 ? 0.87 : size == 2 ? 1.14 : size == 3 ? 1.33 : 1.0;
+}
+
 // The order of the rail's sources after Collection, by source number:
 // openDJ's own, then the services and add-ons. Dragged in the "•••" menu.
 export global RailOrder {
@@ -3706,9 +3714,10 @@ component FolderTree inherits Rectangle {
             }
             tree-list := ListView {
                 gutter: true;
+                property <length> tree-row: round(34 * ListText.scale) * 1px;
                 for f[i] in folders: row := Rectangle {
                     // A line sets the Crates heading apart from the collection.
-                    height: f.separator ? 45px : 34px;
+                    height: f.separator ? 11px + tree-list.tree-row : tree-list.tree-row;
                     if f.separator: Rectangle {
                         x: 8px;
                         y: 5px;
@@ -3723,8 +3732,8 @@ component FolderTree inherits Rectangle {
                     // For tracks: "Add 3" or "Move 3" (with ⌥).
                     property <string> badge;
                     property <bool> list-over: drop.has-drag && zone >= 0;
-                    y: parent.height - 34px;
-                    height: 34px;
+                    y: parent.height - tree-list.tree-row;
+                    height: tree-list.tree-row;
                     border-radius: Theme.radius;
                     border-width: list-over && zone == 1 ? 2px : 0px;
                     border-color: Theme.accent;
@@ -3794,7 +3803,7 @@ component FolderTree inherits Rectangle {
                         badge-text := Text {
                             text: badge;
                             color: white;
-                            font-size: 11px;
+                            font-size: 11px * ListText.scale;
                             font-weight: 700;
                             vertical-alignment: center;
                             horizontal-alignment: center;
@@ -3857,7 +3866,7 @@ component FolderTree inherits Rectangle {
                                     color: Theme.text;
                                     selection-background-color: Theme.accent;
                                     selection-foreground-color: #ffffff;
-                                    font-size: 15px;
+                                    font-size: 15px * ListText.scale;
                                     vertical-alignment: center;
                                     single-line: true;
                                     accepted => { finish-naming(true); }
@@ -3881,7 +3890,7 @@ component FolderTree inherits Rectangle {
                         if i != naming-row: Text {
                             text: f.name;
                             color: i == current ? Theme.on-row-selection : f.kind == 24 ? Theme.text : f.kind == 18 || f.dim ? Theme.text-dim : Theme.stage-labels ? Theme.stage-tint(f.kind) : Theme.text;
-                            font-size: f.kind == 18 || f.kind == 24 ? 13px : 15px;
+                            font-size: (f.kind == 18 || f.kind == 24 ? 13px : 15px) * ListText.scale;
                             font-weight: f.kind == 18 || f.kind == 24 ? 700 : f.kind == 23 ? 600 : 400;
                             vertical-alignment: center;
                             overflow: elide;
@@ -3890,7 +3899,7 @@ component FolderTree inherits Rectangle {
                         if f.count >= 0: Text {
                             text: f.count;
                             color: i == current ? Theme.on-row-selection : Theme.text-dim;
-                            font-size: 13px;
+                            font-size: 13px * ListText.scale;
                             vertical-alignment: center;
                         }
                         if f.count >= 0: Rectangle { width: 2px; }
@@ -3986,7 +3995,7 @@ component HeaderCell inherits Rectangle {
         width: 100%;
         text: root.text + (column == sort-column ? (ascending ? " ▲" : " ▼") : "");
         color: moving ? Theme.lilac-text : Theme.text;
-        font-size: 13px;
+        font-size: 13px * ListText.scale;
         font-weight: column == sort-column ? 600 : 500;
         horizontal-alignment: align;
         overflow: elide;
@@ -5259,7 +5268,7 @@ component TrackList inherits Rectangle {
             }
         }
     }
-    property <length> row-height: 32px;
+    property <length> row-height: round(32 * ListText.scale) * 1px;
     // Which rows are in view, for their mini waveforms.
     property <int> first-shown: max(0, floor(-lv.content-y / row-height));
     property <int> shown-count: ceil(lv.visible-height / row-height) + 1;
@@ -5782,7 +5791,7 @@ component TrackList inherits Rectangle {
                             border-radius: 3px;
                             clip: true;
                             background: Theme.n-2a2a2e;
-                            if !r.has-cover: Text { text: "♪"; color: Theme.text-dim; font-size: 12px; }
+                            if !r.has-cover: Text { text: "♪"; color: Theme.text-dim; font-size: 12px * ListText.scale; }
                             if r.has-cover: Image { width: parent.width; height: parent.height; source: r.cover; image-fit: cover; }
                         }
                     }
@@ -5800,7 +5809,7 @@ component TrackList inherits Rectangle {
                         if r.missing: Text {
                             text: "!";
                             color: Theme.c-ff9f0a;
-                            font-size: 14px;
+                            font-size: 14px * ListText.scale;
                             font-weight: 700;
                         }
                         // A SoundCloud track or Mixcloud show the collection
@@ -5859,14 +5868,14 @@ component TrackList inherits Rectangle {
                             width: 100%;
                             text: r.rating == 0 ? "" : stars(r.rating);
                             color: selected ? Theme.on-row-selection : Theme.c-ffd60a;
-                            font-size: 12px;
+                            font-size: 12px * ListText.scale;
                             vertical-alignment: center;
                         }
                         if col.kind == 1: Text {
                             width: 100%;
                             text: r.title;
                             color: selected ? Theme.on-row-selection : r.deck >= 0 ? Theme.deck-color(r.deck) : plain;
-                            font-size: 15px;
+                            font-size: 15px * ListText.scale;
                             vertical-alignment: center;
                             overflow: elide;
                         }
@@ -5880,14 +5889,14 @@ component TrackList inherits Rectangle {
                                 min-width: self.preferred-width;
                                 text: c < r.cells.length ? r.cells[c] : "";
                                 color: selected ? Theme.on-row-selection : r.played != "" ? Theme.text-dim : r.key-match ? Theme.lilac-text : Theme.text;
-                                font-size: 15px;
+                                font-size: 15px * ListText.scale;
                                 vertical-alignment: center;
                             }
                             if r.key-shift != 0: Text {
                                 overflow: clip;
                                 text: shift-mark(r.key-shift);
                                 color: selected ? Theme.on-row-selection-dim : r.key-shift == 1 || r.key-shift == -1 ? Theme.lilac-dim : Theme.key-far;
-                                font-size: 10px;
+                                font-size: 10px * ListText.scale;
                                 font-weight: 600;
                                 vertical-alignment: center;
                             }
@@ -5919,7 +5928,7 @@ component TrackList inherits Rectangle {
                             color: col.kind == 5 ? (selected ? Theme.on-row-selection : Theme.lilac-text)
                                 : col.kind == 4 ? (selected ? Theme.on-row-selection-dim : Theme.text-dim)
                                 : plain;
-                            font-size: col.kind >= 4 ? 14px : 15px;
+                            font-size: (col.kind >= 4 ? 14px : 15px) * ListText.scale;
                             vertical-alignment: center;
                             horizontal-alignment: col.right ? right : left;
                             overflow: elide;
@@ -6649,7 +6658,7 @@ component SidePanel inherits Rectangle {
     }
     // Where a row was just removed, so the one taking its place gets selected.
     property <int> removed-at: -1;
-    property <length> row-height: 56px;
+    property <length> row-height: round(56 * ListText.scale) * 1px;
     // Where a dragged track would go in, while one is over the list.
     property <int> drop-at: drop.has-drag ? max(0, min(rows.length, round((drag-y - lv.content-y) / row-height))) : -1;
     property <length> drag-y;
@@ -7136,7 +7145,7 @@ component SidePanel inherits Rectangle {
                             x: 8px;
                             text: r.heading;
                             color: Theme.label;
-                            font-size: 12px;
+                            font-size: 12px * ListText.scale;
                             font-weight: 700;
                             letter-spacing: 0.4px;
                             vertical-alignment: center;
@@ -7187,7 +7196,7 @@ component SidePanel inherits Rectangle {
                                 border-radius: 3px;
                                 clip: true;
                                 background: Theme.n-2a2a2e;
-                                if !r.has-cover: Text { text: "♪"; color: Theme.text-dim; font-size: 18px; }
+                                if !r.has-cover: Text { text: "♪"; color: Theme.text-dim; font-size: 18px * ListText.scale; }
                                 if r.has-cover: Image { width: parent.width; height: parent.height; source: r.cover; image-fit: cover; }
                             }
                             VerticalLayout {
@@ -7196,26 +7205,26 @@ component SidePanel inherits Rectangle {
                                 spacing: 2px;
                                 HorizontalLayout {
                                     spacing: 8px;
-                                    Text { horizontal-stretch: 1; text: r.title; color: (i >= first-picked && i <= last-picked) && keys.has-focus ? Theme.on-row-selection : Theme.text; font-size: 14px; font-weight: 500; overflow: elide; }
-                                    Text { text: r.bpm == "" ? "" : r.bpm + " BPM"; color: (i >= first-picked && i <= last-picked) && keys.has-focus ? Theme.on-row-selection : Theme.text; font-size: 14px; font-weight: 500; }
+                                    Text { horizontal-stretch: 1; text: r.title; color: (i >= first-picked && i <= last-picked) && keys.has-focus ? Theme.on-row-selection : Theme.text; font-size: 14px * ListText.scale; font-weight: 500; overflow: elide; }
+                                    Text { text: r.bpm == "" ? "" : r.bpm + " BPM"; color: (i >= first-picked && i <= last-picked) && keys.has-focus ? Theme.on-row-selection : Theme.text; font-size: 14px * ListText.scale; font-weight: 500; }
                                 }
                                 HorizontalLayout {
                                     spacing: 8px;
                                     property <color> dim: (i >= first-picked && i <= last-picked) ? (keys.has-focus ? Theme.on-row-selection-dim : Theme.n-ffffffc0) : Theme.text-dim;
-                                    Text { horizontal-stretch: 1; text: r.artist; color: dim; font-size: 13px; overflow: elide; }
+                                    Text { horizontal-stretch: 1; text: r.artist; color: dim; font-size: 13px * ListText.scale; overflow: elide; }
                                     HorizontalLayout {
                                         spacing: 2px;
-                                        Text { text: r.key; color: (i >= first-picked && i <= last-picked) ? (keys.has-focus ? Theme.on-row-selection : #ffffff) : r.key-match ? Theme.lilac-text : Theme.text; font-size: 13px; font-weight: 500; }
+                                        Text { text: r.key; color: (i >= first-picked && i <= last-picked) ? (keys.has-focus ? Theme.on-row-selection : #ffffff) : r.key-match ? Theme.lilac-text : Theme.text; font-size: 13px * ListText.scale; font-weight: 500; }
                                         if r.key-shift != 0: Text {
                                             text: r.key-shift > 0 ? "+" + r.key-shift : "−" + (-r.key-shift);
                                             color: (i >= first-picked && i <= last-picked) ? Theme.on-row-selection-dim : r.key-shift == 1 || r.key-shift == -1 ? Theme.lilac-dim : Theme.key-far;
-                                            font-size: 9px;
+                                            font-size: 9px * ListText.scale;
                                             font-weight: 600;
                                             vertical-alignment: center;
                                         }
                                     }
-                                    if r.mix != "": Text { text: "⤵ " + r.mix; color: (i >= first-picked && i <= last-picked) ? dim : Theme.lilac-text; font-size: 11px; font-weight: 600; vertical-alignment: center; }
-                                    Text { text: r.length; color: dim; font-size: 13px; }
+                                    if r.mix != "": Text { text: "⤵ " + r.mix; color: (i >= first-picked && i <= last-picked) ? dim : Theme.lilac-text; font-size: 11px * ListText.scale; font-weight: 600; vertical-alignment: center; }
+                                    Text { text: r.length; color: dim; font-size: 13px * ListText.scale; }
                                 }
                             }
                         }

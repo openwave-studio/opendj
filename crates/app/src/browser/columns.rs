@@ -769,18 +769,23 @@ const TITLE_ROOM: f32 = 220.0;
 /// The least width that shows a column's heading (with its sort arrow) and
 /// each of `cells` in full, or `None` for a column that isn't text (the
 /// title takes the room left; stars, dots and waveforms keep theirs).
-pub fn fit_width<'a>(kind: i32, label: &str, cells: impl Iterator<Item = &'a str>) -> Option<f32> {
+pub fn fit_width<'a>(
+    kind: i32,
+    label: &str,
+    cells: impl Iterator<Item = &'a str>,
+    scale: f32,
+) -> Option<f32> {
     use crate::ui_font::text_width;
     let size = match kind {
-        TEXT | KEY => 15.0,
-        DIM | TAG_WORDS => 14.0,
+        TEXT | KEY => 15.0 * scale,
+        DIM | TAG_WORDS => 14.0 * scale,
         _ => return None,
     };
     // Headings are semibold, a little wider than the regular weight.
-    let heading = text_width(&format!("{label} ▲"), 13.0) * 1.06;
+    let heading = text_width(&format!("{label} ▲"), 13.0 * scale) * 1.06;
     let widest = cells.map(|c| text_width(c, size)).fold(0.0, f32::max);
     // A shifted key has a small +1/-1 after it.
-    let extra = if kind == KEY { 16.0 } else { 0.0 };
+    let extra = if kind == KEY { 16.0 * scale } else { 0.0 };
     Some(
         (heading.max(widest + extra) + 4.0)
             .ceil()
@@ -882,8 +887,13 @@ impl Browser {
                 };
                 let cells: Vec<SharedString> =
                     rows.iter().filter_map(|r| r.cells.row_data(i)).collect();
-                let Some(width) = fit_width(def.kind, &def.label, cells.iter().map(|c| c.as_str()))
-                else {
+                let scale = crate::list_text::scale(crate::list_text::size());
+                let Some(width) = fit_width(
+                    def.kind,
+                    &def.label,
+                    cells.iter().map(|c| c.as_str()),
+                    scale,
+                ) else {
                     return;
                 };
                 b.columns.layout.resize(i, width);
@@ -976,19 +986,32 @@ mod tests {
 
     #[test]
     fn fit_follows_the_widest_cell() {
-        let short = fit_width(TEXT, "Artist", ["Ab", "Cd"].into_iter()).unwrap();
+        let short = fit_width(TEXT, "Artist", ["Ab", "Cd"].into_iter(), 1.0).unwrap();
         let long = fit_width(
             TEXT,
             "Artist",
             ["Ab", "A much longer artist name"].into_iter(),
+            1.0,
         )
         .unwrap();
         assert!(long > short + 50.0, "{short} {long}");
         // Never narrower than the heading or the least a column can be.
         assert!(short >= MIN_WIDTH);
-        assert!(fit_width(DIM, "Last Played", std::iter::empty()).unwrap() > 60.0);
-        assert_eq!(fit_width(RATING, "Rating", ["x"].into_iter()), None);
-        assert_eq!(fit_width(WAVEFORM, "Waveform", std::iter::empty()), None);
+        assert!(fit_width(DIM, "Last Played", std::iter::empty(), 1.0).unwrap() > 60.0);
+        assert_eq!(fit_width(RATING, "Rating", ["x"].into_iter(), 1.0), None);
+        // Larger list text needs a wider column.
+        let large = fit_width(
+            TEXT,
+            "Artist",
+            ["A much longer artist name"].into_iter(),
+            1.33,
+        )
+        .unwrap();
+        assert!(large > long + 40.0, "{long} {large}");
+        assert_eq!(
+            fit_width(WAVEFORM, "Waveform", std::iter::empty(), 1.0),
+            None
+        );
     }
 
     fn ids(l: &Layout) -> Vec<i32> {
