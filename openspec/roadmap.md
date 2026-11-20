@@ -128,6 +128,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-list-moves](changes/add-list-moves/proposal.md) (moving tracks and lists: tree drop line before, into and after with free list order, folders opening on hover, Move to…; the Sidelist shows any playlist or crate; ⌥-drag moves; a note with Undo; a user request, 2026-11-16)
 - [add-tablet-app](changes/add-tablet-app/proposal.md) (a very small iPad app on the same engine: two decks, a folder of tracks, DDJ-FLX4, installed from Xcode for personal use, not the App Store; Android tablets later from the same crate; a user request, 2026-11-18)
 - [add-remix-fx](changes/add-remix-fx/proposal.md) (Remix FX: an effect on the lows, mids or highs of any slot, one Release for every effect, a Remix deck that listens to another deck or input with isolate knobs, levers, a build-up/break-down Scene wheel and four rolling sample pads, a MIDI Fighter Twister mapping and a Remix page in the browser remote for iPads; a user request, issue #886, 2026-11-19)
+- [restyle-shared-controls](changes/restyle-shared-controls/proposal.md) (the FX bar's Pigments-style controls across the app as one kit: power buttons for whole units, switch pills, ‹ › steppers, arc knobs with centre-out EQ, titled menus, Roboto Condensed section titles, a two-column effect menu with plugins by maker; instrument decks, decks and pad pages, mixer, Automix, Settings, then the top bar; a user request, issue #923, 2026-11-20)
 
 ## v1.0 · Ready for any DJ switching over
 
