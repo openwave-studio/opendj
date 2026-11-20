@@ -20,6 +20,7 @@ The kit (in `pills.slint` and `controls.slint`, colours and sizes from `Theme`):
 - **Titled menus:** a bold title naming what is chosen, grey group headings, the current choice tinted lilac.
 - **Section titles** in Roboto Condensed (bundled, OFL); values and labels stay in Inter.
 - **Letter case:** section titles in condensed capitals (SCENE, LOOP, MASTER); pill words, labels and menu rows capitalised (Sync, Key lock, Hot Cues, Analog); units in unit pills lowercase (1/4 beat, 4 bars, ±8%). CUE keeps its capitals as the hardware word.
+- **Play, Cue and deck colours:** Play and Cue stay boxed; Play lights green while playing and Cue yellow while held, as on players. Deck colours mark only which deck a thing belongs to: the jog's position tick and the fader's ghost marker, which shows only while the controller's fader and the screen disagree. Cue markers on the waveform keep their cue colours.
 
 The areas, in this order:
 
