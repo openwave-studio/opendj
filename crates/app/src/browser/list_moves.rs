@@ -58,7 +58,7 @@ impl Browser {
     /// What a note calls list `list`.
     fn note_name(&self, list: Option<i64>) -> String {
         let Some(list) = list else {
-            return "the scratch pad".to_string();
+            return "the working list".to_string();
         };
         self.menu_lists
             .iter()
@@ -449,8 +449,8 @@ impl Browser {
         self.sidelist_changed();
         self.refresh_side();
         self.note(
-            format!("Cleared {} from the scratch pad", tracks(n)),
-            "Undo Clear scratch pad".to_string(),
+            format!("Cleared {} from the working list", tracks(n)),
+            "Undo Clear working list".to_string(),
             before,
         );
     }

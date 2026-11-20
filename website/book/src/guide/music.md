@@ -670,19 +670,19 @@ for that crate only, and `crate:""` for tracks in no crate yet.
 ### The Sidelist
 
 The **Sidelist** tab of the side panel holds a list beside the track
-list, so you can build it while you browse anywhere else. It starts as a
-scratch pad, kept until you clear it (**Clear** by its title), even after
-you quit. Drag tracks
-into it, or pick tracks and press <kbd>S</kbd>; drag its rows to change
-their order, and Delete takes the picked ones out.
+list, so you can build it while you browse anywhere else. It starts as
+your **working list**, kept until you clear it (**Clear** by its title),
+even after you quit. Drag tracks into it, or pick tracks and press
+<kbd>S</kbd>; drag its rows to change their order, and Delete takes the
+picked ones out.
 
-To work on one of your playlists there instead, drag it from
-the tree onto the Sidelist tab, or right-click it and choose **Show in
-Sidelist**. The button by the Sidelist's title names the list it shows
-and switches to another, or back to the scratch pad. What you drop,
-reorder or take out there changes that list straight away. **Save
-scratch pad as playlist** at the bottom of that menu keeps the scratch
-pad as a playlist at the top of Playlists and starts a new, empty one.
+To work on one of your playlists there instead, drag it from the tree onto
+the Sidelist tab, or right-click it and choose **Show in Sidelist**. The
+button by the Sidelist's title names the list it shows and switches to
+another playlist, or back to the working list. What you drop, reorder or
+take out there changes that playlist straight away. **Save Working List as
+Playlist** at the bottom of that menu keeps the working list as a playlist
+at the top of Playlists and starts a new, empty one.
 
 ### History
 
