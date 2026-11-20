@@ -393,14 +393,16 @@ right-click it, or use **Settings › Mixer**.
 
 ## Master, phones and mic
 
-The **MASTER** button in the top bar opens the output levels: **Master**,
-**Phones**, **Booth**, and **Cue / Mix**, which blends cue and main in the
-headphones. Its **Ableton Link** switch is described in
-[Ableton Link](link.md). **Audio Settings…** opens the
+The large knob at the right of the top bar is the master level, with the
+left and right meters beside it and the clock. Right-click the knob, or
+click the clock, to open the output levels: **Master**, **Phones**,
+**Booth**, and **Cue / Mix**, which blends cue and main in the headphones.
+**Room EQ** shows its preset while one is on, and **Setup** opens it. The
+**Link** switch is described in [Ableton Link](link.md). **Audio Settings…** opens the
 outputs in Settings. Levels are kept between runs.
 
-The arrow on the **MIC** button opens the microphone, with **ON**, a level
-and one **MIC FX** slot of its own, which the decks' effects never touch.
+Click **Mic** to turn the microphone on. Right-click it to open the
+microphone panel, with **ON**, a level and one **MIC FX** slot of its own, which the decks' effects never touch.
 Auxiliary inputs play on a deck from the **Jam** source. Choose
 the inputs in **Settings › Audio**: **+** under the inputs adds a second
 and third auxiliary input, and each auxiliary input takes a pair of

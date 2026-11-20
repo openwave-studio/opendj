@@ -620,11 +620,14 @@ component DeckCover inherits TouchArea {
         y: inset;
         width: size;
         height: size;
+        // A round button like the power button: dark, ringed, lilac on hover.
         border-radius: size / 2;
-        border-width: 1px;
-        border-color: eta.has-hover ? Theme.accent : #ffffff40;
-        background: eta.has-hover ? Theme.accent : #000000b0;
-        EjectMark { width: size * 0.55; height: size * 0.55; fill: eta.has-hover ? Theme.on-selection : #ffffff; }
+        border-width: 1.5px;
+        border-color: eta.has-hover ? Theme.accent : Theme.n-48484c;
+        background: eta.pressed ? Theme.control-pressed : eta.has-hover ? Theme.pill-hover : Theme.pill;
+        drop-shadow-blur: 6px;
+        drop-shadow-color: Theme.s-000000a0;
+        EjectMark { width: size * 0.5; height: size * 0.5; fill: eta.has-hover ? Theme.lilac-text : Theme.n-a8a8ad; }
         eta := TouchArea {
             mouse-cursor: pointer;
             changed has-hover => {
@@ -650,7 +653,7 @@ component DeckCover inherits TouchArea {
     }
 }
 
-// A bare + or − beside the key: no button, the sign lights on hover.
+// The key as a stepper pill, with the master badge under it.
 component KeyBox inherits VerticalLayout {
     in property <string> group;
     in property <DeckInfo> info;
@@ -6013,25 +6016,26 @@ component TitleButton inherits Rectangle {
     // A hover tip's title, right-aligned under the button's right edge.
     in property <string> tip;
     callback clicked();
-    height: 18px;
-    min-width: 22px;
+    // An icon alone (⏏) is a small round button, as the power button.
+    height: icon != "" ? 20px : 18px;
+    min-width: icon != "" ? 20px : 22px;
     horizontal-stretch: 0;
-    border-radius: 4px;
-    border-width: 1px;
-    border-color: Theme.border;
-    background: lit ? Theme.accent : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.panel-raised : Theme.control;
+    border-radius: icon != "" ? 10px : 6px;
+    border-width: icon != "" ? 1.5px : 1px;
+    border-color: lit ? Theme.pill-on-border : ta.has-hover ? Theme.accent : icon != "" ? Theme.n-48484c : Theme.n-2c2c31;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
     HorizontalLayout {
-        padding-left: 6px;
-        padding-right: 6px;
+        padding-left: icon != "" ? 0px : 6px;
+        padding-right: icon != "" ? 0px : 6px;
         alignment: center;
-        if icon == "": Text { text: text; color: lit ? Theme.on-selection : Theme.text; font-size: text == "+" ? 13px : 9px; font-weight: 700; vertical-alignment: center; }
+        if icon == "": Text { text: text; color: lit ? Theme.lilac-text : Theme.text; font-size: text == "+" ? 13px : 9px; font-weight: 700; vertical-alignment: center; }
         if icon != "": Path {
-            width: 12px;
-            height: 12px;
-            y: 3px;
+            width: 11px;
+            height: 11px;
+            y: (parent.height - self.height) / 2;
             viewbox-width: 24;
             viewbox-height: 24;
-            stroke: Theme.text;
+            stroke: ta.has-hover ? Theme.lilac-text : Theme.n-a8a8ad;
             stroke-width: 2.4px;
             fill: transparent;
             commands: icon;

@@ -87,8 +87,8 @@ The menu at the top left of the window switches layouts:
   which mixes into it straight away; on an album these take the whole
   album in order, and on an artist **Show tracks** searches for them. The keys are **↵**, **⇧↵** and **⌘↵**; **Esc**
   clears the box and the list's search. There is no MASTER button (the
-  bar's volume is the master volume); **REC** shows only while recording
-  (start it from **File › Record Mix**), and there is no **MIC** button
+  bar's volume is the master volume); **Rec** shows only while recording
+  (start it from **File › Record Mix**), and there is no **Mic** button
   (switch to another layout to use the microphone).
   Underneath, decks 1 and 2 take turns and [Automix](automix.md) mixes from
   one to the other. **Play** switches Automix on, **Next** mixes into the next

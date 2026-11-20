@@ -20,7 +20,7 @@ If the gear plays a little early or late against the music, move its
 
 ## Turn it on
 
-Open the **MASTER** button in the top bar and turn on **MIDI Clock**. CLOCK
+Right-click the master knob at the right of the top bar and turn on **MIDI Clock**. CLOCK
 shows on the MASTER button while it's on.
 
 The clock follows the master deck, the same deck Link follows: the deck that's
@@ -46,7 +46,7 @@ The decks can follow the gear instead of leading it.
 
 1. In **Settings › Controllers › MIDI Clock**, pick the gear's MIDI output as
    the **Clock input**.
-2. In the **MASTER** panel, set **SYNC follows** to **Clock**. The tempo
+2. In the Master panel, set **SYNC follows** to **Clock**. The tempo
    coming in shows under it.
 3. Turn on **SYNC** on the decks that should follow.
 
