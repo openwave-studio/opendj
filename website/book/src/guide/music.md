@@ -645,7 +645,7 @@ tracks in it. **Show in playlist** lists the crates and playlists a track
 is in and opens the one you pick.
 
 Hold <kbd>⌥</kbd> (Alt on Windows and Linux) as you drop tracks dragged out
-of the open list or the Sidelist to **move** them: they go into the list
+of the open list, the Shortlist or the Playlist tab to **move** them: they go into the list
 you drop them on and leave the one they came from. The row you hover says
 **Add 3** or **Move 3**. A playlist leaves out tracks it already has; the
 note that says so has **Add them again** to add them anyway.
@@ -667,22 +667,27 @@ A track can be in as many crates as you like, and the **Crates** column
 `crate:yoga` for tracks in a crate with "yoga" in its name, `crate:=yoga`
 for that crate only, and `crate:""` for tracks in no crate yet.
 
-### The Sidelist
+### Shortlist and Playlist tabs
 
-The **Sidelist** tab of the side panel holds a list beside the track
-list, so you can build it while you browse anywhere else. It starts as
-your **Shortlist**, kept until you clear it (**Clear** by its title),
-even after you quit. Drag tracks into it, or pick tracks and press
-<kbd>S</kbd>; drag its rows to change their order, and Delete takes the
-picked ones out.
+Two tabs of the side panel hold a list beside the track list, so you can
+build it while you browse anywhere else.
 
-To work on one of your playlists there instead, drag it from the tree onto
-the Sidelist tab, or right-click it and choose **Show in Sidelist**. The
-button by the Sidelist's title names the list it shows and switches to
-another playlist, or back to the Shortlist. What you drop, reorder or
-take out there changes that playlist straight away. **Save Shortlist as
-Playlist** at the bottom of that menu keeps the Shortlist as a playlist
-at the top of Playlists and starts a new, empty one.
+The **Shortlist** is a scratch list, kept until you clear it, even after
+you quit. Drag tracks into it, or pick tracks and press <kbd>S</kbd>; drag
+its rows to change their order, and Delete takes the picked ones out.
+**Clear** by its title empties it, and **Save** keeps it as a playlist at
+the top of Playlists, opens that in the Playlist tab and starts a new,
+empty Shortlist.
+
+The **Playlist** tab works on one of your saved playlists. Pick it with
+the button at the top, drag it from the tree onto the Playlist tab, or
+right-click it and choose **Show in Playlist Tab**. What you drop,
+reorder or take out there changes that playlist straight away. Taking out
+every track asks first; anything else has **Undo** and ⌘Z (Ctrl+Z).
+
+Drop tracks on the **Automix**, **Shortlist** or **Playlist** tab title to
+add them to the end of its list. Hold them over the title for a moment and
+the tab opens, so you can drop them at a spot in the list instead.
 
 ### History
 

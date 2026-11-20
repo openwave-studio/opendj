@@ -1,4 +1,4 @@
-// Browser: folder tree, track list and a side panel (Automix / Sidelist).
+// Browser: folder tree, track list and a side panel (Automix, Shortlist, Playlist and more).
 // Plain rows, lilac selection, rounded sidebar items.
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
@@ -314,20 +314,25 @@ export struct Choice {
     value: int,
 }
 
-// The Sidelist: the scratch pad, or one of the DJ's crates or playlists it
-// shows. `choices` are the picker's lines (0 the scratch pad, the lists
-// from 1, -2 to save the scratch pad as a playlist), `current` the one
-// shown and `name` its name.
+// The Shortlist tab (a scratch list) and the Playlist tab (one of the DJ's
+// playlists, picked to work on). `choices` are the Playlist tab's picker
+// lines (the lists from 1), `current` the one shown and `name` its name;
+// `shows-list` whether the Playlist tab has a playlist.
 export global SidelistUi {
     in property <[Choice]> choices;
     in property <int> current;
     in property <string> name;
     in property <bool> shows-list;
     callback pick(value: int);
-    // Empties the scratch pad.
+    // Empties the Shortlist.
     callback clear();
-    // A list dragged from the tree: whether it can show in the Sidelist,
-    // and showing it there.
+    // Makes the Shortlist a playlist and shows it in the Playlist tab.
+    callback save();
+    // Tracks dropped on side tab `tab`'s title (Automix, Shortlist or
+    // Playlist): added to the end, or with ⌥ (`moving`) moved there.
+    callback drop-on-tab(tab: int, data: data-transfer, moving: bool);
+    // A list dragged from the tree: whether it can show in the Playlist
+    // tab, and showing it there.
     pure callback accepts-list(data: data-transfer) -> bool;
     callback show-list(data: data-transfer);
 }
@@ -429,7 +434,7 @@ export global LibraryEdit {
     // and moving it to the `target`th of them.
     pure callback move-targets(index: int) -> [MoveTarget];
     callback move-list-to(index: int, target: int);
-    // Shows the list at tree row `index` in the Sidelist.
+    // Shows the list at tree row `index` in the Playlist tab.
     callback show-in-sidelist(index: int);
     // Shift-click (`range`) or ⌘-click (Ctrl-click) on tree row `index`:
     // picks the lists from the current one to it, or adds or drops it.
@@ -3340,7 +3345,7 @@ component FolderTree inherits Rectangle {
             }
             if source == 0 && menu-locked: MenuSeparator {}
             if source == 0 && tab == 0 && menu-kind == 2: MenuLine {
-                text: "Show in Sidelist";
+                text: "Show in Playlist Tab";
                 clicked => {
                     LibraryEdit.show-in-sidelist(menu-index);
                     folder-menu.close();
@@ -6624,10 +6629,11 @@ component MixChips inherits HorizontalLayout {
 component SidePanel inherits Rectangle {
     in property <[SideRow]> rows;
     in property <string> total;
-    // 0 Automix, 1 Sidelist, 2 Related, 3 Info (the selected track's
+    // 0 Automix, 1 Shortlist, 2 Related, 3 Info (the selected track's
     // details, see info.slint), 4 Cues (a deck's cues, see cues.slint),
     // 5 Checklist (what makes the deck's track ready, see checklist.slint),
-    // 6 Lyrics (the playing track's lyrics, see lyrics.slint).
+    // 6 Lyrics (the playing track's lyrics, see lyrics.slint), 7 Playlist
+    // (one of the DJ's playlists, to change it).
     in-out property <int> tab: 0;
     callback activate(row: int);
     // Takes out the rows `first` to `last`.
@@ -6693,6 +6699,15 @@ component SidePanel inherits Rectangle {
         removed-at = first-picked;
         remove(first-picked, last-picked);
     }
+    // Takes out the picked rows, asking first when that would empty a
+    // saved playlist.
+    function ask-remove() {
+        if tab == 7 && rows.length > 1 && first-picked == 0 && last-picked == rows.length - 1 {
+            empty-popup.show();
+        } else {
+            remove-picked();
+        }
+    }
     background: Theme.browser;
     width: 340px;
     // The tabs, as words along the top, the one shown underlined.
@@ -6739,13 +6754,33 @@ component SidePanel inherits Rectangle {
                     }
                 }
                 TourMark { id: i == 0 ? "ui,side_automix" : ""; }
-                // A playlist dropped on the Sidelist tab shows there.
-                if i == 1: DropArea {
-                    can-drop(e) => { SidelistUi.accepts-list(e.data) ? DragAction.copy : DragAction.none }
-                    dropped(e) => {
-                        SidelistUi.show-list(e.data);
-                        tab = 1;
-                        DragAction.copy
+                // Tracks dropped on Automix, Shortlist or Playlist go to the
+                // end of its list; held there a moment, the tab opens so
+                // they can go in at a spot. A playlist dropped on the
+                // Playlist tab shows there.
+                if i == 0 || i == 1 || i == 7: Rectangle {
+                    tab-drop := DropArea {
+                        can-drop(e) => {
+                            if i == 7 && SidelistUi.accepts-list(e.data) {
+                                return DragAction.copy;
+                            }
+                            (i != 7 || SidelistUi.shows-list) && TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
+                        }
+                        dropped(e) => {
+                            if i == 7 && SidelistUi.accepts-list(e.data) {
+                                SidelistUi.show-list(e.data);
+                                tab = 7;
+                                return DragAction.copy;
+                            }
+                            SidelistUi.drop-on-tab(i, e.data, TrackDrag.alt-held);
+                            TrackDrag.active = false;
+                            DragAction.copy
+                        }
+                    }
+                    Timer {
+                        interval: 700ms;
+                        running: tab-drop.has-drag && tab != i;
+                        triggered => { tab = i; }
                     }
                 }
             }
@@ -6910,7 +6945,7 @@ component SidePanel inherits Rectangle {
         y: tab-bar.height;
         width: parent.width;
         height: parent.height - tab-bar.height;
-        visible: tab < 3;
+        visible: tab < 3 || tab == 7;
         key-pressed(e) => {
             // ⌘A (Ctrl+A on Linux and Windows) picks every row, to drag or remove them all.
             if (e.text == "a" || e.text == "A") && e.modifiers.control && !e.modifiers.alt && !e.modifiers.shift {
@@ -6918,7 +6953,7 @@ component SidePanel inherits Rectangle {
                 return accept;
             }
             if selected >= 0 && selected < rows.length && (e.text == Key.Delete || e.text == Key.Backspace) {
-                remove-picked();
+                ask-remove();
                 return accept;
             }
             if e.text == Key.UpArrow && selected > 0 {
@@ -6941,20 +6976,28 @@ component SidePanel inherits Rectangle {
             HorizontalLayout {
                 height: 30px;
                 spacing: 8px;
-                Text { text: ["Automix", "Sidelist", "Related"][tab]; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
-                Text { text: total; color: Theme.label; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-                if tab == 1 && rows.length > 0 && !SidelistUi.shows-list: VerticalLayout {
-                    alignment: center;
-                    SmallButton {
-                        text: "Clear";
-                        clicked => { SidelistUi.clear(); }
-                    }
-                }
-                if tab == 1: VerticalLayout {
+                if tab != 7: Text { text: tab == 0 ? "Automix" : tab == 1 ? "Shortlist" : "Related"; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
+                // The Playlist tab: which playlist, as a picker.
+                if tab == 7: VerticalLayout {
                     alignment: center;
                     SmallButton {
                         text: SidelistUi.name + " ▾";
                         clicked => { sidelist-menu.show(); }
+                    }
+                }
+                Text { text: total; color: Theme.label; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                if tab == 1 && rows.length > 0: VerticalLayout {
+                    alignment: center;
+                    SmallButton {
+                        text: "Save";
+                        clicked => { SidelistUi.save(); }
+                    }
+                }
+                if tab == 1 && rows.length > 0: VerticalLayout {
+                    alignment: center;
+                    SmallButton {
+                        text: "Clear";
+                        clicked => { SidelistUi.clear(); }
                     }
                 }
                 if tab == 0: VerticalLayout {
@@ -7082,9 +7125,9 @@ component SidePanel inherits Rectangle {
             }
             if tab == 0 && KeepGoingUi.player && UpNextUi.now-loaded: Text { x: 8px; height: 20px; text: "UP NEXT"; color: Theme.label; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; vertical-alignment: center; }
             EdgeLine { left: 6px; right: 6px; }
-            // What the Sidelist shows: the scratch pad or a playlist.
+            // Which playlist the Playlist tab shows.
             sidelist-menu := PopupWindow {
-                x: root.width - self.width - 6px;
+                x: 6px;
                 y: 40px;
                 width: 240px;
                 height: min(420px, SidelistUi.choices.length * 26px + 12px);
@@ -7268,7 +7311,8 @@ component SidePanel inherits Rectangle {
                     x: 8px;
                     width: parent.width - 16px;
                     text: tab == 0 ? "Empty. Drag tracks here, or right-click a track and choose Add to Automix."
-                        : tab == 1 ? (SidelistUi.shows-list ? "Empty. Drag tracks here to add them to this list." : "Empty. Drag tracks here, or drag a playlist here to show it.")
+                        : tab == 1 ? "Empty. Drag tracks here or onto the Shortlist tab, or pick tracks and press S. Save keeps it as a playlist."
+                        : tab == 7 ? (SidelistUi.shows-list ? "Empty. Drag tracks here or onto the Playlist tab to add them to this playlist." : "Pick a playlist with the button above, or drag one here from the sidebar, to change it here.")
                         : total == "" ? "Select a track in the browser to see the tracks linked to it and those played next to it."
                         : "Nothing linked yet. Drag tracks here to link them to this one; tracks played next to it in your history show up here too.";
                     color: Theme.text-dim;
@@ -7279,13 +7323,13 @@ component SidePanel inherits Rectangle {
                 drop := DropArea {
                     can-drop(e) => {
                         drag-y = e.position.y;
-                        if tab == 1 && SidelistUi.accepts-list(e.data) {
+                        if tab == 7 && SidelistUi.accepts-list(e.data) {
                             return DragAction.copy;
                         }
-                        TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
+                        (tab != 7 || SidelistUi.shows-list) && TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
                     }
                     dropped(e) => {
-                        if tab == 1 && SidelistUi.accepts-list(e.data) {
+                        if tab == 7 && SidelistUi.accepts-list(e.data) {
                             SidelistUi.show-list(e.data);
                             return DragAction.copy;
                         }
@@ -7334,8 +7378,63 @@ component SidePanel inherits Rectangle {
                 text: tab == 2 ? "Unlink" : "Remove";
                 text-color: Theme.c-ff6961;
                 clicked => {
-                    remove-picked();
                     row-menu.close();
+                    ask-remove();
+                }
+            }
+        }
+    }
+    // Before taking every track out of a saved playlist.
+    empty-popup := PopupWindow {
+        x: 8px;
+        y: 60px;
+        width: root.width - 16px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.n-2a2a2d;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 20px;
+            drop-shadow-color: #00000099;
+        }
+        VerticalLayout {
+            padding: 16px;
+            spacing: 10px;
+            Text {
+                text: "Remove all " + rows.length + " tracks from \"" + SidelistUi.name + "\"?";
+                color: Theme.text;
+                font-size: 15px;
+                font-weight: 700;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "The playlist stays, empty. The tracks stay in your collection.";
+                color: Theme.text-dim;
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: era.has-hover ? Theme.c-ff6b5e.darker(0.15) : Theme.c-ff6b5e;
+                Text { text: "Remove All"; color: white; font-size: 14px; font-weight: 600; }
+                era := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        empty-popup.close();
+                        remove-picked();
+                    }
+                }
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: eca.has-hover ? Theme.n-3a3a3d : Theme.control;
+                Text { text: "Cancel"; color: Theme.text; font-size: 14px; }
+                eca := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { empty-popup.close(); }
                 }
             }
         }

@@ -590,7 +590,7 @@ pub struct Browser {
     /// The decks the layout shows: 4 in 4-Deck, else 2. "Load on a free
     /// deck" picks among these.
     decks_shown: usize,
-    side: [Vec<usize>; 2],
+    side: [Vec<usize>; 8],
     /// The DJ's lists picked with shift- or ⌘-click in the tree, to move
     /// together.
     list_picks: Vec<i64>,
@@ -1327,7 +1327,7 @@ impl Browser {
             loaded: [None; NUM_DECKS],
             prep_pending: None,
             decks_shown: 2,
-            side: [Vec::new(), Vec::new()],
+            side: Default::default(),
             list_picks: Vec::new(),
             automix_before_order: None,
             shown_side_tab: 0,
@@ -1680,11 +1680,9 @@ impl Browser {
                 // Rows dragged within their own list move there.
                 if let Some(Dragged::Side(from, first, last)) = dragged(&data) {
                     if from == tab {
-                        if tab != LINKED_TAB {
+                        if tab != LINKED_TAB && (tab == 0 || b.side_list(tab).is_some()) {
                             move_block(&mut b.side[tab], first, last, at);
-                            if tab == sidelist::SIDELIST_TAB {
-                                b.sidelist_changed();
-                            }
+                            b.side_changed(tab);
                             b.refresh_side();
                         }
                         return;
@@ -1700,16 +1698,13 @@ impl Browser {
                     }
                     return;
                 }
-                if tab == sidelist::SIDELIST_TAB {
-                    b.drop_tracks_on_sidelist(&data, at, moving);
+                if sidelist::is_list_tab(tab) {
+                    b.drop_tracks_on_sidelist(tab, &data, at, moving);
                     return;
                 }
                 let list = &mut b.side[tab];
                 let at = at.min(list.len());
                 list.splice(at..at, ids);
-                if tab == sidelist::SIDELIST_TAB {
-                    b.sidelist_changed();
-                }
                 b.refresh_side();
             }))
         });
@@ -1743,12 +1738,11 @@ impl Browser {
                     for row in (first..=last).rev() {
                         b.unlink_row(row);
                     }
+                } else if sidelist::is_list_tab(tab) {
+                    b.remove_from_sidelist(tab, first, last);
                 } else if first < b.side[tab].len() {
                     let end = (last + 1).min(b.side[tab].len());
                     b.side[tab].drain(first..end);
-                    if tab == sidelist::SIDELIST_TAB {
-                        b.sidelist_changed();
-                    }
                     b.refresh_side();
                 }
             }))
@@ -2098,7 +2092,7 @@ impl Browser {
         edit.on_show_in_sidelist(move |i| {
             w(&|b| {
                 if let Some(list) = b.own_list_at(i.max(0) as usize) {
-                    b.show_in_sidelist(Some(list));
+                    b.show_in_sidelist(list);
                 }
             })
         });
@@ -2107,6 +2101,12 @@ impl Browser {
         sidelist.on_pick(move |v| w(&|b| b.pick_sidelist(v)));
         let w = with.clone();
         sidelist.on_clear(move || w(&|b| b.clear_scratch()));
+        let w = with.clone();
+        sidelist.on_save(move || w(&|b| b.save_scratch_as_playlist()));
+        let w = with.clone();
+        sidelist.on_drop_on_tab(move |tab, data, moving| {
+            w(&|b| b.drop_tracks_on_side_tab(tab.max(0) as usize, &data, moving))
+        });
         let w = weak.clone();
         sidelist.on_accepts_list(move |data| {
             let Some(list) = dragged_list(&data) else {
@@ -2125,7 +2125,7 @@ impl Browser {
             if let Some(list) = dragged_list(&data) {
                 w(&|b| {
                     if b.menu_lists.iter().any(|l| l.id == list && !l.is_crate) {
-                        b.show_in_sidelist(Some(list));
+                        b.show_in_sidelist(list);
                     }
                 })
             }
@@ -4784,11 +4784,11 @@ impl Browser {
     }
 
     fn side_tab(&self) -> usize {
-        self.app
-            .upgrade()
-            .map(|a| a.get_side_tab())
-            .unwrap_or(0)
-            .clamp(0, info::INFO_TAB as i32) as usize
+        let tab = self.app.upgrade().map(|a| a.get_side_tab()).unwrap_or(0);
+        if tab == sidelist::PLAYLIST_TAB as i32 {
+            return sidelist::PLAYLIST_TAB;
+        }
+        tab.clamp(0, info::INFO_TAB as i32) as usize
     }
 
     /// Loads onto a deck that is not playing, preferring deck A.
