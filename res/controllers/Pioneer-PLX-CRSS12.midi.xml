@@ -1,0 +1,2497 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>Pioneer DJ PLX-CRSS12</name>
+        <author>openDJ</author>
+        <description>openDJ mapping for the Pioneer DJ PLX-CRSS12's performance pads and pad modes. The platter isn't mapped: it needs the turntable's own protocol. Beta: written from its MIDI messages, not yet tried on the hardware.</description>
+    </info>
+    <controller id="PLX-CRSS12">
+        <scriptfiles>
+            <file functionprefix="PioneerDJM" filename="Pioneer-DJM-script.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <description>HOT CUE (DECK1) - press - pad mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x90</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE (DECK2) - press - pad mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x91</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE (DECK3) - press - pad mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x92</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE (DECK4) - press - pad mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x93</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>STEMS (DECK1) - press - pad mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x90</status>
+                <midino>0x38</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>STEMS (DECK2) - press - pad mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x91</status>
+                <midino>0x38</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>STEMS (DECK3) - press - pad mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x92</status>
+                <midino>0x38</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>STEMS (DECK4) - press - pad mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x93</status>
+                <midino>0x38</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD FX (DECK1) - press - pad mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x90</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD FX (DECK2) - press - pad mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x91</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD FX (DECK3) - press - pad mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x92</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD FX (DECK4) - press - pad mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x93</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLER (DECK1) - press - pad mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLER (DECK2) - press - pad mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x91</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLER (DECK3) - press - pad mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x92</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLER (DECK4) - press - pad mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x93</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLE SCRATCH (DECK1) - press - pad mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x90</status>
+                <midino>0x39</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLE SCRATCH (DECK2) - press - pad mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x91</status>
+                <midino>0x39</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLE SCRATCH (DECK3) - press - pad mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x92</status>
+                <midino>0x39</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SAMPLE SCRATCH (DECK4) - press - pad mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x93</status>
+                <midino>0x39</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP (DECK1) - press - pad mode</description>
+                <group>[Channel1]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x90</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP (DECK2) - press - pad mode</description>
+                <group>[Channel2]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x91</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP (DECK3) - press - pad mode</description>
+                <group>[Channel3]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x92</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>BEAT JUMP (DECK4) - press - pad mode</description>
+                <group>[Channel4]</group>
+                <key>PioneerDJM.padMode</key>
+                <status>0x93</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE (DECK1) - press - hot cue 1</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE (DECK2) - press - hot cue 1</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE (DECK3) - press - hot cue 1</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x99</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE (DECK4) - press - hot cue 1</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x9A</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE +SHIFT (DECK1) - press - clear hot cue 1</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x97</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE +SHIFT (DECK2) - press - clear hot cue 1</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x98</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE +SHIFT (DECK3) - press - clear hot cue 1</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x99</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 HOT CUE +SHIFT (DECK4) - press - clear hot cue 1</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x9A</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER (DECK1) - press - play sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x10</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER (DECK2) - press - play sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x10</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER (DECK3) - press - play sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x10</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER (DECK4) - press - play sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x10</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER +SHIFT (DECK1) - press - stop sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER +SHIFT (DECK2) - press - stop sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER +SHIFT (DECK3) - press - stop sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 SAMPLER +SHIFT (DECK4) - press - stop sampler 1</description>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x18</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 ROLL (DECK1) - press - roll 0.0625 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_0.0625_activate</key>
+                <status>0x97</status>
+                <midino>0x40</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 ROLL (DECK2) - press - roll 0.0625 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_0.0625_activate</key>
+                <status>0x98</status>
+                <midino>0x40</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 ROLL (DECK3) - press - roll 0.0625 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_0.0625_activate</key>
+                <status>0x99</status>
+                <midino>0x40</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 ROLL (DECK4) - press - roll 0.0625 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_0.0625_activate</key>
+                <status>0x9A</status>
+                <midino>0x40</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 BEAT JUMP (DECK1) - press - jump 1 beat back</description>
+                <group>[Channel1]</group>
+                <key>beatjump_1_backward</key>
+                <status>0x97</status>
+                <midino>0x50</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 BEAT JUMP (DECK2) - press - jump 1 beat back</description>
+                <group>[Channel2]</group>
+                <key>beatjump_1_backward</key>
+                <status>0x98</status>
+                <midino>0x50</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 BEAT JUMP (DECK3) - press - jump 1 beat back</description>
+                <group>[Channel3]</group>
+                <key>beatjump_1_backward</key>
+                <status>0x99</status>
+                <midino>0x50</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 BEAT JUMP (DECK4) - press - jump 1 beat back</description>
+                <group>[Channel4]</group>
+                <key>beatjump_1_backward</key>
+                <status>0x9A</status>
+                <midino>0x50</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE (DECK1) - press - hot cue 2</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE (DECK2) - press - hot cue 2</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x98</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE (DECK3) - press - hot cue 2</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x99</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE (DECK4) - press - hot cue 2</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x9A</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE +SHIFT (DECK1) - press - clear hot cue 2</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x97</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE +SHIFT (DECK2) - press - clear hot cue 2</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x98</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE +SHIFT (DECK3) - press - clear hot cue 2</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x99</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 HOT CUE +SHIFT (DECK4) - press - clear hot cue 2</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x9A</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER (DECK1) - press - play sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x11</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER (DECK2) - press - play sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x11</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER (DECK3) - press - play sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x11</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER (DECK4) - press - play sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x11</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER +SHIFT (DECK1) - press - stop sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER +SHIFT (DECK2) - press - stop sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER +SHIFT (DECK3) - press - stop sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 SAMPLER +SHIFT (DECK4) - press - stop sampler 2</description>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x19</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 ROLL (DECK1) - press - roll 0.125 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_0.125_activate</key>
+                <status>0x97</status>
+                <midino>0x41</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 ROLL (DECK2) - press - roll 0.125 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_0.125_activate</key>
+                <status>0x98</status>
+                <midino>0x41</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 ROLL (DECK3) - press - roll 0.125 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_0.125_activate</key>
+                <status>0x99</status>
+                <midino>0x41</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 ROLL (DECK4) - press - roll 0.125 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_0.125_activate</key>
+                <status>0x9A</status>
+                <midino>0x41</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 BEAT JUMP (DECK1) - press - jump 1 beat forward</description>
+                <group>[Channel1]</group>
+                <key>beatjump_1_forward</key>
+                <status>0x97</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 BEAT JUMP (DECK2) - press - jump 1 beat forward</description>
+                <group>[Channel2]</group>
+                <key>beatjump_1_forward</key>
+                <status>0x98</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 BEAT JUMP (DECK3) - press - jump 1 beat forward</description>
+                <group>[Channel3]</group>
+                <key>beatjump_1_forward</key>
+                <status>0x99</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 BEAT JUMP (DECK4) - press - jump 1 beat forward</description>
+                <group>[Channel4]</group>
+                <key>beatjump_1_forward</key>
+                <status>0x9A</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE (DECK1) - press - hot cue 3</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE (DECK2) - press - hot cue 3</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x98</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE (DECK3) - press - hot cue 3</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x99</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE (DECK4) - press - hot cue 3</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x9A</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE +SHIFT (DECK1) - press - clear hot cue 3</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x97</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE +SHIFT (DECK2) - press - clear hot cue 3</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x98</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE +SHIFT (DECK3) - press - clear hot cue 3</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x99</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 HOT CUE +SHIFT (DECK4) - press - clear hot cue 3</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x9A</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER (DECK1) - press - play sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x12</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER (DECK2) - press - play sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x12</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER (DECK3) - press - play sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x12</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER (DECK4) - press - play sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x12</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER +SHIFT (DECK1) - press - stop sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER +SHIFT (DECK2) - press - stop sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER +SHIFT (DECK3) - press - stop sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 SAMPLER +SHIFT (DECK4) - press - stop sampler 3</description>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 ROLL (DECK1) - press - roll 0.25 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_0.25_activate</key>
+                <status>0x97</status>
+                <midino>0x42</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 ROLL (DECK2) - press - roll 0.25 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_0.25_activate</key>
+                <status>0x98</status>
+                <midino>0x42</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 ROLL (DECK3) - press - roll 0.25 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_0.25_activate</key>
+                <status>0x99</status>
+                <midino>0x42</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 ROLL (DECK4) - press - roll 0.25 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_0.25_activate</key>
+                <status>0x9A</status>
+                <midino>0x42</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 BEAT JUMP (DECK1) - press - jump 2 beats back</description>
+                <group>[Channel1]</group>
+                <key>beatjump_2_backward</key>
+                <status>0x97</status>
+                <midino>0x52</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 BEAT JUMP (DECK2) - press - jump 2 beats back</description>
+                <group>[Channel2]</group>
+                <key>beatjump_2_backward</key>
+                <status>0x98</status>
+                <midino>0x52</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 BEAT JUMP (DECK3) - press - jump 2 beats back</description>
+                <group>[Channel3]</group>
+                <key>beatjump_2_backward</key>
+                <status>0x99</status>
+                <midino>0x52</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 BEAT JUMP (DECK4) - press - jump 2 beats back</description>
+                <group>[Channel4]</group>
+                <key>beatjump_2_backward</key>
+                <status>0x9A</status>
+                <midino>0x52</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE (DECK1) - press - hot cue 4</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE (DECK2) - press - hot cue 4</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE (DECK3) - press - hot cue 4</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x99</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE (DECK4) - press - hot cue 4</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x9A</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE +SHIFT (DECK1) - press - clear hot cue 4</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x97</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE +SHIFT (DECK2) - press - clear hot cue 4</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x98</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE +SHIFT (DECK3) - press - clear hot cue 4</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x99</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 HOT CUE +SHIFT (DECK4) - press - clear hot cue 4</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x9A</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER (DECK1) - press - play sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER (DECK2) - press - play sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER (DECK3) - press - play sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER (DECK4) - press - play sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x13</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER +SHIFT (DECK1) - press - stop sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER +SHIFT (DECK2) - press - stop sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER +SHIFT (DECK3) - press - stop sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 SAMPLER +SHIFT (DECK4) - press - stop sampler 4</description>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x1B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 ROLL (DECK1) - press - roll 0.5 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_0.5_activate</key>
+                <status>0x97</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 ROLL (DECK2) - press - roll 0.5 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_0.5_activate</key>
+                <status>0x98</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 ROLL (DECK3) - press - roll 0.5 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_0.5_activate</key>
+                <status>0x99</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 ROLL (DECK4) - press - roll 0.5 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_0.5_activate</key>
+                <status>0x9A</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 BEAT JUMP (DECK1) - press - jump 2 beats forward</description>
+                <group>[Channel1]</group>
+                <key>beatjump_2_forward</key>
+                <status>0x97</status>
+                <midino>0x53</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 BEAT JUMP (DECK2) - press - jump 2 beats forward</description>
+                <group>[Channel2]</group>
+                <key>beatjump_2_forward</key>
+                <status>0x98</status>
+                <midino>0x53</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 BEAT JUMP (DECK3) - press - jump 2 beats forward</description>
+                <group>[Channel3]</group>
+                <key>beatjump_2_forward</key>
+                <status>0x99</status>
+                <midino>0x53</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 BEAT JUMP (DECK4) - press - jump 2 beats forward</description>
+                <group>[Channel4]</group>
+                <key>beatjump_2_forward</key>
+                <status>0x9A</status>
+                <midino>0x53</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE (DECK1) - press - hot cue 5</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE (DECK2) - press - hot cue 5</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x98</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE (DECK3) - press - hot cue 5</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x99</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE (DECK4) - press - hot cue 5</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x9A</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE +SHIFT (DECK1) - press - clear hot cue 5</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x97</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE +SHIFT (DECK2) - press - clear hot cue 5</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x98</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE +SHIFT (DECK3) - press - clear hot cue 5</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x99</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 HOT CUE +SHIFT (DECK4) - press - clear hot cue 5</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x9A</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER (DECK1) - press - play sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER (DECK2) - press - play sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER (DECK3) - press - play sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER (DECK4) - press - play sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x14</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER +SHIFT (DECK1) - press - stop sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER +SHIFT (DECK2) - press - stop sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER +SHIFT (DECK3) - press - stop sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 SAMPLER +SHIFT (DECK4) - press - stop sampler 5</description>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 ROLL (DECK1) - press - roll 1 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_1_activate</key>
+                <status>0x97</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 ROLL (DECK2) - press - roll 1 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_1_activate</key>
+                <status>0x98</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 ROLL (DECK3) - press - roll 1 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_1_activate</key>
+                <status>0x99</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 ROLL (DECK4) - press - roll 1 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_1_activate</key>
+                <status>0x9A</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 BEAT JUMP (DECK1) - press - jump 4 beats back</description>
+                <group>[Channel1]</group>
+                <key>beatjump_4_backward</key>
+                <status>0x97</status>
+                <midino>0x54</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 BEAT JUMP (DECK2) - press - jump 4 beats back</description>
+                <group>[Channel2]</group>
+                <key>beatjump_4_backward</key>
+                <status>0x98</status>
+                <midino>0x54</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 BEAT JUMP (DECK3) - press - jump 4 beats back</description>
+                <group>[Channel3]</group>
+                <key>beatjump_4_backward</key>
+                <status>0x99</status>
+                <midino>0x54</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 BEAT JUMP (DECK4) - press - jump 4 beats back</description>
+                <group>[Channel4]</group>
+                <key>beatjump_4_backward</key>
+                <status>0x9A</status>
+                <midino>0x54</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE (DECK1) - press - hot cue 6</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE (DECK2) - press - hot cue 6</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE (DECK3) - press - hot cue 6</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x99</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE (DECK4) - press - hot cue 6</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x9A</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE +SHIFT (DECK1) - press - clear hot cue 6</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x97</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE +SHIFT (DECK2) - press - clear hot cue 6</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x98</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE +SHIFT (DECK3) - press - clear hot cue 6</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x99</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 HOT CUE +SHIFT (DECK4) - press - clear hot cue 6</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x9A</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER (DECK1) - press - play sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER (DECK2) - press - play sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER (DECK3) - press - play sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER (DECK4) - press - play sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x15</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER +SHIFT (DECK1) - press - stop sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x1D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER +SHIFT (DECK2) - press - stop sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x1D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER +SHIFT (DECK3) - press - stop sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x1D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 SAMPLER +SHIFT (DECK4) - press - stop sampler 6</description>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x1D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 ROLL (DECK1) - press - roll 2 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_2_activate</key>
+                <status>0x97</status>
+                <midino>0x45</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 ROLL (DECK2) - press - roll 2 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_2_activate</key>
+                <status>0x98</status>
+                <midino>0x45</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 ROLL (DECK3) - press - roll 2 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_2_activate</key>
+                <status>0x99</status>
+                <midino>0x45</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 ROLL (DECK4) - press - roll 2 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_2_activate</key>
+                <status>0x9A</status>
+                <midino>0x45</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 BEAT JUMP (DECK1) - press - jump 4 beats forward</description>
+                <group>[Channel1]</group>
+                <key>beatjump_4_forward</key>
+                <status>0x97</status>
+                <midino>0x55</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 BEAT JUMP (DECK2) - press - jump 4 beats forward</description>
+                <group>[Channel2]</group>
+                <key>beatjump_4_forward</key>
+                <status>0x98</status>
+                <midino>0x55</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 BEAT JUMP (DECK3) - press - jump 4 beats forward</description>
+                <group>[Channel3]</group>
+                <key>beatjump_4_forward</key>
+                <status>0x99</status>
+                <midino>0x55</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 BEAT JUMP (DECK4) - press - jump 4 beats forward</description>
+                <group>[Channel4]</group>
+                <key>beatjump_4_forward</key>
+                <status>0x9A</status>
+                <midino>0x55</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE (DECK1) - press - hot cue 7</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE (DECK2) - press - hot cue 7</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x98</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE (DECK3) - press - hot cue 7</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x99</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE (DECK4) - press - hot cue 7</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x9A</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE +SHIFT (DECK1) - press - clear hot cue 7</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x97</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE +SHIFT (DECK2) - press - clear hot cue 7</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x98</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE +SHIFT (DECK3) - press - clear hot cue 7</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x99</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 HOT CUE +SHIFT (DECK4) - press - clear hot cue 7</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x9A</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER (DECK1) - press - play sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER (DECK2) - press - play sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER (DECK3) - press - play sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER (DECK4) - press - play sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x16</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER +SHIFT (DECK1) - press - stop sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER +SHIFT (DECK2) - press - stop sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER +SHIFT (DECK3) - press - stop sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 SAMPLER +SHIFT (DECK4) - press - stop sampler 7</description>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 ROLL (DECK1) - press - roll 4 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_4_activate</key>
+                <status>0x97</status>
+                <midino>0x46</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 ROLL (DECK2) - press - roll 4 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_4_activate</key>
+                <status>0x98</status>
+                <midino>0x46</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 ROLL (DECK3) - press - roll 4 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_4_activate</key>
+                <status>0x99</status>
+                <midino>0x46</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 ROLL (DECK4) - press - roll 4 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_4_activate</key>
+                <status>0x9A</status>
+                <midino>0x46</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 BEAT JUMP (DECK1) - press - jump 8 beats back</description>
+                <group>[Channel1]</group>
+                <key>beatjump_8_backward</key>
+                <status>0x97</status>
+                <midino>0x56</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 BEAT JUMP (DECK2) - press - jump 8 beats back</description>
+                <group>[Channel2]</group>
+                <key>beatjump_8_backward</key>
+                <status>0x98</status>
+                <midino>0x56</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 BEAT JUMP (DECK3) - press - jump 8 beats back</description>
+                <group>[Channel3]</group>
+                <key>beatjump_8_backward</key>
+                <status>0x99</status>
+                <midino>0x56</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 BEAT JUMP (DECK4) - press - jump 8 beats back</description>
+                <group>[Channel4]</group>
+                <key>beatjump_8_backward</key>
+                <status>0x9A</status>
+                <midino>0x56</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE (DECK1) - press - hot cue 8</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE (DECK2) - press - hot cue 8</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x98</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE (DECK3) - press - hot cue 8</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x99</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE (DECK4) - press - hot cue 8</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x9A</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE +SHIFT (DECK1) - press - clear hot cue 8</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x97</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE +SHIFT (DECK2) - press - clear hot cue 8</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x98</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE +SHIFT (DECK3) - press - clear hot cue 8</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x99</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 HOT CUE +SHIFT (DECK4) - press - clear hot cue 8</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x9A</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER (DECK1) - press - play sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x97</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER (DECK2) - press - play sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x98</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER (DECK3) - press - play sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x99</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER (DECK4) - press - play sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandplay</key>
+                <status>0x9A</status>
+                <midino>0x17</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER +SHIFT (DECK1) - press - stop sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x97</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER +SHIFT (DECK2) - press - stop sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x98</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER +SHIFT (DECK3) - press - stop sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x99</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 SAMPLER +SHIFT (DECK4) - press - stop sampler 8</description>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandstop</key>
+                <status>0x9A</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 ROLL (DECK1) - press - roll 8 beats</description>
+                <group>[Channel1]</group>
+                <key>beatlooproll_8_activate</key>
+                <status>0x97</status>
+                <midino>0x47</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 ROLL (DECK2) - press - roll 8 beats</description>
+                <group>[Channel2]</group>
+                <key>beatlooproll_8_activate</key>
+                <status>0x98</status>
+                <midino>0x47</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 ROLL (DECK3) - press - roll 8 beats</description>
+                <group>[Channel3]</group>
+                <key>beatlooproll_8_activate</key>
+                <status>0x99</status>
+                <midino>0x47</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 ROLL (DECK4) - press - roll 8 beats</description>
+                <group>[Channel4]</group>
+                <key>beatlooproll_8_activate</key>
+                <status>0x9A</status>
+                <midino>0x47</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 BEAT JUMP (DECK1) - press - jump 8 beats forward</description>
+                <group>[Channel1]</group>
+                <key>beatjump_8_forward</key>
+                <status>0x97</status>
+                <midino>0x57</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 BEAT JUMP (DECK2) - press - jump 8 beats forward</description>
+                <group>[Channel2]</group>
+                <key>beatjump_8_forward</key>
+                <status>0x98</status>
+                <midino>0x57</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 BEAT JUMP (DECK3) - press - jump 8 beats forward</description>
+                <group>[Channel3]</group>
+                <key>beatjump_8_forward</key>
+                <status>0x99</status>
+                <midino>0x57</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 BEAT JUMP (DECK4) - press - jump 8 beats forward</description>
+                <group>[Channel4]</group>
+                <key>beatjump_8_forward</key>
+                <status>0x9A</status>
+                <midino>0x57</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <description>PAD 1 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_status</key>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 1 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_status</key>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 1 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_status</key>
+                <status>0x99</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 1 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_status</key>
+                <status>0x9A</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 2 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_status</key>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 2 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_status</key>
+                <status>0x98</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 2 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_status</key>
+                <status>0x99</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 2 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_status</key>
+                <status>0x9A</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 3 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_status</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 3 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_status</key>
+                <status>0x98</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 3 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_status</key>
+                <status>0x99</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 3 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_status</key>
+                <status>0x9A</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 4 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_status</key>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 4 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_status</key>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 4 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_status</key>
+                <status>0x99</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 4 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_status</key>
+                <status>0x9A</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 5 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_status</key>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 5 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_status</key>
+                <status>0x98</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 5 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_status</key>
+                <status>0x99</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 5 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_status</key>
+                <status>0x9A</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 6 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_status</key>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 6 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_status</key>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 6 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_status</key>
+                <status>0x99</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 6 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_status</key>
+                <status>0x9A</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 7 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_status</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 7 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_status</key>
+                <status>0x98</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 7 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_status</key>
+                <status>0x99</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 7 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_status</key>
+                <status>0x9A</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 8 HOT CUE (DECK1) light</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_status</key>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 8 HOT CUE (DECK2) light</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_status</key>
+                <status>0x98</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 8 HOT CUE (DECK3) light</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_status</key>
+                <status>0x99</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <description>PAD 8 HOT CUE (DECK4) light</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_status</key>
+                <status>0x9A</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+                <minimum>0.5</minimum>
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>

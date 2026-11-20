@@ -18,12 +18,16 @@
 
 use opendj_control::{Behavior, ControlHandle, ControlRegistry};
 
+use super::remix_pads::{PadControls, Pads};
+pub use super::remix_pads::{PAD_NAMES, ROLL_RATES};
 use super::scenes::{Look, DOWN, UP};
 pub use super::scenes::{SCENES_DOWN, SCENES_UP};
 use super::{fade_step, glide, link, Ctx, Instance, Kind, MANIFESTS, MAX_PARAMETERS, SILENCE};
 use crate::dsp::{Isolator, EQ_HIGH_HZ, EQ_LOW_HZ};
 use crate::inputs::{AUXILIARIES, MICROPHONE};
+use crate::kits::{Kit, KITS};
 use crate::NUM_DECKS;
+use std::sync::Arc;
 
 /// The Isolate effects, by `isolate_effect`. The knob turned right adds
 /// the effect to its band, more as it turns.
@@ -98,6 +102,8 @@ pub struct RemixControls {
     /// (an octave down to an octave up), 0..1.
     pub scene_time: ControlHandle,
     pub scene_color: ControlHandle,
+    /// The X-PAD.
+    pub pads: PadControls,
 }
 
 impl RemixControls {
@@ -173,6 +179,43 @@ impl RemixControls {
             ),
             scene_time: reg.create(g, "scene_time", 0.5, 0.0, 1.0, Behavior::Linear),
             scene_color: reg.create(g, "scene_color", 0.5, 0.0, 1.0, Behavior::Linear),
+            pads: PadControls {
+                pad: std::array::from_fn(|k| reg.toggle(g, &format!("pad{}", k + 1))),
+                pitch: std::array::from_fn(|k| {
+                    reg.create(
+                        g,
+                        &format!("pad{}_pitch", k + 1),
+                        0.0,
+                        -12.0,
+                        12.0,
+                        Behavior::CenteredOnDefault,
+                    )
+                }),
+                roll_rate: reg.create(
+                    g,
+                    "roll_rate",
+                    0.0,
+                    0.0,
+                    ROLL_RATES.len() as f64,
+                    Behavior::Free,
+                ),
+                roll_rate2: reg.create(
+                    g,
+                    "roll_rate2",
+                    0.0,
+                    0.0,
+                    ROLL_RATES.len() as f64,
+                    Behavior::Free,
+                ),
+                pad_bank: reg.create(
+                    g,
+                    "pad_bank",
+                    0.0,
+                    0.0,
+                    (KITS.len() - 1) as f64,
+                    Behavior::Free,
+                ),
+            },
         }
     }
 
@@ -188,8 +231,10 @@ impl RemixControls {
             &self.scene_down,
             &self.scene_time,
             &self.scene_color,
+            &self.pads.pad_bank,
         ]
         .into_iter()
+        .chain(&self.pads.pitch)
         .chain(&self.isolate)
         .chain(&self.lever)
         .chain(&self.lever_on)
@@ -376,6 +421,7 @@ pub struct RemixDeck {
     /// kept until the scene has rung out.
     scene: [Slot; 2],
     scene_on: Option<(bool, usize)>,
+    pads: Pads,
     step: f32,
     insert: bool,
 }
@@ -391,7 +437,8 @@ fn kill_gain(v: f64) -> f32 {
 }
 
 impl RemixDeck {
-    pub fn new(sample_rate: f64) -> Self {
+    /// A Remix deck whose pads play `kits`.
+    pub fn new(sample_rate: f64, kits: Arc<[Kit]>) -> Self {
         let sr = sample_rate as f32;
         Self {
             sample_rate: sr,
@@ -407,6 +454,7 @@ impl RemixDeck {
             }),
             scene: [Slot::new(sr), Slot::new(sr)],
             scene_on: None,
+            pads: Pads::new(sample_rate, kits),
             step: fade_step(sr),
             insert: false,
         }
@@ -492,6 +540,7 @@ impl RemixDeck {
             }
         }
         self.prepare_scene(c, ctx);
+        self.pads.prepare(&c.pads, beat_seconds, beat);
     }
 
     /// The scene for the next buffer: picked when SCENE leaves centre,
@@ -585,15 +634,14 @@ impl RemixDeck {
     }
 
     /// What the Remix deck plays for the source frame `x`: the processed
-    /// source in Insert mode, only the change in Send mode.
+    /// source in Insert mode, only the change in Send mode; the pads in
+    /// both.
     #[inline]
     pub fn play(&mut self, x: [f32; 2]) -> [f32; 2] {
         let (y, change) = self.process(x);
-        if self.insert {
-            y
-        } else {
-            change
-        }
+        let out = if self.insert { y } else { change };
+        let pad = self.pads.play();
+        [out[0] + pad[0], out[1] + pad[1]]
     }
 }
 
@@ -621,7 +669,7 @@ mod tests {
     fn setup() -> (std::sync::Arc<ControlRegistry>, RemixControls, RemixDeck) {
         let reg = ControlRegistry::new();
         let c = RemixControls::new(&reg, 1);
-        (reg, c, RemixDeck::new(SR))
+        (reg, c, RemixDeck::new(SR, crate::kits::build(SR).into()))
     }
 
     fn run(deck: &mut RemixDeck, c: &RemixControls, x: &[[f32; 2]]) -> Vec<[f32; 2]> {

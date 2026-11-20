@@ -1,0 +1,22 @@
+{
+ "file": "Pioneer-DJM-A9.midi.xml",
+ "width": 830,
+ "height": 838,
+ "panels": [[2, 18, 826, 816, 18]],
+ "controls": [
+  {"id": "ch1-input", "label": "INPUT SELECT 1", "kind": "switch", "round": false, "x": 86, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 35", "USB B|90 42", "DIGITAL|90 32", "LINE|90 33", "PHONO|90 34", "RETURN|90 43", "USB|90 4A", "BLUETOOTH|90 51"]},
+  {"id": "ch2-input", "label": "INPUT SELECT 2", "kind": "switch", "round": false, "x": 218, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 39", "USB B|90 44", "DIGITAL|90 36", "LINE|90 37", "PHONO|90 38", "RETURN|90 45", "USB|90 4B", "BLUETOOTH|90 52"]},
+  {"id": "ch3-input", "label": "INPUT SELECT 3", "kind": "switch", "round": false, "x": 350, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 3D", "USB B|90 46", "DIGITAL|90 3A", "LINE|90 3B", "PHONO|90 3C", "RETURN|90 47", "USB|90 4C", "BLUETOOTH|90 53"]},
+  {"id": "ch4-input", "label": "INPUT SELECT 4", "kind": "switch", "round": false, "x": 482, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 41", "USB B|90 48", "DIGITAL|90 3E", "LINE|90 3F", "PHONO|90 40", "RETURN|90 49", "USB|90 4D", "BLUETOOTH|90 54"]},
+  {"id": "ch1-fader", "label": "CH FADER 1", "kind": "fader", "round": false, "x": 104, "y": 491, "w": 24, "h": 196, "midi": ["B0 11"]},
+  {"id": "ch2-fader", "label": "CH FADER 2", "kind": "fader", "round": false, "x": 236, "y": 491, "w": 24, "h": 196, "midi": ["B0 12"]},
+  {"id": "ch3-fader", "label": "CH FADER 3", "kind": "fader", "round": false, "x": 368, "y": 491, "w": 24, "h": 196, "midi": ["Deck 3|B0 13"]},
+  {"id": "ch4-fader", "label": "CH FADER 4", "kind": "fader", "round": false, "x": 500, "y": 491, "w": 24, "h": 196, "midi": ["Deck 4|B0 14"]},
+  {"id": "ch1-assign", "label": "CROSSFADER ASSIGN 1", "kind": "switch", "round": false, "x": 92, "y": 712, "w": 48, "h": 18, "midi": ["B0 41"]},
+  {"id": "ch2-assign", "label": "CROSSFADER ASSIGN 2", "kind": "switch", "round": false, "x": 224, "y": 712, "w": 48, "h": 18, "midi": ["B0 42"]},
+  {"id": "ch3-assign", "label": "CROSSFADER ASSIGN 3", "kind": "switch", "round": false, "x": 356, "y": 712, "w": 48, "h": 18, "midi": ["B0 43"]},
+  {"id": "ch4-assign", "label": "CROSSFADER ASSIGN 4", "kind": "switch", "round": false, "x": 488, "y": 712, "w": 48, "h": 18, "midi": ["B0 44"]},
+  {"id": "crossfader", "label": "CROSSFADER", "kind": "fader", "round": false, "x": 206, "y": 769, "w": 215, "h": 22, "midi": ["B0 0B"]},
+  {"id": "usb", "label": "USB A/B", "kind": "switch", "round": false, "x": 716, "y": 30, "w": 90, "h": 26, "midi": ["USB A|90 4E", "USB B|90 4F"]}
+ ]
+}

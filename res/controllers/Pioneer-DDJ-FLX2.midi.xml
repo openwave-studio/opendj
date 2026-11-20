@@ -1,0 +1,2231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>Pioneer DDJ-FLX2</name>
+        <author>openDJ</author>
+        <description>openDJ's mapping for the Pioneer DDJ-FLX2, moved from openDJ's DDJ-FLX4 mapping to the DDJ-FLX2's messages from AlphaTheta's MIDI message list.</description>
+        <manual>pioneer_ddj_FLX4</manual>
+        <forums>https://mixxx.discourse.group/t/pioneer-ddj-flx4</forums>
+    </info>
+    <controller id="DDJ-FLX2">
+        <scriptfiles>
+            <file functionprefix="PioneerDDJFLX4" filename="Pioneer-DDJ-FLX4-script.js"/>
+            <file functionprefix="PioneerDDJFLX2" filename="Pioneer-DDJ-FLX2-script.js"/>
+        </scriptfiles>
+        <controls>
+            <!--
+                BROWSER Section START
+            -->
+
+            <!-- BROWSER Section END -->
+
+            <!--
+            DECK Section START
+            -->
+            <control>
+                <description>Shift (DECK1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.shiftPressed</key>
+                <status>0x90</status>
+                <midino>0x3F</midino>
+                <options>
+                  <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>Shift (DECK2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.shiftPressed</key>
+                <status>0x91</status>
+                <midino>0x3F</midino>
+                <options>
+                  <Script-Binding/>
+                </options>
+            </control>
+
+            <control>
+                <description>PLAY/PAUSE (DECK1) - press - Play/Pause</description>
+                <group>[Channel1]</group>
+                <key>play</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE +SHIFT (DECK1) - press - Reverse playback in Slip Mode while held (Censor)</description>
+                <group>[Channel1]</group>
+                <key>reverseroll</key>
+                <status>0x90</status>
+                <midino>0x47</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE (DECK2) - press - Play/Pause</description>
+                <group>[Channel2]</group>
+                <key>play</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE +SHIFT (DECK2) - press - Reverse playback in Slip Mode while held (Censor)</description>
+                <group>[Channel2]</group>
+                <key>reverseroll</key>
+                <status>0x91</status>
+                <midino>0x47</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+
+            <control>
+                <description>CUE (DECK1) - press - Set/Call Cue, Back Cue</description>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>CUE +SHIFT (DECK1) - press - Jump to track start</description>
+                <group>[Channel1]</group>
+                <key>start_stop</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>CUE (DECK2) - press - Set/Call Cue, Back Cue</description>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>CUE +SHIFT (DECK2) - press - Jump to track start</description>
+                <group>[Channel2]</group>
+                <key>start_stop</key>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+
+            <control>
+                <description>JOG DIAL PLATTER Vinyl mode On (DECK1) - rotate - Scratch</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER Vinyl mode Off (DECK1) - rotate - Pitch bend</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x23</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER +SHIFT (DECK1) - rotate - Search (Fast Pitch bend)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER (DECK1) - touch - enable (on touch) / disable (on release) Scratching/Pitch
+                    bend
+                </description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER +SHIFT (DECK1) - touch - enable (on touch) / disable (on release) highspeed
+                    Pitch bend
+                </description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x67</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL SIDE (DECK1) - rotate - Pitch bend</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+
+            <control>
+                <description>JOG DIAL PLATTER Vinyl mode On (DECK2) - rotate - Scratch</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER Vinyl mode Off (DECK2) - rotate - Pitch bend</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x23</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER +SHIFT (DECK2) - rotate - Search (Fast Pitch bend)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER (DECK2) - touch - enable (on touch) / disable (on release) Scratching/Pitch
+                    bend
+                </description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL PLATTER +SHIFT (DECK2) - touch - enable (on touch) / disable (on release) highspeed
+                    Pitch bend
+                </description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x67</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>JOG DIAL SIDE (DECK2) - rotate - Pitch bend</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+
+            <control>
+                <description>TEMPO (DECK1) - fader - Tempo control LSB</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.tempoSliderLSB</key>
+                <status>0xB0</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK1) - fader - Tempo control MSB</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.tempoSliderMSB</key>
+                <status>0xB0</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK2) - fader - Tempo control LSB</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.tempoSliderLSB</key>
+                <status>0xB1</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>TEMPO (DECK2) - fader - Tempo control MSB</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.tempoSliderMSB</key>
+                <status>0xB1</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+
+            <control>
+                <description>BEAT SYNC (DECK1) - press - Beat Sync to Master deck</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.syncPressed</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>BEAT SYNC LONG PRESS (DECK1) - press - Set as Master deck</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.syncLongPressed</key>
+                <status>0x90</status>
+                <midino>0x5C</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+
+            <control>
+                <description>BEAT SYNC (DECK2) - press - Beat Sync to Master deck</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.syncPressed</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>BEAT SYNC LONG PRESS (DECK2) - press - Set as Master deck</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.syncLongPressed</key>
+                <status>0x91</status>
+                <midino>0x5C</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+
+            <!-- DECK Section END -->
+
+            <!-- MIXER Section START -->
+            <control>
+                <description>CROSSFADER - slider</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB6</status>
+                <midino>0x1F</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>CROSSFADER - slider</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB6</status>
+                <midino>0x3F</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+
+            <control>
+                <description>CHANNELFADER - slider</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB0</status>
+                <midino>0x33</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>CHANNELFADER - slider</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB0</status>
+                <midino>0x13</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>CHANNELFADER - slider</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB1</status>
+                <midino>0x33</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>CHANNELFADER - slider</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB1</status>
+                <midino>0x13</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+
+            <control>
+                <description>EQ HI - rotate</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB0</status>
+                <midino>0x27</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ MID - rotate</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB0</status>
+                <midino>0x2B</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW - rotate</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB0</status>
+                <midino>0x2F</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ HI - rotate</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB0</status>
+                <midino>0x07</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ MID - rotate</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB0</status>
+                <midino>0x0B</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW - rotate</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB0</status>
+                <midino>0x0F</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+
+            <control>
+                <description>EQ HI - rotate</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB1</status>
+                <midino>0x27</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ MID - rotate</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB1</status>
+                <midino>0x2B</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW - rotate</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB1</status>
+                <midino>0x2F</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ HI - rotate</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB1</status>
+                <midino>0x07</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ MID - rotate</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB1</status>
+                <midino>0x0B</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>EQ LOW - rotate</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB1</status>
+                <midino>0x0F</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+
+            <control>
+                <description>CUE Channel - press - toggle Headphone Cue</description>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <status>0x90</status>
+                <midino>0x54</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>CUE Channel - press - toggle Headphone Cue</description>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <status>0x91</status>
+                <midino>0x54</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+
+            <!-- openDJ: MASTER LEVEL and HEADPHONES LEVEL, on the numbers Pioneer's
+                 DDJ-400 and DDJ-SB3 use for them, so the knobs on screen follow. -->
+            <control>
+                <description>MASTER LEVEL - rotate - Main gain</description>
+                <group>[Master]</group>
+                <key>gain</key>
+                <status>0xB6</status>
+                <midino>0x08</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>MASTER LEVEL - rotate - Main gain</description>
+                <group>[Master]</group>
+                <key>gain</key>
+                <status>0xB6</status>
+                <midino>0x28</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES LEVEL - rotate - Headphone gain</description>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <status>0xB6</status>
+                <midino>0x0D</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>HEADPHONES LEVEL - rotate - Headphone gain</description>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <status>0xB6</status>
+                <midino>0x2D</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+
+            <!-- MIXER Section END -->
+
+            <!-- EFFECT Section START -->
+            <control>
+                <description>FILTER CH1 - rotate - Filter Effect Knob</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <status>0xB6</status>
+                <midino>0x17</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>FILTER CH1 - rotate - Filter Effect Knob</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <status>0xB6</status>
+                <midino>0x37</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <description>FILTER CH2 - rotate - Filter Effect Knob</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <status>0xB6</status>
+                <midino>0x18</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <description>FILTER CH2 - rotate - Filter Effect Knob</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <status>0xB6</status>
+                <midino>0x38</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+
+            <!-- BEAT FX SECTION START -->
+
+            <!-- Beat Fx channel selector -->
+
+            <!-- BEAT FX SECTION END-->
+            <!-- EFFECT Section END -->
+
+            <!-- PAD MODE SECTION START -->
+            <control>
+                <description>HOT CUE MODE (DECK1) - press - set hotcue mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>HOT CUE MODE (DECK2) - press - set hotcue mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD FX1 MODE (DECK1) - press - set pad fx1 mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x90</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD FX1 MODE (DECK2) - press - set pad fx1 mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x91</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP MODE (DECK1) - press - set beat loop mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>BEAT LOOP MODE (DECK2) - press - set beat loop mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>SAMPLER MODE (DECK1) - press - set sampler mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>SAMPLER MODE (DECK2) - press - set sampler mode</description>
+                <group>[PadMode]</group>
+                <key>PioneerDDJFLX2.padModeKeyPressed</key>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <!-- PAD MODE SECTION END -->
+
+            <!-- HOT CUE MODE START -->
+            <control>
+                <description>PAD 1 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x99</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x9A</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x98</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x99</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x9A</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x98</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x99</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x9A</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x99</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x9A</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5(DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x98</status>
+                <midino>0x04</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x99</status>
+                <midino>0x04</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x9A</status>
+                <midino>0x04</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x99</status>
+                <midino>0x05</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x9A</status>
+                <midino>0x05</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x98</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x99</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x9A</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (DECK1) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 +SHIFT (DECK1) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x98</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (DECK2) HOT CUE MODE - press - set hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x99</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 +SHIFT (DECK2) HOT CUE MODE - press - delete hotcue</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x9A</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <!-- HOT CUE MODE END -->
+
+            <!-- KEYBOARD MODE START -->
+            <control>
+                <description>PAD 1 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x15</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x16</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (DECK1) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x97</status>
+                <midino>0x17</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x15</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x16</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (DECK2) PAD FX1 MODE - hold - Pad FX</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX4.padFxPressed</key>
+                <status>0x99</status>
+                <midino>0x17</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <!-- KEYBOARD MODE END -->
+
+            <!-- BEAT LOOP MODE START -->
+            <control>
+                <description>PAD 1 (DECK1) BEAT LOOP MODE - press - 1/4 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_0.25_toggle</key>
+                <status>0x97</status>
+                <midino>0x60</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 (DECK2) BEAT LOOP MODE - press - 1/4 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_0.25_toggle</key>
+                <status>0x99</status>
+                <midino>0x60</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (DECK1) BEAT LOOP MODE - press - 1/2 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_0.5_toggle</key>
+                <status>0x97</status>
+                <midino>0x61</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (DECK2) BEAT LOOP MODE - press - 1/2 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_0.5_toggle</key>
+                <status>0x99</status>
+                <midino>0x61</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (DECK1) BEAT LOOP MODE - press - 1/1 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_1_toggle</key>
+                <status>0x97</status>
+                <midino>0x62</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (DECK2) BEAT LOOP MODE - press - 1/1 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_1_toggle</key>
+                <status>0x99</status>
+                <midino>0x62</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (DECK1) BEAT LOOP MODE - press - 2 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_2_toggle</key>
+                <status>0x97</status>
+                <midino>0x63</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (DECK2) BEAT LOOP MODE - press - 2 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_2_toggle</key>
+                <status>0x99</status>
+                <midino>0x63</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (DECK1) BEAT LOOP MODE - press - 4 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_4_toggle</key>
+                <status>0x97</status>
+                <midino>0x64</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (DECK2) BEAT LOOP MODE - press - 4 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_4_toggle</key>
+                <status>0x99</status>
+                <midino>0x64</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (DECK1) BEAT LOOP MODE - press - 8 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_8_toggle</key>
+                <status>0x97</status>
+                <midino>0x65</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (DECK2) BEAT LOOP MODE - press - 8 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_8_toggle</key>
+                <status>0x99</status>
+                <midino>0x65</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (DECK1) BEAT LOOP MODE - press - 16 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_16_toggle</key>
+                <status>0x97</status>
+                <midino>0x66</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (DECK2) BEAT LOOP MODE - press - 16 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_16_toggle</key>
+                <status>0x99</status>
+                <midino>0x66</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (DECK1) BEAT LOOP MODE - press - 32 Beatloop</description>
+                <group>[Channel1]</group>
+                <key>beatloop_32_toggle</key>
+                <status>0x97</status>
+                <midino>0x67</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (DECK2) BEAT LOOP MODE - press - 32 Beatloop</description>
+                <group>[Channel2]</group>
+                <key>beatloop_32_toggle</key>
+                <status>0x99</status>
+                <midino>0x67</midino>
+                <options>
+                    <Normal/>
+                </options>
+            </control>
+            <!-- BEAT LOOP MODE END -->
+
+            <!-- BEAT JUMP MODE START-->
+
+            <!-- BEAT JUMP MODE END -->
+
+            <!-- SAMPLER MODE START -->
+            <control>
+                <description>PAD 1 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler1]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler1]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler2]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler2]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler3]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler3]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler4]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler4]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler9]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x34</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler9]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x34</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler10]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler10]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler11]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler11]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (LEFT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler12]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x97</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (LEFT)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler12]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x98</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+
+            <control>
+                <description>PAD 1 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler5]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler5]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x30</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler6]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler6]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x31</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler7]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler7]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x32</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler8]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler8]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x33</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler13]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x34</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler13]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x34</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler14]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler14]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x35</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler15]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler15]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (RIGHT) SAMPLE MODE - press - Play Sample or Load Track</description>
+                <group>[Sampler16]</group>
+                <key>PioneerDDJFLX4.samplerPadPressed</key>
+                <status>0x99</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 (Right)+SHIFT SAMPLE MODE - press - Stop Playback or Eject Track</description>
+                <group>[Sampler16]</group>
+                <key>PioneerDDJFLX4.samplerPadShiftPressed</key>
+                <status>0x9A</status>
+                <midino>0x37</midino>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <!-- SAMPLER MODE END -->
+
+            <!-- KEY SHIFT MODE START -->
+            <!-- KEYBOARD MODE END -->
+
+            <!-- PAD Section END -->
+            <!-- openDJ: LOOP ROLL pads. The device has no such mode: the
+                 script routes a pad mode's pads to these notes when its
+                 tab shows loop rolls (see PioneerDDJFLX4.routePads). -->
+        </controls>
+        <outputs>
+            <!-- PLAY -->
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x90</status>  <!-- First byte sent to device -->
+                <midino>0x0B</midino>  <!-- Second byte -->
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>  <!-- First byte sent to device -->
+                <midino>0x0B</midino>  <!-- Second byte -->
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x90</status>  <!-- First byte sent to device -->
+                <midino>0x47</midino>  <!-- Second byte -->
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>  <!-- First byte sent to device -->
+                <midino>0x47</midino>  <!-- Second byte -->
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- CUE -->
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- CUE + Shift -->
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <status>0x90</status>
+                <midino>0x47</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <status>0x91</status>
+                <midino>0x47</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- BEAT SYNC Ch1 9058 Shift 9060 Ch2 9158 Shift 9160 -->
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- CH CUE Ch1 9054 Ch2 9154 -->
+            <output>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <status>0x90</status>
+                <midino>0x54</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <status>0x91</status>
+                <midino>0x54</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- Hotcue Mode Pads -->
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_1_status</key>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_1_status</key>
+                <status>0x99</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_2_status</key>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_2_status</key>
+                <status>0x99</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_3_status</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_3_status</key>
+                <status>0x99</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_4_status</key>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_4_status</key>
+                <status>0x99</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_5_status</key>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_5_status</key>
+                <status>0x99</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_6_status</key>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_6_status</key>
+                <status>0x99</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_7_status</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_7_status</key>
+                <status>0x99</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_8_status</key>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_8_status</key>
+                <status>0x99</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- Repeat the output signal for the OFF status (Deck 1: 0x98, Deck 2: 0x9A.)
+            This is to ensure that the hotcue lights don't turn off when pressing the SHIFT button
+            -->
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_1_status</key>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_1_status</key>
+                <status>0x9A</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_2_status</key>
+                <status>0x98</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_2_status</key>
+                <status>0x9A</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_3_status</key>
+                <status>0x98</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_3_status</key>
+                <status>0x9A</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_4_status</key>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_4_status</key>
+                <status>0x9A</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_5_status</key>
+                <status>0x98</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_5_status</key>
+                <status>0x9A</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_6_status</key>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_6_status</key>
+                <status>0x9A</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_7_status</key>
+                <status>0x98</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_7_status</key>
+                <status>0x9A</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_8_status</key>
+                <status>0x98</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_8_status</key>
+                <status>0x9A</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- BEATLOOP Mode Pads -->
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_0.25_enabled</key>
+                <status>0x97</status>
+                <midino>0x60</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_0.25_enabled</key>
+                <status>0x99</status>
+                <midino>0x60</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_0.5_enabled</key>
+                <status>0x97</status>
+                <midino>0x61</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_0.5_enabled</key>
+                <status>0x99</status>
+                <midino>0x61</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_1_enabled</key>
+                <status>0x97</status>
+                <midino>0x62</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_1_enabled</key>
+                <status>0x99</status>
+                <midino>0x62</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_2_enabled</key>
+                <status>0x97</status>
+                <midino>0x63</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_2_enabled</key>
+                <status>0x99</status>
+                <midino>0x63</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_4_enabled</key>
+                <status>0x97</status>
+                <midino>0x64</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_4_enabled</key>
+                <status>0x99</status>
+                <midino>0x64</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_8_enabled</key>
+                <status>0x97</status>
+                <midino>0x65</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_8_enabled</key>
+                <status>0x99</status>
+                <midino>0x65</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_16_enabled</key>
+                <status>0x97</status>
+                <midino>0x66</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_16_enabled</key>
+                <status>0x99</status>
+                <midino>0x66</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>beatloop_32_enabled</key>
+                <status>0x97</status>
+                <midino>0x67</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>beatloop_32_enabled</key>
+                <status>0x99</status>
+                <midino>0x67</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+
+            <!-- Repeat the output signal for the OFF status (Deck 1: 0x98, Deck 2: 0x9A.)
+            This is to ensure that the beat_loop lights don't turn off when pressing the SHIFT button
+            -->
+
+            <!-- Beatjump (light pads 7&8 when shift is pressed) -->
+
+            <!-- SAMPLER Mode Pads (while SHIFT is NOT pressed)-->
+            <!-- Deck 1 pads -->
+            <!-- SAMPLER Mode Pads (while SHIFT is NOT pressed)-->
+            <!-- Deck 2 pads -->
+
+            <!-- SAMPLER Mode Pads (while SHIFT IS pressed)-->
+            <!-- Deck 1 pads -->
+
+            <!-- SAMPLER Mode Pads (while SHIFT IS pressed)-->
+            <!-- Deck 2 pads -->
+
+            <!-- SAMPLER Mode Pads end-->
+            <!-- openDJ: LOOP ROLL pads (see the controls above). -->
+        </outputs>
+    </controller>
+</MixxxControllerPreset>
