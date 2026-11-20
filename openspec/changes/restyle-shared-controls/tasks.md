@@ -23,7 +23,7 @@
 ## 5. Panels and Settings
 
 - [x] 5.1 Automix panel: power, Length stepper, Style and Repeat switch pills (the panel has no Skip played setting)
-- [ ] 5.2 Settings: steppers, value pills, lilac switches
+- [x] 5.2 Settings: choice pills (in place of steppers: every choice shows at once), value pills for menus, lilac switches, condensed section titles
 
 ## 6. Top bar
 

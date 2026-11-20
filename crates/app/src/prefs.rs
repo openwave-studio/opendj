@@ -1387,7 +1387,7 @@ impl Prefs {
                                 "cue_mode",
                                 SEGMENTED,
                                 "CUE button",
-                                "Hold to preview plays while CUE is held, as on Pioneer players.",
+                                "Hold to preview plays while CUE is held, as on club players.",
                             )
                         },
                         switch(
@@ -1446,7 +1446,7 @@ impl Prefs {
                                 SEGMENTED,
                                 "Tempo fader direction",
                                 "Which way the tempo faders, on screen and on controllers, speed \
-                                 the deck up. Pioneer players slow down as the fader goes up.",
+                                 the deck up. Club players slow down as the fader goes up.",
                             )
                         },
                         switch(

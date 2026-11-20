@@ -6,7 +6,7 @@ import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { Caption, Controls, ControlButton, ControlFader, ControlKnob, Crossfader, CueHeadphones, StereoMeter, VuMeter } from "controls.slint";
 import { EffectList } from "deck.slint";
-import { SwitchPill } from "pills.slint";
+import { PillCaret, SwitchPill } from "pills.slint";
 
 // One output route in the settings table.
 export struct OutputRow {
@@ -98,24 +98,18 @@ export component MenuField inherits Rectangle {
     callback opening();
     callback picked(index: int);
     height: 26px;
-    background: ta.has-hover ? Theme.n-2a2a2e : Theme.control;
-    border-radius: Theme.radius;
+    // A value pill (see pills.slint): outlined while hovered or open.
+    background: ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-radius: 7px;
     border-width: 1px;
-    border-color: Theme.border;
+    border-color: ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
     HorizontalLayout {
-        padding-left: 8px;
-        padding-right: 6px;
-        spacing: 4px;
+        padding-left: 9px;
+        padding-right: 8px;
+        spacing: 5px;
         Text { text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
-        Path {
-            width: 8px;
-            height: 5px;
-            y: (parent.height - self.height) / 2;
-            commands: "M 0 0 L 4 4.5 L 8 0";
-            stroke: Theme.text-dim;
-            stroke-width: 1.5px;
-            fill: transparent;
-        }
+        PillCaret { y: (parent.height - self.height) / 2; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -128,14 +122,15 @@ export component MenuField inherits Rectangle {
         x: 0px;
         y: root.height + 2px;
         width: menu-width;
-        height: min(choices.length * 26px, 390px) + 12px;
+        height: min(choices.length * 28px, 392px) + 12px;
         close-policy: close-on-click-outside;
+        // The titled list's look (pills.slint), without a title.
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
         Flickable {
@@ -143,16 +138,16 @@ export component MenuField inherits Rectangle {
             y: 6px;
             width: parent.width - 12px;
             height: parent.height - 12px;
-            content-height: choices.length * 26px;
+            content-height: choices.length * 28px;
             // Opens with the chosen item in view.
-            content-y: max(min(0px, self.height / 2 - (chosen + 0.5) * 26px), self.height - self.content-height);
+            content-y: max(min(0px, self.height / 2 - (chosen + 0.5) * 28px), self.height - self.content-height);
             VerticalLayout {
                 spacing: 0px;
                 for c[i] in choices: Rectangle {
-                    height: 26px;
-                    border-radius: 4px;
-                    background: i == chosen ? Theme.accent.with-alpha(0.35) : ita.has-hover ? Theme.n-3a3a3d : transparent;
-                    Text { x: 8px; width: parent.width - 16px; text: c; color: Theme.text; font-size: 13px; font-weight: i == chosen ? 600 : 400; overflow: elide; }
+                    height: 28px;
+                    border-radius: 6px;
+                    background: ita.has-hover ? Theme.n-38373d : i == chosen ? Theme.n-313036 : transparent;
+                    Text { x: 10px; width: parent.width - 20px; text: c; color: i == chosen ? Theme.lilac-text : Theme.text; font-size: 12px; overflow: elide; }
                     ita := TouchArea {
                         clicked => {
                             root.picked(i);
