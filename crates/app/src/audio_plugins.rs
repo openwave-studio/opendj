@@ -383,12 +383,13 @@ const OTHER: usize = KINDS.len() - 1;
 /// The built-in effects' kinds, by name.
 fn builtin_kind(name: &str) -> usize {
     match name {
-        "Echo" | "Echo Out" | "Spiral" | "Filter Echo" => 0,
+        "Echo" | "Echo Out" | "Spiral" | "Filter Echo" | "Tape Echo" => 0,
         "Reverb" | "Hall" | "Rev Roll" => 1,
-        "Filter" | "Ladder" => 2,
+        "Filter" | "Ladder" | "Solo" => 2,
         "Flanger" | "Phaser" | "Chorus" => 3,
         "Bitcrusher" | "Drive" | "Noise" => 4,
-        "Gate" | "Roll" | "Brake" => 6,
+        "Ducker" => 5,
+        "Gate" | "Roll" | "Brake" | "Rhythm" => 6,
         _ => OTHER,
     }
 }
@@ -859,9 +860,10 @@ mod tests {
         // Echo (1) is first in the list: its neighbour back is the last
         // plugin, and Echo Out (9) comes next.
         assert_eq!(following[0], 9);
-        assert_eq!(previous[0], 20);
+        let last_plugin = AVAILABLE_EFFECTS.len() + 2;
+        assert_eq!(previous[0], last_plugin as i32);
         // The last plugin wraps round to Echo.
-        assert_eq!(following[19], 1);
+        assert_eq!(following[last_plugin - 1], 1);
     }
 
     #[test]

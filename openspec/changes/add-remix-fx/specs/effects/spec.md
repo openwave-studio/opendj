@@ -26,10 +26,10 @@ A Remix deck SHALL hold three band lanes (LOW, MID, HIGH), each with an ISOLATE 
 - **THEN** the mix sounds exactly as without the Remix deck
 
 ### Requirement: Isolate knobs
-Each band's ISOLATE knob SHALL have a centre where it does nothing. Turned left, it SHALL lower that band down to silence at the end. Turned right, it SHALL add the Isolate effect (Tape Echo, Reverb, Drive, Filter, Ducker or Rhythm) to that band, more as it turns.
+Each band's ISOLATE knob SHALL have a centre where it does nothing. Turned left in Insert mode, it SHALL lower that band down to silence at the end (in Send mode the source's own channel keeps playing the band, so turning left does nothing). Turned right, it SHALL add the Isolate effect (Tape Echo, Reverb, Drive, Filter, Ducker or Rhythm) to that band, more as it turns.
 
 #### Scenario: Cut the bass
-- **WHEN** ISOLATE LOW is turned fully left
+- **WHEN** the Remix deck is in Insert mode and ISOLATE LOW is turned fully left
 - **THEN** the source's lows are silent and the mids and highs are unchanged
 
 #### Scenario: Duck the mids
@@ -44,7 +44,7 @@ Each band's LEVER SHALL put the Lever effect (Echo, Reverb, Repeat, Reverse, Sol
 - **THEN** the highs echo on the beat until it is let go, and the echo tail rings out
 
 #### Scenario: Solo
-- **WHEN** LEVER MID is latched with Solo chosen
+- **WHEN** LEVER MID is latched with Solo chosen in Insert mode
 - **THEN** only the mids play until the lever is pressed again
 
 ### Requirement: Scenes

@@ -12,9 +12,9 @@ in ─► BandSplit (LR4 246 Hz / 2.48 kHz + all-pass)
                          sample pads ─► sample effect ──────────────────────────────────────────┘
 ```
 
-- Bands with nothing on skip their effects. In Send mode, with every band idle and SCENE at centre, the dry copy is not added (the deck plays only effects and pads), so the mix sounds exactly as before. In Insert mode the idle deck passes the source through bit-identical (tested).
-- Source: `[RemixN],source` 1-4 a deck (not itself), 5 mic, 6-8 aux; `[RemixN],mode` 0 Send, 1 Insert. Tempo from the source deck's grid, else the sync leader.
-- `BandSplit` is the channel `Isolator` without the gains: low = LP(246), mid = LP(2484)·HP(246), high = HP(2484), low through the upper crossover's all-pass so the sum is flat. It is shared with per-slot band FX.
+- Bands with nothing on skip their effects. In Send mode the deck plays only what each lane adds (lane output minus its band) and pads, so idle it adds exactly nothing. Turning a band down (ISOLATE left, Solo) does nothing in Send: the source's channel still plays the band, and the band played upside down would not cancel it because the crossovers shift its phase. In Insert mode the idle deck passes the source through bit-identical (tested), and fades over 5 ms to the bands' sum when anything comes on.
+- Source: `[RemixN],source` 1-4 a deck (not itself), 5 mic, 6-13 aux 1-8; `[RemixN],mode` 0 Send, 1 Insert. Tempo from the source deck's grid, else the sync leader.
+- The split is the channel `Isolator`'s `split()`: low = LP(246), mid = LP(2484)·HP(246), high = HP(2484), low through the upper crossover's all-pass so the sum is flat. In the mixer the Remix deck runs after every other deck in the frame loop, so its source's frame (after EQ, filter and sculpt) is ready; in Insert it then zeroes the source's frame.
 
 ## Band FX on slots
 
@@ -24,7 +24,7 @@ in ─► BandSplit (LR4 246 Hz / 2.48 kHz + all-pass)
 
 `isolate_low|mid|high` in -1..1, 0 = centre. Below 0 the band's gain follows the channel EQ's kill curve (−∞ at −1). Above 0 the Isolate effect runs on that band with depth = value; the band stays at unity. A dead zone of ±0.02 keeps a detented knob exactly off.
 
-Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle saturation and wow in the feedback), Reverb, Drive (oversampled, the existing Drive), Filter (a resonant band-pass sweep inside the band, from its low edge to its high edge as the knob turns), Ducker (a beat-synced volume envelope: dips on each beat and recovers over `isolate_time`, 1/4 to 1 beat), Rhythm (cuts the band into 1/8-beat slices over a bar and replays them in a fixed shuffled order; FREEZE's slice logic).
+Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle saturation and wow in the feedback), Reverb, Drive (oversampled, the existing Drive), Filter (a resonant band-pass sweep inside the band, from its low edge to its high edge as the knob turns), Ducker (a beat-synced volume envelope: dips on each beat over 3 ms and recovers over 1/2 beat, 1/4 to 1 beat in a slot), Rhythm (cuts the band into 1/8-beat slices, 16 to a cycle, and plays each from the same place or up to 4 slices back by a fixed pattern, four patterns; each jump crossfades over 3 ms, and reaching back only keeps it inside the 2 s delay memory). The same three, and Solo (plays only the slot's Band choice), are slot effects too: `loaded_effect` 19-22, so plugins now start at 23.
 
 ## Levers
 
@@ -32,7 +32,12 @@ Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle satu
 
 ## Scenes
 
-`scene` in -1..1; `scene_down` and `scene_up` pick one of five built-in scenes each; `scene_time` and `scene_color`. A scene is data in `remix.rs`: a short list of (effect kind, parameter, curve) rows applied as |scene| goes from 0 to 1, e.g. Rise Echo = band-pass echo with cutoff 400 Hz → 6 kHz, feedback 0.3 → 0.8, wet 0 → 0.7. Effect instances come from the pool when the knob leaves centre and go back when it returns and the tail ends.
+`scene` in -1..1 (±0.02 dead zone); `scene_up` and `scene_down` pick one of five built-in scenes each; `scene_time` (echo length 1/4, 1/2 or 1 beat) and `scene_color` (filters an octave down to an octave up). A scene is data in `effects/scenes.rs`: two effects in series, each with a function from (amount 0..1, time, color) to its parameters and wet amount, e.g. Rise Echo = a band-pass from 400 Hz to 6 kHz into an echo with feedback 0.3 → 0.8 and send 0 → 0.7.
+
+- Build Up: Rise Echo (band-pass + Echo), Crush Echo (Bitcrusher + Echo), Spiral Up (high-pass + Spiral), Noise Riser (high-pass + Noise), Roll Up (high-pass + Roll from 1/2 to 1/16 beat).
+- Break Down: Dub Down (low-pass closing + Tape Echo), Wash Out (high-pass + Hall), Filter Down (Ladder closing + Gate), Gate Down (1/8-beat Gate + low-pass), Crush Down (downsampling + low-pass).
+- The scene is picked when SCENE leaves centre and kept while it sounds: choosing another scene, or turning the knob to the other side, only takes effect once the first has rung out. The two instances are the Remix deck's own (with their delay memory), not the rack's pool, so a scene never fails to start.
+- After the lanes, in both modes. In Send only what the scene's echoes and reverbs add is played: its filters, gates and crushers colour what feeds the echo but can't take anything out of the source's channel.
 
 ## Release
 
