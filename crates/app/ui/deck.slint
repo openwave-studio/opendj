@@ -126,7 +126,7 @@ component GridMenuItem inherits Rectangle {
     in property <string> text;
     height: 26px;
     border-radius: 4px;
-    background: ta.has-hover ? Theme.n-3a3a3d : transparent;
+    background: ta.has-hover ? Theme.n-38373d : transparent;
     Text { x: 10px; text: root.text; color: Theme.text; font-size: 13px; vertical-alignment: center; }
     ta := TouchArea {
         clicked => {
@@ -208,11 +208,11 @@ export component GridMenu inherits PopupWindow {
     width: 240px;
     close-policy: close-on-click-outside;
     Rectangle {
-        background: Theme.panel-raised;
-        border-radius: Theme.radius;
+        background: Theme.pill-list;
+        border-radius: 9px;
         border-width: 1px;
         border-color: Theme.border;
-        drop-shadow-blur: 12px;
+        drop-shadow-blur: 14px;
         drop-shadow-color: Theme.s-000000a0;
     }
     property <bool> locked: Controls.value(Controls.resolve(group, "bpmlock"), Controls.tick) > 0;
@@ -468,13 +468,13 @@ component GrooveMenuItem inherits Rectangle {
     in property <bool> checked;
     callback clicked();
     height: detail == "" ? 24px : 36px;
-    border-radius: 5px;
-    background: gmta.has-hover ? Theme.n-3a3a3d : transparent;
+    border-radius: 6px;
+    background: gmta.has-hover ? Theme.n-38373d : checked ? Theme.n-313036 : transparent;
     VerticalLayout {
         x: 22px;
         width: parent.width - 28px;
         alignment: center;
-        Text { text: root.text; color: Theme.text; font-size: 12px; }
+        Text { text: root.text; color: root.checked ? Theme.lilac-text : Theme.text; font-size: 12px; }
         if detail != "": Text { text: root.detail; color: Theme.text-dim; font-size: 10px; overflow: elide; }
     }
     if checked: Text { x: 7px; text: "✓"; color: Theme.lilac-text; font-size: 12px; vertical-alignment: center; }
@@ -482,12 +482,12 @@ component GrooveMenuItem inherits Rectangle {
 }
 
 component GrooveMenuBackground inherits Rectangle {
-    background: Theme.panel-raised;
-    border-radius: 10px;
+    background: Theme.pill-list;
+    border-radius: 9px;
     border-width: 1px;
     border-color: Theme.border;
-    drop-shadow-blur: 16px;
-    drop-shadow-color: Theme.s-000000b0;
+    drop-shadow-blur: 14px;
+    drop-shadow-color: Theme.s-000000a0;
 }
 
 // Album art, large; without any, the deck color with the
@@ -2102,14 +2102,13 @@ component PanelMenuItem inherits Rectangle {
     in property <bool> current;
     callback picked();
     height: 24px;
-    background: ta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
-    border-radius: 4px;
+    background: ta.has-hover ? Theme.n-38373d : current ? Theme.n-313036 : transparent;
+    border-radius: 6px;
     Text {
         x: 10px;
         text: root.text;
         color: current ? Theme.lilac-text : Theme.text;
-        font-size: 11px;
-        font-weight: 600;
+        font-size: 12px;
         vertical-alignment: center;
     }
     ta := TouchArea { clicked => { root.picked(); } }
@@ -3126,11 +3125,11 @@ export component TempoPanelMenu inherits Rectangle {
         width: 176px;
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius + 2px;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
         VerticalLayout {
@@ -5368,11 +5367,11 @@ component InputPicker inherits PopupWindow {
     width: 190px;
     close-policy: close-on-click-outside;
     Rectangle {
-        background: Theme.panel-raised;
-        border-radius: Theme.radius;
+        background: Theme.pill-list;
+        border-radius: 9px;
         border-width: 1px;
         border-color: Theme.border;
-        drop-shadow-blur: 12px;
+        drop-shadow-blur: 14px;
         drop-shadow-color: Theme.s-000000a0;
     }
     // Fresh meters while it is open.

@@ -417,11 +417,11 @@ component TagField inherits VerticalLayout {
                 height: min(TrackInfo.choices.length * 26px, 260px) + 46px;
                 close-policy: close-on-click-outside;
                 Rectangle {
-                    background: Theme.panel-raised;
-                    border-radius: Theme.radius;
+                    background: Theme.pill-list;
+                    border-radius: 9px;
                     border-width: 1px;
                     border-color: Theme.border;
-                    drop-shadow-blur: 12px;
+                    drop-shadow-blur: 14px;
                     drop-shadow-color: Theme.s-000000a0;
                 }
                 VerticalLayout {
@@ -521,11 +521,11 @@ component PickValue inherits Rectangle {
         height: min(TrackInfo.choices.length * 26px, 260px) + (field.menu ? 46px : 12px);
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
         VerticalLayout {
@@ -765,11 +765,11 @@ component InfoCell inherits Rectangle {
                 width: 240px;
                 height: min(TrackInfo.choices.length * 26px + (TrackInfo.many > 0 ? 66px : 12px), 340px);
                 Rectangle {
-                    background: Theme.panel-raised;
-                    border-radius: Theme.radius;
+                    background: Theme.pill-list;
+                    border-radius: 9px;
                     border-width: 1px;
                     border-color: Theme.border;
-                    drop-shadow-blur: 12px;
+                    drop-shadow-blur: 14px;
                     drop-shadow-color: Theme.s-000000a0;
                 }
                 VerticalLayout {
@@ -1181,11 +1181,11 @@ export component InfoPanel inherits Rectangle {
                     y: parent.height + 2px;
                     width: 140px;
                     Rectangle {
-                        background: Theme.panel-raised;
-                        border-radius: Theme.radius;
+                        background: Theme.pill-list;
+                        border-radius: 9px;
                         border-width: 1px;
                         border-color: Theme.border;
-                        drop-shadow-blur: 12px;
+                        drop-shadow-blur: 14px;
                         drop-shadow-color: Theme.s-000000a0;
                     }
                     VerticalLayout {
@@ -1193,7 +1193,7 @@ export component InfoPanel inherits Rectangle {
                         for s[i] in ["Selected track", "Deck A", "Deck B"]: Rectangle {
                             height: 26px;
                             border-radius: 4px;
-                            background: sta.has-hover ? Theme.n-3a3a3d : transparent;
+                            background: sta.has-hover ? Theme.n-38373d : transparent;
                             Text {
                                 x: 10px;
                                 text: s;

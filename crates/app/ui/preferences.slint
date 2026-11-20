@@ -726,11 +726,11 @@ component StorageView inherits VerticalLayout {
                 height: StorageUi.actions.length * 26px + 12px;
                 close-policy: close-on-click-outside;
                 Rectangle {
-                    background: Theme.panel-raised;
-                    border-radius: Theme.radius;
+                    background: Theme.pill-list;
+                    border-radius: 9px;
                     border-width: 1px;
                     border-color: Theme.border;
-                    drop-shadow-blur: 12px;
+                    drop-shadow-blur: 14px;
                     drop-shadow-color: Theme.s-000000a0;
                 }
                 VerticalLayout {
@@ -738,7 +738,7 @@ component StorageView inherits VerticalLayout {
                     for a[i] in StorageUi.actions: Rectangle {
                         height: 26px;
                         border-radius: 4px;
-                        background: ata.has-hover ? Theme.n-3a3a3d : transparent;
+                        background: ata.has-hover ? Theme.n-38373d : transparent;
                         Text { x: 8px; text: a; color: Theme.text; font-size: 12px; vertical-alignment: center; height: parent.height; }
                         ata := TouchArea { mouse-cursor: pointer; clicked => { Preferences.picked(item.id, i); menu.close(); } }
                     }
@@ -1348,7 +1348,7 @@ export component CloseButton inherits Rectangle {
     width: 26px;
     height: 26px;
     border-radius: 13px;
-    background: ta.has-hover ? Theme.n-3a3a3d : transparent;
+    background: ta.has-hover ? Theme.n-38373d : transparent;
     Path {
         width: 10px;
         height: 10px;

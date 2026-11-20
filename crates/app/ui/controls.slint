@@ -880,11 +880,11 @@ export component SyncButton inherits Rectangle {
         width: 214px;
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
         VerticalLayout {
@@ -926,7 +926,7 @@ export component SyncButton inherits Rectangle {
                         property <bool> on: abs(beats - size.beats) < 0.001;
                         horizontal-stretch: 1;
                         border-radius: 3px;
-                        background: on ? Theme.accent : sta.has-hover ? Theme.n-3a3a3d : transparent;
+                        background: on ? Theme.accent : sta.has-hover ? Theme.n-38373d : transparent;
                         Text { text: size.label; color: on ? #000000 : Theme.text; font-size: 12px; font-weight: on ? 700 : 400; }
                         sta := TouchArea {
                             mouse-cursor: pointer;
