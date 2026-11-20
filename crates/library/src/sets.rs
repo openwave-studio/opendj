@@ -87,6 +87,19 @@ impl Library {
         )
     }
 
+    /// Puts list or folder `id` first among the lists beside it, so a new
+    /// one shows at the top of its folder or section.
+    pub fn put_first(&self, id: i64) -> Result<(), Error> {
+        let tx = self.db.unchecked_transaction()?;
+        tx.execute(
+            "UPDATE playlists SET position = position + 1
+             WHERE parent IS (SELECT parent FROM playlists WHERE id = ?1) AND id != ?1",
+            [id],
+        )?;
+        tx.execute("UPDATE playlists SET position = 0 WHERE id = ?1", [id])?;
+        tx.commit()
+    }
+
     /// Makes an empty crate in `folder`, or at the top of Crates.
     pub fn create_crate(&self, name: &str, folder: Option<i64>) -> Result<i64, Error> {
         self.create_playlist(name, folder, PlaylistKind::Crate)
@@ -613,6 +626,10 @@ mod tests {
         lib.place_playlist(warm, Some(gigs), false, Some(close))
             .unwrap();
         assert_eq!(order(&lib), [warm, close, peak]);
+        // A new list goes first.
+        lib.put_first(peak).unwrap();
+        assert_eq!(order(&lib), [peak, warm, close]);
+        lib.place_playlist(peak, Some(gigs), false, None).unwrap();
         // Out to the top of Playlists: still a playlist, not a crate.
         lib.place_playlist(peak, None, false, Some(gigs)).unwrap();
         let p = lib

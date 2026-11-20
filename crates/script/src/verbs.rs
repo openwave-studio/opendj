@@ -381,7 +381,7 @@ pub static VERBS: &[Verb] = &[
         App,
         TakesDeck::No,
         &[],
-        "Add the tracks picked in the browser to the end of the Sidelist",
+        "Add the tracks picked in the browser to the end of the Shortlist",
     ),
     def(
         "show_info",
