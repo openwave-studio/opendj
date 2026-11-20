@@ -328,6 +328,16 @@ export global SidelistUi {
     callback show-list(data: data-transfer);
 }
 
+// The lists panel's and the side panel's widths and whether the DJ folded
+// the lists panel, per layout (0 to 4); kept in settings.json under
+// `browser_panels` (browser/panels.rs), saved after each change.
+export global BrowserPanels {
+    in-out property <[length]> lists-widths: [270px, 270px, 270px, 270px, 270px];
+    in-out property <[length]> side-widths: [340px, 340px, 340px, 340px, 340px];
+    in-out property <[bool]> lists-folded: [false, false, false, false, false];
+    callback changed();
+}
+
 export global LibraryEdit {
     // Colors a crate can have (see CrateColors).
     out property <[color]> list-colors: CrateColors.colors;
@@ -3548,7 +3558,8 @@ component FolderTree inherits Rectangle {
     }
 
     background: Theme.browser;
-    width: 270px;
+    in property <length> panel-width: 270px;
+    width: panel-width;
     rename-popup := PopupWindow {
         x: 8px;
         y: 76px;
@@ -6647,7 +6658,8 @@ component SidePanel inherits Rectangle {
         remove(first-picked, last-picked);
     }
     background: Theme.browser;
-    width: 340px;
+    in property <length> panel-width: 340px;
+    width: panel-width;
     // The tabs, as words along the top, the one shown underlined.
     tab-bar := Rectangle {
         y: 0px;
@@ -7288,13 +7300,41 @@ component SidePanel inherits Rectangle {
     }
 }
 
+// A panel's draggable edge: 6 px wide, a resize cursor, a lilac line
+// while hovered or dragged. `dragged` gives the move since the last one.
+component PanelEdge inherits Rectangle {
+    callback dragged(dx: length);
+    callback released();
+    width: 6px;
+    height: 100%;
+    z: 3;
+    if ta.has-hover || ta.pressed: Rectangle { x: 2px; width: 2px; background: Theme.accent; }
+    ta := TouchArea {
+        mouse-cursor: col-resize;
+        moved => {
+            if self.pressed {
+                dragged(self.mouse-x - self.pressed-x);
+            }
+        }
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.up {
+                released();
+            }
+        }
+    }
+}
+
 export component Browser inherits HorizontalLayout {
     // A window under 1440 wide: the lists panel folds into the rail and
     // the side panel opens over the track list, so the list keeps its
     // columns.
     in property <bool> narrow;
+    // The layout showing, for the panels' widths and fold (BrowserPanels).
+    in property <int> layout;
     // The DJ folded the lists panel (a second click on the open source).
-    in-out property <bool> lists-folded;
+    property <bool> lists-folded: BrowserPanels.lists-folded[layout];
+    property <length> lists-width: BrowserPanels.lists-widths[layout];
+    property <length> side-width: BrowserPanels.side-widths[layout];
     property <bool> lists-docked: !narrow && !lists-folded;
     // The folded lists panel, slid out over the track list.
     in-out property <bool> lists-out;
@@ -7394,7 +7434,8 @@ export component Browser inherits HorizontalLayout {
             // A second click on the open source folds or unfolds the lists;
             // folded, a click slides them out over the track list.
             if s == lists-for && !narrow {
-                lists-folded = !lists-folded;
+                BrowserPanels.lists-folded[layout] = !lists-folded;
+                BrowserPanels.changed();
                 lists-out = false;
             } else if !lists-docked {
                 lists-out = s == lists-for ? !lists-out : true;
@@ -7438,18 +7479,19 @@ export component Browser inherits HorizontalLayout {
     // Folded, the panel takes no width and slides out over the track
     // list (raised above it with z).
     if !plugin-source && !instruments-source && !now-playing: Rectangle {
-        width: lists-docked ? 270px : 0px;
+        width: lists-docked ? lists-width : 0px;
         z: 2;
         Rectangle {
             x: 0;
-            width: 270px;
+            width: lists-width;
             height: parent.height;
             clip: true;
             visible: lists-docked || lists-out;
             // A dark edge where it lies over the track list.
             if !lists-docked: Rectangle { x: parent.width - 1px; width: 1px; background: Theme.n-000000; z: 1; }
             FolderTree {
-                x: lists-docked || lists-out ? 0px : -270px;
+                panel-width: lists-width;
+                x: lists-docked || lists-out ? 0px : -lists-width;
                 animate x { duration: 150ms; easing: ease-out; }
                 height: parent.height;
                 folders: folders;
@@ -7471,6 +7513,12 @@ export component Browser inherits HorizontalLayout {
                 spotify-disconnect => { spotify-disconnect(); }
                 spotify-refresh => { spotify-refresh(); }
             }
+        }
+        // Its right edge drags it 200 to 360 px wide.
+        if lists-docked: PanelEdge {
+            x: parent.width - 3px;
+            dragged(dx) => { BrowserPanels.lists-widths[layout] = clamp(lists-width + dx, 200px, 360px); }
+            released => { BrowserPanels.changed(); }
         }
     }
     // The Collection Health page, or the bar over one check's tracks.
@@ -7576,6 +7624,7 @@ export component Browser inherits HorizontalLayout {
         z: 2;
         if narrow: Rectangle { x: -side.width - 1px; width: 1px; background: Theme.n-000000; }
         side := SidePanel {
+            panel-width: side-width;
             x: narrow ? -self.width : 0px;
             height: parent.height;
             rows: side-rows;
@@ -7597,6 +7646,12 @@ export component Browser inherits HorizontalLayout {
             automix-set-style(i) => { automix-set-style(i); }
             automix-repeat: automix-repeat;
             automix-set-repeat(on) => { automix-set-repeat(on); }
+        }
+        // Its left edge drags it 280 to 480 px wide.
+        PanelEdge {
+            x: (narrow ? -side.width : 0px) - 3px;
+            dragged(dx) => { BrowserPanels.side-widths[layout] = clamp(side-width - dx, 280px, 480px); }
+            released => { BrowserPanels.changed(); }
         }
     }
 }

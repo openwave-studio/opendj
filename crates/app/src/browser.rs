@@ -52,6 +52,7 @@ mod lyrics;
 mod mix_export;
 mod mixed_set;
 mod pages;
+mod panels;
 mod picks;
 mod played;
 mod playlist_files;
@@ -1757,6 +1758,7 @@ impl Browser {
         app.set_sources_shown(std::rc::Rc::new(slint::VecModel::from(shown)).into());
         side_tabs::install(app);
         rail_order::install(app);
+        panels::install(app);
         // Collection Health's rail button hides the same way.
         app.global::<HealthUi>()
             .set_rail_shown(!hidden.iter().any(|h| h == HEALTH_RAIL_NAME));

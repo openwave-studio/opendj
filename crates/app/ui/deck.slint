@@ -5661,6 +5661,39 @@ component AddStrip inherits Rectangle {
     add-picker := InputPicker { x: 0; y: 40px; }
 }
 
+component StripArrow inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    width: 22px;
+    height: 44px;
+    border-radius: 6px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    Text { text: root.text; color: Theme.text; font-size: 16px; font-weight: 700; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Over the Mixer deck's strips when they run off a side: a fade into the
+// well and a ‹ or › that scrolls by one strip, so the hidden strips show.
+component StripScrollCue inherits Rectangle {
+    in property <length> shown;
+    in property <length> min-offset;
+    in property <length> step;
+    callback scroll-to(offset: length);
+    if shown < 0: Rectangle {
+        x: 0;
+        width: 30px;
+        background: @linear-gradient(90deg, Theme.well 35%, Theme.well.with-alpha(0) 100%);
+        StripArrow { x: 2px; text: "‹"; clicked => { scroll-to(min(0px, shown + step)); } }
+    }
+    if shown > min-offset: Rectangle {
+        x: parent.width - self.width;
+        width: 30px;
+        background: @linear-gradient(90deg, Theme.well.with-alpha(0) 0%, Theme.well 65%);
+        StripArrow { x: parent.width - self.width - 2px; text: "›"; clicked => { scroll-to(max(min-offset, shown - step)); } }
+    }
+}
+
+
 // The Mixer deck's strips side by side, scrolling sideways when they don't
 // fit, then + to pick another input. Not a Flickable: a Flickable takes a
 // press that moves a few pixels as its own drag, so the knobs and faders
@@ -5693,6 +5726,14 @@ component MixerStrips inherits Rectangle {
             if InstrumentsUi.in-mixer("[Microphone]", Controls.tick): MixerStrip { info: InstrumentsUi.mic-strip(); tint: tint; }
             if InstrumentsUi.strips.length < 8: AddStrip {}
         }
+    }
+    StripScrollCue {
+        width: 100%;
+        height: 100%;
+        shown: shown;
+        min-offset: min-offset;
+        step: 86px;
+        scroll-to(o) => { offset = o; }
     }
 }
 
@@ -7151,6 +7192,14 @@ component SlimMixerStrips inherits Rectangle {
             if InstrumentsUi.in-mixer("[Microphone]", Controls.tick): SlimMixerStrip { info: InstrumentsUi.mic-strip(); tint: tint; }
             if InstrumentsUi.strips.length < 8: AddStrip { }
         }
+    }
+    StripScrollCue {
+        width: 100%;
+        height: 100%;
+        shown: shown;
+        min-offset: min-offset;
+        step: 70px;
+        scroll-to(o) => { offset = o; }
     }
 }
 
