@@ -438,6 +438,23 @@ impl Browser {
         }
     }
 
+    /// Empties the scratch pad, with Undo.
+    pub(super) fn clear_scratch(&mut self) {
+        if self.sidelist_list().is_some() || self.side[SIDELIST_TAB].is_empty() {
+            return;
+        }
+        let before = self.snapshot(&[None]);
+        let n = self.side[SIDELIST_TAB].len();
+        self.side[SIDELIST_TAB].clear();
+        self.sidelist_changed();
+        self.refresh_side();
+        self.note(
+            format!("Cleared {} from the scratch pad", tracks(n)),
+            "Undo Clear scratch pad".to_string(),
+            before,
+        );
+    }
+
     /// Puts lists back as they were before the last add, move or removal.
     pub(super) fn restore_lists(&mut self, lists: Vec<(Option<i64>, Vec<usize>)>) {
         for (list, ids) in lists {

@@ -620,9 +620,14 @@ folder for a moment and the folder opens; near the top or bottom of the
 tree, the tree scrolls. Drop it on the **Crates** or **Playlists** heading
 to take it back to the top (a crate's top is Crates, a playlist's is
 Playlists; a folder can go under either). The list stays selected where it
-landed. Without dragging, right-click a list for **Move to…** (pick a
-folder or the top), **Move Up** or **Move Down**, or press ⌥⌘↑ / ⌥⌘↓
-(Ctrl+Alt+↑ / ↓ on Windows and Linux) while the tree has the keys.
+landed. Without dragging, press ⌥⌘↑ / ⌥⌘↓ (Ctrl+Alt+↑ / ↓ on Windows
+and Linux) while the tree has the keys to move a list up or down.
+Shift-click or ⌘-click (Ctrl-click) more lists to pick several; dragging
+and those keys then take them all together. A new
+crate, playlist or folder starts at the top of the folder or section you
+make it in, with its name ready to type over. **Delete…** on a list's
+menu asks first and says what goes with it; the tracks stay in your
+collection.
 - **Imported**: other apps' lists (a folder per app) and **Groupings and
   Tags**. They are read-only, because the app's next import makes them
   again, so they show a padlock and dimmer names. To keep an app's lists as
@@ -666,7 +671,8 @@ for that crate only, and `crate:""` for tracks in no crate yet.
 
 The **Sidelist** tab of the side panel holds a list beside the track
 list, so you can build it while you browse anywhere else. It starts as a
-scratch pad, kept until you clear it, even after you quit. Drag tracks
+scratch pad, kept until you clear it (**Clear** by its title), even after
+you quit. Drag tracks
 into it, or pick tracks and press <kbd>S</kbd>; drag its rows to change
 their order, and Delete takes the picked ones out.
 

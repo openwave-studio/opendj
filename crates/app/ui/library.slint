@@ -53,6 +53,8 @@ export struct Folder {
     adoptable: bool,
     // An album downloaded into the Inbox: its menu offers Move to Albums.
     bundle: bool,
+    // One of several lists picked with shift- or ⌘-click, to move together.
+    picked: bool,
 }
 
 export struct TrackRow {
@@ -322,6 +324,8 @@ export global SidelistUi {
     in property <string> name;
     in property <bool> shows-list;
     callback pick(value: int);
+    // Empties the scratch pad.
+    callback clear();
     // A list dragged from the tree: whether it can show in the Sidelist,
     // and showing it there.
     pure callback accepts-list(data: data-transfer) -> bool;
@@ -427,6 +431,14 @@ export global LibraryEdit {
     callback move-list-to(index: int, target: int);
     // Shows the list at tree row `index` in the Sidelist.
     callback show-in-sidelist(index: int);
+    // Shift-click (`range`) or ⌘-click (Ctrl-click) on tree row `index`:
+    // picks the lists from the current one to it, or adds or drops it.
+    callback pick-lists(index: int, range: bool);
+    // What deleting the list or folder at tree row `index` takes with it,
+    // for the dialog that asks first.
+    pure callback delete-detail(index: int) -> string;
+    // How far down the tree row `index` starts.
+    pure callback tree-row-top(index: int) -> length;
     // Tracks dropped on tree row `index`; `moving` (⌥ held) takes them
     // out of the list they came from.
     callback drop(index: int, data: data-transfer, moving: bool);
@@ -3098,13 +3110,30 @@ component FolderTree inherits Rectangle {
     property <string> rename-text;
     // The row being named in place, as in Finder, and the name typed so far.
     property <int> naming-row: -1;
+    // The keys held at the last click on a row.
+    property <bool> shift-click;
+    property <bool> cmd-click;
     property <string> naming-text;
     // Opens the name editor on a row with its name selected, so typing
     // replaces it and Esc keeps it.
     function name-in-place(row: int) {
         if row >= 0 && row < folders.length {
+            reveal(row);
             naming-text = folders[row].name;
             naming-row = row;
+        }
+    }
+    // Scrolls the tree so row `row` is in sight.
+    // The tree's scroll and height, kept here by the list itself (it sits
+    // in a part only some sources show).
+    property <length> tree-y;
+    property <length> tree-view-h;
+    function reveal(row: int) {
+        let top = LibraryEdit.tree-row-top(row);
+        if top < -tree-y {
+            tree-y = -top;
+        } else if top + 45px > tree-view-h - tree-y {
+            tree-y = min(0px, tree-view-h - top - 45px);
         }
     }
     // Enter or a click elsewhere keeps what was typed; Esc keeps the old name.
@@ -3433,31 +3462,6 @@ component FolderTree inherits Rectangle {
                     folder-menu.close();
                 }
             }
-            if menu-editable && tab == 0 && source == 0: MenuLine {
-                text: "Move to…";
-                clicked => {
-                    move-targets = LibraryEdit.move-targets(menu-index);
-                    folder-menu.close();
-                    move-menu.show();
-                }
-            }
-            if menu-editable && tab == 0 && source == 0: MenuLine {
-                text: "Move Up";
-                hint: LibraryEdit.mac ? "⌥⌘↑" : "Ctrl+Alt+↑";
-                clicked => {
-                    LibraryEdit.nudge-list(menu-index, -1);
-                    folder-menu.close();
-                }
-            }
-            if menu-editable && tab == 0 && source == 0: MenuLine {
-                text: "Move Down";
-                hint: LibraryEdit.mac ? "⌥⌘↓" : "Ctrl+Alt+↓";
-                clicked => {
-                    LibraryEdit.nudge-list(menu-index, 1);
-                    folder-menu.close();
-                }
-            }
-            if menu-editable && tab == 0 && source == 0: MenuSeparator {}
             if menu-editable: MenuLine {
                 text: "Rename…";
                 clicked => {
@@ -3475,40 +3479,70 @@ component FolderTree inherits Rectangle {
                 }
             }
             if menu-editable: MenuLine {
-                text: menu-kind == 1 ? "Delete folder and its lists" : menu-kind == 17 ? "Delete crate" : "Delete list";
+                text: menu-kind == 1 ? "Delete Folder…" : menu-kind == 17 ? "Delete Crate…" : "Delete Playlist…";
                 text-color: Theme.c-ff6b5e;
                 clicked => {
-                    LibraryEdit.delete(menu-index);
+                    delete-detail = LibraryEdit.delete-detail(menu-index);
                     folder-menu.close();
+                    delete-popup.show();
                 }
             }
         }
     }
 
-    // Move to…: the folders the list can go in, and the tops of Crates
-    // and Playlists, as the tree shows them.
-    property <[MoveTarget]> move-targets;
-    move-menu := PopupWindow {
-        x: 40px;
-        y: menu-y;
-        width: 230px;
-        height: min(360px, move-targets.length * 26px + 40px);
+    // Asks before a list or folder is deleted, saying what goes with it.
+    property <string> delete-detail;
+    property <string> delete-what: menu-kind == 1 ? "Folder" : menu-kind == 17 ? "Crate" : "Playlist";
+    delete-popup := PopupWindow {
+        x: 8px;
+        y: max(8px, menu-y - 60px);
+        width: max(240px, root.width - 16px);
         close-policy: close-on-click-outside;
-        MenuBackground {}
+        Rectangle {
+            background: Theme.n-2a2a2d;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 20px;
+            drop-shadow-color: #00000099;
+        }
         VerticalLayout {
-            padding: 6px;
-            spacing: 2px;
-            Text { text: "Move \"" + menu-name + "\" to"; color: Theme.text-dim; font-size: 12px; height: 22px; vertical-alignment: center; overflow: elide; x: 10px; width: parent.width - 20px; }
-            ListView {
-                for t[k] in move-targets: HorizontalLayout {
-                    padding-left: t.depth * 14px;
-                    MenuLine {
-                        text: t.name;
-                        clicked => {
-                            LibraryEdit.move-list-to(menu-index, k);
-                            move-menu.close();
-                        }
+            padding: 16px;
+            spacing: 10px;
+            Text {
+                text: "Delete \"" + menu-name + "\"?";
+                color: Theme.text;
+                font-size: 15px;
+                font-weight: 700;
+                wrap: word-wrap;
+            }
+            if delete-detail != "": Text {
+                text: delete-detail;
+                color: Theme.text-dim;
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: dta.has-hover ? Theme.c-ff6b5e.darker(0.15) : Theme.c-ff6b5e;
+                Text { text: "Delete " + delete-what; color: white; font-size: 14px; font-weight: 600; }
+                dta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        LibraryEdit.delete(menu-index);
+                        delete-popup.close();
                     }
+                }
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: cta.has-hover ? Theme.n-3a3a3d : Theme.control;
+                Text { text: "Cancel"; color: Theme.text; font-size: 14px; }
+                cta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { delete-popup.close(); }
                 }
             }
         }
@@ -3692,6 +3726,9 @@ component FolderTree inherits Rectangle {
             }
             tree-list := ListView {
                 gutter: true;
+                content-y <=> root.tree-y;
+                init => { root.tree-view-h = self.visible-height; }
+                changed visible-height => { root.tree-view-h = self.visible-height; }
                 for f[i] in folders: row := Rectangle {
                     // A line sets the Crates heading apart from the collection.
                     height: f.separator ? 45px : 34px;
@@ -3714,7 +3751,7 @@ component FolderTree inherits Rectangle {
                     border-radius: Theme.radius;
                     border-width: list-over && zone == 1 ? 2px : 0px;
                     border-color: Theme.accent;
-                    background: list-over ? (zone == 1 ? Theme.accent.transparentize(0.88) : (i == current ? (focused ? Theme.selection : Theme.selection-idle) : transparent)) : drop.has-drag ? Theme.selection.transparentize(0.4) : i == current ? (focused ? Theme.selection : Theme.selection-idle) : (ta.has-hover ? Theme.n-232326 : transparent);
+                    background: list-over ? (zone == 1 ? Theme.accent.transparentize(0.88) : (i == current || f.picked ? (focused ? Theme.selection : Theme.selection-idle) : transparent)) : drop.has-drag ? Theme.selection.transparentize(0.4) : i == current || f.picked ? (focused ? Theme.selection : Theme.selection-idle) : (ta.has-hover ? Theme.n-232326 : transparent);
                     // The DJ's own lists and folders drag onto a folder, or a
                     // heading, to move there.
                     DragArea {
@@ -3722,9 +3759,19 @@ component FolderTree inherits Rectangle {
                         data: LibraryEdit.list-payload(i);
                         allow-copy: true;
                         ta := TouchArea {
-                            clicked => { select(i); }
+                            clicked => {
+                                if (shift-click || cmd-click) && f.editable && tab == 0 && source == 0 {
+                                    LibraryEdit.pick-lists(i, shift-click);
+                                } else {
+                                    select(i);
+                                }
+                            }
                             double-clicked => { toggle(i); }
                             pointer-event(e) => {
+                                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                                    shift-click = e.modifiers.shift;
+                                    cmd-click = e.modifiers.control;
+                                }
                                 if (((f.editable || f.analysable || f.adoptable || f.bundle || source == 1 || StoreUi.stream(source)) && tab == 0) || (tab == 1 && f.kind == 5)) && e.button == PointerEventButton.right && e.kind == PointerEventKind.down {
                                     menu-index = i;
                                     menu-name = f.name;
@@ -6896,6 +6943,13 @@ component SidePanel inherits Rectangle {
                 spacing: 8px;
                 Text { text: ["Automix", "Sidelist", "Related"][tab]; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
                 Text { text: total; color: Theme.label; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                if tab == 1 && rows.length > 0 && !SidelistUi.shows-list: VerticalLayout {
+                    alignment: center;
+                    SmallButton {
+                        text: "Clear";
+                        clicked => { SidelistUi.clear(); }
+                    }
+                }
                 if tab == 1: VerticalLayout {
                     alignment: center;
                     SmallButton {
