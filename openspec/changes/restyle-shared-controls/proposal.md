@@ -19,6 +19,7 @@ The kit (in `pills.slint` and `controls.slint`, colours and sizes from `Theme`):
 - **Faders** (channel, tempo, crossfader): a darker graphite cap with a lilac centre line on a thinner track with softer ticks; tempo keeps its lilac fill from the centre. Small parameter sliders use the FX bar's slim slider.
 - **Titled menus:** a bold title naming what is chosen, grey group headings, the current choice tinted lilac.
 - **Section titles** in Roboto Condensed (bundled, OFL); values and labels stay in Inter.
+- **Letter case:** section titles in condensed capitals (SCENE, LOOP, MASTER); pill words, labels and menu rows capitalised (Sync, Key lock, Hot Cues, Analog); units in unit pills lowercase (1/4 beat, 4 bars, ±8%). CUE keeps its capitals as the hardware word.
 
 The areas, in this order:
 
