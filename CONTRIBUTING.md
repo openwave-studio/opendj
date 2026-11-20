@@ -27,6 +27,11 @@ The first build takes about as long as a release build. After that, dependencies
 - Before pushing, run `cargo fmt --check`, `cargo clippy --workspace --all-targets` and the tests for the crates you changed.
 - If the change alters what a DJ sees, update the matching page in `website/book/src/guide`. If it adds controls, regenerate `website/book/supported-controls.txt`.
 
+## UI
+
+- **Use the shared controls.** Power buttons, ‹ › stepper pills, value pills with titled lists, arc knobs and section titles live in `crates/app/ui/pills.slint` and `controls.slint`. Use them rather than drawing a new one in a screen's file; if a screen needs a variant, add it to the shared component.
+- **Colours and control styles come from `Theme`.** Add no hex colour literals outside `crates/app/ui/theme.slint`; when you touch a screen, move the literals in the part you change onto tokens. This keeps Light mode and color schemes (`openspec/changes/add-color-schemes`) reaching every screen.
+
 ## Issues
 
 - Bugs and feature ideas: use the issue templates.
