@@ -3604,8 +3604,17 @@ fn beats_parameter(wanted: f32, lo: i32, hi: i32) -> f32 {
 /// The effects a deck's stems can be sent into, as `[ChannelN],stem_fx`
 /// values 1 and up. One per deck: the stems with their quick effect on
 /// (`[QuickEffectRack1_[ChannelN_StemM]],enabled`) share it, which sounds
-/// the same as one each since both effects are linear.
-pub const STEM_FX: [&str; 2] = ["Echo", "Reverb"];
+/// the same as one each since the effects are linear.
+///
+/// Echo and Reverb add to the stems, which play on dry (muting a sent stem
+/// leaves its echo). Roll and Trans take the sent stems' place: a roll of
+/// them, or them chopped in time, `[ChannelN],stem_fx_beats` long, and
+/// stop as soon as nothing is sent (a controller's drum roll).
+pub const STEM_FX: [&str; 4] = ["Echo", "Reverb", "Roll", "Trans"];
+
+/// `stem_fx` values for Roll and Trans.
+const STEM_ROLL: usize = 3;
+const STEM_TRANS: usize = 4;
 
 /// How long a stem effect rings on once nothing is sent into it, in
 /// seconds, before the deck stops running it.
@@ -3642,12 +3651,18 @@ impl StemFx {
 
     fn load(&mut self, preset: usize) {
         self.preset = preset;
-        self.inst.kind = Some(if preset == 2 {
-            Kind::Reverb
-        } else {
-            Kind::Echo
+        self.inst.kind = Some(match preset {
+            2 => Kind::Reverb,
+            STEM_ROLL => Kind::Roll,
+            STEM_TRANS => Kind::Gate,
+            _ => Kind::Echo,
         });
         self.clear();
+    }
+
+    /// Roll and Trans replace the sent stems rather than adding to them.
+    fn replaces(&self) -> bool {
+        matches!(self.preset, STEM_ROLL | STEM_TRANS)
     }
 
     /// Silences the effect at once, tail and all (a new track).
@@ -3656,9 +3671,10 @@ impl StemFx {
         self.tail = 0.0;
     }
 
-    /// Once per buffer: the chosen effect (`stem_fx`) and the deck's beat
-    /// length in seconds.
-    pub(crate) fn prepare(&mut self, preset: f64, beat_seconds: f64) {
+    /// Once per buffer: the chosen effect (`stem_fx`), the deck's beat
+    /// length in seconds, and how many beats Roll and Trans repeat or chop
+    /// (`stem_fx_beats`, 1/16 to 1).
+    pub(crate) fn prepare(&mut self, preset: f64, beat_seconds: f64, beats: f64) {
         let preset = (preset.round() as usize).clamp(1, STEM_FX.len());
         if preset != self.preset {
             self.load(preset);
@@ -3671,6 +3687,10 @@ impl StemFx {
         let p = match preset {
             // Decay, bandwidth, damping, send: a big, slightly dark hall.
             2 => [0.8, 0.7, 0.35, 1.0],
+            // Rolls read their rate backwards: 1 is the shortest slice.
+            STEM_ROLL => [1.0 - beats_parameter(beats as f32, -4, 4), 0.0, 0.0, 0.0],
+            // Fully shut between beats, open half of each.
+            STEM_TRANS => [beats_parameter(beats as f32, -4, 4), 1.0, 0.5, 0.0],
             // Half a beat, repeats fading over a couple of bars, a little
             // ping-pong, full send.
             _ => [beats_parameter(STEM_ECHO_BEATS, -4, 2), 0.72, 0.25, 1.0],
@@ -3684,6 +3704,7 @@ impl StemFx {
     pub(crate) fn capture_seconds(&self, beat_seconds: f64) -> f64 {
         match self.preset {
             2 => 0.25,
+            STEM_ROLL | STEM_TRANS => 0.0,
             _ => STEM_ECHO_BEATS as f64 * beat_seconds,
         }
     }
@@ -3698,6 +3719,12 @@ impl StemFx {
     pub(crate) fn process(&mut self, x: [f32; 2], sending: bool) -> [f32; 2] {
         if sending {
             self.tail = self.tail_len;
+        } else if self.replaces() {
+            // Nothing to ring on: the stems are back as they were.
+            if self.tail > 0.0 {
+                self.clear();
+            }
+            return [0.0; 2];
         } else if self.tail <= 0.0 {
             return [0.0; 2];
         } else {
@@ -3709,7 +3736,9 @@ impl StemFx {
             }
         }
         let y = self.inst.process(x);
-        // Fades over the last quarter of the tail, so cutting it is silent.
+        // Taking the sent stems out leaves Echo and Reverb's effect alone
+        // (the deck plays the dry stems on), and puts Roll and Trans in
+        // the dry stems' place. Fades over the last quarter of the tail, so cutting it is silent.
         let fade = (self.tail / (0.25 * self.tail_len)).min(1.0);
         [(y[0] - x[0]) * fade, (y[1] - x[1]) * fade]
     }
