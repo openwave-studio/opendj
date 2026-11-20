@@ -181,7 +181,7 @@ openDJ looks after a list of popular controllers itself: the DDJ-FLX4,
 DDJ-FLX6, DDJ-400, DDJ-200, DDJ-SB3, Numark's Mixtrack Platinum FX, Mixtrack
 Pro FX, NS4FX, Mixstream Pro, DJ2GO2 Touch, Party Mix, Scratch and V7,
 DJControl Inpulse 500, Xone K2 and Midi Fighter Twister so far, with the
-DDJ-REV1, DDJ-1000, DDJ-FLX10 and Traktor Kontrol S2 MK3 coming.
+DDJ-REV1, DDJ-1000, DDJ-FLX10, DDJ-GRV6 and Traktor Kontrol S2 MK3 coming.
 Each has a drawing in the Controller Editor and a guide page.
 
 They're marked **Beta** in **Settings › Controllers** and the editor until
