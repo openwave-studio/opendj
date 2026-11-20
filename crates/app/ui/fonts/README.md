@@ -11,3 +11,9 @@ Zen Dots, used for the openDJ name in the top bar, is by Yoshimichi Ohira
 ([googlefonts/zen-dots](https://github.com/googlefonts/zen-dots)), licensed
 under the SIL Open Font License (see `OFL-ZenDots.txt`). It is included
 unchanged.
+
+Roboto Condensed, used for section titles, is from the Roboto project
+([googlefonts/roboto-classic](https://github.com/googlefonts/roboto-classic),
+release v3.011), licensed under the SIL Open Font License (see
+`OFL-RobotoCondensed.txt`). The Medium and Bold static files are included
+unchanged.

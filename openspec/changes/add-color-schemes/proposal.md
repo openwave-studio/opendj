@@ -4,7 +4,7 @@ Planned for: **v1.0 · Ready for any DJ switching over** (a user request, issue 
 
 ## Why
 
-DJs coming from VirtualDJ and Mixxx expect to change how the app looks, and openDJ can't do that yet beyond Dark and Light. Full skin files that rearrange the window are a large job: the default skin is compiled in, and Rust still talks to the main window through about 94 window properties and callbacks that a skin loaded at runtime would have to provide. Colours are the cheapest level to open up. Every colour already goes through the `Theme` global since Light mode, and the Pigments-style controls (#908, #920) are becoming one shared kit that a scheme can restyle in one place.
+DJs coming from VirtualDJ and Mixxx expect to change how the app looks, and openDJ can't do that yet beyond Dark and Light. Full skin files that rearrange the window are a large job: the default skin is compiled in, and Rust still talks to the main window through about 94 window properties and callbacks that a skin loaded at runtime would have to provide. Colours are the cheapest level to open up. Every colour already goes through the `Theme` global since Light mode, and the Tron-look controls (#908, #920) are becoming one shared kit that a scheme can restyle in one place.
 
 ## What Changes
 
@@ -30,7 +30,7 @@ None.
 - Skin files that move, hide or replace parts of the window (`slint-interpreter`), which come after 1.0; showing and hiding deck sections stays in add-layout-customization.
 - Images, icons and fonts in a scheme.
 - Waveform colours, which keep their own setting.
-- A choice between the old boxed controls and the Pigments-style kit.
+- A choice between the old boxed controls and the Tron kit.
 
 ## Difficulty
 
