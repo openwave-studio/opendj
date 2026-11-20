@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxControllerPreset mixxxVersion="2.4.0" schemaVersion="1">
+  <info>
+    <name>Traktor Kontrol D2</name>
+    <author>openDJ</author>
+    <description>openDJ's HID mapping for the Traktor Kontrol D2: one deck at a time with an effect unit, stems on the performance faders, hot cue, loop, slicer and sample pads, the touch strip and transport, played as in Traktor. Written from the controller's published HID report layout. Its display stays dark.</description>
+    <devices>
+      <product protocol="hid" vendor_id="0x17cc" product_id="0x1400" interface_number="0x0" />
+    </devices>
+  </info>
+  <controller id="Traktor">
+    <scriptfiles>
+      <file filename="Traktor-Kontrol-D2.js" functionprefix="TraktorD2" />
+    </scriptfiles>
+  </controller>
+</MixxxControllerPreset>

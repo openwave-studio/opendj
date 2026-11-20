@@ -534,3 +534,63 @@ fn traktor_kontrol_z1_mk2_plays_as_traktor() {
     );
     assert_eq!(c.errors(), Vec::<String>::new());
 }
+
+/// The D2 as Traktor plays it: DECK switches A and C, DECK held with B picks
+/// deck B, A-D send decks to the effect unit on top, the faders are stem
+/// volumes and the LOOP pads jump by the loop.
+#[test]
+fn traktor_kontrol_d2_plays_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol D2.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 17];
+    idle[0] = 0x01;
+    let mut knobs = vec![0u8; 25];
+    knobs[0] = 0x02;
+    c.receive_report(&idle);
+    c.receive_report(&knobs);
+    tap(&mut c, &idle, 8, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "PLAY on deck A");
+    tap(&mut c, &idle, 7, 0x04);
+    tap(&mut c, &idle, 8, 0x10);
+    assert_eq!(get(&reg, "[Channel3]", "play"), 1.0, "DECK, then PLAY on deck C");
+    // Hold DECK and press B.
+    let mut held = idle.clone();
+    held[7] |= 0x04;
+    c.receive_report(&held);
+    tap(&mut c, &held, 5, 0x02);
+    c.receive_report(&idle);
+    tap(&mut c, &idle, 8, 0x10);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "DECK + B, then PLAY on deck B");
+    tap(&mut c, &idle, 5, 0x01);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable"),
+        1.0,
+        "A sends deck A to the B/D effect unit"
+    );
+    reg.get("[Channel2]", "stem_count").unwrap().set(4.0);
+    reg.get("[Channel2_Stem2]", "volume").unwrap().set(0.49);
+    let mut fader = knobs.clone();
+    fader[11] = 0xF7;
+    fader[12] = 0x07;
+    c.receive_report(&fader);
+    settle(&mut c, 10);
+    assert_eq!(get(&reg, "[Channel2_Stem2]", "volume"), 0.5, "fader 2 is stem 2");
+    tap(&mut c, &idle, 4, 0x08);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel2_Stem2]]", "enabled"),
+        1.0,
+        "ON 2 sends stem 2 to the stem effect"
+    );
+    tap(&mut c, &idle, 8, 0x04);
+    let size = get(&reg, "[Channel2]", "beatloop_size");
+    tap(&mut c, &idle, 7, 0x02);
+    assert_eq!(get(&reg, "[Channel2]", "beatjump"), size, "LOOP pad 8 jumps by the loop");
+    let reports = c.take_reports();
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.first() == Some(&0x80) && r.len() == 123),
+        "LED report"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+}

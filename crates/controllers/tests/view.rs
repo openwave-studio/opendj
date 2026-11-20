@@ -161,6 +161,7 @@ fn traktor_hid_pictures_say_what_controls_do() {
         "Traktor Kontrol S3.hid.xml",
         "Traktor Kontrol S4 MK3.hid.xml",
         "Traktor MX2.hid.xml",
+        "Traktor Kontrol D2.hid.xml",
     ] {
         let v = view(file);
         let play = v
