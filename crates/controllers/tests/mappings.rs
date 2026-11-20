@@ -1324,6 +1324,10 @@ fn ddj_sx_family_plays_and_mixes() {
         "Pioneer DDJ-SX.midi.xml",
         "Pioneer DDJ-SX2.midi.xml",
         "Pioneer DDJ-RX.midi.xml",
+        "Pioneer DDJ-SZ.midi.xml",
+        "Pioneer DDJ-RZ.midi.xml",
+        "Pioneer DDJ-RZX.midi.xml",
+        "Pioneer DDJ-RR.midi.xml",
     ] {
         let (reg, mut c) = load(file);
         settle(&mut c, 50);
@@ -1350,6 +1354,97 @@ fn ddj_sx_family_plays_and_mixes() {
         c.receive(&[0xB0, 0x22, 0x45]);
         c.receive(&[0x90, 0x36, 0x00]);
         settle(&mut c, 50);
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+/// The DDJ-RB runs the DDJ-400 script with its own pad numbering: deck 1's
+/// pads on channel 8, deck 2's on 9, SHIFT adding 8 to the note.
+#[test]
+fn ddj_rb_pads_and_effects() {
+    let (reg, mut c) = load("Pioneer-DDJ-RB.midi.xml");
+    settle(&mut c, 50);
+    c.receive(&[0x91, 0x0B, 0x7F]);
+    c.receive(&[0x91, 0x0B, 0x00]);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0);
+    sweep14(&mut c, 0xB1, 0x13, 0x33, 0x00);
+    assert!(get(&reg, "[Channel2]", "volume") < 0.02);
+    // Deck 2's pad 1 is hot cue 1; SHIFT (note + 8) deletes it.
+    c.receive(&[0x98, 0x00, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "hotcue_1_activate"), 1.0);
+    c.receive(&[0x98, 0x00, 0x00]);
+    c.receive(&[0x98, 0x08, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "hotcue_1_clear"), 1.0);
+    c.receive(&[0x98, 0x08, 0x00]);
+    // Its light follows the hot cue.
+    c.take_output();
+    reg.get("[Channel2]", "hotcue_1_enabled").unwrap().set(1.0);
+    c.poll(Instant::now());
+    let out = c.take_output();
+    assert!(out.iter().any(|m| m[..] == [0x98, 0x00, 0x7F]), "{out:x?}");
+    // BEAT JUMP pads, slicer rolls, pad FX, sampler and SLICER LOOP pads.
+    for status in [0x97, 0x98] {
+        for pad in [0x10, 0x18, 0x20, 0x30, 0x38, 0x40, 0x41, 0x50, 0x60] {
+            c.receive(&[status, pad, 0x7F]);
+            c.receive(&[status, pad, 0x00]);
+        }
+    }
+    // FX2's ON button.
+    let slot = "[EffectRack1_EffectUnit2_Effect1]";
+    let on = get(&reg, slot, "enabled");
+    c.receive(&[0x95, 0x47, 0x7F]);
+    c.receive(&[0x95, 0x47, 0x00]);
+    assert_eq!(get(&reg, slot, "enabled"), 1.0 - on);
+    settle(&mut c, 600);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// openDJ's own WeGO and ERGO mappings: decks, mixer, hot cues, the
+/// sampler and the effects.
+#[test]
+fn ddj_wego_family_and_ergo() {
+    for file in [
+        "Pioneer-DDJ-WeGO.midi.xml",
+        "Pioneer-DDJ-WeGO2.midi.xml",
+        "Pioneer-DDJ-WeGO3.midi.xml",
+        "Pioneer-DDJ-WeGO4.midi.xml",
+        "Pioneer-DDJ-ERGO.midi.xml",
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        c.receive(&[0x91, 0x0B, 0x7F]);
+        c.receive(&[0x91, 0x0B, 0x00]);
+        assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "{file}");
+        // Channel fader 1 is B6 13/33.
+        sweep14(&mut c, 0xB6, 0x13, 0x33, 0x00);
+        assert!(get(&reg, "[Channel1]", "volume") < 0.02, "{file}");
+        // Tempo all the way to the top: slowest.
+        c.receive(&[0xB0, 0x00, 0x7F]);
+        c.receive(&[0xB0, 0x20, 0x7F]);
+        assert!(get(&reg, "[Channel1]", "rate") < -0.9, "{file}");
+        // Pad 2 on deck 1 is hot cue 2; SHIFT deletes it.
+        c.receive(&[0x90, 0x2F, 0x7F]);
+        assert_eq!(get(&reg, "[Channel1]", "hotcue_2_activate"), 1.0, "{file}");
+        c.receive(&[0x90, 0x2F, 0x00]);
+        c.receive(&[0x90, 0x60, 0x7F]);
+        assert_eq!(get(&reg, "[Channel1]", "hotcue_2_clear"), 1.0, "{file}");
+        c.receive(&[0x90, 0x60, 0x00]);
+        // The jog: touch, scratch, let go; bend; search.
+        c.receive(&[0x90, 0x36, 0x7F]);
+        c.receive(&[0xB0, 0x22, 0x45]);
+        c.receive(&[0x90, 0x36, 0x00]);
+        c.receive(&[0xB0, 0x21, 0x41]);
+        c.receive(&[0xB0, 0x26, 0x41]);
+        // FX unit 1's first effect on and off.
+        let slot = "[EffectRack1_EffectUnit1_Effect1]";
+        let on_note = if file.contains("ERGO") { 0x47 } else { 0x43 };
+        let on = get(&reg, slot, "enabled");
+        c.receive(&[0x94, on_note, 0x7F]);
+        c.receive(&[0x94, on_note, 0x00]);
+        assert_eq!(get(&reg, slot, "enabled"), 1.0 - on, "{file}");
+        settle(&mut c, 100);
         assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
         c.shutdown();
     }
