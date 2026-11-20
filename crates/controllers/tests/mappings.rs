@@ -2148,6 +2148,147 @@ fn numark_ns4fx_sync_loops_and_crossfader_assign() {
     assert_eq!(get(&reg, "[Channel1]", "orientation"), 1.0);
 }
 
+#[test]
+fn djm_club_mixers_follow_faders_and_input_select() {
+    let (reg, mut c) = load("Pioneer-DJM-900NXS2.midi.xml");
+    // CH3 fader (B0 13) up: on air while INPUT SELECT is on USB A.
+    c.receive(&[0xB0, 0x13, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 1.0);
+    // INPUT SELECT CH3 to PHONO (90 3C): the room no longer hears deck 3.
+    c.receive(&[0x90, 0x3C, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 0.0);
+    // Back to USB A (90 3D).
+    c.receive(&[0x90, 0x3D, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 1.0);
+    // This computer on USB B (90 4F): channel 3 still plays USB A.
+    c.receive(&[0x90, 0x4F, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 0.0);
+    c.receive(&[0x90, 0x46, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "volume"), 1.0);
+    // Crossfader and crossfader assign.
+    c.receive(&[0xB0, 0x0B, 0x00]);
+    assert_eq!(get(&reg, "[Master]", "crossfader"), -1.0);
+    c.receive(&[0xB0, 0x44, 0x7F]);
+    assert_eq!(get(&reg, "[Channel4]", "orientation"), 2.0);
+    c.receive(&[0xB0, 0x41, 0x40]);
+    assert_eq!(get(&reg, "[Channel1]", "orientation"), 1.0);
+
+    // The euphonia's rotary volumes.
+    let (reg, mut c) = load("AlphaTheta-euphonia.midi.xml");
+    c.receive(&[0xB0, 0x11, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "volume"), 1.0);
+    c.receive(&[0x90, 0x33, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "volume"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+#[test]
+fn djm_s9_pads_loops_effects_and_14_bit_faders() {
+    let (reg, mut c) = load("Pioneer-DJM-S9.midi.xml");
+    settle(&mut c, 20);
+    c.take_output();
+
+    // Pads on channel 8 (deck 1) and 9 (deck 2), a mode on each 0x10.
+    c.receive(&[0x97, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "hotcue_3_activate"), 1.0);
+    c.receive(&[0x97, 0x02, 0x00]);
+    c.receive(&[0x98, 0x0A, 0x7F]);
+    c.receive(&[0x98, 0x0A, 0x00]);
+    c.receive(&[0x98, 0x13, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "beatlooproll_0.5_activate"), 1.0);
+    c.receive(&[0x98, 0x13, 0x00]);
+    c.receive(&[0x97, 0x30, 0x7F]);
+    assert_eq!(get(&reg, "[Sampler1]", "cue_gotoandplay"), 1.0);
+    c.receive(&[0x97, 0x30, 0x00]);
+    c.receive(&[0x97, 0x41, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "beatjump_1_forward"), 1.0);
+    c.receive(&[0x97, 0x41, 0x00]);
+
+    // Pad mode buttons light, one at a time.
+    c.receive(&[0x90, 0x1B, 0x7F]);
+    c.receive(&[0x90, 0x1E, 0x7F]);
+    let out = c.take_output();
+    assert!(out.iter().any(|m| m[..] == [0x90, 0x1E, 0x7F]), "{out:x?}");
+    assert!(out.iter().any(|m| m[..] == [0x90, 0x1B, 0x00]), "{out:x?}");
+
+    // Hot cue lights.
+    reg.get("[Channel1]", "hotcue_2_status").unwrap().set(1.0);
+    settle(&mut c, 20);
+    let out = c.take_output();
+    assert!(out.iter().any(|m| m[..] == [0x97, 0x01, 0x7F]), "{out:x?}");
+
+    // Loops: 4 BEAT on 0x14, HALF/DOUBLE.
+    c.receive(&[0x90, 0x14, 0x7F]);
+    c.receive(&[0x90, 0x14, 0x00]);
+    c.receive(&[0x90, 0x12, 0x7F]);
+    c.receive(&[0x90, 0x12, 0x00]);
+
+    // 14-bit channel fader B0 13/33 and crossfader B6 1F/3F.
+    c.receive(&[0xB1, 0x13, 0x40]);
+    c.receive(&[0xB1, 0x33, 0x00]);
+    let v = get(&reg, "[Channel2]", "volume");
+    assert!(v > 0.3 && v < 0.7, "{v}");
+    c.receive(&[0xB6, 0x1F, 0x7F]);
+    c.receive(&[0xB6, 0x3F, 0x7F]);
+    assert_eq!(get(&reg, "[Master]", "crossfader"), 1.0);
+
+    // The CH1 FX lever holds effect 1-2 on channel 1.
+    c.receive(&[0x94, 0x48, 0x7F]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1_Effect2]", "enabled"),
+        1.0
+    );
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1]", "group_[Channel1]_enable"),
+        1.0
+    );
+    c.receive(&[0x94, 0x48, 0x00]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1_Effect2]", "enabled"),
+        0.0
+    );
+
+    // Browser and LOAD.
+    c.receive(&[0x96, 0x46, 0x7F]);
+    c.receive(&[0x96, 0x46, 0x00]);
+    c.receive(&[0xB6, 0x40, 0x01]);
+    settle(&mut c, 20);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
+fn djm_t1_and_plx_crss12_decks_and_pads() {
+    let (reg, mut c) = load("Pioneer-DJM-T1.midi.xml");
+    c.receive(&[0x90, 0x04, 0x7F]);
+    c.receive(&[0x90, 0x04, 0x00]);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0);
+    c.receive(&[0x90, 0x1F, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "hotcue_2_activate"), 1.0);
+    c.receive(&[0x90, 0x1F, 0x00]);
+    let on = get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable");
+    c.receive(&[0x90, 0x09, 0x7F]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable"),
+        1.0 - on
+    );
+    let size = get(&reg, "[Channel1]", "beatloop_size");
+    c.receive(&[0xB0, 0x09, 0x01]);
+    assert_eq!(get(&reg, "[Channel1]", "beatloop_size"), size * 2.0);
+    c.receive(&[0xB0, 0x16, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "volume"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+
+    // The PLX-CRSS12 set to deck 2: pads on channel 9.
+    let (reg, mut c) = load("Pioneer-PLX-CRSS12.midi.xml");
+    c.receive(&[0x98, 0x07, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "hotcue_8_activate"), 1.0);
+    c.receive(&[0x98, 0x07, 0x00]);
+    c.receive(&[0x97, 0x10, 0x7F]);
+    assert_eq!(get(&reg, "[Sampler1]", "cue_gotoandplay"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
 /// Presses, turns and lets go of every message a mapping takes, and checks
 /// its scripts take them all without an error.
 fn every_message_runs_cleanly(file: &str, c: &mut Controller) {
@@ -2371,4 +2512,130 @@ fn ddj_sb_and_sb2() {
         every_message_runs_cleanly(file, &mut c);
         c.shutdown();
     }
+}
+
+/// The all-in-ones sharing Pioneer-all-in-one-script.js: each deck plays
+/// from its own channel, the faders and hot cues follow, and every bound
+/// message runs without script errors.
+/// A unit to try: its file, PLAY note, CH FADER 1 and HOT CUE 1 as
+/// (status, number); (0, 0) for none.
+type AllInOne = (&'static str, u8, (u8, u8), (u8, u8));
+
+#[test]
+fn pioneer_all_in_ones_play_mix_and_run_every_control() {
+    let units: [AllInOne; 8] = [
+        ("Pioneer-XDJ-RX.midi.xml", 0x00, (0xB4, 0x11), (0x90, 0x18)),
+        ("Pioneer-XDJ-RX2.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        ("Pioneer-XDJ-RR.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        ("Pioneer-XDJ-XZ.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        ("Pioneer-XDJ-AERO.midi.xml", 0x0B, (0xB6, 0x13), (0, 0)),
+        ("Pioneer-XDJ-R1.midi.xml", 0x0B, (0xB6, 0x13), (0, 0)),
+        ("Pioneer-XDJ-AN.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        (
+            "AlphaTheta-OMNIS-DUO.midi.xml",
+            0x00,
+            (0xB4, 0x11),
+            (0x95, 0x00),
+        ),
+    ];
+    let dir = default_mappings_dir().unwrap();
+    for (file, play, fader, hot_cue) in units {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 20);
+
+        // PLAY on channel 2 plays deck 2 only.
+        c.receive(&[0x91, play, 0x7F]);
+        c.receive(&[0x91, play, 0x00]);
+        assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "{file}");
+        assert_eq!(get(&reg, "[Channel1]", "play"), 0.0, "{file}");
+
+        // CH FADER 1, swept from the bottom up so pick-up lets it through.
+        for v in 0..=0x7F {
+            c.receive(&[fader.0, fader.1, v]);
+        }
+        assert_eq!(get(&reg, "[Channel1]", "volume"), 1.0, "{file}");
+
+        if hot_cue.0 != 0 {
+            c.receive(&[hot_cue.0, hot_cue.1, 0x7F]);
+            assert_eq!(get(&reg, "[Channel1]", "hotcue_1_activate"), 1.0, "{file}");
+            c.receive(&[hot_cue.0, hot_cue.1, 0x00]);
+        }
+
+        // Every bound message, pressed and let go (turned and back).
+        let mapping = Mapping::load(&dir.join(file)).unwrap();
+        let mut keys: Vec<(u8, u8)> = mapping.inputs.keys().copied().collect();
+        keys.sort();
+        for (status, number) in keys {
+            c.receive(&[status, number, 0x41]);
+            c.receive(&[status, number, 0x00]);
+        }
+        settle(&mut c, 50);
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+#[test]
+fn omnis_duo_hands_its_mixer_to_opendj() {
+    let (_reg, mut c) = load("AlphaTheta-OMNIS-DUO.midi.xml");
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB4, 0x65, 0x00]),
+        "mixer MIDI mode: {out:x?}"
+    );
+    c.shutdown();
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB4, 0x65, 0x7F]),
+        "mixer back: {out:x?}"
+    );
+}
+
+#[test]
+fn xdj_xz_jog_displays_and_load_lights() {
+    let (reg, mut c) = load("Pioneer-XDJ-XZ.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+    reg.get("[Channel3]", "track_loaded").unwrap().set(1.0);
+    reg.get("[Channel3]", "duration").unwrap().set(180.0);
+    reg.get("[Channel3]", "playposition")
+        .unwrap()
+        .set(0.5 / 180.0);
+    settle(&mut c, 100);
+    let out = c.take_output();
+    assert!(
+        out.iter()
+            .any(|m| m[0] == 0xBB && (m[1] == 0x02 || m[1] == 0x22) && m[2] > 0),
+        "jog display moved: {out:x?}"
+    );
+    assert!(
+        out.iter().any(|m| m[..] == [0x9B, 0x02, 0x7F]),
+        "LOAD light: {out:x?}"
+    );
+    // Deck 4's hot cue pad on channel 9.
+    c.receive(&[0x98, 0x00, 0x7F]);
+    assert_eq!(get(&reg, "[Channel4]", "hotcue_1_activate"), 1.0);
+    c.receive(&[0x98, 0x00, 0x00]);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
+fn xdj_aero_deck_fx_runs_an_effect_unit_per_deck() {
+    let (reg, mut c) = load("Pioneer-XDJ-AERO.midi.xml");
+    let fx1 = "[EffectRack1_EffectUnit1_Effect1]";
+    let fx2 = "[EffectRack1_EffectUnit2_Effect1]";
+    // FX 1 ECHO (94 48) loads the echo and turns it on; pressing it again
+    // turns it off. FX 2 ROLL (95 49) on the other unit.
+    c.receive(&[0x94, 0x48, 0x7F]);
+    assert_eq!(get(&reg, fx1, "loaded_effect"), 1.0);
+    assert_eq!(get(&reg, fx1, "enabled"), 1.0);
+    c.receive(&[0x94, 0x48, 0x00]);
+    c.receive(&[0x94, 0x48, 0x7F]);
+    assert_eq!(get(&reg, fx1, "enabled"), 0.0);
+    c.receive(&[0x95, 0x49, 0x7F]);
+    assert_eq!(get(&reg, fx2, "loaded_effect"), 8.0);
+    assert_eq!(get(&reg, fx2, "enabled"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
 }

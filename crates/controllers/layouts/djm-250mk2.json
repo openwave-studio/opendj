@@ -1,0 +1,26 @@
+{
+ "file": "Pioneer-DJM-250MK2.midi.xml",
+ "width": 464,
+ "height": 662,
+ "panels": [[2, 18, 460, 640, 18]],
+ "controls": [
+  {"id": "ch1-input", "label": "INPUT SELECT 1", "kind": "switch", "round": false, "x": 99, "y": 50, "w": 60, "h": 26, "midi": ["USB A|90 35", "LINE|90 33", "PHONO|90 34"]},
+  {"id": "ch2-input", "label": "INPUT SELECT 2", "kind": "switch", "round": false, "x": 301, "y": 50, "w": 60, "h": 26, "midi": ["USB A|90 39", "LINE|90 37", "PHONO|90 38"]},
+  {"id": "ch1-fader", "label": "CH FADER 1", "kind": "fader", "round": false, "x": 117, "y": 389, "w": 24, "h": 154, "midi": ["B0 11"]},
+  {"id": "ch2-fader", "label": "CH FADER 2", "kind": "fader", "round": false, "x": 319, "y": 389, "w": 24, "h": 154, "midi": ["B0 12"]},
+  {"id": "crossfader", "label": "CROSSFADER", "kind": "fader", "round": false, "x": 170, "y": 607, "w": 120, "h": 22, "midi": ["B0 0B"]},
+  {"id": "usb", "label": "USB A/B", "kind": "switch", "round": false, "x": 350, "y": 30, "w": 90, "h": 26, "midi": ["USB A|90 4E"]},
+  {"id": "ch1-trim", "label": "TRIM 1", "kind": "knob", "round": true, "x": 111, "y": 114, "w": 36, "h": 36, "midi": ["B0 01"]},
+  {"id": "ch2-trim", "label": "TRIM 2", "kind": "knob", "round": true, "x": 313, "y": 114, "w": 36, "h": 36, "midi": ["B0 06"]},
+  {"id": "ch1-hi", "label": "HI 1", "kind": "knob", "round": true, "x": 111, "y": 162, "w": 36, "h": 36, "midi": ["B0 02"]},
+  {"id": "ch2-hi", "label": "HI 2", "kind": "knob", "round": true, "x": 313, "y": 162, "w": 36, "h": 36, "midi": ["B0 07"]},
+  {"id": "ch1-mid", "label": "MID 1", "kind": "knob", "round": true, "x": 111, "y": 210, "w": 36, "h": 36, "midi": ["B0 03"]},
+  {"id": "ch2-mid", "label": "MID 2", "kind": "knob", "round": true, "x": 313, "y": 210, "w": 36, "h": 36, "midi": ["B0 08"]},
+  {"id": "ch1-low", "label": "LOW 1", "kind": "knob", "round": true, "x": 111, "y": 258, "w": 36, "h": 36, "midi": ["B0 04"]},
+  {"id": "ch2-low", "label": "LOW 2", "kind": "knob", "round": true, "x": 313, "y": 258, "w": 36, "h": 36, "midi": ["B0 09"]},
+  {"id": "ch1-color", "label": "COLOR 1", "kind": "knob", "round": true, "x": 111, "y": 306, "w": 36, "h": 36, "midi": ["B0 05"]},
+  {"id": "ch2-color", "label": "COLOR 2", "kind": "knob", "round": true, "x": 313, "y": 306, "w": 36, "h": 36, "midi": ["B0 0A"]},
+  {"id": "ch1-cue", "label": "CUE 1", "kind": "button", "round": false, "x": 107, "y": 357, "w": 44, "h": 20, "midi": ["B0 46"]},
+  {"id": "ch2-cue", "label": "CUE 2", "kind": "button", "round": false, "x": 309, "y": 357, "w": 44, "h": 20, "midi": ["B0 47"]}
+ ]
+}
