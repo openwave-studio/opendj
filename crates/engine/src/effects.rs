@@ -3884,6 +3884,7 @@ impl ReleaseStage {
 mod extra;
 pub(crate) mod remix;
 mod remix_fx;
+mod remix_pads;
 mod scenes;
 
 #[cfg(test)]
