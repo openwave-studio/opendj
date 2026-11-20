@@ -2513,3 +2513,129 @@ fn ddj_sb_and_sb2() {
         c.shutdown();
     }
 }
+
+/// The all-in-ones sharing Pioneer-all-in-one-script.js: each deck plays
+/// from its own channel, the faders and hot cues follow, and every bound
+/// message runs without script errors.
+/// A unit to try: its file, PLAY note, CH FADER 1 and HOT CUE 1 as
+/// (status, number); (0, 0) for none.
+type AllInOne = (&'static str, u8, (u8, u8), (u8, u8));
+
+#[test]
+fn pioneer_all_in_ones_play_mix_and_run_every_control() {
+    let units: [AllInOne; 8] = [
+        ("Pioneer-XDJ-RX.midi.xml", 0x00, (0xB4, 0x11), (0x90, 0x18)),
+        ("Pioneer-XDJ-RX2.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        ("Pioneer-XDJ-RR.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        ("Pioneer-XDJ-XZ.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        ("Pioneer-XDJ-AERO.midi.xml", 0x0B, (0xB6, 0x13), (0, 0)),
+        ("Pioneer-XDJ-R1.midi.xml", 0x0B, (0xB6, 0x13), (0, 0)),
+        ("Pioneer-XDJ-AN.midi.xml", 0x00, (0xB4, 0x11), (0x95, 0x00)),
+        (
+            "AlphaTheta-OMNIS-DUO.midi.xml",
+            0x00,
+            (0xB4, 0x11),
+            (0x95, 0x00),
+        ),
+    ];
+    let dir = default_mappings_dir().unwrap();
+    for (file, play, fader, hot_cue) in units {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 20);
+
+        // PLAY on channel 2 plays deck 2 only.
+        c.receive(&[0x91, play, 0x7F]);
+        c.receive(&[0x91, play, 0x00]);
+        assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "{file}");
+        assert_eq!(get(&reg, "[Channel1]", "play"), 0.0, "{file}");
+
+        // CH FADER 1, swept from the bottom up so pick-up lets it through.
+        for v in 0..=0x7F {
+            c.receive(&[fader.0, fader.1, v]);
+        }
+        assert_eq!(get(&reg, "[Channel1]", "volume"), 1.0, "{file}");
+
+        if hot_cue.0 != 0 {
+            c.receive(&[hot_cue.0, hot_cue.1, 0x7F]);
+            assert_eq!(get(&reg, "[Channel1]", "hotcue_1_activate"), 1.0, "{file}");
+            c.receive(&[hot_cue.0, hot_cue.1, 0x00]);
+        }
+
+        // Every bound message, pressed and let go (turned and back).
+        let mapping = Mapping::load(&dir.join(file)).unwrap();
+        let mut keys: Vec<(u8, u8)> = mapping.inputs.keys().copied().collect();
+        keys.sort();
+        for (status, number) in keys {
+            c.receive(&[status, number, 0x41]);
+            c.receive(&[status, number, 0x00]);
+        }
+        settle(&mut c, 50);
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+#[test]
+fn omnis_duo_hands_its_mixer_to_opendj() {
+    let (_reg, mut c) = load("AlphaTheta-OMNIS-DUO.midi.xml");
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB4, 0x65, 0x00]),
+        "mixer MIDI mode: {out:x?}"
+    );
+    c.shutdown();
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB4, 0x65, 0x7F]),
+        "mixer back: {out:x?}"
+    );
+}
+
+#[test]
+fn xdj_xz_jog_displays_and_load_lights() {
+    let (reg, mut c) = load("Pioneer-XDJ-XZ.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+    reg.get("[Channel3]", "track_loaded").unwrap().set(1.0);
+    reg.get("[Channel3]", "duration").unwrap().set(180.0);
+    reg.get("[Channel3]", "playposition")
+        .unwrap()
+        .set(0.5 / 180.0);
+    settle(&mut c, 100);
+    let out = c.take_output();
+    assert!(
+        out.iter()
+            .any(|m| m[0] == 0xBB && (m[1] == 0x02 || m[1] == 0x22) && m[2] > 0),
+        "jog display moved: {out:x?}"
+    );
+    assert!(
+        out.iter().any(|m| m[..] == [0x9B, 0x02, 0x7F]),
+        "LOAD light: {out:x?}"
+    );
+    // Deck 4's hot cue pad on channel 9.
+    c.receive(&[0x98, 0x00, 0x7F]);
+    assert_eq!(get(&reg, "[Channel4]", "hotcue_1_activate"), 1.0);
+    c.receive(&[0x98, 0x00, 0x00]);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
+fn xdj_aero_deck_fx_runs_an_effect_unit_per_deck() {
+    let (reg, mut c) = load("Pioneer-XDJ-AERO.midi.xml");
+    let fx1 = "[EffectRack1_EffectUnit1_Effect1]";
+    let fx2 = "[EffectRack1_EffectUnit2_Effect1]";
+    // FX 1 ECHO (94 48) loads the echo and turns it on; pressing it again
+    // turns it off. FX 2 ROLL (95 49) on the other unit.
+    c.receive(&[0x94, 0x48, 0x7F]);
+    assert_eq!(get(&reg, fx1, "loaded_effect"), 1.0);
+    assert_eq!(get(&reg, fx1, "enabled"), 1.0);
+    c.receive(&[0x94, 0x48, 0x00]);
+    c.receive(&[0x94, 0x48, 0x7F]);
+    assert_eq!(get(&reg, fx1, "enabled"), 0.0);
+    c.receive(&[0x95, 0x49, 0x7F]);
+    assert_eq!(get(&reg, fx2, "loaded_effect"), 8.0);
+    assert_eq!(get(&reg, fx2, "enabled"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}

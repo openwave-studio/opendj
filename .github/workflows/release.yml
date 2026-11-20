@@ -9,6 +9,12 @@ name: Release
 # before the next version. Run this workflow by hand on main to publish a
 # nightly right away. Pre-releases never become "Latest", so the README's
 # download link and the app's update check keep pointing at the last version.
+#
+# Versions: between releases, main's Cargo.toml says the next version with
+# -dev (0.9.0-dev after 0.8.0), so builds from main read as newer than every
+# release so far and the nightly is named 0.9.0-nightly.<date>.<commit>. The
+# prepare PR drops -dev before the tag; right after the tag, main moves on to
+# the next -dev. Patch releases come from release/X.Y branches.
 on:
   push:
     tags: ["v*"]
@@ -41,6 +47,9 @@ jobs:
       # The build in brackets after the version in About openDJ on macOS
       # (the app itself always reports the Cargo.toml version).
       build: ${{ steps.v.outputs.build }}
+      # The version Finder shows on macOS: plain numbers for a nightly,
+      # otherwise empty, which means the Cargo.toml version.
+      bundle: ${{ steps.v.outputs.bundle }}
       nightly: ${{ steps.v.outputs.nightly }}
       # Nothing to do: main hasn't changed since the last nightly.
       skip: ${{ steps.v.outputs.skip }}
@@ -68,9 +77,13 @@ jobs:
               echo "Nightly is already at $sha."
               echo "skip=true" >> "$GITHUB_OUTPUT"
             fi
-            # e.g. 0.9.0-nightly.20261120.abc1234: names the downloads, sorts
-            # by date for apt and dnf, and says which commit it is.
-            echo "version=$cargo-nightly.$(date -u +%Y%m%d).$sha" >> "$GITHUB_OUTPUT"
+            # Main carries the next version with a -dev suffix (e.g. 0.9.0-dev
+            # after 0.8.0 ships), so a nightly is named after the release it
+            # leads up to: 0.9.0-nightly.20261120.abc1234 names the downloads,
+            # sorts by date for apt and dnf, and says which commit it is.
+            next=${cargo%%-*}
+            echo "version=$next-nightly.$(date -u +%Y%m%d).$sha" >> "$GITHUB_OUTPUT"
+            echo "bundle=$next" >> "$GITHUB_OUTPUT"
             echo "build=nightly $sha" >> "$GITHUB_OUTPUT"
             echo "nightly=true" >> "$GITHUB_OUTPUT"
           else
@@ -128,7 +141,7 @@ jobs:
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/cert.p12"
           echo "MACOS_SIGN_IDENTITY=Developer ID Application" >> "$GITHUB_ENV"
-      - run: scripts/bundle-macos.sh dist/opendj "" "${{ needs.version.outputs.build }}"
+      - run: scripts/bundle-macos.sh dist/opendj "${{ needs.version.outputs.bundle }}" "${{ needs.version.outputs.build }}"
       - name: Notarize
         if: env.MACOS_SIGN_IDENTITY != '' && env.APPLE_APP_PASSWORD != ''
         run: |
@@ -183,9 +196,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+      # The runner image version (an environment variable expressions can't read).
+      - run: echo "IMAGE_VERSION=$env:ImageVersion" >> $env:GITHUB_ENV
+        shell: pwsh
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
+          # A new runner image can move Visual Studio, and CMake caches in
+          # target/ (whisper.cpp) would still point at the old compiler.
+          key: ${{ env.IMAGE_VERSION }}
       - run: cargo build --release -p opendj -p opendj-plugin-host
       - run: scripts/bundle-windows.ps1 target/release/opendj.exe "${{ needs.version.outputs.version }}"
         shell: pwsh
@@ -257,6 +276,6 @@ jobs:
           gh release delete nightly --cleanup-tag --yes 2>/dev/null || true
           gh release create nightly dist/* \
             --target "$GITHUB_SHA" \
-            --title "openDJ nightly ($VERSION)" \
+            --title "openDJ ${VERSION%%-*} nightly ($VERSION)" \
             --notes-file notes.md \
             --prerelease --latest=false

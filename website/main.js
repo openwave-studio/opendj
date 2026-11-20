@@ -63,14 +63,16 @@
     .catch(function () {});
 })();
 
-// Latest releases list: the four newest releases from GitHub. Without JS
+// Latest releases list: the four newest releases from GitHub, leaving out
+// pre-releases (the rolling nightly, stem models, betas). Without JS
 // (or if GitHub's API is unreachable) the list written in the page stays.
 (function () {
   var list = document.querySelector("[data-releases]");
   if (!list) return;
-  fetch("https://api.github.com/repos/openwave-studio/opendj/releases?per_page=4")
+  fetch("https://api.github.com/repos/openwave-studio/opendj/releases?per_page=20")
     .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
     .then(function (rels) {
+      rels = rels.filter(function (rel) { return !rel.prerelease && !rel.draft; }).slice(0, 4);
       if (!rels.length) return;
       list.textContent = "";
       rels.forEach(function (rel) {
