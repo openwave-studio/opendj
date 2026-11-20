@@ -32,7 +32,12 @@ Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle satu
 
 ## Scenes
 
-`scene` in -1..1; `scene_down` and `scene_up` pick one of five built-in scenes each; `scene_time` and `scene_color`. A scene is data in `remix.rs`: a short list of (effect kind, parameter, curve) rows applied as |scene| goes from 0 to 1, e.g. Rise Echo = band-pass echo with cutoff 400 Hz → 6 kHz, feedback 0.3 → 0.8, wet 0 → 0.7. Effect instances come from the pool when the knob leaves centre and go back when it returns and the tail ends.
+`scene` in -1..1 (±0.02 dead zone); `scene_up` and `scene_down` pick one of five built-in scenes each; `scene_time` (echo length 1/4, 1/2 or 1 beat) and `scene_color` (filters an octave down to an octave up). A scene is data in `effects/scenes.rs`: two effects in series, each with a function from (amount 0..1, time, color) to its parameters and wet amount, e.g. Rise Echo = a band-pass from 400 Hz to 6 kHz into an echo with feedback 0.3 → 0.8 and send 0 → 0.7.
+
+- Build Up: Rise Echo (band-pass + Echo), Crush Echo (Bitcrusher + Echo), Spiral Up (high-pass + Spiral), Noise Riser (high-pass + Noise), Roll Up (high-pass + Roll from 1/2 to 1/16 beat).
+- Break Down: Dub Down (low-pass closing + Tape Echo), Wash Out (high-pass + Hall), Filter Down (Ladder closing + Gate), Gate Down (1/8-beat Gate + low-pass), Crush Down (downsampling + low-pass).
+- The scene is picked when SCENE leaves centre and kept while it sounds: choosing another scene, or turning the knob to the other side, only takes effect once the first has rung out. The two instances are the Remix deck's own (with their delay memory), not the rack's pool, so a scene never fails to start.
+- After the lanes, in both modes. In Send only what the scene's echoes and reverbs add is played: its filters, gates and crushers colour what feeds the echo but can't take anything out of the source's channel.
 
 ## Release
 

@@ -3855,6 +3855,7 @@ impl ReleaseStage {
 mod extra;
 pub(crate) mod remix;
 mod remix_fx;
+mod scenes;
 
 #[cfg(test)]
 mod bench;

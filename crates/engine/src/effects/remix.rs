@@ -18,6 +18,8 @@
 
 use opendj_control::{Behavior, ControlHandle, ControlRegistry};
 
+use super::scenes::{Look, DOWN, UP};
+pub use super::scenes::{SCENES_DOWN, SCENES_UP};
 use super::{fade_step, glide, link, Ctx, Instance, Kind, MANIFESTS, MAX_PARAMETERS, SILENCE};
 use crate::dsp::{Isolator, EQ_HIGH_HZ, EQ_LOW_HZ};
 use crate::inputs::{AUXILIARIES, MICROPHONE};
@@ -87,6 +89,15 @@ pub struct RemixControls {
     pub lever_on: [ControlHandle; 3],
     pub isolate_effect: ControlHandle,
     pub lever_effect: ControlHandle,
+    /// -1..1: right plays the Build Up scene `scene_up`, left the Break
+    /// Down scene `scene_down`, more as it turns; nothing at centre.
+    pub scene: ControlHandle,
+    pub scene_up: ControlHandle,
+    pub scene_down: ControlHandle,
+    /// The scenes' echo length (1/4, 1/2, 1 beat) and filter colour
+    /// (an octave down to an octave up), 0..1.
+    pub scene_time: ControlHandle,
+    pub scene_color: ControlHandle,
 }
 
 impl RemixControls {
@@ -143,6 +154,25 @@ impl RemixControls {
                 (LEVER_EFFECTS.len() - 1) as f64,
                 Behavior::Free,
             ),
+            scene: reg.create(g, "scene", 0.0, -1.0, 1.0, Behavior::CenteredOnDefault),
+            scene_up: reg.create(
+                g,
+                "scene_up",
+                0.0,
+                0.0,
+                (SCENES_UP.len() - 1) as f64,
+                Behavior::Free,
+            ),
+            scene_down: reg.create(
+                g,
+                "scene_down",
+                0.0,
+                0.0,
+                (SCENES_DOWN.len() - 1) as f64,
+                Behavior::Free,
+            ),
+            scene_time: reg.create(g, "scene_time", 0.5, 0.0, 1.0, Behavior::Linear),
+            scene_color: reg.create(g, "scene_color", 0.5, 0.0, 1.0, Behavior::Linear),
         }
     }
 
@@ -153,6 +183,11 @@ impl RemixControls {
             &self.mode,
             &self.isolate_effect,
             &self.lever_effect,
+            &self.scene,
+            &self.scene_up,
+            &self.scene_down,
+            &self.scene_time,
+            &self.scene_color,
         ]
         .into_iter()
         .chain(&self.isolate)
@@ -194,7 +229,10 @@ fn lever_kind(v: f64) -> Option<Kind> {
 /// Effects whose sound rings on after their input stops: they keep playing
 /// fully once let go, their send closed, until they fall silent.
 fn rings(kind: Kind) -> bool {
-    matches!(kind, Kind::Echo | Kind::Reverb | Kind::TapeEcho)
+    matches!(
+        kind,
+        Kind::Echo | Kind::Reverb | Kind::TapeEcho | Kind::Spiral | Kind::Hall
+    )
 }
 
 /// An effect's parameters at its defaults with `meta` applied as on a slot.
@@ -333,6 +371,11 @@ pub struct RemixDeck {
     /// to 1 while anything is on and back to 0 once all is idle.
     blend: f32,
     lanes: [Lane; 3],
+    /// The scene's two effects, and which scene they hold (Build Up or
+    /// not, and its number): it is picked when SCENE leaves centre and
+    /// kept until the scene has rung out.
+    scene: [Slot; 2],
+    scene_on: Option<(bool, usize)>,
     step: f32,
     insert: bool,
 }
@@ -362,6 +405,8 @@ impl RemixDeck {
                 isolate: Slot::new(sr),
                 lever: Slot::new(sr),
             }),
+            scene: [Slot::new(sr), Slot::new(sr)],
+            scene_on: None,
             step: fade_step(sr),
             insert: false,
         }
@@ -446,6 +491,42 @@ impl RemixDeck {
                 }
             }
         }
+        self.prepare_scene(c, ctx);
+    }
+
+    /// The scene for the next buffer: picked when SCENE leaves centre,
+    /// its effects following the knob, and ringing out once it is back.
+    fn prepare_scene(&mut self, c: &RemixControls, ctx: Ctx) {
+        let v = c.scene.get().clamp(-1.0, 1.0);
+        let on = v.abs() > DEAD_ZONE;
+        let up = v > 0.0;
+        let asleep = self.scene.iter().all(|s| !s.awake);
+        if asleep {
+            self.scene_on = on.then(|| {
+                let pick = if up { &c.scene_up } else { &c.scene_down };
+                let most = if up { UP.len() } else { DOWN.len() } - 1;
+                (up, (pick.get().round().max(0.0) as usize).min(most))
+            });
+        }
+        let Some((side, number)) = self.scene_on else {
+            return;
+        };
+        // Turned the other way while ringing: this scene closes.
+        let on = on && up == side;
+        let look = Look {
+            amount: if on {
+                ((v.abs() - DEAD_ZONE) / (1.0 - DEAD_ZONE)) as f32
+            } else {
+                0.0
+            },
+            time: c.scene_time.get().clamp(0.0, 1.0) as f32,
+            color: c.scene_color.get().clamp(0.0, 1.0) as f32,
+        };
+        let scene = if side { &UP[number] } else { &DOWN[number] };
+        for (slot, step) in self.scene.iter_mut().zip(&scene.steps) {
+            let (p, wet) = (step.params)(&look);
+            slot.set(step.kind, on, wet, &p, ctx);
+        }
     }
 
     /// The source's frame `x` through the lanes, and what the lanes
@@ -473,15 +554,34 @@ impl RemixDeck {
         let target = if busy { 1.0 } else { 0.0 };
         let d = target - self.blend;
         self.blend += d.clamp(-self.step, self.step);
-        if self.blend == 0.0 {
-            // Idle: the source itself, bit for bit.
-            return (x, change);
+        // Idle: the source itself, bit for bit.
+        let y = if self.blend == 0.0 {
+            x
+        } else {
+            [
+                x[0] + (y[0] - x[0]) * self.blend,
+                x[1] + (y[1] - x[1]) * self.blend,
+            ]
+        };
+        if self.scene_on.is_none() {
+            return (y, change);
         }
-        let y = [
-            x[0] + (y[0] - x[0]) * self.blend,
-            x[1] + (y[1] - x[1]) * self.blend,
-        ];
-        (y, change)
+        // The scene, after the lanes. In Send only what its echoes and
+        // reverbs add counts: its filters, gates and crushers colour what
+        // they feed but can't take anything out of the source's channel.
+        let mut s = y;
+        for slot in &mut self.scene {
+            if !slot.awake {
+                continue;
+            }
+            let out = slot.process(s, self.step);
+            if slot.kind.is_some_and(rings) {
+                change[0] += out[0] - s[0];
+                change[1] += out[1] - s[1];
+            }
+            s = out;
+        }
+        (s, change)
     }
 
     /// What the Remix deck plays for the source frame `x`: the processed
@@ -642,6 +742,90 @@ mod tests {
         assert!(back > 0.45, "back up: {back}");
         let highs = level_at(at(24_000), 6000.0) / level_at(src(24_000), 6000.0);
         assert!((highs - 1.0).abs() < 0.05, "{highs}");
+    }
+
+    #[test]
+    fn every_scene_changes_the_sound_and_stays_in_range() {
+        let x = music(24_000);
+        for (side, count) in [(1.0, SCENES_UP.len()), (-1.0, SCENES_DOWN.len())] {
+            for n in 0..count {
+                let (_reg, c, mut deck) = setup();
+                c.mode.set(INSERT);
+                c.scene_up.set(n as f64);
+                c.scene_down.set(n as f64);
+                c.scene.set(side);
+                let y = run(&mut deck, &c, &x);
+                let name = if side > 0.0 {
+                    SCENES_UP[n]
+                } else {
+                    SCENES_DOWN[n]
+                };
+                let d = y[12_000..]
+                    .iter()
+                    .zip(&x[12_000..])
+                    .map(|(a, b)| (a[0] - b[0]).abs())
+                    .fold(0.0, f32::max);
+                assert!(d > 0.05, "{name} changes the sound: {d}");
+                assert!(
+                    y.iter().all(|f| f[0].is_finite() && f[0].abs() < 2.0),
+                    "{name} stays in range"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_build_up_echo_sends_and_rings_out() {
+        let (_reg, c, mut deck) = setup();
+        let x = music(48_000);
+        // Send: nothing at centre.
+        let y = run(&mut deck, &c, &x[..12_000]);
+        assert!(y.iter().all(|f| *f == [0.0, 0.0]));
+        // Rise Echo all the way: the band-passed echo comes out, the
+        // filter itself takes nothing away.
+        c.scene.set(1.0);
+        let y = run(&mut deck, &c, &x);
+        let echo = y[24_000..].iter().map(|f| f[0].abs()).fold(0.0, f32::max);
+        assert!(echo > 0.1, "{echo}");
+        assert!(level_at(&y[24_000..], 80.0) < 0.05, "no bass taken away");
+        // Back to centre: the echo rings on into silence, then the deck
+        // plays nothing again.
+        c.scene.set(0.0);
+        let silence = vec![[0.0f32; 2]; 48_000 * 12];
+        let tail = run(&mut deck, &c, &silence);
+        let ring = tail[..12_000]
+            .iter()
+            .map(|f| f[0].abs())
+            .fold(0.0, f32::max);
+        assert!(ring > 0.01, "rings on: {ring}");
+        let y = run(&mut deck, &c, &x[..12_000]);
+        assert!(y.iter().all(|f| *f == [0.0, 0.0]), "asleep again");
+    }
+
+    #[test]
+    fn filter_down_closes_on_the_highs() {
+        let (_reg, c, mut deck) = setup();
+        c.mode.set(INSERT);
+        c.scene_down.set(2.0);
+        c.scene.set(-1.0);
+        let x = music(48_000);
+        let y = run(&mut deck, &c, &x);
+        let high = level_at(&y[24_000..], 6000.0);
+        assert!(high < 0.05, "the highs are filtered away: {high}");
+    }
+
+    #[test]
+    fn a_scene_picked_mid_turn_waits_for_the_knob_to_come_back() {
+        let (_reg, c, mut deck) = setup();
+        c.mode.set(INSERT);
+        c.scene.set(0.5);
+        let x = music(4_800);
+        run(&mut deck, &c, &x);
+        assert_eq!(deck.scene_on, Some((true, 0)));
+        // Choosing another scene while one plays keeps the one playing.
+        c.scene_up.set(3.0);
+        run(&mut deck, &c, &x);
+        assert_eq!(deck.scene_on, Some((true, 0)));
     }
 
     #[test]
