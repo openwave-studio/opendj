@@ -4336,6 +4336,26 @@
                     <normal />
                 </options>
             </control>
+            <control>
+                <group>[EffectRack1]</group>
+                <key>show</key>
+                <description>Toggle Effect view, Button: SHIFT &amp; left LOAD (Deck 2 active) (Pioneer's MIDI list sends this note)</description>
+                <status>0x96</status>
+                <midino>0x5A</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Samplers]</group>
+                <key>show_samplers</key>
+                <description>Toggle Sampler view, Button: SHIFT &amp; right LOAD (Deck 4 active) (Pioneer's MIDI list sends this note)</description>
+                <status>0x96</status>
+                <midino>0x5B</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
         </controls>
         <outputs />
     </controller>
