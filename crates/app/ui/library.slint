@@ -130,6 +130,9 @@ export global ColumnUi {
     callback resize(column: int, width: length);
     // A resize finished: keep the widths.
     callback resized();
+    // A double-click on a column's right edge: narrow it to the least that
+    // shows its heading and every row of `rows` in full.
+    callback fit(column: int, rows: [TrackRow]);
     // A heading dropped at `x` along a header `header` wide.
     callback move(column: int, x: length, header: length);
     // A heading is being dragged: Rust sets `drop-x` to where it would land
@@ -3973,6 +3976,8 @@ component HeaderCell inherits Rectangle {
     in property <length> header-width;
     callback sort(column: int);
     callback menu(x: length, y: length);
+    // Its right edge was double-clicked.
+    callback fit();
     property <bool> moving;
     // A click sorts only when it started on this heading and didn't resize it.
     property <bool> armed;
@@ -4038,6 +4043,7 @@ component HeaderCell inherits Rectangle {
         }
         rta := TouchArea {
             mouse-cursor: col-resize;
+            double-clicked => { root.fit(); }
             pointer-event(e) => {
                 if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
                     start-width = root.width;
@@ -5644,6 +5650,7 @@ component TrackList inherits Rectangle {
                 header-width: header.width;
                 // Sorting keeps the same tracks picked, wherever they land.
                 sort(id) => { sort(id); }
+                fit => { ColumnUi.fit(c, rows); }
                 menu(x, y) => {
                     column-menu-x = x + lv.content-x;
                     column-menu.show();
