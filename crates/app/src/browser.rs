@@ -558,6 +558,8 @@ pub struct Browser {
     stream_plays: Vec<crate::sources::StreamPlay>,
     /// What each deck is fetching to load (see [`stream_play`]).
     fetches: [Option<stream_play::DeckFetch>; NUM_DECKS],
+    /// Streamed tracks downloading, by link, as their rows show them.
+    row_fetches: stream_play::RowFetches,
     /// What a catalog search listed in place of the playlist: every track
     /// it found (its [`spotify::SEARCH`] key), or an artist's or album's
     /// tracks ("artist:<id>", "album:<id>"). Empty for the playlist.
@@ -1423,6 +1425,7 @@ impl Browser {
             play_sites: Vec::new(),
             stream_plays: Vec::new(),
             fetches: Default::default(),
+            row_fetches: Default::default(),
             stream_search: String::new(),
             catalog: catalog::CatalogState::new(),
             export_status: None,
@@ -6134,6 +6137,10 @@ impl Browser {
                         .map(|id| self.played.time_of(library[id].id))
                         .unwrap_or_default()
                         .into(),
+                    // Filled in by `show_row_fetches`.
+                    fetching: false,
+                    fetch: 0.0,
+                    fetch_failed: false,
                 };
                 let crates = r.local.and_then(|id| self.crates.get(&library[id].id));
                 TrackRow {

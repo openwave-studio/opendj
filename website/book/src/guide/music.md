@@ -85,9 +85,12 @@ Each service is signed in to with your own app, so openDJ ships no keys:
   your playlists, searches and plays.
 
   In the TIDAL source, typing in the search box opens a list of matching
-  artists, albums and tracks under it. Click an artist or album to see its
-  tracks, or a track to load it onto a deck; press ↵ to list every track
-  found. Clear the box to see the playlist again. TIDAL tracks show the
+  artists, albums and tracks under it. Click an artist to see their top
+  tracks and albums (‹ goes back), an album to list its tracks, or a track
+  to load it onto a deck; press ↵ to list every track found. **Download**
+  on a track's right-click (or on several picked tracks) downloads it into
+  your Inbox without loading it: its row shows the progress in the
+  waveform's place, and it is analysed once in. Clear the box to see the playlist again. TIDAL tracks show the
   BPM and key TIDAL gives them before they are downloaded; once a track is
   in the collection, openDJ's own analysis takes over.
 - **Apple Music**: needs an Apple Developer account. Under **Certificates,
