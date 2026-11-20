@@ -7,7 +7,7 @@
 
 ## 2. Instrument decks
 
-- [ ] 2.1 Groove Box header: power, page pills, Kit and Pattern steppers, Scene / Playback / Generation sections, tempo arc knob, Fills switch pill
+- [x] 2.1 Groove Box header: power, page pills, Kit and Pattern steppers, Scene / Playback / Generation sections, tempo arc knob, Fills switch pill
 - [ ] 2.2 Looper and synth decks on the same frame
 
 ## 3. Decks

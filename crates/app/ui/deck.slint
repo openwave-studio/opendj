@@ -1201,7 +1201,7 @@ component GroovePreset inherits GrooveButton {
     in property <int> deck;
     property <string> name: PresetUi.name(deck);
     property <int> asking;
-    text: (name != "" ? name : "Preset") + " ▾";
+    text: name != "" ? name : "Preset";
     clicked => { menu.show(); }
     menu := PopupWindow {
         y: root.height + 2px;
@@ -4191,14 +4191,18 @@ component GroovePads inherits HorizontalLayout {
     }
 }
 
-// The Groove Box's bottom bar: Auto fill (Off, Auto 1, Auto 2), FILL
-// (hold for a fill now) and the REMIX strip (hold and slide: hats, then
+// A thin upright line between a bar's sections.
+component SectionRule inherits Rectangle {
+    width: 9px;
+    Rectangle { width: 1px; height: parent.height - 6px; background: Theme.separator; }
+}
+
+// The Groove Box's generation section: Auto fill (Off, Auto 1, Auto 2), FILL
+// (hold for a fill now), the dice, then the REMIX strip (hold and slide: hats, then
 // rolls, then swapped tracks, then everything; let go to go back).
 component GrooveFillBar inherits HorizontalLayout {
     in property <string> g;
     in property <color> tint;
-    // The Sequencer as 4x4 pads instead of rows of 16.
-    in-out property <bool> four;
     property <int> auto-index: Controls.resolve(g, "auto_fill");
     property <int> auto: Controls.value(auto-index, Controls.tick);
     property <int> fill-index: Controls.resolve(g, "fill");
@@ -4208,14 +4212,6 @@ component GrooveFillBar inherits HorizontalLayout {
     property <int> level: remix <= 0 ? 0 : floor(min(1, remix) * 15.999) + 1;
     height: 26px;
     spacing: 4px;
-    GrooveTab {
-        width: 40px;
-        height: 26px;
-        text: "4×4";
-        on: four;
-        tint: tint;
-        clicked => { four = !four; }
-    }
     // No fills → Auto 1 → Auto 2, a press stepping on.
     GrooveTab {
         width: 72px;
@@ -4243,11 +4239,13 @@ component GrooveFillBar inherits HorizontalLayout {
             }
         }
     }
+    GrooveDice { g: g; width: 30px; height: 26px; tint: tint; }
+    SectionRule { }
     Rectangle {
         horizontal-stretch: 1;
-        border-radius: Theme.radius;
+        border-radius: 7px;
         border-width: 1px;
-        border-color: level > 0 ? tint : Theme.border;
+        border-color: level > 0 ? Theme.n-6e58a8 : Theme.n-2c2c31;
         background: Theme.s-00000040;
         HorizontalLayout {
             padding: 3px;
@@ -4287,11 +4285,12 @@ component GrooveFillBar inherits HorizontalLayout {
 }
 
 // The Groove Box, over the whole deck: a top bar with Play, the kit and
-// the genre and groove in stepper pills, chain, preset, A to D, dice and
-// the tempo (with swing); then the view: Sequencer (eight tracks of 16
-// steps), Synth (each track's sound, pitch, decay and tone) or Mixer (each
-// track's pan, level, meter, M and S); and at the bottom the fills, Remix
-// and the three views as switch pills.
+// the genre and groove in stepper pills, chain and preset, then the scene
+// (A to D) and the tempo (with swing); then the view: Sequencer (eight
+// tracks of 16 steps), Synth (each track's sound, pitch, decay and tone) or
+// Mixer (each track's pan, level, meter, M and S); and at the bottom the
+// three views as switch pills, then generation: fills, Fill, the dice and
+// Remix.
 component GrooveBox inherits Rectangle {
     in property <int> deck;
     in property <string> group;
@@ -4447,9 +4446,10 @@ component GrooveBox inherits Rectangle {
                 }
             }
             GrooveButton {
-                width: 52px;
+                width: chain > 0 ? 96px : 52px;
                 height: 30px;
-                text: "Chain ▾";
+                // The groove it takes turns with, while chained.
+                text: chain > 0 && chain <= grooves.length ? "↔ " + grooves[chain - 1].name : "Chain";
                 lit: chain > 0;
                 tint: tint;
                 clicked => { chain-menu.show(); }
@@ -4484,8 +4484,10 @@ component GrooveBox inherits Rectangle {
             }
             // The preset shares the room left over with the groove's name.
             GroovePreset { deck: deck; min-width: 34px; horizontal-stretch: 1; height: 30px; tint: tint; }
+            // Scene: the groove's four variations.
+            SectionRule { }
             for letter[i] in ["A", "B", "C", "D"]: GrooveButton {
-                width: 22px;
+                width: 24px;
                 height: 30px;
                 text: letter;
                 tint: tint;
@@ -4494,7 +4496,7 @@ component GrooveBox inherits Rectangle {
                 blink: i == queued && queued != sounding && blink;
                 clicked => { Controls.set-value(Controls.resolve(g, "groove"), i); }
             }
-            GrooveDice { g: g; width: 30px; height: 30px; tint: tint; }
+            SectionRule { }
             GrooveTempo { g: g; width: 60px; height: 30px; tint: tint; }
             Rectangle { width: 2px; }
 
@@ -4542,11 +4544,10 @@ component GrooveBox inherits Rectangle {
                 }
             }
         }
+        // The views (and the Sequencer as 4x4 pads), then the generation
+        // section.
         HorizontalLayout {
             spacing: 4px;
-            GrooveFillBar { g: g; tint: tint; four <=> four; horizontal-stretch: 1; }
-            Rectangle { width: 2px; }
-            // The three views, beside the fills: the top bar is full.
             for name[i] in ["Sequencer", "Synth", "Mixer"]: GrooveTab {
                 height: 26px;
                 text: name;
@@ -4554,6 +4555,16 @@ component GrooveBox inherits Rectangle {
                 tint: tint;
                 clicked => { tab = i; }
             }
+            GrooveTab {
+                width: 40px;
+                height: 26px;
+                text: "4×4";
+                on: four;
+                tint: tint;
+                clicked => { four = !four; tab = 0; }
+            }
+            SectionRule { }
+            GrooveFillBar { g: g; tint: tint; horizontal-stretch: 1; }
         }
     }
 }
