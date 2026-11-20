@@ -379,16 +379,21 @@ impl Mapping {
                             .fold(0, |acc, n| acc | Options::from_name(n.tag_name().name()))
                     })
                     .unwrap_or(0);
-                inputs
-                    .entry((byte(text(c, "status"), 0), byte(text(c, "midino"), 0)))
-                    .or_default()
-                    .push(Input {
-                        group: text(c, "group").unwrap_or("").to_string(),
-                        key: text(c, "key").unwrap_or("").to_string(),
-                        options: Options(options),
-                        description: description(c),
-                        ..Default::default()
-                    });
+                let status = byte(text(c, "status"), 0);
+                // Pitch bend's second byte is part of its value, not a
+                // number: Mixxx ignores whatever a mapping wrote there.
+                let number = if status & 0xF0 == 0xE0 {
+                    0
+                } else {
+                    byte(text(c, "midino"), 0)
+                };
+                inputs.entry((status, number)).or_default().push(Input {
+                    group: text(c, "group").unwrap_or("").to_string(),
+                    key: text(c, "key").unwrap_or("").to_string(),
+                    options: Options(options),
+                    description: description(c),
+                    ..Default::default()
+                });
             }
         }
 

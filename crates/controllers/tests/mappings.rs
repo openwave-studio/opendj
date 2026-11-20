@@ -2724,6 +2724,46 @@ fn numark_party_mix_mkii_notes() {
     c.shutdown();
 }
 
+/// Every Denon mapping on the support list takes each of its messages,
+/// pressed and released or turned, without a script error.
+#[test]
+fn denon_mappings_take_every_message_cleanly() {
+    for c in opendj_controllers::support::all() {
+        let Some(file) = c.file.filter(|_| c.name.starts_with("Denon")) else {
+            continue;
+        };
+        let (_reg, mut ctl) = load(&file);
+        settle(&mut ctl, 50);
+        every_message_runs_cleanly(&file, &mut ctl);
+        ctl.shutdown();
+    }
+}
+
+/// Pitch bend carries its value's low 7 bits where other messages carry
+/// their number, so a pitch fader moves its binding whatever those bits
+/// are, and whatever number the mapping wrote for it (as in Mixxx).
+#[test]
+fn pitch_bend_reaches_its_binding_at_any_value() {
+    for (file, status, group) in [
+        ("Denon-MC6000MK2.midi.xml", 0xE0u8, "[Channel1]"),
+        ("Denon MC3000.midi.xml", 0xE0, "[Channel1]"),
+        ("Denon DN SC2000.midi.xml", 0xE1, "[Channel2]"),
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 20);
+        let rate = reg.get(group, "rate").unwrap();
+        c.receive(&[status, 0x00, 0x00]);
+        let low = rate.get();
+        c.receive(&[status, 0x35, 0x70]);
+        let high = rate.get();
+        assert_ne!(low, high, "{file}");
+        c.receive(&[status, 0x12, 0x20]);
+        assert_ne!(rate.get(), high, "{file}");
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
 /// Inpulse 200, per Hercules' MIDI command list: SHIFT and a pad in sampler
 /// mode (0x96/0x97 0x38-0x3B) stops the sample, and the jog wheels' unused
 /// 0xB1/0xB2 0x0C no longer call a script function that doesn't exist.
