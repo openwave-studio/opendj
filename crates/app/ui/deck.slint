@@ -1696,6 +1696,9 @@ export global EffectList {
     // Reverb decay, Filter resonance, Bitcrusher bit depth, Noise sweep,
     // Drive tone, Ladder resonance, Hall decay.
     in property <[int]> slider-params: [-1, 0, 1, -1, 0, -1, -1, -1, -1, -1, 1, -1, 1, -1, 1, 0, -1, -1];
+    // The slider's control names, in the same order (set from the engine's
+    // parameter names): "Decay", "Resonance"...
+    in property <[string]> slider-labels;
 }
 
 // The effect menu's contents: openDJ FX and Plugins tabs (when plugins are

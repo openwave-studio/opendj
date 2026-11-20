@@ -16,9 +16,9 @@ use std::sync::mpsc::{self, Receiver};
 use std::time::{Duration, UNIX_EPOCH};
 
 use opendj_engine::plugins::{scan, scan_audio_units, Descriptor, Plugin, PluginEntry, ScanError};
-use opendj_engine::{step_effect, AudioEngine, AVAILABLE_EFFECTS};
+use opendj_engine::{parameter_names, step_effect, AudioEngine, AVAILABLE_EFFECTS};
 use serde_json::{json, Value};
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
 use crate::settings;
 use crate::{AppWindow, EffectList, FxRow};
@@ -332,6 +332,20 @@ impl AudioPlugins {
                 .set_names(ModelRc::new(VecModel::from(names)));
             app.global::<EffectList>()
                 .set_builtin_count(AVAILABLE_EFFECTS.len() as i32);
+            // What each built-in effect's slider sets, named.
+            let params = app.global::<EffectList>().get_slider_params();
+            let labels: Vec<SharedString> = (0..AVAILABLE_EFFECTS.len())
+                .map(|i| {
+                    let p = params.row_data(i).unwrap_or(-1);
+                    usize::try_from(p)
+                        .ok()
+                        .and_then(|p| parameter_names((i + 1) as f64).get(p).copied())
+                        .unwrap_or("")
+                        .into()
+                })
+                .collect();
+            app.global::<EffectList>()
+                .set_slider_labels(ModelRc::new(VecModel::from(labels)));
             let (previous, following) = neighbours(chosen.len());
             app.global::<EffectList>()
                 .set_previous(ModelRc::new(VecModel::from(previous)));
