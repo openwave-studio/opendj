@@ -30,7 +30,7 @@ None.
 - Skin files that move, hide or replace parts of the window (`slint-interpreter`), which come after 1.0; showing and hiding deck sections stays in add-layout-customization.
 - Images, icons and fonts in a scheme.
 - Waveform colours, which keep their own setting.
-- A choice between the old boxed controls and the Pigments-style kit.
+- A choice between the old boxed controls and the Tron kit.
 
 ## Difficulty
 

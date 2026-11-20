@@ -4,7 +4,7 @@ Planned for: **v0.9 · In the club** (a user request, issue #923, 2026-11-20)
 
 ## Why
 
-The FX bar now uses Pigments-style controls (#908, #920): round power buttons, dark value pills with titled lists, ‹ › inside the name pill, arc knobs. The rest of the window still uses the older boxed buttons, tabs that get cut off ("BEAT JUMF"), unlabeled ▾ menus and plain grey knobs, so the app has two looks. Using one shared kit everywhere makes the window easier to read, gives every on/off and every choice the same shape, and lets a color scheme (add-color-schemes, #921) restyle all of it from `Theme`.
+The FX bar now uses the Tron look (#908, #920), the name for the controls first modelled on Arturia Pigments: round power buttons, dark value pills with titled lists, ‹ › inside the name pill, arc knobs. The rest of the window still uses the older boxed buttons, tabs that get cut off ("BEAT JUMF"), unlabeled ▾ menus and plain grey knobs, so the app has two looks. Using one shared kit everywhere makes the window easier to read, gives every on/off and every choice the same shape, and lets a color scheme (add-color-schemes, #921) restyle all of it from `Theme`.
 
 ## What Changes
 
