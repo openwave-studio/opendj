@@ -193,7 +193,8 @@ in the Controller Editor and a guide page:
   the PLX-CRSS12.
 - **Native Instruments:** Traktor Kontrol S2 MK3, S3, S4 MK3, S5, S8, D2, X1
   MK3, Z1 MK2, Traktor MX2 and Maschine Mikro MK3.
-- **Denon DJ:** MC7000, MC6000MK2, MC4000, MC3000, DN-SC2000 and DN-HS5500.
+- **Denon DJ:** SC LIVE 4, PRIME 4, PRIME GO, MC7000, MC6000MK2, MC4000,
+  MC3000, DN-SC2000 and DN-HS5500.
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,
   DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7.
 - **Hercules:** DJControl Inpulse 200, 300 and 500, Jogvision and Mix.
