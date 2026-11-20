@@ -12,17 +12,17 @@
 
 ## 3. Decks
 
-- [ ] 3.1 Deck controls: Sync, Key lock, Master, Vinyl and Slip switch pills; pad mode stepper; square pads; Loop section without on/off; Key stepper; tempo range value pill
+- [x] 3.1 Deck controls: Sync, Key lock, Master, Vinyl and Slip switch pills; pad mode stepper; square pads; Loop section without on/off; Key stepper; tempo range value pill
 - [ ] 3.2 Pad pages: each page's setting in the stepper row, pad text layout
 
 ## 4. Mixer and menus
 
-- [ ] 4.1 Mixer: centre-out EQ arcs in band colours, EQ / Sculpt / Stems switch pill, round headphone cue, FX assign switch pills, new fader caps for channel, tempo and crossfader
+- [x] 4.1 Mixer: centre-out EQ arcs in band colours, EQ / Sculpt / Stems switch pill, round headphone cue, FX assign switch pills, new fader caps for channel, tempo and crossfader
 - [ ] 4.2 Titled menus everywhere
 
 ## 5. Panels and Settings
 
-- [ ] 5.1 Automix panel: power, Length stepper, Style, Repeat and Skip played switch pills
+- [x] 5.1 Automix panel: power, Length stepper, Style and Repeat switch pills (the panel has no Skip played setting)
 - [ ] 5.2 Settings: steppers, value pills, lilac switches
 
 ## 6. Top bar

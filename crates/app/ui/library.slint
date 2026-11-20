@@ -15,6 +15,7 @@ import { PageView, PageUi } from "pages.slint";
 import { FilterBar, FilterUi, SuggestionList } from "filters.slint";
 import { CrateIcon, CrateColors } from "crate_icon.slint";
 import { TourMark } from "tourmark.slint";
+import { ListRow, PowerButton, StepperPill, SwitchPill, TitledList } from "pills.slint";
 
 export struct Folder {
     name: string,
@@ -6167,34 +6168,6 @@ component TrackList inherits Rectangle {
 }
 
 // Starts and stops Automix: a play triangle and the word, green while on.
-component AutomixButton inherits Rectangle {
-    in property <bool> on;
-    callback clicked();
-    property <color> green: Theme.automix;
-    width: 92px;
-    height: 22px;
-    border-radius: 11px;
-    background: on ? (ta.pressed ? green.darker(0.2) : ta.has-hover ? green.brighter(0.1) : green)
-        : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.panel-raised;
-    border-width: on ? 0px : 1px;
-    border-color: green.with-alpha(0.6);
-    HorizontalLayout {
-        alignment: center;
-        spacing: 5px;
-        Path {
-            width: 9px;
-            height: 22px;
-            viewbox-width: 9;
-            viewbox-height: 22;
-            fill: on ? Theme.n-000000 : green;
-            commands: on ? "M 0 6.5 L 3 6.5 L 3 15.5 L 0 15.5 Z M 5.5 6.5 L 8.5 6.5 L 8.5 15.5 L 5.5 15.5 Z" : "M 0.5 6 L 8.5 11 L 0.5 16 Z";
-        }
-        Text { text: "AUTOMIX"; color: on ? #000000 : Theme.text; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-    }
-    ta := TouchArea { clicked => { root.clicked(); } }
-    TourMark { id: "ui,automix_button"; }
-}
-
 // A small flat button with a word on it.
 component SmallButton inherits Rectangle {
     in property <string> text;
@@ -6203,13 +6176,12 @@ component SmallButton inherits Rectangle {
     // Switched on (Repeat): drawn in the accent.
     in property <bool> lit;
     callback clicked();
-    width: label.preferred-width + 16px;
-    height: 22px;
-    y: 1px;
-    border-radius: 4px;
-    background: lit ? Theme.accent.with-alpha(0.18) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.panel-raised;
-    border-width: lit ? 1px : 0px;
-    border-color: Theme.accent;
+    width: label.preferred-width + 20px;
+    height: 24px;
+    border-radius: 7px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: lit ? Theme.pill-on-border : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
     label := Text { text: root.text; color: lit ? Theme.lilac-text : Theme.text; font-size: 12px; font-weight: 500; }
     ta := TouchArea { clicked => { root.clicked(); } }
     TourMark { id: root.tour-id; }
@@ -6714,6 +6686,21 @@ component SidePanel inherits Rectangle {
     in property <string> automix-status;
     // After an Order pick: what the list was put in order by, with Undo.
     in-out property <string> automix-order-note;
+    // The mix lengths for the Length list.
+    property <[Choice]> length-choices: [
+        { text: "Time", header: true, value: -1 },
+        // No mix: each track plays to its end and the next starts at once.
+        { text: "0 seconds (gapless)", value: 0 },
+        { text: "12 seconds", value: 1 },
+        { text: "15 seconds", value: 2 },
+        { text: "30 seconds", value: 3 },
+        { text: "Bars", header: true, value: -1 },
+        { text: "16 bars", value: 4 },
+        { text: "32 bars", value: 5 },
+        { text: "Phrases", header: true, value: -1 },
+        // Intro over outro: from the outgoing outro, as long as the incoming intro.
+        { text: "Intro over outro", value: 6 },
+    ];
     in property <int> automix-length;
     in property <int> automix-style;
     // Played tracks go back to the end of the list instead of leaving it.
@@ -7049,6 +7036,15 @@ component SidePanel inherits Rectangle {
             HorizontalLayout {
                 height: 30px;
                 spacing: 8px;
+                // Automix on and off: the power button before its name.
+                if tab == 0: VerticalLayout {
+                    alignment: center;
+                    PowerButton {
+                        on: automix-on;
+                        clicked => { automix-toggle(); }
+                        TourMark { id: "ui,automix_button"; }
+                    }
+                }
                 if tab != 7: Text { text: tab == 0 ? "Automix" : tab == 1 ? "Shortlist" : "Related"; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
                 // The Playlist tab: which playlist, as a picker.
                 if tab == 7: VerticalLayout {
@@ -7073,54 +7069,42 @@ component SidePanel inherits Rectangle {
                         clicked => { SidelistUi.clear(); }
                     }
                 }
-                if tab == 0: VerticalLayout {
-                    alignment: center;
-                    AutomixButton {
-                        on: automix-on;
-                        clicked => { automix-toggle(); }
-                    }
-                }
             }
             if tab == 0: VerticalLayout {
                 spacing: 4px;
                 HorizontalLayout {
                     spacing: 6px;
-                    Dropdown {
-                        horizontal-stretch: 1;
-                        label: "LENGTH";
-                        tour-id: "ui,automix_length";
-                        text: ["0 s", "12 s", "15 s", "30 s", "16 bars", "32 bars", "Phrases"][automix-length];
-                        current: automix-length;
-                        choices: [
-                            { text: "TIME", header: true, value: -1 },
-                            // No mix: each track plays to its end and the next starts at once.
-                            { text: "0 seconds (gapless)", value: 0 },
-                            { text: "12 seconds", value: 1 },
-                            { text: "15 seconds", value: 2 },
-                            { text: "30 seconds", value: 3 },
-                            { text: "BARS", header: true, value: -1 },
-                            { text: "16 bars", value: 4 },
-                            { text: "32 bars", value: 5 },
-                            { text: "PHRASES", header: true, value: -1 },
-                            // Intro over outro: from the outgoing outro, as long as the incoming intro.
-                            { text: "Intro over outro", value: 6 },
-                        ];
-                        picked(i) => { automix-set-length(i); }
+                    Text { text: "Length"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
+                    Rectangle {
+                      width: 112px;
+                      StepperPill {
+                        width: 112px;
+                        prev-enabled: automix-length > 0;
+                        next-enabled: automix-length < 6;
+                        prev => { automix-set-length(automix-length - 1); }
+                        next => { automix-set-length(automix-length + 1); }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: ["0 s", "12 s", "15 s", "30 s", "16 bars", "32 bars", "Phrases"][automix-length];
+                            color: len-ta.has-hover ? Theme.n-ffffff : Theme.text;
+                            font-size: 12px;
+                            font-weight: 500;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            len-ta := TouchArea { mouse-cursor: pointer; clicked => { length-menu.show(); } }
+                        }
+                      }
+                      TourMark { id: "ui,automix_length"; }
                     }
-                    Dropdown {
-                        horizontal-stretch: 1;
-                        label: "STYLE";
-                        tour-id: "ui,automix_style";
+                    Rectangle { width: 4px; }
+                    Text { text: "Style"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
+                    // Four styles: a press steps to the next.
+                    SwitchPill {
                         text: ["Smooth", "Bass swap", "Filter", "Cut"][automix-style];
-                        current: automix-style;
-                        choices: [
-                            { text: "Smooth", value: 0 },
-                            { text: "Bass swap", value: 1 },
-                            { text: "Filter", value: 2 },
-                            { text: "Cut", value: 3 },
-                        ];
-                        picked(i) => { automix-set-style(i); }
+                        clicked => { automix-set-style(mod(automix-style + 1, 4)); }
+                        TourMark { id: "ui,automix_style"; }
                     }
+                    Rectangle { horizontal-stretch: 1; }
                 }
                 // Always there, so the list below doesn't move when the status comes and goes.
                 HorizontalLayout {
@@ -7147,9 +7131,9 @@ component SidePanel inherits Rectangle {
                         clicked => { order-menu.show(); }
                     }
                     // The list keeps going round: played tracks go back to its end.
-                    SmallButton {
+                    SwitchPill {
                         text: "Repeat";
-                        lit: automix-repeat;
+                        on: automix-repeat;
                         clicked => { automix-set-repeat(!automix-repeat); }
                     }
                     if automix-on: SmallButton { text: "Mix now"; tour-id: "ui,automix_mix_now"; clicked => { automix-mix-now(); } }
@@ -7235,40 +7219,46 @@ component SidePanel inherits Rectangle {
                 y: 98px;
                 width: 230px;
                 close-policy: close-on-click-outside;
-                MenuBackground {}
-                VerticalLayout {
-                    padding: 6px;
-                    Text {
-                        height: 22px;
-                        x: 6px;
-                        text: "PUT THE LIST IN ORDER";
-                        color: Theme.text-dim;
-                        font-size: 10px;
-                        font-weight: 600;
-                        letter-spacing: 0.5px;
-                        vertical-alignment: center;
-                    }
+                TitledList {
+                    title: "Put the list in order";
                     // In automix_order::ORDERS order.
-                    for name[i] in ["Shuffle", "BPM low to high", "BPM high to low", "Harmonic path", "Smooth flow (key and BPM)", "Reverse"]: Rectangle {
-                        height: 26px;
-                        border-radius: 4px;
-                        background: ota.has-hover ? Theme.n-3a3a3d : transparent;
-                        Text { x: 12px; text: name; color: Theme.text; font-size: 13px; vertical-alignment: center; }
-                        ota := TouchArea {
-                            clicked => {
-                                automix-order(i);
-                                order-menu.close();
-                            }
+                    for name[i] in ["Shuffle", "BPM low to high", "BPM high to low", "Harmonic path", "Smooth flow (key and BPM)", "Reverse"]: ListRow {
+                        clicked => {
+                            automix-order(i);
+                            order-menu.close();
                         }
+                        Text { x: 10px; text: name; color: Theme.text; font-size: 12px; vertical-alignment: center; }
                     }
                     Rectangle { height: 4px; }
                     Text {
-                        x: 6px;
-                        width: parent.width - 12px;
+                        x: 8px;
+                        width: parent.width - 16px;
                         text: "The first track, and the ones Automix is playing or has waiting, stay where they are.";
                         color: Theme.text-dim;
                         font-size: 11px;
                         wrap: word-wrap;
+                    }
+                }
+            }
+            // The mix lengths, by time, bars and phrases.
+            length-menu := PopupWindow {
+                x: 6px;
+                y: 64px;
+                width: 200px;
+                close-policy: close-on-click-outside;
+                TitledList {
+                    title: "Length";
+                    for c in root.length-choices: Rectangle {
+                        height: c.header ? 22px : 28px;
+                        if c.header: Text { x: 10px; text: c.text; color: Theme.text-dim; font-size: 11px; font-weight: 600; vertical-alignment: bottom; }
+                        if !c.header: ListRow {
+                            selected: c.value == automix-length;
+                            clicked => {
+                                automix-set-length(c.value);
+                                length-menu.close();
+                            }
+                            Text { x: 10px; text: c.text; color: c.value == automix-length ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
+                        }
                     }
                 }
             }

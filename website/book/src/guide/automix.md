@@ -10,9 +10,10 @@ and the EQ move, and you can take over at any time.
    panel on the right of the browser. Drag tracks into it, or right-click a
    track and choose **Add to Automix**. Drag tracks within the list to
    change their order. The top of the panel shows how long the list runs.
-2. **Pick a length and a style** from the two menus at the top of the
-   panel (see below).
-3. **Press AUTOMIX.** It turns green. If nothing is playing, openDJ loads the
+2. **Pick a length and a style** at the top of the panel (see below):
+   step **Length** with its arrows or press it for the list, and press
+   **Style** to step through the styles.
+3. **Press the power button** by the Automix name. It lights up. If nothing is playing, openDJ loads the
    first track and starts it; if a deck is already playing, Automix mixes out
    of it into the list.
 
@@ -47,7 +48,7 @@ openDJ remembers the length and style you picked.
 - **Move the crossfader** during a mix to take it over: Automix stops and
   leaves the mix to you. Pausing the playing deck stops it too.
 - **Start the other deck yourself** and Automix leaves that deck alone.
-- **Press AUTOMIX** again to stop. A mix in progress stays where it is, and
+- **Press the power button** again to stop. A mix in progress stays where it is, and
   the EQ and filter Automix moved go back to the middle.
 
 The panel says what Automix is doing, such as which track mixes in next and
