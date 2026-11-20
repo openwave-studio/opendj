@@ -1758,6 +1758,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 b.learn_deck_phrases(&tracks);
                 b.learn_analysis(&tracks);
                 let fetches = b.deck_fetches();
+                b.show_row_fetches();
                 b.poll_prep();
                 b.keep(&tracks, 0.016);
                 let mut host = browser::AutomixHost {

@@ -85,9 +85,12 @@ Each service is signed in to with your own app, so openDJ ships no keys:
   your playlists, searches and plays.
 
   In the TIDAL source, typing in the search box opens a list of matching
-  artists, albums and tracks under it. Click an artist or album to see its
-  tracks, or a track to load it onto a deck; press ↵ to list every track
-  found. Clear the box to see the playlist again. TIDAL tracks show the
+  artists, albums and tracks under it. Click an artist to see their top
+  tracks and albums (‹ goes back), an album to list its tracks, or a track
+  to load it onto a deck; press ↵ to list every track found. **Download**
+  on a track's right-click (or on several picked tracks) downloads it into
+  your Inbox without loading it: its row shows the progress in the
+  waveform's place, and it is analysed once in. Clear the box to see the playlist again. TIDAL tracks show the
   BPM and key TIDAL gives them before they are downloaded; once a track is
   in the collection, openDJ's own analysis takes over.
 - **Apple Music**: needs an Apple Developer account. Under **Certificates,
@@ -620,9 +623,14 @@ folder for a moment and the folder opens; near the top or bottom of the
 tree, the tree scrolls. Drop it on the **Crates** or **Playlists** heading
 to take it back to the top (a crate's top is Crates, a playlist's is
 Playlists; a folder can go under either). The list stays selected where it
-landed. Without dragging, right-click a list for **Move to…** (pick a
-folder or the top), **Move Up** or **Move Down**, or press ⌥⌘↑ / ⌥⌘↓
-(Ctrl+Alt+↑ / ↓ on Windows and Linux) while the tree has the keys.
+landed. Without dragging, press ⌥⌘↑ / ⌥⌘↓ (Ctrl+Alt+↑ / ↓ on Windows
+and Linux) while the tree has the keys to move a list up or down.
+Shift-click or ⌘-click (Ctrl-click) more lists to pick several; dragging
+and those keys then take them all together. A new
+crate, playlist or folder starts at the top of the folder or section you
+make it in, with its name ready to type over. **Delete…** on a list's
+menu asks first and says what goes with it; the tracks stay in your
+collection.
 - **Imported**: other apps' lists (a folder per app) and **Groupings and
   Tags**. They are read-only, because the app's next import makes them
   again, so they show a padlock and dimmer names. To keep an app's lists as
@@ -640,7 +648,7 @@ tracks in it. **Show in playlist** lists the crates and playlists a track
 is in and opens the one you pick.
 
 Hold <kbd>⌥</kbd> (Alt on Windows and Linux) as you drop tracks dragged out
-of the open list or the Sidelist to **move** them: they go into the list
+of the open list, the Shortlist or the Playlist tab to **move** them: they go into the list
 you drop them on and leave the one they came from. The row you hover says
 **Add 3** or **Move 3**. A playlist leaves out tracks it already has; the
 note that says so has **Add them again** to add them anyway.
@@ -662,21 +670,27 @@ A track can be in as many crates as you like, and the **Crates** column
 `crate:yoga` for tracks in a crate with "yoga" in its name, `crate:=yoga`
 for that crate only, and `crate:""` for tracks in no crate yet.
 
-### The Sidelist
+### Shortlist and Playlist tabs
 
-The **Sidelist** tab of the side panel holds a list beside the track
-list, so you can build it while you browse anywhere else. It starts as a
-scratch pad, kept until you clear it, even after you quit. Drag tracks
-into it, or pick tracks and press <kbd>S</kbd>; drag its rows to change
-their order, and Delete takes the picked ones out.
+Two tabs of the side panel hold a list beside the track list, so you can
+build it while you browse anywhere else.
 
-To work on one of your crates or playlists there instead, drag it from
-the tree onto the Sidelist tab, or right-click it and choose **Show in
-Sidelist**. The button by the Sidelist's title names the list it shows
-and switches to another, or back to the scratch pad. What you drop,
-reorder or take out there changes that list straight away. **Save
-scratch pad as playlist** at the bottom of that menu keeps the scratch
-pad as a playlist at the top of Playlists and starts a new, empty one.
+The **Shortlist** is a scratch list, kept until you clear it, even after
+you quit. Drag tracks into it, or pick tracks and press <kbd>S</kbd>; drag
+its rows to change their order, and Delete takes the picked ones out.
+**Clear** by its title empties it, and **Save** keeps it as a playlist at
+the top of Playlists, opens that in the Playlist tab and starts a new,
+empty Shortlist.
+
+The **Playlist** tab works on one of your saved playlists. Pick it with
+the button at the top, drag it from the tree onto the Playlist tab, or
+right-click it and choose **Show in Playlist Tab**. What you drop,
+reorder or take out there changes that playlist straight away. Taking out
+every track asks first; anything else has **Undo** and ⌘Z (Ctrl+Z).
+
+Drop tracks on the **Automix**, **Shortlist** or **Playlist** tab title to
+add them to the end of its list. Hold them over the title for a moment and
+the tab opens, so you can drop them at a spot in the list instead.
 
 ### History
 

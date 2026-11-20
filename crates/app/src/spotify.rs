@@ -132,6 +132,9 @@ pub enum Request {
     /// Search the catalog for artists, albums and tracks; answered with
     /// [`Event::Searched`].
     Search(String),
+    /// An artist's page (its key, "artist:<id>"): their top tracks and
+    /// albums, answered with [`Event::Searched`] under that key.
+    Artist(String),
 }
 
 /// What a catalog search found, best first in each kind.
@@ -410,7 +413,7 @@ impl Worker {
                 }
                 // Only TIDAL browses through an add-on, or searches the
                 // catalog.
-                Request::Catalog(_) | Request::Search(_) => {}
+                Request::Catalog(_) | Request::Search(_) | Request::Artist(_) => {}
                 Request::Disconnect => {
                     if let Some(s) = self.session.take() {
                         Saved {

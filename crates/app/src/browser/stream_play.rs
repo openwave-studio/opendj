@@ -6,7 +6,10 @@
 //! collection in the Inbox and takes the streamed track's place in the
 //! lists it stood in.
 
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
+
+use slint::Model;
 
 use opendj_engine::scan::read_track;
 
@@ -16,6 +19,15 @@ use crate::spotify::StreamTrack;
 
 /// How long a failed fetch stays on its deck.
 const FAILED_SHOWN: Duration = Duration::from_secs(8);
+
+/// How each streamed track downloading is going, by link, for its rows:
+/// how far it got, whether it failed, and when a failed one goes. `shown`
+/// says the rows show some, so they are cleared once none are left.
+#[derive(Default)]
+pub struct RowFetches {
+    by_link: HashMap<String, (f32, bool, Option<Instant>)>,
+    shown: bool,
+}
 
 /// A streamed track downloading to load onto a deck, as the deck shows it.
 #[derive(Clone, Debug, PartialEq)]
@@ -78,18 +90,25 @@ impl Browser {
                 until: None,
             });
         }
+        self.row_fetches
+            .by_link
+            .insert(t.page.clone(), (0.0, false, None));
         self.stream_plays.push(Self::stream_play(t, service, deck));
     }
 
-    /// Downloads a streamed track into the collection, without loading it.
+    /// Downloads a streamed track into the collection, without loading it:
+    /// its rows show how it goes, and it is analysed once in.
     pub(super) fn download_stream(&mut self, t: &StreamTrack, service: &str) {
-        if self.plays_link(&t.page) {
+        if self.plays_link(&t.page) && !self.row_fetches.by_link.contains_key(&t.page) {
+            self.row_fetches
+                .by_link
+                .insert(t.page.clone(), (0.0, false, None));
             self.stream_plays.push(Self::stream_play(t, service, None));
         }
     }
 
-    /// Download on a streamed row's menu: one plays as a double-click
-    /// does; several download.
+    /// Download on a streamed row's menu: downloads the row, or every row
+    /// picked, without loading any onto a deck.
     pub(super) fn fetch_rows(&mut self, first: usize, last: usize) {
         let rows = self.chosen_rows(first.min(last), first.max(last));
         let picked: Vec<(StreamTrack, String)> = rows
@@ -97,11 +116,6 @@ impl Browser {
             .filter(|&row| self.rows.get(row).is_some_and(Option::is_none))
             .filter_map(|row| self.stream_row(row))
             .collect();
-        if let [(t, service)] = picked.as_slice() {
-            let (t, service) = (t.clone(), service.clone());
-            self.play_stream(&t, &service, None);
-            return;
-        }
         for (t, service) in picked {
             self.download_stream(&t, &service);
         }
@@ -126,6 +140,22 @@ impl Browser {
                 .as_ref()
                 .is_some_and(|f| f.link == u.play.link)
         });
+        match &u.state {
+            FetchState::Fetching(_, p) => {
+                if let Some(f) = self.row_fetches.by_link.get_mut(&u.play.link) {
+                    f.0 = *p;
+                }
+            }
+            FetchState::Failed(_) => {
+                self.row_fetches.by_link.insert(
+                    u.play.link.clone(),
+                    (0.0, true, Some(Instant::now() + FAILED_SHOWN)),
+                );
+            }
+            FetchState::Done(_) => {
+                self.row_fetches.by_link.remove(&u.play.link);
+            }
+        }
         match u.state {
             FetchState::Fetching(note, progress) => {
                 if let Some(f) = deck.and_then(|d| self.fetches[d].as_mut()) {
@@ -154,10 +184,16 @@ impl Browser {
                 let deck = deck.filter(|&d| !self.play[d].get_bool()).or_else(|| {
                     deck.and_then(|_| (0..self.decks_shown).find(|&d| !self.play[d].get_bool()))
                 });
-                if let Some(d) = deck {
-                    if self.playable(i) {
-                        self.engine.load_track(d, self.library[i].clone());
+                match deck {
+                    Some(d) => {
+                        if self.playable(i) {
+                            self.engine.load_track(d, self.library[i].clone());
+                        }
                     }
+                    // Downloaded without a deck to go to: analysed now,
+                    // ready to play.
+                    None if u.play.deck.is_none() => self.analyze(&[i]),
+                    None => {}
                 }
             }
         }
@@ -180,6 +216,39 @@ impl Browser {
             }
             Ok(_) => {}
             Err(e) => eprintln!("can't put the download in its lists: {e}"),
+        }
+    }
+
+    /// Shows each downloading streamed track's progress on its rows (in
+    /// the mini waveform's place). Called every frame; does nothing once
+    /// no row shows one.
+    pub fn show_row_fetches(&mut self) {
+        let now = Instant::now();
+        self.row_fetches
+            .by_link
+            .retain(|_, f| f.2.is_none_or(|t| t > now));
+        if self.row_fetches.by_link.is_empty() && !self.row_fetches.shown {
+            return;
+        }
+        self.row_fetches.shown = !self.row_fetches.by_link.is_empty();
+        for row in 0..self.list.row_count() {
+            let want = self
+                .stream_track(row)
+                .and_then(|t| self.row_fetches.by_link.get(&t.page))
+                .copied();
+            let Some(mut r) = self.list.row_data(row) else {
+                continue;
+            };
+            let (fetching, fetch, failed) = match want {
+                Some((p, failed, _)) => (true, p, failed),
+                None => (false, 0.0, false),
+            };
+            if r.fetching != fetching || r.fetch != fetch || r.fetch_failed != failed {
+                r.fetching = fetching;
+                r.fetch = fetch;
+                r.fetch_failed = failed;
+                self.list.set_row_data(row, r);
+            }
         }
     }
 

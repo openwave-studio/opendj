@@ -164,7 +164,7 @@ impl Browser {
     }
 
     /// Queues library tracks (by index) to be analysed afresh.
-    fn analyze(&mut self, indices: &[usize]) {
+    pub(super) fn analyze(&mut self, indices: &[usize]) {
         let tracks: Vec<Arc<Track>> = indices
             .iter()
             .filter_map(|&i| self.library.get(i))

@@ -1,4 +1,4 @@
-// Browser: folder tree, track list and a side panel (Automix / Sidelist).
+// Browser: folder tree, track list and a side panel (Automix, Shortlist, Playlist and more).
 // Plain rows, lilac selection, rounded sidebar items.
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
@@ -53,6 +53,8 @@ export struct Folder {
     adoptable: bool,
     // An album downloaded into the Inbox: its menu offers Move to Albums.
     bundle: bool,
+    // One of several lists picked with shift- or ⌘-click, to move together.
+    picked: bool,
 }
 
 export struct TrackRow {
@@ -102,6 +104,11 @@ export struct TrackRow {
     // When it was played in this History session ("23:41"): shown dimmed
     // with a lilac check. Empty when it wasn't.
     played: string,
+    // A streamed track downloading: how far (0 to 1), shown in the mini
+    // waveform's place, and whether it failed.
+    fetching: bool,
+    fetch: float,
+    fetch-failed: bool,
 }
 
 // One of the track list's columns. kind: 0 text, 1 the title (takes the
@@ -323,18 +330,25 @@ export struct Choice {
     value: int,
 }
 
-// The Sidelist: the scratch pad, or one of the DJ's crates or playlists it
-// shows. `choices` are the picker's lines (0 the scratch pad, the lists
-// from 1, -2 to save the scratch pad as a playlist), `current` the one
-// shown and `name` its name.
+// The Shortlist tab (a scratch list) and the Playlist tab (one of the DJ's
+// playlists, picked to work on). `choices` are the Playlist tab's picker
+// lines (the lists from 1), `current` the one shown and `name` its name;
+// `shows-list` whether the Playlist tab has a playlist.
 export global SidelistUi {
     in property <[Choice]> choices;
     in property <int> current;
     in property <string> name;
     in property <bool> shows-list;
     callback pick(value: int);
-    // A list dragged from the tree: whether it can show in the Sidelist,
-    // and showing it there.
+    // Empties the Shortlist.
+    callback clear();
+    // Makes the Shortlist a playlist and shows it in the Playlist tab.
+    callback save();
+    // Tracks dropped on side tab `tab`'s title (Automix, Shortlist or
+    // Playlist): added to the end, or with ⌥ (`moving`) moved there.
+    callback drop-on-tab(tab: int, data: data-transfer, moving: bool);
+    // A list dragged from the tree: whether it can show in the Playlist
+    // tab, and showing it there.
     pure callback accepts-list(data: data-transfer) -> bool;
     callback show-list(data: data-transfer);
 }
@@ -446,8 +460,17 @@ export global LibraryEdit {
     // and moving it to the `target`th of them.
     pure callback move-targets(index: int) -> [MoveTarget];
     callback move-list-to(index: int, target: int);
-    // Shows the list at tree row `index` in the Sidelist.
+    // Shows the list at tree row `index` in the Playlist tab.
     callback show-in-sidelist(index: int);
+    // Shift-click (`range`) or ⌘-click (Ctrl-click) on tree row `index`:
+    // picks the lists from the current one to it, or adds or drops it.
+    callback pick-lists(index: int, range: bool);
+    // What deleting the list or folder at tree row `index` takes with it,
+    // for the dialog that asks first.
+    pure callback delete-detail(index: int) -> string;
+    // How far down the tree row `index` starts, rows `row` high (and a
+    // separator 11px more).
+    pure callback tree-row-top(index: int, row: length) -> length;
     // Tracks dropped on tree row `index`; `moving` (⌥ held) takes them
     // out of the list they came from.
     callback drop(index: int, data: data-transfer, moving: bool);
@@ -1013,8 +1036,12 @@ export global CatalogSearch {
     // mode 0 opens the row (an artist's or album's tracks in the list; a
     // track loads onto a free deck), 1 downloads a track.
     callback act(row: int, mode: int);
-    // Every track found, in the list.
+    // Every track found (or the artist's), in the list.
     callback all();
+    // The artist whose page the dropdown shows (top tracks, then albums);
+    // empty for what a search found. back() returns to the search.
+    in property <string> artist;
+    callback back();
 }
 
 // A choice on a catalog result's right-click menu.
@@ -1056,6 +1083,22 @@ component CatalogResults inherits Rectangle {
     frame := VerticalLayout {
         padding: 6px;
         spacing: 2px;
+        if CatalogSearch.artist != "": Rectangle {
+            height: 34px;
+            border-radius: 8px;
+            background: bta.has-hover ? Theme.n-ffffff12 : transparent;
+            bta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { CatalogSearch.back(); }
+            }
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                spacing: 8px;
+                Text { text: "‹"; color: Theme.text-dim; font-size: 18px; vertical-alignment: center; }
+                Text { text: CatalogSearch.artist; color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+            }
+        }
         scroll := ScrollView {
             height: min(list.preferred-height, max(120px, root.max-list-height));
             vertical-stretch: 0;
@@ -1065,7 +1108,7 @@ component CatalogResults inherits Rectangle {
                     if i == 0 || CatalogSearch.rows[i - 1].kind != r.kind: Text {
                         height: 24px;
                         x: 10px;
-                        text: r.kind == 1 ? "ARTISTS" : r.kind == 2 ? "ALBUMS" : "TRACKS";
+                        text: r.kind == 1 ? "ARTISTS" : r.kind == 2 ? "ALBUMS" : CatalogSearch.artist != "" ? "TOP TRACKS" : "TRACKS";
                         color: Theme.text-dim;
                         font-size: 10px;
                         font-weight: 700;
@@ -1145,7 +1188,9 @@ component CatalogResults inherits Rectangle {
             height: 26px;
             x: 10px;
             width: parent.width - 20px;
-            text: CatalogSearch.rows.length == 0 ? "Esc closes" : "↵ all tracks · click a track to play it · right-click to download · Esc closes";
+            text: CatalogSearch.rows.length == 0 ? "Esc closes"
+                : CatalogSearch.artist != "" ? "↵ all their tracks · click an album to list it · right-click a track to download · Esc closes"
+                : "↵ all tracks · click a track to play it · right-click to download · Esc closes";
             color: Theme.text-dim;
             font-size: 11px;
             vertical-alignment: center;
@@ -3119,13 +3164,31 @@ component FolderTree inherits Rectangle {
     property <string> rename-text;
     // The row being named in place, as in Finder, and the name typed so far.
     property <int> naming-row: -1;
+    // The keys held at the last click on a row.
+    property <bool> shift-click;
+    property <bool> cmd-click;
     property <string> naming-text;
     // Opens the name editor on a row with its name selected, so typing
     // replaces it and Esc keeps it.
     function name-in-place(row: int) {
         if row >= 0 && row < folders.length {
+            reveal(row);
             naming-text = folders[row].name;
             naming-row = row;
+        }
+    }
+    // Scrolls the tree so row `row` is in sight.
+    // The tree's scroll and height, kept here by the list itself (it sits
+    // in a part only some sources show).
+    property <length> tree-y;
+    property <length> tree-view-h;
+    function reveal(row: int) {
+        let height = round(34 * ListText.scale) * 1px;
+        let top = LibraryEdit.tree-row-top(row, height);
+        if top < -tree-y {
+            tree-y = -top;
+        } else if top + height + 11px > tree-view-h - tree-y {
+            tree-y = min(0px, tree-view-h - top - height - 11px);
         }
     }
     // Enter or a click elsewhere keeps what was typed; Esc keeps the old name.
@@ -3331,8 +3394,8 @@ component FolderTree inherits Rectangle {
                 }
             }
             if source == 0 && menu-locked: MenuSeparator {}
-            if source == 0 && tab == 0 && (menu-kind == 17 || menu-kind == 2): MenuLine {
-                text: "Show in Sidelist";
+            if source == 0 && tab == 0 && menu-kind == 2: MenuLine {
+                text: "Show in Playlist Tab";
                 clicked => {
                     LibraryEdit.show-in-sidelist(menu-index);
                     folder-menu.close();
@@ -3454,31 +3517,6 @@ component FolderTree inherits Rectangle {
                     folder-menu.close();
                 }
             }
-            if menu-editable && tab == 0 && source == 0: MenuLine {
-                text: "Move to…";
-                clicked => {
-                    move-targets = LibraryEdit.move-targets(menu-index);
-                    folder-menu.close();
-                    move-menu.show();
-                }
-            }
-            if menu-editable && tab == 0 && source == 0: MenuLine {
-                text: "Move Up";
-                hint: LibraryEdit.mac ? "⌥⌘↑" : "Ctrl+Alt+↑";
-                clicked => {
-                    LibraryEdit.nudge-list(menu-index, -1);
-                    folder-menu.close();
-                }
-            }
-            if menu-editable && tab == 0 && source == 0: MenuLine {
-                text: "Move Down";
-                hint: LibraryEdit.mac ? "⌥⌘↓" : "Ctrl+Alt+↓";
-                clicked => {
-                    LibraryEdit.nudge-list(menu-index, 1);
-                    folder-menu.close();
-                }
-            }
-            if menu-editable && tab == 0 && source == 0: MenuSeparator {}
             if menu-editable: MenuLine {
                 text: "Rename…";
                 clicked => {
@@ -3496,40 +3534,70 @@ component FolderTree inherits Rectangle {
                 }
             }
             if menu-editable: MenuLine {
-                text: menu-kind == 1 ? "Delete folder and its lists" : menu-kind == 17 ? "Delete crate" : "Delete list";
+                text: menu-kind == 1 ? "Delete Folder…" : menu-kind == 17 ? "Delete Crate…" : "Delete Playlist…";
                 text-color: Theme.c-ff6b5e;
                 clicked => {
-                    LibraryEdit.delete(menu-index);
+                    delete-detail = LibraryEdit.delete-detail(menu-index);
                     folder-menu.close();
+                    delete-popup.show();
                 }
             }
         }
     }
 
-    // Move to…: the folders the list can go in, and the tops of Crates
-    // and Playlists, as the tree shows them.
-    property <[MoveTarget]> move-targets;
-    move-menu := PopupWindow {
-        x: 40px;
-        y: menu-y;
-        width: 230px;
-        height: min(360px, move-targets.length * 26px + 40px);
+    // Asks before a list or folder is deleted, saying what goes with it.
+    property <string> delete-detail;
+    property <string> delete-what: menu-kind == 1 ? "Folder" : menu-kind == 17 ? "Crate" : "Playlist";
+    delete-popup := PopupWindow {
+        x: 8px;
+        y: max(8px, menu-y - 60px);
+        width: max(240px, root.width - 16px);
         close-policy: close-on-click-outside;
-        MenuBackground {}
+        Rectangle {
+            background: Theme.n-2a2a2d;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 20px;
+            drop-shadow-color: #00000099;
+        }
         VerticalLayout {
-            padding: 6px;
-            spacing: 2px;
-            Text { text: "Move \"" + menu-name + "\" to"; color: Theme.text-dim; font-size: 12px; height: 22px; vertical-alignment: center; overflow: elide; x: 10px; width: parent.width - 20px; }
-            ListView {
-                for t[k] in move-targets: HorizontalLayout {
-                    padding-left: t.depth * 14px;
-                    MenuLine {
-                        text: t.name;
-                        clicked => {
-                            LibraryEdit.move-list-to(menu-index, k);
-                            move-menu.close();
-                        }
+            padding: 16px;
+            spacing: 10px;
+            Text {
+                text: "Delete \"" + menu-name + "\"?";
+                color: Theme.text;
+                font-size: 15px;
+                font-weight: 700;
+                wrap: word-wrap;
+            }
+            if delete-detail != "": Text {
+                text: delete-detail;
+                color: Theme.text-dim;
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: dta.has-hover ? Theme.c-ff6b5e.darker(0.15) : Theme.c-ff6b5e;
+                Text { text: "Delete " + delete-what; color: white; font-size: 14px; font-weight: 600; }
+                dta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        LibraryEdit.delete(menu-index);
+                        delete-popup.close();
                     }
+                }
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: cta.has-hover ? Theme.n-3a3a3d : Theme.control;
+                Text { text: "Cancel"; color: Theme.text; font-size: 14px; }
+                cta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { delete-popup.close(); }
                 }
             }
         }
@@ -3714,6 +3782,9 @@ component FolderTree inherits Rectangle {
             }
             tree-list := ListView {
                 gutter: true;
+                content-y <=> root.tree-y;
+                init => { root.tree-view-h = self.visible-height; }
+                changed visible-height => { root.tree-view-h = self.visible-height; }
                 property <length> tree-row: round(34 * ListText.scale) * 1px;
                 for f[i] in folders: row := Rectangle {
                     // A line sets the Crates heading apart from the collection.
@@ -3737,7 +3808,7 @@ component FolderTree inherits Rectangle {
                     border-radius: Theme.radius;
                     border-width: list-over && zone == 1 ? 2px : 0px;
                     border-color: Theme.accent;
-                    background: list-over ? (zone == 1 ? Theme.accent.transparentize(0.88) : (i == current ? (focused ? Theme.selection : Theme.selection-idle) : transparent)) : drop.has-drag ? Theme.selection.transparentize(0.4) : i == current ? (focused ? Theme.selection : Theme.selection-idle) : (ta.has-hover ? Theme.n-232326 : transparent);
+                    background: list-over ? (zone == 1 ? Theme.accent.transparentize(0.88) : (i == current || f.picked ? (focused ? Theme.selection : Theme.selection-idle) : transparent)) : drop.has-drag ? Theme.selection.transparentize(0.4) : i == current || f.picked ? (focused ? Theme.selection : Theme.selection-idle) : (ta.has-hover ? Theme.n-232326 : transparent);
                     // The DJ's own lists and folders drag onto a folder, or a
                     // heading, to move there.
                     DragArea {
@@ -3745,9 +3816,19 @@ component FolderTree inherits Rectangle {
                         data: LibraryEdit.list-payload(i);
                         allow-copy: true;
                         ta := TouchArea {
-                            clicked => { select(i); }
+                            clicked => {
+                                if (shift-click || cmd-click) && f.editable && tab == 0 && source == 0 {
+                                    LibraryEdit.pick-lists(i, shift-click);
+                                } else {
+                                    select(i);
+                                }
+                            }
                             double-clicked => { toggle(i); }
                             pointer-event(e) => {
+                                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                                    shift-click = e.modifiers.shift;
+                                    cmd-click = e.modifiers.control;
+                                }
                                 if (((f.editable || f.analysable || f.adoptable || f.bundle || source == 1 || StoreUi.stream(source)) && tab == 0) || (tab == 1 && f.kind == 5)) && e.button == PointerEventButton.right && e.kind == PointerEventKind.down {
                                     menu-index = i;
                                     menu-name = f.name;
@@ -5912,7 +5993,23 @@ component TrackList inherits Rectangle {
                             border-width: selected ? 1.5px : 0px;
                             border-color: Theme.on-row-selection;
                         }
-                        if col.kind == 6 && r.has-wave: Image {
+                        // Downloading: a bar in the waveform's place.
+                        if col.kind == 6 && r.fetching: Rectangle {
+                            y: (parent.height - self.height) / 2;
+                            width: 100%;
+                            height: 6px;
+                            border-radius: 3px;
+                            background: Theme.n-36363b;
+                            Rectangle {
+                                x: 0;
+                                width: r.fetch-failed ? parent.width : parent.width * max(0.04, r.fetch);
+                                height: parent.height;
+                                border-radius: 3px;
+                                background: r.fetch-failed ? Theme.c-ff9f0a : selected ? Theme.on-row-selection : Theme.lilac;
+                                opacity: r.fetch-failed || r.fetch > 0 ? 1 : 0.4 + 0.6 * abs(sin(animation-tick() / 1ms * 0.25deg));
+                            }
+                        }
+                        if col.kind == 6 && r.has-wave && !r.fetching: Image {
                             y: 4px;
                             width: 100%;
                             height: row-height - 8px;
@@ -6604,10 +6701,11 @@ component MixChips inherits HorizontalLayout {
 component SidePanel inherits Rectangle {
     in property <[SideRow]> rows;
     in property <string> total;
-    // 0 Automix, 1 Sidelist, 2 Related, 3 Info (the selected track's
+    // 0 Automix, 1 Shortlist, 2 Related, 3 Info (the selected track's
     // details, see info.slint), 4 Cues (a deck's cues, see cues.slint),
     // 5 Checklist (what makes the deck's track ready, see checklist.slint),
-    // 6 Lyrics (the playing track's lyrics, see lyrics.slint).
+    // 6 Lyrics (the playing track's lyrics, see lyrics.slint), 7 Playlist
+    // (one of the DJ's playlists, to change it).
     in-out property <int> tab: 0;
     callback activate(row: int);
     // Takes out the rows `first` to `last`.
@@ -6673,6 +6771,15 @@ component SidePanel inherits Rectangle {
         removed-at = first-picked;
         remove(first-picked, last-picked);
     }
+    // Takes out the picked rows, asking first when that would empty a
+    // saved playlist.
+    function ask-remove() {
+        if tab == 7 && rows.length > 1 && first-picked == 0 && last-picked == rows.length - 1 {
+            empty-popup.show();
+        } else {
+            remove-picked();
+        }
+    }
     background: Theme.browser;
     in property <length> panel-width: 340px;
     width: panel-width;
@@ -6720,13 +6827,33 @@ component SidePanel inherits Rectangle {
                     }
                 }
                 TourMark { id: i == 0 ? "ui,side_automix" : ""; }
-                // A crate or playlist dropped on the Sidelist tab shows there.
-                if i == 1: DropArea {
-                    can-drop(e) => { SidelistUi.accepts-list(e.data) ? DragAction.copy : DragAction.none }
-                    dropped(e) => {
-                        SidelistUi.show-list(e.data);
-                        tab = 1;
-                        DragAction.copy
+                // Tracks dropped on Automix, Shortlist or Playlist go to the
+                // end of its list; held there a moment, the tab opens so
+                // they can go in at a spot. A playlist dropped on the
+                // Playlist tab shows there.
+                if i == 0 || i == 1 || i == 7: Rectangle {
+                    tab-drop := DropArea {
+                        can-drop(e) => {
+                            if i == 7 && SidelistUi.accepts-list(e.data) {
+                                return DragAction.copy;
+                            }
+                            (i != 7 || SidelistUi.shows-list) && TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
+                        }
+                        dropped(e) => {
+                            if i == 7 && SidelistUi.accepts-list(e.data) {
+                                SidelistUi.show-list(e.data);
+                                tab = 7;
+                                return DragAction.copy;
+                            }
+                            SidelistUi.drop-on-tab(i, e.data, TrackDrag.alt-held);
+                            TrackDrag.active = false;
+                            DragAction.copy
+                        }
+                    }
+                    Timer {
+                        interval: 700ms;
+                        running: tab-drop.has-drag && tab != i;
+                        triggered => { tab = i; }
                     }
                 }
             }
@@ -6891,7 +7018,7 @@ component SidePanel inherits Rectangle {
         y: tab-bar.height;
         width: parent.width;
         height: parent.height - tab-bar.height;
-        visible: tab < 3;
+        visible: tab < 3 || tab == 7;
         key-pressed(e) => {
             // ⌘A (Ctrl+A on Linux and Windows) picks every row, to drag or remove them all.
             if (e.text == "a" || e.text == "A") && e.modifiers.control && !e.modifiers.alt && !e.modifiers.shift {
@@ -6899,7 +7026,7 @@ component SidePanel inherits Rectangle {
                 return accept;
             }
             if selected >= 0 && selected < rows.length && (e.text == Key.Delete || e.text == Key.Backspace) {
-                remove-picked();
+                ask-remove();
                 return accept;
             }
             if e.text == Key.UpArrow && selected > 0 {
@@ -6922,13 +7049,28 @@ component SidePanel inherits Rectangle {
             HorizontalLayout {
                 height: 30px;
                 spacing: 8px;
-                Text { text: ["Automix", "Sidelist", "Related"][tab]; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
-                Text { text: total; color: Theme.label; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
-                if tab == 1: VerticalLayout {
+                if tab != 7: Text { text: tab == 0 ? "Automix" : tab == 1 ? "Shortlist" : "Related"; color: Theme.text; font-size: 15px; font-weight: 600; vertical-alignment: center; }
+                // The Playlist tab: which playlist, as a picker.
+                if tab == 7: VerticalLayout {
                     alignment: center;
                     SmallButton {
                         text: SidelistUi.name + " ▾";
                         clicked => { sidelist-menu.show(); }
+                    }
+                }
+                Text { text: total; color: Theme.label; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                if tab == 1 && rows.length > 0: VerticalLayout {
+                    alignment: center;
+                    SmallButton {
+                        text: "Save";
+                        clicked => { SidelistUi.save(); }
+                    }
+                }
+                if tab == 1 && rows.length > 0: VerticalLayout {
+                    alignment: center;
+                    SmallButton {
+                        text: "Clear";
+                        clicked => { SidelistUi.clear(); }
                     }
                 }
                 if tab == 0: VerticalLayout {
@@ -7056,9 +7198,9 @@ component SidePanel inherits Rectangle {
             }
             if tab == 0 && KeepGoingUi.player && UpNextUi.now-loaded: Text { x: 8px; height: 20px; text: "UP NEXT"; color: Theme.label; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; vertical-alignment: center; }
             EdgeLine { left: 6px; right: 6px; }
-            // What the Sidelist shows: the scratch pad, a crate or a playlist.
+            // Which playlist the Playlist tab shows.
             sidelist-menu := PopupWindow {
-                x: root.width - self.width - 6px;
+                x: 6px;
                 y: 40px;
                 width: 240px;
                 height: min(420px, SidelistUi.choices.length * 26px + 12px);
@@ -7242,7 +7384,8 @@ component SidePanel inherits Rectangle {
                     x: 8px;
                     width: parent.width - 16px;
                     text: tab == 0 ? "Empty. Drag tracks here, or right-click a track and choose Add to Automix."
-                        : tab == 1 ? (SidelistUi.shows-list ? "Empty. Drag tracks here to add them to this list." : "Empty. Drag tracks here, or drag a crate or playlist here to show it.")
+                        : tab == 1 ? "Empty. Drag tracks here or onto the Shortlist tab, or pick tracks and press S. Save keeps it as a playlist."
+                        : tab == 7 ? (SidelistUi.shows-list ? "Empty. Drag tracks here or onto the Playlist tab to add them to this playlist." : "Pick a playlist with the button above, or drag one here from the sidebar, to change it here.")
                         : total == "" ? "Select a track in the browser to see the tracks linked to it and those played next to it."
                         : "Nothing linked yet. Drag tracks here to link them to this one; tracks played next to it in your history show up here too.";
                     color: Theme.text-dim;
@@ -7253,13 +7396,13 @@ component SidePanel inherits Rectangle {
                 drop := DropArea {
                     can-drop(e) => {
                         drag-y = e.position.y;
-                        if tab == 1 && SidelistUi.accepts-list(e.data) {
+                        if tab == 7 && SidelistUi.accepts-list(e.data) {
                             return DragAction.copy;
                         }
-                        TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
+                        (tab != 7 || SidelistUi.shows-list) && TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none
                     }
                     dropped(e) => {
-                        if tab == 1 && SidelistUi.accepts-list(e.data) {
+                        if tab == 7 && SidelistUi.accepts-list(e.data) {
                             SidelistUi.show-list(e.data);
                             return DragAction.copy;
                         }
@@ -7308,8 +7451,63 @@ component SidePanel inherits Rectangle {
                 text: tab == 2 ? "Unlink" : "Remove";
                 text-color: Theme.c-ff6961;
                 clicked => {
-                    remove-picked();
                     row-menu.close();
+                    ask-remove();
+                }
+            }
+        }
+    }
+    // Before taking every track out of a saved playlist.
+    empty-popup := PopupWindow {
+        x: 8px;
+        y: 60px;
+        width: root.width - 16px;
+        close-policy: close-on-click-outside;
+        Rectangle {
+            background: Theme.n-2a2a2d;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 20px;
+            drop-shadow-color: #00000099;
+        }
+        VerticalLayout {
+            padding: 16px;
+            spacing: 10px;
+            Text {
+                text: "Remove all " + rows.length + " tracks from \"" + SidelistUi.name + "\"?";
+                color: Theme.text;
+                font-size: 15px;
+                font-weight: 700;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "The playlist stays, empty. The tracks stay in your collection.";
+                color: Theme.text-dim;
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: era.has-hover ? Theme.c-ff6b5e.darker(0.15) : Theme.c-ff6b5e;
+                Text { text: "Remove All"; color: white; font-size: 14px; font-weight: 600; }
+                era := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        empty-popup.close();
+                        remove-picked();
+                    }
+                }
+            }
+            Rectangle {
+                height: 34px;
+                border-radius: 8px;
+                background: eca.has-hover ? Theme.n-3a3a3d : Theme.control;
+                Text { text: "Cancel"; color: Theme.text; font-size: 14px; }
+                eca := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { empty-popup.close(); }
                 }
             }
         }
