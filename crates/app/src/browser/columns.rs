@@ -781,7 +781,11 @@ pub fn fit_width<'a>(kind: i32, label: &str, cells: impl Iterator<Item = &'a str
     let widest = cells.map(|c| text_width(c, size)).fold(0.0, f32::max);
     // A shifted key has a small +1/-1 after it.
     let extra = if kind == KEY { 16.0 } else { 0.0 };
-    Some((heading.max(widest + extra) + 4.0).ceil().clamp(MIN_WIDTH, 600.0))
+    Some(
+        (heading.max(widest + extra) + 4.0)
+            .ceil()
+            .clamp(MIN_WIDTH, 600.0),
+    )
 }
 
 fn shown_width(id: i32, width: f32) -> f32 {
@@ -876,10 +880,8 @@ impl Browser {
                 let Some(def) = b.columns.def(id) else {
                     return;
                 };
-                let cells: Vec<SharedString> = rows
-                    .iter()
-                    .filter_map(|r| r.cells.row_data(i))
-                    .collect();
+                let cells: Vec<SharedString> =
+                    rows.iter().filter_map(|r| r.cells.row_data(i)).collect();
                 let Some(width) = fit_width(def.kind, &def.label, cells.iter().map(|c| c.as_str()))
                 else {
                     return;
@@ -975,7 +977,12 @@ mod tests {
     #[test]
     fn fit_follows_the_widest_cell() {
         let short = fit_width(TEXT, "Artist", ["Ab", "Cd"].into_iter()).unwrap();
-        let long = fit_width(TEXT, "Artist", ["Ab", "A much longer artist name"].into_iter()).unwrap();
+        let long = fit_width(
+            TEXT,
+            "Artist",
+            ["Ab", "A much longer artist name"].into_iter(),
+        )
+        .unwrap();
         assert!(long > short + 50.0, "{short} {long}");
         // Never narrower than the heading or the least a column can be.
         assert!(short >= MIN_WIDTH);
