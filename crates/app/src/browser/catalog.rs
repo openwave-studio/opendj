@@ -409,7 +409,8 @@ impl Browser {
     fn leave_artist(&mut self) {
         if self.catalog.artist.take().is_some() {
             if let Some(app) = self.app.upgrade() {
-                app.global::<CatalogSearch>().set_artist(SharedString::new());
+                app.global::<CatalogSearch>()
+                    .set_artist(SharedString::new());
             }
         }
     }
@@ -461,7 +462,10 @@ mod tests {
         let rows = rows_of(hits);
         let kinds: Vec<i32> = rows.iter().map(|(_, r, _)| r.kind).collect();
         assert_eq!(kinds, [1, 2, 0]);
-        assert_eq!(rows[0].0, Pick::Artist("artist:1".into(), "Radiohead".into()));
+        assert_eq!(
+            rows[0].0,
+            Pick::Artist("artist:1".into(), "Radiohead".into())
+        );
         assert_eq!(rows[1].1.detail, "Album · Radiohead · 12 tracks");
         assert_eq!(rows[2].1.detail, "Radiohead · 4:44");
         assert_eq!(rows[2].2, "c.jpg");
