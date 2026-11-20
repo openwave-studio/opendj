@@ -49,7 +49,7 @@ export component Caption inherits Text {
 
 // Part of a circle in a 100 x 100 box, clockwise from `from` to `to` (or
 // back, when `to` is smaller). Angles are from twelve o'clock.
-component KnobArc inherits Path {
+export component KnobArc inherits Path {
     in property <angle> from;
     in property <angle> to;
     in property <float> r: 46;
