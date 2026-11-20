@@ -1171,6 +1171,184 @@ fn ddj_flx6_four_decks_and_mixer() {
 }
 
 #[test]
+fn ddj_grv6_decks_beat_fx_and_groove_circuit() {
+    let (reg, mut c) = load("Pioneer-DDJ-GRV6.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+
+    // Each deck has its own channel, as on the FLX6.
+    c.receive(&[0x93, 0x0B, 0x7F]);
+    c.receive(&[0x93, 0x0B, 0x00]);
+    assert_eq!(get(&reg, "[Channel4]", "play"), 1.0);
+    for (status, deck) in [(0xB0, 1), (0xB3, 4)] {
+        sweep14(&mut c, status, 0x13, 0x33, 0x20);
+        let v = get(&reg, &format!("[Channel{deck}]"), "volume");
+        assert!((v - 0.25).abs() < 0.02, "deck {deck} volume {v}");
+    }
+
+    // The STEMS button opens the stems pads, SHIFT + STEMS the pad FX.
+    assert_eq!(get(&reg, "[Channel1]", "pad_slot_2"), 4.0);
+    assert_eq!(get(&reg, "[Channel1]", "pad_slot_6"), 1.0);
+    c.receive(&[0x90, 0x1E, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "pad_tab"), 1.0);
+
+    // MASTER TEMPO, SLIP and KEY SYNC.
+    let keylock = get(&reg, "[Channel2]", "keylock");
+    c.receive(&[0x91, 0x1A, 0x7F]);
+    c.receive(&[0x91, 0x1A, 0x00]);
+    assert_ne!(get(&reg, "[Channel2]", "keylock"), keylock);
+    let slip = get(&reg, "[Channel2]", "slip_enabled");
+    c.receive(&[0x91, 0x40, 0x7F]);
+    c.receive(&[0x91, 0x40, 0x00]);
+    assert_ne!(get(&reg, "[Channel2]", "slip_enabled"), slip);
+    let vinyl = get(&reg, "[Channel2]", "vinyl_mode");
+    c.receive(&[0x91, 0x17, 0x7F]);
+    assert_ne!(get(&reg, "[Channel2]", "vinyl_mode"), vinyl);
+
+    // SHIFT + BEAT SYNC pins the sync leader.
+    c.receive(&[0x91, 0x5C, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "sync_leader"), 2.0);
+
+    // BEAT FX: the lever picks an effect, CH SELECT where it goes, ON/OFF.
+    let unit = "[EffectRack1_EffectUnit5]";
+    let fx = "[EffectRack1_EffectUnit5_Effect1]";
+    c.receive(&[0x94, 0x25, 0x7F]);
+    assert_eq!(get(&reg, fx, "loaded_effect"), 2.0);
+    c.receive(&[0x94, 0x12, 0x7F]);
+    assert_eq!(get(&reg, unit, "route"), 3.0);
+    c.receive(&[0x94, 0x14, 0x7F]);
+    assert_eq!(get(&reg, unit, "route"), 6.0);
+    c.receive(&[0x94, 0x47, 0x7F]);
+    assert_eq!(get(&reg, fx, "enabled"), 1.0);
+
+    // SOUND COLOR FX turns the COLOR knobs' effect on for all four.
+    let cfx = |d: u8| get(&reg, &format!("[QuickEffectRack1_[Channel{d}]]"), "enabled");
+    let before = cfx(1);
+    c.receive(&[0x96, 0x00, 0x7F]);
+    assert_ne!(cfx(1), before);
+    assert_eq!(cfx(4), cfx(1));
+
+    // GROOVE CIRCUIT on a track with five stems: DRUM SWAP 3 takes out
+    // the kick and hi-hats and lights; DRUM RELEASE echoes them out while
+    // held; GAIN sets their level.
+    reg.get("[Channel1]", "stem_count").unwrap().set(5.0);
+    c.receive(&[0x90, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "mute"), 1.0);
+    assert_eq!(get(&reg, "[Channel1_Stem5]", "mute"), 1.0);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 0.0);
+    c.poll(Instant::now());
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x90, 0x02, 0x7F]),
+        "DRUM SWAP 3 lit: {out:x?}"
+    );
+    c.receive(&[0x90, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "mute"), 0.0);
+    c.receive(&[0x90, 0x24, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem5]", "mute"), 1.0);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel1_Stem5]]", "enabled"),
+        1.0
+    );
+    c.receive(&[0x90, 0x24, 0x00]);
+    assert_eq!(get(&reg, "[Channel1_Stem5]", "mute"), 0.0);
+    c.receive(&[0xB0, 0x12, 0x00]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "volume"), 0.0);
+    c.receive(&[0xB0, 0x12, 0x7F]);
+
+    // DRUM ROLL rolls the drums alone through the stem effect, DRUM TRANS
+    // chops them; let go, the stem effect is back as it was.
+    c.receive(&[0x90, 0x05, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 3.0);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx_beats"), 0.25);
+    for stem in [1, 5] {
+        let fx = format!("[QuickEffectRack1_[Channel1_Stem{stem}]]");
+        assert_eq!(get(&reg, &fx, "enabled"), 1.0);
+    }
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel1_Stem4]]", "enabled"),
+        0.0
+    );
+    assert_eq!(get(&reg, "[Channel1]", "beatlooproll_0.25_activate"), 0.0);
+    c.receive(&[0x90, 0x05, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 1.0);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel1_Stem1]]", "enabled"),
+        0.0
+    );
+    c.receive(&[0x90, 0x33, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 4.0);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx_beats"), 1.0);
+    c.receive(&[0x90, 0x33, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "stem_fx"), 1.0);
+    // Without stems the whole deck rolls.
+    c.receive(&[0x91, 0x05, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "beatlooproll_0.25_activate"), 1.0);
+    c.receive(&[0x91, 0x05, 0x00]);
+
+    // SHIFT + DRUM SWAP: Bank B takes out the other stems; Single ends the
+    // swap before, Multi adds them up.
+    c.receive(&[0x90, 0x2D, 0x7F]);
+    c.receive(&[0x90, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 1.0);
+    c.receive(&[0x90, 0x00, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem2]", "mute"), 1.0);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 0.0);
+    c.receive(&[0x90, 0x2F, 0x7F]);
+    c.receive(&[0x90, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem2]", "mute"), 1.0);
+    assert_eq!(get(&reg, "[Channel1_Stem4]", "mute"), 1.0);
+    c.poll(Instant::now());
+    let out = c.take_output();
+    for lit in [0x2D, 0x2F] {
+        assert!(
+            out.iter().any(|m| m[..] == [0x90, lit, 0x7F]),
+            "SHIFT light {lit:x}: {out:x?}"
+        );
+    }
+
+    // CAPTURE grabs bars into an open Looper deck; SHIFT steps the length.
+    let bars = get(&reg, "[Looper1]", "capture_bars");
+    c.receive(&[0x90, 0x2B, 0x7F]);
+    assert_ne!(get(&reg, "[Looper3]", "capture_bars"), bars);
+    reg.get("[Looper3]", "enabled").unwrap().set(1.0);
+    let capture = reg.get("[Looper3]", "capture").unwrap();
+    let version = capture.version();
+    c.receive(&[0x90, 0x08, 0x7F]);
+    assert!(
+        capture.version().wrapping_sub(version) >= 2,
+        "CAPTURE pushed"
+    );
+
+    // The BEAT FX beat lights show the effect's length.
+    reg.get(fx, "beats").unwrap().set(4.0);
+    c.poll(Instant::now());
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0xB4, 0x64, 0x07]),
+        "4 beats: {out:x?}"
+    );
+
+    // LOAD lights follow the decks; the jog ring is on channel 16.
+    reg.get("[Channel1]", "track_loaded").unwrap().set(1.0);
+    reg.get("[Channel1]", "duration").unwrap().set(180.0);
+    reg.get("[Channel1]", "playposition")
+        .unwrap()
+        .set(0.5 / 180.0);
+    settle(&mut c, 100);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x9F, 0x00, 0x7F]),
+        "LOAD 1 lit: {out:x?}"
+    );
+    assert!(
+        out.iter().any(|m| m[0] == 0xBF && m[1] == 0x00 && m[2] > 0),
+        "jog ring moved: {out:x?}"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+#[test]
 fn xdj_rx3_decks_mixer_and_pads() {
     let (reg, mut c) = load("Pioneer-XDJ-RX3.midi.xml");
     settle(&mut c, 50);

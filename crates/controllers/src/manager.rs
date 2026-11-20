@@ -1294,6 +1294,8 @@ mod tests {
             ("OPUS-QUAD", "Pioneer-OPUS-QUAD.midi.xml"),
             ("DDJ-FLX10", "Pioneer-DDJ-FLX10.midi.xml"),
             ("DDJ-FLX6", "Pioneer-DDJ-FLX6.midi.xml"),
+            ("DDJ-GRV6", "Pioneer-DDJ-GRV6.midi.xml"),
+            ("DDJ-GRV6:DDJ-GRV6 MIDI 1 24:0", "Pioneer-DDJ-GRV6.midi.xml"),
             ("XDJ-RX3", "Pioneer-XDJ-RX3.midi.xml"),
             ("DDJ-400", "Pioneer-DDJ-400.midi.xml"),
             ("DDJ-200", "Pioneer DDJ-200.midi.xml"),

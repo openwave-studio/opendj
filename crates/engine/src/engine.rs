@@ -3532,7 +3532,8 @@ impl Engine {
                 None => (0.0, 0.0),
             };
             d.stem_upgrade = upgrade.1;
-            d.stem_fx.prepare(d.c.stem_fx.get(), beat);
+            d.stem_fx
+                .prepare(d.c.stem_fx.get(), beat, d.c.stem_fx_beats.get());
             let capture = d.stem_fx.capture_seconds(beat);
             let mut send_to = [0.0f32; MAX_STEMS];
             let stem_gains = stems.map(|_| {
@@ -4864,6 +4865,82 @@ mod tests {
         load(&mut input, 0, vocal_tone_track(2.0));
         run(&mut engine, 0.05);
         assert!(!fx.get_bool());
+    }
+
+    /// Peak level over each 10 ms of the left channel.
+    fn peaks(left: &[f32]) -> Vec<f32> {
+        left.chunks((SR * 0.01) as usize)
+            .map(|c| c.iter().fold(0f32, |m, v| m.max(v.abs())))
+            .collect()
+    }
+
+    #[test]
+    fn stem_trans_chops_the_stem_and_stops_at_once() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, vocal_tone_track(14.0));
+        run(&mut engine, 0.01);
+        reg.get("[Channel1]", "stem_fx").unwrap().set(4.0);
+        reg.get("[Channel1]", "stem_fx_beats").unwrap().set(0.25);
+        reg.get("[Channel1]", "play").unwrap().set_bool(true);
+        record(&mut engine, 0.5);
+        let fx = reg
+            .get("[QuickEffectRack1_[Channel1_Stem4]]", "enabled")
+            .unwrap();
+        fx.set_bool(true);
+        // A quarter beat at 120 BPM is 125 ms: open half, shut half.
+        let chopped = peaks(&record(&mut engine, 1.0));
+        let shut = chopped.iter().filter(|&&p| p < 0.01).count();
+        let open = chopped.iter().filter(|&&p| p > 0.25).count();
+        assert!(
+            shut > 30 && open > 30,
+            "shut {shut}, open {open}: {chopped:?}"
+        );
+        // Let go, the stem is back whole at once, with nothing ringing on.
+        fx.set_bool(false);
+        record(&mut engine, 0.05);
+        assert!(!engine.decks[0].stem_fx.ringing());
+        let after = peaks(&record(&mut engine, 0.5));
+        assert!(after.iter().all(|&p| p > 0.25), "{after:?}");
+    }
+
+    #[test]
+    fn stem_roll_repeats_in_place_of_the_stem() {
+        let (reg, mut engine, mut input) = setup();
+        let mut t = (*vocal_tone_track(14.0)).clone();
+        // A tone that rises, so a repeat is told apart from playing on.
+        let n = (SR * 14.0) as usize;
+        let frames: Vec<_> = (0..n)
+            .map(|i| {
+                let v = (i as f32 / n as f32) * 0.5;
+                [[0.0; 2], [0.0; 2], [0.0; 2], [v, v], [0.0; 2]]
+            })
+            .collect();
+        let audio = Audio::from_frames(SR as u32, vec![[0.0; 2]; n]);
+        assert!(audio.set_stems(crate::stems::Stems::from_frames(
+            crate::stems::default_info(),
+            SR as u32,
+            &frames
+        )));
+        t.audio = Some(Arc::new(audio));
+        load(&mut input, 0, Arc::new(t));
+        run(&mut engine, 0.01);
+        reg.get("[Channel1]", "stem_fx").unwrap().set(3.0);
+        reg.get("[Channel1]", "stem_fx_beats").unwrap().set(0.5);
+        reg.get("[Channel1]", "play").unwrap().set_bool(true);
+        record(&mut engine, 2.0);
+        let fx = reg
+            .get("[QuickEffectRack1_[Channel1_Stem4]]", "enabled")
+            .unwrap();
+        fx.set_bool(true);
+        let rolled = record(&mut engine, 1.5);
+        // Playing on, the level would climb by about 0.05 over 1.5 s; the
+        // roll keeps going back to where it started.
+        let early = rolled[(SR * 0.3) as usize];
+        let late = rolled[(SR * 1.4) as usize];
+        assert!((late - early).abs() < 0.03, "{early} {late}");
+        fx.set_bool(false);
+        record(&mut engine, 0.05);
+        assert!(!engine.decks[0].stem_fx.ringing());
     }
 
     #[test]
