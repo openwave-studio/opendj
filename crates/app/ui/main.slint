@@ -1,3 +1,4 @@
+import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Palette } from "std-widgets.slint";
 import { Theme, KeyNotation, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
@@ -59,6 +60,7 @@ export { RemoteUi, RemoteDevice }
 export { MixerMode, InputSettings, InputRow }
 export { BroadcastState, BroadcastStation }
 export { RemixUi }
+export { BrowserFocus, BrowserPane }
 export { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, FxGroup, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, BrowserPanels, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
 
 // Macro lanes: an instrument deck's knobs drawn as lines on its scrolling
@@ -1664,6 +1666,7 @@ export component AppWindow inherits Window {
     // on-screen mixer, only each deck's level.
     property <bool> external-mixer: Controls.value(Controls.resolve("[Master]", "external_mixer"), Controls.tick) > 0;
     property <bool> prep: layout == 3 && !library-expanded;
+    changed prep => { BrowserFocus.prep = prep; }
     // The Player layout: one bar, no waveforms or FX bar.
     property <bool> player: layout == 1;
     property <bool> recording: Controls.value(Controls.resolve("[Recording]", "status"), Controls.tick) > 1;
@@ -1684,6 +1687,7 @@ export component AppWindow inherits Window {
     callback spotify-refresh();
     callback select-folder(index: int);
     callback toggle-folder(index: int);
+    callback navigate-folders(direction: int);
     callback sort(column: int);
     callback search(text: string);
     callback activate-track(row: int);
@@ -1734,6 +1738,7 @@ export component AppWindow inherits Window {
         Palette.color-scheme = Theme.light ? ColorScheme.light : ColorScheme.dark;
         Theme.player = player;
         WaveHeight.layout = layout;
+        BrowserFocus.prep = prep;
         keys.focus();
         LibraryEdit.window-height = root.height;
         LibraryEdit.window-width = root.width;
@@ -1782,10 +1787,29 @@ export component AppWindow inherits Window {
     property <bool> playing-4: Controls.value(play-index[3], Controls.tick) > 0;
     property <[bool]> playing: [playing-1, playing-2, playing-3, playing-4];
     property <int> master-deck: 0;
-    // The deck started last, the one being mixed in: ← and → bend it.
+    // The deck started last, the one being mixed in: ← and → bend it
+    // while no part of the browser has the keys.
     property <int> last-started: 0;
-    // The bend control an arrow key holds down, -1 for none.
+    // The bend control a key holds down, -1 for none, and that key.
     property <int> bend-held: -1;
+    property <string> bend-key;
+    // W and E bend deck 1 down and up while held, U and I deck 2 (Shift
+    // for a bigger bend); ← and → the deck started last. True when the key
+    // is one of them.
+    function bend-press(text: string, shift: bool) -> bool {
+        let k = text == "W" ? "w" : text == "E" ? "e" : text == "U" ? "u" : text == "I" ? "i" : text;
+        let deck = k == "w" || k == "e" ? 0 : k == "u" || k == "i" ? 1 : text == Key.LeftArrow || text == Key.RightArrow ? last-started : -1;
+        if deck < 0 {
+            return false;
+        }
+        if bend-held < 0 {
+            let up = k == "e" || k == "i" || text == Key.RightArrow;
+            bend-held = Controls.resolve("[Channel" + (deck + 1) + "]", (up ? "rate_temp_up" : "rate_temp_down") + (shift ? "" : "_small"));
+            bend-key = k;
+            Controls.set-value(bend-held, 1);
+        }
+        true
+    }
     // Presses one of deck 1's controls once, for Prep's keys.
     function press(key: string) {
         Controls.set-value(Controls.resolve("[Channel1]", key), 1);
@@ -1912,10 +1936,11 @@ export component AppWindow inherits Window {
             }
             reject
         }
-        // ← and → bend the deck started last while held, by 2% (4% with
-        // Shift), to nudge its beat into line (see key-pressed).
+        // The bend keys bend a deck while held, by 2% (4% with Shift), to
+        // nudge its beat into line (see bend-press). Shift may be let go
+        // first, which changes the letter's case.
         key-released(e) => {
-            if (e.text == Key.LeftArrow || e.text == Key.RightArrow) && bend-held >= 0 {
+            if bend-held >= 0 && (e.text == bend-key || e.text == bend-key.to-uppercase()) {
                 Controls.set-value(bend-held, 0);
                 bend-held = -1;
                 return accept;
@@ -2061,13 +2086,24 @@ export component AppWindow inherits Window {
             if !Preferences.open && shortcut(e.text, e.modifiers.control, e.modifiers.alt, e.modifiers.shift, master-deck, browser.first-picked, browser.last-picked) {
                 return accept;
             }
-            // Unless the DJ gave the arrows shortcuts of their own.
-            if (e.text == Key.LeftArrow || e.text == Key.RightArrow) && !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt {
-                if bend-held < 0 {
-                    let group = "[Channel" + (last-started + 1) + "]";
-                    bend-held = Controls.resolve(group, (e.text == Key.RightArrow ? "rate_temp_up" : "rate_temp_down") + (e.modifiers.shift ? "" : "_small"));
-                    Controls.set-value(bend-held, 1);
-                }
+            // Unless the DJ gave these keys shortcuts of their own.
+            if !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && bend-press(e.text, e.modifiers.shift) {
+                return accept;
+            }
+            // With no part of the browser holding the keys, ↑ and ↓ move
+            // through the tracks and Tab goes to them; Esc in the browser
+            // hands the keys back here, to the decks.
+            if !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && !e.modifiers.shift && (e.text == Key.UpArrow || e.text == Key.DownArrow) {
+                BrowserFocus.focus(BrowserPane.content);
+                BrowserFocus.navigate(e.text == Key.UpArrow ? 0 : 1, 1);
+                return accept;
+            }
+            if !Preferences.open && !prep && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && (e.text == Key.Tab || e.text == Key.Backtab) {
+                BrowserFocus.focus(e.text == Key.Backtab || e.modifiers.shift ? BrowserPane.folders : BrowserPane.content);
+                return accept;
+            }
+            if e.text == Key.Escape && !keys.has-focus {
+                keys.focus();
                 return accept;
             }
             reject
@@ -2378,9 +2414,10 @@ export component AppWindow inherits Window {
                 ascending: sort-ascending;
                 side-rows: side-rows;
                 side-total: side-total;
-                list-clicked => { keys.focus(); }
+                list-clicked => { BrowserFocus.pane = BrowserPane.content; }
                 select-folder(i) => { select-folder(i); }
                 toggle-folder(i) => { toggle-folder(i); }
+                navigate-folders(d) => { root.navigate-folders(d); }
                 sort(c) => { sort(c); }
                 search(t) => { search(t); }
                 activate(r) => { activate-track(r); }

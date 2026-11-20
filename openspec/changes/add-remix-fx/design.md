@@ -45,7 +45,7 @@ Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle satu
 
 ## Sample pads
 
-`pad1..4` (press/release), `pad_bank` (sample pack bank or a Groove Box kit), `roll_rate` (0 off, 1-8 the rates), `roll_rate2` (second held rate for groove rolls: hits on both grids, accents where they meet), `pad1..4_pitch` (±12 semitones), `overdub` (toggle; a 1-bar loop recorded on the grid, layered, `overdub_undo` removes the last pass, `overdub_clear`), `sample_fx` (choice) and `sample_fx_amount`. Hits use the sampler's voices on a pad bus mixed into the Remix deck's output after the band split, so they follow its fader.
+`pad1..4` (press/release), `pad_bank` (sample pack bank or a Groove Box kit), `roll_rate` (0 off, 1-8 the rates), `roll_rate2` (second held rate for groove rolls: hits on both grids, accents where they meet), `pad1..4_pitch` (±12 semitones), `overdub` (toggle; a 1-bar loop recorded on the grid, layered, `overdub_undo` removes the last pass, `overdub_clear`), `sample_fx` (choice) and `sample_fx_amount`. Hits play on the Remix deck's own eight voices, mixed into its output after the band split, so they follow its fader. On screen the X-PAD sits under the ISOLATE arrow on the WHEEL screen: the roll rates in a strip to slide along, over the four pads.
 
 ## Controllers and remote
 

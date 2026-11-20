@@ -3,20 +3,25 @@
 | Key | Does |
 |---|---|
 | <kbd>Space</kbd> | Play or pause the master deck |
-| <kbd>←</kbd> <kbd>→</kbd> | Bend the deck you started last slower or faster while held, 2% (4% with <kbd>Shift</kbd>); see [pitch bend](decks.md#slip-bend-and-censor) |
+| <kbd>W</kbd> <kbd>E</kbd> / <kbd>U</kbd> <kbd>I</kbd> | Bend deck 1 / deck 2 slower or faster while held, 2% (4% with <kbd>Shift</kbd>); see [pitch bend](decks.md#slip-bend-and-censor) |
+| <kbd>←</kbd> <kbd>→</kbd> | In the browser, open and close folders and move between the tree and the tracks (see [keyboard browsing](music.md#keyboard-browsing)); otherwise bend the deck you started last |
+| <kbd>↑</kbd> <kbd>↓</kbd> | Move through the tracks, folders or sources, whichever has the keys |
+| <kbd>Tab</kbd> / <kbd>Shift</kbd> <kbd>Tab</kbd> | Move the keys between the source rail, the folder tree and the track list |
+| <kbd>⇧</kbd> <kbd>←</kbd> / <kbd>⇧</kbd> <kbd>→</kbd> | Load the picked track onto deck 1 or deck 2 (`deck 1 load`) |
 | <kbd>⌘</kbd> <kbd>1</kbd> to <kbd>⌘</kbd> <kbd>5</kbd> (Linux and Windows: <kbd>Ctrl</kbd>) | Rate the tracks picked in the browser 1 to 5 stars |
 | <kbd>⌘</kbd> <kbd>I</kbd> (Linux and Windows: <kbd>Ctrl</kbd> <kbd>I</kbd>) | Show the picked track in the side panel's Info tab, as **Show Info** on the track menu does |
 | <kbd>S</kbd> | Add the tracks picked in the browser to the end of the [Shortlist](music.md#shortlist-and-playlist-tabs) |
 | <kbd>⌘</kbd> <kbd>A</kbd> (Linux and Windows: <kbd>Ctrl</kbd> <kbd>A</kbd>) | Pick every track in the track list or side list you last clicked, to drag or analyze them together |
 | <kbd>⌘</kbd> <kbd>,</kbd> (Linux and Windows: <kbd>Ctrl</kbd> <kbd>,</kbd>) | Open or close Settings |
 | <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> / <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>→</kbd> (Linux and Windows: <kbd>Shift</kbd> <kbd>Alt</kbd>) | Unload deck 1 or deck 2 (`deck 1 eject`), as ⏏ on the deck's cover does; not while it plays |
-| <kbd>Esc</kbd> | Close Settings |
+| <kbd>Esc</kbd> | Close Settings; in the browser, hand the keys back to the decks |
 | Media keys (play/pause, next, previous) | In [Player](layouts.md), play or pause, mix into the next track in Up Next, or go back to the start of the track; headphone buttons and the system's Now Playing do the same. Other layouts only with **Media keys in every layout** on in Settings › Player |
 
 ## openDJscript
 
-Each shortcut, apart from Space, ⌘A, ⌘, and Esc (and ← and →, unless you
-give them shortcuts of your own), runs a line of openDJscript,
+Each shortcut, apart from Space, ⌘A, ⌘, and Esc (and the bend keys, the
+arrows and Tab, unless you give them shortcuts of your own), runs a line of
+openDJscript,
 a short action language in the style of VirtualDJ's VDJscript. ⌘3 runs
 `rating 3`.
 
@@ -39,6 +44,7 @@ set '[Master],gain' 1             a control of another group
 | `edit_grid` | Start or finish editing the beat grid (G) |
 | `loop 4`, `loop_exit` | Loop that many beats (4 if left out), end the loop |
 | `hot_cue 1` | Play from a hot cue, or set it |
+| `load` | Load the track picked in the browser onto the deck (⇧← and ⇧→) |
 | `eject` | Unload the deck |
 | `volume 80%` | Set the channel fader |
 | `crossfader` | Turn the crossfader on or off |

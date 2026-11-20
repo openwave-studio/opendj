@@ -1,3 +1,4 @@
+import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 // The Jam source (formerly Instruments) in the library rail: what a deck can play instead
 // of a track. The Groove Box's kits, the instrument plugins ticked in
 // Settings › Plugins, and the microphone and aux inputs, each dragged onto
@@ -152,6 +153,7 @@ export global InstrumentsUi {
     in property <[InstrumentNode]> nodes;
     in property <int> current-node;
     in property <[LiveItem]> rows;
+    in-out property <int> current-item: -1;
     // Text for an empty list, and the Settings page that fills it: 7 Plugins,
     // 0 Audio, -1 none.
     in property <string> empty-text;
@@ -159,6 +161,7 @@ export global InstrumentsUi {
     in property <int> empty-tab;
     callback select-node(index: int);
     callback toggle-node(index: int);
+    callback navigate-node(direction: int);
     callback search(text: string);
     // The tag chips over the list, on or off, in PresetUi.tag-names' order:
     // with any on, the list shows the presets with all of them.
@@ -621,65 +624,130 @@ component NodeIcon inherits Rectangle {
 
 // The tree on the left: everything, the Groove Box, plugins by maker, inputs.
 component InstrumentTree inherits Rectangle {
+    property <int> navigation-request: BrowserFocus.request;
+    changed navigation-request => { focus-pending = true; }
+    property <bool> focus-pending;
+    Timer {
+        interval: 1ms;
+        running: root.focus-pending;
+        triggered => {
+            root.focus-pending = false;
+            if root.visible && BrowserFocus.pane == BrowserPane.folders { tree-keys.focus(); }
+        }
+    }
+
     background: Theme.browser;
     width: 270px;
+
+    property <int> navigation-current: InstrumentsUi.current-node;
+    property <[InstrumentNode]> navigation-nodes: InstrumentsUi.nodes;
+    property <bool> reveal-pending: false;
+    changed navigation-current => { reveal-pending = true; }
+
+    function reveal-current() {
+        if navigation-current < 0 || navigation-current >= navigation-nodes.length { return; }
+        let top = navigation-current * 34px;
+        let bottom = top + 34px;
+        let view-top = -jam-scroll.content-y;
+        if top < view-top {
+            jam-scroll.content-y = -top;
+        } else if bottom > view-top + jam-scroll.visible-height {
+            jam-scroll.content-y = -(bottom - jam-scroll.visible-height);
+        }
+        jam-scroll.content-y = min(0px, max(
+            min(0px, jam-scroll.visible-height - jam-scroll.content-height),
+            jam-scroll.content-y
+        ));
+    }
+
+    Timer {
+        interval: 16ms;
+        running: root.reveal-pending;
+        triggered => {
+            root.reveal-pending = false;
+            root.reveal-current();
+        }
+    }
+
     VerticalLayout {
         padding: 8px;
         spacing: 6px;
         Text { text: "Jam"; color: Theme.text; font-size: 15px; font-weight: 600; height: 30px; vertical-alignment: center; x: 4px; }
-        ScrollView {
-            gutter: true;
-            VerticalLayout {
-                alignment: start;
-                for n[i] in InstrumentsUi.nodes: Rectangle {
-                    height: 34px;
-                    border-radius: Theme.radius;
-                    background: i == InstrumentsUi.current-node ? Theme.selection : ta.has-hover ? Theme.n-232326 : transparent;
-                    ta := TouchArea {
-                        clicked => { InstrumentsUi.select-node(i); }
-                        double-clicked => { InstrumentsUi.toggle-node(i); }
-                    }
-                    HorizontalLayout {
-                        padding-left: 4px + n.depth * 16px;
-                        padding-right: 8px;
-                        spacing: 8px;
-                        Rectangle {
-                            width: 12px;
-                            if n.children > 0: Path {
-                                width: 10px;
-                                height: 10px;
-                                viewbox-width: 10;
-                                viewbox-height: 10;
-                                stroke: Theme.text-dim;
-                                stroke-width: 1.6px;
-                                stroke-line-cap: round;
-                                fill: transparent;
-                                commands: n.children == 2 ? "M 2 3.5 L 5 6.5 L 8 3.5" : "M 3.5 2 L 6.5 5 L 3.5 8";
+        tree-keys := FocusScope {
+            min-height: 50px;
+            vertical-stretch: 1;
+            focus-on-click: false;
+            changed has-focus => { if self.has-focus { BrowserFocus.pane = BrowserPane.folders; } }
+            key-pressed(e) => {
+                if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
+                if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
+                    return reject;
+                }
+                if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+                else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+                else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
+                else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
+                else { return reject; }
+                root.reveal-pending = true;
+                accept
+            }
+            jam-scroll := ScrollView {
+                width: parent.width;
+                height: parent.height;
+                gutter: true;
+                VerticalLayout {
+                    alignment: start;
+                    for n[i] in InstrumentsUi.nodes: Rectangle {
+                        height: 34px;
+                        border-radius: Theme.radius;
+                        background: i == InstrumentsUi.current-node ? (tree-keys.has-focus ? Theme.selection : Theme.selection-idle) : ta.has-hover ? Theme.n-232326 : transparent;
+                        ta := TouchArea {
+                            clicked => { tree-keys.focus(); InstrumentsUi.select-node(i); }
+                            double-clicked => { tree-keys.focus(); InstrumentsUi.toggle-node(i); }
+                        }
+                        HorizontalLayout {
+                            padding-left: 4px + n.depth * 16px;
+                            padding-right: 8px;
+                            spacing: 8px;
+                            Rectangle {
+                                width: 12px;
+                                if n.children > 0: Path {
+                                    width: 10px;
+                                    height: 10px;
+                                    viewbox-width: 10;
+                                    viewbox-height: 10;
+                                    stroke: Theme.text-dim;
+                                    stroke-width: 1.6px;
+                                    stroke-line-cap: round;
+                                    fill: transparent;
+                                    commands: n.children == 2 ? "M 2 3.5 L 5 6.5 L 8 3.5" : "M 3.5 2 L 6.5 5 L 3.5 8";
+                                }
+                                TouchArea { clicked => { tree-keys.focus(); InstrumentsUi.toggle-node(i); } }
                             }
-                            TouchArea { clicked => { InstrumentsUi.toggle-node(i); } }
-                        }
-                        VerticalLayout {
-                            alignment: center;
-                            NodeIcon { kind: n.kind; tint: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.accent; }
-                        }
-                        Text {
-                            text: n.name;
-                            color: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.text;
-                            font-size: 15px;
-                            vertical-alignment: center;
-                            overflow: elide;
-                            horizontal-stretch: 1;
-                        }
-                        if n.count >= 0: Text {
-                            text: n.count;
-                            color: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.text-dim;
-                            font-size: 13px;
-                            vertical-alignment: center;
+                            VerticalLayout {
+                                alignment: center;
+                                NodeIcon { kind: n.kind; tint: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.accent; }
+                            }
+                            Text {
+                                text: n.name;
+                                color: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.text;
+                                font-size: 15px;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                            if n.count >= 0: Text {
+                                text: n.count;
+                                color: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.text-dim;
+                                font-size: 13px;
+                                vertical-alignment: center;
+                            }
                         }
                     }
                 }
             }
         }
+
     }
 }
 
@@ -711,6 +779,7 @@ component InstrumentRow inherits Rectangle {
     in property <LiveItem> item;
     in property <int> line;
     in property <bool> selected;
+    in property <bool> focused;
     in property <length> type-width;
     in property <length> maker-width;
     in property <length> format-width;
@@ -718,7 +787,7 @@ component InstrumentRow inherits Rectangle {
     callback load();
     property <string> decks: InstrumentsUi.decks-of(item.kind, item.index);
     height: 32px;
-    background: selected ? Theme.selection : Math.mod(line, 2) == 0 ? Theme.row : Theme.row-alt;
+    background: selected ? (focused ? Theme.selection : Theme.selection-idle) : Math.mod(line, 2) == 0 ? Theme.row : Theme.row-alt;
     drag := DragArea {
         data: InstrumentsUi.payload(item.kind, item.index);
         allow-copy: true;
@@ -804,9 +873,51 @@ component TagRow inherits HorizontalLayout {
 }
 
 component InstrumentList inherits Rectangle {
+    property <int> navigation-request: BrowserFocus.request;
+    changed navigation-request => { focus-pending = true; }
+    property <bool> focus-pending;
+    Timer {
+        interval: 1ms;
+        running: root.focus-pending;
+        triggered => {
+            root.focus-pending = false;
+            if root.visible && BrowserFocus.pane == BrowserPane.content { item-keys.focus(); }
+        }
+    }
+    item-keys := FocusScope {
+        focus-on-click: false;
+        changed has-focus => {
+            if self.has-focus { BrowserFocus.pane = BrowserPane.content; }
+        }
+        key-pressed(e) => {
+            if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift { return reject; }
+            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+            else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
+            else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
+            else { return reject; }
+            accept
+        }
+    }
+    Timer {
+        interval: 1ms;
+        running: item-keys.has-focus && BrowserFocus.pane == BrowserPane.content
+            && (root.current < 0 || root.current >= InstrumentsUi.rows.length) && InstrumentsUi.rows.length > 0;
+        triggered => { root.current = 0; }
+    }
+    changed current => {
+        if current >= 0 {
+            if current * 32px + items-scroll.content-y < 0 { items-scroll.content-y = -current * 32px; }
+            else if (current + 1) * 32px + items-scroll.content-y > items-scroll.visible-height {
+                items-scroll.content-y = items-scroll.visible-height - (current + 1) * 32px;
+            }
+        }
+    }
+
     // How many decks are shown, for double-click.
     in property <int> decks;
-    property <int> current: -1;
+    property <int> current <=> InstrumentsUi.current-item;
     property <length> type-width: 110px;
     property <length> maker-width: 200px;
     property <length> format-width: 70px;
@@ -867,18 +978,20 @@ component InstrumentList inherits Rectangle {
             }
             Rectangle { y: parent.height - 1px; height: 1px; background: Theme.separator; }
         }
-        ScrollView {
+        items-scroll := ScrollView {
             VerticalLayout {
                 alignment: start;
                 for it[i] in InstrumentsUi.rows: InstrumentRow {
                     item: it;
                     line: i;
                     selected: i == current;
+                    focused: item-keys.has-focus;
                     type-width: type-width;
                     maker-width: maker-width;
                     format-width: format-width;
-                    select => { current = i; }
+                    select => { item-keys.focus(); current = i; }
                     load => {
+                        item-keys.focus();
                         current = i;
                         if InstrumentsUi.free-deck(decks) >= 0 {
                             InstrumentsUi.drop(InstrumentsUi.free-deck(decks), it.kind * 1000 + it.index);

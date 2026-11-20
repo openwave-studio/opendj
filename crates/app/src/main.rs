@@ -115,6 +115,7 @@ mod tidal;
 mod tour;
 mod track_end;
 mod transport;
+mod tree_navigation;
 mod tutorials;
 mod ui_font;
 mod ui_scale;

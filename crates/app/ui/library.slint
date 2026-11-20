@@ -1,3 +1,4 @@
+import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 // Browser: folder tree, track list and a side panel (Automix, Shortlist, Playlist and more).
 // Plain rows, lilac selection, rounded sidebar items.
 import { LineEdit } from "std-widgets.slint";
@@ -54,6 +55,8 @@ export struct Folder {
     adoptable: bool,
     // An album downloaded into the Inbox: its menu offers Move to Albums.
     bundle: bool,
+    // Top of the currently visible rows, in logical pixels.
+    top: float,
     // One of several lists picked with shift- or ⌘-click, to move together.
     picked: bool,
 }
@@ -172,6 +175,8 @@ export global RailOrder {
     in property <[int]> built-in: [1, 9, 10, 12];
     in property <[int]> external: [2, 3, 4, 8, 11];
     // Moves source `source` this many places along its section.
+    callback adjacent(source: int, health: bool, steps: int) -> int;
+    callback position(source: int, health: bool) -> int;
     callback moved(source: int, steps: int);
 }
 
@@ -2779,6 +2784,46 @@ component SourceDragList inherits Rectangle {
 // The column of music sources down the left edge. The "..."
 // under them picks which sources are shown; the collection always is.
 component SourceRail inherits Rectangle {
+    property <int> navigation-request: BrowserFocus.request;
+    changed navigation-request => { focus-pending = true; }
+    property <bool> focus-pending;
+    Timer {
+        interval: 1ms;
+        running: root.focus-pending;
+        triggered => {
+            root.focus-pending = false;
+            if root.visible && BrowserFocus.pane == BrowserPane.sources { rail-keys.focus(); root.reveal-entry(); }
+        }
+    }
+    rail-keys := FocusScope {
+        focus-on-click: false;
+        changed has-focus => {
+            if self.has-focus { BrowserFocus.pane = BrowserPane.sources; }
+        }
+        key-pressed(e) => {
+            if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift { return reject; }
+            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+            else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
+            else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
+            else { return reject; }
+            accept
+        }
+    }
+    function activate-entry(entry: int) {
+        rail-keys.focus();
+        source = entry < 0 ? 0 : entry;
+        if entry < 0 { health-picked(); } else { picked(entry); }
+    }
+    function reveal-entry() {
+        let top = RailOrder.position(source, HealthUi.view) * 48px;
+        if top + rail-scroll.content-y < 0 { rail-scroll.content-y = -top; }
+        else if top + 48px + rail-scroll.content-y > rail-scroll.height {
+            rail-scroll.content-y = rail-scroll.height - top - 48px;
+        }
+    }
+
     in-out property <int> source;
     in-out property <[bool]> shown;
     callback picked(source: int);
@@ -2806,6 +2851,8 @@ component SourceRail inherits Rectangle {
         "The Groove Box, instrument plugins and inputs, to drag onto a deck."
     ];
     width: 52px;
+    border-width: rail-keys.has-focus ? 1px : 0px;
+    border-color: Theme.accent;
     background: Theme.browser;
     // On a short window the sources scroll under the "•••", which stays in
     // view; they would otherwise set how short the whole window can be.
@@ -2833,7 +2880,7 @@ component SourceRail inherits Rectangle {
                         tip: names[0];
                         tip-body: tips[0];
                         SourceIcon { kind: 0; }
-                        clicked => { source = 0; picked(0); }
+                        clicked => { root.activate-entry(0); }
                     }
                     if HealthUi.rail-shown: RailButton {
                         y: 48px;
@@ -2841,7 +2888,7 @@ component SourceRail inherits Rectangle {
                         tip: "Collection Health";
                         tip-body: "Checks your collection for duplicates, missing files and poor tags.";
                         HealthIcon {}
-                        clicked => { source = 0; health-picked(); }
+                        clicked => { root.activate-entry(-1); }
                     }
                 }
                 // The rest in the DJ's order; add-ons' sources are numbered
@@ -2855,7 +2902,7 @@ component SourceRail inherits Rectangle {
                         tip: i < names.length ? names[i] : SourceUi.sources[i - names.length].name;
                         tip-body: i < names.length ? tips[i] : "From an add-on.";
                         RailIcon { kind: i; built-ins: names.length; }
-                        clicked => { source = i; picked(i); }
+                        clicked => { root.activate-entry(i); }
                     }
                 }
                 for i in RailOrder.external: Rectangle {
@@ -2867,7 +2914,7 @@ component SourceRail inherits Rectangle {
                         tip: i < names.length ? names[i] : SourceUi.sources[i - names.length].name;
                         tip-body: i < names.length ? tips[i] : "From an add-on.";
                         RailIcon { kind: i; built-ins: names.length; }
-                        clicked => { source = i; picked(i); }
+                        clicked => { root.activate-entry(i); }
                     }
                 }
             }
@@ -3108,6 +3155,9 @@ component Padlock inherits Rectangle {
 }
 
 component FolderTree inherits Rectangle {
+    property <int> navigation-request: BrowserFocus.request;
+    changed navigation-request => { focus-pending = true; }
+    property <bool> focus-pending;
     in property <[Folder]> folders;
     in property <int> current;
     // A controller's browse knob is moving through folders, not tracks.
@@ -3121,6 +3171,14 @@ component FolderTree inherits Rectangle {
     in-out property <string> spotify-client-id;
     callback select(index: int);
     callback toggle(index: int);
+    callback navigate(direction: int);
+    callback took-focus();
+
+    property <bool> reveal-pending: false;
+    changed current => { reveal-pending = true; }
+    changed source => { reveal-pending = true; }
+    changed tab => { reveal-pending = true; }
+
     callback spotify-connect(client-id: string);
     callback spotify-disconnect();
     callback spotify-refresh();
@@ -3770,6 +3828,58 @@ component FolderTree inherits Rectangle {
                     }
                 }
             }
+            tree-keys := FocusScope {
+                Timer {
+                    interval: 1ms;
+                    running: root.focus-pending;
+                    triggered => {
+                        root.focus-pending = false;
+                        if root.visible && BrowserFocus.pane == BrowserPane.folders { tree-keys.focus(); }
+                    }
+                }
+                min-height: 50px;
+                vertical-stretch: 1;
+                focus-on-click: false;
+                changed has-focus => {
+                    if self.has-focus { BrowserFocus.pane = BrowserPane.folders; root.took-focus(); }
+                }
+                key-pressed(e) => {
+                    if root.naming-row < 0 && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
+                    if root.naming-row >= 0 || e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
+                        return reject;
+                    }
+                    if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+                    else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+                    else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
+                    else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
+                    else { return reject; }
+                    root.reveal-pending = true;
+                    accept
+                }
+                function reveal-current() {
+                    if current < 0 || current >= folders.length { return; }
+                    let top = folders[current].top * 1px;
+                    let bottom = top + (folders[current].separator ? 45px : 34px);
+                    let view-top = -tree-list.content-y;
+                    if top < view-top {
+                        tree-list.content-y = -top;
+                    } else if bottom > view-top + tree-list.visible-height {
+                        tree-list.content-y = -(bottom - tree-list.visible-height);
+                    }
+                    tree-list.content-y = min(0px, max(
+                        min(0px, tree-list.visible-height - tree-list.content-height),
+                        tree-list.content-y
+                    ));
+                }
+                // Reveal the selection after the updated list has been laid out.
+                Timer {
+                    interval: 16ms;
+                    running: root.reveal-pending;
+                    triggered => {
+                        root.reveal-pending = false;
+                        tree-keys.reveal-current();
+                    }
+                }
             // Scrolls while a drag waits near the top or bottom edge.
             Timer {
                 interval: 30ms;
@@ -3783,6 +3893,8 @@ component FolderTree inherits Rectangle {
                 }
             }
             tree-list := ListView {
+                width: parent.width;
+                height: parent.height;
                 gutter: true;
                 content-y <=> root.tree-y;
                 init => { root.tree-view-h = self.visible-height; }
@@ -3822,10 +3934,11 @@ component FolderTree inherits Rectangle {
                                 if (shift-click || cmd-click) && f.editable && tab == 0 && source == 0 {
                                     LibraryEdit.pick-lists(i, shift-click);
                                 } else {
+                                    tree-keys.focus();
                                     select(i);
                                 }
                             }
-                            double-clicked => { toggle(i); }
+                            double-clicked => { tree-keys.focus(); toggle(i); }
                             pointer-event(e) => {
                                 if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
                                     shift-click = e.modifiers.shift;
@@ -3928,7 +4041,7 @@ component FolderTree inherits Rectangle {
                                 fill: transparent;
                                 commands: f.children == 2 ? "M 2 3.5 L 5 6.5 L 8 3.5" : "M 3.5 2 L 6.5 5 L 3.5 8";
                             }
-                            TouchArea { clicked => { toggle(i); } }
+                                TouchArea { clicked => { tree-keys.focus(); toggle(i); } }
                         }
                         // The Crates and Playlists headings have no icon.
                         // Nor do the history tab's days.
@@ -4012,6 +4125,7 @@ component FolderTree inherits Rectangle {
                     }
                     }
                 }
+            }
             }
             if StoreUi.stores && source == 5: InboxPanel {}
             if source == 1 && tab == 0: FilesOptions {}
@@ -5251,6 +5365,41 @@ component NoteButton inherits Rectangle {
 }
 
 component TrackList inherits Rectangle {
+    property <int> navigation-request: BrowserFocus.request;
+    changed navigation-request => { focus-pending = true; }
+    property <bool> focus-pending;
+    Timer {
+        interval: 1ms;
+        running: root.focus-pending;
+        triggered => {
+            root.focus-pending = false;
+            if root.visible && BrowserFocus.pane == BrowserPane.content { list-keys.focus(); }
+        }
+    }
+    list-keys := FocusScope {
+        focus-on-click: false;
+        changed has-focus => {
+            if self.has-focus { BrowserFocus.pane = BrowserPane.content; root.took-focus(); }
+        }
+        key-pressed(e) => {
+            if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift { return reject; }
+            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+            else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
+            else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
+            else { return reject; }
+            accept
+        }
+    }
+    // Initialize only while this list owns focus, after view restoration.
+    Timer {
+        interval: 1ms;
+        running: list-keys.has-focus && BrowserFocus.pane == BrowserPane.content && root.visible
+            && (root.current < 0 || root.current >= root.rows.length) && root.rows.length > 0;
+        triggered => { root.pick(0); }
+    }
+
     in property <[TrackRow]> rows;
     // Its selection is lilac while it has focus, gray while the folders do.
     in property <bool> focused: true;
@@ -5375,6 +5524,7 @@ component TrackList inherits Rectangle {
         anchor = i;
         LibraryEdit.pick-rows(i, i, false);
         current = i;
+        list-keys.focus();
         took-focus();
     }
     function extend(i: int, add: bool) {
@@ -5383,12 +5533,14 @@ component TrackList inherits Rectangle {
         }
         LibraryEdit.pick-rows(anchor, i, add);
         current = i;
+        list-keys.focus();
         took-focus();
     }
     function toggle(i: int) {
         anchor = i;
         LibraryEdit.toggle-row(i);
         current = i;
+        list-keys.focus();
         took-focus();
     }
     // ⌘F (Ctrl+F on Linux and Windows): into the search box, its text
@@ -5403,6 +5555,7 @@ component TrackList inherits Rectangle {
             anchor = 0;
             LibraryEdit.pick-rows(0, rows.length - 1, false);
             current = 0;
+            list-keys.focus();
             took-focus();
         }
     }
@@ -5418,6 +5571,10 @@ component TrackList inherits Rectangle {
     }
     // Keep the selection in view when a controller moves it.
     changed current => {
+        // The shared Rust dispatcher also establishes the next Shift-click anchor.
+        if current >= 0 && LibraryEdit.picked-count == 1 && LibraryEdit.picks[current] {
+            anchor = current;
+        }
         // Moved some other way than a click (arrows, a controller, a new
         // list) to a row not picked: just that row is picked. A click has
         // made `current` the anchor or picked it already.
@@ -5629,12 +5786,14 @@ component TrackList inherits Rectangle {
                             search-text = "";
                             search("");
                         } else {
+                            list-keys.focus();
                             took-focus();
                         }
                         return accept;
                     }
                     if e.text == Key.DownArrow && rows.length > 0 {
                         FilterUi.find("");
+                        list-keys.focus();
                         took-focus();
                         if current < 0 {
                             current = 0;
@@ -7552,6 +7711,18 @@ export component Browser inherits HorizontalLayout {
     callback side-wanted();
     // Whether the side panel can open here (not over Now Playing).
     in property <bool> side-offered: true;
+    property <bool> folders-available: !now-playing && !plugin-source &&
+        (instruments-source || (listing && (library-tab == 0 || folders.length > 0)))
+        // Folded on a narrow window, the lists take the keys only while out.
+        && (instruments-source || lists-docked || lists-out);
+    property <bool> content-available: !now-playing &&
+        (instruments-source || (list.visible && !AlbumsUi.grid));
+    changed folders-available => { BrowserFocus.folders-available = folders-available; }
+    changed content-available => { BrowserFocus.content-available = content-available; }
+    init => {
+        BrowserFocus.folders-available = folders-available;
+        BrowserFocus.content-available = content-available;
+    }
     in property <[Folder]> folders;
     in property <int> current-folder;
     in property <[TrackRow]> rows;
@@ -7567,7 +7738,7 @@ export component Browser inherits HorizontalLayout {
     out property <int> last-picked: list.last-picked;
     // ⌘A in the track list, when it has the focus rather than the folders.
     public function select-all() {
-        if !folders-focused && list.visible {
+        if BrowserFocus.pane == BrowserPane.content && !folders-focused && list.visible {
             list.select-all();
         }
     }
@@ -7597,6 +7768,7 @@ export component Browser inherits HorizontalLayout {
     callback spotify-refresh();
     callback select-folder(index: int);
     callback toggle-folder(index: int);
+    callback navigate-folders(direction: int);
     callback sort(column: int);
     callback search(text: string);
     callback activate(row: int);
@@ -7706,7 +7878,7 @@ export component Browser inherits HorizontalLayout {
                 height: parent.height;
                 folders: folders;
                 current: current-folder;
-                focused: folders-focused;
+                focused: folders-focused && BrowserFocus.pane != BrowserPane.sources;
                 source: source;
                 tab <=> library-tab;
                 spotify-connected: spotify-connected;
@@ -7719,6 +7891,8 @@ export component Browser inherits HorizontalLayout {
                     lists-out = false;
                 }
                 toggle(i) => { toggle-folder(i); }
+                navigate(d) => { root.navigate-folders(d); }
+                took-focus => { root.folders-focused = true; }
                 spotify-connect(id) => { spotify-connect(id); }
                 spotify-disconnect => { spotify-disconnect(); }
                 spotify-refresh => { spotify-refresh(); }
@@ -7745,7 +7919,7 @@ export component Browser inherits HorizontalLayout {
             listed: rows.length;
         }
         list := TrackList {
-            focused: !folders-focused;
+            focused: !folders-focused && BrowserFocus.pane != BrowserPane.sources;
             visible: !plugin-source && !instruments-source && !health-page && !cleanup-page && !(health-bar && HealthUi.reviewing) && !now-playing && !page-open;
             y: health-bar ? (HealthUi.steps.length > 0 ? 167px : 105px) : 0;
             width: 100%;

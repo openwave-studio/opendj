@@ -8,16 +8,18 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-use slint::{ComponentHandle, DataTransfer, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, DataTransfer, Model, ModelRc, SharedString, VecModel};
 
 use opendj_engine::{inputs, remix};
 
 use crate::audio_plugins::Found;
 use crate::presets::{self, Preset, GROOVE};
+use crate::tree_navigation::{self, Action, Direction, Row};
 use crate::{
     settings, AppWindow, InstrumentNode, InstrumentsUi, LiveItem, MixerStripInfo, Preferences,
     RemixUi,
 };
+use crate::{BrowserFocus, BrowserPane};
 
 /// What dragging an item carries: `opendj-live:<kind>:<index>`.
 const LIVE_PAYLOAD: &str = "opendj-live:";
@@ -137,6 +139,68 @@ const MIXER_ROUTE: usize = inputs::MIXER - 1;
 const INPUTS: [(i32, i32, usize, &str); 2] =
     [(MIC, 0, 0, "Microphone"), (MIXER, 0, MIXER_ROUTE, "Mixer")];
 
+fn select_node(app: &AppWindow, row: i32) {
+    let Ok(row) = usize::try_from(row) else {
+        return;
+    };
+    STATE.with_borrow_mut(|s| {
+        if let Some(key) = s.keys.get(row).cloned() {
+            s.current = key;
+        }
+    });
+    refresh(app);
+}
+
+fn toggle_node(app: &AppWindow, row: i32) {
+    let Ok(index) = usize::try_from(row) else {
+        return;
+    };
+    let ui = app.global::<InstrumentsUi>();
+    if !ui
+        .get_nodes()
+        .row_data(index)
+        .is_some_and(|n| n.children > 0)
+    {
+        return;
+    }
+    STATE.with_borrow_mut(|s| {
+        if let Some(key) = s.keys.get(index).cloned() {
+            if !s.open.remove(&key) {
+                s.open.insert(key);
+            }
+        }
+    });
+    // Refresh after releasing the borrow of STATE.
+    refresh(app);
+}
+
+pub(crate) fn navigate_nodes(app: &AppWindow, code: i32) {
+    let Some(direction) = Direction::from_code(code) else {
+        return;
+    };
+    let ui = app.global::<InstrumentsUi>();
+    let rows: Vec<Row> = ui
+        .get_nodes()
+        .iter()
+        .map(|n| Row {
+            depth: n.depth,
+            children: n.children,
+        })
+        .collect();
+    let current = usize::try_from(ui.get_current_node()).ok();
+    match tree_navigation::navigate(&rows, current, direction) {
+        Some(Action::Select(row)) => select_node(app, row as i32),
+        Some(Action::Toggle(row)) => toggle_node(app, row as i32),
+        Some(Action::EnterContent) => app
+            .global::<BrowserFocus>()
+            .invoke_focus(BrowserPane::Content),
+        Some(Action::ExitToSources) => app
+            .global::<BrowserFocus>()
+            .invoke_focus(BrowserPane::Sources),
+        None => {}
+    }
+}
+
 pub fn install(app: &AppWindow) {
     // The Remix deck's effect and scene names, by its controls' values.
     let names = |n: &[&str]| -> ModelRc<SharedString> {
@@ -149,6 +213,10 @@ pub fn install(app: &AppWindow) {
     remix_ui.set_lever_effects(names(&remix::LEVER_EFFECTS));
     remix_ui.set_scenes_up(names(&remix::SCENES_UP));
     remix_ui.set_scenes_down(names(&remix::SCENES_DOWN));
+    remix_ui.set_pad_names(names(&remix::PAD_NAMES));
+    remix_ui.set_roll_rates(names(&remix::ROLL_RATES));
+    let kits: Vec<&str> = remix::KITS.iter().map(|k| k.name).collect();
+    remix_ui.set_kits(names(&kits));
     let ui = app.global::<InstrumentsUi>();
     ui.set_audio_page(crate::prefs::AUDIO_PAGE);
     ui.set_plugins_page(crate::prefs::PLUGINS_PAGE);
@@ -162,26 +230,20 @@ pub fn install(app: &AppWindow) {
     });
     let weak = app.as_weak();
     ui.on_select_node(move |row| {
-        STATE.with_borrow_mut(|s| {
-            if let Some(key) = s.keys.get(row as usize).cloned() {
-                s.current = key;
-            }
-        });
         if let Some(app) = weak.upgrade() {
-            refresh(&app);
+            select_node(&app, row);
         }
     });
     let weak = app.as_weak();
     ui.on_toggle_node(move |row| {
-        STATE.with_borrow_mut(|s| {
-            if let Some(key) = s.keys.get(row as usize).cloned() {
-                if !s.open.remove(&key) {
-                    s.open.insert(key);
-                }
-            }
-        });
         if let Some(app) = weak.upgrade() {
-            refresh(&app);
+            toggle_node(&app, row);
+        }
+    });
+    let weak = app.as_weak();
+    ui.on_navigate_node(move |code| {
+        if let Some(app) = weak.upgrade() {
+            navigate_nodes(&app, code);
         }
     });
     let weak = app.as_weak();

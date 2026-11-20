@@ -1,0 +1,57 @@
+// Which part of the browser has the keys: the source rail, the folder tree
+// or the track list. UI focus requests are applied on the next event turn,
+// which keeps focus callbacks out of the Rust browser's active RefCell borrow.
+export enum BrowserPane { sources, folders, content }
+export global BrowserFocus {
+    // Keyboard and controller commands share the Rust browser dispatcher:
+    // direction 0 up, 1 down, 2 left, 3 right.
+    callback navigate(direction: int, steps: int);
+    in-out property <BrowserPane> pane: content;
+    in-out property <int> request;
+    in-out property <bool> folders-available;
+    in-out property <bool> content-available;
+    // In the Prep layout Tab steps through phrases and ← → jump 16 beats,
+    // so there they don't move between the panes.
+    in-out property <bool> prep;
+    public function focus(target: BrowserPane) {
+        if target == BrowserPane.folders && !folders-available {
+            pane = BrowserPane.sources;
+            request += 1;
+            return;
+        }
+        if target == BrowserPane.content && !content-available { return; }
+        pane = target;
+        request += 1;
+    }
+    function available(target: BrowserPane) -> bool {
+        target == BrowserPane.sources
+            || (target == BrowserPane.folders && folders-available)
+            || (target == BrowserPane.content && content-available)
+    }
+    function after(at: BrowserPane, step: int) -> BrowserPane {
+        if step > 0 {
+            at == BrowserPane.sources ? BrowserPane.folders : at == BrowserPane.folders ? BrowserPane.content : BrowserPane.sources
+        } else {
+            at == BrowserPane.sources ? BrowserPane.content : at == BrowserPane.content ? BrowserPane.folders : BrowserPane.sources
+        }
+    }
+    // Tab (step 1) and Shift+Tab (step -1): the next pane that shows, in the
+    // order rail, tree, tracks, round again.
+    public function cycle(step: int) {
+        let first = after(pane, step);
+        if available(first) {
+            pane = first;
+        } else {
+            pane = after(first, step);
+        }
+        request += 1;
+    }
+    // True when a pane handled Tab or Shift+Tab.
+    public function tab-key(text: string, shift: bool) -> bool {
+        if prep || (text != Key.Tab && text != Key.Backtab) {
+            return false;
+        }
+        cycle(text == Key.Backtab || shift ? -1 : 1);
+        true
+    }
+}

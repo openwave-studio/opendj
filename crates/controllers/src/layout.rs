@@ -10,10 +10,11 @@ use serde_json::Value;
 
 use crate::probe::message_key;
 
-const LAYOUTS: [&str; 19] = [
+const LAYOUTS: [&str; 38] = [
     include_str!("../layouts/flx4.json"),
     include_str!("../layouts/ddj-flx6.json"),
     include_str!("../layouts/ddj-flx10.json"),
+    include_str!("../layouts/ddj-grv6.json"),
     include_str!("../layouts/xdj-rx3.json"),
     include_str!("../layouts/xdj-az.json"),
     include_str!("../layouts/opus-quad.json"),
@@ -24,12 +25,30 @@ const LAYOUTS: [&str; 19] = [
     include_str!("../layouts/ddj-sx.json"),
     include_str!("../layouts/ddj-sx2.json"),
     include_str!("../layouts/ddj-rx.json"),
+    include_str!("../layouts/ddj-rb.json"),
+    include_str!("../layouts/ddj-rr.json"),
+    include_str!("../layouts/ddj-rz.json"),
+    include_str!("../layouts/ddj-rzx.json"),
+    include_str!("../layouts/ddj-sz.json"),
+    include_str!("../layouts/ddj-ergo.json"),
+    include_str!("../layouts/ddj-wego.json"),
+    include_str!("../layouts/ddj-wego2.json"),
+    include_str!("../layouts/ddj-wego3.json"),
+    include_str!("../layouts/ddj-wego4.json"),
     include_str!("../layouts/mixtrack-platinum-fx.json"),
     include_str!("../layouts/mixtrack-pro-fx.json"),
     include_str!("../layouts/inpulse-500.json"),
     include_str!("../layouts/xone-k2.json"),
     include_str!("../layouts/twister.json"),
     include_str!("../layouts/numark-v7.json"),
+    include_str!("../layouts/ddj-flx2.json"),
+    include_str!("../layouts/ddj-rev5.json"),
+    include_str!("../layouts/ddj-sr.json"),
+    include_str!("../layouts/ddj-sp1.json"),
+    include_str!("../layouts/ddj-xp1.json"),
+    include_str!("../layouts/ddj-xp2.json"),
+    include_str!("../layouts/ddj-sb.json"),
+    include_str!("../layouts/ddj-sb2.json"),
 ];
 
 #[derive(Clone, Debug, PartialEq)]

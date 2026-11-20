@@ -11,6 +11,32 @@ on (see [Stages](#stages-inbox-in-prep-and-play-ready)).
 the rail. Together with Files and the streaming services it makes up the
 **browser**, the lower half of the screen.
 
+## Keyboard browsing
+
+The browser has three parts that take the keys in turn: the source rail,
+the folder tree and the track list. The one with the keys has the bright
+selection; the others' selections dim. Click one, or press <kbd>Tab</kbd>
+(<kbd>Shift</kbd> <kbd>Tab</kbd> to go back) to move between them.
+
+- <kbd>↑</kbd> and <kbd>↓</kbd> move through the sources, folders or tracks.
+- In the tree, <kbd>→</kbd> opens a folder, then steps into it; on a
+  playlist or crate it goes to its tracks. <kbd>←</kbd> closes a folder,
+  then steps up to the one above, and from the top to the rail.
+- In the track list, <kbd>←</kbd> goes back to the tree.
+- <kbd>Shift</kbd> <kbd>←</kbd> and <kbd>Shift</kbd> <kbd>→</kbd> load the
+  picked track onto deck 1 or deck 2.
+- <kbd>Esc</kbd> hands the keys back to the decks, where <kbd>←</kbd> and
+  <kbd>→</kbd> bend the deck you started last.
+
+Jam's tree and instruments work the same way. In the Prep layout,
+<kbd>Tab</kbd> and <kbd>←</kbd> <kbd>→</kbd> keep their Prep jobs (phrase by
+phrase, and beat jumps).
+
+A controller's **BROWSE** knob does the same: turn it to move, press it to
+step right, and hold **SHIFT** while pressing to step left. In the track
+list, a press goes back to the tree, so a controller with only the press
+still gets from one to the other.
+
 ## Sources
 
 The rail at the far left picks where the tree and the track list come from:
