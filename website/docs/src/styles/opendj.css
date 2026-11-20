@@ -1,0 +1,39 @@
+/* openDJ's look on Starlight: Electric Lilac accents, the site's dark
+   background and fonts. The fonts come from the landing page's /assets, so
+   `npm run dev` on its own falls back to system fonts. */
+@font-face { font-family: "Inter Tabular"; src: url("/assets/fonts/InterTabular-Regular.otf") format("opentype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Inter Tabular"; src: url("/assets/fonts/InterTabular-SemiBold.otf") format("opentype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Inter Tabular"; src: url("/assets/fonts/InterTabular-Bold.otf") format("opentype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Zen Dots"; src: url("/assets/fonts/ZenDots-Regular.ttf") format("truetype"); font-display: swap; }
+
+:root {
+  --sl-font: "Inter Tabular", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sl-color-accent-low: #2a2140;
+  --sl-color-accent: #8C72D9;
+  --sl-color-accent-high: #D9CCFF;
+  --sl-color-white: #ecebf5;
+  --sl-color-gray-1: #d6d4e4;
+  --sl-color-gray-2: #a9a6be;
+  --sl-color-gray-3: #75728b;
+  --sl-color-gray-4: #3a374f;
+  --sl-color-gray-5: #2a2740;
+  --sl-color-gray-6: #15131f;
+  --sl-color-black: #0e0d17;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #e6deff;
+  --sl-color-accent: #6b4fd8;
+  --sl-color-accent-high: #3b2a85;
+  --sl-color-white: #15131f;
+  --sl-color-gray-1: #2a2740;
+  --sl-color-gray-2: #3a374f;
+  --sl-color-gray-3: #5c5973;
+  --sl-color-gray-4: #9a97ae;
+  --sl-color-gray-5: #d6d4e4;
+  --sl-color-gray-6: #eeedf5;
+  --sl-color-gray-7: #f6f5fb;
+  --sl-color-black: #ffffff;
+}
+
+.sl-markdown-content img { border-radius: 12px; border: 1px solid var(--sl-color-gray-5); }
+.sl-markdown-content kbd { font-family: var(--__sl-font-mono, ui-monospace, monospace); font-size: 0.85em; border: 1px solid var(--sl-color-gray-5); border-bottom-width: 2px; border-radius: 6px; padding: 1px 7px; }

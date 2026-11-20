@@ -96,7 +96,7 @@ jobs:
       # large generated module): its binary and tests one at a time, so the
       # runner doesn't run out of memory.
       - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
-      # Includes the check that website/book/supported-controls.txt matches
+      # Includes the check that website/docs/supported-controls.txt matches
       # `opendj --list-controls` (control_list_tests in crates/app).
       - run: cargo test --workspace
 

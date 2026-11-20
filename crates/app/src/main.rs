@@ -2138,7 +2138,7 @@ fn short_port_name(port: &str) -> &str {
 
 /// Prints every control openDJ has, aliases included, as sorted `[Group],key`
 /// lines. The website's controller pages use this list to mark mapping lines
-/// that don't do anything in openDJ yet (website/book/supported-controls.txt).
+/// that don't do anything in openDJ yet (website/docs/supported-controls.txt).
 fn list_controls() {
     print!("{}", control_list());
 }
@@ -2257,13 +2257,13 @@ mod control_list_tests {
     fn website_list_is_up_to_date() {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../website/book/supported-controls.txt"
+            "/../../website/docs/supported-controls.txt"
         );
         let saved = std::fs::read_to_string(path).unwrap().replace("\r\n", "\n");
         assert!(
             saved == super::control_list(),
-            "website/book/supported-controls.txt is out of date; regenerate it with \
-             `cargo run -q -p opendj -- --list-controls > website/book/supported-controls.txt`"
+            "website/docs/supported-controls.txt is out of date; regenerate it with \
+             `cargo run -q -p opendj -- --list-controls > website/docs/supported-controls.txt`"
         );
     }
 }

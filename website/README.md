@@ -1,7 +1,8 @@
 # opendj.app
 
-The openDJ website: a static landing page, a tutorials page and the docs, which
-are an [mdBook](https://rust-lang.github.io/mdBook/) in `book/`.
+The openDJ website: a static landing page, a tutorials page, release pages
+and the docs, which are a [Starlight](https://starlight.astro.build) site in
+`docs/` (Node 22 or newer).
 
 ## Preview
 
@@ -10,7 +11,23 @@ are an [mdBook](https://rust-lang.github.io/mdBook/) in `book/`.
 python3 -m http.server -d dist   # then open http://localhost:8000
 ```
 
-For the docs alone, `mdbook serve book --open` reloads as you edit.
+For the docs alone, `cd docs && npm install && npm run dev` reloads as you
+edit (without the site's fonts, which live in `assets/`).
+
+## Docs
+
+Pages are Markdown files in `docs/src/content/docs/`, served at
+`/docs/<path>.html` (the addresses the app's tutorials link to). Each starts
+with a `title:` front matter instead of a `#` heading. Link to other pages by
+file, `[Looping](looping.md#loop-rolls)`: `docs/plugins/md-links.mjs` turns
+that into the page's address, and the build fails on a link to a page or
+heading that doesn't exist. Screenshots go in `docs/src/content/docs/images/`
+and are linked relatively; the build converts them to WebP. The sidebar is
+listed in `docs/astro.config.mjs`, so add new pages there. The look (Electric
+Lilac, Inter Tabular, Zen Dots) is in `docs/src/styles/opendj.css`, and
+`docs/src/components/SiteTitle.astro` puts the openDJ logo, linking home, in
+the header. Old addresses that moved are listed under `redirects` in the
+config.
 
 ## Deploy (Cloudflare Pages, free plan)
 
@@ -24,7 +41,8 @@ Connect the repository in Cloudflare Pages with:
 | Build command | `./build.sh` |
 | Build output directory | `dist` |
 
-`build.sh` downloads mdBook if the build image doesn't have it. Add
+`build.sh` installs the docs' packages with `npm ci` and builds them; the
+build image picks Node from `.node-version`. Add
 `opendj.app` under the project's Custom domains. `_headers` sets caching and
 security headers, and `404.html` is the not-found page.
 
@@ -63,11 +81,15 @@ set, the sign-in pages say it isn't set up yet.
 ## Controller pages
 
 `tools/controllers.py` writes a docs page for every mapping in
-`res/controllers` when the site builds, plus the docs' `SUMMARY.md` from
-`book/src/SUMMARY.in.md`. Lines that drive a control openDJ doesn't have yet
-are marked using `book/supported-controls.txt`. `cargo test` fails when that list is
+`res/controllers` when the docs build (`npm run build` and `npm run dev` run
+it first), plus the controllers' index page and `docs/src/controllers.json`,
+their sidebar entries. Hand-written guides in `docs/controller-guides/` go at
+the top of their controller's page, and the controllers in
+`crates/controllers/support.json` get a Beta or Supported badge. Lines that
+drive a control openDJ doesn't have yet are marked using
+`docs/supported-controls.txt`. `cargo test` fails when that list is
 out of date; regenerate it from the repository root with:
 
 ```sh
-cargo run -q -p opendj -- --list-controls > website/book/supported-controls.txt
+cargo run -q -p opendj -- --list-controls > website/docs/supported-controls.txt
 ```
