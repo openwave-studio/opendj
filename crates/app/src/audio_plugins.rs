@@ -21,7 +21,7 @@ use serde_json::{json, Value};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
 use crate::settings;
-use crate::{AppWindow, EffectList, FxRow};
+use crate::{AppWindow, EffectList, FxGroup, FxRow};
 
 /// Settings keys: the folders looked through, and the effects shown.
 pub const FOLDERS: &str = "audio_plugin_folders";
@@ -356,6 +356,17 @@ impl AudioPlugins {
                     &chosen,
                     &effect_names,
                 ))));
+            let (groups, group_rows) = plugin_groups(&chosen, &effect_names);
+            app.global::<EffectList>()
+                .set_plugin_groups(ModelRc::new(VecModel::from(groups)));
+            app.global::<EffectList>()
+                .set_plugin_group_rows(ModelRc::new(VecModel::from(group_rows)));
+            let maker_keys: Vec<SharedString> = chosen
+                .iter()
+                .map(|f| format!("m:{}", maker_name(f)).into())
+                .collect();
+            app.global::<EffectList>()
+                .set_plugin_maker_keys(ModelRc::new(VecModel::from(maker_keys)));
             let names: Vec<SharedString> = list_names(&instruments)
                 .iter()
                 .map(|n| SharedString::from(n.as_str()))
@@ -492,24 +503,49 @@ fn plugin_kind(features: &[String], name: &str) -> usize {
         .map_or(OTHER, |(kind, _)| *kind)
 }
 
+/// An effect in the menu: its label, its place in EffectList.names and its
+/// kind.
+type MenuItem = (String, usize, usize);
+
 /// Menu lines for `items` (a label, its place in EffectList.names and its
 /// kind): a heading per kind, in [`KINDS`] order, then its effects A to Z.
-fn grouped(items: Vec<(String, usize, usize)>) -> Vec<FxRow> {
-    let mut rows = Vec::new();
-    for (k, kind) in KINDS.iter().enumerate() {
-        let mut these: Vec<&(String, usize, usize)> =
-            items.iter().filter(|(_, _, i)| *i == k).collect();
+/// The kinds are split over two columns of about the same length, kept in
+/// order.
+fn grouped(items: Vec<MenuItem>) -> Vec<FxRow> {
+    let mut groups: Vec<(usize, Vec<&MenuItem>)> = Vec::new();
+    for k in 0..KINDS.len() {
+        let mut these: Vec<&MenuItem> = items.iter().filter(|(_, _, i)| *i == k).collect();
         if these.is_empty() {
             continue;
         }
         these.sort_by_key(|(label, _, _)| label.to_lowercase());
+        groups.push((k, these));
+    }
+    let total: usize = groups.iter().map(|(_, g)| g.len() + 1).sum();
+    let mut rows = Vec::new();
+    let mut first = 0;
+    let mut column = 0;
+    for (k, these) in groups {
+        let size = these.len() + 1;
+        if column == 0 && first > 0 && 2 * (first + size) > total + 1 {
+            column = 1;
+        }
+        if column == 0 {
+            first += size;
+        }
         rows.push(FxRow {
-            label: kind.to_uppercase().into(),
+            label: KINDS[k].into(),
             index: -1,
+            kind: k as i32,
+            column,
+            group: SharedString::new(),
         });
         rows.extend(these.into_iter().map(|(label, index, _)| FxRow {
             label: label.as_str().into(),
             index: *index as i32,
+            kind: k as i32,
+            column,
+            group: SharedString::new(),
         }));
     }
     rows
@@ -543,6 +579,84 @@ fn plugin_rows(chosen: &[Found], names: &[String]) -> Vec<FxRow> {
             })
             .collect(),
     )
+}
+
+/// A plugin's maker as the Plugins tab lists it.
+fn maker_name(f: &Found) -> String {
+    let v = f.vendor.trim();
+    if v.is_empty() {
+        "Other makers".to_string()
+    } else {
+        v.to_string()
+    }
+}
+
+/// The Plugins tab's first column (its makers A to Z, then its kinds) and
+/// what each one opens in the second: the effects of that maker by kind
+/// (`group` "m:<maker>"), or of that kind (`group` "k:<kind>"). `chosen`
+/// and `names` are in the order of [`plugin_rows`].
+fn plugin_groups(chosen: &[Found], names: &[String]) -> (Vec<FxGroup>, Vec<FxRow>) {
+    let maker = maker_name;
+    let mut makers: Vec<String> = chosen.iter().map(maker).collect();
+    makers.sort_by_key(|m| m.to_lowercase());
+    makers.dedup();
+    let mut groups = Vec::new();
+    let mut rows = Vec::new();
+    for m in &makers {
+        let key = format!("m:{m}");
+        let items: Vec<MenuItem> = chosen
+            .iter()
+            .zip(names)
+            .enumerate()
+            .filter(|(_, (f, _))| maker(f) == *m)
+            .map(|(i, (f, n))| {
+                (
+                    n.clone(),
+                    AVAILABLE_EFFECTS.len() + i,
+                    plugin_kind(&f.features, &f.name),
+                )
+            })
+            .collect();
+        groups.push(FxGroup {
+            label: m.as_str().into(),
+            key: key.as_str().into(),
+            count: items.len() as i32,
+            kind: -1,
+        });
+        rows.extend(grouped(items).into_iter().map(|mut r| {
+            r.column = 0;
+            r.group = key.as_str().into();
+            r
+        }));
+    }
+    for (k, kind) in KINDS.iter().enumerate() {
+        let key = format!("k:{kind}");
+        let mut items: Vec<(String, usize)> = chosen
+            .iter()
+            .zip(names)
+            .enumerate()
+            .filter(|(_, (f, _))| plugin_kind(&f.features, &f.name) == k)
+            .map(|(i, (_, n))| (n.clone(), AVAILABLE_EFFECTS.len() + i))
+            .collect();
+        if items.is_empty() {
+            continue;
+        }
+        items.sort_by_key(|(n, _)| n.to_lowercase());
+        groups.push(FxGroup {
+            label: (*kind).into(),
+            key: key.as_str().into(),
+            count: items.len() as i32,
+            kind: k as i32,
+        });
+        rows.extend(items.into_iter().map(|(n, i)| FxRow {
+            label: n.as_str().into(),
+            index: i as i32,
+            kind: k as i32,
+            column: 0,
+            group: key.as_str().into(),
+        }));
+    }
+    (groups, rows)
 }
 
 /// The names to show in a chooser: a plugin ticked in more than one format
@@ -959,8 +1073,12 @@ mod menu_tests {
                 .collect::<Vec<_>>(),
             opendj_engine::EFFECT_MENU_ORDER
         );
-        assert_eq!(rows[0].label, "DELAY & ECHO");
-        assert!(rows.iter().all(|r| r.label != "OTHER"));
+        assert_eq!(rows[0].label, "Delay & Echo");
+        assert!(rows.iter().all(|r| r.label != "Other"));
+        // Two columns: Delay, Reverb and Filter first, the rest beside them.
+        let second = rows.iter().position(|r| r.column == 1).unwrap();
+        assert_eq!(rows[second].label, "Modulation");
+        assert!(rows[second..].iter().all(|r| r.column == 1));
         // A to Z within a kind: Echo, Echo Out, Filter Echo, Spiral.
         let first: Vec<&str> = rows[1..5].iter().map(|r| r.label.as_str()).collect();
         assert_eq!(first, ["Echo", "Echo Out", "Filter Echo", "Spiral"]);

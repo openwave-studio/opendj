@@ -1,5 +1,6 @@
-// The shared Pigments-style controls: dark value pills that open titled
-// lists, ‹ › stepper pills, power buttons, arc knobs and the band mark.
+// The shared Tron-look controls: dark value pills that open titled lists,
+// ‹ › stepper pills, switch pills, unit pills, power buttons, arc knobs,
+// section titles and the band mark.
 // Screens use these rather than drawing their own; colors and sizes come
 // from Theme.
 import { Theme } from "theme.slint";
@@ -212,4 +213,94 @@ export component ArcKnob inherits Rectangle {
         stroke-width: max(3px, root.size / 7);
     }
     @children
+}
+
+// A switch pill: one word, pressed to turn something on (lilac) or off
+// (grey), or to step through two or three choices, showing only the current
+// one. Never dots or other marks for the choices. `on` lights it.
+export component SwitchPill inherits Rectangle {
+    in property <string> text;
+    in property <bool> on: true;
+    in property <bool> enabled: true;
+    in property <length> font-size: 12px;
+    in property <string> map-key;
+    callback clicked();
+    height: 24px;
+    min-width: label.preferred-width + 20px;
+    border-radius: 7px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: root.on && root.enabled ? Theme.pill-on-border : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    label := Text {
+        text: root.text;
+        color: !root.enabled ? Theme.n-48484c : root.on ? Theme.lilac-text : Theme.pill-off-text;
+        font-size: root.font-size;
+        font-weight: 500;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea {
+        mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
+        clicked => {
+            if root.enabled {
+                root.clicked();
+            }
+        }
+    }
+    if root.map-key != "": MapMark { key: root.map-key; }
+}
+
+// A label with a small unit pill beside it ("Rate sync", "Filter LP"):
+// a press on the pill switches the unit or mode in place.
+export component UnitLabel inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> unit;
+    in property <bool> enabled: true;
+    in property <length> font-size: 11px;
+    callback clicked();
+    spacing: 4px;
+    alignment: center;
+    Text {
+        text: root.label;
+        color: Theme.text-dim;
+        font-size: root.font-size;
+        vertical-alignment: center;
+    }
+    if root.unit != "": Rectangle {
+        height: 18px;
+        width: unit-text.preferred-width + 12px;
+        border-radius: 5px;
+        background: uta.has-hover ? Theme.pill-hover : Theme.pill;
+        border-width: 1px;
+        border-color: uta.has-hover ? Theme.n-6e58a8 : Theme.pill-on-border;
+        unit-text := Text {
+            text: root.unit;
+            color: root.enabled ? Theme.lilac-text : Theme.pill-off-text;
+            font-size: root.font-size;
+            vertical-alignment: center;
+        }
+        uta := TouchArea {
+            mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
+            clicked => {
+                if root.enabled {
+                    root.clicked();
+                }
+            }
+        }
+    }
+}
+
+// A section title (SCENE, LOOP, MASTER): condensed capitals. Pill words
+// and labels stay capitalised in Inter; only these are in capitals.
+export component SectionTitle inherits Text {
+    // Written as a word ("Scene"); shown in capitals.
+    in property <string> title;
+    text: root.title.to-uppercase();
+    font-family: Theme.title-font;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: Theme.section-title;
+    vertical-alignment: center;
 }

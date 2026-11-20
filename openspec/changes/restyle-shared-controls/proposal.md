@@ -4,7 +4,7 @@ Planned for: **v0.9 · In the club** (a user request, issue #923, 2026-11-20)
 
 ## Why
 
-The FX bar now uses Pigments-style controls (#908, #920): round power buttons, dark value pills with titled lists, ‹ › inside the name pill, arc knobs. The rest of the window still uses the older boxed buttons, tabs that get cut off ("BEAT JUMF"), unlabeled ▾ menus and plain grey knobs, so the app has two looks. Using one shared kit everywhere makes the window easier to read, gives every on/off and every choice the same shape, and lets a color scheme (add-color-schemes, #921) restyle all of it from `Theme`.
+The FX bar now uses the Tron look (#908, #920), the name for the controls first modelled on Arturia Pigments: round power buttons, dark value pills with titled lists, ‹ › inside the name pill, arc knobs. The rest of the window still uses the older boxed buttons, tabs that get cut off ("BEAT JUMF"), unlabeled ▾ menus and plain grey knobs, so the app has two looks. Using one shared kit everywhere makes the window easier to read, gives every on/off and every choice the same shape, and lets a color scheme (add-color-schemes, #921) restyle all of it from `Theme`.
 
 ## What Changes
 
@@ -19,6 +19,8 @@ The kit (in `pills.slint` and `controls.slint`, colours and sizes from `Theme`):
 - **Faders** (channel, tempo, crossfader): a darker graphite cap with a lilac centre line on a thinner track with softer ticks; tempo keeps its lilac fill from the centre. Small parameter sliders use the FX bar's slim slider.
 - **Titled menus:** a bold title naming what is chosen, grey group headings, the current choice tinted lilac.
 - **Section titles** in Roboto Condensed (bundled, OFL); values and labels stay in Inter.
+- **Letter case:** section titles in condensed capitals (SCENE, LOOP, MASTER); pill words, labels and menu rows capitalised (Sync, Key lock, Hot Cues, Analog); units in unit pills lowercase (1/4 beat, 4 bars, ±8%). CUE keeps its capitals as the hardware word.
+- **Play, Cue and deck colours:** Play and Cue stay boxed; Play lights green while playing and Cue yellow while held, as on players. Deck colours mark only which deck a thing belongs to: the jog's position tick and the fader's ghost marker, which shows only while the controller's fader and the screen disagree. Cue markers on the waveform keep their cue colours.
 
 The areas, in this order:
 

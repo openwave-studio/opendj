@@ -9,6 +9,7 @@ import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint"
 import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
+import { SwitchPill } from "pills.slint";
 import { RemixEffectPill, RemixMode, RemixPanel, RemixSource, RemixUi } from "remix.slint";
 import { InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
@@ -1661,10 +1662,25 @@ export global DeckActions {
 }
 
 // A line of the effect menu: an effect (`index` into EffectList.names,
-// from 0) or, with `index` -1, the heading of a group.
+// from 0) or, with `index` -1, the heading of a kind. `kind` picks its
+// icon (KINDS in audio_plugins.rs), `column` which of the two columns it
+// sits in, and `group` the maker or kind it is listed under in the
+// Plugins tab ("m:<maker>" or "k:<kind>").
 export struct FxRow {
     label: string,
     index: int,
+    kind: int,
+    column: int,
+    group: string,
+}
+
+// A maker or a kind in the Plugins tab's first column, with how many
+// effects it holds; `kind` -1 for a maker.
+export struct FxGroup {
+    label: string,
+    key: string,
+    count: int,
+    kind: int,
 }
 
 export global EffectList {
@@ -1678,6 +1694,11 @@ export global EffectList {
     // each grouped by kind (delay, reverb, filter...).
     in property <[FxRow]> builtin-rows;
     in property <[FxRow]> plugin-rows;
+    // The Plugins tab: makers then kinds, and each one's effects.
+    in property <[FxGroup]> plugin-groups;
+    in property <[FxRow]> plugin-group-rows;
+    // Each ticked plugin's maker group ("m:<maker>"), in list order.
+    in property <[string]> plugin-maker-keys;
     // The effects either side of each one in list order, by `loaded_effect`
     // (index loaded - 1), as `next_effect` and `prev_effect` step: for the
     // strip that shows a controller's change.
@@ -1701,65 +1722,200 @@ export global EffectList {
     in property <[string]> slider-labels;
 }
 
-// The effect menu's contents: openDJ FX and Plugins tabs (when plugins are
-// ticked), then the tab's effects grouped by kind; a long list scrolls.
-// Picking an effect calls `picked` with its place in EffectList.names.
+// An effect kind's icon, 16 by 16: echoes, a reverb tail, a filter
+// slope, waves, a clipped wave, a compressor curve, beats, or a dot.
+export component KindIcon inherits Path {
+    in property <int> kind;
+    in property <color> tint: Theme.text;
+    width: 14px;
+    height: 14px;
+    viewbox-width: 16;
+    viewbox-height: 16;
+    commands: kind == 0 ? "M4 4.5q2 3.5 0 7M7.5 3q3 5 0 10M11 1.8q4 6.2 0 12.4"
+        : kind == 1 ? "M2 12 L6 4 Q8 9 14 12"
+        : kind == 2 ? "M1.5 6h7q3 0 4.5 6"
+        : kind == 3 ? "M1.5 7q2-5 4.5 0t4.5 0 4-1M1.5 11q2-5 4.5 0t4.5 0 4-1"
+        : kind == 4 ? "M1.5 11h3V4h3v7h3V4h4"
+        : kind == 5 ? "M2 13 L8 7 L14 5"
+        : kind == 6 ? "M2.5 12V5M6 12V8M9.5 12V4M13 12V9"
+        : "M4.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0";
+    stroke: tint;
+    stroke-width: kind == 6 ? 1.8px : 1.4px;
+    stroke-line-cap: round;
+    stroke-line-join: round;
+    fill: transparent;
+}
+
+// A line of the effect menu: a kind's grey heading, or an effect with its
+// kind's icon, lilac while loaded.
+component FxMenuRow inherits Rectangle {
+    in property <FxRow> line;
+    in property <bool> current;
+    in property <bool> shown: true;
+    callback picked(index: int);
+    property <bool> heading: line.index < 0;
+    height: !shown ? 0px : heading ? 24px : 26px;
+    visible: shown;
+    border-radius: 6px;
+    background: heading ? transparent : ta.has-hover ? Theme.n-38373d : current ? Theme.n-313036 : transparent;
+    HorizontalLayout {
+        padding-left: heading ? 6px : 8px;
+        padding-right: 8px;
+        padding-top: heading ? 6px : 0px;
+        spacing: 8px;
+        if !heading: VerticalLayout {
+            alignment: center;
+            KindIcon { kind: line.kind; tint: current ? Theme.lilac-text : Theme.text; }
+        }
+        Text {
+            text: line.label;
+            color: heading ? Theme.text-dim : current ? Theme.lilac-text : Theme.text;
+            font-size: heading ? 10.5px : 12px;
+            font-weight: heading ? 600 : current ? 600 : 400;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+    }
+    ta := TouchArea {
+        enabled: !heading && shown;
+        mouse-cursor: heading ? default : pointer;
+        clicked => { root.picked(line.index); }
+    }
+}
+
+// The effect menu's contents: a title naming the slot, openDJ FX and
+// Plugins tabs (when plugins are ticked) and None, then the built-in
+// effects in two columns by kind, or the plugins: makers and kinds on the
+// left, the one under the pointer's effects on the right. Picking an
+// effect calls `picked` with its place in EffectList.names; None calls it
+// with -1.
 export component EffectMenu inherits VerticalLayout {
     in property <int> loaded;
     in property <color> tint;
+    in property <string> title: "Effect";
     in-out property <int> tab;
     callback picked(index: int);
     property <bool> tabs: EffectList.plugin-rows.length > 0;
-    property <[FxRow]> rows: tabs && tab == 1 ? EffectList.plugin-rows : EffectList.builtin-rows;
-    padding: 6px;
-    spacing: 4px;
-    if tabs: HorizontalLayout {
-        height: 26px;
-        spacing: 2px;
-        for t[i] in ["openDJ FX", "Plugins"]: Rectangle {
-            horizontal-stretch: 1;
-            border-radius: 4px;
-            background: tab == i ? Theme.control-pressed : tta.has-hover ? Theme.n-2a2b2e : transparent;
-            Text {
-                text: t;
-                color: tab == i ? Theme.text : Theme.text-dim;
-                font-size: 11px;
-                font-weight: tab == i ? 700 : 500;
-            }
-            tta := TouchArea { mouse-cursor: pointer; clicked => { tab = i; } }
+    // The maker or kind open in the Plugins tab: the loaded plugin's maker,
+    // else the first.
+    property <string> group;
+    property <string> shown-group: group != "" ? group : loaded-group != "" ? loaded-group : EffectList.plugin-groups.length > 0 ? EffectList.plugin-groups[0].key : "";
+    property <int> plugin: loaded - EffectList.builtin-count - 1;
+    property <string> loaded-group: plugin >= 0 && plugin < EffectList.plugin-maker-keys.length ? EffectList.plugin-maker-keys[plugin] : "";
+    padding: 8px;
+    padding-top: 10px;
+    spacing: 6px;
+    Text {
+        text: root.title;
+        color: Theme.text;
+        font-size: 13px;
+        font-weight: 700;
+        height: 18px;
+        vertical-alignment: center;
+        x: 6px;
+    }
+    HorizontalLayout {
+        height: 22px;
+        spacing: 6px;
+        padding-left: 6px;
+        if tabs: SwitchPill { height: 22px; font-size: 11px; text: "openDJ FX"; on: tab == 0; clicked => { tab = 0; } }
+        if tabs: SwitchPill { height: 22px; font-size: 11px; text: "Plugins"; on: tab == 1; clicked => { tab = 1; } }
+        Rectangle { horizontal-stretch: 1; }
+        SwitchPill {
+            height: 22px;
+            font-size: 11px;
+            text: "None";
+            on: false;
+            enabled: loaded > 0;
+            clicked => { root.picked(-1); }
         }
     }
-    if tabs: Rectangle { height: 1px; background: Theme.border; }
     Flickable {
-        height: min(fx-rows.preferred-height, 420px);
-        viewport-height: fx-rows.preferred-height;
-        fx-rows := VerticalLayout {
-            spacing: 0px;
-            for row in rows: Rectangle {
-                property <bool> heading: row.index < 0;
-                property <bool> current: !heading && loaded == row.index + 1;
-                height: heading ? 22px : 26px;
-                border-radius: 4px;
-                background: current ? tint.with-alpha(0.35) : !heading && eta.has-hover ? Theme.n-3a3a3d : transparent;
-                HorizontalLayout {
-                    padding-left: 8px;
-                    padding-right: 8px;
-                    padding-top: heading ? 6px : 0px;
-                    Text {
-                        text: row.label;
-                        color: heading ? Theme.text-dim : Theme.text;
-                        font-size: heading ? 9px : 12px;
-                        font-weight: heading ? 700 : current ? 700 : 400;
-                        letter-spacing: heading ? 0.6px : 0px;
-                        vertical-alignment: center;
-                        overflow: elide;
-                        horizontal-stretch: 1;
+        height: min(cols.preferred-height, 440px);
+        viewport-height: cols.preferred-height;
+        cols := HorizontalLayout {
+            alignment: start;
+            spacing: 8px;
+            // openDJ FX: two columns of kinds.
+            if !tabs || tab == 0: VerticalLayout {
+                width: 150px;
+                alignment: start;
+                for row in EffectList.builtin-rows: FxMenuRow {
+                    line: row;
+                    shown: row.column == 0;
+                    current: loaded == row.index + 1;
+                    picked(i) => { root.picked(i); }
+                }
+            }
+            if !tabs || tab == 0: VerticalLayout {
+                width: 150px;
+                alignment: start;
+                for row in EffectList.builtin-rows: FxMenuRow {
+                    line: row;
+                    shown: row.column == 1;
+                    current: loaded == row.index + 1;
+                    picked(i) => { root.picked(i); }
+                }
+            }
+            // Plugins: makers and kinds, then what the one under the
+            // pointer holds.
+            if tabs && tab == 1: VerticalLayout {
+                width: 160px;
+                alignment: start;
+                for g[i] in EffectList.plugin-groups: VerticalLayout {
+                    property <bool> first-kind: g.kind >= 0 && (i == 0 || EffectList.plugin-groups[i - 1].kind < 0);
+                    if i == 0 || first-kind: Text {
+                        text: first-kind ? "By kind" : "By maker";
+                        color: Theme.text-dim;
+                        font-size: 10.5px;
+                        font-weight: 600;
+                        height: 24px;
+                        x: 6px;
+                        vertical-alignment: bottom;
+                    }
+                    Rectangle {
+                        property <bool> open: root.shown-group == g.key;
+                        height: 26px;
+                        border-radius: 6px;
+                        background: gta.has-hover ? Theme.n-38373d : open ? Theme.n-313036 : transparent;
+                        HorizontalLayout {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            spacing: 8px;
+                            if g.kind >= 0: VerticalLayout { alignment: center; KindIcon { kind: g.kind; tint: open ? Theme.lilac-text : Theme.text; } }
+                            Text {
+                                text: g.label;
+                                color: open ? Theme.lilac-text : Theme.text;
+                                font-size: 12px;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                            Text { text: g.count; color: Theme.text-dim; font-size: 10.5px; vertical-alignment: center; }
+                            Text { text: "›"; color: Theme.text-dim; font-size: 13px; vertical-alignment: center; }
+                        }
+                        gta := TouchArea {
+                            mouse-cursor: pointer;
+                            changed has-hover => {
+                                if self.has-hover {
+                                    root.group = g.key;
+                                }
+                            }
+                            clicked => { root.group = g.key; }
+                        }
                     }
                 }
-                eta := TouchArea {
-                    enabled: !heading;
-                    mouse-cursor: heading ? default : pointer;
-                    clicked => { root.picked(row.index); }
+            }
+            if tabs && tab == 1: Rectangle { width: 1px; background: Theme.border; }
+            if tabs && tab == 1: VerticalLayout {
+                width: 170px;
+                alignment: start;
+                for row in EffectList.plugin-group-rows: FxMenuRow {
+                    line: row;
+                    shown: row.group == root.shown-group;
+                    current: loaded == row.index + 1;
+                    picked(i) => { root.picked(i); }
                 }
             }
         }
@@ -1894,22 +2050,25 @@ export component FxSlot inherits HorizontalLayout {
     menu := PopupWindow {
         x: arrow.x + arrow.width + 4px;
         y: 0px;
-        width: 210px;
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
         EffectMenu {
             loaded: loaded;
             tint: tint;
+            title: (unit == EffectList.mic-unit ? "Mic" : "Deck " + (unit + 1)) + " · FX " + (slot + 1);
             tab <=> root.menu-tab;
             picked(i) => {
-                if loaded == i + 1 {
+                if i < 0 {
+                    Controls.set-value(enabled-index, 0);
+                    Controls.set-value(loaded-index, 0);
+                } else if loaded == i + 1 {
                     Controls.toggle(enabled-index);
                 } else {
                     Controls.set-value(loaded-index, i + 1);
