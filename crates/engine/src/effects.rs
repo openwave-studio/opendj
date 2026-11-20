@@ -28,7 +28,7 @@ use crate::inputs::{input_group, MICROPHONE, NUM_INPUTS};
 use crate::tap_tempo::{tap_time, TapTempo};
 
 /// Mixxx's built-in effects that this engine implements, in `loaded_effect` order.
-pub const AVAILABLE_EFFECTS: [&str; 18] = [
+pub const AVAILABLE_EFFECTS: [&str; 22] = [
     "Echo",
     "Reverb",
     "Filter",
@@ -47,6 +47,10 @@ pub const AVAILABLE_EFFECTS: [&str; 18] = [
     "Hall",
     "Rev Roll",
     "Filter Echo",
+    "Tape Echo",
+    "Ducker",
+    "Rhythm",
+    "Solo",
 ];
 
 /// The built-in effects' `loaded_effect` numbers in the order the effect
@@ -54,8 +58,8 @@ pub const AVAILABLE_EFFECTS: [&str; 18] = [
 /// distortion, rhythm), then A to Z. `next_effect`, `prev_effect` and
 /// `effect_selector` step through them in this order, then through the
 /// plugins; the numbers themselves never change.
-pub const EFFECT_MENU_ORDER: [usize; 18] = [
-    1, 9, 18, 12, 16, 17, 2, 3, 15, 14, 4, 6, 5, 13, 11, 10, 7, 8,
+pub const EFFECT_MENU_ORDER: [usize; 22] = [
+    1, 9, 18, 12, 19, 16, 17, 2, 3, 15, 22, 14, 4, 6, 5, 13, 11, 20, 10, 7, 21, 8,
 ];
 
 /// The effect `step` places from `current` in list order, over the built-in
@@ -342,9 +346,13 @@ enum Kind {
     Hall,
     RevRoll,
     FilterEcho,
+    TapeEcho,
+    Ducker,
+    Rhythm,
+    Solo,
 }
 
-const KINDS: [Kind; 18] = [
+const KINDS: [Kind; 22] = [
     Kind::Echo,
     Kind::Reverb,
     Kind::Filter,
@@ -363,6 +371,10 @@ const KINDS: [Kind; 18] = [
     Kind::Hall,
     Kind::RevRoll,
     Kind::FilterEcho,
+    Kind::TapeEcho,
+    Kind::Ducker,
+    Kind::Rhythm,
+    Kind::Solo,
 ];
 
 impl Kind {
@@ -381,7 +393,9 @@ impl Kind {
             | Kind::Spiral
             | Kind::Hall
             | Kind::RevRoll
-            | Kind::FilterEcho => Memory::Long,
+            | Kind::FilterEcho
+            | Kind::TapeEcho
+            | Kind::Rhythm => Memory::Long,
             Kind::Reverb | Kind::Flanger | Kind::Chorus => Memory::Short,
             Kind::Filter
             | Kind::Bitcrusher
@@ -389,7 +403,9 @@ impl Kind {
             | Kind::Gate
             | Kind::Noise
             | Kind::Drive
-            | Kind::Ladder => Memory::None,
+            | Kind::Ladder
+            | Kind::Ducker
+            | Kind::Solo => Memory::None,
         }
     }
 }
@@ -400,7 +416,7 @@ struct Manifest {
     defaults: &'static [f64],
 }
 
-const MANIFESTS: [Manifest; 18] = [
+const MANIFESTS: [Manifest; 22] = [
     Manifest {
         names: &["Time", "Feedback", "Ping Pong", "Send"],
         // Time: 1/2 beat.
@@ -477,6 +493,25 @@ const MANIFESTS: [Manifest; 18] = [
         // Time: 1/2 beat.
         defaults: &[0.375, 0.6, 0.75, 1.0],
     },
+    Manifest {
+        names: &["Time", "Feedback", "Wow", "Send"],
+        // Time: 1/2 beat.
+        defaults: &[0.375, 0.55, 0.5, 1.0],
+    },
+    Manifest {
+        names: &["Depth", "Time"],
+        // Time: back up over 1/2 beat.
+        defaults: &[0.8, 0.5],
+    },
+    Manifest {
+        names: &["Rate", "Pattern"],
+        // Rate: 1/8 beat slices.
+        defaults: &[0.5, 0.0],
+    },
+    Manifest {
+        names: &[],
+        defaults: &[],
+    },
 ];
 
 /// The beat switch's range: 1/16 to 64 beats, as powers of two. Each effect
@@ -491,7 +526,9 @@ const DEFAULT_BEATS: f64 = 0.25;
 /// how its `process` reads it with [`beats`].
 fn time_parameter(kind: Kind) -> Option<(usize, i32, i32, bool)> {
     match kind {
-        Kind::Echo | Kind::FilterEcho => Some((0, -4, 4, false)),
+        Kind::Echo | Kind::FilterEcho | Kind::TapeEcho => Some((0, -4, 4, false)),
+        Kind::Ducker => Some((1, -2, 0, false)),
+        Kind::Rhythm => Some((0, -4, -2, false)),
         Kind::Flanger | Kind::Phaser => Some((0, -1, 6, true)),
         Kind::Gate => Some((0, -4, 4, false)),
         Kind::Roll | Kind::RevRoll => Some((0, -4, 4, true)),
@@ -504,7 +541,8 @@ fn time_parameter(kind: Kind) -> Option<(usize, i32, i32, bool)> {
         | Kind::Noise
         | Kind::Drive
         | Kind::Ladder
-        | Kind::Hall => None,
+        | Kind::Hall
+        | Kind::Solo => None,
     }
 }
 
@@ -514,7 +552,7 @@ fn time_parameter(kind: Kind) -> Option<(usize, i32, i32, bool)> {
 fn beat_limit(kind: Option<Kind>, hi: i32, beat_fx: bool) -> i32 {
     match kind {
         _ if beat_fx => hi,
-        Some(Kind::Echo | Kind::FilterEcho) => hi.min(2),
+        Some(Kind::Echo | Kind::FilterEcho | Kind::TapeEcho) => hi.min(2),
         Some(Kind::Roll | Kind::RevRoll) => hi.min(0),
         _ => hi,
     }
@@ -525,7 +563,10 @@ fn beat_limit(kind: Option<Kind>, hi: i32, beat_fx: bool) -> i32 {
 /// at 0 and turning up sweeps its high-pass.
 fn link(kind: Kind, meta: f64) -> [Option<f64>; MAX_PARAMETERS] {
     match kind {
-        Kind::Echo | Kind::Reverb | Kind::Hall => [None, None, None, Some(meta)],
+        Kind::Echo | Kind::Reverb | Kind::Hall | Kind::TapeEcho => [None, None, None, Some(meta)],
+        Kind::Ducker => [Some(meta), None, None, None],
+        // Its pattern is the FX bar's slider; Solo has nothing to turn.
+        Kind::Rhythm | Kind::Solo => [None; MAX_PARAMETERS],
         Kind::Filter => [Some(1.0), None, Some(meta), None],
         Kind::Flanger | Kind::Phaser | Kind::Gate => [None, Some(meta), None, None],
         // Bitcrusher and Noise leave their second control to the FX bar's
@@ -555,7 +596,7 @@ fn link_beat_fx(kind: Kind, meta: f64) -> [Option<f64>; MAX_PARAMETERS] {
     let more = (meta - 0.5).max(0.0);
     match kind {
         // Time, Feedback, Ping Pong, Send.
-        Kind::Echo => [None, Some(0.5 + 0.7 * more), None, Some(wet)],
+        Kind::Echo | Kind::TapeEcho => [None, Some(0.5 + 0.7 * more), None, Some(wet)],
         // Time, Feedback, Send.
         Kind::Spiral => [None, Some(0.6 + 0.5 * more), Some(wet), None],
         // Time, Feedback, Filter, Send.
@@ -1046,6 +1087,9 @@ struct Instance {
     ladder: extra::Ladder,
     hall: extra::Hall,
     filter_echo: extra::FilterEcho,
+    tape_echo: remix_fx::TapeEcho,
+    ducker: remix_fx::Ducker,
+    rhythm: remix_fx::Rhythm,
 }
 
 impl Instance {
@@ -1082,6 +1126,9 @@ impl Instance {
             ladder: extra::Ladder::new(sample_rate),
             hall: extra::Hall::new(sample_rate),
             filter_echo: extra::FilterEcho::new(sample_rate),
+            tape_echo: remix_fx::TapeEcho::new(sample_rate),
+            ducker: remix_fx::Ducker::default(),
+            rhythm: remix_fx::Rhythm::new(sample_rate),
         }
     }
 
@@ -1147,6 +1194,8 @@ impl Instance {
     fn process_bands(&mut self, x: [f32; 2]) -> [f32; 2] {
         match self.band_part(x) {
             None => self.process(x),
+            // Solo: only the chosen bands play.
+            Some(part) if self.kind == Some(Kind::Solo) => part,
             Some(part) => {
                 let y = self.process(part);
                 [y[0] + x[0] - part[0], y[1] + x[1] - part[1]]
@@ -1177,6 +1226,10 @@ impl Instance {
             Some(Kind::Ladder) => self.ladder.reset(),
             Some(Kind::Hall) => self.hall.reset(&mut self.mem),
             Some(Kind::FilterEcho) => self.filter_echo.reset(&mut self.mem),
+            Some(Kind::TapeEcho) => self.tape_echo.reset(&mut self.mem),
+            Some(Kind::Ducker) => self.ducker = remix_fx::Ducker::default(),
+            Some(Kind::Rhythm) => self.rhythm.reset(&mut self.mem),
+            Some(Kind::Solo) => {}
             None => {}
         }
     }
@@ -1207,6 +1260,10 @@ impl Instance {
             Some(Kind::Ladder) => self.ladder.prepare(p),
             Some(Kind::Hall) => self.hall.prepare(p),
             Some(Kind::FilterEcho) => self.filter_echo.prepare(p, ctx),
+            Some(Kind::TapeEcho) => self.tape_echo.prepare(p, ctx),
+            Some(Kind::Ducker) => self.ducker.prepare(p, ctx),
+            Some(Kind::Rhythm) => self.rhythm.prepare(p, ctx),
+            Some(Kind::Solo) => {}
             None => {}
         }
     }
@@ -1231,6 +1288,11 @@ impl Instance {
             Some(Kind::Ladder) => self.ladder.process(x),
             Some(Kind::Hall) => self.hall.process(&mut self.mem, x),
             Some(Kind::FilterEcho) => self.filter_echo.process(&mut self.mem, x),
+            Some(Kind::TapeEcho) => self.tape_echo.process(&mut self.mem, x),
+            Some(Kind::Ducker) => self.ducker.process(x),
+            Some(Kind::Rhythm) => self.rhythm.process(&mut self.mem, x),
+            // Solo keeps its bands and drops the rest (see `process_bands`).
+            Some(Kind::Solo) => x,
             None => x,
         }
     }
@@ -3792,6 +3854,7 @@ impl ReleaseStage {
 
 mod extra;
 pub(crate) mod remix;
+mod remix_fx;
 
 #[cfg(test)]
 mod bench;
@@ -3805,7 +3868,7 @@ mod tests {
         for plugins in [0, 3] {
             let order: Vec<_> = EFFECT_MENU_ORDER
                 .into_iter()
-                .chain(19..19 + plugins)
+                .chain(PLUGIN_BASE..PLUGIN_BASE + plugins)
                 .collect();
             assert_eq!(step_effect(0, 1, plugins), order[0]);
             assert_eq!(step_effect(0, -1, plugins), *order.last().unwrap());
@@ -4296,6 +4359,52 @@ mod tests {
             low_on_high < 0.02,
             "a high note passes the lows' effect: {low_on_high}"
         );
+    }
+
+    #[test]
+    fn solo_plays_only_its_bands() {
+        // Solo on the highs of deck 1: a bass note goes quiet, a high one
+        // plays on.
+        let run = |hz: f32| {
+            let reg = ControlRegistry::new();
+            let mut rack = EffectRack::new(&reg, SR as f64);
+            let unit = |k: &str| reg.get("[EffectRack1_EffectUnit1]", k).unwrap();
+            let slot = |s: usize, k: &str| {
+                reg.get(&format!("[EffectRack1_EffectUnit1_Effect{s}]"), k)
+                    .unwrap()
+            };
+            unit("group_[Channel1]_enable").set(1.0);
+            unit("enabled").set(1.0);
+            unit("mix").set(1.0);
+            for s in 1..=3 {
+                slot(s, "enabled").set(0.0);
+            }
+            let solo = AVAILABLE_EFFECTS.iter().position(|&n| n == "Solo").unwrap() + 1;
+            slot(1, "loaded_effect").set(solo as f64);
+            slot(1, "band").set(4.0);
+            slot(1, "enabled").set(1.0);
+            let beats = [0.5; TARGETS];
+            let mut out = Vec::new();
+            let mut i = 0usize;
+            for n in 0..200 {
+                rack.prepare(beats, n as f64 * 0.01);
+                let mut buf = [[0.0f32; 2]; 64];
+                for (f, b) in buf.iter_mut().enumerate() {
+                    let x = 0.4 * (TAU * hz * (i + f) as f32 / SR).sin();
+                    *b = [x, x];
+                }
+                rack.process_block(0, &mut buf);
+                rack.finish(64);
+                if n >= 100 {
+                    out.extend(buf.iter().map(|b| b[0]));
+                }
+                i += 64;
+            }
+            rms(&out)
+        };
+        let input = 0.4 / 2f32.sqrt();
+        assert!(run(60.0) < 0.02 * input, "the bass is gone");
+        assert!(run(8000.0) > 0.9 * input, "the highs play");
     }
 
     #[test]

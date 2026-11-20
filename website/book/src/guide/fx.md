@@ -70,6 +70,10 @@ that deck.
 | Hall | A big, smooth concert hall, with pre-delay |
 | Rev Roll | Repeats a short slice backwards |
 | Filter Echo | An echo whose repeats get thinner (or darker) |
+| Tape Echo | An echo with a tape loop's warmth and gently wobbling pitch |
+| Ducker | Dips the sound on every beat and swells it back, like a pumping compressor |
+| Rhythm | Cuts the beat into slices and replays some from a little earlier, for a new rhythm |
+| Solo | Plays only the bands chosen in Band, muting the rest |
 
 ## Release
 

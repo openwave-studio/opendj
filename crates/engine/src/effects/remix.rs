@@ -25,7 +25,8 @@ use crate::NUM_DECKS;
 
 /// The Isolate effects, by `isolate_effect`. The knob turned right adds
 /// the effect to its band, more as it turns.
-pub const ISOLATE_EFFECTS: [&str; 4] = ["Echo", "Reverb", "Drive", "Filter"];
+pub const ISOLATE_EFFECTS: [&str; 6] =
+    ["Tape Echo", "Reverb", "Drive", "Filter", "Ducker", "Rhythm"];
 /// The Lever effects, by `lever_effect`.
 pub const LEVER_EFFECTS: [&str; 5] = ["Echo", "Reverb", "Repeat", "Reverse", "Solo"];
 
@@ -173,7 +174,9 @@ fn isolate_kind(v: f64) -> Kind {
         1 => Kind::Reverb,
         2 => Kind::Drive,
         3 => Kind::Filter,
-        _ => Kind::Echo,
+        4 => Kind::Ducker,
+        5 => Kind::Rhythm,
+        _ => Kind::TapeEcho,
     }
 }
 
@@ -191,7 +194,7 @@ fn lever_kind(v: f64) -> Option<Kind> {
 /// Effects whose sound rings on after their input stops: they keep playing
 /// fully once let go, their send closed, until they fall silent.
 fn rings(kind: Kind) -> bool {
-    matches!(kind, Kind::Echo | Kind::Reverb)
+    matches!(kind, Kind::Echo | Kind::Reverb | Kind::TapeEcho)
 }
 
 /// An effect's parameters at its defaults with `meta` applied as on a slot.
@@ -262,7 +265,7 @@ impl Slot {
         }
         if on && (!self.on || !self.awake) {
             // Repeats start from what plays when the lever goes down.
-            if !self.awake || matches!(kind, Kind::Roll | Kind::RevRoll) {
+            if !self.awake || matches!(kind, Kind::Roll | Kind::RevRoll | Kind::Rhythm) {
                 self.inst.reset();
             }
             if !self.awake {
@@ -403,8 +406,13 @@ impl RemixDeck {
                     let hz = lo * (hi / lo).powf(depth);
                     (band_pass(hz), (4.0 * depth).min(1.0) as f32)
                 }
-                Kind::Drive => (with_meta(iso_kind, depth), (4.0 * depth).min(1.0) as f32),
-                // Echo and Reverb: the knob opens their send.
+                // Drive and Rhythm come in over the first quarter turn,
+                // Drive driving harder as it turns.
+                Kind::Drive | Kind::Rhythm => {
+                    (with_meta(iso_kind, depth), (4.0 * depth).min(1.0) as f32)
+                }
+                // Ducker: the knob is its depth. Tape Echo and Reverb: the
+                // knob opens their send.
                 _ => (with_meta(iso_kind, depth), 1.0),
             };
             lane.isolate.set(iso_kind, on, wet, &p, ctx);
@@ -517,9 +525,11 @@ mod tests {
     }
 
     fn run(deck: &mut RemixDeck, c: &RemixControls, x: &[[f32; 2]]) -> Vec<[f32; 2]> {
+        // 120 BPM, starting on a beat.
         let mut out = Vec::with_capacity(x.len());
         for block in x.chunks(512) {
-            deck.prepare(c, 0.5, Some(0.0));
+            let beat = out.len() as f64 / (0.5 * SR);
+            deck.prepare(c, 0.5, Some(beat));
             out.extend(block.iter().map(|&f| deck.play(f)));
         }
         out
@@ -612,6 +622,26 @@ mod tests {
         let tail = &y[24_000..];
         assert!(level_at(tail, 80.0) < 0.01, "the bass is muted");
         assert!((level_at(tail, 6000.0) - 0.5).abs() < 0.02);
+    }
+
+    #[test]
+    fn isolate_ducker_pumps_its_band_on_the_beat() {
+        let (_reg, c, mut deck) = setup();
+        c.mode.set(INSERT);
+        c.isolate_effect.set(4.0);
+        c.isolate[0].set(1.0);
+        let x = music(48_000);
+        let y = run(&mut deck, &c, &x);
+        // A beat is 24000 frames: the bass is ducked just after the
+        // second beat and back by its middle; the highs never move.
+        let at = |from: usize| &y[from..from + 2_000];
+        let src = |from: usize| &x[from..from + 2_000];
+        let ducked = level_at(at(24_000), 80.0);
+        let back = level_at(at(36_000), 80.0);
+        assert!(ducked < 0.25, "ducked: {ducked}");
+        assert!(back > 0.45, "back up: {back}");
+        let highs = level_at(at(24_000), 6000.0) / level_at(src(24_000), 6000.0);
+        assert!((highs - 1.0).abs() < 0.05, "{highs}");
     }
 
     #[test]

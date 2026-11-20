@@ -6528,11 +6528,14 @@ mod tests {
         let track = short_track(124.0, 4.0);
         let dry = render(&track, |_| {});
         for (k, name) in AVAILABLE_EFFECTS.iter().enumerate() {
+            // Solo on the whole signal keeps it all: try it on the highs.
+            let band = if *name == "Solo" { 4.0 } else { 0.0 };
             let fx = |enabled: bool, unit_on: bool| {
                 move |reg: &ControlRegistry| {
                     let slot =
                         |key: &str| reg.get("[EffectRack1_EffectUnit1_Effect1]", key).unwrap();
                     slot("loaded_effect").set((k + 1) as f64);
+                    slot("band").set(band);
                     slot("meta").set(0.8);
                     slot("enabled").set_bool(enabled);
                     reg.get("[EffectRack1_EffectUnit1]", "enabled")

@@ -24,7 +24,7 @@ in ─► BandSplit (LR4 246 Hz / 2.48 kHz + all-pass)
 
 `isolate_low|mid|high` in -1..1, 0 = centre. Below 0 the band's gain follows the channel EQ's kill curve (−∞ at −1). Above 0 the Isolate effect runs on that band with depth = value; the band stays at unity. A dead zone of ±0.02 keeps a detented knob exactly off.
 
-Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle saturation and wow in the feedback), Reverb, Drive (oversampled, the existing Drive), Filter (a resonant band-pass sweep inside the band, from its low edge to its high edge as the knob turns), Ducker (a beat-synced volume envelope: dips on each beat and recovers over `isolate_time`, 1/4 to 1 beat), Rhythm (cuts the band into 1/8-beat slices over a bar and replays them in a fixed shuffled order; FREEZE's slice logic).
+Isolate effects (one choice, `isolate_effect`): Tape Echo (echo with gentle saturation and wow in the feedback), Reverb, Drive (oversampled, the existing Drive), Filter (a resonant band-pass sweep inside the band, from its low edge to its high edge as the knob turns), Ducker (a beat-synced volume envelope: dips on each beat over 3 ms and recovers over 1/2 beat, 1/4 to 1 beat in a slot), Rhythm (cuts the band into 1/8-beat slices, 16 to a cycle, and plays each from the same place or up to 4 slices back by a fixed pattern, four patterns; each jump crossfades over 3 ms, and reaching back only keeps it inside the 2 s delay memory). The same three, and Solo (plays only the slot's Band choice), are slot effects too: `loaded_effect` 19-22, so plugins now start at 23.
 
 ## Levers
 
