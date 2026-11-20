@@ -2288,3 +2288,228 @@ fn djm_t1_and_plx_crss12_decks_and_pads() {
     assert_eq!(get(&reg, "[Sampler1]", "cue_gotoandplay"), 1.0);
     assert_eq!(c.errors(), Vec::<String>::new());
 }
+
+/// Presses, turns and lets go of every message a mapping takes, and checks
+/// its scripts take them all without an error.
+fn every_message_runs_cleanly(file: &str, c: &mut Controller) {
+    let path = default_mappings_dir().unwrap().join(file);
+    let messages: Vec<(u8, u8)> = Mapping::load(&path)
+        .unwrap()
+        .inputs
+        .keys()
+        .copied()
+        .collect();
+    let start = Instant::now();
+    for (i, &(status, control)) in messages.iter().enumerate() {
+        for value in [0x7F, 0x41, 0x3F, 0x00] {
+            c.receive(&[status, control, value]);
+        }
+        c.poll(start + Duration::from_millis(i as u64));
+    }
+    settle(c, 100);
+    assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+}
+
+/// What a deck of a Pioneer controller sends, for `pioneer_deck_basics`.
+struct DeckMessages {
+    deck: u8,
+    play: [u8; 2],
+    touch: [u8; 2],
+    jog: [u8; 2],
+    fader: [u8; 3],
+    hot_cue_1: [u8; 2],
+    /// A pad mode button and the deck's pad tab it opens.
+    pad_mode: Option<([u8; 2], f64)>,
+}
+
+/// PLAY plays, the jog scratches while touched, the channel fader moves,
+/// pad 1 sets hot cue 1 and a pad mode button opens its tab.
+fn pioneer_deck_basics(file: &str, reg: &ControlRegistry, c: &mut Controller, m: DeckMessages) {
+    let group = format!("[Channel{}]", m.deck);
+    c.receive(&[m.play[0], m.play[1], 0x7F]);
+    c.receive(&[m.play[0], m.play[1], 0x00]);
+    assert_eq!(get(reg, &group, "play"), 1.0, "{file}: play {group}");
+    c.receive(&[m.touch[0], m.touch[1], 0x7F]);
+    c.poll(Instant::now());
+    assert_eq!(
+        get(reg, &group, "scratch2_enable"),
+        1.0,
+        "{file}: touch {group}"
+    );
+    let start = Instant::now();
+    for i in 0..20u64 {
+        c.receive(&[m.jog[0], m.jog[1], 0x48]);
+        c.poll(start + Duration::from_millis(i));
+    }
+    assert!(
+        get(reg, &group, "scratch2") > 0.0,
+        "{file}: scratch {group}"
+    );
+    c.receive(&[m.touch[0], m.touch[1], 0x00]);
+    settle(c, 500);
+    sweep14(c, m.fader[0], m.fader[1], m.fader[2], 0x20);
+    let v = get(reg, &group, "volume");
+    assert!((v - 0.25).abs() < 0.02, "{file}: volume {group} {v}");
+    c.receive(&[m.hot_cue_1[0], m.hot_cue_1[1], 0x7F]);
+    assert_eq!(
+        get(reg, &group, "hotcue_1_activate"),
+        1.0,
+        "{file}: hot cue {group}"
+    );
+    c.receive(&[m.hot_cue_1[0], m.hot_cue_1[1], 0x00]);
+    if let Some((button, tab)) = m.pad_mode {
+        c.receive(&[button[0], button[1], 0x7F]);
+        c.receive(&[button[0], button[1], 0x00]);
+        assert_eq!(get(reg, &group, "pad_tab"), tab, "{file}: pad mode {group}");
+    }
+    assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+}
+
+/// openDJ's DDJ-FLX2 mapping: the DDJ-FLX4's, with the FLX2's pad mode
+/// buttons.
+#[test]
+fn ddj_flx2_decks_mixer_and_pad_modes() {
+    let file = "Pioneer-DDJ-FLX2.midi.xml";
+    let (reg, mut c) = load(file);
+    settle(&mut c, 50);
+    pioneer_deck_basics(
+        file,
+        &reg,
+        &mut c,
+        DeckMessages {
+            deck: 2,
+            play: [0x91, 0x0B],
+            touch: [0x91, 0x36],
+            jog: [0xB1, 0x22],
+            fader: [0xB1, 0x13, 0x33],
+            hot_cue_1: [0x99, 0x00],
+            pad_mode: Some(([0x91, 0x05], 1.0)),
+        },
+    );
+    c.poll(Instant::now());
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x91, 0x05, 0x7F]),
+        "PAD FX lit: {out:x?}"
+    );
+    // SHIFT + the third button: BEAT LOOP, the FLX4's tab 7.
+    c.receive(&[0x90, 0x01, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "pad_tab"), 6.0);
+    every_message_runs_cleanly(file, &mut c);
+    c.shutdown();
+}
+
+/// openDJ's DDJ-REV5 mapping: the DDJ-FLX6's, moved to the REV5's messages.
+#[test]
+fn ddj_rev5_four_decks() {
+    let file = "Pioneer-DDJ-REV5.midi.xml";
+    let (reg, mut c) = load(file);
+    settle(&mut c, 50);
+    pioneer_deck_basics(
+        file,
+        &reg,
+        &mut c,
+        DeckMessages {
+            deck: 3,
+            play: [0x92, 0x0B],
+            touch: [0x92, 0x0D],
+            jog: [0xB2, 0x22],
+            fader: [0xB2, 0x13, 0x33],
+            hot_cue_1: [0x9B, 0x00],
+            pad_mode: Some(([0x92, 0x41], 1.0)),
+        },
+    );
+    // The REV5's own KEY LOCK and SLIP, which the FLX6 script lacks.
+    for (note, key) in [(0x09, "keylock"), (0x28, "slip_enabled")] {
+        let before = get(&reg, "[Channel3]", key);
+        c.receive(&[0x92, note, 0x7F]);
+        c.receive(&[0x92, note, 0x00]);
+        assert_ne!(get(&reg, "[Channel3]", key), before, "{key}");
+    }
+    every_message_runs_cleanly(file, &mut c);
+    c.shutdown();
+}
+
+/// openDJ's DDJ-SR and DDJ-SP1 mappings: Mixxx's DDJ-SX mapping, moved.
+#[test]
+fn ddj_sr_and_sp1() {
+    let file = "Pioneer DDJ-SR.midi.xml";
+    let (reg, mut c) = load(file);
+    settle(&mut c, 50);
+    pioneer_deck_basics(
+        file,
+        &reg,
+        &mut c,
+        DeckMessages {
+            deck: 2,
+            play: [0x91, 0x0B],
+            touch: [0x91, 0x36],
+            jog: [0xB1, 0x22],
+            fader: [0xB1, 0x13, 0x33],
+            hot_cue_1: [0x98, 0x00],
+            pad_mode: None,
+        },
+    );
+    // LOOP IN is SHIFT + LOOP 1/2X on the SR.
+    c.receive(&[0x90, 0x61, 0x7F]);
+    c.receive(&[0x90, 0x61, 0x00]);
+    every_message_runs_cleanly(file, &mut c);
+    c.shutdown();
+
+    let file = "Pioneer DDJ-SP1.midi.xml";
+    let (reg, mut c) = load(file);
+    settle(&mut c, 50);
+    c.receive(&[0x99, 0x00, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "hotcue_1_activate"), 1.0, "{file}");
+    c.receive(&[0x99, 0x00, 0x00]);
+    every_message_runs_cleanly(file, &mut c);
+    c.shutdown();
+}
+
+/// openDJ's DDJ-XP1 and DDJ-XP2 mappings: the pads, pad modes and loops of
+/// the DDJ-FLX6's, for four decks, with hot cues 9 to 16 on the second row.
+#[test]
+fn ddj_xp1_and_xp2_pads_for_four_decks() {
+    for file in ["Pioneer-DDJ-XP1.midi.xml", "Pioneer-DDJ-XP2.midi.xml"] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        // Deck 4's pad 1 and deck 1's pad 12 in HOT CUE mode.
+        c.receive(&[0x9D, 0x00, 0x7F]);
+        assert_eq!(get(&reg, "[Channel4]", "hotcue_1_activate"), 1.0, "{file}");
+        c.receive(&[0x9D, 0x00, 0x00]);
+        c.receive(&[0x97, 0x0B, 0x7F]);
+        assert_eq!(get(&reg, "[Channel1]", "hotcue_12_activate"), 1.0, "{file}");
+        c.receive(&[0x97, 0x0B, 0x00]);
+        // PAD FX opens deck 2's second pad tab.
+        c.receive(&[0x91, 0x1E, 0x7F]);
+        c.receive(&[0x91, 0x1E, 0x00]);
+        assert_eq!(get(&reg, "[Channel2]", "pad_tab"), 1.0, "{file}");
+        // LOOP IN on deck 3.
+        c.receive(&[0x92, 0x10, 0x7F]);
+        c.receive(&[0x92, 0x10, 0x00]);
+        assert!(
+            get(&reg, "[Channel3]", "loop_start_position") >= 0.0,
+            "{file}"
+        );
+        every_message_runs_cleanly(file, &mut c);
+        c.shutdown();
+    }
+}
+
+/// Mixxx's DDJ-SB and DDJ-SB2 mappings, which now have pictures: they load,
+/// play and run every message cleanly.
+#[test]
+fn ddj_sb_and_sb2() {
+    for (file, deck, play) in [
+        ("Pioneer-DDJ-SB.midi.xml", "[Channel2]", [0x91, 0x0B]),
+        ("Pioneer-DDJ-SB2.midi.xml", "[Channel4]", [0x93, 0x0B]),
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        c.receive(&[play[0], play[1], 0x7F]);
+        c.receive(&[play[0], play[1], 0x00]);
+        assert_eq!(get(&reg, deck, "play"), 1.0, "{file}");
+        every_message_runs_cleanly(file, &mut c);
+        c.shutdown();
+    }
+}

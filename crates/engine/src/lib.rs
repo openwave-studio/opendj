@@ -93,7 +93,10 @@ pub use effects::{
 };
 /// The Remix deck's effect and scene names, as its controls number them.
 pub mod remix {
-    pub use crate::effects::remix::{ISOLATE_EFFECTS, LEVER_EFFECTS, SCENES_DOWN, SCENES_UP};
+    pub use crate::effects::remix::{
+        ISOLATE_EFFECTS, LEVER_EFFECTS, PAD_NAMES, ROLL_RATES, SCENES_DOWN, SCENES_UP,
+    };
+    pub use crate::kits::KITS;
 }
 pub use gridfit::GridMode;
 pub use output::{
