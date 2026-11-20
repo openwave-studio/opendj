@@ -10,12 +10,13 @@ use std::collections::HashSet;
 
 use slint::{ComponentHandle, DataTransfer, ModelRc, SharedString, VecModel};
 
-use opendj_engine::inputs;
+use opendj_engine::{inputs, remix};
 
 use crate::audio_plugins::Found;
 use crate::presets::{self, Preset, GROOVE};
 use crate::{
     settings, AppWindow, InstrumentNode, InstrumentsUi, LiveItem, MixerStripInfo, Preferences,
+    RemixUi,
 };
 
 /// What dragging an item carries: `opendj-live:<kind>:<index>`.
@@ -32,7 +33,10 @@ const PRESET: i32 = 5;
 const LOOPER: i32 = 6;
 /// The Mixer: the aux inputs as strips, summed into one deck.
 const MIXER: i32 = 7;
-const LAST_KIND: i32 = 7;
+/// The Remix deck (`[RemixN],enabled`): another deck played through
+/// band effects and scenes.
+const REMIX: i32 = 8;
+const LAST_KIND: i32 = 8;
 
 fn payload(kind: i32, index: i32) -> String {
     format!("{LIVE_PAYLOAD}{kind}:{index}")
@@ -82,6 +86,7 @@ fn recent_key(s: &State, kind: i32, index: i32) -> Option<String> {
     match kind {
         KIT => Some("groove".into()),
         LOOPER => Some("looper".into()),
+        REMIX => Some("remix".into()),
         PLUGIN => s.plugins.get(i).map(|p| format!("plugin:{}", p.key)),
         PRESET => s
             .presets
@@ -133,6 +138,17 @@ const INPUTS: [(i32, i32, usize, &str); 2] =
     [(MIC, 0, 0, "Microphone"), (MIXER, 0, MIXER_ROUTE, "Mixer")];
 
 pub fn install(app: &AppWindow) {
+    // The Remix deck's effect and scene names, by its controls' values.
+    let names = |n: &[&str]| -> ModelRc<SharedString> {
+        ModelRc::new(VecModel::from(
+            n.iter().map(|&n| SharedString::from(n)).collect::<Vec<_>>(),
+        ))
+    };
+    let remix_ui = app.global::<RemixUi>();
+    remix_ui.set_isolate_effects(names(&remix::ISOLATE_EFFECTS));
+    remix_ui.set_lever_effects(names(&remix::LEVER_EFFECTS));
+    remix_ui.set_scenes_up(names(&remix::SCENES_UP));
+    remix_ui.set_scenes_down(names(&remix::SCENES_DOWN));
     let ui = app.global::<InstrumentsUi>();
     ui.set_audio_page(crate::prefs::AUDIO_PAGE);
     ui.set_plugins_page(crate::prefs::PLUGINS_PAGE);
@@ -399,7 +415,7 @@ fn nodes(s: &State) -> Vec<(String, InstrumentNode)> {
     };
     let open = |key: &str| if s.open.contains(key) { 2 } else { 1 };
     let inputs = INPUTS.len() as i32;
-    let total = 2 + s.plugins.len() as i32 + inputs;
+    let total = 3 + s.plugins.len() as i32 + inputs;
     let mut out = vec![
         (
             "recent".to_string(),
@@ -418,6 +434,7 @@ fn nodes(s: &State) -> Vec<(String, InstrumentNode)> {
         ),
         ("groove".to_string(), node("Groove Box", 0, 0, 1, -1)),
         ("looper".to_string(), node("Looper", 0, 0, 9, -1)),
+        ("remix".to_string(), node("Remix", 0, 0, 10, -1)),
         (
             "plugins".to_string(),
             node(
@@ -470,6 +487,15 @@ fn rows(s: &State) -> Vec<LiveItem> {
         index: 0,
         name: "Looper".into(),
         r#type: "Looper".into(),
+        maker: "openDJ".into(),
+        format: "Built in".into(),
+        problem: "".into(),
+    };
+    let remix = || LiveItem {
+        kind: REMIX,
+        index: 0,
+        name: "Remix".into(),
+        r#type: "Remix effects".into(),
         maker: "openDJ".into(),
         format: "Built in".into(),
         problem: "".into(),
@@ -538,6 +564,7 @@ fn rows(s: &State) -> Vec<LiveItem> {
             rows
         }
         "looper" => vec![looper()],
+        "remix" => vec![remix()],
         "presets" => s
             .presets
             .iter()
@@ -554,6 +581,7 @@ fn rows(s: &State) -> Vec<LiveItem> {
                 match kind {
                     KIT => Some(groove()),
                     LOOPER => Some(looper()),
+                    REMIX => Some(remix()),
                     PLUGIN => s.plugins.get(i).map(|p| plugin(i, p)),
                     PRESET => s.presets.get(i).map(|p| preset(i, p)),
                     _ => INPUTS
@@ -577,7 +605,7 @@ fn rows(s: &State) -> Vec<LiveItem> {
                 }
                 rows
             } else {
-                let mut all = vec![groove(), looper()];
+                let mut all = vec![groove(), looper(), remix()];
                 all.extend(plugins(&|_| true));
                 all.extend(live_inputs().map(input));
                 all
@@ -642,7 +670,7 @@ fn rows(s: &State) -> Vec<LiveItem> {
 /// Recently played, newest first, as (kind, index): what is still there
 /// of it.
 fn recent_items(s: &State) -> Vec<(i32, i32)> {
-    let all: Vec<(i32, i32)> = [(KIT, 0), (LOOPER, 0)]
+    let all: Vec<(i32, i32)> = [(KIT, 0), (LOOPER, 0), (REMIX, 0)]
         .into_iter()
         .chain((0..s.plugins.len()).map(|i| (PLUGIN, i as i32)))
         .chain((0..s.presets.len()).map(|i| (PRESET, i as i32)))
@@ -864,8 +892,9 @@ mod tests {
         assert_eq!(parse(&payload(1, 2)), Some(1002));
         assert_eq!(parse(&payload(2, 0)), Some(2000));
         assert_eq!(parse(&payload(MIXER, 0)), Some(7000));
+        assert_eq!(parse(&payload(REMIX, 0)), Some(8000));
         assert_eq!(parse("opendj-row:3"), None);
-        assert_eq!(parse("opendj-live:8:0"), None);
+        assert_eq!(parse("opendj-live:9:0"), None);
         assert_eq!(parse("opendj-live:1:x"), None);
     }
 
@@ -907,6 +936,7 @@ mod tests {
                 "presets",
                 "groove",
                 "looper",
+                "remix",
                 "plugins",
                 "maker:Arturia",
                 "plugin:0",

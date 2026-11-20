@@ -91,6 +91,10 @@ pub use effects::{
     NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
     MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
 };
+/// The Remix deck's effect and scene names, as its controls number them.
+pub mod remix {
+    pub use crate::effects::remix::{ISOLATE_EFFECTS, LEVER_EFFECTS, SCENES_DOWN, SCENES_UP};
+}
 pub use gridfit::GridMode;
 pub use output::{
     channel_names, deck_outputs_split, default_output_device, input_devices, output_devices,

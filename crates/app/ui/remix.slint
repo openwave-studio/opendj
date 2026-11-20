@@ -1,0 +1,523 @@
+// The Remix deck's WHEEL screen (`[RemixN]`): the source it plays and how
+// (Send adds only what its effects add, Insert plays the source through
+// it), an ISOLATE knob and a LEVER for each band down the side, and the
+// SCENE wheel: right plays the Build Up scene picked on the wheel's right
+// half, left the Break Down scene on its left half, more as it turns.
+// TIME and COLOR shape the scenes' echoes and filters.
+import { Theme } from "theme.slint";
+import { ControlKnob, Controls, KnobArc } from "controls.slint";
+import { ListRow, PillCaret, TitledList, ValuePill } from "pills.slint";
+
+// The engine's names for what the Remix controls pick, by their values
+// (set from opendj_engine::remix).
+export global RemixUi {
+    in property <[string]> isolate-effects;
+    in property <[string]> lever-effects;
+    in property <[string]> scenes-up;
+    in property <[string]> scenes-down;
+}
+
+// The two sides of the SCENE wheel.
+global SceneColors {
+    out property <color> up: Theme.lilac-text;
+    out property <color> down: Theme.knob-arc;
+}
+
+// One choice of a few side by side, lit when it is the one set.
+component Segment inherits Rectangle {
+    in property <string> text;
+    in property <bool> picked;
+    callback clicked();
+    width: label.preferred-width + 16px;
+    height: 22px;
+    border-radius: 6px;
+    background: picked ? Theme.accent : ta.has-hover ? Theme.n-2a2a2e : transparent;
+    label := Text {
+        text: root.text;
+        color: root.picked ? Theme.on-selection : Theme.text-dim;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A row of segments in a dark well.
+component Segments inherits Rectangle {
+    height: 26px;
+    border-radius: 8px;
+    background: Theme.light ? #ffffff : #111113;
+    border-width: 1px;
+    border-color: Theme.n-2c2c31;
+    HorizontalLayout {
+        padding: 2px;
+        spacing: 1px;
+        @children
+    }
+}
+
+// SEND or INSERT.
+export component RemixMode inherits Segments {
+    in property <string> group;
+    property <int> index: Controls.resolve(group, "mode");
+    property <bool> insert: Controls.value(index, Controls.tick) > 0.5;
+    Segment { text: "SEND"; picked: !root.insert; clicked => { Controls.set-value(root.index, 0); } }
+    Segment { text: "INSERT"; picked: root.insert; clicked => { Controls.set-value(root.index, 1); } }
+}
+
+// What the Remix deck plays: another deck, the mic or an aux input, in a
+// value pill with a titled list. Its own deck is left out.
+export component RemixSource inherits HorizontalLayout {
+    in property <int> deck;
+    in property <string> group;
+    property <int> index: Controls.resolve(group, "source");
+    property <int> source: round(Controls.value(index, Controls.tick));
+    // By `source`, from 1.
+    property <[string]> names: ["Deck 1", "Deck 2", "Deck 3", "Deck 4", "Mic", "Aux 1", "Aux 2", "Aux 3", "Aux 4", "Aux 5", "Aux 6", "Aux 7", "Aux 8"];
+    spacing: 6px;
+    horizontal-stretch: 0;
+    VerticalLayout {
+        alignment: center;
+        pill := ValuePill {
+            width: source-row.preferred-width;
+            clicked => { list.show(); }
+            source-row := HorizontalLayout {
+                padding-left: 9px;
+                padding-right: 9px;
+                spacing: 6px;
+                Text {
+                    text: root.source >= 1 && root.source <= root.names.length ? root.names[root.source - 1] : "None";
+                    color: Theme.lilac-text;
+                    font-size: 12px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                VerticalLayout { alignment: center; PillCaret { } }
+            }
+        }
+    }
+    list := PopupWindow {
+        x: 0px;
+        y: 26px;
+        width: 160px;
+        close-policy: close-on-click-outside;
+        TitledList {
+            title: "Play";
+            for name[i] in root.names: ListRow {
+                visible: i != root.deck;
+                height: self.visible ? 26px : 0px;
+                selected: i + 1 == root.source;
+                clicked => {
+                    Controls.set-value(root.index, i + 1);
+                    list.close();
+                }
+                Text {
+                    x: 10px;
+                    text: name;
+                    color: i + 1 == root.source ? Theme.lilac-text : Theme.text;
+                    font-size: 13px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+// A label and a value pill naming the effect a control picks, with the
+// titled list of the others.
+export component RemixEffectPill inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> group;
+    in property <string> key;
+    in property <[string]> names;
+    property <int> index: Controls.resolve(group, key);
+    property <int> current: round(Controls.value(index, Controls.tick));
+    spacing: 6px;
+    horizontal-stretch: 0;
+    Text { text: root.label; color: Theme.n-a8a8ad; font-size: 11.5px; vertical-alignment: center; horizontal-stretch: 0; }
+    VerticalLayout {
+        alignment: center;
+        ValuePill {
+            width: effect-row.preferred-width;
+            clicked => { list.show(); }
+            effect-row := HorizontalLayout {
+                padding-left: 9px;
+                padding-right: 9px;
+                spacing: 6px;
+                Text {
+                    text: root.current >= 0 && root.current < root.names.length ? root.names[root.current] : "";
+                    color: Theme.lilac-text;
+                    font-size: 12px;
+                    font-weight: 500;
+                    vertical-alignment: center;
+                }
+                VerticalLayout { alignment: center; PillCaret { } }
+            }
+        }
+    }
+    list := PopupWindow {
+        x: 0px;
+        y: 26px;
+        width: 170px;
+        close-policy: close-on-click-outside;
+        TitledList {
+            title: root.label;
+            for name[i] in root.names: ListRow {
+                selected: i == root.current;
+                clicked => {
+                    Controls.set-value(root.index, i);
+                    list.close();
+                }
+                Text {
+                    x: 10px;
+                    text: name;
+                    color: i == root.current ? Theme.lilac-text : Theme.text;
+                    font-size: 13px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+// A band's LEVER: a tap latches it down and another lifts it; held longer,
+// it springs back up when let go.
+component Lever inherits VerticalLayout {
+    in property <string> group;
+    in property <string> key;
+    in property <color> tint;
+    property <int> index: Controls.resolve(group, key);
+    property <bool> on: Controls.value(index, Controls.tick) > 0;
+    property <bool> was-on;
+    property <bool> long;
+    alignment: center;
+    spacing: 3px;
+    Rectangle {
+        width: 30px;
+        height: 44px;
+        border-radius: 7px;
+        background: Theme.light ? #ffffff : #111113;
+        border-width: 1px;
+        border-color: root.on ? root.tint : ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+        // The handle: up while off, down and lit while on.
+        Rectangle {
+            x: 4px;
+            y: root.on ? parent.height - self.height - 4px : 4px;
+            width: parent.width - 8px;
+            height: 17px;
+            border-radius: 5px;
+            background: root.on ? root.tint : Theme.n-48484c;
+            animate y { duration: 60ms; }
+        }
+        hold := Timer {
+            interval: 300ms;
+            running: false;
+            triggered => {
+                root.long = true;
+                self.running = false;
+            }
+        }
+        ta := TouchArea {
+            mouse-cursor: pointer;
+            pointer-event(e) => {
+                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                    root.was-on = root.on;
+                    root.long = false;
+                    Controls.set-value(root.index, root.was-on ? 0 : 1);
+                    hold.running = !root.was-on;
+                } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                    hold.running = false;
+                    if !root.was-on && root.long {
+                        Controls.set-value(root.index, 0);
+                    }
+                }
+            }
+        }
+    }
+    Text {
+        text: !root.on ? "off" : ta.pressed && root.long ? "held" : "latched";
+        color: root.on ? root.tint : Theme.text-dim;
+        font-size: 10px;
+        horizontal-alignment: center;
+    }
+}
+
+// One band's ISOLATE knob and LEVER. Left of centre turns the band down
+// (in Insert; in Send the source's own channel still plays it), right adds
+// the Isolate effect to it.
+component BandLane inherits HorizontalLayout {
+    in property <string> group;
+    // 0 low, 1 mid, 2 high.
+    in property <int> band;
+    in property <bool> insert;
+    property <string> key: band == 0 ? "low" : band == 1 ? "mid" : "high";
+    property <color> tint: band == 0 ? Theme.band-low : band == 1 ? Theme.band-mid : Theme.band-high;
+    property <float> isolate: Controls.value(Controls.resolve(group, "isolate_" + key), Controls.tick);
+    spacing: 6px;
+    VerticalLayout {
+        alignment: center;
+        spacing: 0px;
+        ControlKnob {
+            group: root.group;
+            key: "isolate_" + root.key;
+            size: 40px;
+            bipolar: true;
+            look: 3;
+            arc-color: root.isolate >= 0 ? root.tint : root.insert ? Theme.danger : Theme.n-58585d;
+        }
+        Text {
+            text: root.key.to-uppercase();
+            color: root.tint;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            horizontal-alignment: center;
+        }
+    }
+    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; }
+}
+
+// A slice of the SCENE wheel's ring, in a 100 x 100 box, clockwise from
+// `from` to `to` (under 180 degrees).
+component Sector inherits Path {
+    in property <angle> from;
+    in property <angle> to;
+    in property <float> outer: 49;
+    in property <float> inner: 31;
+    viewbox-width: 100;
+    viewbox-height: 100;
+    MoveTo { x: 50 + root.outer * sin(root.from); y: 50 - root.outer * cos(root.from); }
+    ArcTo { radius-x: root.outer; radius-y: root.outer; sweep: true; x: 50 + root.outer * sin(root.to); y: 50 - root.outer * cos(root.to); }
+    LineTo { x: 50 + root.inner * sin(root.to); y: 50 - root.inner * cos(root.to); }
+    ArcTo { radius-x: root.inner; radius-y: root.inner; sweep: false; x: 50 + root.inner * sin(root.from); y: 50 - root.inner * cos(root.from); }
+    Close { }
+}
+
+// The SCENE wheel. Its ring holds the scenes, Build Ups on the right and
+// Break Downs on the left, a click picking one; the disc in the middle
+// turns SCENE: drag right or up for the Build Up, left or down for the
+// Break Down; a double-click (or the scroll wheel back to the middle)
+// stops it.
+component SceneWheel inherits Rectangle {
+    in property <string> group;
+    property <int> scene-index: Controls.resolve(group, "scene");
+    property <float> scene: Controls.value(scene-index, Controls.tick);
+    property <int> up-index: Controls.resolve(group, "scene_up");
+    property <int> down-index: Controls.resolve(group, "scene_down");
+    property <int> up: round(Controls.value(up-index, Controls.tick));
+    property <int> down: round(Controls.value(down-index, Controls.tick));
+    property <length> size: min(self.width, self.height);
+    property <length> cx: self.width / 2;
+    property <length> cy: self.height / 2;
+    // Where the pointer is, from the centre: its angle from twelve o'clock
+    // and its distance in the 100-wide box.
+    property <angle> at: atan2((ta.mouse-x - cx) / 1px, (cy - ta.mouse-y) / 1px);
+    property <float> reach: sqrt(pow((ta.mouse-x - cx) / 1px, 2) + pow((ta.mouse-y - cy) / 1px, 2)) / (size / 1px) * 100;
+    // The slice under the pointer: 0-4 the Build Ups, 5-9 the Break Downs; -1 none.
+    property <int> hovered: !ta.has-hover || reach < 31 || reach > 50 ? -1
+        : at >= 0deg ? min(4, floor(at / 36deg)) : 5 + min(4, floor(-at / 36deg));
+    property <bool> on-disc: ta.has-hover && reach < 31;
+    property <bool> turning;
+    property <float> drag-start;
+    property <bool> building: scene > 0.005;
+    property <bool> breaking: scene < -0.005;
+    property <length> font: clamp(size / 26, 9px, 12px);
+
+    for i in 10: Sector {
+        x: (root.width - root.size) / 2;
+        y: (root.height - root.size) / 2;
+        width: root.size;
+        height: root.size;
+        property <bool> up-side: i < 5;
+        property <int> n: up-side ? i : i - 5;
+        property <bool> picked: up-side ? root.up == n : root.down == n;
+        property <bool> playing: picked && (up-side ? root.building : root.breaking);
+        property <color> side: up-side ? SceneColors.up : SceneColors.down;
+        from: up-side ? n * 36deg : -(n + 1) * 36deg;
+        to: up-side ? (n + 1) * 36deg : -n * 36deg;
+        fill: playing ? side.with-alpha(0.38) : picked ? side.with-alpha(0.2) : root.hovered == i ? Theme.n-2a2a2e : Theme.light ? #f0eff4 : #151517;
+        stroke: Theme.panel;
+        stroke-width: 2px;
+    }
+    // The scenes' names in their slices.
+    for i in 10: Text {
+        property <bool> up-side: i < 5;
+        property <int> n: up-side ? i : i - 5;
+        property <angle> mid: up-side ? n * 36deg + 18deg : -n * 36deg - 18deg;
+        property <bool> picked: up-side ? root.up == n : root.down == n;
+        width: root.size * 0.2;
+        height: root.size * 0.12;
+        x: root.cx + root.size * 0.4 * sin(mid) - self.width / 2;
+        y: root.cy - root.size * 0.4 * cos(mid) - self.height / 2;
+        text: up-side ? (n < RemixUi.scenes-up.length ? RemixUi.scenes-up[n] : "") : (n < RemixUi.scenes-down.length ? RemixUi.scenes-down[n] : "");
+        color: picked ? Theme.text : up-side ? SceneColors.up.with-alpha(0.8) : SceneColors.down.with-alpha(0.85);
+        font-size: root.font;
+        font-weight: picked ? 700 : 500;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        wrap: word-wrap;
+    }
+    // The disc that turns, and how far: an arc from twelve o'clock, round
+    // the right for a Build Up, the left for a Break Down.
+    Rectangle {
+        x: root.cx - self.width / 2;
+        y: root.cy - self.height / 2;
+        width: root.size * 0.54;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.on-disc || root.turning ? Theme.n-2a2a2e : Theme.n-121214;
+        border-width: 1px;
+        border-color: Theme.n-2c2c31;
+    }
+    KnobArc {
+        x: (root.width - root.size) / 2;
+        y: (root.height - root.size) / 2;
+        width: root.size;
+        height: root.size;
+        r: 29;
+        from: -179deg;
+        to: 179deg;
+        stroke: Theme.n-26262a;
+        stroke-width: max(3px, root.size * 0.025);
+    }
+    if root.building || root.breaking: KnobArc {
+        x: (root.width - root.size) / 2;
+        y: (root.height - root.size) / 2;
+        width: root.size;
+        height: root.size;
+        r: 29;
+        from: 0deg;
+        to: root.scene * 180deg;
+        stroke: root.building ? SceneColors.up : SceneColors.down;
+        stroke-width: max(3px, root.size * 0.025);
+    }
+    VerticalLayout {
+        x: root.cx - root.size * 0.22;
+        y: root.cy - root.size * 0.2;
+        width: root.size * 0.44;
+        height: root.size * 0.4;
+        alignment: center;
+        spacing: 2px;
+        Text {
+            text: root.building ? "BUILD UP" : root.breaking ? "BREAK DOWN" : "SCENE";
+            color: Theme.text-dim;
+            font-size: root.font * 0.9;
+            font-weight: 700;
+            letter-spacing: 1px;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: round(abs(root.scene) * 100);
+            color: Theme.text;
+            font-size: clamp(root.size / 9, 16px, 34px);
+            font-weight: 600;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: root.building ? (root.up < RemixUi.scenes-up.length ? RemixUi.scenes-up[root.up] : "")
+                : root.breaking ? (root.down < RemixUi.scenes-down.length ? RemixUi.scenes-down[root.down] : "")
+                : "Drag to play";
+            color: root.building ? SceneColors.up : root.breaking ? SceneColors.down : Theme.text-dim;
+            font-size: root.font;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: root.on-disc || root.turning ? MouseCursor.move : root.hovered >= 0 ? MouseCursor.pointer : MouseCursor.default;
+        pointer-event(e) => {
+            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                root.turning = root.reach < 31;
+                root.drag-start = root.scene;
+            } else if e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel {
+                root.turning = false;
+            }
+        }
+        moved => {
+            if root.turning {
+                Controls.set-value(root.scene-index, clamp(root.drag-start + ((self.mouse-x - self.pressed-x) - (self.mouse-y - self.pressed-y)) / (root.size * 0.8), -1, 1));
+            }
+        }
+        clicked => {
+            if root.hovered >= 0 && root.hovered < 5 {
+                Controls.set-value(root.up-index, root.hovered);
+            } else if root.hovered >= 5 {
+                Controls.set-value(root.down-index, root.hovered - 5);
+            }
+        }
+        double-clicked => {
+            if root.reach < 31 {
+                Controls.set-value(root.scene-index, 0);
+            }
+        }
+        scroll-event(e) => {
+            Controls.set-value(root.scene-index, clamp(root.scene + (e.delta-y > 0 ? 0.04 : -0.04), -1, 1));
+            accept
+        }
+    }
+}
+
+// The scenes' TIME (1/4, 1/2 or 1 beat echoes) and COLOR (their filters
+// an octave down to an octave up).
+component SceneShape inherits VerticalLayout {
+    in property <string> group;
+    property <int> time-index: Controls.resolve(group, "scene_time");
+    property <int> time: round(2 * Controls.value(time-index, Controls.tick));
+    property <float> color: Controls.value(Controls.resolve(group, "scene_color"), Controls.tick);
+    alignment: center;
+    spacing: 6px;
+    Text { text: "TIME"; color: Theme.text-dim; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; horizontal-alignment: center; }
+    HorizontalLayout {
+        alignment: center;
+        Segments {
+            for name[k] in ["1/4", "1/2", "1"]: Segment {
+                text: name;
+                picked: root.time == k;
+                clicked => { Controls.set-value(root.time-index, k / 2); }
+            }
+        }
+    }
+    Rectangle { height: 6px; }
+    Text { text: "COLOR"; color: Theme.text-dim; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; horizontal-alignment: center; }
+    HorizontalLayout {
+        alignment: center;
+        ControlKnob { group: root.group; key: "scene_color"; size: 32px; bipolar: true; look: 3; arc-color: Theme.accent; }
+    }
+    Text {
+        text: (root.color > 0.505 ? "+" : "") + round((root.color - 0.5) * 200);
+        color: Theme.text;
+        font-size: 11px;
+        horizontal-alignment: center;
+    }
+}
+
+// The Remix deck under its title: the band lanes, the SCENE wheel and its
+// TIME and COLOR.
+export component RemixPanel inherits Rectangle {
+    in property <int> deck;
+    property <string> group: "[Remix" + (deck + 1) + "]";
+    property <bool> insert: Controls.value(Controls.resolve(group, "mode"), Controls.tick) > 0.5;
+    background: Theme.panel;
+    // Clicks between the controls stay on the deck.
+    TouchArea { }
+    VerticalLayout {
+        padding: 8px;
+        padding-top: 6px;
+        spacing: 6px;
+        HorizontalLayout {
+            vertical-stretch: 1;
+            spacing: 10px;
+            VerticalLayout {
+                alignment: space-around;
+                for b in [2, 1, 0]: BandLane { group: root.group; band: b; insert: root.insert; }
+            }
+            SceneWheel { group: root.group; horizontal-stretch: 1; }
+            SceneShape { group: root.group; width: 96px; }
+        }
+    }
+}

@@ -9,6 +9,7 @@ import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint"
 import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
+import { RemixEffectPill, RemixMode, RemixPanel, RemixSource, RemixUi } from "remix.slint";
 import { InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
@@ -5797,7 +5798,8 @@ component TitleButton inherits Rectangle {
 // Mixer, a Groove Box): three thin lilac lines opening the deck's menu.
 component DeckMenuButton inherits Rectangle {
     in property <int> deck;
-    // What the deck plays: 0 an instrument plugin, 1 the Mixer, 2 a Groove Box.
+    // What the deck plays: 0 an instrument plugin, 1 the Mixer, 2 a Groove
+    // Box, 3 the Remix deck.
     in property <int> kind;
     // The instrument's preset actions that ask something first: the title
     // that holds the name and tag popups shows them.
@@ -6061,6 +6063,36 @@ component GrooveTitle inherits Rectangle {
         Text { text: "GROOVE BOX"; color: Theme.text; font-size: 12px; font-weight: 700; letter-spacing: 1px; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
         if !playing: VerticalLayout {
+            alignment: center;
+            TitleButton {
+                icon: "M 5 13 L 12 5 L 19 13 Z M 5 18.5 L 19 18.5";
+                tip: "Unload deck";
+                clicked => { DeckActions.eject(root.deck); }
+            }
+        }
+    }
+}
+
+// The Remix deck's slim title: REMIX, what it plays and SEND or INSERT on
+// the left; the Isolate and Lever effects and ⏏ (unload the deck) on the
+// right.
+component RemixTitle inherits Rectangle {
+    in property <int> deck;
+    property <string> group: "[Remix" + (deck + 1) + "]";
+    height: 30px;
+    background: Theme.panel;
+    HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 8px;
+        spacing: 10px;
+        VerticalLayout { alignment: center; DeckMenuButton { deck: root.deck; kind: 3; } }
+        Text { text: "REMIX"; color: Theme.lilac-text; font-size: 12px; font-weight: 700; letter-spacing: 1px; vertical-alignment: center; }
+        RemixSource { deck: root.deck; group: root.group; }
+        VerticalLayout { alignment: center; RemixMode { group: root.group; } }
+        Rectangle { horizontal-stretch: 1; }
+        RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
+        RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+        VerticalLayout {
             alignment: center;
             TitleButton {
                 icon: "M 5 13 L 12 5 L 19 13 Z M 5 18.5 L 19 18.5";
@@ -7344,7 +7376,14 @@ export component Deck inherits Rectangle {
         }
     }
     property <bool> looper: !info.loaded && Controls.value(Controls.resolve("[Looper" + (deck + 1) + "]", "enabled"), Controls.tick) > 0;
-    property <int> live: info.loaded || groove || looper ? 0 : InstrumentsUi.live(deck);
+    // The Remix deck plays another deck through its effects.
+    property <bool> remix: !info.loaded && Controls.value(Controls.resolve("[Remix" + (deck + 1) + "]", "enabled"), Controls.tick) > 0;
+    changed remix => {
+        if !remix && HoverTip.title == "Unload deck" {
+            HoverTip.shown = false;
+        }
+    }
+    property <int> live: info.loaded || groove || looper || remix ? 0 : InstrumentsUi.live(deck);
     property <bool> mixer: live == InstrumentsUi.mixer-live;
     property <bool> plugin: live == 3;
     property <bool> plugin-ready: Controls.value(Controls.resolve("[Instrument1]", "input_configured"), Controls.tick) > 0;
@@ -7401,7 +7440,7 @@ export component Deck inherits Rectangle {
             if plugin && plugin-ready: InstrumentRack { x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px; group: group; }
             if live > 0 && !mixer-groove-shown && !(plugin && plugin-ready): LivePanel { x: mixer ? 4px : 8px; y: mixer ? 4px : 8px; width: parent.width - (mixer ? 8px : 16px); height: parent.height - (mixer ? 8px : 16px); live: mixer-keys ? 3 : live; titled: plugin; group: group; tint: tint; }
             if looper: LooperPanel { x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px; deck: deck; group: group; tint: tint; }
-            if !groove && !looper && live == 0: HorizontalLayout {
+            if !groove && !looper && !remix && live == 0: HorizontalLayout {
                 padding: 8px;
                 spacing: 0px;
                 if mirrored: JogSection { group: group; info: info; tint: tint; spin: spin; mirrored: true; }
@@ -7431,6 +7470,15 @@ export component Deck inherits Rectangle {
         spacing: 1px;
         GrooveTitle { deck: deck; group: group; }
         GrooveBox { vertical-stretch: 1; deck: deck; group: group; tint: tint; }
+    }
+
+    // So does the Remix deck.
+    if remix: VerticalLayout {
+        width: parent.width;
+        height: parent.height;
+        spacing: 1px;
+        RemixTitle { deck: deck; }
+        RemixPanel { vertical-stretch: 1; deck: deck; }
     }
 
     // Drop target for tracks dragged from the browser. While any drag is in

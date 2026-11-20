@@ -26,7 +26,8 @@
 
 ## 5. On screen
 
-- [ ] 5.1 Remix in the deck ☰ menu; Remix deck layout in 2-Deck (WHEEL tab: SCENE wheel, ISOLATE knobs with LEVERs, RELEASE; PADS tab: pads, OVERDUB, roll rates), BIG mode over the library in the wheel layout, slim header in 4-Deck; live waveform; screenshots
+- [x] 5.1 Remix in the Jam list (dropped on a deck like the Looper; ⏏ turns the deck back into a track deck); the Remix deck in 2-Deck: slim title (source pill, SEND/INSERT), WHEEL screen (Isolate and Lever effect pills, ISOLATE knobs with LEVERs that latch on a tap and spring back when held, SCENE wheel with the scenes round its ring, TIME and COLOR); screenshot
+- [ ] 5.2 RELEASE on the WHEEL screen (with 2.3); PADS tab: pads, OVERDUB, roll rates (with step 4); BIG mode over the library in the wheel layout; slim header in 4-Deck and 2-Deck Basic; live waveform; screenshots
 
 ## 6. Controllers and remote
 

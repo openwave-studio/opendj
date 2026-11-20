@@ -1,0 +1,93 @@
+// The Pigments-style pieces the FX bar and the Remix deck share: dark
+// value pills that open titled lists, and the band mark.
+import { Theme } from "theme.slint";
+
+// Three short bars, high on top and low at the bottom: the bands an effect
+// works on, each lit in its band's color, or all lilac for the whole signal.
+export component BandIcon inherits Rectangle {
+    // The slot's `band`: 0 the whole signal, else 1 low + 2 mid + 4 high.
+    in property <int> mask;
+    width: 10px;
+    height: 8px;
+    for i in 3: Rectangle {
+        property <int> bit: i == 0 ? 4 : i == 1 ? 2 : 1;
+        property <bool> lit: mask == 0 || mask == 7 || mod(floor(mask / bit), 2) == 1;
+        x: 0px;
+        y: i * 3px;
+        width: 10px;
+        height: 2px;
+        border-radius: 1px;
+        background: !lit ? Theme.n-48484c
+            : mask == 0 || mask == 7 ? Theme.lilac-text
+            : i == 0 ? Theme.band-high : i == 1 ? Theme.band-mid : Theme.band-low;
+    }
+}
+
+// A dark value pill: what is set, in its color, and ▾ for a titled list.
+// It outlines on hover.
+export component ValuePill inherits Rectangle {
+    in property <bool> open;
+    callback clicked();
+    height: 22px;
+    border-radius: 7px;
+    background: Theme.light ? #ffffff : ta.has-hover || open ? #17151e : #111113;
+    border-width: 1px;
+    border-color: ta.has-hover || open ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    @children
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The small ▾ in a value pill.
+export component PillCaret inherits Path {
+    width: 7px;
+    height: 4px;
+    viewbox-width: 7;
+    viewbox-height: 4;
+    commands: "M 0 0 L 7 0 L 3.5 4 Z";
+    fill: Theme.lilac-text.with-alpha(0.7);
+}
+
+// A row in a titled list: lit (tinted, the text in its color) when it is
+// the one set, a lighter row under the pointer.
+export component ListRow inherits Rectangle {
+    in property <bool> selected;
+    callback clicked();
+    height: 28px;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.n-38373d : selected ? Theme.n-313036 : transparent;
+    @children
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The titled list a value pill opens.
+export component TitledList inherits Rectangle {
+    in property <string> title;
+    background: Theme.light ? #ffffff : #262629;
+    border-radius: 9px;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 14px;
+    drop-shadow-color: Theme.s-000000a0;
+    VerticalLayout {
+        padding: 8px;
+        padding-top: 10px;
+        spacing: 1px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: 13px;
+            font-weight: 700;
+            height: 24px;
+            vertical-alignment: top;
+            x: 8px;
+        }
+        @children
+    }
+}

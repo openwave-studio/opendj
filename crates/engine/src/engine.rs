@@ -2386,11 +2386,12 @@ impl Engine {
                 d.c.play.set_bool(false);
             }
             let pressed = d.eject_edge.pressed(&d.c.eject) && !d.c.play.get_bool();
-            // Ejecting an empty Groove Box or live input deck makes it an
-            // empty track deck.
+            // Ejecting an empty Groove Box, Looper, Remix or live input
+            // deck makes it an empty track deck.
             if pressed && d.track.is_none() {
                 self.grooves[deck].c.enabled.set_bool(false);
                 self.loopers.loopers[deck].c.enabled.set_bool(false);
+                self.remix_controls[deck].enabled.set_bool(false);
                 d.c.live_input.set(0.0);
             }
             if pressed || groove {
@@ -8722,6 +8723,12 @@ mod tests {
         reg.get("[Groove4]", "enabled").unwrap().set_bool(true);
         run(&mut engine, 0.01);
         assert!(!rx(4, "enabled").get_bool());
+        // Unloading the Remix deck makes it an empty track deck.
+        rx(2, "enabled").set_bool(true);
+        run(&mut engine, 0.01);
+        reg.get("[Channel2]", "eject").unwrap().set_bool(true);
+        run(&mut engine, 0.01);
+        assert!(!rx(2, "enabled").get_bool());
     }
 
     #[test]
