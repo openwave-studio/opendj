@@ -1081,6 +1081,23 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
             None
         }
     };
+    // Bug reports name the controllers plugged in, and the mapping each runs.
+    if let Some(c) = &controllers {
+        let c = Rc::downgrade(c);
+        diagnostics::set_controllers(move || {
+            let Some(c) = c.upgrade() else {
+                return Vec::new();
+            };
+            c.ports()
+                .into_iter()
+                .filter(|p| !opendj_controllers::is_system_port(&p.name))
+                .map(|p| match p.running {
+                    Some(m) if m != p.name => format!("{} ({m})", p.name),
+                    _ => p.name,
+                })
+                .collect()
+        });
+    }
     // MIDI keyboards (devices with no mapping) play the Instrument input.
     if let Some(c) = &controllers {
         let notes = engine.note_input();
@@ -1390,6 +1407,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         "graphics: {} ({:?}, {:?}), driver {} {}",
                         info.name, info.backend, info.device_type, info.driver, info.driver_info
                     );
+                    diagnostics::set_graphics(format!("{} ({:?})", info.name, info.backend));
                     let renderer = WaveformRenderer::new(device, queue);
                     let make = |mode| WaveformView::new(device, mode, 1, 1);
                     *gpu.borrow_mut() = Some(Gpu {

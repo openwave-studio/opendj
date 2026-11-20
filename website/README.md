@@ -29,7 +29,18 @@ Connect the repository in Cloudflare Pages with:
 security headers, and `404.html` is the not-found page.
 
 The Download buttons link to the latest GitHub release; `main.js` swaps in the
-direct file links from GitHub's API when it can.
+direct file links from GitHub's API when it can. Below them, the Nightly lane
+reads the `nightly` pre-release (named after the next version, shown as
+"0.9.0 Alpha") and Previous versions lists the older stable releases.
+
+## Release pages
+
+`releases/` holds a page per version for people who use openDJ (what's new,
+one section per area with a screenshot), and `releases/index.html` lists them.
+The technical changelog stays on GitHub. For a new version, copy the last
+page to `releases/<major.minor>/index.html`, put its screenshots (WebP) in
+`assets/releases/<major.minor>/`, write a short section per area from the
+GitHub release notes, and add it at the top of `releases/index.html`.
 
 ## Mixcloud sign-in
 
