@@ -113,6 +113,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
+          # A new runner image can move Visual Studio, and CMake caches in
+          # target/ (whisper.cpp) would still point at the old compiler.
+          key: ${{ env.ImageVersion }}
       - run: cargo clippy --workspace --exclude opendj --all-targets -- -D warnings
       # Checking the app takes several GB per target (its Slint UI is one
       # large generated module): its binary and tests one at a time, so the
@@ -169,6 +172,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
+          # A new runner image can move Visual Studio, and CMake caches in
+          # target/ (whisper.cpp) would still point at the old compiler.
+          key: ${{ env.ImageVersion }}
       - run: cargo build --release -p opendj -p opendj-plugin-host
       # The version in Cargo.toml, as the app reports it, so the setup and
       # Apps & features name the same version.

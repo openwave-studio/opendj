@@ -199,6 +199,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
+          # A new runner image can move Visual Studio, and CMake caches in
+          # target/ (whisper.cpp) would still point at the old compiler.
+          key: ${{ env.ImageVersion }}
       - run: cargo build --release -p opendj -p opendj-plugin-host
       - run: scripts/bundle-windows.ps1 target/release/opendj.exe "${{ needs.version.outputs.version }}"
         shell: pwsh
