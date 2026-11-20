@@ -14,4 +14,4 @@ ab_glyph = "0.2"
 
 [dev-dependencies]
 wgpu = { version = "30", features = ["vulkan", "wgsl"] }
-pollster = "0.4"
+pollster = "1.0"
