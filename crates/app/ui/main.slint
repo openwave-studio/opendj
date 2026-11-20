@@ -2354,6 +2354,8 @@ export component AppWindow inherits Window {
                 narrow: browser-narrow;
                 layout: root.layout;
                 side-dismissed => { side-panel-visible = false; }
+                side-wanted => { side-panel-visible = true; }
+                side-offered: !(player && NowPlayingUi.open);
                 vertical-stretch: 1;
                 folders: folders;
                 current-folder: current-folder;
