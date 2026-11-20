@@ -27,7 +27,7 @@
 
 ## 6. Top bar
 
-- [ ] 6.1 Rec and Mic pills, the master knob with vertical meters and its Master panel on right-click, after screenshots are reviewed
+- [x] 6.1 Rec and Mic pills, the master knob with vertical meters and its Master panel on right-click, after screenshots are reviewed
 
 ## 7. Docs
 
