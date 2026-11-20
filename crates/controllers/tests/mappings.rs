@@ -2723,3 +2723,23 @@ fn numark_party_mix_mkii_notes() {
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
+
+/// Inpulse 200, per Hercules' MIDI command list: SHIFT and a pad in sampler
+/// mode (0x96/0x97 0x38-0x3B) stops the sample, and the jog wheels' unused
+/// 0xB1/0xB2 0x0C no longer call a script function that doesn't exist.
+#[test]
+fn hercules_inpulse_200_sampler_stop() {
+    let (reg, mut c) = load("Hercules_DJControl_Inpulse_200.midi.xml");
+    settle(&mut c, 50);
+    for (status, sampler) in [(0x96u8, "[Sampler1]"), (0x97, "[Sampler5]")] {
+        let stop = reg.get(sampler, "cue_gotoandstop").unwrap();
+        let before = stop.version();
+        c.receive(&[status, 0x38, 0x7F]);
+        c.receive(&[status, 0x38, 0x00]);
+        assert_ne!(stop.version(), before, "{sampler}");
+    }
+    c.receive(&[0xB1, 0x0C, 0x41]);
+    c.receive(&[0xB2, 0x0C, 0x41]);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
