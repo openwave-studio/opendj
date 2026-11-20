@@ -1874,3 +1874,74 @@ fn numark_ns4fx_sync_loops_and_crossfader_assign() {
     c.receive(&[0xB0, 0x1E, 0x00]);
     assert_eq!(get(&reg, "[Channel1]", "orientation"), 1.0);
 }
+
+/// Every Numark mapping on the support list takes each of its messages,
+/// pressed and released or turned, without a script error.
+#[test]
+fn numark_mappings_take_every_message_cleanly() {
+    for c in opendj_controllers::support::all() {
+        let Some(file) = c.file.filter(|_| c.name.starts_with("Numark")) else {
+            continue;
+        };
+        let (_reg, mut ctl) = load(&file);
+        settle(&mut ctl, 50);
+        let path = default_mappings_dir().unwrap().join(&file);
+        let mut messages: Vec<(u8, u8)> = Mapping::load(&path)
+            .unwrap()
+            .inputs
+            .keys()
+            .copied()
+            .collect();
+        messages.sort();
+        let start = Instant::now();
+        for (i, &(status, number)) in messages.iter().enumerate() {
+            for value in [0x7F, 0x00, 0x41, 0x3F] {
+                ctl.receive(&[status, number, value]);
+            }
+            ctl.poll(start + Duration::from_millis(i as u64));
+        }
+        settle(&mut ctl, 100);
+        assert_eq!(ctl.errors(), Vec::<String>::new(), "{file}");
+        ctl.shutdown();
+    }
+}
+
+/// The NS4FX's pad mode buttons send a second note when pressed again;
+/// Mixxx's mapping only listened for it on deck 1. Also checks its loop
+/// in and out buttons and the pads after an unfinished pad mode.
+#[test]
+fn numark_ns4fx_second_pad_mode_on_every_deck() {
+    let (reg, mut c) = load("Numark NS4FX.midi.xml");
+    settle(&mut c, 50);
+    c.take_output();
+    for status in [0x94u8, 0x95, 0x96, 0x97] {
+        // Roll is the AUTO LOOP button's second press.
+        c.receive(&[status, 0x06, 0x7F]);
+        c.receive(&[status - 0x10, 0x06, 0x00]);
+        let out = c.take_output();
+        assert!(
+            out.iter()
+                .any(|m| m.len() == 3 && m[0] == status && m[1] == 0x06 && m[2] == 0x7F),
+            "{status:02X}: {out:02X?}"
+        );
+    }
+    // SHIFT + 1/2 sets the loop in and SHIFT + x2 the loop out on both
+    // sides, as Numark's manual and the script's own lights have it.
+    for (status, group) in [(0x94u8, "[Channel1]"), (0x95, "[Channel2]")] {
+        let loop_in = reg.get(group, "loop_in").unwrap();
+        let loop_out = reg.get(group, "loop_out").unwrap();
+        let (i, o) = (loop_in.version(), loop_out.version());
+        c.receive(&[status, 0x36, 0x7F]);
+        c.receive(&[status - 0x10, 0x36, 0x00]);
+        assert_ne!(loop_in.version(), i, "{group} loop in");
+        assert_eq!(loop_out.version(), o, "{group} loop out untouched");
+    }
+    // Pitch play isn't there yet, so its pads stay hot cues.
+    c.receive(&[0x94, 0x02, 0x7F]);
+    let hotcue = reg.get("[Channel1]", "hotcue_1_activate").unwrap();
+    let before = hotcue.version();
+    c.receive(&[0x94, 0x14, 0x7F]);
+    c.receive(&[0x84, 0x14, 0x00]);
+    assert_ne!(hotcue.version(), before);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}

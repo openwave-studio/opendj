@@ -1170,18 +1170,31 @@ NS4FX.Deck = function(number, midi_chan) {
             // LED updates are handled by the connections within each stem button.
             buttons = this.stems_buttons;
         } else if (padmode === "pitchplay") {
-            print("not implemented yet");
+            // No pitch play yet: the pads stay hot cues.
+            deck.hotcue_buttons.updateLEDs();
+            buttons = this.hotcue_buttons;
         } else if (padmode === "roll") {
             buttons = this.roll_buttons;
         } else if (padmode === "slicer") {
             buttons = this.slicer_buttons;
         } else if (padmode === "scratchbanks") {
-            print("not implemented yet");
+            // No scratch banks yet: the pads stay samplers.
+            deck.sampler_buttons.updateLEDs(`[Channel${this.number}]`);
+            buttons = this.sampler_buttons;
+        }
+        if (buttons === undefined) {
+            return;
         }
         this.hotcues.forEachComponent(function(component) {
             component.disconnect();
         });
         this.hotcues = buttons;
+        // Modes with fewer than eight pads ignore the others.
+        for (let i = 1; i <= 8; i++) {
+            if (this.hotcues[i] === undefined) {
+                this.hotcues[i] = {input: function() {}};
+            }
+        }
         this.hotcues.reconnectComponents();
     };
     this.hotcues = new components.ComponentContainer();
