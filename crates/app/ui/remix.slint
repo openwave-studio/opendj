@@ -135,6 +135,8 @@ export component RemixSource inherits HorizontalLayout {
 // titled list of the others.
 export component RemixEffectPill inherits HorizontalLayout {
     in property <string> label;
+    // The list's title; the label unless given.
+    in property <string> title: label;
     in property <string> group;
     in property <string> key;
     in property <[string]> names;
@@ -169,7 +171,7 @@ export component RemixEffectPill inherits HorizontalLayout {
         width: 170px;
         close-policy: close-on-click-outside;
         TitledList {
-            title: root.label;
+            title: root.title;
             for name[i] in root.names: ListRow {
                 selected: i == root.current;
                 clicked => {
@@ -311,6 +313,29 @@ component IsolateArrow inherits Rectangle {
         padding-top: 6px;
         padding-bottom: 4px;
         alignment: space-around;
+        // The Isolate effect beside the knobs, the Lever effect beside
+        // the levers: rows as tall as the bands' knob, name and lever.
+        VerticalLayout {
+            width: 104px;
+            alignment: center;
+            spacing: 2px;
+            HorizontalLayout {
+                height: 40px;
+                VerticalLayout {
+                    alignment: center;
+                    RemixEffectPill { label: ""; title: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
+                }
+            }
+            Text { text: " "; font-size: 10px; }
+            Rectangle { height: 2px; }
+            HorizontalLayout {
+                height: 42px;
+                VerticalLayout {
+                    alignment: center;
+                    RemixEffectPill { label: ""; title: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+                }
+            }
+        }
         for b in [0, 1, 2]: BandLane { group: root.group; band: b; insert: root.insert; }
     }
 }
@@ -625,10 +650,10 @@ component SceneColor inherits VerticalLayout {
     }
 }
 
-// The Remix deck under its title, on a grid of three rows: the effect
-// pickers and TIME over the ISOLATE arrow, SCENE wheel and COLOR, over the
-// X-PAD and its kit. The arrow sits on the wheel's middle and its tip
-// reaches the wheel.
+// The Remix deck under its title, on a grid of three rows: TIME over the
+// ISOLATE arrow (its effect pickers beside the knobs and levers), SCENE
+// wheel and COLOR, over the X-PAD and its kit. The arrow sits on the
+// wheel's middle and its tip reaches the wheel.
 export component RemixPanel inherits Rectangle {
     in property <int> deck;
     property <string> group: "[Remix" + (deck + 1) + "]";
@@ -648,20 +673,7 @@ export component RemixPanel inherits Rectangle {
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 6px;
-            HorizontalLayout {
-                height: root.band;
-                padding-right: root.tip;
-                spacing: 12px;
-                VerticalLayout {
-                    alignment: end;
-                    RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
-                }
-                VerticalLayout {
-                    alignment: end;
-                    RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
-                }
-                Rectangle { }
-            }
+            Rectangle { height: root.band; }
             IsolateArrow { group: root.group; insert: root.insert; tip: root.tip; vertical-stretch: 1; }
             HorizontalLayout {
                 height: root.band;
@@ -686,7 +698,7 @@ export component RemixPanel inherits Rectangle {
                 BlockTitle { text: "KIT"; }
                 HorizontalLayout {
                     alignment: center;
-                    RemixEffectPill { label: ""; group: root.group; key: "pad_bank"; names: RemixUi.kits; }
+                    RemixEffectPill { label: ""; title: "Kit"; group: root.group; key: "pad_bank"; names: RemixUi.kits; }
                 }
             }
         }
