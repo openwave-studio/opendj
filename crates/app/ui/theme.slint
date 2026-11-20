@@ -24,6 +24,15 @@ export global Theme {
     out property <color> background: root.light ? #e4e3ea : #0e0e10;
     out property <color> panel: root.light ? #f7f6fa : #1a1a1c;
     out property <color> panel-raised: root.light ? #ffffff : #232326;
+    // The shared controls (pills.slint): a value or stepper pill's well,
+    // and under the pointer or open; the titled list it opens; a slider's
+    // thumb, and under the pointer; the SCENE wheel's slices.
+    out property <color> pill: root.light ? #ffffff : #111113;
+    out property <color> pill-hover: root.light ? #ffffff : #17151e;
+    out property <color> pill-list: root.light ? #ffffff : #262629;
+    out property <color> thumb: root.light ? root.lilac-text : #ece8ff;
+    out property <color> thumb-hover: root.light ? #7d5fe0 : #ffffff;
+    out property <color> wheel-slice: root.light ? #f0eff4 : #151517;
     // The library browser's background, and its rows, which alternate
     // between two tones.
     out property <color> browser: root.light ? #ffffff : #101112;

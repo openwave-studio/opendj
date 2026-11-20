@@ -155,7 +155,7 @@ impl Worker {
                 }),
                 // Only TIDAL browses through an add-on, or searches the
                 // catalog.
-                Request::Catalog(_) | Request::Search(_) => {}
+                Request::Catalog(_) | Request::Search(_) | Request::Artist(_) => {}
                 Request::Disconnect => {
                     if let Some(s) = self.session.take() {
                         Saved {

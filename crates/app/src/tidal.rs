@@ -121,6 +121,10 @@ impl Worker {
                     self.addon = Some(addon.clone());
                     self.addon_connect(&addon);
                 }
+                Request::Artist(key) => self.emit(Event::TracksFailed {
+                    key: format!("{SEARCH}{key}"),
+                    error: "Artist pages need the TIDAL add-on.".into(),
+                }),
                 Request::Search(words) => match self.search(&words) {
                     Ok(tracks) => self.emit(Event::Searched {
                         words,
@@ -211,6 +215,19 @@ impl Worker {
                             break;
                         }
                     }
+                }
+            }
+            Request::Artist(key) => {
+                let id = key.strip_prefix("artist:").unwrap_or(&key).to_string();
+                match addon.ask(serde_json::json!({ "ask": "artist", "id": id })) {
+                    Ok(found) => self.emit(Event::Searched {
+                        words: key,
+                        hits: addon_hits(&found),
+                    }),
+                    Err(error) => self.emit(Event::TracksFailed {
+                        key: format!("{SEARCH}{key}"),
+                        error,
+                    }),
                 }
             }
             Request::Search(words) => {

@@ -107,6 +107,11 @@ export struct TrackRow {
     // When it was played in this History session ("23:41"): shown dimmed
     // with a lilac check. Empty when it wasn't.
     played: string,
+    // A streamed track downloading: how far (0 to 1), shown in the mini
+    // waveform's place, and whether it failed.
+    fetching: bool,
+    fetch: float,
+    fetch-failed: bool,
 }
 
 // One of the track list's columns. kind: 0 text, 1 the title (takes the
@@ -1036,8 +1041,12 @@ export global CatalogSearch {
     // mode 0 opens the row (an artist's or album's tracks in the list; a
     // track loads onto a free deck), 1 downloads a track.
     callback act(row: int, mode: int);
-    // Every track found, in the list.
+    // Every track found (or the artist's), in the list.
     callback all();
+    // The artist whose page the dropdown shows (top tracks, then albums);
+    // empty for what a search found. back() returns to the search.
+    in property <string> artist;
+    callback back();
 }
 
 // A choice on a catalog result's right-click menu.
@@ -1079,6 +1088,22 @@ component CatalogResults inherits Rectangle {
     frame := VerticalLayout {
         padding: 6px;
         spacing: 2px;
+        if CatalogSearch.artist != "": Rectangle {
+            height: 34px;
+            border-radius: 8px;
+            background: bta.has-hover ? Theme.n-ffffff12 : transparent;
+            bta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { CatalogSearch.back(); }
+            }
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                spacing: 8px;
+                Text { text: "‹"; color: Theme.text-dim; font-size: 18px; vertical-alignment: center; }
+                Text { text: CatalogSearch.artist; color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+            }
+        }
         scroll := ScrollView {
             height: min(list.preferred-height, max(120px, root.max-list-height));
             vertical-stretch: 0;
@@ -1088,7 +1113,7 @@ component CatalogResults inherits Rectangle {
                     if i == 0 || CatalogSearch.rows[i - 1].kind != r.kind: Text {
                         height: 24px;
                         x: 10px;
-                        text: r.kind == 1 ? "ARTISTS" : r.kind == 2 ? "ALBUMS" : "TRACKS";
+                        text: r.kind == 1 ? "ARTISTS" : r.kind == 2 ? "ALBUMS" : CatalogSearch.artist != "" ? "TOP TRACKS" : "TRACKS";
                         color: Theme.text-dim;
                         font-size: 10px;
                         font-weight: 700;
@@ -1168,7 +1193,9 @@ component CatalogResults inherits Rectangle {
             height: 26px;
             x: 10px;
             width: parent.width - 20px;
-            text: CatalogSearch.rows.length == 0 ? "Esc closes" : "↵ all tracks · click a track to play it · right-click to download · Esc closes";
+            text: CatalogSearch.rows.length == 0 ? "Esc closes"
+                : CatalogSearch.artist != "" ? "↵ all their tracks · click an album to list it · right-click a track to download · Esc closes"
+                : "↵ all tracks · click a track to play it · right-click to download · Esc closes";
             color: Theme.text-dim;
             font-size: 11px;
             vertical-alignment: center;
@@ -6125,7 +6152,23 @@ component TrackList inherits Rectangle {
                             border-width: selected ? 1.5px : 0px;
                             border-color: Theme.on-row-selection;
                         }
-                        if col.kind == 6 && r.has-wave: Image {
+                        // Downloading: a bar in the waveform's place.
+                        if col.kind == 6 && r.fetching: Rectangle {
+                            y: (parent.height - self.height) / 2;
+                            width: 100%;
+                            height: 6px;
+                            border-radius: 3px;
+                            background: Theme.n-36363b;
+                            Rectangle {
+                                x: 0;
+                                width: r.fetch-failed ? parent.width : parent.width * max(0.04, r.fetch);
+                                height: parent.height;
+                                border-radius: 3px;
+                                background: r.fetch-failed ? Theme.c-ff9f0a : selected ? Theme.on-row-selection : Theme.lilac;
+                                opacity: r.fetch-failed || r.fetch > 0 ? 1 : 0.4 + 0.6 * abs(sin(animation-tick() / 1ms * 0.25deg));
+                            }
+                        }
+                        if col.kind == 6 && r.has-wave && !r.fetching: Image {
                             y: 4px;
                             width: 100%;
                             height: row-height - 8px;
@@ -7672,6 +7715,11 @@ export component Browser inherits HorizontalLayout {
     property <int> lists-for: source;
     // A click in the track list while the side panel is over it.
     callback side-dismissed();
+    // A track dragged to the right edge while the side panel is closed:
+    // open it, so the drop lands on Automix or the Sidelist.
+    callback side-wanted();
+    // Whether the side panel can open here (not over Now Playing).
+    in property <bool> side-offered: true;
     property <bool> folders-available: !now-playing && !plugin-source &&
         (instruments-source || (listing && (library-tab == 0 || folders.length > 0)))
         // Folded on a narrow window, the lists take the keys only while out.
@@ -7946,6 +7994,27 @@ export component Browser inherits HorizontalLayout {
             width: 100%;
             height: 100%;
             hint: plugin-index < SourceUi.sources.length ? SourceUi.sources[plugin-index].hint : "";
+        }
+        // While a track is dragged and the side panel is closed, the right
+        // edge opens it: a lilac glow shows where.
+        if TrackDrag.active && !side-visible && side-offered: DropArea {
+            x: parent.width - self.width;
+            width: 48px;
+            height: 100%;
+            can-drop(e) => { TrackDrag.accepts(e.data) ? DragAction.copy : DragAction.none }
+            changed has-drag => {
+                if self.has-drag {
+                    side-wanted();
+                }
+            }
+            Rectangle {
+                background: @linear-gradient(90deg, Theme.accent.transparentize(1) 0%, Theme.accent.transparentize(0.75) 100%);
+            }
+            Rectangle {
+                x: parent.width - self.width;
+                width: 3px;
+                background: Theme.accent;
+            }
         }
         if instruments-source: InstrumentsPanel {
             width: 100%;

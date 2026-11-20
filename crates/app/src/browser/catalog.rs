@@ -1,8 +1,9 @@
 //! A streaming service's catalog search (TIDAL): typing in the list's
 //! search box while the service is shown lists artists, albums and tracks
-//! under the box, as the player's search does. An artist or album opens its
-//! tracks in the list; a track loads onto a free deck through the add-on
-//! that plays the service's tracks, or downloads on its right-click.
+//! under the box, as the player's search does. An artist opens their page
+//! in the dropdown (top tracks, then albums); an album opens its tracks in
+//! the list; a track loads onto a free deck through the add-on that plays
+//! the service's tracks, or downloads on its right-click.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -13,7 +14,7 @@ use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
 use super::{searches, Browser, SEARCH_PAUSE};
 use crate::sources::Catalog;
-use crate::spotify::{self, Hits, Request, StreamTrack};
+use crate::spotify::{self, Hit, Hits, Request, StreamTrack};
 use crate::{AppWindow, CatalogRow, CatalogSearch, StoreUi};
 
 /// How big a result's picture is fetched, in pixels (shown at 34).
@@ -25,16 +26,21 @@ type Thumbnail = (u32, Vec<u8>);
 /// A row of the dropdown: what a click on it does.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) enum Pick {
-    /// Lists an artist's or album's tracks: its key (see
-    /// [`spotify::Hit::key`]).
+    /// Lists an album's tracks: its key (see [`spotify::Hit::key`]).
     Open(String),
+    /// Shows an artist's page: their key and name.
+    Artist(String, String),
     Track(Box<StreamTrack>),
 }
 
 /// The catalog search's state, kept by the browser.
 pub(super) struct CatalogState {
-    /// The words searched for last, to match the answer to.
+    /// The words searched for last, or the artist key whose page was
+    /// asked for, to match the answer to.
     words: String,
+    /// The artist whose page shows (key, name), and the words to go back to.
+    artist: Option<(String, String)>,
+    searched: String,
     /// When to ask, once typing pauses.
     due: Option<std::time::Instant>,
     picks: Vec<Pick>,
@@ -62,6 +68,8 @@ impl CatalogState {
             .expect("spawn catalog pictures thread");
         Self {
             words: String::new(),
+            artist: None,
+            searched: String::new(),
             due: None,
             picks: Vec::new(),
             pictures: Vec::new(),
@@ -72,20 +80,42 @@ impl CatalogState {
     }
 }
 
+type Row = (Pick, CatalogRow, String);
+
 /// The dropdown's rows for what a search found, and what each does.
-pub(super) fn rows_of(hits: Hits) -> Vec<(Pick, CatalogRow, String)> {
+pub(super) fn rows_of(hits: Hits) -> Vec<Row> {
+    let mut rows = artist_rows(hits.artists);
+    rows.extend(album_rows(hits.albums));
+    rows.extend(track_rows(hits.tracks));
+    rows
+}
+
+/// An artist's page: their top tracks, then their albums.
+pub(super) fn artist_page(hits: Hits) -> Vec<Row> {
+    let mut rows = track_rows(hits.tracks);
+    rows.extend(album_rows(hits.albums));
+    rows
+}
+
+fn artist_rows(artists: Vec<Hit>) -> Vec<Row> {
+    artists
+        .into_iter()
+        .map(|a| {
+            let row = CatalogRow {
+                kind: 1,
+                title: a.name.as_str().into(),
+                detail: "Artist".into(),
+                initials: initials(&a.name).into(),
+                ..Default::default()
+            };
+            (Pick::Artist(a.key, a.name), row, a.picture)
+        })
+        .collect()
+}
+
+fn album_rows(albums: Vec<Hit>) -> Vec<Row> {
     let mut rows = Vec::new();
-    for a in hits.artists {
-        let row = CatalogRow {
-            kind: 1,
-            title: a.name.as_str().into(),
-            detail: "Artist".into(),
-            initials: initials(&a.name).into(),
-            ..Default::default()
-        };
-        rows.push((Pick::Open(a.key), row, a.picture));
-    }
-    for a in hits.albums {
+    for a in albums {
         let mut detail = String::from("Album");
         if !a.by.is_empty() {
             detail.push_str(" · ");
@@ -107,7 +137,12 @@ pub(super) fn rows_of(hits: Hits) -> Vec<(Pick, CatalogRow, String)> {
         };
         rows.push((Pick::Open(a.key), row, a.picture));
     }
-    for (t, cover) in hits.tracks {
+    rows
+}
+
+fn track_rows(tracks: Vec<(StreamTrack, String)>) -> Vec<Row> {
+    let mut rows = Vec::new();
+    for (t, cover) in tracks {
         let mut detail = t.artist();
         if t.duration > 0.0 {
             let secs = t.duration.round() as u64;
@@ -151,6 +186,12 @@ impl Browser {
             }
         });
         let w = Rc::downgrade(b);
+        ui.on_back(move || {
+            if let Some(b) = w.upgrade() {
+                b.borrow_mut().catalog_back();
+            }
+        });
+        let w = Rc::downgrade(b);
         ui.on_all(move || {
             if let Some(b) = w.upgrade() {
                 b.borrow_mut().catalog_all();
@@ -179,6 +220,7 @@ impl Browser {
         if words.is_empty() {
             self.stream_search.clear();
         }
+        self.leave_artist();
         if words.chars().count() < 2 {
             self.catalog.due = None;
             self.catalog.words.clear();
@@ -225,7 +267,11 @@ impl Browser {
         if words != self.catalog.words {
             return;
         }
-        let rows = rows_of(hits);
+        let rows = if self.catalog.artist.is_some() {
+            artist_page(hits)
+        } else {
+            rows_of(hits)
+        };
         self.catalog.picks = rows.iter().map(|(p, _, _)| p.clone()).collect();
         self.catalog.pictures = rows.iter().map(|(_, _, u)| u.clone()).collect();
         for url in &self.catalog.pictures {
@@ -275,6 +321,9 @@ impl Browser {
             return;
         };
         let ui = app.global::<CatalogSearch>();
+        if !open {
+            self.leave_artist();
+        }
         if !open || !note.is_empty() {
             self.catalog.picks.clear();
             self.catalog.pictures.clear();
@@ -307,6 +356,7 @@ impl Browser {
         };
         match pick {
             Pick::Open(key) => self.list_catalog(key),
+            Pick::Artist(key, name) => self.open_artist(key, name),
             Pick::Track(t) => {
                 let service = self
                     .shown_stream()
@@ -324,8 +374,54 @@ impl Browser {
         }
     }
 
-    /// Return with no row picked: every track found, in the list.
+    /// Shows an artist's page in the dropdown, asking the service for it.
+    fn open_artist(&mut self, key: String, name: String) {
+        if self.catalog.artist.is_none() {
+            self.catalog.searched = self.catalog.words.clone();
+        }
+        self.catalog.words = key.clone();
+        self.catalog.due = None;
+        self.catalog.artist = Some((key.clone(), name.clone()));
+        if let Some(st) = self.shown_stream() {
+            st.service.send(Request::Artist(key));
+        }
+        self.show_catalog(true, "Loading…");
+        if let Some(app) = self.app.upgrade() {
+            app.global::<CatalogSearch>().set_artist(name.into());
+        }
+    }
+
+    /// Back from an artist's page to what the search found.
+    fn catalog_back(&mut self) {
+        if self.catalog.artist.is_none() {
+            return;
+        }
+        let words = std::mem::take(&mut self.catalog.searched);
+        self.leave_artist();
+        self.catalog.words = words.clone();
+        if let Some(st) = self.shown_stream() {
+            st.service.send(Request::Search(words));
+        }
+        self.show_catalog(true, "Searching…");
+    }
+
+    /// Forgets the artist page shown, if any.
+    fn leave_artist(&mut self) {
+        if self.catalog.artist.take().is_some() {
+            if let Some(app) = self.app.upgrade() {
+                app.global::<CatalogSearch>()
+                    .set_artist(SharedString::new());
+            }
+        }
+    }
+
+    /// Return with no row picked: every track found (or the artist's), in
+    /// the list.
     fn catalog_all(&mut self) {
+        if let Some((key, _)) = self.catalog.artist.clone() {
+            self.list_catalog(key);
+            return;
+        }
         let words = self.catalog.words.clone();
         if !words.is_empty() {
             self.list_catalog(format!("{}{words}", spotify::SEARCH));
@@ -336,7 +432,6 @@ impl Browser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::spotify::Hit;
 
     #[test]
     fn rows_come_artists_then_albums_then_tracks() {
@@ -367,7 +462,10 @@ mod tests {
         let rows = rows_of(hits);
         let kinds: Vec<i32> = rows.iter().map(|(_, r, _)| r.kind).collect();
         assert_eq!(kinds, [1, 2, 0]);
-        assert_eq!(rows[0].0, Pick::Open("artist:1".into()));
+        assert_eq!(
+            rows[0].0,
+            Pick::Artist("artist:1".into(), "Radiohead".into())
+        );
         assert_eq!(rows[1].1.detail, "Album · Radiohead · 12 tracks");
         assert_eq!(rows[2].1.detail, "Radiohead · 4:44");
         assert_eq!(rows[2].2, "c.jpg");

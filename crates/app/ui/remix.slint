@@ -51,7 +51,7 @@ component Segment inherits Rectangle {
 component Segments inherits Rectangle {
     height: 26px;
     border-radius: 8px;
-    background: Theme.light ? #ffffff : #111113;
+    background: Theme.pill;
     border-width: 1px;
     border-color: Theme.n-2c2c31;
     HorizontalLayout {
@@ -201,7 +201,7 @@ component Lever inherits VerticalLayout {
         width: 30px;
         height: 44px;
         border-radius: 7px;
-        background: Theme.light ? #ffffff : #111113;
+        background: Theme.pill;
         border-width: 1px;
         border-color: root.on ? root.tint : ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
         // The handle: up while off, down and lit while on.
@@ -340,7 +340,7 @@ component SceneWheel inherits Rectangle {
         property <color> side: up-side ? SceneColors.up : SceneColors.down;
         from: up-side ? n * 36deg : -(n + 1) * 36deg;
         to: up-side ? (n + 1) * 36deg : -n * 36deg;
-        fill: playing ? side.with-alpha(0.38) : picked ? side.with-alpha(0.2) : root.hovered == i ? Theme.n-2a2a2e : Theme.light ? #f0eff4 : #151517;
+        fill: playing ? side.with-alpha(0.38) : picked ? side.with-alpha(0.2) : root.hovered == i ? Theme.n-2a2a2e : Theme.wheel-slice;
         stroke: Theme.panel;
         stroke-width: 2px;
     }

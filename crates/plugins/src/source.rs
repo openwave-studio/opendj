@@ -265,6 +265,8 @@ pub trait SearchSource: Send {
     ///   `"search:<words>"`, `"album:<id>"` or `"artist:<id>"`): `[track]`.
     /// - `"lookup"` with `"ids"`: `[track]`.
     /// - `"search"` with `"words"`: `{ "artists", "albums", "tracks" }`.
+    /// - `"artist"` with `"id"`: their page, `{ "tracks", "albums" }`
+    ///   (top tracks first).
     /// - `"sign_out"`.
     ///
     /// A track is `{ "id", "isrc", "title", "artists": [..], "album",

@@ -11,11 +11,12 @@ The FX bar now uses Pigments-style controls (#908, #920): round power buttons, d
 The kit (in `pills.slint` and `controls.slint`, colours and sizes from `Theme`):
 
 - **Power button:** round, lilac ring when on. Only for turning a whole unit on: an FX slot, an instrument deck, Automix.
-- **Switch pill:** pressed to turn something on (lilac text) or off (grey), or to step through a few choices (small dots show how many). Replaces power-button-plus-label pairs and ON boxes.
+- **Switch pill:** pressed to turn something on (lilac text) or off (grey), or to step through two or three choices. It shows only the current word, with no dots or other marks for the choices. Replaces power-button-plus-label pairs and ON boxes.
 - **Stepper pill:** `‹ value ›`, no ▾. ‹ › step; pressing the value opens its titled list.
 - **Value pill:** `value ▾` for long lists, opening a titled list.
 - **Unit pill:** a small pill beside a knob's or stepper's label that switches its unit or mode (Rate sync, Filter LP), used where it fits.
 - **Arc knob:** a lilac arc for the value; EQ arcs grow from the centre in the waveform band colours.
+- **Faders** (channel, tempo, crossfader): a darker graphite cap with a lilac centre line on a thinner track with softer ticks; tempo keeps its lilac fill from the centre. Small parameter sliders use the FX bar's slim slider.
 - **Titled menus:** a bold title naming what is chosen, grey group headings, the current choice tinted lilac.
 - **Section titles** in Roboto Condensed (bundled, OFL); values and labels stay in Inter.
 
@@ -25,11 +26,11 @@ The areas, in this order:
 2. **Instrument decks:** power, page pills (Sequencer / Synth / Mixer), Kit and Pattern steppers, Scene, Playback and Generation sections, tempo as an arc knob, Fills as a switch pill. Groove Box first, then the Looper and synth decks on the same frame.
 3. **Deck controls:** Sync, Key lock and Master as switch pills; Vinyl and Slip as two switch pills by the jog; the pad mode as one stepper (no tabs); square pads; a Loop section with a length stepper, In, Out, Reloop and Jump and no on/off button; Key as a stepper; the tempo range as a value pill. Play and CUE stay boxed.
 4. **Pad pages:** each page's own setting on the right of the stepper row (for example Hold/Latch for Pad FX, Mute/Solo for Stems, Roll for Beat Loop), the main word large on each pad with its detail under it.
-5. **Mixer:** centre-out EQ arcs in band colours with the value in the label while off centre; the mode pill reads EQ, Sculpt or Stems and steps on press; cue as a round button with openDJ's headphone icon, red ring when on; FX 1 / 2 assign as switch pills.
+5. **Mixer:** centre-out EQ arcs in band colours with the value in the label while off centre; the mode pill reads EQ, Sculpt or Stems and steps on press; cue as a round button with openDJ's headphone icon, glowing lilac when on; FX 1 / 2 assign as switch pills; the channel faders, tempo faders and crossfader in the new fader style.
 6. **Menus everywhere** use the titled menu.
 7. **Automix panel:** the power button starts and stops Automix (replacing AUTOMIX and Start); Length as a stepper, Style as a switch pill, Repeat and Skip played as switch pills. The track list does not change.
 8. **Settings:** steppers for numbers, value pills for named choices, switches kept for saved on/off settings, in lilac.
-9. **Top bar,** last and only after real screenshots are reviewed: Rec as a pill showing the running time while recording; Mic as one switch pill with its settings on right-click.
+9. **Top bar,** last and only after real screenshots are reviewed: Rec as a pill showing the running time while recording; Mic as one switch pill with its settings on right-click; at the right, a master knob larger than the deck knobs with two vertical meters as tall as it, replacing the MASTER pill's horizontal meters. Right-clicking the knob opens the Master panel (levels as knobs, Room EQ, Link and MIDI clock as switch pills, what Sync follows, loudness); the clock and LINK / CLOCK sit to its left as text.
 
 ## Capabilities
 

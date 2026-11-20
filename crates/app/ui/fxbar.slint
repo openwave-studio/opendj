@@ -9,102 +9,29 @@
 // one-line rows. The FX button in the top bar shows and hides the bar.
 import { Theme } from "theme.slint";
 import { TourMark } from "tourmark.slint";
-import { ControlButton, Controls, KnobArc, PickupDot, PickupGhost } from "controls.slint";
+import { ControlButton, Controls, PickupDot, PickupGhost } from "controls.slint";
 import { EffectList, EffectMenu } from "deck.slint";
 import { MapMark } from "mapmark.slint";
-import { BandIcon, ListRow, PillCaret, TitledList, ValuePill } from "pills.slint";
+import { ArcKnob, BandIcon, ListRow, PillCaret, PowerButton, StepperPill, TitledList, ValuePill } from "pills.slint";
 
-// ‹ or ›, stepping to the previous or next effect.
-component StepArrow inherits Rectangle {
-    in property <bool> next;
-    in property <int> index;
-    // The control, for Map mode: `[EffectRack1_EffectUnit1_Effect1],next_effect`.
-    in property <string> map-key;
-    width: 22px;
-    Path {
-        width: 6px;
-        height: 10px;
-        viewbox-width: 6;
-        viewbox-height: 10;
-        commands: next ? "M 1 1 L 5 5 L 1 9" : "M 5 1 L 1 5 L 5 9";
-        stroke: ta.pressed ? Theme.text-dim : ta.has-hover ? Theme.text : Theme.n-b0b0b5;
-        stroke-width: 1.6px;
-        stroke-line-cap: round;
-        fill: transparent;
-    }
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => {
-            Controls.set-value(index, 1);
-            Controls.set-value(index, 0);
-        }
-    }
-    MapMark { key: root.map-key; }
-}
-
-// ‹ or › in the beats pill, halving or doubling the beats.
-component BeatArrow inherits Rectangle {
-    in property <bool> next;
-    in property <bool> enabled;
-    callback clicked();
-    width: 18px;
-    Path {
-        width: 5px;
-        height: 9px;
-        viewbox-width: 5;
-        viewbox-height: 9;
-        commands: next ? "M 1 1 L 4 4.5 L 1 8" : "M 4 1 L 1 4.5 L 4 8";
-        stroke: !enabled ? Theme.n-3a3a3e : ta.pressed ? Theme.text-dim : ta.has-hover ? Theme.text : Theme.n-a8a8ad;
-        stroke-width: 1.5px;
-        stroke-line-cap: round;
-        fill: transparent;
-    }
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.clicked(); }
-    }
-}
-
-// ‹ 1/8 › in a value pill: an effect's length, halved and doubled from
+// ‹ 1/8 › in a stepper pill: an effect's length, halved and doubled from
 // 1/16 to 4 beats.
-component BeatChooser inherits Rectangle {
+component BeatChooser inherits StepperPill {
     in property <int> index;
     property <float> beats: Controls.value(index, Controls.tick);
-    height: 24px;
-    border-radius: 7px;
-    background: Theme.light ? #ffffff : #111113;
-    border-width: 1px;
-    border-color: Theme.n-2c2c31;
-    HorizontalLayout {
-    padding-left: 2px;
-    padding-right: 2px;
-    BeatArrow {
-        enabled: beats > 1 / 16;
-        clicked => {
-            if beats > 1 / 16 {
-                Controls.set-value(index, beats / 2);
-            }
-        }
-    }
+    prev-enabled: beats > 1 / 16;
+    next-enabled: beats > 0 && beats < 4;
+    prev => { Controls.set-value(index, beats / 2); }
+    next => { Controls.set-value(index, beats * 2); }
     Text {
         min-width: 22px;
         horizontal-stretch: 1;
-        text: beats <= 0 ? "–" : beats < 1 ? "1/" + round(1 / beats) : round(beats);
+        text: root.beats <= 0 ? "–" : root.beats < 1 ? "1/" + round(1 / root.beats) : round(root.beats);
         color: Theme.text;
         font-size: 12.5px;
         font-weight: 500;
         horizontal-alignment: center;
         vertical-alignment: center;
-    }
-    BeatArrow {
-        next: true;
-        enabled: beats > 0 && beats < 4;
-        clicked => {
-            if beats > 0 && beats < 4 {
-                Controls.set-value(index, beats * 2);
-            }
-        }
-    }
     }
 }
 
@@ -144,7 +71,7 @@ component ParamSlider inherits Rectangle {
         width: thumb;
         height: 16px;
         border-radius: 3px;
-        background: touch.pressed ? Theme.n-e4e4e8 : touch.has-hover ? #ffffff : Theme.light ? Theme.accent : #ece8ff;
+        background: touch.pressed ? Theme.n-e4e4e8 : touch.has-hover ? Theme.thumb-hover : Theme.thumb;
         drop-shadow-blur: 3px;
         drop-shadow-color: Theme.s-00000080;
     }
@@ -185,20 +112,7 @@ component DwKnob inherits Rectangle {
     property <float> hardware: Controls.hardware(index, Controls.tick);
     width: size;
     height: size;
-    KnobArc {
-        r: 40;
-        from: -135deg;
-        to: 135deg;
-        stroke: ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
-        stroke-width: max(3px, root.size / 7);
-    }
-    if param > 0.004: KnobArc {
-        r: 40;
-        from: -135deg;
-        to: -135deg + param * 270deg;
-        stroke: tint;
-        stroke-width: max(3px, root.size / 7);
-    }
+    ArcKnob { value: root.param; tint: root.tint; size: root.size; hover: ta.has-hover; }
     if hardware >= 0: PickupDot { at: hardware; tint: tint; }
     ta := TouchArea {
         mouse-cursor: ns-resize;
@@ -305,6 +219,8 @@ component EffectPicker inherits Rectangle {
     in property <length> font-size: 14px;
     in property <bool> centred: true;
     in property <bool> strip;
+    // ▾ after the name; a stepper pill shows none (its ‹ › say it steps).
+    in property <bool> caret: true;
     // Set by a pick from the list, so that change doesn't glow.
     property <bool> own-pick;
     property <bool> glowing: glow-timer.running;
@@ -327,7 +243,7 @@ component EffectPicker inherits Rectangle {
             vertical-alignment: center;
             overflow: elide;
         }
-        VerticalLayout { alignment: center; PillCaret { } }
+        if root.caret: VerticalLayout { alignment: center; PillCaret { } }
     }
     property <int> menu-tab;
     changed loaded => {
@@ -444,60 +360,39 @@ component EffectPicker inherits Rectangle {
     }
 }
 
-// The power button: the effect on (lit lilac) or off.
-component PowerButton inherits Rectangle {
+// An effect's power button.
+component FxPower inherits PowerButton {
     in property <string> fx;
-    in property <length> size: 26px;
     property <int> enabled-index: Controls.resolve(fx, "enabled");
     property <int> loaded: Controls.value(Controls.resolve(fx, "loaded_effect"), Controls.tick);
-    property <bool> has-effect: loaded > 0 && loaded <= EffectList.names.length;
-    property <bool> on: Controls.value(enabled-index, Controls.tick) > 0;
-    width: size;
-    height: size;
-    border-radius: size / 2;
-    background: on ? Theme.accent.with-alpha(ta.has-hover ? 0.32 : 0.2) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.light ? #ffffff : #111113;
-    border-width: 1.5px;
-    border-color: on ? Theme.accent : Theme.n-48484c;
-    Path {
-        width: root.size * 0.5;
-        height: root.size * 0.5;
-        viewbox-width: 20;
-        viewbox-height: 20;
-        commands: "M 10 2 L 10 9 M 5.4 5 A 7 7 0 1 0 14.6 5";
-        stroke: root.on ? Theme.lilac-text : root.has-effect ? Theme.n-a8a8ad : Theme.n-58585d;
-        stroke-width: 2px;
-        stroke-line-cap: round;
-        fill: transparent;
-    }
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => {
-            if root.has-effect {
-                Controls.toggle(root.enabled-index);
-            }
-        }
-    }
+    on: Controls.value(enabled-index, Controls.tick) > 0;
+    active: loaded > 0 && loaded <= EffectList.names.length;
+    clicked => { Controls.toggle(enabled-index); }
     MapMark { key: root.fx + ",enabled"; }
     TourMark { id: root.fx + ",enabled"; }
 }
 
-// The effect's name in a dark pill, ‹ and › either side inside it.
-component NamePill inherits Rectangle {
+// ‹ Reverb ›: the effect's name in a stepper pill. A press on the name
+// opens the list of effects.
+component NamePill inherits StepperPill {
     in property <string> fx;
     in property <color> tint;
     in property <bool> strip;
+    property <int> prev-index: Controls.resolve(fx, "prev_effect");
+    property <int> next-index: Controls.resolve(fx, "next_effect");
     height: 26px;
-    min-width: 0px;
     horizontal-stretch: 1;
-    border-radius: 8px;
-    background: Theme.light ? #ffffff : #111113;
-    border-width: 1px;
-    border-color: Theme.n-2c2c31;
-    HorizontalLayout {
-        StepArrow { index: Controls.resolve(root.fx, "prev_effect"); map-key: root.fx + ",prev_effect"; }
-        EffectPicker { fx: root.fx; tint: root.tint; strip: root.strip; }
-        StepArrow { next: true; index: Controls.resolve(root.fx, "next_effect"); map-key: root.fx + ",next_effect"; }
+    prev-key: fx + ",prev_effect";
+    next-key: fx + ",next_effect";
+    prev => {
+        Controls.set-value(prev-index, 1);
+        Controls.set-value(prev-index, 0);
     }
+    next => {
+        Controls.set-value(next-index, 1);
+        Controls.set-value(next-index, 0);
+    }
+    EffectPicker { fx: root.fx; tint: root.tint; strip: root.strip; caret: false; }
 }
 
 // An effect's second row: its beats or slider, named, then D/W. With
@@ -519,7 +414,7 @@ component FxControls inherits HorizontalLayout {
     padding-left: with-name ? 6px : 10px;
     padding-right: with-name ? 6px : 10px;
     spacing: with-name ? 5px : 8px;
-    if with-name: VerticalLayout { alignment: center; PowerButton { fx: root.fx; size: 22px; } }
+    if with-name: VerticalLayout { alignment: center; FxPower { fx: root.fx; size: 22px; } }
     if with-name: EffectPicker { fx: fx; tint: tint; font-size: 13px; centred: false; min-width: 64px; preferred-width: 110px; horizontal-stretch: 0; }
     // A plugin's own window, for its presets and every setting: lit while
     // it is open.
@@ -584,7 +479,7 @@ component FxCell inherits Rectangle {
             padding-right: 8px;
             padding-top: 4px;
             spacing: 8px;
-            VerticalLayout { alignment: center; PowerButton { fx: root.fx; } }
+            VerticalLayout { alignment: center; FxPower { fx: root.fx; } }
             VerticalLayout { alignment: center; NamePill { fx: root.fx; tint: root.tint; } }
         }
         FxControls { height: 34px; fx: fx; tint: tint; }
@@ -719,7 +614,7 @@ component ReleaseControls inherits HorizontalLayout {
             width: 22px;
             height: 22px;
             border-radius: 11px;
-            background: held ? Theme.n-ff6b70.with-alpha(0.25) : fta.has-hover ? #2a1a1c : Theme.light ? #ffffff : #111113;
+            background: held ? Theme.n-ff6b70.with-alpha(0.25) : fta.has-hover ? Theme.n-ff6b70.with-alpha(0.12) : Theme.pill;
             border-width: 1px;
             border-color: held || fta.has-hover ? Theme.n-ff6b70 : Theme.n-ff6b70.with-alpha(0.45);
             Path {
@@ -788,7 +683,7 @@ component BeatFxSection inherits Rectangle {
             padding-right: 8px;
             padding-top: four ? 2px : 4px;
             spacing: 6px;
-            VerticalLayout { alignment: center; PowerButton { fx: root.fx; size: four ? 22px : 26px; } }
+            VerticalLayout { alignment: center; FxPower { fx: root.fx; size: four ? 22px : 26px; } }
             if !four: Text { text: "BEAT FX"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
             VerticalLayout { alignment: center; NamePill { fx: root.fx; tint: Theme.accent; strip: true; } }
             RoutePill { four: root.four; unit: root.unit; }
