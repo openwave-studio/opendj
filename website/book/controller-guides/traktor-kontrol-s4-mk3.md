@@ -16,9 +16,19 @@ channels 1-2 and the headphones on 3-4.
   `sudo udevadm control --reload-rules && sudo udevadm trigger`, and plug the
   controller in again.
 
-HID mappings are all script, so the Controller Editor has no picture or list
-for it, and it can't be remapped there. The mapping's own options (jog wheel
-feel, pad colours and so on) follow Mixxx's defaults.
+HID mappings are all script, so it can't be remapped in the Controller
+Editor, but the editor shows its picture, drawn from Native Instruments'
+manual, and lists what every control does in each layer. The mapping's own
+options (jog wheel feel, pad colours and so on) follow Mixxx's defaults.
+
+## Plays like Traktor
+
+- **HOTCUES** gives 8 hot cues, and decks A and B light blue, C and D orange.
+- **STEMS**: pads 1-4 mute and unmute stems 1-4, and holding pad 5-8 picks
+  that stem so the **MOVE** and **LOOP** encoders set its volume and filter.
+- **SHIFT + CUE** goes back to the start of the track, and **SHIFT + MASTER**
+  resets the tempo.
+- **SHIFT + MOVE** changes the key.
 
 ## When you try it
 

@@ -96,8 +96,9 @@ mod tests {
     fn listed_mappings_have_pictures() {
         let pictured = crate::layout::Layout::files();
         for c in all() {
-            // HID mappings are all script: no rows to place on a picture.
-            if let Some(f) = c.file.filter(|f| !f.ends_with(".hid.xml")) {
+            // HID mappings are all script; the Traktor ones have pictures.
+            let hid = |f: &String| f.ends_with(".hid.xml") && !f.starts_with("Traktor");
+            if let Some(f) = c.file.filter(|f| !hid(f)) {
                 assert!(pictured.contains(&f), "{f} has no layout");
             }
         }

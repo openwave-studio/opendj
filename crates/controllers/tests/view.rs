@@ -113,13 +113,60 @@ fn ddj_sb3_shift_layers() {
 fn looked_after_mappings_read_cleanly() {
     for c in opendj_controllers::support::all() {
         let Some(file) = c.file else { continue };
-        // HID mappings are all script: the editor doesn't show them.
-        if file.ends_with(".hid.xml") {
+        let v = view(&file);
+        // HID mappings are all script: one without a picture has no rows.
+        if file.ends_with(".hid.xml") && v.layout.is_none() {
             continue;
         }
-        let v = view(&file);
         assert!(!v.rows.is_empty(), "{file}");
+        // HID mappings are all script: their picture says what each control
+        // does, every row in a known place.
+        if file.ends_with(".hid.xml") {
+            let l = v.layout.as_ref().expect(&file);
+            assert!(v.rows.iter().all(|r| r.part.is_some()), "{file}");
+            // A control the script doesn't read works on the device itself.
+            for p in l
+                .parts
+                .iter()
+                .filter(|p| !p.does.is_empty() && p.hid.is_empty())
+            {
+                assert!(
+                    p.does.iter().all(|d| d.name.contains("on the device")),
+                    "{file}: {}",
+                    p.id
+                );
+            }
+            continue;
+        }
         let failed: Vec<&String> = v.notes.iter().filter(|n| n.contains("failed")).collect();
         assert!(failed.is_empty(), "{file}: {failed:?}");
+    }
+}
+
+/// A HID controller's picture lists what each control does, in Traktor's
+/// layers, with where the control is in the input report.
+#[test]
+fn traktor_hid_pictures_say_what_controls_do() {
+    let v = view("Traktor Kontrol S2 MK3.hid.xml");
+    dump(&v);
+    assert!(has(&v, "Back to the start", "Deck 1", "CUE", "SHIFT"));
+    assert!(has(&v, "Stem 1 on or off", "Deck 2", "PAD 1", "Stems"));
+    let play = v
+        .rows
+        .iter()
+        .find(|r| r.control == "PLAY" && r.layer.is_empty())
+        .unwrap();
+    assert_eq!(play.midi, "Report 01 · byte 2 · 0x08");
+    for file in [
+        "Traktor Kontrol S3.hid.xml",
+        "Traktor Kontrol S4 MK3.hid.xml",
+        "Traktor MX2.hid.xml",
+    ] {
+        let v = view(file);
+        let play = v
+            .rows
+            .iter()
+            .any(|r| r.function.name == "Play / pause" && r.control == "PLAY");
+        assert!(play, "{file}");
     }
 }

@@ -16,15 +16,31 @@ channels 1-2 and the headphones on 3-4 (check its manual if the sound comes out 
   `sudo udevadm control --reload-rules && sudo udevadm trigger`, and plug the
   controller in again.
 
-HID mappings are all script, so the Controller Editor has no picture or list
-for it, and it can't be remapped there. The mapping's own options (jog wheel
-feel, pad colours and so on) follow Mixxx's defaults.
+HID mappings are all script, so it can't be remapped in the Controller
+Editor, but the editor shows its picture, drawn from Native Instruments'
+manual, and lists what every control does in each layer. The mapping's own
+options (jog wheel feel, pad colours and so on) follow Mixxx's defaults.
+
+## Plays like Traktor
+
+- **SAMPLES** on a track with stems turns the pads into stem pads: pads 1-4
+  mute and unmute stems 1-4, and holding pad 5-8 picks that stem so the
+  **MOVE** encoder sets its volume. On a track without stems the pads play
+  the samplers.
+- **SHIFT + CUE** goes back to the start of the track.
+- **SHIFT + SYNC** makes the deck the tempo leader, and **SHIFT + KEYLOCK**
+  resets the tempo.
+- **REV** plays backwards while held and carries on where the track would
+  have been; **SHIFT + REV** is a plain reverse.
+- Hold **GRID** and turn the jog wheel to move the beat grid. A tap turns
+  quantize on or off; **SHIFT + GRID** sets a beat where the deck is.
 
 ## When you try it
 
 - Load a track with the browse encoder, play it, and scratch and nudge it with
   the jog wheels.
-- Try the pad modes (**HOTCUES**, **SAMPLES**) with and without SHIFT.
+- Try the pad modes (**HOTCUES**, **SAMPLES**) with and without SHIFT, on a
+  track with stems and one without.
 - Move every fader and knob, and check the tempo faders and the deck C and D buttons.
 - Check that the button and pad lights, and the level meters, follow what's
   on screen.

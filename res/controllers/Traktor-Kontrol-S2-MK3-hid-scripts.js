@@ -51,7 +51,19 @@ var TraktorS2MK3 = new function() {
     this.controller = new HIDController();
     this.shiftPressed = {"[Channel1]": false, "[Channel2]": false};
     this.fxButtonState = {1: false, 2: false, 3: false, 4: false};
-    this.padModeState = {"[Channel1]": 0, "[Channel2]": 0}; // 0 = Hotcues Mode, 1 = Samples Mode
+    this.padModeState = {"[Channel1]": 0, "[Channel2]": 0}; // 0 = Hotcues Mode, 1 = Samples Mode, 2 = Stems Mode
+
+    // openDJ: as in Traktor, SAMPLES plays the stems of a track that has
+    // them: pads 1-4 mute stems 1-4, and holding pad 5-8 focuses a stem so
+    // MOVE sets its volume. The stem held, 0 for none.
+    this.stemFocus = {"[Channel1]": 0, "[Channel2]": 0};
+
+    // openDJ: as in Traktor, hold GRID and turn the jog wheel to move the
+    // beat grid; a tap without turning sets a beat where the deck is.
+    this.gridHeld = {"[Channel1]": false, "[Channel2]": false};
+    this.gridMoved = {"[Channel1]": false, "[Channel2]": false};
+    this.gridTicks = [0, 0];
+    this.lastTickDelta = [0, 0];
 
     // Knob encoder states (hold values between 0x0 and 0xF)
     // Rotate to the right is +1 and to the left is means -1
@@ -297,7 +309,8 @@ TraktorS2MK3.playHandler = function(field) {
 
 TraktorS2MK3.cueHandler = function(field) {
     if (TraktorS2MK3.shiftPressed[field.group]) {
-        engine.setValue(field.group, "cue_gotoandstop", field.value);
+        // openDJ: back to the start of the track, as in Traktor.
+        engine.setValue(field.group, "start", field.value);
     } else {
         engine.setValue(field.group, "cue_default", field.value);
     }
@@ -357,7 +370,14 @@ TraktorS2MK3.padModeHandler = function(field) {
         return;
     }
 
-    if (TraktorS2MK3.padModeState[field.group] === 0 && field.name === "!samples") {
+    if (field.name === "!samples" && engine.getValue(field.group, "stem_count") > 0) {
+        // openDJ: a track with stems: SAMPLES plays its stems, as in Traktor.
+        TraktorS2MK3.padModeState[field.group] = 2;
+        TraktorS2MK3.stemFocus[field.group] = 0;
+        TraktorS2MK3.outputHandler(0, field.group, "hotcues");
+        TraktorS2MK3.outputHandler(1, field.group, "samples");
+        TraktorS2MK3.lightStems(field.group);
+    } else if (TraktorS2MK3.padModeState[field.group] !== 1 && field.name === "!samples") {
         // If we are in hotcues mode and samples mode is activated
         engine.setValue("[Samplers]", "show_samplers", 1);
         TraktorS2MK3.padModeState[field.group] = 1;
@@ -477,6 +497,10 @@ TraktorS2MK3.PadColorMap = new ColorMapper({
 
 TraktorS2MK3.numberButtonHandler = function(field) {
     const padNumber = parseInt(field.id[field.id.length - 1]);
+    if (TraktorS2MK3.padModeState[field.group] === 2) {
+        TraktorS2MK3.stemPad(field.group, padNumber, field.value);
+        return;
+    }
     if (TraktorS2MK3.padModeState[field.group] === 0) {
         // Hotcues mode
         if (TraktorS2MK3.shiftPressed[field.group]) {
@@ -582,7 +606,13 @@ TraktorS2MK3.selectBeatjumpHandler = function(field) {
         delta = -1;
     }
 
-    if (TraktorS2MK3.shiftPressed[field.group]) {
+    const stem = TraktorS2MK3.stemFocus[field.group];
+    if (TraktorS2MK3.padModeState[field.group] === 2 && stem > 0) {
+        // openDJ: the focused stem's volume, as in Traktor.
+        const stemGroup = TraktorS2MK3.stemGroup(field.group, stem);
+        const volume = engine.getValue(stemGroup, "volume") + delta * 0.05;
+        engine.setValue(stemGroup, "volume", Math.max(0, Math.min(1, volume)));
+    } else if (TraktorS2MK3.shiftPressed[field.group]) {
         const beatjumpSize = engine.getValue(field.group, "beatjump_size");
         if (delta > 0) {
             engine.setValue(field.group, "beatjump_size", beatjumpSize * 2);
@@ -687,6 +717,19 @@ TraktorS2MK3.jogHandler = function(field) {
     const deckIndex = TraktorS2MK3.controller.resolveDeck(field.group) - 1;
     const velocity = TraktorS2MK3.wheelVelocity(deckIndex, field.value);
 
+    if (TraktorS2MK3.gridHeld[field.group]) {
+        // openDJ: GRID held: the wheel moves the beat grid, a step every
+        // 20 ticks (30 a turn), as in Traktor.
+        TraktorS2MK3.gridTicks[deckIndex] += TraktorS2MK3.lastTickDelta[deckIndex];
+        while (Math.abs(TraktorS2MK3.gridTicks[deckIndex]) >= 20) {
+            const later = TraktorS2MK3.gridTicks[deckIndex] > 0;
+            script.triggerControl(field.group, later ? "beats_translate_later" : "beats_translate_earlier");
+            TraktorS2MK3.gridTicks[deckIndex] -= later ? 20 : -20;
+            TraktorS2MK3.gridMoved[field.group] = true;
+        }
+        return;
+    }
+
     if (engine.getValue(field.group, "scratch2_enable")) {
         engine.setValue(field.group, "scratch2", velocity * VELOCITY_TO_SCRATCH);
 
@@ -772,6 +815,7 @@ TraktorS2MK3.wheelVelocity = function(deckIndex, value) {
         // Looped around from max to 0
         tickDelta += 1024;
     }
+    this.lastTickDelta[deckIndex] = tickDelta;
 
     // Velocity smoothing
     const velocity = tickDelta / timeDelta;
@@ -880,10 +924,12 @@ TraktorS2MK3.fxOutputHandler = function() {
 };
 
 TraktorS2MK3.reverseHandler = function(field) {
+    // openDJ: as in Traktor, REV plays backwards while held and the track
+    // carries on where it would have been (flux reverse); SHIFT: plain reverse.
     if (TraktorS2MK3.shiftPressed[field.group]) {
-        engine.setValue(field.group, "reverseroll", field.value);
-    } else {
         engine.setValue(field.group, "reverse", field.value);
+    } else {
+        engine.setValue(field.group, "reverseroll", field.value);
     }
 
     TraktorS2MK3.outputHandler(field.value, field.group, "reverse");
@@ -898,13 +944,82 @@ TraktorS2MK3.fluxHandler = function(field) {
 };
 
 TraktorS2MK3.beatgridHandler = function(field) {
-    if (TraktorS2MK3.shiftPressed[field.group]) {
-        engine.setValue(field.group, "beats_translate_match_alignment", field.value);
+    // openDJ: hold GRID and turn the wheel to move the grid, as in Traktor.
+    // A tap without turning sets a beat where the deck is (SHIFT: lines the
+    // grid up with the other deck's).
+    if (field.value) {
+        TraktorS2MK3.gridHeld[field.group] = true;
+        TraktorS2MK3.gridMoved[field.group] = false;
+        TraktorS2MK3.gridTicks[TraktorS2MK3.controller.resolveDeck(field.group) - 1] = 0;
     } else {
-        engine.setValue(field.group, "beats_translate_curpos", field.value);
+        TraktorS2MK3.gridHeld[field.group] = false;
+        if (!TraktorS2MK3.gridMoved[field.group]) {
+            const key = TraktorS2MK3.shiftPressed[field.group] ? "beats_translate_match_alignment" : "beats_translate_curpos";
+            script.triggerControl(field.group, key);
+        }
     }
 
     TraktorS2MK3.outputHandler(field.value, field.group, "grid");
+};
+
+/* openDJ: Stems mode, as in Traktor */
+
+TraktorS2MK3.stemGroup = function(group, stem) {
+    return group.substr(0, group.length - 1) + "_Stem" + stem + "]";
+};
+
+TraktorS2MK3.stemPad = function(group, padNumber, pressed) {
+    if (padNumber <= 4) {
+        if (pressed && padNumber <= engine.getValue(group, "stem_count")) {
+            script.toggleControl(TraktorS2MK3.stemGroup(group, padNumber), "mute");
+        }
+        return;
+    }
+    const stem = padNumber - 4;
+    if (pressed) {
+        TraktorS2MK3.stemFocus[group] = stem;
+    } else if (TraktorS2MK3.stemFocus[group] === stem) {
+        TraktorS2MK3.stemFocus[group] = 0;
+    }
+    TraktorS2MK3.lightStems(group);
+};
+
+TraktorS2MK3.lightStems = function(group) {
+    if (TraktorS2MK3.padModeState[group] !== 2) {
+        return;
+    }
+    const count = engine.getValue(group, "stem_count");
+    for (let stem = 1; stem <= 4; ++stem) {
+        const stemGroup = TraktorS2MK3.stemGroup(group, stem);
+        if (stem > count) {
+            TraktorS2MK3.outputHandler(0x02, group, "pad_" + stem);
+            TraktorS2MK3.outputHandler(0x02, group, "pad_" + (stem + 4));
+            continue;
+        }
+        // Lit in the stem's colour while it plays, dim when muted.
+        if (engine.getValue(stemGroup, "mute")) {
+            TraktorS2MK3.outputHandler(0, group, "pad_" + stem);
+        } else {
+            TraktorS2MK3.colorOutputHandler(engine.getValue(stemGroup, "color"), group, "pad_" + stem);
+        }
+        TraktorS2MK3.outputHandler(TraktorS2MK3.stemFocus[group] === stem, group, "pad_" + (stem + 4));
+    }
+};
+
+TraktorS2MK3.stemOutputHandler = function(value, group, _key) {
+    const deck = group.replace(/_Stem\d\]$/, "]");
+    if (deck in TraktorS2MK3.padModeState) {
+        TraktorS2MK3.lightStems(deck);
+    }
+};
+
+TraktorS2MK3.stemCountHandler = function(value, group, _key) {
+    // A track without stems leaves Stems mode for Hotcues mode.
+    if (TraktorS2MK3.padModeState[group] === 2 && value === 0) {
+        TraktorS2MK3.padModeHandler({value: 1, group: group, name: "!hotcues"});
+    } else {
+        TraktorS2MK3.lightStems(group);
+    }
 };
 
 TraktorS2MK3.registerOutputPackets = function() {
@@ -1028,6 +1143,15 @@ TraktorS2MK3.registerOutputPackets = function() {
     for (let i = 1; i <= TraktorS2MK3.samplerCount; ++i) {
         this.samplerCallbacks.push(engine.makeConnection("[Sampler" + i + "]", "track_loaded", this.samplesOutputHandler.bind(this)));
         this.samplerCallbacks.push(engine.makeConnection("[Sampler" + i + "]", "play", this.samplesOutputHandler.bind(this)));
+    }
+
+    // openDJ: Stems mode lights.
+    for (const group of ["[Channel1]", "[Channel2]"]) {
+        engine.makeConnection(group, "stem_count", this.stemCountHandler);
+        for (let stem = 1; stem <= 4; ++stem) {
+            engine.makeConnection(this.stemGroup(group, stem), "mute", this.stemOutputHandler);
+            engine.makeConnection(this.stemGroup(group, stem), "color", this.stemOutputHandler);
+        }
     }
 
     this.fxCallbacks = [];

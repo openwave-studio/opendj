@@ -143,6 +143,84 @@ fn traktor_kontrol_s2_mk3() {
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
+/// Presses and lets go of one button: bit `mask` of byte `byte` (the ID is
+/// byte 0) in a report like `idle`.
+fn tap(c: &mut Controller, idle: &[u8], byte: usize, mask: u8) {
+    let mut pressed = idle.to_vec();
+    pressed[byte] |= mask;
+    c.receive_report(&pressed);
+    c.receive_report(idle);
+    settle(c, 10);
+}
+
+/// Traktor's layers on the S2 MK3: SAMPLES plays a stem track's stems
+/// (pads 1-4 mute them), REV is flux reverse while held.
+#[test]
+fn traktor_kontrol_s2_mk3_plays_stems_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol S2 MK3.hid.xml");
+    settle(&mut c, 50);
+    reg.get("[Channel1]", "stem_count").unwrap().set(4.0);
+    let mut idle = vec![0u8; 22];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    // SAMPLES on deck 1, then pad 1: stem 1 mutes.
+    tap(&mut c, &idle, 0x01, 0x80);
+    tap(&mut c, &idle, 0x02, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel1_Stem1]", "mute"),
+        1.0,
+        "pad 1 mutes stem 1"
+    );
+    tap(&mut c, &idle, 0x02, 0x10);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "mute"), 0.0, "and back");
+    // REV held: reverse roll, as Traktor's flux reverse.
+    let mut rev = idle.clone();
+    rev[0x01] |= 0x01;
+    c.receive_report(&rev);
+    settle(&mut c, 10);
+    assert_eq!(get(&reg, "[Channel1]", "reverseroll"), 1.0);
+    c.receive_report(&idle);
+    settle(&mut c, 10);
+    assert_eq!(get(&reg, "[Channel1]", "reverseroll"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// Traktor's layers on the S3: SAMPLES plays a stem track's stems, SHIFT +
+/// SYNC makes the deck the tempo leader, a tap on GRID toggles quantize.
+#[test]
+fn traktor_kontrol_s3_plays_stems_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol S3.hid.xml");
+    settle(&mut c, 50);
+    reg.get("[Channel1]", "stem_count").unwrap().set(4.0);
+    let mut idle = vec![0u8; 24];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    tap(&mut c, &idle, 0x02, 0x40);
+    tap(&mut c, &idle, 0x03, 0x02);
+    assert_eq!(
+        get(&reg, "[Channel1_Stem1]", "mute"),
+        1.0,
+        "pad 1 mutes stem 1"
+    );
+    // SHIFT + SYNC.
+    let mut shifted = idle.clone();
+    shifted[0x01] |= 0x01;
+    c.receive_report(&shifted);
+    tap(&mut c, &shifted, 0x02, 0x08);
+    c.receive_report(&idle);
+    settle(&mut c, 10);
+    assert!(
+        get(&reg, "[Channel1]", "sync_leader") > 0.0,
+        "SHIFT + SYNC: leader"
+    );
+    let quantize = get(&reg, "[Channel1]", "quantize");
+    tap(&mut c, &idle, 0x01, 0x80);
+    assert_ne!(get(&reg, "[Channel1]", "quantize"), quantize, "GRID tap");
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
 /// The Maschine Mikro MK3 drives the Groove Box: pads reach
 /// `[GrooveN],padK`, buttons pick the pad mode, and the lights and screen
 /// go out as reports 0x80 and 0xe0.

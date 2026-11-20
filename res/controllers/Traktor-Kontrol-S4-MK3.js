@@ -865,7 +865,8 @@ class CueButton extends PushButton {
         this.inKey = "cue_default";
     }
     shift() {
-        this.inKey = "start_stop";
+        // openDJ: back to the start of the track, as Traktor's SHIFT + CUE.
+        this.inKey = "start";
     }
     input(pressed) {
         if (this.deck.moveMode === moveModes.keyboard && !this.deck.keyboardPlayMode) {
@@ -1999,6 +2000,11 @@ class S4Mk3Deck extends Deck {
                 this.setKey("sync_leader");
             } : undefined,
             onShortRelease: function() {
+                // openDJ: SHIFT + MASTER resets the tempo, as in Traktor.
+                if (this.shifted && !UseKeylockOnMaster) {
+                    script.triggerControl(this.group, "rate_set_zero");
+                    return;
+                }
                 script.toggleControl(this.group, this.inKey);
             },
             onLongPress: function() {
@@ -2663,7 +2669,21 @@ class S4Mk3Deck extends Deck {
         const beatJumpPage = Array(8).fill({});
         const samplerOrBeatloopRollPage = Array(8).fill({});
         const keyboard = Array(8).fill({});
+        // openDJ: as in Traktor's STEMS mode, the top pads mute stems 1-4
+        // and the bottom pads pick a stem to change with the encoders.
         const stem = [
+            new StemMuteButton({
+                number: 1,
+            }),
+            new StemMuteButton({
+                number: 2,
+            }),
+            new StemMuteButton({
+                number: 3,
+            }),
+            new StemMuteButton({
+                number: 4,
+            }),
             new StemButton({
                 number: 1,
                 deck: this,
@@ -2679,18 +2699,6 @@ class S4Mk3Deck extends Deck {
             new StemButton({
                 number: 4,
                 deck: this,
-            }),
-            new StemMuteButton({
-                number: 1,
-            }),
-            new StemMuteButton({
-                number: 2,
-            }),
-            new StemMuteButton({
-                number: 3,
-            }),
-            new StemMuteButton({
-                number: 4,
             }),
         ];
         let i = 0;
