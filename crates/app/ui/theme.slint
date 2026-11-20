@@ -70,6 +70,9 @@ export global Theme {
     // The lit part of the ring round mixer knobs.
     out property <color> knob-arc: root.light ? #0060df : #0a84ff;
     out property <color> knob-ring: root.light ? #d5d3de : #3a3a3e;
+    // Matte knob caps (look 4): lit from above left.
+    out property <color> knob-matte-hi: root.light ? #ffffff : #4a4a50;
+    out property <color> knob-matte-lo: root.light ? #dcdae4 : #2a2a2f;
     out property <color> fader-handle: root.light ? #6e6c7a : #8e8e93;
     out property <color> tick: root.light ? #b5b3c0 : #3e3e42;
     // Electric Lilac, openDJ's own color: the logo, the accent and the
@@ -162,8 +165,9 @@ export global Theme {
     // a soft lilac halo, and a faint lilac fill inside the ring.
     out property <length> glow-blur: 4px;
     out property <color> glow: root.accent.with-alpha(0.3);
-    out property <color> lit-fill: root.accent.with-alpha(0.12);
-    out property <color> lit-fill-hover: root.accent.with-alpha(0.2);
+    // Opaque, so the glow under the button stays outside it.
+    out property <color> lit-fill: root.pill.mix(root.accent, 0.9);
+    out property <color> lit-fill-hover: root.pill.mix(root.accent, 0.84);
     out property <color> play-lit: root.light ? #1f9d3a : #30d158;
     out property <color> cue-lit: root.light ? #b38600 : #ffcc00;
 

@@ -451,8 +451,9 @@ export component Knob inherits HorizontalLayout {
     in property <color> arc-color: Theme.knob-arc;
     in property <length> size: 30px;
     in property <string> tour-id;
+    in property <int> readout: 0;
     alignment: center;
-    ControlKnob { group: group; key: key; label: label; bipolar: true; origin: origin; look: look; arc-color: arc-color; size: size; tint: tint; tour-id: tour-id; }
+    ControlKnob { group: group; key: key; label: label; bipolar: true; origin: origin; look: look; arc-color: arc-color; size: size; tint: tint; tour-id: tour-id; readout: readout; }
 }
 
 // One of the four knobs down a side of the mixer (`place` 0 is the top), as
@@ -460,7 +461,7 @@ export component Knob inherits HorizontalLayout {
 export component SideKnob inherits Rectangle {
     in property <int> deck;
     in property <int> place;
-    in property <length> size: 27px;
+    in property <length> size: 32px;
     // The Color FX ▾ beside the filter knob goes on its left: the inner
     // side for the right-hand deck.
     in property <bool> cfx-arrow-left: deck == 1;
@@ -486,8 +487,10 @@ export component SideKnob inherits Rectangle {
             tour-id: self.group + "," + self.key;
             // The filter knob plays the chosen Color FX, and says which.
             label: place == 3 ? (cfx >= 1 && cfx <= EffectList.color-fx.length ? EffectList.color-fx[cfx - 1] : "Filter") : ["High", "Mid", "Low"][place];
-            // Arc knobs from the centre, each band in its waveform colour.
-            look: 3;
+            // Arc knobs from the centre, each band in its waveform colour;
+            // the label shows the value under the pointer.
+            look: 4;
+            readout: place == 3 ? (self.label == "Filter" ? 2 : 0) : 1;
             arc-color: [Theme.band-high, Theme.band-mid, Theme.band-low, Theme.accent][place];
         }
         if mode == 1: Knob {
@@ -496,7 +499,8 @@ export component SideKnob inherits Rectangle {
             key: "volume";
             label: ["Hi-hat", "Vocal", "Kick", "Bass"][place];
             origin: 0;
-            look: 3;
+            look: 4;
+            readout: 1;
             arc-color: Theme.accent;
         }
         if mode == 2: Knob {
@@ -540,7 +544,7 @@ component Channel inherits VerticalLayout {
     in property <string> group;
     in property <color> tint;
     spacing: 6px;
-    Knob { group: group; key: "pregain"; label: "Gain"; size: 24px; look: 3; arc-color: Theme.accent; }
+    Knob { group: group; key: "pregain"; label: "Gain"; size: 28px; look: 4; readout: 1; arc-color: Theme.accent; }
     HorizontalLayout {
         alignment: center;
         vertical-stretch: 1;

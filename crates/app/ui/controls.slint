@@ -149,13 +149,29 @@ export component ControlKnob inherits Rectangle {
     // cap (sculpt) and 2 a black cap ringed in white (contour filters);
     // 3 a rack knob (instrument decks): a dark cap inside a ring, the
     // ring's arc in `arc-color` with a soft glow.
+    // 4 a matte cap in a thin track (the mixer), described below.
     in property <int> look: 0;
     in property <color> arc-color: Theme.knob-arc;
+    // 4 a matte cap with a short pointer inside a thin track (the mixer);
+    // the arc thickens under the pointer.
+    property <bool> thin: look == 4;
+    property <bool> lit: touch.has-hover || touch.pressed;
+    // What the label says under the pointer: 0 nothing new, 1 the gain in
+    // dB (EQs, volumes), 2 the filter's side and amount.
+    in property <int> readout: 0;
+    property <float> raw: Controls.value(index, Controls.tick);
+    property <float> db: raw < 0.001 ? -999 : 20 * log(raw, 10);
+    property <string> readout-text: readout == 1
+        ? (raw < 0.001 ? "−∞ dB" : abs(db) < 0.05 ? "0 dB" : (db > 0 ? "+" : "") + round(db * 10) / 10 + " dB")
+        : abs(param - 0.5) < 0.01 ? "Off"
+        : (param < 0.5 ? "LP " : "HP ") + round(abs(param - 0.5) * 200) + "%";
     // A rack knob's cap sits inside its ring.
-    property <length> inset: look == 3 ? round(size * 0.17 / 1px) * 1px : 0px;
+    property <length> inset: look == 3 ? round(size * 0.17 / 1px) * 1px
+        : look == 4 ? round(size * 0.2 / 1px) * 1px
+        : 0px;
     property <angle> origin-angle: -135deg + origin * 270deg;
     // Soft shadow, then the cap.
-    Rectangle {
+    if !thin: Rectangle {
         x: 4px;
         y: 4px;
         width: size;
@@ -174,13 +190,27 @@ export component ControlKnob inherits Rectangle {
         stroke: Theme.n-26262a;
         stroke-width: max(3px, size / 10);
     }
+    // The thin knobs' track: the whole sweep, under the arc.
+    if thin: KnobArc {
+        x: 4px;
+        y: 3px;
+        width: size;
+        height: size;
+        r: 45;
+        from: -135deg;
+        to: 135deg;
+        stroke: Theme.n-3a3a3f;
+        stroke-width: lit ? max(3px, size / 10.5) : max(2px, size / 16);
+    }
     cap := Rectangle {
         x: 4px + inset;
         y: 3px + inset;
         width: size - 2 * inset;
         height: size - 2 * inset;
         border-radius: self.width / 2;
-        background: look == 3
+        background: look == 4
+            ? @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%)
+            : look == 3
             ? (touch.has-hover ? @radial-gradient(circle, #55575f 0%, #24252a 100%) : @radial-gradient(circle, #4a4c54 0%, #1d1e23 100%))
             : look == 1
             ? (touch.has-hover ? @linear-gradient(180deg, #ffffff 0%, #d4d4d8 100%) : @linear-gradient(180deg, #f2f2f4 0%, #c8c8cc 100%))
@@ -189,8 +219,8 @@ export component ControlKnob inherits Rectangle {
             : touch.has-hover
             ? @linear-gradient(180deg, #505055 0%, #303034 100%)
             : @linear-gradient(180deg, #46464b 0%, #2a2a2e 100%);
-        border-width: look == 2 ? max(2px, size / 12) : 1px;
-        drop-shadow-blur: look == 3 ? 4px : 0px;
+        border-width: look == 4 ? 0px : look == 2 ? max(2px, size / 12) : 1px;
+        drop-shadow-blur: look == 3 || look == 4 ? 4px : 0px;
         drop-shadow-color: Theme.s-000000b0;
         border-color: look == 2 ? Theme.n-e4e4e8 : Theme.n-141416;
     }
@@ -206,7 +236,18 @@ export component ControlKnob inherits Rectangle {
         stroke: root.arc-color.with-alpha(0.28);
         stroke-width: max(7px, size / 4.5);
     }
-    if abs(param - origin) > 0.004: KnobArc {
+    if thin && abs(param - origin) > 0.004: KnobArc {
+        x: 4px;
+        y: 3px;
+        width: size;
+        height: size;
+        r: 45;
+        from: origin-angle;
+        to: value-angle;
+        stroke: root.arc-color;
+        stroke-width: lit ? max(3px, size / 10.5) : max(2px, size / 16);
+    }
+    if !thin && abs(param - origin) > 0.004: KnobArc {
         x: 4px + 1px;
         y: 3px + 1px;
         width: size - 2px;
@@ -227,8 +268,11 @@ export component ControlKnob inherits Rectangle {
         stroke: look == 1 ? Theme.n-1c1c1e : root.tint == Theme.text ? Theme.n-e4e4e8 : root.tint;
         stroke-width: max(1.5px, size / 14);
         stroke-line-cap: round;
-        MoveTo { x: 50 + (look == 3 ? 12 : 8) * sin(value-angle); y: 50 - (look == 3 ? 12 : 8) * cos(value-angle); }
-        LineTo { x: 50 + (look == 3 ? 38 : 40) * sin(value-angle); y: 50 - (look == 3 ? 38 : 40) * cos(value-angle); }
+        // A short pointer near the rim on the matte cap.
+        property <float> from-r: look == 4 ? 13 : look == 3 ? 12 : 8;
+        property <float> to-r: look == 4 ? 39 : look == 3 ? 38 : 40;
+        MoveTo { x: 50 + from-r * sin(value-angle); y: 50 - from-r * cos(value-angle); }
+        LineTo { x: 50 + to-r * sin(value-angle); y: 50 - to-r * cos(value-angle); }
     }
     if hardware >= 0: PickupDot {
         x: cap.x;
@@ -252,7 +296,9 @@ export component ControlKnob inherits Rectangle {
         y: size + 6px;
         x: (parent.width - self.width) / 2;
         width: 80px;
-        text: label;
+        // The value while the pointer is over it, in the arc's color.
+        text: readout != 0 && lit ? readout-text : label;
+        color: readout != 0 && lit ? (thin ? root.arc-color : Theme.text) : Theme.n-6e6e73;
     }
 
     touch := TouchArea {

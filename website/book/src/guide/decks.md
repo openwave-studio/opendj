@@ -385,6 +385,10 @@ The menu over the meters picks what the four knobs do:
 
 A controller's EQ knobs follow the same choice.
 
+Hold the pointer over an EQ, gain or stem knob and its label shows the level
+in dB, in the band's color. Over the filter knob it shows the side and how
+far it is turned, such as **LP 38%** (low-pass) or **HP 20%** (high-pass).
+
 **Crossfader curve** (Settings › Mixer): **Smooth** for blends, **Linear**,
 or **Scratch**, where both sides play at full level until the very end. With
 Scratch, **Cut-in** sets how close to the end a side opens fully: 0.5%, 1%,
