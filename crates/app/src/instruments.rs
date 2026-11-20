@@ -213,6 +213,10 @@ pub fn install(app: &AppWindow) {
     remix_ui.set_lever_effects(names(&remix::LEVER_EFFECTS));
     remix_ui.set_scenes_up(names(&remix::SCENES_UP));
     remix_ui.set_scenes_down(names(&remix::SCENES_DOWN));
+    remix_ui.set_pad_names(names(&remix::PAD_NAMES));
+    remix_ui.set_roll_rates(names(&remix::ROLL_RATES));
+    let kits: Vec<&str> = remix::KITS.iter().map(|k| k.name).collect();
+    remix_ui.set_kits(names(&kits));
     let ui = app.global::<InstrumentsUi>();
     ui.set_audio_page(crate::prefs::AUDIO_PAGE);
     ui.set_plugins_page(crate::prefs::PLUGINS_PAGE);

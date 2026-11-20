@@ -21,13 +21,14 @@
 
 ## 4. Sample pads
 
-- [ ] 4.1 engine: `pad1..4`, quantized hits, `roll_rate`, `roll_rate2` groove roll, pitch per pad, `pad_bank` (Groove Box kit or sample pack bank); tests
-- [ ] 4.2 overdub 1-bar loop with undo and clear; `sample_fx`, `sample_fx_amount`
+- [x] 4.1 engine (`effects/remix_pads.rs`): `pad1..4` (kick, snare, clap, hat), hits on the next 1/4 beat (at once just after one, or without a moving grid), `roll_rate` (1 to 1/16 beat), `roll_rate2` groove roll (both grids, louder where they meet), `pad1..4_pitch`, `pad_bank` (a Groove Box kit); the deck's own eight voices; tests
+- [ ] 4.2 overdub 1-bar loop with undo and clear; `sample_fx`, `sample_fx_amount`; sample pack banks on `pad_bank`
 
 ## 5. On screen
 
 - [x] 5.1 Remix in the Jam list (dropped on a deck like the Looper; ⏏ turns the deck back into a track deck); the Remix deck in 2-Deck: slim title (source pill, SEND/INSERT), WHEEL screen (Isolate and Lever effect pills, ISOLATE knobs with LEVERs that latch on a tap and spring back when held, SCENE wheel with the scenes round its ring, TIME and COLOR); screenshot
 - [ ] 5.2 RELEASE on the WHEEL screen (with 2.3); PADS tab: pads, OVERDUB, roll rates (with step 4); BIG mode over the library in the wheel layout; slim header in 4-Deck and 2-Deck Basic; live waveform; screenshots
+- [x] 5.3 the WHEEL screen on a grid: Isolate and Lever pickers and TIME over the ISOLATE arrow (its tip reaching the SCENE wheel, centred on it) and COLOR, over the X-PAD (roll rates to slide along over four pads) and KIT; screenshot
 
 ## 6. Controllers and remote
 

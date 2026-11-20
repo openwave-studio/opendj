@@ -15,6 +15,9 @@ export global RemixUi {
     in property <[string]> lever-effects;
     in property <[string]> scenes-up;
     in property <[string]> scenes-down;
+    in property <[string]> pad-names;
+    in property <[string]> roll-rates;
+    in property <[string]> kits;
 }
 
 // The two sides of the SCENE wheel.
@@ -139,7 +142,7 @@ export component RemixEffectPill inherits HorizontalLayout {
     property <int> current: round(Controls.value(index, Controls.tick));
     spacing: 6px;
     horizontal-stretch: 0;
-    Text { text: root.label; color: Theme.n-a8a8ad; font-size: 11.5px; vertical-alignment: center; horizontal-stretch: 0; }
+    if root.label != "": Text { text: root.label; color: Theme.n-a8a8ad; font-size: 11.5px; vertical-alignment: center; horizontal-stretch: 0; }
     VerticalLayout {
         alignment: center;
         ValuePill {
@@ -199,7 +202,7 @@ component Lever inherits VerticalLayout {
     spacing: 3px;
     Rectangle {
         width: 30px;
-        height: 44px;
+        height: 36px;
         border-radius: 7px;
         background: Theme.pill;
         border-width: 1px;
@@ -209,7 +212,7 @@ component Lever inherits VerticalLayout {
             x: 4px;
             y: root.on ? parent.height - self.height - 4px : 4px;
             width: parent.width - 8px;
-            height: 17px;
+            height: 13px;
             border-radius: 5px;
             background: root.on ? root.tint : Theme.n-48484c;
             animate y { duration: 60ms; }
@@ -279,47 +282,118 @@ component BandLane inherits VerticalLayout {
         letter-spacing: 0.8px;
         horizontal-alignment: center;
     }
-    Rectangle { height: 4px; }
     Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; }
 }
 
-// The three bands side by side, LOW to HIGH, on a panel that points at
-// the SCENE wheel, with the effects their knobs and levers add above.
-component IsolateArrow inherits VerticalLayout {
+// The three bands side by side, LOW to HIGH, on a panel whose tip
+// reaches the SCENE wheel.
+component IsolateArrow inherits Rectangle {
     in property <string> group;
     in property <bool> insert;
-    property <length> tip: 22px;
-    alignment: center;
-    spacing: 8px;
-    HorizontalLayout {
-        spacing: 12px;
-        alignment: start;
-        RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
-        RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+    in property <length> tip;
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+        fill: Theme.panel-raised;
+        stroke: Theme.n-6e58a8;
+        stroke-width: 1px;
+        MoveTo { x: 0.5; y: 0.5; }
+        LineTo { x: (root.width - root.tip) / 1px; y: 0.5; }
+        LineTo { x: root.width / 1px - 0.5; y: root.height / 2px; }
+        LineTo { x: (root.width - root.tip) / 1px; y: root.height / 1px - 0.5; }
+        LineTo { x: 0.5; y: root.height / 1px - 0.5; }
+        Close { }
     }
-    arrow := Rectangle {
-        Path {
-            width: 100%;
-            height: 100%;
-            viewbox-width: self.width / 1px;
-            viewbox-height: self.height / 1px;
-            fill: Theme.panel-raised;
-            stroke: Theme.n-6e58a8;
-            stroke-width: 1px;
-            MoveTo { x: 0.5; y: 0.5; }
-            LineTo { x: (arrow.width - root.tip) / 1px; y: 0.5; }
-            LineTo { x: arrow.width / 1px - 0.5; y: arrow.height / 2px; }
-            LineTo { x: (arrow.width - root.tip) / 1px; y: arrow.height / 1px - 0.5; }
-            LineTo { x: 0.5; y: arrow.height / 1px - 0.5; }
-            Close { }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: root.tip;
+        padding-top: 6px;
+        padding-bottom: 4px;
+        alignment: space-around;
+        for b in [0, 1, 2]: BandLane { group: root.group; band: b; insert: root.insert; }
+    }
+}
+
+// The X-PAD: the roll rates over four drum pads. A pad hits on the next
+// beat step; held with a roll rate held too it repeats at that rate.
+// Slide along the rates to change them.
+component XPad inherits VerticalLayout {
+    in property <string> group;
+    property <int> rate-index: Controls.resolve(group, "roll_rate");
+    property <int> rate: round(Controls.value(rate-index, Controls.tick));
+    property <int> count: RemixUi.roll-rates.length;
+    spacing: 4px;
+    strip := Rectangle {
+        height: 18px;
+        border-radius: 5px;
+        background: Theme.pill;
+        border-width: 1px;
+        border-color: roll.has-hover || roll.pressed ? Theme.n-6e58a8 : Theme.n-2c2c31;
+        for name[i] in RemixUi.roll-rates: Rectangle {
+            x: i * strip.width / max(1, root.count);
+            width: strip.width / max(1, root.count);
+            border-radius: 5px;
+            background: root.rate == i + 1 ? Theme.accent : transparent;
+            Text {
+                text: name;
+                color: root.rate == i + 1 ? Theme.on-selection : Theme.text-dim;
+                font-size: 10px;
+                font-weight: 700;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
         }
-        HorizontalLayout {
-            padding-left: 12px;
-            padding-right: root.tip + 8px;
-            padding-top: 8px;
-            padding-bottom: 6px;
-            spacing: 14px;
-            for b in [0, 1, 2]: BandLane { group: root.group; band: b; insert: root.insert; }
+        roll := TouchArea {
+            mouse-cursor: pointer;
+            function pick() {
+                Controls.set-value(root.rate-index, clamp(floor(self.mouse-x / strip.width * root.count), 0, root.count - 1) + 1);
+            }
+            pointer-event(e) => {
+                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                    self.pick();
+                } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                    Controls.set-value(root.rate-index, 0);
+                }
+            }
+            moved => {
+                if self.pressed {
+                    self.pick();
+                }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 6px;
+        for name[k] in RemixUi.pad-names: pad := Rectangle {
+            property <int> index: Controls.resolve(root.group, "pad" + (k + 1));
+            property <bool> down: Controls.value(index, Controls.tick) > 0.5;
+            height: 26px;
+            horizontal-stretch: 1;
+            border-radius: 6px;
+            background: pad.down ? Theme.accent : hit.has-hover ? Theme.pill-hover : Theme.pill;
+            border-width: 1px;
+            border-color: pad.down ? Theme.accent : Theme.n-2c2c31;
+            Text {
+                text: name.to-uppercase();
+                color: pad.down ? Theme.on-selection : Theme.text;
+                font-size: 10.5px;
+                font-weight: 700;
+                letter-spacing: 0.8px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            hit := TouchArea {
+                mouse-cursor: pointer;
+                pointer-event(e) => {
+                    if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                        Controls.set-value(pad.index, 1);
+                    } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                        Controls.set-value(pad.index, 0);
+                    }
+                }
+            }
         }
     }
 }
@@ -505,16 +579,22 @@ component SceneWheel inherits Rectangle {
     }
 }
 
-// The scenes' TIME (1/4, 1/2 or 1 beat echoes) and COLOR (their filters
-// an octave down to an octave up).
-component SceneShape inherits VerticalLayout {
+// A small capital title over a control, as in TIME, COLOR and KIT.
+component BlockTitle inherits Text {
+    color: Theme.text-dim;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    horizontal-alignment: center;
+}
+
+// The scenes' TIME: 1/4, 1/2 or 1 beat echoes.
+component SceneTime inherits VerticalLayout {
     in property <string> group;
     property <int> time-index: Controls.resolve(group, "scene_time");
     property <int> time: round(2 * Controls.value(time-index, Controls.tick));
-    property <float> color: Controls.value(Controls.resolve(group, "scene_color"), Controls.tick);
-    alignment: center;
-    spacing: 6px;
-    Text { text: "TIME"; color: Theme.text-dim; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; horizontal-alignment: center; }
+    spacing: 4px;
+    BlockTitle { text: "TIME"; }
     HorizontalLayout {
         alignment: center;
         Segments {
@@ -525,8 +605,15 @@ component SceneShape inherits VerticalLayout {
             }
         }
     }
-    Rectangle { height: 6px; }
-    Text { text: "COLOR"; color: Theme.text-dim; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; horizontal-alignment: center; }
+}
+
+// The scenes' COLOR: their filters an octave down to an octave up.
+component SceneColor inherits VerticalLayout {
+    in property <string> group;
+    property <float> color: Controls.value(Controls.resolve(group, "scene_color"), Controls.tick);
+    alignment: center;
+    spacing: 4px;
+    BlockTitle { text: "COLOR"; }
     HorizontalLayout {
         alignment: center;
         ControlKnob { group: root.group; key: "scene_color"; size: 32px; bipolar: true; look: 3; arc-color: Theme.accent; }
@@ -539,25 +626,70 @@ component SceneShape inherits VerticalLayout {
     }
 }
 
-// The Remix deck under its title: the band lanes, the SCENE wheel and its
-// TIME and COLOR.
+// The Remix deck under its title, on a grid of three rows: the effect
+// pickers and TIME over the ISOLATE arrow, SCENE wheel and COLOR, over the
+// X-PAD and its kit. The arrow sits on the wheel's middle and its tip
+// reaches the wheel.
 export component RemixPanel inherits Rectangle {
     in property <int> deck;
     property <string> group: "[Remix" + (deck + 1) + "]";
     property <bool> insert: Controls.value(Controls.resolve(group, "mode"), Controls.tick) > 0.5;
+    // The top and bottom rows' height: the same, so the middle row is
+    // centred on the wheel.
+    property <length> band: 46px;
+    property <length> gap: 8px;
+    property <length> tip: 22px;
+    property <length> wheel: min(root.height - 2 * root.gap, max(120px, root.width * 0.38));
     background: Theme.panel;
     // Clicks between the controls stay on the deck.
     TouchArea { }
-    VerticalLayout {
-        padding: 8px;
-        padding-top: 6px;
-        spacing: 6px;
-        HorizontalLayout {
-            vertical-stretch: 1;
-            spacing: 10px;
-            IsolateArrow { group: root.group; insert: root.insert; }
-            SceneWheel { group: root.group; horizontal-stretch: 1; }
-            SceneShape { group: root.group; width: 96px; }
+    HorizontalLayout {
+        padding: root.gap;
+        spacing: 0px;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: 6px;
+            HorizontalLayout {
+                height: root.band;
+                padding-right: root.tip;
+                spacing: 12px;
+                VerticalLayout {
+                    alignment: end;
+                    RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
+                }
+                VerticalLayout {
+                    alignment: end;
+                    RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+                }
+                Rectangle { }
+            }
+            IsolateArrow { group: root.group; insert: root.insert; tip: root.tip; vertical-stretch: 1; }
+            HorizontalLayout {
+                height: root.band;
+                padding-right: root.tip;
+                XPad { group: root.group; }
+            }
+        }
+        SceneWheel { group: root.group; width: root.wheel; }
+        VerticalLayout {
+            width: 96px;
+            spacing: 6px;
+            VerticalLayout {
+                height: root.band;
+                alignment: end;
+                SceneTime { group: root.group; }
+            }
+            SceneColor { group: root.group; vertical-stretch: 1; }
+            VerticalLayout {
+                height: root.band;
+                alignment: start;
+                spacing: 4px;
+                BlockTitle { text: "KIT"; }
+                HorizontalLayout {
+                    alignment: center;
+                    RemixEffectPill { label: ""; group: root.group; key: "pad_bank"; names: RemixUi.kits; }
+                }
+            }
         }
     }
 }
