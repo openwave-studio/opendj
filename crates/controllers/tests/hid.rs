@@ -552,7 +552,11 @@ fn traktor_kontrol_d2_plays_as_traktor() {
     assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "PLAY on deck A");
     tap(&mut c, &idle, 7, 0x04);
     tap(&mut c, &idle, 8, 0x10);
-    assert_eq!(get(&reg, "[Channel3]", "play"), 1.0, "DECK, then PLAY on deck C");
+    assert_eq!(
+        get(&reg, "[Channel3]", "play"),
+        1.0,
+        "DECK, then PLAY on deck C"
+    );
     // Hold DECK and press B.
     let mut held = idle.clone();
     held[7] |= 0x04;
@@ -560,7 +564,11 @@ fn traktor_kontrol_d2_plays_as_traktor() {
     tap(&mut c, &held, 5, 0x02);
     c.receive_report(&idle);
     tap(&mut c, &idle, 8, 0x10);
-    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "DECK + B, then PLAY on deck B");
+    assert_eq!(
+        get(&reg, "[Channel2]", "play"),
+        1.0,
+        "DECK + B, then PLAY on deck B"
+    );
     tap(&mut c, &idle, 5, 0x01);
     assert_eq!(
         get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable"),
@@ -574,7 +582,11 @@ fn traktor_kontrol_d2_plays_as_traktor() {
     fader[12] = 0x07;
     c.receive_report(&fader);
     settle(&mut c, 10);
-    assert_eq!(get(&reg, "[Channel2_Stem2]", "volume"), 0.5, "fader 2 is stem 2");
+    assert_eq!(
+        get(&reg, "[Channel2_Stem2]", "volume"),
+        0.5,
+        "fader 2 is stem 2"
+    );
     tap(&mut c, &idle, 4, 0x08);
     assert_eq!(
         get(&reg, "[QuickEffectRack1_[Channel2_Stem2]]", "enabled"),
@@ -584,7 +596,11 @@ fn traktor_kontrol_d2_plays_as_traktor() {
     tap(&mut c, &idle, 8, 0x04);
     let size = get(&reg, "[Channel2]", "beatloop_size");
     tap(&mut c, &idle, 7, 0x02);
-    assert_eq!(get(&reg, "[Channel2]", "beatjump"), size, "LOOP pad 8 jumps by the loop");
+    assert_eq!(
+        get(&reg, "[Channel2]", "beatjump"),
+        size,
+        "LOOP pad 8 jumps by the loop"
+    );
     let reports = c.take_reports();
     assert!(
         reports
