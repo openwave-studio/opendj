@@ -610,3 +610,65 @@ fn traktor_kontrol_d2_plays_as_traktor() {
     );
     assert_eq!(c.errors(), Vec::<String>::new());
 }
+
+/// The S8's two deck sections play decks A and C, B and D; the mixer's CUE
+/// lights through feature report 0xF4, as the S8 wants.
+#[test]
+fn traktor_kontrol_s8_plays_as_traktor() {
+    let (reg, mut c, device) = load("Traktor Kontrol S8.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 41];
+    idle[0] = 0x01;
+    let mut knobs = vec![0u8; 109];
+    knobs[0] = 0x02;
+    c.receive_report(&idle);
+    c.receive_report(&knobs);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "left PLAY on deck A");
+    tap(&mut c, &idle, 17, 0x10);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "right PLAY on deck B");
+    tap(&mut c, &idle, 16, 0x04);
+    tap(&mut c, &idle, 17, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel4]", "play"),
+        1.0,
+        "right DECK, then PLAY on deck D"
+    );
+    device.feature_sent.borrow_mut().clear();
+    tap(&mut c, &idle, 20, 0x08);
+    assert_eq!(get(&reg, "[Channel1]", "pfl"), 1.0, "CUE A");
+    assert!(
+        device
+            .feature_sent
+            .borrow()
+            .iter()
+            .any(|r| r[..3] == [0xF4, 0x26, 0x01]),
+        "CUE A lights"
+    );
+    let mut xfader = knobs.clone();
+    xfader[41] = 0xF7;
+    xfader[42] = 0x07;
+    c.receive_report(&xfader);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Master]", "crossfader"),
+        0.0,
+        "crossfader centred"
+    );
+    tap(&mut c, &idle, 25, 0x10);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1]", "group_[Channel2]_enable"),
+        1.0,
+        "FX 1 on channel B"
+    );
+    let reports = c.take_reports();
+    for (id, len) in [(0x80, 119), (0x81, 119), (0x82, 74)] {
+        assert!(
+            reports
+                .iter()
+                .any(|r| r.first() == Some(&id) && r.len() == len),
+            "LED report {id:#x}"
+        );
+    }
+    assert_eq!(c.errors(), Vec::<String>::new());
+}

@@ -10,6 +10,7 @@
   </info>
   <controller id="Traktor">
     <scriptfiles>
+      <file filename="Traktor-Kontrol-Deck-Section.js" functionprefix="" />
       <file filename="Traktor-Kontrol-D2.js" functionprefix="TraktorD2" />
     </scriptfiles>
   </controller>
