@@ -9,7 +9,7 @@ import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint"
 import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
-import { ListRow, PillCaret, SectionTitle, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
+import { ArcKnob, ListRow, PillCaret, SectionTitle, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
 import { RemixMode, RemixPanel, RemixSource } from "remix.slint";
 import { InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
@@ -3829,8 +3829,12 @@ component GrooveKickKey inherits Rectangle {
 // The Groove Box's tempo in the top bar: lit while it follows the mix.
 // Its menu turns following off and on, changes the BPM (which stops
 // following), plays at half or double the mix's tempo, and has SWING.
-component GrooveTempo inherits GrooveButton {
+// The Groove Box tempo as an arc knob with the BPM beside it, lit while it
+// follows the mix: drag up or down to change it, press
+// for the tempo menu.
+component GrooveTempo inherits Rectangle {
     in property <string> g;
+    in property <color> tint;
     property <int> bpm-index: Controls.resolve(g, "bpm");
     property <float> bpm: Controls.value(bpm-index, Controls.tick);
     property <int> follow-index: Controls.resolve(g, "follow");
@@ -3838,13 +3842,66 @@ component GrooveTempo inherits GrooveButton {
     property <bool> following: Controls.value(Controls.resolve(g, "following"), Controls.tick) > 0;
     property <int> scale-index: Controls.resolve(g, "tempo_scale");
     property <float> scale: Controls.value(scale-index, Controls.tick);
+    property <float> drag-start;
+    property <bool> dragged;
     function nudge(by: float) {
         Controls.set-value(follow-index, 0);
         Controls.set-value(bpm-index, max(40, min(220, round((bpm + by) * 10) / 10)));
     }
-    text: round(bpm * 10) / 10 + (scale < 0.75 && follow ? " ½×" : scale > 1.5 && follow ? " 2×" : "") + " ▾";
-    lit: following;
-    clicked => { tempo-menu.show(); }
+    HorizontalLayout {
+        spacing: 4px;
+        alignment: center;
+        ArcKnob {
+            size: 26px;
+            y: (parent.height - self.height) / 2;
+            // 60 to 180 BPM round the sweep.
+            value: clamp((bpm - 60) / 120, 0, 1);
+            tint: following ? Theme.accent : Theme.n-a8a8ad;
+            hover: ta.has-hover;
+        }
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: round(bpm * 10) / 10;
+                color: following ? Theme.lilac-text : Theme.text;
+                font-size: 12px;
+                font-weight: 600;
+                font-family: "Inter Tabular";
+            }
+            Text {
+                text: scale < 0.75 && follow ? "½× BPM" : scale > 1.5 && follow ? "2× BPM" : "BPM";
+                color: Theme.text-dim;
+                font-size: 8px;
+            }
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: MouseCursor.ns-resize;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                drag-start = bpm;
+                dragged = false;
+            }
+        }
+        moved => {
+            if self.pressed {
+                apply-drag();
+            }
+        }
+        clicked => {
+            if !dragged {
+                tempo-menu.show();
+            }
+        }
+    }
+    function apply-drag() {
+        // Up raises the tempo, a BPM every 4 px.
+        dragged = dragged || abs(ta.mouse-y - ta.pressed-y) > 3px;
+        if dragged {
+            Controls.set-value(follow-index, 0);
+            Controls.set-value(bpm-index, max(40, min(220, round((drag-start + (ta.pressed-y - ta.mouse-y) / 4px) * 10) / 10)));
+        }
+    }
     tempo-menu := PopupWindow {
         y: root.height + 2px;
         x: root.width - 220px;
