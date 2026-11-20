@@ -2,8 +2,8 @@
 
 ## 1. Kit and effect menu
 
-- [ ] 1.1 Shared kit in `pills.slint` / `controls.slint`: power button, stepper pill (no ▾), switch pill with step dots, unit pill, arc knob (also centre-out), section title in Roboto Condensed (bundled with its OFL); the FX bar's own copies replaced by the shared ones
-- [ ] 1.2 Effect menu: slot title, None, two columns of kinds with icons, openDJ FX / Plugins pill tabs, plugins by maker in a second column
+- [x] 1.1 Shared kit in `pills.slint` / `controls.slint`: power button, stepper pill (no ▾), switch pill (one word, no dots), unit pill, arc knob (also centre-out), section title in Roboto Condensed (bundled with its OFL); the FX bar's own copies replaced by the shared ones
+- [x] 1.2 Effect menu: slot title, None, two columns of kinds with icons, openDJ FX / Plugins pill tabs, plugins by maker in a second column
 
 ## 2. Instrument decks
 

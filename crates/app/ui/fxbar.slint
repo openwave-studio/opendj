@@ -215,6 +215,8 @@ component BandPill inherits HorizontalLayout {
 // effects before and after it in the list.
 component EffectPicker inherits Rectangle {
     in property <string> fx;
+    // The list's title, naming the slot: "Deck 1 · FX 2".
+    in property <string> title: "Effect";
     in property <color> tint;
     in property <length> font-size: 14px;
     in property <bool> centred: true;
@@ -330,24 +332,27 @@ component EffectPicker inherits Rectangle {
         }
     }
     menu := PopupWindow {
-        x: centred ? (root.width - 210px) / 2 : 0px;
+        x: centred ? (root.width - 324px) / 2 : 0px;
         y: root.height + 2px;
-        width: 210px;
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: Theme.radius;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
         EffectMenu {
             loaded: loaded;
             tint: tint;
+            title: root.title;
             tab <=> root.menu-tab;
             picked(i) => {
-                if loaded == i + 1 {
+                if i < 0 {
+                    Controls.set-value(enabled-index, 0);
+                    Controls.set-value(loaded-index, 0);
+                } else if loaded == i + 1 {
                     Controls.toggle(enabled-index);
                 } else {
                     own-pick = true;
@@ -376,6 +381,7 @@ component FxPower inherits PowerButton {
 // opens the list of effects.
 component NamePill inherits StepperPill {
     in property <string> fx;
+    in property <string> title;
     in property <color> tint;
     in property <bool> strip;
     property <int> prev-index: Controls.resolve(fx, "prev_effect");
@@ -392,7 +398,7 @@ component NamePill inherits StepperPill {
         Controls.set-value(next-index, 1);
         Controls.set-value(next-index, 0);
     }
-    EffectPicker { fx: root.fx; tint: root.tint; strip: root.strip; caret: false; }
+    EffectPicker { fx: root.fx; title: root.title; tint: root.tint; strip: root.strip; caret: false; }
 }
 
 // An effect's second row: its beats or slider, named, then D/W. With
@@ -400,6 +406,7 @@ component NamePill inherits StepperPill {
 // come first, and the labels go.
 component FxControls inherits HorizontalLayout {
     in property <string> fx;
+    in property <string> title;
     in property <color> tint;
     in property <bool> with-name;
     property <int> loaded-index: Controls.resolve(fx, "loaded_effect");
@@ -415,7 +422,7 @@ component FxControls inherits HorizontalLayout {
     padding-right: with-name ? 6px : 10px;
     spacing: with-name ? 5px : 8px;
     if with-name: VerticalLayout { alignment: center; FxPower { fx: root.fx; size: 22px; } }
-    if with-name: EffectPicker { fx: fx; tint: tint; font-size: 13px; centred: false; min-width: 64px; preferred-width: 110px; horizontal-stretch: 0; }
+    if with-name: EffectPicker { fx: fx; title: root.title; tint: tint; font-size: 13px; centred: false; min-width: 64px; preferred-width: 110px; horizontal-stretch: 0; }
     // A plugin's own window, for its presets and every setting: lit while
     // it is open.
     if plugin: ControlButton {
@@ -480,7 +487,7 @@ component FxCell inherits Rectangle {
             padding-top: 4px;
             spacing: 8px;
             VerticalLayout { alignment: center; FxPower { fx: root.fx; } }
-            VerticalLayout { alignment: center; NamePill { fx: root.fx; tint: root.tint; } }
+            VerticalLayout { alignment: center; NamePill { fx: root.fx; title: "Deck " + (root.unit + 1) + " · FX " + (root.slot + 1); tint: root.tint; } }
         }
         FxControls { height: 34px; fx: fx; tint: tint; }
         HorizontalLayout {
@@ -509,6 +516,7 @@ component FxStack inherits Rectangle {
         for i in 3: FxControls {
             vertical-stretch: 1;
             fx: "[EffectRack1_EffectUnit" + (deck + 1) + "_Effect" + (i + 1) + "]";
+            title: "Deck " + (root.deck + 1) + " · FX " + (i + 1);
             tint: Theme.accent;
             with-name: true;
         }
@@ -685,7 +693,7 @@ component BeatFxSection inherits Rectangle {
             spacing: 6px;
             VerticalLayout { alignment: center; FxPower { fx: root.fx; size: four ? 22px : 26px; } }
             if !four: Text { text: "BEAT FX"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-            VerticalLayout { alignment: center; NamePill { fx: root.fx; tint: Theme.accent; strip: true; } }
+            VerticalLayout { alignment: center; NamePill { fx: root.fx; title: "Beat FX"; tint: Theme.accent; strip: true; } }
             RoutePill { four: root.four; unit: root.unit; }
         }
         FxControls { height: 34px; fx: fx; tint: Theme.accent; }
