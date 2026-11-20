@@ -9,7 +9,7 @@ import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint"
 import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
-import { SwitchPill } from "pills.slint";
+import { StepperPill, SwitchPill } from "pills.slint";
 import { RemixEffectPill, RemixMode, RemixPanel, RemixSource, RemixUi } from "remix.slint";
 import { InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
@@ -1092,16 +1092,18 @@ component GrooveButton inherits Rectangle {
     in property <bool> blink;
     in property <length> font-size: 11px;
     callback clicked();
+    // The Tron look: a dark pill, lit in lilac (text and border) while on;
+    // `tint` stays for callers, the light is always lilac.
     height: 24px;
-    border-radius: Theme.radius;
-    border-width: lit || blink ? 2px : 1px;
-    border-color: lit ? tint : blink ? tint.with-alpha(0.5) : Theme.border;
-    background: gbta.pressed ? Theme.control-pressed : Theme.control;
+    border-radius: 7px;
+    border-width: 1px;
+    border-color: lit ? Theme.n-6e58a8 : blink ? Theme.n-6e58a8.with-alpha(0.5) : gbta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    background: gbta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.12) : gbta.has-hover ? Theme.pill-hover : Theme.pill;
     if icon == 0: Text {
         text: root.text;
-        color: lit ? tint : Theme.text;
+        color: lit ? Theme.lilac-text : Theme.text;
         font-size: root.font-size;
-        font-weight: 600;
+        font-weight: 500;
         overflow: elide;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -1113,13 +1115,13 @@ component GrooveButton inherits Rectangle {
         spacing: 4px;
         VerticalLayout {
             alignment: center;
-            ModeIcon { kind: root.icon; tint: lit ? root.tint : Theme.text; width: 16px; height: 16px; }
+            ModeIcon { kind: root.icon; tint: lit ? Theme.lilac-text : Theme.text; width: 16px; height: 16px; }
         }
         Text {
             text: root.text;
-            color: lit ? root.tint : Theme.text;
+            color: lit ? Theme.lilac-text : Theme.text;
             font-size: root.font-size;
-            font-weight: 600;
+            font-weight: 500;
             overflow: elide;
             vertical-alignment: center;
             horizontal-stretch: 1;
@@ -4012,9 +4014,12 @@ component GrooveTab inherits Rectangle {
     in property <color> tint;
     callback clicked();
     height: 24px;
-    border-radius: 4px;
-    background: on ? tint.with-alpha(0.22) : gtba.has-hover ? Theme.n-ffffff10 : transparent;
-    Text { text: root.text; color: on ? Theme.text : Theme.text-dim; font-size: 9px; font-weight: 700; letter-spacing: 0.4px; }
+    min-width: tab-text.preferred-width + 18px;
+    border-radius: 7px;
+    border-width: 1px;
+    border-color: on ? Theme.n-6e58a8 : gtba.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    background: on ? Theme.accent.with-alpha(0.12) : gtba.has-hover ? Theme.pill-hover : Theme.pill;
+    tab-text := Text { text: root.text; color: on ? Theme.lilac-text : Theme.pill-off-text; font-size: 11px; font-weight: 500; }
     gtba := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
@@ -4138,37 +4143,30 @@ component GrooveFillBar inherits HorizontalLayout {
     property <int> level: remix <= 0 ? 0 : floor(min(1, remix) * 15.999) + 1;
     height: 26px;
     spacing: 4px;
-    GrooveButton {
+    GrooveTab {
         width: 40px;
         height: 26px;
-        text: "4x4";
-        lit: four;
+        text: "4×4";
+        on: four;
         tint: tint;
         clicked => { four = !four; }
     }
-    Rectangle {
-        width: 168px;
-        border-radius: 6px;
-        background: Theme.well;
-        HorizontalLayout {
-            padding: 2px;
-            spacing: 2px;
-            for name[i] in ["NO FILLS", "AUTO 1", "AUTO 2"]: GrooveTab {
-                height: 22px;
-                text: name;
-                on: auto == i;
-                tint: tint;
-                clicked => { Controls.set-value(auto-index, i); }
-            }
-        }
+    // No fills → Auto 1 → Auto 2, a press stepping on.
+    GrooveTab {
+        width: 72px;
+        height: 26px;
+        text: ["No fills", "Auto 1", "Auto 2"][auto];
+        on: auto > 0;
+        tint: tint;
+        clicked => { Controls.set-value(auto-index, mod(auto + 1, 3)); }
     }
     Rectangle {
-        width: 52px;
-        border-radius: Theme.radius;
-        border-width: filling ? 2px : 1px;
-        border-color: filling ? tint : Theme.border;
-        background: fta.pressed ? tint.with-alpha(0.4) : Theme.control;
-        Text { text: "FILL"; color: filling ? tint : Theme.text; font-size: 10px; font-weight: 700; }
+        width: 48px;
+        border-radius: 7px;
+        border-width: 1px;
+        border-color: filling ? Theme.n-6e58a8 : fta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+        background: fta.pressed ? Theme.accent.with-alpha(0.3) : filling ? Theme.accent.with-alpha(0.12) : Theme.pill;
+        Text { text: "Fill"; color: filling ? Theme.lilac-text : Theme.text; font-size: 11.5px; font-weight: 500; }
         fta := TouchArea {
             mouse-cursor: pointer;
             pointer-event(e) => {
@@ -4195,11 +4193,10 @@ component GrooveFillBar inherits HorizontalLayout {
             }
         }
         Text {
-            text: level > 0 ? "REMIX " + level : "REMIX   hold and slide: hats · rolls · swap · all";
+            text: level > 0 ? "Remix " + level : "Remix   hold and slide: hats · rolls · swap · all";
             color: level > 0 ? Theme.text : Theme.text-dim;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.4px;
+            font-size: 10.5px;
+            font-weight: 500;
         }
         rta := TouchArea {
             mouse-cursor: pointer;
@@ -4224,10 +4221,12 @@ component GrooveFillBar inherits HorizontalLayout {
     }
 }
 
-// The Groove Box, over the whole deck: a top bar with PLAY, the kit, the
-// library's genre, groove and chain, A to D, the tempo (with SWING) and the three tabs,
-// then the tab: SEQUENCER (eight tracks of 16 steps), SYNTH (each track's sound, PITCH,
-// DECAY and TONE) or MIXER (each track's PAN, level, meter, M and S).
+// The Groove Box, over the whole deck: a top bar with Play, the kit and
+// the genre and groove in stepper pills, chain, preset, A to D, dice and
+// the tempo (with swing); then the view: Sequencer (eight tracks of 16
+// steps), Synth (each track's sound, pitch, decay and tone) or Mixer (each
+// track's pan, level, meter, M and S); and at the bottom the fills, Remix
+// and the three views as switch pills.
 component GrooveBox inherits Rectangle {
     in property <int> deck;
     in property <string> group;
@@ -4257,13 +4256,29 @@ component GrooveBox inherits Rectangle {
             height: 30px;
             spacing: 4px;
             PlayButton { group: group; tint: tint; width: 42px; }
-            GrooveButton {
-                width: 76px;
-                height: 30px;
-                text: GrooveUi.kits[kit].name + " ▾";
-                clicked => { kit-menu.show(); }
+            // ‹ Analog ›: the kit, stepped either way; a press on the name
+            // lists them all.
+            VerticalLayout {
+                alignment: center;
+                StepperPill {
+                    width: 104px;
+                    height: 26px;
+                    prev => { Controls.set-value(kit-index, mod(kit - 1 + GrooveUi.kits.length, GrooveUi.kits.length)); }
+                    next => { Controls.set-value(kit-index, mod(kit + 1, GrooveUi.kits.length)); }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: GrooveUi.kits[kit].name;
+                        color: kit-ta.has-hover ? Theme.n-ffffff : Theme.text;
+                        font-size: 11.5px;
+                        font-weight: 500;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        kit-ta := TouchArea { mouse-cursor: pointer; clicked => { kit-menu.show(); } }
+                    }
+                }
                 kit-menu := PopupWindow {
-                    y: parent.height + 2px;
+                    y: 30px;
                     width: 260px;
                     GrooveMenuBackground { }
                     VerticalLayout {
@@ -4277,13 +4292,52 @@ component GrooveBox inherits Rectangle {
                     }
                 }
             }
-            GrooveButton {
-                width: 60px;
-                height: 30px;
-                text: GrooveUi.genres[genre].name + " ▾";
-                clicked => { genre-menu.show(); }
+            // ‹ Basics · Four on the floor ›: the genre and its groove, the
+            // arrows stepping through the genre's grooves. A press on the
+            // genre lists the genres, on the groove the genre's grooves.
+            VerticalLayout {
+                alignment: center;
+                min-width: 90px;
+                horizontal-stretch: 2;
+                StepperPill {
+                    height: 26px;
+                    prev-enabled: pattern > 1;
+                    next-enabled: pattern < grooves.length;
+                    prev => {
+                        Controls.set-value(pattern-index, pattern - 1);
+                        Controls.set-value(Controls.resolve(g, "load"), 1);
+                    }
+                    next => {
+                        Controls.set-value(pattern-index, pattern + 1);
+                        Controls.set-value(Controls.resolve(g, "load"), 1);
+                    }
+                    HorizontalLayout {
+                        horizontal-stretch: 1;
+                        alignment: center;
+                        spacing: 4px;
+                        Text {
+                            text: GrooveUi.genres[genre].name;
+                            color: genre-ta.has-hover ? Theme.n-ffffff : Theme.text-dim;
+                            font-size: 11.5px;
+                            font-weight: 500;
+                            vertical-alignment: center;
+                            genre-ta := TouchArea { mouse-cursor: pointer; clicked => { genre-menu.show(); } }
+                        }
+                        Text { text: "·"; color: Theme.text-dim; font-size: 11.5px; vertical-alignment: center; }
+                        Text {
+                            min-width: 20px;
+                            text: pattern > 0 && pattern <= grooves.length ? grooves[pattern - 1].name : "Groove";
+                            color: groove-ta.has-hover ? Theme.n-ffffff : Theme.text;
+                            font-size: 11.5px;
+                            font-weight: 500;
+                            vertical-alignment: center;
+                            overflow: elide;
+                            groove-ta := TouchArea { mouse-cursor: pointer; clicked => { pattern-menu.show(); } }
+                        }
+                    }
+                }
                 genre-menu := PopupWindow {
-                    y: parent.height + 2px;
+                    y: 30px;
                     width: 190px;
                     height: min(GrooveUi.genres.length * 24px + 8px, 340px);
                     GrooveMenuBackground { }
@@ -4305,16 +4359,8 @@ component GrooveBox inherits Rectangle {
                         }
                     }
                 }
-            }
-            // The groove's name takes the room left over.
-            GrooveButton {
-                min-width: 34px;
-                horizontal-stretch: 1;
-                height: 30px;
-                text: (pattern > 0 && pattern <= grooves.length ? grooves[pattern - 1].name : "Groove") + " ▾";
-                clicked => { pattern-menu.show(); }
                 pattern-menu := PopupWindow {
-                    y: parent.height + 2px;
+                    y: 30px;
                     width: 300px;
                     height: min(grooves.length * 36px + 8px, 380px);
                     GrooveMenuBackground { }
@@ -4386,21 +4432,7 @@ component GrooveBox inherits Rectangle {
             GrooveDice { g: g; width: 30px; height: 30px; tint: tint; }
             GrooveTempo { g: g; width: 60px; height: 30px; tint: tint; }
             Rectangle { width: 2px; }
-            Rectangle {
-                width: 148px;
-                border-radius: 6px;
-                background: Theme.well;
-                HorizontalLayout {
-                    padding: 3px;
-                    spacing: 2px;
-                    for name[i] in ["SEQUENCER", "SYNTH", "MIXER"]: GrooveTab {
-                        text: name;
-                        on: tab == i;
-                        tint: tint;
-                        clicked => { tab = i; }
-                    }
-                }
-            }
+
         }
         Rectangle {
             vertical-stretch: 1;
@@ -4448,6 +4480,15 @@ component GrooveBox inherits Rectangle {
         HorizontalLayout {
             spacing: 4px;
             GrooveFillBar { g: g; tint: tint; four <=> four; horizontal-stretch: 1; }
+            Rectangle { width: 2px; }
+            // The three views, beside the fills: the top bar is full.
+            for name[i] in ["Sequencer", "Synth", "Mixer"]: GrooveTab {
+                height: 26px;
+                text: name;
+                on: tab == i;
+                tint: tint;
+                clicked => { tab = i; }
+            }
         }
     }
 }
