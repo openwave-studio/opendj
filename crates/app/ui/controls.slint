@@ -537,7 +537,7 @@ export component ControlFader inherits Rectangle {
     // be moved.
     in property <bool> disabled: false;
     // Held by something else (Automix and the crossfader): it still moves,
-    // outlined in Automix green (the green glow says who holds it), but can't be
+    // outlined in Automix cyan (the cyan glow says who holds it), but can't be
     // dragged or scrolled.
     in property <bool> locked: false;
     // The slot's dark line lit solid in `glow` (key lock on the tempo
@@ -591,7 +591,7 @@ export component ControlFader inherits Rectangle {
         border-width: 1px;
         border-color: locked ? Theme.automix.with-alpha(0.6) : glowing ? glow : Theme.n-2a2a2d;
     }
-    // Locked: the slot lights green from the centre (or the bottom) to the
+    // Locked: the slot lights cyan from the centre (or the bottom) to the
     // handle.
     if locked: Rectangle {
         property <float> from: center-mark ? 0.5 : 0;
@@ -671,7 +671,8 @@ export component ControlFader inherits Rectangle {
         width: vertical ? min(parent.width - 4px, 40px) : handle;
         height: vertical ? handle : min(parent.height - 4px, 40px);
         border-radius: min(self.width, self.height) / 2;
-        background: @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%);
+        // Held by Automix: the cap fills with its cyan.
+        background: locked ? @radial-gradient(circle, Theme.automix 0%, Theme.automix 100%) : @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%);
         border-width: locked ? 1px : 0px;
         border-color: Theme.automix;
         drop-shadow-blur: 4px;
@@ -736,7 +737,7 @@ export component ControlFader inherits Rectangle {
 // (`[Mixer],crossfader_enabled`, also in Settings > Mixer): while it is off
 // every deck plays as if set to thru, and the fader sits greyed out in the
 // centre. While Automix is on it drives the crossfader and holds it locked
-// (switched off or not): it slides with each mix, glowing Automix green,
+// (switched off or not): it slides with each mix, glowing Automix cyan,
 // and the mouse and controllers can't move it until Automix stops.
 export component Crossfader inherits Rectangle {
     // Names it for the guided tour (see TourMark).
@@ -990,7 +991,7 @@ export component SyncButton inherits Rectangle {
         group: group;
         key: "sync_enabled";
         shift-key: "beatsync";
-        text: "Sync";
+        text: "SYNC";
         tint: tint;
         pill: true;
         font-size: root.font-size;

@@ -60,7 +60,11 @@ export global Theme {
     out property <color> control-pressed: root.light ? #e2e0ea : #2c2c2f;
     out property <color> border: root.light ? #c9c7d3 : #353538;
     // Automix: its button while on, and the crossfader while Automix holds it.
-    out property <color> automix: root.light ? #24a148 : #30c158;
+    // Automix's colour: cyan, apart from Play's green and the lilac of
+    // selections, on its power button, the crossfader it holds and its mixes.
+    out property <color> automix: root.light ? #1597ad : #3ccbe0;
+    // Ink on an Automix-filled button.
+    out property <color> automix-ink: #0b2a30;
     out property <color> separator: root.light ? #d8d6e0 : #28282b;
     out property <color> text: root.light ? #16151b : #f2f2f7;
     out property <color> text-dim: root.light ? #5d5b69 : #8e8e93;

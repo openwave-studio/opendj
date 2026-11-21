@@ -1591,7 +1591,7 @@ export component Header inherits Rectangle {
                     tint: tint;
                     hint: compact ? "Press PLAY" : "Press PLAY, then click a square to add or remove a hit. SAVE keeps the groove.";
                 }
-                // Automix's mix, shaded green: on the playing deck from where
+                // Automix's mix, shaded cyan: on the playing deck from where
                 // the mix starts to the end, on the waiting deck from its cue
                 // to where the mix is over.
                 if info.automix-to > info.automix-from: Rectangle {
@@ -3371,6 +3371,8 @@ component Pitch inherits VerticalLayout {
     }
     Rectangle { height: 5px; }
     SyncButton { group: group; tint: tint; font-size: 13px; height: 32px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
+    // Level with the deck's bar's buttons (Play, CUE, the loop).
+    Rectangle { height: 2px; }
 }
 
 // Play and pause in one button showing ▶: outlined and drawn in green

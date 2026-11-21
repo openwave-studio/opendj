@@ -6327,7 +6327,7 @@ component TrackList inherits Rectangle {
     }
 }
 
-// Starts and stops Automix: a play triangle and the word, green while on.
+// Starts and stops Automix: a play triangle and the word, cyan while on.
 // A small flat button with a word on it.
 component SmallButton inherits Rectangle {
     in property <string> text;
@@ -7203,6 +7203,8 @@ component SidePanel inherits Rectangle {
                     alignment: center;
                     PowerButton {
                         on: automix-on;
+                        filled: true;
+                        lit: Theme.automix;
                         clicked => { automix-toggle(); }
                         TourMark { id: "ui,automix_button"; }
                     }
@@ -7474,7 +7476,8 @@ component SidePanel inherits Rectangle {
                 vertical-stretch: 1;
                 border-radius: 4px;
                 border-width: drop.has-drag ? 2px : TrackDrag.active ? 1px : 0px;
-                border-color: drop.has-drag ? #30c158 : #30c15880;
+                // Automix's drop box in its cyan; the other panels in lilac.
+                border-color: (tab == 0 ? Theme.automix : Theme.accent).with-alpha(drop.has-drag ? 1 : 0.5);
                 lv := ListView {
                     gutter: true;
                     for r[i] in rows: Rectangle {
@@ -7576,7 +7579,7 @@ component SidePanel inherits Rectangle {
                     y: max(0px, min(parent.height - 2px, drop-at * row-height + lv.content-y - 1px));
                     width: parent.width - 8px;
                     height: 2px;
-                    background: #30c158;
+                    background: tab == 0 ? Theme.automix : Theme.accent;
                 }
                 if rows.length == 0: Text {
                     x: 8px;
