@@ -223,26 +223,29 @@ fn a_helper_that_never_exits_after_answering_does_not_stall_a_scan() {
     )
     .unwrap();
     std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o755)).unwrap();
-    // Another test spawning a helper at the same moment can hold the
-    // script's write handle across its fork until its exec, so running the
-    // script can fail with "Text file busy" (ETXTBSY) for a moment: retry.
-    let mut tries = 0;
-    let (found, took) = loop {
-        let start = Instant::now();
-        match opendj_plugin_host::client::scan(
+    // Other tests in this binary spawn helpers at the same time. A child
+    // forked while the script above was still open for writing holds that
+    // descriptor until it execs, and running the script then fails with
+    // "Text file busy" (ETXTBSY). Try again once that child has moved on.
+    let scan = || {
+        opendj_plugin_host::client::scan(
             &helper,
             std::path::Path::new("x.clap"),
             Duration::from_secs(5),
-        ) {
-            Ok(found) => break (found, start.elapsed()),
-            Err(e) if tries < 50 && format!("{e:?}").contains("Text file busy") => {
+        )
+    };
+    let mut tries = 0;
+    let (found, elapsed) = loop {
+        let start = Instant::now();
+        match scan() {
+            Err(e) if format!("{e:?}").contains("Text file busy") && tries < 50 => {
                 tries += 1;
                 std::thread::sleep(Duration::from_millis(20));
             }
-            Err(e) => panic!("{e:?}"),
+            other => break (other.unwrap(), start.elapsed()),
         }
     };
-    assert!(took < Duration::from_secs(3));
+    assert!(elapsed < Duration::from_secs(3));
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].name, "Name");
     let _ = std::fs::remove_dir_all(&dir);

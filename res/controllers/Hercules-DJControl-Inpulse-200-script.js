@@ -99,6 +99,29 @@ DJCi200.vinylButton = function(_channel, _control, value, status, _group) {
     }
 };
 
+// Inpulse 200 MK2, SHIFT + a pad in Stems mode: plays that stem alone, or
+// all four again if it already plays alone.
+DJCi200.stemSolo = function(_channel, _control, value, _status, group) {
+    if (!value) {
+        return;
+    }
+    var m = group.match(/^\[Channel(\d+)_Stem(\d)\]$/);
+    if (!m) {
+        return;
+    }
+    var deck = "[Channel" + m[1] + "_Stem";
+    var stem = parseInt(m[2], 10);
+    var alone = !engine.getValue(group, "mute");
+    for (var i = 1; i <= 4; i++) {
+        if (i !== stem && !engine.getValue(deck + i + "]", "mute")) {
+            alone = false;
+        }
+    }
+    for (var j = 1; j <= 4; j++) {
+        engine.setValue(deck + j + "]", "mute", alone || j === stem ? 0 : 1);
+    }
+};
+
 DJCi200._scratchEnable = function(deck) {
     var alpha = 1.0/8;
     var beta = alpha/32;
