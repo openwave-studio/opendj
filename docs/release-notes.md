@@ -37,7 +37,7 @@ openDJ 0.9.0 gets openDJ ready for the club. A new look runs across the whole ap
 **Library**
 
 - **Keyboard browsing**: ↑ ↓ move in the rail, folder tree or track list, Tab moves between them, → and ← open and close folders. **Shift+← / Shift+→** load decks 1 and 2. A controller's BROWSE knob moves the same way. Pitch bend moves to W/E (deck 1) and U/I (deck 2), and Esc hands the keys back to the decks.
-- **Small screens**: openDJ fits a 1280 × 720 window. Below 1440 px wide the lists panel folds into the rail and slides out when you click it, and the side panel opens over the track list. Drag a track to the list's right edge to open the side panel.
+- **Small screens**: the window can be as small as 1280 × 720. Below 1440 px wide the lists panel folds into the rail and slides out when you click it, and the side panel opens over the track list. Drag a track to the list's right edge to open the side panel.
 - Drag the edges of the lists panel and side panel to resize them. Double-click a column's edge to fit it. **Settings › Appearance** adds **Interface scale** (85–125%) and **List text** size.
 - **Lists**: a new playlist, crate or folder goes first and starts in rename. Shift-click and ⌘-click pick several lists to move together. Deleting a list asks first.
 - The side panel's Sidelist becomes two tabs: **Shortlist**, a scratch list you can save as a playlist, and **Playlist**, which edits one saved playlist. Removing tracks can be undone.
@@ -109,6 +109,7 @@ Add your music folders in Settings › Collection, or let the guided tour do it 
 - Broadcasting: Icecast and Shoutcast only for now. Twitch, YouTube and Mixcloud Live streaming come later.
 - USB export for Pioneer and Engine DJ players is experimental.
 - Room EQ has no Isolator or booth EQ knobs yet.
+- At the smallest window widths (around 1280 px), 2-Deck's right deck and a Remix deck's right column are cut off. 1440 px and wider show everything.
 - One Remix deck at a time. Its Release, the MIDI Fighter Twister mapping and the Remix page on the phone remote come later.
 - The Mixed Set Editor changes a transition's length and curve and swaps tracks. Moving transitions and drawing curves come later.
 - One instrument plugin plays at a time.
