@@ -100,6 +100,31 @@ impl Decoder {
         })
     }
 
+    /// Moves to `seconds` into the file, for [`Decoder::stream`] to go on
+    /// from there. Returns how many frames the stream gives before that
+    /// point (decoding starts at the packet holding it), to be skipped.
+    pub fn seek(&mut self, seconds: f64) -> Result<u64, String> {
+        use symphonia::core::formats::{SeekMode, SeekTo};
+        use symphonia::core::units::Time;
+        if seconds <= 0.0 {
+            return Ok(0);
+        }
+        let time = Time::try_from_secs_f64(seconds)
+            .ok_or_else(|| format!("{}: can't seek to {seconds} s", self.path.display()))?;
+        let to = self
+            .format
+            .seek(
+                SeekMode::Accurate,
+                SeekTo::Time {
+                    time,
+                    track_id: Some(self.track_id),
+                },
+            )
+            .map_err(|e| format!("{}: {e}", self.path.display()))?;
+        self.decoder.reset();
+        Ok((to.required_ts.get() - to.actual_ts.get()).max(0) as u64)
+    }
+
     /// The audio being decoded; frames appear in it as [`Decoder::run`] goes.
     pub fn audio(&self) -> &Arc<Audio> {
         self.writer.audio()

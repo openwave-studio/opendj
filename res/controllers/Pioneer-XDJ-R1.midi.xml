@@ -1,0 +1,1377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>Pioneer XDJ-R1</name>
+        <author>openDJ</author>
+        <description>openDJ mapping for the XDJ-R1 all-in-one in PC control (MIDI) mode: two decks, the mixer, an effect unit on each deck and Sound Color FX. Beta: written from the XDJ-R1's MIDI messages as rekordbox maps them, not yet tried on the hardware.</description>
+        <manual>pioneer_xdj_r1</manual>
+    </info>
+    <controller id="XDJ-R1">
+        <scriptfiles>
+            <file functionprefix="" filename="Pioneer-all-in-one-script.js"/>
+            <file functionprefix="PioneerXDJR1" filename="Pioneer-XDJ-R1-script.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <description>Browse</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB0</status>
+                <midino>0x40</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>Browse</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB1</status>
+                <midino>0x40</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>Browse</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB2</status>
+                <midino>0x40</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>Browse</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB3</status>
+                <midino>0x40</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Shift</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.waveformZoom</key>
+                <status>0xB0</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Shift</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.waveformZoom</key>
+                <status>0xB1</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Shift</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.waveformZoom</key>
+                <status>0xB2</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Shift</description>
+                <group>[Library]</group>
+                <key>PioneerXDJR1.waveformZoom</key>
+                <status>0xB3</status>
+                <midino>0x41</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press</description>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <status>0x90</status>
+                <midino>0x42</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press</description>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <status>0x91</status>
+                <midino>0x42</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press+Shift</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press+Shift</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x91</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press+Shift</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x92</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press+Shift</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x93</status>
+                <midino>0x43</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Back</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Back</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x91</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Back</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x92</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Back</description>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <status>0x93</status>
+                <midino>0x44</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.play</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.play</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.toStart</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.toStart</key>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x07</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x07</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x36</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x67</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x67</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogBend</key>
+                <status>0xB0</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogBend</key>
+                <status>0xB1</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelSearch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x06</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelSearch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x06</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoSliderMSB</key>
+                <status>0xB0</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoSliderLSB</key>
+                <status>0xB0</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoSliderMSB</key>
+                <status>0xB1</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoSliderLSB</key>
+                <status>0xB1</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.keylock</key>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.keylock</key>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.6 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange6</key>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.6 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange6</key>
+                <status>0x91</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.10 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange10</key>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.10 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange10</key>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.16 (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange16</key>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.16 (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange16</key>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.WIDE (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.tempoRange100</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TempoRange.WIDE (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.tempoRange100</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.sync</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.sync</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.master</key>
+                <status>0x90</status>
+                <midino>0x5C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.master</key>
+                <status>0x91</status>
+                <midino>0x5C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.master</key>
+                <status>0x90</status>
+                <midino>0x59</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.master</key>
+                <status>0x91</status>
+                <midino>0x59</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.beatLoopPressed</key>
+                <status>0x90</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.beatLoopPressed</key>
+                <status>0x91</status>
+                <midino>0x14</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.reloop</key>
+                <status>0x90</status>
+                <midino>0x50</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.reloop</key>
+                <status>0x91</status>
+                <midino>0x50</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.beatLoopTurn</key>
+                <status>0xB0</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.beatLoopTurn</key>
+                <status>0xB1</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.jogMode</key>
+                <status>0x90</status>
+                <midino>0x15</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.jogMode</key>
+                <status>0x91</status>
+                <midino>0x15</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackNext (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.quickJumpForward</key>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackNext (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.quickJumpForward</key>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackPrev (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.quickJumpBack</key>
+                <status>0x90</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TrackPrev (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.quickJumpBack</key>
+                <status>0x91</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CrossFader</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB6</status>
+                <midino>0x1F</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB6</status>
+                <midino>0x13</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB6</status>
+                <midino>0x15</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <status>0xB6</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <status>0xB6</status>
+                <midino>0x04</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB6</status>
+                <midino>0x07</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB6</status>
+                <midino>0x08</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB6</status>
+                <midino>0x0B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB6</status>
+                <midino>0x0C</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB6</status>
+                <midino>0x0F</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB6</status>
+                <midino>0x10</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.pfl</key>
+                <status>0x96</status>
+                <midino>0x54</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.pfl</key>
+                <status>0x96</status>
+                <midino>0x55</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>PioneerXDJR1.pfl</key>
+                <status>0x96</status>
+                <midino>0x60</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>PioneerXDJR1.pfl</key>
+                <status>0x96</status>
+                <midino>0x61</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterLevel</description>
+                <group>[Master]</group>
+                <key>gain</key>
+                <status>0xB6</status>
+                <midino>0x00</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphonesMix</description>
+                <group>[Master]</group>
+                <key>head_mix</key>
+                <status>0xB6</status>
+                <midino>0x01</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphonesVolume</description>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <status>0xB6</status>
+                <midino>0x02</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 LEVEL/DEPTH</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxLevel</key>
+                <status>0xB4</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 LEVEL/DEPTH</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxLevel</key>
+                <status>0xB4</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 TRANS</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x46</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 TRANS</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 FLANGER</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 FLANGER</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x4B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 ECHO</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 ECHO</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x4C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 ROLL</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 ROLL</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x94</status>
+                <midino>0x4D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 TAP</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxTap</key>
+                <status>0x94</status>
+                <midino>0x58</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 1 TAP</description>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>PioneerXDJR1.deckFxTap</key>
+                <status>0x94</status>
+                <midino>0x59</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 LEVEL/DEPTH</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxLevel</key>
+                <status>0xB5</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 LEVEL/DEPTH</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxLevel</key>
+                <status>0xB5</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 TRANS</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x46</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 TRANS</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x4A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 FLANGER</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 FLANGER</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x4B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 ECHO</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 ECHO</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x4C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 ROLL</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 ROLL</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxPressed</key>
+                <status>0x95</status>
+                <midino>0x4D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 TAP</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxTap</key>
+                <status>0x95</status>
+                <midino>0x58</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX 2 TAP</description>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>PioneerXDJR1.deckFxTap</key>
+                <status>0x95</status>
+                <midino>0x59</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 1)</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <status>0xB6</status>
+                <midino>0x1B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 2)</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <status>0xB6</status>
+                <midino>0x1C</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE</description>
+                <group>[Master]</group>
+                <key>PioneerXDJR1.colorFxPressed</key>
+                <status>0x94</status>
+                <midino>0x51</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX CRUSH</description>
+                <group>[Master]</group>
+                <key>PioneerXDJR1.colorFxPressed</key>
+                <status>0x94</status>
+                <midino>0x50</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER</description>
+                <group>[Master]</group>
+                <key>PioneerXDJR1.colorFxPressed</key>
+                <status>0x94</status>
+                <midino>0x4E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>keylock</key>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>keylock</key>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_leader</key>
+                <status>0x90</status>
+                <midino>0x59</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_leader</key>
+                <status>0x91</status>
+                <midino>0x59</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x46</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x4A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x47</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x4B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x48</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x4C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x49</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>enabled</key>
+                <status>0x94</status>
+                <midino>0x4D</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x46</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x4A</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x47</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x4B</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x48</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x4C</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x49</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>enabled</key>
+                <status>0x95</status>
+                <midino>0x4D</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>

@@ -1,6 +1,6 @@
 # Proposal
 
-Planned for: **v0.8 · From the booth to the studio**
+Planned for: **v0.9**
 
 ## Why
 
@@ -8,11 +8,12 @@ The Mixed Set Editor (add-mixed-set-editor, which comes first in v0.8) shows a r
 
 ## What Changes
 
-- Capture: control changes stamped with the audio frame they took effect on (not the logger's 5 ms poll), plugin parameter changes and instrument / Groove Box notes in the log, an option to record Mic and Aux inputs to their own files, and the deck's exact place in its track every audio block while it is scratched (jog in scratch mode, backspin, brake).
-- Editing in the Mixed Set Editor: drag a transition earlier or later (snapping to beats and phrases), stretch it, pick a style, open a transition editor with both tracks on one beatgrid and editable curves (VirtualDJ's Automix editor layout), change a loop's length or repeat count, A/B against the recording, undo.
-- Hard moves (scratches, backspins, brakes and anything else the render cannot rebuild from mixer controls) stay one block with two choices, not editable stroke by stroke: **Keep from recording** (the default: that stretch of audio is copied from the recording into the render) or **Bypass** (the deck plays straight through as if the move never happened). DJs fine-tune fader, EQ, filter and FX lines; they keep or drop a scratch whole.
-- Render: play the edited set offline through openDJ's engine to a new file beside the recording; the recording is never changed. Mixcloud export and tracklist from the new file.
-- The Ableton export (add-ableton-set-export step 3) uses the same timeline, with kept hard moves as rendered audio clips.
+The basics come first; loops, hard moves and the capture work are advanced steps after them.
+
+- **Change a transition**: pick one, set its length in bars and its curve (Smooth, Bass swap, Filter, Cut, the Automix styles), hear it with a few bars either side, keep it or go back to how it was played.
+- **Swap a track**: replace one track of the set with another from the library. It comes in beatmatched to the set's tempo on the same bar, plays for the same stretch, and both of its transitions are made again in their recorded style and length.
+- **Local render**: an edit re-plays only its own stretch of the log through openDJ's engine, offline, and splices it into the recording at seams where one deck plays alone, on a beat, with a short crossfade. Everything else is copied from the recording, so a first version needs neither a frame-accurate log nor a bit-exact engine. **Save edited mix** writes a new file beside the recording; the recording is never changed.
+- Advanced, later: drag a transition earlier or later with beat and phrase snapping, a transition editor with both tracks on one beatgrid and drawn curves, loops (length, repeat count), hard moves (scratches, backspins, brakes) as one block with **Keep from recording** (default) or **Bypass**, frame-accurate capture (control changes stamped with their audio frame, plugin parameters and instrument notes logged, Mic and Aux to their own files, the deck's place every block during a hard move), a whole-set render, and the Ableton export (add-ableton-set-export step 3) on the same timeline.
 
 Mockups (board 2, and the scratch block on board 1): https://claude.ai/artifact/76fLT6FF4ULjWNcXRSQCzv
 
@@ -30,8 +31,9 @@ None.
 
 - Building a mix from a playlist without playing it (DJ.Studio's main use); it can reuse the render later.
 - Video export, stems placed on the timeline, re-ordering a whole set.
+- Swapping in a track that was never analysed (it is analysed first).
 - Recreating third-party plugin state that was not logged.
 
 ## Impact
 
-engine recorder (frame stamps, plugin and note lines, input files, place lines during hard moves), editing in the Mixed Set Editor, an offline render path that drives the engine from a log.
+editing in the Mixed Set Editor (transition length and curve, track swap), an offline render path that drives the engine from a stretch of the log and splices it into the recording; later the engine recorder (frame stamps, plugin and note lines, input files, place lines during hard moves).

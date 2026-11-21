@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxControllerPreset mixxxVersion="2.4.0" schemaVersion="1">
+  <info>
+    <name>Traktor Kontrol S8</name>
+    <author>openDJ</author>
+    <description>openDJ's partial HID mapping for the Traktor Kontrol S8: two deck sections played as in Traktor (effect units, stems on the performance faders, hot cue, loop, slicer and sample pads, touch strips, transport) and the four-channel mixer. Written from an incomplete published HID report layout: the browse and loop encoders don't turn anything yet. Its displays stay dark.</description>
+    <devices>
+      <product protocol="hid" vendor_id="0x17cc" product_id="0x1370" interface_number="0x5" />
+    </devices>
+  </info>
+  <controller id="Traktor">
+    <scriptfiles>
+      <file filename="Traktor-Kontrol-Deck-Section.js" functionprefix="" />
+      <file filename="Traktor-Kontrol-S5-S8.js" functionprefix="" />
+      <file filename="Traktor-Kontrol-S8.js" functionprefix="TraktorS8" />
+    </scriptfiles>
+  </controller>
+</MixxxControllerPreset>

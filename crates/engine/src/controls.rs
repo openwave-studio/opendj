@@ -111,9 +111,11 @@ pub(crate) struct DeckControls {
     /// Stems in the loaded track (0 without stems).
     pub(crate) stem_count: ControlHandle,
     pub(crate) stems: [StemControls; crate::stems::MAX_STEMS],
-    /// The effect sent stems go into: 1 Echo, 2 Reverb (see
-    /// [`crate::effects::STEM_FX`]).
+    /// The effect sent stems go into: 1 Echo, 2 Reverb, 3 Roll, 4 Trans
+    /// (see [`crate::effects::STEM_FX`]).
     pub(crate) stem_fx: ControlHandle,
+    /// Beats Roll and Trans repeat or chop, 1/16 to 1.
+    pub(crate) stem_fx_beats: ControlHandle,
     pub(crate) play: ControlHandle,
     /// Gapless playback: the deck (1 to 4) that starts on the very sample
     /// this deck's track ends, or 0. Cleared once it has started.
@@ -258,6 +260,10 @@ pub(crate) struct DeckControls {
     /// The loaded track's beat grid is locked (Mixxx's `bpmlock`): turning
     /// it on or off locks or unlocks the grid.
     pub(crate) bpmlock: ControlHandle,
+    /// The loaded track's grid mode (openDJ's own; see
+    /// [`crate::gridfit::GridMode::id`]): setting it fits the grid again in
+    /// that mode.
+    pub(crate) beats_mode: ControlHandle,
     /// Clicks on each beat of the grid, louder on bar 1 (openDJ's own), to
     /// check the grid by ear.
     pub(crate) metronome: ControlHandle,
@@ -298,7 +304,7 @@ impl DeckControls {
         // A pad panel a controller's pad mode buttons ask the deck to show
         // (0 hot cues, 1 pad FX 1, 2 beat jump, 3 sampler, 4 stems, 5 beat
         // loop, 6 pad FX 2, 7 keyboard, 8 key shift, 9 loop roll, 10 slicer,
-        // 11 freeze); the skin shows it and sets this back to -1.
+        // 11 freeze); the skin shows it and the app sets this back to -1.
         reg.create(g, "pad_panel", -1.0, -1.0, 16.0, Behavior::Free);
         // Touching the jog's top scratches (on, as on vinyl) or only bends
         // like the rim (off, CDJ mode). Only controller mappings read it;
@@ -306,7 +312,7 @@ impl DeckControls {
         reg.create(g, "vinyl_mode", 1.0, 0.0, 1.0, Behavior::Toggle);
         // Asks the skin to open pad tab 0-7 by its place (a controller's pad
         // mode buttons: 0-3 plain, 4-7 with Shift), whatever panel it shows;
-        // the skin sets this back to -1.
+        // the app sets this back to -1 once the skin has seen it.
         reg.create(g, "pad_tab", -1.0, -1.0, 7.0, Behavior::Free);
         // The pad panel in each of the eight pad tabs (numbers as for
         // `pad_panel`), in the DDJ-FLX4's pad mode order. The skin changes
@@ -395,6 +401,7 @@ impl DeckControls {
                 crate::effects::STEM_FX.len() as f64,
                 Behavior::Free,
             ),
+            stem_fx_beats: reg.create(g, "stem_fx_beats", 0.5, 0.0625, 1.0, Behavior::Free),
             play: reg.toggle(g, "play"),
             play_next: reg.create(g, "play_next", 0.0, 0.0, 4.0, Behavior::Free),
             pfl: reg.toggle(g, "pfl"),
@@ -541,6 +548,7 @@ impl DeckControls {
             }),
             keylock: reg.toggle(g, "keylock"),
             bpmlock: reg.toggle(g, "bpmlock"),
+            beats_mode: reg.create(g, "beats_mode", 0.0, 0.0, 2.0, Behavior::Free),
             metronome: reg.toggle(g, "metronome"),
             beats_edit: reg.toggle(g, "beats_edit"),
             live_input: reg.create(
@@ -773,6 +781,13 @@ pub(crate) struct MasterControls {
     /// headphones and takes the other decks out of the cue. On to start;
     /// automix loads leave the cue alone.
     pub(crate) pfl_on_load: ControlHandle,
+    /// `[Controls] bpm_match_on_load`: a track loaded while another deck
+    /// plays takes that deck's tempo (or half or double it), as sync would,
+    /// without syncing. Off to start.
+    pub(crate) bpm_match_on_load: ControlHandle,
+    /// `[Controls] sync_on_play`: pressing PLAY on a deck that isn't synced
+    /// lines it up with the deck it would sync to, once. Off to start.
+    pub(crate) sync_on_play: ControlHandle,
     /// `[Master] test_tone`: beeps for checking the outputs, 1 in the
     /// master mix, 2 in the headphones, 0 off. The guided tour plays it.
     pub(crate) test_tone: ControlHandle,
@@ -914,6 +929,8 @@ pub(crate) fn create_global_controls(reg: &ControlRegistry) -> MasterControls {
             c.set_bool(true);
             c
         },
+        bpm_match_on_load: reg.toggle("[Controls]", "bpm_match_on_load"),
+        sync_on_play: reg.toggle("[Controls]", "sync_on_play"),
     }
 }
 
@@ -937,7 +954,9 @@ pub(crate) fn alias(
 }
 
 /// Detects presses of a momentary control. Also catches a press and release that
-/// both happened between two ticks, which a plain "was it down" check would miss.
+/// both happened between two ticks, which a plain "was it down" check would miss,
+/// and a press while still down (a write of 1 over 1, which counts as a release
+/// and a press).
 #[derive(Default, Clone, Copy)]
 pub(crate) struct Edge {
     down: bool,
@@ -948,9 +967,35 @@ impl Edge {
     pub(crate) fn pressed(&mut self, c: &ControlHandle) -> bool {
         let (down, version) = (c.get_bool(), c.version());
         let changes = version.wrapping_sub(self.version);
-        let pressed = (down && !self.down) || (!down && changes >= 2);
+        let pressed = (down && !self.down) || changes >= 2;
         self.down = down;
         self.version = version;
         pressed
+    }
+}
+
+#[cfg(test)]
+mod edge_tests {
+    use super::*;
+
+    #[test]
+    fn edge_sees_a_press_while_still_down() {
+        let reg = ControlRegistry::new();
+        let c = reg.push("[Channel1]", "beatsync");
+        let mut edge = Edge::default();
+        assert!(!edge.pressed(&c));
+        c.set(1.0);
+        assert!(edge.pressed(&c));
+        assert!(!edge.pressed(&c), "held is one press");
+        // Released and pressed again between two ticks.
+        c.set(0.0);
+        c.set(1.0);
+        assert!(edge.pressed(&c));
+        // Pressed and released between two ticks.
+        c.set(0.0);
+        assert!(!edge.pressed(&c));
+        c.set(1.0);
+        c.set(0.0);
+        assert!(edge.pressed(&c));
     }
 }

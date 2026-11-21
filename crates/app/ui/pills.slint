@@ -1,0 +1,315 @@
+// The shared Tron-look controls: dark value pills that open titled lists,
+// ‹ › stepper pills, switch pills, unit pills, power buttons, arc knobs,
+// section titles and the band mark.
+// Screens use these rather than drawing their own; colors and sizes come
+// from Theme.
+import { Theme } from "theme.slint";
+import { KnobArc } from "controls.slint";
+import { MapMark } from "mapmark.slint";
+
+// Three short bars, high on top and low at the bottom: the bands an effect
+// works on, each lit in its band's color, or all lilac for the whole signal.
+export component BandIcon inherits Rectangle {
+    // The slot's `band`: 0 the whole signal, else 1 low + 2 mid + 4 high.
+    in property <int> mask;
+    width: 10px;
+    height: 8px;
+    for i in 3: Rectangle {
+        property <int> bit: i == 0 ? 4 : i == 1 ? 2 : 1;
+        property <bool> lit: mask == 0 || mask == 7 || mod(floor(mask / bit), 2) == 1;
+        x: 0px;
+        y: i * 3px;
+        width: 10px;
+        height: 2px;
+        border-radius: 1px;
+        background: !lit ? Theme.n-48484c
+            : mask == 0 || mask == 7 ? Theme.lilac-text
+            : i == 0 ? Theme.band-high : i == 1 ? Theme.band-mid : Theme.band-low;
+    }
+}
+
+// A dark value pill: what is set, in its color, and ▾ for a titled list.
+// It outlines on hover.
+export component ValuePill inherits Rectangle {
+    in property <bool> open;
+    callback clicked();
+    height: 22px;
+    border-radius: 7px;
+    background: ta.has-hover || open ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: ta.has-hover || open ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    @children
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The small ▾ in a value pill.
+export component PillCaret inherits Path {
+    width: 7px;
+    height: 4px;
+    viewbox-width: 7;
+    viewbox-height: 4;
+    commands: "M 0 0 L 7 0 L 3.5 4 Z";
+    fill: Theme.lilac-text.with-alpha(0.7);
+}
+
+// A row in a titled list: lit (tinted, the text in its color) when it is
+// the one set, a lighter row under the pointer.
+export component ListRow inherits Rectangle {
+    in property <bool> selected;
+    callback clicked();
+    height: 28px;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.n-38373d : selected ? Theme.n-313036 : transparent;
+    @children
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// The titled list a value pill opens.
+export component TitledList inherits Rectangle {
+    in property <string> title;
+    background: Theme.pill-list;
+    border-radius: 9px;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 14px;
+    drop-shadow-color: Theme.s-000000a0;
+    VerticalLayout {
+        padding: 8px;
+        padding-top: 10px;
+        spacing: 1px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: 13px;
+            font-weight: 700;
+            height: 24px;
+            vertical-alignment: top;
+            x: 8px;
+        }
+        @children
+    }
+}
+
+// ‹ or › in a stepper pill. `map-key` names its control for Map mode.
+export component StepArrow inherits Rectangle {
+    in property <bool> next;
+    in property <bool> enabled: true;
+    in property <string> map-key;
+    callback clicked();
+    width: 22px;
+    Path {
+        width: 5px;
+        height: 9px;
+        viewbox-width: 5;
+        viewbox-height: 9;
+        commands: root.next ? "M 1 1 L 4 4.5 L 1 8" : "M 4 1 L 1 4.5 L 4 8";
+        stroke: !root.enabled ? Theme.n-3a3a3e : ta.pressed ? Theme.text-dim : ta.has-hover ? Theme.text : Theme.n-a8a8ad;
+        stroke-width: 1.5px;
+        stroke-line-cap: round;
+        fill: transparent;
+    }
+    ta := TouchArea {
+        mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
+        clicked => {
+            if root.enabled {
+                root.clicked();
+            }
+        }
+    }
+    if root.map-key != "": MapMark { key: root.map-key; }
+}
+
+// ‹ value ›: a dark pill stepping a value either way, the value (its
+// children) between the arrows. A press on the value opens its list, where
+// it has one; a stepper pill shows no ▾.
+export component StepperPill inherits Rectangle {
+    in property <bool> prev-enabled: true;
+    in property <bool> next-enabled: true;
+    in property <string> prev-key;
+    in property <string> next-key;
+    callback prev();
+    callback next();
+    height: 24px;
+    min-width: 0px;
+    border-radius: 7px;
+    background: Theme.pill;
+    border-width: 1px;
+    border-color: Theme.n-2c2c31;
+    HorizontalLayout {
+        StepArrow { enabled: root.prev-enabled; map-key: root.prev-key; clicked => { root.prev(); } }
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            min-width: 0px;
+            @children
+        }
+        StepArrow { next: true; enabled: root.next-enabled; map-key: root.next-key; clicked => { root.next(); } }
+    }
+}
+
+// A round power button: lit in lilac while on; dim when there is nothing
+// to turn on.
+export component PowerButton inherits Rectangle {
+    in property <bool> on;
+    in property <bool> active: true;
+    in property <length> size: 26px;
+    // Filled in `lit` while on, the symbol in `ink` (Automix: cyan);
+    // otherwise lit lilac, as every other power button.
+    in property <bool> filled;
+    in property <color> lit: Theme.accent;
+    in property <color> ink: Theme.automix-ink;
+    callback clicked();
+    width: size;
+    height: size;
+    border-radius: size / 2;
+    background: on && filled ? (ta.has-hover ? lit.brighter(0.15) : lit) : on ? (ta.has-hover ? Theme.lit-fill-hover : Theme.lit-fill) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.pill;
+    // The shared glow of a lit round button (see Theme.glow).
+    drop-shadow-blur: on ? Theme.glow-blur : 0px;
+    drop-shadow-color: on && filled ? lit.with-alpha(0.55) : Theme.glow;
+    border-width: 1.5px;
+    border-color: on ? (filled ? lit : Theme.accent) : Theme.n-48484c;
+    Path {
+        width: root.size * 0.5;
+        height: root.size * 0.5;
+        viewbox-width: 20;
+        viewbox-height: 20;
+        commands: "M 10 2 L 10 9 M 5.4 5 A 7 7 0 1 0 14.6 5";
+        stroke: root.on && root.filled ? root.ink : root.on ? Theme.lilac-text : root.active ? Theme.n-a8a8ad : Theme.n-58585d;
+        stroke-width: 2px;
+        stroke-line-cap: round;
+        fill: transparent;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            if root.active {
+                root.clicked();
+            }
+        }
+    }
+    @children
+}
+
+// An arc knob's look: a thick ring, filled in the tint from `origin` as far
+// as `value` (both 0..1 over the sweep). The screen adds the dragging.
+export component ArcKnob inherits Rectangle {
+    in property <float> value;
+    in property <float> origin: 0;
+    in property <color> tint: Theme.accent;
+    in property <length> size: 24px;
+    in property <bool> hover;
+    width: size;
+    height: size;
+    KnobArc {
+        r: 40;
+        from: -135deg;
+        to: 135deg;
+        stroke: root.hover ? Theme.n-48484c : Theme.n-2c2c31;
+        stroke-width: max(3px, root.size / 7);
+    }
+    if abs(root.value - root.origin) > 0.004: KnobArc {
+        r: 40;
+        from: -135deg + root.origin * 270deg;
+        to: -135deg + root.value * 270deg;
+        stroke: root.tint;
+        stroke-width: max(3px, root.size / 7);
+    }
+    @children
+}
+
+// A switch pill: one word, pressed to turn something on (lilac) or off
+// (grey), or to step through two or three choices, showing only the current
+// one. Never dots or other marks for the choices. `on` lights it.
+export component SwitchPill inherits Rectangle {
+    in property <string> text;
+    in property <bool> on: true;
+    in property <bool> enabled: true;
+    in property <length> font-size: 12px;
+    in property <string> map-key;
+    callback clicked();
+    height: 24px;
+    min-width: label.preferred-width + 20px;
+    border-radius: 7px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: root.on && root.enabled ? Theme.pill-on-border : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    label := Text {
+        text: root.text;
+        color: !root.enabled ? Theme.n-48484c : root.on ? Theme.lilac-text : Theme.pill-off-text;
+        font-size: root.font-size;
+        font-weight: 500;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea {
+        mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
+        clicked => {
+            if root.enabled {
+                root.clicked();
+            }
+        }
+    }
+    if root.map-key != "": MapMark { key: root.map-key; }
+    @children
+}
+
+// A label with a small unit pill beside it ("Rate sync", "Filter LP"):
+// a press on the pill switches the unit or mode in place.
+export component UnitLabel inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> unit;
+    in property <bool> enabled: true;
+    in property <length> font-size: 11px;
+    callback clicked();
+    spacing: 4px;
+    alignment: center;
+    Text {
+        text: root.label;
+        color: Theme.text-dim;
+        font-size: root.font-size;
+        vertical-alignment: center;
+    }
+    if root.unit != "": Rectangle {
+        height: 18px;
+        width: unit-text.preferred-width + 12px;
+        border-radius: 5px;
+        background: uta.has-hover ? Theme.pill-hover : Theme.pill;
+        border-width: 1px;
+        border-color: uta.has-hover ? Theme.n-6e58a8 : Theme.pill-on-border;
+        unit-text := Text {
+            text: root.unit;
+            color: root.enabled ? Theme.lilac-text : Theme.pill-off-text;
+            font-size: root.font-size;
+            vertical-alignment: center;
+        }
+        uta := TouchArea {
+            mouse-cursor: root.enabled ? MouseCursor.pointer : MouseCursor.default;
+            clicked => {
+                if root.enabled {
+                    root.clicked();
+                }
+            }
+        }
+    }
+}
+
+// A section title (SCENE, LOOP, MASTER): condensed capitals. Pill words
+// and labels stay capitalised in Inter; only these are in capitals.
+export component SectionTitle inherits Text {
+    // Written as a word ("Scene"); shown in capitals.
+    in property <string> title;
+    text: root.title.to-uppercase();
+    font-family: Theme.title-font;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    color: Theme.section-title;
+    vertical-alignment: center;
+}

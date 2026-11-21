@@ -1,5 +1,20 @@
 ## ADDED Requirements
 
+### Requirement: Change a transition
+In the Mixed Set Editor the DJ SHALL be able to set a transition's length in bars and its curve, hear it with a few bars either side, and go back to how it was played.
+
+#### Scenario: Longer bass swap
+- **WHEN** the DJ sets a 4-bar Smooth transition to 16 bars of Bass swap and saves the edited mix
+- **THEN** the new file mixes those two tracks over 16 bars with a bass swap, and the rest of the set is as recorded
+
+### Requirement: Swap a track
+In the Mixed Set Editor the DJ SHALL be able to replace a track of the set with another from the library, beatmatched to the set on the same bar for the same stretch, with both of its transitions made again in their recorded style and length.
+
+#### Scenario: Swapped track
+- **WHEN** the DJ swaps track 3 for another track and saves the edited mix
+- **THEN** the new file plays the other track in its place in time with the tracks around it, and the tracklist and chapters name it
+
+
 ### Requirement: Frame-accurate control log
 Control changes in the control log SHALL be stamped with the audio frame at which they took effect. Plugin parameter changes and instrument notes SHALL be logged.
 

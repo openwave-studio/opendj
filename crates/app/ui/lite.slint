@@ -116,12 +116,12 @@ export component LiteDeck inherits Rectangle {
                     padding-right: 10px;
                     spacing: 8px;
                     if mirrored: PlayButton { group: group; tint: tint; width: 72px; height: 38px; y: (parent.height - self.height) / 2; tour-id: group + ",play"; }
-                    if mirrored: ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: tint; outline-when-lit: true; font-size: 14px; width: 72px; height: 38px; y: (parent.height - self.height) / 2; }
+                    if mirrored: ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 14px; width: 72px; height: 38px; y: (parent.height - self.height) / 2; }
                     if mirrored: Rectangle { horizontal-stretch: 1; }
                     LiteTempo { group: group; info: info; tint: tint; mirrored: mirrored; }
                     if !mirrored: Rectangle { horizontal-stretch: 1; }
                     if !mirrored: PlayButton { group: group; tint: tint; width: 72px; height: 38px; y: (parent.height - self.height) / 2; tour-id: group + ",play"; }
-                    if !mirrored: ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: tint; outline-when-lit: true; font-size: 14px; width: 72px; height: 38px; y: (parent.height - self.height) / 2; }
+                    if !mirrored: ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 14px; width: 72px; height: 38px; y: (parent.height - self.height) / 2; }
                 }
                 }
             }
@@ -142,11 +142,11 @@ component LiteChannel inherits VerticalLayout {
     in property <color> tint;
     in property <length> knob: 16px;
     spacing: 2px;
-    Knob { group: group; key: "pregain"; size: knob; tour-id: group + ",pregain"; }
+    Knob { group: group; key: "pregain"; size: knob; look: 4; readout: 1; arc-color: Theme.accent; tour-id: group + ",pregain"; }
     HorizontalLayout {
         alignment: center;
         vertical-stretch: 1;
-        ControlFader { group: group; key: "volume"; tint: tint; ticks: 7; width: 30px; tour-id: group + ",volume"; }
+        ControlFader { group: group; key: "volume"; tint: tint; ticks: 7; width: 30px; look: 1; tour-id: group + ",volume"; }
     }
 }
 

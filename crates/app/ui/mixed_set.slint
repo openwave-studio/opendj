@@ -6,6 +6,7 @@
 // `view-start` to `view-start + view-len` of it.
 import { Theme } from "theme.slint";
 import { Switch } from "controls.slint";
+import { SearchField } from "preferences.slint";
 
 // A track on the timeline: on its deck's row with Show decks on, above
 // the waveform in the simple view.
@@ -41,6 +42,29 @@ export struct SetTransitionRow {
     ticked: bool,
     // The pair's mix already saved, if any: "Saved 3 Nov".
     saved: string,
+}
+
+// A track in the tracklist.
+export struct SetTrackRow {
+    number: int,
+    title: string,
+    artist: string,
+    // "0:42:10".
+    at: string,
+    // "6:12".
+    length: string,
+    // Swapped for another track (the row shows the replacement).
+    swapped: bool,
+}
+
+// A track from the library to swap in.
+export struct SetSwapRow {
+    title: string,
+    artist: string,
+    // "124 BPM · 8A".
+    info: string,
+    // "Same key, +1%", or empty.
+    hint: string,
 }
 
 export struct SetFindingRow {
@@ -82,7 +106,12 @@ export global MixedSetUi {
     in property <[int]> deck-rows;
     // The recording's waveform (path commands over 1000 by 100, mirrored
     // round 50).
-    in property <string> wave;
+    // The recording's waveform for what the timeline shows, and for the
+    // whole set (the overview), in the deck waveforms' colors.
+    in property <image> wave-image;
+    in property <image> overview-image;
+    // The timeline's width in pixels, so the waveform is drawn to it.
+    in-out property <float> wave-px;
     in property <[SetBlock]> blocks;
     in property <[SetSpan]> spans;
     in property <[SetLane]> lanes;
@@ -91,6 +120,19 @@ export global MixedSetUi {
     in-out property <float> view-start: 0;
     in-out property <float> view-len: 1;
     in-out property <int> tab;
+    in property <[SetTrackRow]> tracks;
+    // The track under the playhead, from 0.
+    in property <int> playing-track: -1;
+    // The track picked in the tracklist, to swap, from 0.
+    in-out property <int> selected-track: -1;
+    // Whether tracks can be swapped (the set has a control log).
+    in property <bool> can-swap;
+    in-out property <string> swap-query;
+    in property <[SetSwapRow]> swap-rows;
+    in property <bool> swapping;
+    // "Swapped for Artist - Title", or empty when as played.
+    in property <string> track-swapped;
+    in property <string> swap-note;
     in property <[SetTransitionRow]> transitions;
     in property <int> selected-transition: -1;
     // The selected transition, in more words.
@@ -102,6 +144,16 @@ export global MixedSetUi {
     in property <string> detail-style;
     in property <string> detail-sync;
     in property <int> pair-count;
+    // Mixing the selected transition again: index into bar-choices and
+    // style-choices, and what has been done.
+    in-out property <int> edit-bars: 2;
+    in-out property <int> edit-style;
+    in property <[string]> bar-choices: ["2", "4", "8", "16", "32"];
+    in property <[string]> style-choices: ["Smooth", "Bass swap", "Filter", "Cut"];
+    in property <bool> mixing;
+    // "Mixed again: 16 bars, Bass swap", or empty when as played.
+    in property <string> detail-mixed;
+    in property <string> edit-note;
     in property <[SetFindingRow]> findings;
     in property <bool> checking;
     in property <[SetFixRow]> fixes;
@@ -123,7 +175,13 @@ export global MixedSetUi {
     callback clear-range();
     callback zoom(float);
     callback select-block(int);
+    callback select-track(int);
     callback select-transition(int);
+    callback mix-transition();
+    callback unmix-transition();
+    callback swap-search();
+    callback swap-track(int);
+    callback unswap-track();
     callback step-transition(int);
     callback tick-pair(int, bool);
     callback save-pairs();
@@ -198,6 +256,32 @@ component Tab inherits Rectangle {
     }
 }
 
+// A small choice in a row of them.
+component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> on;
+    callback clicked();
+    height: 24px;
+    min-width: cl.preferred-width;
+    border-radius: 12px;
+    background: on ? Theme.accent : ta.has-hover ? Theme.n-3a3a3e : Theme.n-2c2c30;
+    cl := HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 9px;
+        Text {
+            text: root.text;
+            color: on ? #000000 : Theme.text;
+            font-size: 11px;
+            font-weight: on ? 700 : 500;
+            vertical-alignment: center;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
 // The timeline: the waveform (simple view) or deck rows, with the
 // transitions shaded, the selection, and the playhead. Drag to select.
 component Timeline inherits Rectangle {
@@ -205,7 +289,10 @@ component Timeline inherits Rectangle {
     property <float> vl: max(0.001, MixedSetUi.view-len);
     // The waveform takes the height there is; deck rows share it, within
     // reason, after the lanes.
-    property <length> row-h: MixedSetUi.show-decks ? clamp((root.height - 18px - lanes-h) / max(1, MixedSetUi.deck-count), 64px, 140px) : max(80px, root.height - 18px - block-h - 8px);
+    property <length> row-h: MixedSetUi.show-decks ? clamp((root.height - 18px - lanes-h - 96px) / max(1, MixedSetUi.deck-count), 64px, 140px) : max(80px, root.height - 18px - block-h - 8px);
+    // Show decks: the recording's waveform under the decks and lanes.
+    property <length> mix-y: rows * row-h + lanes-h;
+    property <length> mix-h: max(48px, root.height - 18px - mix-y - 4px);
     property <length> block-h: 22px;
     property <int> rows: MixedSetUi.show-decks ? MixedSetUi.deck-count : 1;
     property <length> lanes-h: MixedSetUi.show-decks && MixedSetUi.show-lanes ? MixedSetUi.lanes.length * 26px : 0px;
@@ -214,6 +301,12 @@ component Timeline inherits Rectangle {
     clip: true;
     background: Theme.well;
     border-radius: 8px;
+    init => {
+        MixedSetUi.wave-px = root.width / 1px;
+    }
+    changed width => {
+        MixedSetUi.wave-px = root.width / 1px;
+    }
 
     // Ruler.
     for t[i] in MixedSetUi.ticks: Text {
@@ -234,16 +327,18 @@ component Timeline inherits Rectangle {
     // Spans behind the rows: transitions, the selection, cuts and trims.
     for s in MixedSetUi.spans: Rectangle {
         visible: s.kind == 0 || s.kind >= 3;
-        x: (s.start - vs) / vl * root.width;
-        width: max(2px, (s.end - s.start) / vl * root.width);
+        property <length> x0: max(-8px, (s.start - vs) / vl * root.width);
+        property <length> x1: min(root.width + 8px, (s.end - vs) / vl * root.width);
+        x: x0;
+        width: max(2px, x1 - x0);
         y: 18px;
-        height: rows * row-h + (MixedSetUi.show-decks ? 0px : block-h);
+        height: MixedSetUi.show-decks ? mix-y + mix-h : rows * row-h + block-h;
         background: s.kind == 0 ? (s.selected ? #b69cff40 : #b69cff1c) : s.kind == 3 ? #ffffff26 : #ff453a2a;
         border-width: s.kind == 0 && s.selected ? 1px : 0px;
         border-color: Theme.accent;
         if s.kind == 0 && MixedSetUi.show-decks && s.label != "": Text {
             x: 4px;
-            y: parent.height - 14px;
+            y: mix-y + 2px;
             text: s.label;
             color: Theme.lilac-text;
             font-size: 10px;
@@ -263,8 +358,13 @@ component Timeline inherits Rectangle {
         y: 18px;
         height: block-h + row-h;
         for b[i] in MixedSetUi.blocks: Rectangle {
-            x: (b.start - vs) / vl * root.width + 1px;
-            width: max(2px, (b.end - b.start) / vl * root.width - 2px);
+            // Cut to the view (plus a little), so a block zoomed far in
+            // never draws wider than the screen: a clipped block is drawn
+            // as a layer, and a layer wider than 16384 px can't be made.
+            property <length> x0: max(-8px, (b.start - vs) / vl * root.width);
+            property <length> x1: min(root.width + 8px, (b.end - vs) / vl * root.width);
+            x: x0 + 1px;
+            width: max(2px, x1 - x0 - 2px);
             y: 0;
             height: block-h - 2px;
             border-radius: 4px;
@@ -282,16 +382,13 @@ component Timeline inherits Rectangle {
                 clicked => { MixedSetUi.select-block(i); }
             }
         }
-        Path {
-            x: -vs / vl * root.width;
+        Image {
+            x: 0;
             y: block-h;
-            width: root.width / vl;
+            width: root.width;
             height: row-h;
-            viewbox-width: 1000;
-            fit: fill;
-            viewbox-height: 100;
-            fill: Theme.lilac-dim;
-            commands: MixedSetUi.wave;
+            source: MixedSetUi.wave-image;
+            image-fit: fill;
         }
     }
 
@@ -318,8 +415,13 @@ component Timeline inherits Rectangle {
         }
         for b[i] in MixedSetUi.blocks: Rectangle {
             property <int> on-row: b.deck;
-            x: (b.start - vs) / vl * root.width + 1px;
-            width: max(2px, (b.end - b.start) / vl * root.width - 2px);
+            // Cut to the view (plus a little), so a block zoomed far in
+            // never draws wider than the screen: a clipped block is drawn
+            // as a layer, and a layer wider than 16384 px can't be made.
+            property <length> x0: max(-8px, (b.start - vs) / vl * root.width);
+            property <length> x1: min(root.width + 8px, (b.end - vs) / vl * root.width);
+            x: x0 + 1px;
+            width: max(2px, x1 - x0 - 2px);
             y: on-row * row-h + 16px;
             height: row-h - 22px;
             border-radius: 4px;
@@ -348,8 +450,10 @@ component Timeline inherits Rectangle {
         }
         for s in MixedSetUi.spans: Rectangle {
             visible: s.kind == 1 || s.kind == 2;
-            x: (s.start - vs) / vl * root.width;
-            width: max(3px, (s.end - s.start) / vl * root.width);
+            property <length> x0: max(-8px, (s.start - vs) / vl * root.width);
+            property <length> x1: min(root.width + 8px, (s.end - vs) / vl * root.width);
+            x: x0;
+            width: max(3px, x1 - x0);
             y: s.deck * row-h + row-h - 18px;
             height: 12px;
             border-radius: 3px;
@@ -403,6 +507,26 @@ component Timeline inherits Rectangle {
         }
     }
 
+    // Show decks: the whole mix as recorded, under the decks.
+    if MixedSetUi.show-decks: Rectangle {
+        y: 18px + mix-y;
+        height: mix-h;
+        Image {
+            y: 14px;
+            width: root.width;
+            height: parent.height - 14px;
+            source: MixedSetUi.wave-image;
+            image-fit: fill;
+        }
+        Text {
+            x: root.width - self.width - 6px;
+            y: 2px;
+            text: "Mix";
+            color: Theme.text-dim;
+            font-size: 10px;
+        }
+    }
+
     // Playhead.
     Rectangle {
         x: (MixedSetUi.position - vs) / vl * root.width;
@@ -451,14 +575,12 @@ component Overview inherits Rectangle {
     background: Theme.well;
     border-radius: 6px;
     clip: true;
-    Path {
+    Image {
         width: root.width;
         height: root.height;
-        viewbox-width: 1000;
-        fit: fill;
-        viewbox-height: 100;
-        fill: Theme.n-3a3a3e;
-        commands: MixedSetUi.wave;
+        source: MixedSetUi.overview-image;
+        image-fit: fill;
+        opacity: 0.6;
     }
     for b[i] in MixedSetUi.blocks: Rectangle {
         visible: !MixedSetUi.show-decks;
@@ -562,6 +684,10 @@ component TransitionsTab inherits VerticalLayout {
                     vertical-alignment: center;
                 }
                 Button {
+                    text: "▶ Listen";
+                    clicked => { MixedSetUi.select-transition(MixedSetUi.selected-transition); }
+                }
+                Button {
                     text: "‹";
                     clicked => { MixedSetUi.step-transition(-1); }
                 }
@@ -593,6 +719,69 @@ component TransitionsTab inherits VerticalLayout {
             if MixedSetUi.detail-sync != "": KeyValue {
                 key: "Beats";
                 value: MixedSetUi.detail-sync;
+            }
+            Rectangle {
+                height: 1px;
+                background: Theme.separator;
+            }
+            Text {
+                text: MixedSetUi.detail-mixed != "" ? MixedSetUi.detail-mixed : "Mix it again";
+                color: MixedSetUi.detail-mixed != "" ? Theme.lilac-text : Theme.text-dim;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                alignment: start;
+                Text {
+                    text: "Bars";
+                    color: Theme.text-dim;
+                    font-size: 11px;
+                    width: 44px;
+                    vertical-alignment: center;
+                }
+                for b[i] in MixedSetUi.bar-choices: Chip {
+                    text: b;
+                    on: i == MixedSetUi.edit-bars;
+                    clicked => { MixedSetUi.edit-bars = i; }
+                }
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                alignment: start;
+                Text {
+                    text: "Curve";
+                    color: Theme.text-dim;
+                    font-size: 11px;
+                    width: 44px;
+                    vertical-alignment: center;
+                }
+                for c[i] in MixedSetUi.style-choices: Chip {
+                    text: c;
+                    on: i == MixedSetUi.edit-style;
+                    clicked => { MixedSetUi.edit-style = i; }
+                }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                alignment: start;
+                Button {
+                    text: MixedSetUi.mixing ? "Mixing…" : "Mix it this way";
+                    primary: true;
+                    enabled: !MixedSetUi.mixing;
+                    clicked => { MixedSetUi.mix-transition(); }
+                }
+                if MixedSetUi.detail-mixed != "": Button {
+                    text: "As played";
+                    enabled: !MixedSetUi.mixing;
+                    clicked => { MixedSetUi.unmix-transition(); }
+                }
+            }
+            if MixedSetUi.edit-note != "": Text {
+                text: MixedSetUi.edit-note;
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
             }
         }
     }
@@ -662,6 +851,180 @@ component TransitionsTab inherits VerticalLayout {
             text: MixedSetUi.pair-count == 1 ? "Save 1 pair mix" : "Save " + MixedSetUi.pair-count + " pair mixes";
             enabled: MixedSetUi.pair-count > 0;
             clicked => { MixedSetUi.save-pairs(); }
+        }
+    }
+}
+
+// The tracklist with when each track starts and how long it plays; click
+// one to go there.
+component TracksTab inherits VerticalLayout {
+    spacing: 8px;
+    Flickable {
+        vertical-stretch: 1;
+        content-height: list.preferred-height;
+        list := VerticalLayout {
+            for t[i] in MixedSetUi.tracks: Rectangle {
+                property <bool> now: i == MixedSetUi.playing-track;
+                property <bool> picked: i == MixedSetUi.selected-track;
+                height: 40px;
+                border-radius: 6px;
+                border-width: picked ? 1px : 0;
+                border-color: Theme.accent;
+                background: now ? Theme.selection : ta.has-hover ? Theme.n-2c2c30 : transparent;
+                ta := TouchArea {
+                    clicked => {
+                        MixedSetUi.selected-track = i;
+                        MixedSetUi.select-track(i);
+                    }
+                }
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    spacing: 8px;
+                    Text {
+                        text: t.number;
+                        color: now ? #ffffffb0 : Theme.text-dim;
+                        font-size: 11px;
+                        width: 18px;
+                        vertical-alignment: center;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: t.title;
+                            color: now ? #ffffff : Theme.text;
+                            font-size: 12px;
+                            overflow: elide;
+                        }
+                        if t.artist != "" || t.swapped: Text {
+                            text: t.swapped ? (t.artist != "" ? t.artist + " · swapped in" : "Swapped in") : t.artist;
+                            color: now ? #ffffffb0 : t.swapped ? Theme.lilac-text : Theme.text-dim;
+                            font-size: 10px;
+                            overflow: elide;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: t.at;
+                            color: now ? #ffffff : Theme.text;
+                            font-size: 11px;
+                            horizontal-alignment: right;
+                        }
+                        Text {
+                            text: t.length;
+                            color: now ? #ffffffb0 : Theme.text-dim;
+                            font-size: 10px;
+                            horizontal-alignment: right;
+                        }
+                    }
+                }
+            }
+            if MixedSetUi.tracks.length == 0: Text {
+                text: "No tracklist: the recording has no control log or cue sheet.";
+                color: Theme.text-dim;
+                font-size: 12px;
+                wrap: word-wrap;
+            }
+        }
+    }
+    if MixedSetUi.can-swap && MixedSetUi.selected-track >= 0: Rectangle {
+        background: Theme.panel-raised;
+        border-radius: 8px;
+        height: swap.preferred-height;
+        swap := VerticalLayout {
+            padding: 12px;
+            spacing: 6px;
+            HorizontalLayout {
+                spacing: 6px;
+                Text {
+                    text: "Swap track " + (MixedSetUi.selected-track + 1);
+                    color: Theme.text;
+                    font-size: 13px;
+                    font-weight: 700;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                }
+                if MixedSetUi.track-swapped != "": Button {
+                    text: "As played";
+                    enabled: !MixedSetUi.swapping;
+                    clicked => { MixedSetUi.unswap-track(); }
+                }
+            }
+            if MixedSetUi.track-swapped != "": Text {
+                text: MixedSetUi.track-swapped;
+                color: Theme.lilac-text;
+                font-size: 11px;
+                font-weight: 600;
+                overflow: elide;
+            }
+            Text {
+                text: "Plays the same stretch on the same beats, with its transitions mixed as recorded. Best matches first.";
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
+            }
+            SearchField {
+                placeholder: "Search the library";
+                text <=> MixedSetUi.swap-query;
+                edited => { MixedSetUi.swap-search(); }
+            }
+            for r[i] in MixedSetUi.swap-rows: Rectangle {
+                height: 34px;
+                border-radius: 6px;
+                background: sa.has-hover && !MixedSetUi.swapping ? Theme.n-2c2c30 : transparent;
+                sa := TouchArea {
+                    mouse-cursor: MixedSetUi.swapping ? default : pointer;
+                    clicked => {
+                        if !MixedSetUi.swapping {
+                            MixedSetUi.swap-track(i);
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    spacing: 8px;
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Text {
+                            text: r.title;
+                            color: Theme.text;
+                            font-size: 12px;
+                            overflow: elide;
+                        }
+                        Text {
+                            text: r.artist;
+                            color: Theme.text-dim;
+                            font-size: 10px;
+                            overflow: elide;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: r.info;
+                            color: Theme.text;
+                            font-size: 11px;
+                            horizontal-alignment: right;
+                        }
+                        Text {
+                            text: r.hint;
+                            color: Theme.lilac-text;
+                            font-size: 10px;
+                            horizontal-alignment: right;
+                        }
+                    }
+                }
+            }
+            if MixedSetUi.swapping || MixedSetUi.swap-note != "": Text {
+                text: MixedSetUi.swapping ? "Swapping… the new stretch plays when it's ready." : MixedSetUi.swap-note;
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
+            }
         }
     }
 }
@@ -1093,6 +1456,11 @@ export component MixedSetEditor inherits Rectangle {
                             spacing: 4px;
                             alignment: start;
                             Tab {
+                                text: "Tracks · " + MixedSetUi.tracks.length;
+                                on: MixedSetUi.tab == 3;
+                                clicked => { MixedSetUi.tab = 3; }
+                            }
+                            Tab {
                                 text: "Transitions";
                                 on: MixedSetUi.tab == 0;
                                 clicked => { MixedSetUi.tab = 0; }
@@ -1107,6 +1475,9 @@ export component MixedSetEditor inherits Rectangle {
                                 on: MixedSetUi.tab == 2;
                                 clicked => { MixedSetUi.tab = 2; }
                             }
+                        }
+                        if MixedSetUi.tab == 3: TracksTab {
+                            vertical-stretch: 1;
                         }
                         if MixedSetUi.tab == 0: TransitionsTab {
                             vertical-stretch: 1;

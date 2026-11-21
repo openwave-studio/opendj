@@ -143,6 +143,84 @@ fn traktor_kontrol_s2_mk3() {
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
+/// Presses and lets go of one button: bit `mask` of byte `byte` (the ID is
+/// byte 0) in a report like `idle`.
+fn tap(c: &mut Controller, idle: &[u8], byte: usize, mask: u8) {
+    let mut pressed = idle.to_vec();
+    pressed[byte] |= mask;
+    c.receive_report(&pressed);
+    c.receive_report(idle);
+    settle(c, 10);
+}
+
+/// Traktor's layers on the S2 MK3: SAMPLES plays a stem track's stems
+/// (pads 1-4 mute them), REV is flux reverse while held.
+#[test]
+fn traktor_kontrol_s2_mk3_plays_stems_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol S2 MK3.hid.xml");
+    settle(&mut c, 50);
+    reg.get("[Channel1]", "stem_count").unwrap().set(4.0);
+    let mut idle = vec![0u8; 22];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    // SAMPLES on deck 1, then pad 1: stem 1 mutes.
+    tap(&mut c, &idle, 0x01, 0x80);
+    tap(&mut c, &idle, 0x02, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel1_Stem1]", "mute"),
+        1.0,
+        "pad 1 mutes stem 1"
+    );
+    tap(&mut c, &idle, 0x02, 0x10);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "mute"), 0.0, "and back");
+    // REV held: reverse roll, as Traktor's flux reverse.
+    let mut rev = idle.clone();
+    rev[0x01] |= 0x01;
+    c.receive_report(&rev);
+    settle(&mut c, 10);
+    assert_eq!(get(&reg, "[Channel1]", "reverseroll"), 1.0);
+    c.receive_report(&idle);
+    settle(&mut c, 10);
+    assert_eq!(get(&reg, "[Channel1]", "reverseroll"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// Traktor's layers on the S3: SAMPLES plays a stem track's stems, SHIFT +
+/// SYNC makes the deck the tempo leader, a tap on GRID toggles quantize.
+#[test]
+fn traktor_kontrol_s3_plays_stems_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol S3.hid.xml");
+    settle(&mut c, 50);
+    reg.get("[Channel1]", "stem_count").unwrap().set(4.0);
+    let mut idle = vec![0u8; 24];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    tap(&mut c, &idle, 0x02, 0x40);
+    tap(&mut c, &idle, 0x03, 0x02);
+    assert_eq!(
+        get(&reg, "[Channel1_Stem1]", "mute"),
+        1.0,
+        "pad 1 mutes stem 1"
+    );
+    // SHIFT + SYNC.
+    let mut shifted = idle.clone();
+    shifted[0x01] |= 0x01;
+    c.receive_report(&shifted);
+    tap(&mut c, &shifted, 0x02, 0x08);
+    c.receive_report(&idle);
+    settle(&mut c, 10);
+    assert!(
+        get(&reg, "[Channel1]", "sync_leader") > 0.0,
+        "SHIFT + SYNC: leader"
+    );
+    let quantize = get(&reg, "[Channel1]", "quantize");
+    tap(&mut c, &idle, 0x01, 0x80);
+    assert_ne!(get(&reg, "[Channel1]", "quantize"), quantize, "GRID tap");
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
 /// The Maschine Mikro MK3 drives the Groove Box: pads reach
 /// `[GrooveN],padK`, buttons pick the pad mode, and the lights and screen
 /// go out as reports 0x80 and 0xe0.
@@ -229,4 +307,412 @@ fn maschine_mikro_mk3_knows_the_kits() {
         );
         assert!(script.contains(&line), "missing {line}");
     }
+}
+
+/// The DDJ-FLX10's jog screens: the HID mapping says it runs, the MIDI
+/// mapping switches the screens over with SysEx, and the HID mapping then
+/// streams each loaded deck's state and loads its waveform.
+#[test]
+fn ddj_flx10_jog_screens_show_the_waveform() {
+    // Ten seconds of red (bass only), at full height.
+    opendj_controllers::waves::set_source(Some(Arc::new(|deck, per_second| {
+        if deck == 0 {
+            vec![[255, 0, 0, 255]; (10.0 * per_second) as usize]
+        } else {
+            Vec::new()
+        }
+    })));
+    let reg = ControlRegistry::new();
+    let _engine = opendj_engine::engine::Engine::new(&reg, 44_100.0);
+    let dir = default_mappings_dir().unwrap();
+    let mut midi = Controller::new(
+        "DDJ-FLX10",
+        Mapping::load(&dir.join("Pioneer-DDJ-FLX10.midi.xml")).unwrap(),
+        reg.clone(),
+    )
+    .unwrap();
+    let mut screens = Controller::new_hid(
+        "Pioneer DDJ-FLX10 jog screens",
+        Mapping::load(&dir.join("Pioneer-DDJ-FLX10-screens.hid.xml")).unwrap(),
+        reg.clone(),
+        Rc::new(FakeDevice::default()),
+    )
+    .unwrap();
+    let set = |key: &str, v: f64| reg.get("[Channel1]", key).unwrap().force(v);
+    set("duration", 10.0);
+    set("playposition", 0.5);
+    set("bpm", 128.5);
+    set("key", 22.0); // A minor
+    set("track_loaded", 1.0);
+
+    // Nothing goes to the screens until the MIDI side has switched them.
+    let start = Instant::now();
+    for i in 0..400 {
+        let t = start + Duration::from_millis(i);
+        midi.poll(t);
+        screens.poll(t);
+    }
+    let sysex: Vec<Vec<u8>> = midi
+        .take_output()
+        .into_iter()
+        .filter(|m| m[0] == 0xF0)
+        .collect();
+    let enter = [
+        0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00, 0x03, 0x01, 0xF7,
+    ];
+    assert!(sysex.contains(&enter.to_vec()), "{sysex:x?}");
+    let keepalive = [
+        0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00, 0x50, 0x31, 0xF7,
+    ];
+    assert!(sysex.contains(&keepalive.to_vec()), "kept in HID mode");
+
+    let reports = screens.take_reports();
+    assert!(!reports.is_empty());
+    // Report ID 0 then 128 bytes, deck 1 only.
+    assert!(
+        reports.iter().all(|r| r.len() == 129 && r[0] == 0),
+        "{:x?}",
+        reports[0]
+    );
+    let kinds: Vec<u8> = reports.iter().map(|r| r[2]).collect();
+    assert!(reports.iter().all(|r| r[1] == 0x10));
+
+    // State first, then the load in order.
+    assert_eq!(kinds[0], 0x27);
+    let load: Vec<u8> = kinds.iter().copied().filter(|&k| k != 0x27).collect();
+    let mut expected = vec![0x30, 0x39, 0x39, 0x39, 0x35, 0x35, 0x35];
+    expected.extend(std::iter::repeat_n(0x36, 1500usize.div_ceil(19)));
+    expected.push(0x2F);
+    assert_eq!(&load[..expected.len()], &expected[..], "{load:x?}");
+    // Then entries at the playhead now and then (5 s in = entry 750).
+    let trickle = reports.iter().rev().find(|r| r[2] == 0x36).unwrap();
+    assert_eq!(
+        u32::from_le_bytes([trickle[11], trickle[12], trickle[13], trickle[14]]),
+        750
+    );
+
+    let state = &reports[0][1..];
+    assert_eq!(&state[5..7], &[0, 5], "five seconds played");
+    assert_eq!(&state[9..11], &[0, 10], "a ten-second track");
+    assert_eq!((state[13], state[14]), (128, 0x80), "128.5 BPM");
+    assert_eq!(state[29], 0x82, "8A");
+    assert_eq!(state[31], 0x02, "deck 1");
+
+    let length = reports.iter().find(|r| r[2] == 0x30).unwrap();
+    assert_eq!(&length[7..9], &[0, 10]);
+    let count = reports.iter().find(|r| r[2] == 0x35).unwrap();
+    assert_eq!(u16::from_le_bytes([count[3], count[4]]), 1500);
+    let labels = reports.iter().find(|r| r[2] == 0x39).unwrap();
+    assert_eq!(&labels[8..15], b"HOT CUE");
+    // Red at full brightness, full height: (7 << 13) | (31 << 2).
+    let first = reports.iter().find(|r| r[2] == 0x36).unwrap();
+    assert_eq!(&first[11..15], &[0, 0, 0, 0], "from entry 0");
+    assert_eq!(&first[15..17], &0xE07Cu16.to_le_bytes());
+    assert_eq!(first[7], 19);
+
+    // Unplugged or turned off: the MIDI displays come back.
+    screens.shutdown();
+    screens.poll(Instant::now());
+    let mut t = Instant::now();
+    for _ in 0..100 {
+        t += Duration::from_millis(1);
+        midi.poll(t);
+    }
+    let _ = midi.take_output();
+    for _ in 0..400 {
+        t += Duration::from_millis(1);
+        midi.poll(t);
+    }
+    let out = midi.take_output();
+    assert!(
+        !out.iter().any(|m| m[..] == keepalive[..]),
+        "keepalive stopped"
+    );
+    assert!(out.iter().any(|m| m[0] == 0xBF), "MIDI jog displays again");
+    assert_eq!(midi.errors(), Vec::<String>::new());
+    assert_eq!(screens.errors(), Vec::<String>::new());
+    opendj_controllers::waves::set_source(None);
+}
+
+/// openDJ's X1 MK3 mapping: transport and hot cues per side, the loop
+/// encoder, MODE switching the top knobs from effects to the mixer, and the
+/// lights going out as report 0x80.
+#[test]
+fn traktor_kontrol_x1_mk3_plays_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol X1 MK3.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 25];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    // PLAY on the right deck.
+    tap(&mut c, &idle, 4, 0x10);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "right PLAY");
+    // SHIFT + REV turns flux on; REV held is a reverse roll.
+    let mut shifted = idle.clone();
+    shifted[1] |= 0x01;
+    c.receive_report(&shifted);
+    tap(&mut c, &shifted, 4, 0x04);
+    c.receive_report(&idle);
+    settle(&mut c, 10);
+    assert_eq!(get(&reg, "[Channel1]", "slip_enabled"), 1.0, "SHIFT + REV");
+    // SHIFT + loop encoder one step up jumps a loop's length.
+    let size = get(&reg, "[Channel1]", "beatloop_size");
+    let mut turned = shifted.clone();
+    turned[7] = 0x01;
+    c.receive_report(&shifted);
+    c.receive_report(&turned);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Channel1]", "beatjump"),
+        size,
+        "SHIFT + loop encoder"
+    );
+    turned[1] &= !0x01;
+    c.receive_report(&turned);
+    idle = turned;
+    // MODE twice: mixer; the fourth left knob is deck 1's volume.
+    tap(&mut c, &idle, 1, 0x02);
+    tap(&mut c, &idle, 1, 0x02);
+    // Soft takeover: the knob picks the volume up near where it is.
+    reg.get("[Channel1]", "volume").unwrap().set(0.49);
+    let mut knob = idle.clone();
+    knob[15] = 0x00;
+    knob[16] = 0x08;
+    c.receive_report(&knob);
+    settle(&mut c, 10);
+    let volume = get(&reg, "[Channel1]", "volume");
+    assert!((volume - 0.5).abs() < 0.01, "mixer volume {volume}");
+    let reports = c.take_reports();
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.first() == Some(&0x80) && r.len() == 49),
+        "LED report"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// openDJ's Z1 MK2 mapping: headphone cue, Mixer FX shortcuts and STEMS
+/// mode turning the gain knob into stem 1's volume.
+#[test]
+fn traktor_kontrol_z1_mk2_plays_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol Z1 MK2.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 35];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    tap(&mut c, &idle, 2, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "pfl"), 1.0, "left CUE");
+    tap(&mut c, &idle, 1, 0x80);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel2]]", "loaded_chain_preset"),
+        2.0,
+        "FX 1"
+    );
+    // STEMS on the left with a stem track: GAIN is stem 1's volume.
+    reg.get("[Channel1]", "stem_count").unwrap().set(4.0);
+    reg.get("[Channel1_Stem1]", "volume").unwrap().set(0.49);
+    tap(&mut c, &idle, 1, 0x02);
+    let mut knob = idle.clone();
+    knob[3] = 0xFF;
+    knob[4] = 0x07;
+    c.receive_report(&knob);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Channel1_Stem1]", "volume"),
+        0.5,
+        "GAIN in STEMS mode"
+    );
+    let reports = c.take_reports();
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.first() == Some(&0x80) && r.len() == 47),
+        "LED report"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// The D2 as Traktor plays it: DECK switches A and C, DECK held with B picks
+/// deck B, A-D send decks to the effect unit on top, the faders are stem
+/// volumes and the LOOP pads jump by the loop.
+#[test]
+fn traktor_kontrol_d2_plays_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol D2.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 17];
+    idle[0] = 0x01;
+    let mut knobs = vec![0u8; 25];
+    knobs[0] = 0x02;
+    c.receive_report(&idle);
+    c.receive_report(&knobs);
+    tap(&mut c, &idle, 8, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "PLAY on deck A");
+    tap(&mut c, &idle, 7, 0x04);
+    tap(&mut c, &idle, 8, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel3]", "play"),
+        1.0,
+        "DECK, then PLAY on deck C"
+    );
+    // Hold DECK and press B.
+    let mut held = idle.clone();
+    held[7] |= 0x04;
+    c.receive_report(&held);
+    tap(&mut c, &held, 5, 0x02);
+    c.receive_report(&idle);
+    tap(&mut c, &idle, 8, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel2]", "play"),
+        1.0,
+        "DECK + B, then PLAY on deck B"
+    );
+    tap(&mut c, &idle, 5, 0x01);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit2]", "group_[Channel1]_enable"),
+        1.0,
+        "A sends deck A to the B/D effect unit"
+    );
+    reg.get("[Channel2]", "stem_count").unwrap().set(4.0);
+    reg.get("[Channel2_Stem2]", "volume").unwrap().set(0.49);
+    let mut fader = knobs.clone();
+    fader[11] = 0xF7;
+    fader[12] = 0x07;
+    c.receive_report(&fader);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Channel2_Stem2]", "volume"),
+        0.5,
+        "fader 2 is stem 2"
+    );
+    tap(&mut c, &idle, 4, 0x08);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel2_Stem2]]", "enabled"),
+        1.0,
+        "ON 2 sends stem 2 to the stem effect"
+    );
+    tap(&mut c, &idle, 8, 0x04);
+    let size = get(&reg, "[Channel2]", "beatloop_size");
+    tap(&mut c, &idle, 7, 0x02);
+    assert_eq!(
+        get(&reg, "[Channel2]", "beatjump"),
+        size,
+        "LOOP pad 8 jumps by the loop"
+    );
+    let reports = c.take_reports();
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.first() == Some(&0x80) && r.len() == 123),
+        "LED report"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// The S8's two deck sections play decks A and C, B and D; the mixer's CUE
+/// lights through feature report 0xF4, as the S8 wants.
+#[test]
+fn traktor_kontrol_s8_plays_as_traktor() {
+    let (reg, mut c, device) = load("Traktor Kontrol S8.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 41];
+    idle[0] = 0x01;
+    let mut knobs = vec![0u8; 109];
+    knobs[0] = 0x02;
+    c.receive_report(&idle);
+    c.receive_report(&knobs);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "left PLAY on deck A");
+    tap(&mut c, &idle, 17, 0x10);
+    assert_eq!(get(&reg, "[Channel2]", "play"), 1.0, "right PLAY on deck B");
+    tap(&mut c, &idle, 16, 0x04);
+    tap(&mut c, &idle, 17, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel4]", "play"),
+        1.0,
+        "right DECK, then PLAY on deck D"
+    );
+    device.feature_sent.borrow_mut().clear();
+    tap(&mut c, &idle, 20, 0x08);
+    assert_eq!(get(&reg, "[Channel1]", "pfl"), 1.0, "CUE A");
+    assert!(
+        device
+            .feature_sent
+            .borrow()
+            .iter()
+            .any(|r| r[..3] == [0xF4, 0x26, 0x01]),
+        "CUE A lights"
+    );
+    let mut xfader = knobs.clone();
+    xfader[41] = 0xF7;
+    xfader[42] = 0x07;
+    c.receive_report(&xfader);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Master]", "crossfader"),
+        0.0,
+        "crossfader centred"
+    );
+    tap(&mut c, &idle, 25, 0x10);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1]", "group_[Channel2]_enable"),
+        1.0,
+        "FX 1 on channel B"
+    );
+    let reports = c.take_reports();
+    for (id, len) in [(0x80, 119), (0x81, 119), (0x82, 74)] {
+        assert!(
+            reports
+                .iter()
+                .any(|r| r.first() == Some(&id) && r.len() == len),
+            "LED report {id:#x}"
+        );
+    }
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// The S5 as the S8 without the performance section: decks A and C on the
+/// left, B and D on the right; CUE lights in the mixer's own LED report.
+#[test]
+fn traktor_kontrol_s5_plays_as_traktor() {
+    let (reg, mut c, _device) = load("Traktor Kontrol S5.hid.xml");
+    settle(&mut c, 50);
+    let mut idle = vec![0u8; 30];
+    idle[0] = 0x01;
+    let mut knobs = vec![0u8; 79];
+    knobs[0] = 0x02;
+    c.receive_report(&idle);
+    c.receive_report(&knobs);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "left PLAY on deck A");
+    tap(&mut c, &idle, 8, 0x04);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel3]", "play"),
+        1.0,
+        "left DECK, then PLAY on deck C"
+    );
+    let _ = c.take_reports();
+    tap(&mut c, &idle, 23, 0x20);
+    assert_eq!(get(&reg, "[Channel2]", "pfl"), 1.0, "CUE B");
+    let reports = c.take_reports();
+    assert!(
+        reports
+            .iter()
+            .any(|r| r.len() == 74 && r[0] == 0x82 && r[2] == 0x7F),
+        "CUE B lights"
+    );
+    let mut xfader = knobs.clone();
+    xfader[25] = 0xF7;
+    xfader[26] = 0x07;
+    c.receive_report(&xfader);
+    settle(&mut c, 10);
+    assert_eq!(
+        get(&reg, "[Master]", "crossfader"),
+        0.0,
+        "crossfader centred"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
 }

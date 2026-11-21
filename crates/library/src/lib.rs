@@ -54,9 +54,10 @@ pub const ID_BASE: usize = 1_000_000;
 /// 9 added `tracks.stage` (see [`stages`]).
 /// 10 added `tracks.grid_locked` and `grid_unsure`; imported grids start
 /// locked.
+/// 14 added `tracks.grid_mode`.
 /// 12 takes off the wanted list the streamed tracks imports used to put
 /// there: only the DJ puts tracks on it now.
-const VERSION: i32 = 13;
+const VERSION: i32 = 14;
 
 /// The `source` of grids, keys and markers found by this app's analysis.
 const ANALYSIS: &str = "analysis";
@@ -171,7 +172,7 @@ CREATE TABLE IF NOT EXISTS inbox_log (
 ";
 
 /// Columns added to `tracks` after version 1: name and definition.
-const ADDED_COLUMNS: [(&str, &str); 18] = [
+const ADDED_COLUMNS: [(&str, &str); 19] = [
     ("store", "store TEXT NOT NULL DEFAULT ''"),
     ("store_url", "store_url TEXT"),
     // Where the key came from: 'analysis', 'tags', or another app's name;
@@ -202,6 +203,9 @@ const ADDED_COLUMNS: [(&str, &str); 18] = [
     ("grid_locked", "grid_locked INTEGER NOT NULL DEFAULT 0"),
     // The analysed grid fits the beats poorly: worth a check (version 10).
     ("grid_unsure", "grid_unsure INTEGER NOT NULL DEFAULT 0"),
+    // How the grid follows the tempo, as `GridMode::name`; empty for the
+    // mode set in Settings (version 14).
+    ("grid_mode", "grid_mode TEXT NOT NULL DEFAULT ''"),
 ];
 
 /// Tracks the DJ linked as going well together: `track` links to `linked`. Created on every open rather than by
@@ -755,7 +759,7 @@ impl Library {
                     comment, grouping, labels, play_count, grid, added, key_source,
                     remix, year, track_number, user1, user2, gain, last_played,
                     disc_number, label, composer, remixer, isrc, user_more, stage, grid_source,
-                    grid_locked, grid_unsure
+                    grid_locked, grid_unsure, grid_mode
              FROM tracks WHERE id NOT IN (SELECT track_id FROM removed) ORDER BY id",
         )?;
         let rows = q.query_map([], |r| {
@@ -797,6 +801,7 @@ impl Library {
                         grid_from: grid_source.unwrap_or_default(),
                         grid_locked: r.get(33)?,
                         grid_unsure: r.get(34)?,
+                        grid_mode: opendj_engine::GridMode::from_name(&r.get::<_, String>(35)?),
                         added: r.get(16)?,
                         missing: false,
                         key_detected: key_source.map(|s| s == "analysis"),
@@ -1148,6 +1153,21 @@ impl Library {
         self.db.execute(
             "UPDATE tracks SET grid_locked = ?2 WHERE id = ?1",
             params![row, locked],
+        )?;
+        Ok(())
+    }
+
+    /// Keeps how a track's grid follows its tempo; None for the mode set in
+    /// Settings.
+    pub fn set_grid_mode(
+        &self,
+        id: usize,
+        mode: Option<opendj_engine::GridMode>,
+    ) -> Result<(), Error> {
+        let Some(row) = row_id(id) else { return Ok(()) };
+        self.db.execute(
+            "UPDATE tracks SET grid_mode = ?2 WHERE id = ?1",
+            params![row, mode.map_or("", |m| m.name())],
         )?;
         Ok(())
     }
@@ -1504,6 +1524,45 @@ impl Library {
             ],
         )?;
         Ok(())
+    }
+
+    /// Puts collection track `track` in the place of streamed track
+    /// `stream_id` on `service` in every list it stands in, keeping its
+    /// place and when it was played or added. Returns the lists changed.
+    pub fn fill_streamed(
+        &mut self,
+        service: &str,
+        stream_id: &str,
+        track: usize,
+    ) -> Result<Vec<i64>, Error> {
+        let Some(row) = row_id(track) else {
+            return Ok(Vec::new());
+        };
+        let tx = self.db.transaction()?;
+        let places: Vec<(i64, i64, Option<i64>)> = tx
+            .prepare(
+                "SELECT playlist_id, position, played_at FROM list_streams
+                 WHERE service = ?1 AND stream_id = ?2",
+            )?
+            .query_map(params![service, stream_id], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            })?
+            .collect::<Result<_, _>>()?;
+        for (list, position, at) in &places {
+            tx.execute(
+                "DELETE FROM list_streams WHERE playlist_id = ?1 AND position = ?2",
+                params![list, position],
+            )?;
+            tx.execute(
+                "INSERT INTO playlist_tracks (playlist_id, position, track_id, played_at)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![list, position, row, at],
+            )?;
+        }
+        tx.commit()?;
+        let mut lists: Vec<i64> = places.into_iter().map(|(l, _, _)| l).collect();
+        lists.dedup();
+        Ok(lists)
     }
 
     /// Appends tracks to a list. Tracks not in the library are skipped.
@@ -3239,6 +3298,14 @@ mod tests {
             ("GBARL9600049", "Online Only")
         );
         assert_eq!(lib.streamed_without_isrc("tidal").unwrap(), ["1"]);
+        // Once the file is in, the track takes the placeholder's place.
+        let b = tracks.iter().find(|t| t.title == "Imported").unwrap().id;
+        let filled = lib.fill_streamed("tidal", "1", b).unwrap();
+        assert_eq!(filled, [id("Mixed").unwrap()]);
+        let entries = lib.playlist_entries(id("Mixed").unwrap()).unwrap();
+        assert!(matches!(entries[0], ListEntry::Track(t) if t == b));
+        assert_eq!(entries.len(), 4);
+        assert!(lib.fill_streamed("tidal", "nope", b).unwrap().is_empty());
         lib.remove_import("vdj", |_| false).unwrap();
         assert!(lib.wanted().unwrap().is_empty());
         assert!(!lib.has_streamed_entries().unwrap());
@@ -3440,6 +3507,23 @@ mod tests {
         assert_eq!(t.grid, BeatGrid::constant(126.0, 0.1));
         assert!(!t.info.grid_unsure);
         assert!(t.info.grid_locked, "the lock stays");
+    }
+
+    #[test]
+    fn a_grid_mode_is_kept_and_searchable() {
+        use opendj_engine::GridMode;
+        let mut lib = Library::in_memory().unwrap();
+        lib.sync(&[file_track("/m/a.mp3", "A"), file_track("/m/b.mp3", "B")])
+            .unwrap();
+        let a = lib.tracks(|_| true).unwrap().remove(0);
+        assert_eq!(a.info.grid_mode, None);
+        lib.set_grid_mode(a.id, Some(GridMode::Flexible)).unwrap();
+        assert_eq!(
+            lib.tracks(|_| true).unwrap()[0].info.grid_mode,
+            Some(GridMode::Flexible)
+        );
+        lib.set_grid_mode(a.id, None).unwrap();
+        assert_eq!(lib.tracks(|_| true).unwrap()[0].info.grid_mode, None);
     }
 
     #[test]

@@ -56,7 +56,7 @@ pub struct Playlist {
     pub version: String,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StreamTrack {
     /// The service's track id; empty for the DJ's own local files.
     pub id: String,
@@ -68,6 +68,10 @@ pub struct StreamTrack {
     pub artists: Vec<String>,
     pub album: String,
     pub duration: f64,
+    /// The tempo and key the service gives, for those it knows ("Am",
+    /// "F#"); empty otherwise.
+    pub bpm: f64,
+    pub key: String,
 }
 
 impl StreamTrack {
@@ -122,6 +126,38 @@ pub enum Request {
         tracks: Vec<Wanted>,
     },
     Disconnect,
+    /// Browse through this add-on from now on: it signs in, lists the
+    /// playlists and searches (see [`crate::sources::Catalog`]).
+    Catalog(crate::sources::Catalog),
+    /// Search the catalog for artists, albums and tracks; answered with
+    /// [`Event::Searched`].
+    Search(String),
+    /// An artist's page (its key, "artist:<id>"): their top tracks and
+    /// albums, answered with [`Event::Searched`] under that key.
+    Artist(String),
+}
+
+/// What a catalog search found, best first in each kind.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Hits {
+    pub artists: Vec<Hit>,
+    pub albums: Vec<Hit>,
+    /// Each with its cover's address, or empty.
+    pub tracks: Vec<(StreamTrack, String)>,
+}
+
+/// An artist or album a catalog search found.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Hit {
+    /// What lists its tracks, e.g. "artist:123" or "album:456".
+    pub key: String,
+    pub name: String,
+    /// An album's artist; empty for an artist.
+    pub by: String,
+    /// Its picture's address, or empty.
+    pub picture: String,
+    /// How many tracks, when known.
+    pub count: usize,
 }
 
 /// A track to put in a playlist made on Spotify: Spotify's id when it is
@@ -181,6 +217,11 @@ pub enum Event {
         error: String,
     },
     Disconnected,
+    /// What a [`Request::Search`] for `words` found.
+    Searched {
+        words: String,
+        hits: Hits,
+    },
 }
 
 /// A streaming service's worker, as the UI talks to it.
@@ -370,6 +411,9 @@ impl Worker {
                         self.emit(Event::SignInFailed(format!("Couldn't refresh: {e}")));
                     }
                 }
+                // Only TIDAL browses through an add-on, or searches the
+                // catalog.
+                Request::Catalog(_) | Request::Search(_) | Request::Artist(_) => {}
                 Request::Disconnect => {
                     if let Some(s) = self.session.take() {
                         Saved {
@@ -822,6 +866,7 @@ fn parse_item(item: &Value) -> Option<StreamTrack> {
         artists,
         album: t["album"]["name"].as_str().unwrap_or_default().to_string(),
         duration: t["duration_ms"].as_f64().unwrap_or(0.0) / 1000.0,
+        ..Default::default()
     })
 }
 
@@ -1156,6 +1201,7 @@ mod tests {
             artists: vec!["Faithless".into(), "Rollo".into()],
             album: String::new(),
             duration: 0.0,
+            ..Default::default()
         };
         let m = |title: &str, artist: &str| matches(&sp, &normalize(title), &normalize(artist));
         assert!(m("Insomnia (Extended Mix)", "Faithless"));
@@ -1193,6 +1239,7 @@ mod tests {
             artists: vec![artist.into()],
             album: String::new(),
             duration,
+            ..Default::default()
         }
     }
 

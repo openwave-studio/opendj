@@ -48,7 +48,7 @@ export component SuggestionList inherits Rectangle {
         for s[i] in items: Rectangle {
             height: 28px;
             border-radius: 5px;
-            background: i == highlight ? Theme.selection : sta.has-hover ? Theme.n-3a3a3d : transparent;
+            background: i == highlight ? Theme.selection : sta.has-hover ? Theme.n-38373d : transparent;
             HorizontalLayout {
                 padding-left: 10px;
                 padding-right: 10px;
@@ -127,12 +127,12 @@ export global FilterUi {
 }
 
 component PopupBackground inherits Rectangle {
-    background: Theme.panel-raised;
-    border-radius: 10px;
+    background: Theme.pill-list;
+    border-radius: 9px;
     border-width: 1px;
     border-color: Theme.border;
-    drop-shadow-blur: 16px;
-    drop-shadow-color: Theme.s-000000b0;
+    drop-shadow-blur: 14px;
+    drop-shadow-color: Theme.s-000000a0;
 }
 
 component Toggle inherits Rectangle {
@@ -438,7 +438,7 @@ export component FilterBar inherits Rectangle {
                                     if first && section == 2: Rectangle {
                                         height: 28px;
                                         border-radius: 5px;
-                                        background: mfta.has-hover ? Theme.n-3a3a3d : transparent;
+                                        background: mfta.has-hover ? Theme.n-38373d : transparent;
                                         Text {
                                             x: 10px;
                                             text: (more-fields ? "▾ " : "▸ ") + "More fields";
@@ -452,7 +452,7 @@ export component FilterBar inherits Rectangle {
                                     if section < 2 || more-fields: Rectangle {
                                         height: 28px;
                                         border-radius: 5px;
-                                        background: ata.has-hover ? Theme.n-3a3a3d : transparent;
+                                        background: ata.has-hover ? Theme.n-38373d : transparent;
                                         Text { x: section == 2 ? 22px : 10px; text: name; color: Theme.text; font-size: 13px; vertical-alignment: center; }
                                         ata := TouchArea {
                                             mouse-cursor: pointer;
@@ -587,7 +587,7 @@ export component FilterBar inherits Rectangle {
                     for c[i] in FilterUi.choices: Rectangle {
                         height: 28px;
                         border-radius: 5px;
-                        background: ota.has-hover ? Theme.n-3a3a3d : transparent;
+                        background: ota.has-hover ? Theme.n-38373d : transparent;
                         HorizontalLayout {
                             padding-left: 6px;
                             padding-right: 8px;
@@ -616,7 +616,7 @@ export component FilterBar inherits Rectangle {
                     if FilterUi.more > 0: Rectangle {
                         height: 28px;
                         border-radius: 5px;
-                        background: mta.has-hover ? Theme.n-3a3a3d : transparent;
+                        background: mta.has-hover ? Theme.n-38373d : transparent;
                         Text {
                             x: 6px;
                             text: "Show " + FilterUi.more + " more";

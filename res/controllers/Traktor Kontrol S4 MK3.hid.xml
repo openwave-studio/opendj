@@ -18,7 +18,7 @@
                     label="Deck A">
                     <value label="Aqua" color="#00FF49">aqua</value>
                     <value label="Azalea" color="#FF477E">azalea</value>
-                    <value label="Blue" color="#0000FF">blue</value>
+                    <value label="Blue" color="#0000FF" default="true">blue</value>
                     <value label="Carrot" color="#FF5E00">carrot</value>
                     <value label="Celeste" color="#00FFFF">celeste</value>
                     <value label="Fuscia" color="#FF0091">fuscia</value>
@@ -28,7 +28,7 @@
                     <value label="Magenta" color="#FF0079">magenta</value>
                     <value label="Orange" color="#FF7800">orange</value>
                     <value label="Purple" color="#FF00FF">purple</value>
-                    <value label="Red" color="#FF0000" default="true">red</value>
+                    <value label="Red" color="#FF0000">red</value>
                     <value label="Salmon" color="#FF4761">salmon</value>
                     <value label="Sky" color="#0091FF">sky</value>
                     <value label="White" color="#FFFFFF">white</value>
@@ -70,13 +70,13 @@
                     <value label="Honey" color="#FF9200">honey</value>
                     <value label="Lime" color="#81FF00">lime</value>
                     <value label="Magenta" color="#FF0079">magenta</value>
-                    <value label="Orange" color="#FF7800">orange</value>
+                    <value label="Orange" color="#FF7800" default="true">orange</value>
                     <value label="Purple" color="#FF00FF">purple</value>
                     <value label="Red" color="#FF0000">red</value>
                     <value label="Salmon" color="#FF4761">salmon</value>
                     <value label="Sky" color="#0091FF">sky</value>
                     <value label="White" color="#FFFFFF">white</value>
-                    <value label="Yellow" color="#FFFF00" default="true">yellow</value>
+                    <value label="Yellow" color="#FFFF00">yellow</value>
                 </option>
                 <option
                     variable="deckD"
@@ -92,8 +92,8 @@
                     <value label="Honey" color="#FF9200">honey</value>
                     <value label="Lime" color="#81FF00">lime</value>
                     <value label="Magenta" color="#FF0079">magenta</value>
-                    <value label="Orange" color="#FF7800">orange</value>
-                    <value label="Purple" color="#FF00FF" default="true">purple</value>
+                    <value label="Orange" color="#FF7800" default="true">orange</value>
+                    <value label="Purple" color="#FF00FF">purple</value>
                     <value label="Red" color="#FF0000">red</value>
                     <value label="Salmon" color="#FF4761">salmon</value>
                     <value label="Sky" color="#0091FF">sky</value>
@@ -253,8 +253,8 @@
                 variable="defaultPadLayout"
                 type="enum"
                 label="Default Pad Layout">
-                <value label="Intro/Outro + 4 hotcues" default="true">default</value>
-                <value label="Hotcues">hotcue</value>
+                <value label="Intro/Outro + 4 hotcues">default</value>
+                <value label="Hotcues" default="true">hotcue</value>
                 <value label="Sampler or beatloop">samplerBeatloop</value>
                 <value label="Keyboard">keyboard</value>
                 <description>

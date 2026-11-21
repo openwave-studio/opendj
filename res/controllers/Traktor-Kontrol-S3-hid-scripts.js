@@ -828,8 +828,17 @@ TraktorS3.Deck = class {
         // Various states
         this.syncPressedTimer = 0;
         this.previewPressed = false;
-        // padModeState 0 is hotcues, 1 is samplers
+        // padModeState 0 is hotcues, 1 is samplers, 2 is stems
         this.padModeState = 0;
+        // openDJ: as in Traktor, SAMPLES plays the stems of a track that
+        // has them: pads 1-4 mute stems 1-4, holding pad 5-8 focuses a stem
+        // so MOVE sets its volume. The stem held, 0 for none.
+        this.stemFocus = 0;
+        // openDJ: as in Traktor, hold GRID and turn the jog wheel to move
+        // the beat grid.
+        this.gridHeld = false;
+        this.gridMoved = false;
+        this.gridTicks = 0;
 
         // Jog wheel state
         this.lastTickVal = 0;
@@ -959,7 +968,8 @@ TraktorS3.Deck = class {
 
     cueHandler(field) {
         if (this.shiftPressed) {
-            engine.setValue(this.activeChannel, "cue_gotoandstop", field.value);
+            // openDJ: back to the start of the track, as in Traktor.
+            engine.setValue(this.activeChannel, "start", field.value);
         } else {
             engine.setValue(this.activeChannel, "cue_default", field.value);
         }
@@ -967,7 +977,12 @@ TraktorS3.Deck = class {
 
     syncHandler(field) {
         if (this.shiftPressed) {
-            engine.setValue(this.activeChannel, "beatsync_phase", field.value);
+            // openDJ: SHIFT + SYNC makes the deck the tempo leader, as
+            // Traktor's MASTER.
+            if (field.value) {
+                const leader = engine.getValue(this.activeChannel, "sync_leader") > 0;
+                engine.setValue(this.activeChannel, "sync_leader", leader ? 0 : 1);
+            }
             // Light LED while pressed
             this.colorOutput(field.value, "sync_enabled");
             return;
@@ -1003,10 +1018,10 @@ TraktorS3.Deck = class {
     }
 
     keylockHandler(field) {
-        // shift + keylock resets pitch (in either mode).
+        // openDJ: shift + keylock resets the tempo, as in Traktor.
         if (this.shiftPressed) {
             if (field.value) {
-                engine.setValue(this.activeChannel, "pitch_adjust_set_default", 1);
+                script.triggerControl(this.activeChannel, "rate_set_zero");
             }
         } else if (TraktorS3.PitchSliderRelativeMode) {
             if (field.value) {
@@ -1042,7 +1057,11 @@ TraktorS3.Deck = class {
             return;
         }
 
-        if (this.padModeState === 0 && field.name === "!samples") {
+        if (field.name === "!samples" && engine.getValue(this.activeChannel, "stem_count") > 0) {
+            // openDJ: a track with stems: SAMPLES plays its stems, as in Traktor.
+            this.padModeState = 2;
+            this.stemFocus = 0;
+        } else if (this.padModeState !== 1 && field.name === "!samples") {
             // If we are in hotcues mode and samples mode is activated
             engine.setValue("[Samplers]", "show_samplers", 1);
             this.padModeState = 1;
@@ -1055,6 +1074,11 @@ TraktorS3.Deck = class {
 
     numberButtonHandler(field) {
         const padNumber = parseInt(field.name[field.name.length - 1]);
+
+        if (this.padModeState === 2) {
+            this.stemPad(padNumber, field.value);
+            return;
+        }
 
         // Hotcues mode
         if (this.padModeState === 0) {
@@ -1217,7 +1241,12 @@ TraktorS3.Deck = class {
             delta = -1;
         }
 
-        if (this.shiftPressed) {
+        if (this.padModeState === 2 && this.stemFocus > 0) {
+            // openDJ: the focused stem's volume, as in Traktor.
+            const stemGroup = TraktorS3.stemGroup(this.activeChannel, this.stemFocus);
+            const volume = engine.getValue(stemGroup, "volume") + delta * 0.05;
+            engine.setValue(stemGroup, "volume", Math.max(0, Math.min(1, volume)));
+        } else if (this.shiftPressed) {
             const beatjumpSize = engine.getValue(this.activeChannel, "beatjump_size");
             if (delta > 0) {
                 engine.setValue(this.activeChannel, "beatjump_size", beatjumpSize * 2);
@@ -1260,11 +1289,21 @@ TraktorS3.Deck = class {
     }
 
     quantizeHandler(field) {
-        if (field.value === 0) {
+        // openDJ: the GRID button. Hold it and turn the jog wheel to move
+        // the beat grid, as in Traktor; a tap without turning toggles
+        // quantize (SHIFT: sets a beat where the deck is).
+        if (field.value) {
+            this.gridHeld = true;
+            this.gridMoved = false;
+            this.gridTicks = 0;
+            return;
+        }
+        this.gridHeld = false;
+        if (this.gridMoved) {
             return;
         }
         if (this.shiftPressed) {
-            engine.setValue(this.activeChannel, "beats_translate_curpos", field.value);
+            script.triggerControl(this.activeChannel, "beats_translate_curpos");
         } else {
             script.toggleControl(this.activeChannel, "quantize");
         }
@@ -1304,6 +1343,19 @@ TraktorS3.Deck = class {
 
     jogHandler(field) {
         const deltas = this.wheelDeltas(field.value);
+
+        if (this.gridHeld) {
+            // openDJ: GRID held: the wheel moves the beat grid, a step every
+            // 24 ticks (32 a turn), as in Traktor.
+            this.gridTicks += deltas[0];
+            while (Math.abs(this.gridTicks) >= 24) {
+                const later = this.gridTicks > 0;
+                script.triggerControl(this.activeChannel, later ? "beats_translate_later" : "beats_translate_earlier");
+                this.gridTicks -= later ? 24 : -24;
+                this.gridMoved = true;
+            }
+            return;
+        }
 
         // If shift button is held, do a simple seek.
         if (this.shiftPressed) {
@@ -1554,7 +1606,51 @@ TraktorS3.Deck = class {
         this.controller.hid.setOutput(this.group, "!pad_" + number, ledValue, !TraktorS3.batchingOutputs);
     }
 
+    // openDJ: Stems mode, as in Traktor.
+    stemPad(padNumber, pressed) {
+        if (padNumber <= 4) {
+            if (pressed && padNumber <= engine.getValue(this.activeChannel, "stem_count")) {
+                script.toggleControl(TraktorS3.stemGroup(this.activeChannel, padNumber), "mute");
+            }
+            return;
+        }
+        const stem = padNumber - 4;
+        if (pressed) {
+            this.stemFocus = stem;
+        } else if (this.stemFocus === stem) {
+            this.stemFocus = 0;
+        }
+        this.lightPads();
+    }
+
+    lightStems() {
+        this.colorOutput(0, "hotcues");
+        this.colorOutput(1, "samples");
+        const count = engine.getValue(this.activeChannel, "stem_count");
+        for (let stem = 1; stem <= 4; ++stem) {
+            const stemGroup = TraktorS3.stemGroup(this.activeChannel, stem);
+            if (stem > count) {
+                this.controller.hid.setOutput(this.group, "!pad_" + stem, 0, !TraktorS3.batchingOutputs);
+                this.controller.hid.setOutput(this.group, "!pad_" + (stem + 4), 0, !TraktorS3.batchingOutputs);
+                continue;
+            }
+            // In the stem's colour, bright while it plays and dim when muted.
+            let ledValue = this.controller.colorMap.getValueForNearestColor(engine.getValue(stemGroup, "color"));
+            ledValue += engine.getValue(stemGroup, "mute") ? TraktorS3.LEDDimValue : TraktorS3.LEDBrightValue;
+            this.controller.hid.setOutput(this.group, "!pad_" + stem, ledValue, !TraktorS3.batchingOutputs);
+            this.colorOutput(this.stemFocus === stem, "!pad_" + (stem + 4));
+        }
+    }
+
     lightPads() {
+        if (this.padModeState === 2) {
+            if (engine.getValue(this.activeChannel, "stem_count") > 0) {
+                this.lightStems();
+                return;
+            }
+            // A track without stems: back to hot cues.
+            this.padModeState = 0;
+        }
         // Samplers
         if (this.padModeState === 1) {
             this.colorOutput(0, "hotcues");
@@ -1720,6 +1816,18 @@ TraktorS3.Channel = class {
         this.vuConnection = engine.makeConnection(this.group, "vu_meter", TraktorS3.Channel.prototype.vuMeterHandler.bind(this));
         this.clipConnection = engine.makeConnection(this.group, "peak_indicator", TraktorS3.Controller.prototype.peakOutput.bind(this.controller));
         this.controller.linkChannelOutput(this.group, "pfl", TraktorS3.Controller.prototype.pflOutput.bind(this.controller));
+        // openDJ: Stems mode lights.
+        const relightStems = () => {
+            const deck = this.parentDeck;
+            if (deck.activeChannel === this.group && deck.padModeState === 2) {
+                deck.lightPads();
+            }
+        };
+        engine.makeConnection(this.group, "stem_count", relightStems);
+        for (let stem = 1; stem <= 4; stem++) {
+            engine.makeConnection(TraktorS3.stemGroup(this.group, stem), "mute", relightStems);
+            engine.makeConnection(TraktorS3.stemGroup(this.group, stem), "color", relightStems);
+        }
         for (let j = 1; j <= 8; j++) {
             this.hotcueCallbacks.push(engine.makeConnection(this.group, "hotcue_" + j + "_status",
                 TraktorS3.Channel.prototype.hotcuesOutput.bind(this)));
@@ -1814,6 +1922,11 @@ TraktorS3.Channel = class {
  * @param {number} value An integer value in the range `[0 .. 4095]`.
  * @returns {number} `value` normalized to `[0, 1]`.
  */
+// openDJ: `[ChannelN_StemM]`, the group of a deck's stem.
+TraktorS3.stemGroup = function(group, stem) {
+    return group.substr(0, group.length - 1) + "_Stem" + stem + "]";
+};
+
 TraktorS3.normalize12BitValue = function(value) {
     return value === 2047 ? 0.5 : value / 4095;
 };

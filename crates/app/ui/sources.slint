@@ -179,7 +179,7 @@ component Line inherits Rectangle {
     callback clicked();
     height: 30px;
     border-radius: 5px;
-    background: ta.has-hover ? Theme.n-3a3a3d : transparent;
+    background: ta.has-hover ? Theme.n-38373d : transparent;
     Text { x: 10px; text: root.text; color: root.text-color; font-size: 13px; vertical-alignment: center; }
     ta := TouchArea { clicked => { root.clicked(); } }
 }
@@ -486,7 +486,7 @@ component PreviewButton inherits Rectangle {
     width: 26px;
     height: 22px;
     border-radius: 11px;
-    background: ta.has-hover ? Theme.n-3a3a3d : transparent;
+    background: ta.has-hover ? Theme.n-38373d : transparent;
     property <color> ink: state == 1 || state == 2 ? Theme.accent : ta.has-hover ? Theme.text : Theme.text-dim;
     if state == 0 || state == 3: Path {
         width: 9px;
@@ -515,7 +515,7 @@ component CacheButtons inherits HorizontalLayout {
         height: 22px;
         y: (parent.height - self.height) / 2;
         border-radius: 11px;
-        background: pta.has-hover ? Theme.n-3a3a3d : transparent;
+        background: pta.has-hover ? Theme.n-38373d : transparent;
         Path {
             width: 9px;
             height: 10px;
@@ -911,7 +911,7 @@ export component SourceResults inherits Rectangle {
                         height: 22px;
                         y: (parent.height - self.height) / 2;
                         border-radius: 11px;
-                        background: xta.has-hover ? Theme.n-3a3a3d : transparent;
+                        background: xta.has-hover ? Theme.n-38373d : transparent;
                         CloseIcon { size: 9px; color: xta.has-hover ? Theme.c-ff6b5e : Theme.text-dim; }
                         xta := TouchArea { mouse-cursor: pointer; clicked => { SourceUi.remove-download(i); } }
                     }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxControllerPreset mixxxVersion="2.4.0" schemaVersion="1">
+  <info>
+    <name>Traktor Kontrol X1 MK3</name>
+    <author>openDJ</author>
+    <description>openDJ's HID mapping for the Traktor Kontrol X1 MK3: two effect units or the mixer on top, browse and loop encoders, hot cues and transport, played as in Traktor. Written from the controller's published HID report layout. Its displays stay dark.</description>
+    <devices>
+      <product protocol="hid" vendor_id="0x17cc" product_id="0x2200" />
+    </devices>
+  </info>
+  <controller id="Traktor">
+    <scriptfiles>
+      <file filename="Traktor-Kontrol-X1-MK3.js" functionprefix="TraktorX1MK3" />
+    </scriptfiles>
+  </controller>
+</MixxxControllerPreset>

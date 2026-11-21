@@ -8,12 +8,16 @@ import "fonts/InterTabular-Medium.otf";
 import "fonts/InterTabular-SemiBold.otf";
 import "fonts/InterTabular-Bold.otf";
 import "fonts/ZenDots-Regular.ttf";
+import "fonts/RobotoCondensed-Medium.ttf";
+import "fonts/RobotoCondensed-Bold.ttf";
 
 export global Theme {
     // The bundled Inter Tabular, or the system font on macOS (see ui_font.rs).
     in-out property <string> font-family: "Inter Tabular";
     // The openDJ wordmark.
     out property <string> brand-font: "Zen Dots";
+    // Section titles (SCENE, LOOP, MASTER), in capitals.
+    out property <string> title-font: "Roboto Condensed";
     // Light appearance (Settings › Appearance), set from Rust:
     // every colour below has a Light value beside its Dark one. The large
     // waveforms keep dark wells in both (see `wave-well`).
@@ -24,6 +28,25 @@ export global Theme {
     out property <color> background: root.light ? #e4e3ea : #0e0e10;
     out property <color> panel: root.light ? #f7f6fa : #1a1a1c;
     out property <color> panel-raised: root.light ? #ffffff : #232326;
+    // The shared controls (pills.slint): a value or stepper pill's well,
+    // and under the pointer or open; the titled list it opens; a slider's
+    // thumb, and under the pointer; the SCENE wheel's slices.
+    out property <color> pill: root.light ? #ffffff : #111113;
+    out property <color> pill-hover: root.light ? #ffffff : #17151e;
+    out property <color> pill-list: root.light ? #ffffff : #262629;
+    out property <color> thumb: root.light ? root.lilac-text : #ece8ff;
+    out property <color> thumb-hover: root.light ? #7d5fe0 : #ffffff;
+    // A switch pill's border while on, and its text while off.
+    out property <color> pill-on-border: root.light ? #c9bdf2 : #3a3346;
+    out property <color> pill-off-text: root.light ? #8e8c96 : #6f6d78;
+    // Section titles.
+    out property <color> section-title: root.light ? #4a4852 : #d9d6e4;
+    // A fader's cap (top and bottom of its shading) and its edge: graphite,
+    // with a lilac line across its middle.
+    out property <color> fader-cap-top: root.light ? #fbfbfd : #4a4a50;
+    out property <color> fader-cap-bottom: root.light ? #dcdbe3 : #26262b;
+    out property <color> fader-cap-edge: root.light ? #b9b7c4 : #55555c;
+    out property <color> wheel-slice: root.light ? #f0eff4 : #151517;
     // The library browser's background, and its rows, which alternate
     // between two tones.
     out property <color> browser: root.light ? #ffffff : #101112;
@@ -37,7 +60,11 @@ export global Theme {
     out property <color> control-pressed: root.light ? #e2e0ea : #2c2c2f;
     out property <color> border: root.light ? #c9c7d3 : #353538;
     // Automix: its button while on, and the crossfader while Automix holds it.
-    out property <color> automix: root.light ? #24a148 : #30c158;
+    // Automix's colour: cyan, apart from Play's green and the lilac of
+    // selections, on its power button, the crossfader it holds and its mixes.
+    out property <color> automix: root.light ? #1597ad : #3ccbe0;
+    // Ink on an Automix-filled button.
+    out property <color> automix-ink: #0b2a30;
     out property <color> separator: root.light ? #d8d6e0 : #28282b;
     out property <color> text: root.light ? #16151b : #f2f2f7;
     out property <color> text-dim: root.light ? #5d5b69 : #8e8e93;
@@ -47,6 +74,9 @@ export global Theme {
     // The lit part of the ring round mixer knobs.
     out property <color> knob-arc: root.light ? #0060df : #0a84ff;
     out property <color> knob-ring: root.light ? #d5d3de : #3a3a3e;
+    // Matte knob caps (look 4): lit from above left.
+    out property <color> knob-matte-hi: root.light ? #ffffff : #4a4a50;
+    out property <color> knob-matte-lo: root.light ? #dcdae4 : #2a2a2f;
     out property <color> fader-handle: root.light ? #6e6c7a : #8e8e93;
     out property <color> tick: root.light ? #b5b3c0 : #3e3e42;
     // Electric Lilac, openDJ's own color: the logo, the accent and the
@@ -56,6 +86,11 @@ export global Theme {
     // Lilac used as text or a thin mark: the brand lilac on dark, a deeper
     // lilac on light, where #b69cff on white is too faint to read.
     out property <color> lilac-text: root.light ? #6a4bd4 : root.lilac;
+    // The low, mid and high bands, as the waveforms draw them (deeper on
+    // light, where the ice blue would vanish on white).
+    out property <color> band-low: root.light ? #b02f26 : #c8372d;
+    out property <color> band-mid: root.light ? #a86d0a : #f0a830;
+    out property <color> band-high: root.light ? #2a78ad : #b4e4ff;
     // The large waveforms' and overviews' background: dark in both
     // appearances, as the waveform colours are made for black.
     out property <color> wave-well: #0d0d0e;
@@ -127,6 +162,18 @@ export global Theme {
     out property <length> font-normal: 13px;
     out property <length> font-large: 17px;
     out property <length> font-xl: 24px;
+
+    // Play while playing (green) and CUE while held or at the cue point
+    // (yellow), as on players, whatever the deck's own colour.
+    // The one glow every lit round button shares (headphone cue, power):
+    // a soft lilac halo, and a faint lilac fill inside the ring.
+    out property <length> glow-blur: 4px;
+    out property <color> glow: root.accent.with-alpha(0.3);
+    // Opaque, so the glow under the button stays outside it.
+    out property <color> lit-fill: root.pill.mix(root.accent, 0.9);
+    out property <color> lit-fill-hover: root.pill.mix(root.accent, 0.84);
+    out property <color> play-lit: root.light ? #1f9d3a : #30d158;
+    out property <color> cue-lit: root.light ? #b38600 : #ffcc00;
 
     // Hotcue colors: blue, green, yellow, orange, red, pink, purple, teal.
     // Same order as the waveform shader.
@@ -202,6 +249,11 @@ export global Theme {
     out property <color> n-a0a0a8: root.light ? #66666b : #a0a0a8;
     out property <color> n-a1a1a6: root.light ? #6a6a6d : #a1a1a6;
     out property <color> n-a8a8ad: root.light ? #636366 : #a8a8ad;
+    out property <color> n-ff6b70: root.light ? #d93a40 : #ff6b70;
+    out property <color> n-6e58a8: root.light ? #8c72d9 : #6e58a8;
+    out property <color> n-2c2c31: root.light ? #d6d4e0 : #2c2c31;
+    out property <color> n-38373d: root.light ? #ebe9f3 : #38373d;
+    out property <color> n-313036: root.light ? #e4e1f0 : #313036;
     out property <color> n-a9aaab: root.light ? #676868 : #a9aaab;
     out property <color> n-b0b0b5: root.light ? #5c5c5e : #b0b0b5;
     out property <color> n-bbbbbb: root.light ? #585858 : #bbbbbb;

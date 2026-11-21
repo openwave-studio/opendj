@@ -1,19 +1,22 @@
 //! openDJ for tablets, iPad first: a very small DJ app on openDJ's engine.
 //!
-//! Two decks, the tracks in one folder, play/cue/sync, a crossfader and
-//! waveforms, and any MIDI controller with a Mixxx mapping (made for the
-//! DDJ-FLX4: its browse knob and LOAD buttons pick and load tracks). The
-//! desktop app's other parts (plugin hosting, add-on programs, stems with
-//! Python, the library database, HID controllers) are left out.
+//! Two decks, the tracks in one folder, play/cue/sync, headphone cue, a
+//! crossfader and waveforms, in the desktop app's look; and, for now, two
+//! controllers: the Pioneer DDJ-FLX4 and the Allen & Heath Xone:K2 (see
+//! `controllers.txt`), whose browse knobs and LOAD buttons pick and load
+//! tracks. The desktop app's other parts (plugin hosting, add-on programs,
+//! stems with Python, the library database, HID controllers) are left out.
 //!
 //! It runs on the desktop too (`cargo run -p opendj-tablet`), to try
 //! changes without an iPad. See `crates/tablet/README.md` for the iPad
 //! build.
 
+mod folder;
 mod session;
 mod wave;
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -21,7 +24,7 @@ use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
 use opendj_engine::{deck_group, AudioEngine, AudioSetup, Role, Route, Track};
-use slint::{ComponentHandle, Image, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};
 
 slint::include_modules!();
 
@@ -37,12 +40,15 @@ const SPAN: f64 = 8.0;
 /// How long an alert stays in the status line.
 const ALERT_TIME: Duration = Duration::from_secs(6);
 
-/// Where the tracks are: `OPENDJ_MUSIC` if set; on iPadOS the app's own
-/// Documents folder, which the Files app shows as On My iPad › openDJ;
-/// elsewhere the user's Music folder.
+/// Where the tracks are: `OPENDJ_MUSIC` if set; on iPadOS the folder
+/// picked with Folder, else the app's own Documents folder, which the Files
+/// app shows as On My iPad › openDJ; elsewhere the user's Music folder.
 fn music_folder() -> PathBuf {
     if let Some(dir) = std::env::var_os("OPENDJ_MUSIC").filter(|d| !d.is_empty()) {
         return PathBuf::from(dir);
+    }
+    if let Some(dir) = folder::restore() {
+        return dir;
     }
     let home = opendj_engine::paths::home_dir().unwrap_or_default();
     if cfg!(target_os = "ios") {
@@ -58,6 +64,15 @@ fn clock(seconds: f64) -> String {
     format!("{}:{:02}", s / 60, s % 60)
 }
 
+/// The folder's name, for the track list's heading.
+fn folder_name(folder: &std::path::Path) -> String {
+    folder
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .filter(|n| n != "Documents" || !cfg!(target_os = "ios"))
+        .unwrap_or_else(|| "On My iPad".into())
+}
+
 /// Takes the presses or steps a controller has left on `c`.
 fn take(c: &ControlHandle) -> f64 {
     let v = c.get();
@@ -65,6 +80,73 @@ fn take(c: &ControlHandle) -> f64 {
         c.set(0.0);
     }
     v
+}
+
+/// The controller files the app uses, one per line (see `controllers.txt`).
+const CONTROLLER_FILES: &str = include_str!("../controllers.txt");
+
+fn controller_files() -> impl Iterator<Item = &'static str> {
+    CONTROLLER_FILES
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty() && !l.starts_with('#'))
+}
+
+/// A folder with only the supported controllers' files, copied from the
+/// mappings folder (bundled beside the app on iPadOS, the repository's
+/// `res/controllers` on the desktop), so no other mapping is picked.
+fn controllers_dir() -> Option<PathBuf> {
+    let from = opendj_controllers::default_mappings_dir()?;
+    let to = opendj_engine::paths::cache_base()?
+        .join(opendj_engine::paths::app_folder_name())
+        .join("tablet-controllers");
+    let _ = std::fs::remove_dir_all(&to);
+    std::fs::create_dir_all(&to).ok()?;
+    for file in controller_files() {
+        if let Err(e) = std::fs::copy(from.join(file), to.join(file)) {
+            eprintln!("controller file {file}: {e}");
+        }
+    }
+    Some(to)
+}
+
+/// The outputs for a device with `channels` channels: the master on 1-2,
+/// and with four or more (a controller's own sound card) the headphones
+/// on 3-4.
+fn audio_setup(channels: u16) -> AudioSetup {
+    let mut setup = AudioSetup::default();
+    if channels >= 4 {
+        setup.routes.push(Route {
+            role: Role::Headphones,
+            device: String::new(),
+            pair: 1,
+        });
+    }
+    setup
+}
+
+/// What the AUDIO pill says for `channels`.
+fn outputs_text(channels: u16) -> String {
+    if channels >= 4 {
+        "Master 1-2 · Phones 3-4".into()
+    } else {
+        "Master 1-2 · no phones".into()
+    }
+}
+
+/// Up to two letters for a cover tile: the artist's initials, else the
+/// title's.
+fn initials(track: &Track) -> String {
+    let from = if track.artist.trim().is_empty() {
+        &track.title
+    } else {
+        &track.artist
+    };
+    from.split_whitespace()
+        .filter_map(|w| w.chars().find(|c| c.is_alphanumeric()))
+        .flat_map(char::to_uppercase)
+        .take(2)
+        .collect()
 }
 
 /// The controls one deck is played with.
@@ -75,6 +157,7 @@ struct DeckControls {
     sync: ControlHandle,
     position: ControlHandle,
     bpm: ControlHandle,
+    pfl: ControlHandle,
     /// A controller's LOAD button for this deck.
     load: ControlHandle,
 }
@@ -93,6 +176,7 @@ impl DeckControls {
             sync: get("sync_enabled"),
             position: get("playposition"),
             bpm: get("bpm"),
+            pfl: get("pfl"),
             load: reg.free(&g, "LoadSelectedTrack"),
         }
     }
@@ -105,40 +189,82 @@ struct State {
     /// Each deck's overview, and what it was drawn from: the track (by
     /// address) and how much of its waveform there was.
     overviews: [(usize, usize, Image); DECKS],
+    /// Each deck's cover, and the track (by address) it is for.
+    covers: [(usize, Option<Image>); DECKS],
     status: Option<(String, Instant)>,
+    /// The folder the tracks are in.
+    folder: PathBuf,
+    /// Tracks still in iCloud Drive, being downloaded.
+    cloud: HashSet<PathBuf>,
 }
 
-fn rows(tracks: &[Arc<Track>]) -> ModelRc<Row> {
+fn path_of(track: &Track) -> Option<&std::path::Path> {
+    match &track.source {
+        opendj_engine::Source::File(p) => Some(p),
+        _ => None,
+    }
+}
+
+fn row(t: &Track, in_cloud: bool) -> Row {
+    Row {
+        title: t.title.clone().into(),
+        artist: t.artist.clone().into(),
+        bpm: if t.bpm > 0.0 {
+            format!("{:.1}", t.bpm).into()
+        } else {
+            SharedString::new()
+        },
+        key: t.key.clone().into(),
+        time: if in_cloud {
+            "iCloud".into()
+        } else {
+            clock(t.duration).into()
+        },
+    }
+}
+
+fn rows(tracks: &[Arc<Track>], cloud: &HashSet<PathBuf>) -> ModelRc<Row> {
     let rows: Vec<Row> = tracks
         .iter()
-        .map(|t| Row {
-            title: t.title.clone().into(),
-            artist: t.artist.clone().into(),
-            bpm: if t.bpm > 0.0 {
-                format!("{:.0}", t.bpm).into()
-            } else {
-                SharedString::new()
-            },
-            key: t.key.clone().into(),
-            time: clock(t.duration).into(),
-        })
+        .map(|t| row(t, path_of(t).is_some_and(|p| cloud.contains(p))))
         .collect();
     ModelRc::new(VecModel::from(rows))
 }
 
-/// Reads the folder's tracks off the UI thread, then lists them.
-fn scan(window: slint::Weak<AppWindow>, state: Rc<RefCell<State>>, folder: PathBuf) {
+/// What the status line says about the iCloud downloads.
+fn cloud_status(n: usize) -> SharedString {
+    match n {
+        0 => SharedString::new(),
+        1 => "1 track is downloading from iCloud".into(),
+        n => format!("{n} tracks are downloading from iCloud").into(),
+    }
+}
+
+/// Reads the folder's tracks off the UI thread, then lists them. Tracks
+/// still in iCloud are listed by name and asked for.
+fn scan(window: slint::Weak<AppWindow>, state: Rc<RefCell<State>>) {
+    let folder = state.borrow().folder.clone();
     if let Some(w) = window.upgrade() {
         w.set_status("Reading your tracks…".into());
+        w.set_folder(folder_name(&folder).into());
     }
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        let mut tracks = opendj_engine::scan::scan(&folder, 0);
+        let (files, cloud) = folder::audio_files(&folder);
+        let mut tracks: Vec<Arc<Track>> = files
+            .iter()
+            .enumerate()
+            .map(|(i, p)| Arc::new(opendj_engine::scan::read_track(i, p)))
+            .collect();
         tracks.sort_by(|a, b| {
             (a.artist.to_lowercase(), a.title.to_lowercase())
                 .cmp(&(b.artist.to_lowercase(), b.title.to_lowercase()))
         });
-        let _ = tx.send(tracks);
+        let cloud: HashSet<PathBuf> = cloud.into_iter().collect();
+        let _ = tx.send((tracks, cloud.clone()));
+        for path in &cloud {
+            folder::download(path);
+        }
     });
     // Polled rather than sent across: the tracks stay on this thread.
     let timer = Rc::new(slint::Timer::default());
@@ -147,44 +273,90 @@ fn scan(window: slint::Weak<AppWindow>, state: Rc<RefCell<State>>, folder: PathB
         slint::TimerMode::Repeated,
         Duration::from_millis(100),
         move || {
-            let Ok(tracks) = rx.try_recv() else {
+            let Ok((tracks, cloud)) = rx.try_recv() else {
                 return;
             };
             keep.stop();
             let Some(w) = window.upgrade() else {
                 return;
             };
-            w.set_rows(rows(&tracks));
+            w.set_rows(rows(&tracks, &cloud));
             let mut s = state.borrow_mut();
             s.selected = (!tracks.is_empty()).then_some(0);
             w.set_selected(s.selected.map_or(-1, |i| i as i32));
             w.set_status(if tracks.is_empty() {
-                "No tracks yet: copy music into openDJ's folder in the Files app, then Rescan"
-                    .into()
+                if folder::CAN_PICK {
+                    "No tracks here: tap Folder to pick your music, or copy it into openDJ's folder in the Files app"
+                        .into()
+                } else {
+                    "No tracks yet: copy music into the folder, then Rescan".into()
+                }
             } else {
-                SharedString::new()
+                cloud_status(cloud.len())
             });
             s.tracks = tracks;
+            s.cloud = cloud;
         },
     );
 }
 
-fn main() -> Result<(), slint::PlatformError> {
-    let channels = session::start();
-    let registry = ControlRegistry::new();
-    let mut setup = AudioSetup::default();
-    // A controller's own sound card: the headphones on its second pair.
-    if channels >= 4 {
-        setup.routes.push(Route {
-            role: Role::Headphones,
-            device: String::new(),
-            pair: 1,
-        });
+/// Re-reads the iCloud tracks that have downloaded since the last look,
+/// in place, so the list doesn't jump.
+fn arrived(w: &AppWindow, s: &mut State) {
+    if s.cloud.is_empty() {
+        return;
     }
-    let engine = Rc::new(AudioEngine::start(registry.clone(), &setup));
+    let here: Vec<PathBuf> = s
+        .cloud
+        .iter()
+        .filter(|p| folder::is_here(p))
+        .cloned()
+        .collect();
+    if here.is_empty() {
+        return;
+    }
+    let model = w.get_rows();
+    for (i, t) in s.tracks.iter_mut().enumerate() {
+        if path_of(t).is_some_and(|p| here.iter().any(|h| h == p)) {
+            let path = path_of(t).map(|p| p.to_path_buf()).unwrap_or_default();
+            *t = Arc::new(opendj_engine::scan::read_track(t.id, &path));
+            model.set_row_data(i, row(t, false));
+        }
+    }
+    for p in &here {
+        s.cloud.remove(p);
+    }
+    if s.status.is_none() {
+        w.set_status(cloud_status(s.cloud.len()));
+    }
+}
 
-    // Controllers: Mixxx's mappings, bundled beside the app.
-    let _controllers = match opendj_controllers::default_mappings_dir() {
+fn main() -> Result<(), slint::PlatformError> {
+    session::start();
+    let mut channels = session::channels();
+    let registry = ControlRegistry::new();
+    let engine = Rc::new(AudioEngine::start(registry.clone(), &audio_setup(channels)));
+
+    // The browser's controls, before any controller mapping looks for them.
+    let decks: [DeckControls; DECKS] = std::array::from_fn(|d| DeckControls::new(&registry, d));
+    let decks = Rc::new(decks);
+    let browse = [
+        (registry.free("[Library]", "MoveVertical"), 1.0),
+        (registry.free("[Library]", "ScrollVertical"), 1.0),
+        (registry.free("[Library]", "MoveDown"), 1.0),
+        (registry.free("[Library]", "MoveUp"), -1.0),
+        (registry.free("[Playlist]", "SelectTrackKnob"), 1.0),
+        (registry.free("[Playlist]", "SelectNextTrack"), 1.0),
+        (registry.free("[Playlist]", "SelectPrevTrack"), -1.0),
+    ];
+    // There is only a track list: LOAD buttons load rather than open a
+    // folder (the Xone:K2 mapping asks which pane has focus; 3 is tracks).
+    registry.free("[Library]", "focused_widget").set(3.0);
+    let crossfader = registry
+        .get("[Master]", "crossfader")
+        .expect("the engine has a crossfader");
+
+    let controllers = match controllers_dir() {
         Some(dir) => Some(opendj_controllers::Controllers::start(
             registry.clone(),
             dir,
@@ -198,29 +370,18 @@ fn main() -> Result<(), slint::PlatformError> {
     };
 
     let window = AppWindow::new()?;
-    let folder = music_folder();
-    window.set_folder(format!("Tracks in {}", folder.display()).into());
-
-    let decks: [DeckControls; DECKS] = std::array::from_fn(|d| DeckControls::new(&registry, d));
-    let decks = Rc::new(decks);
-    let crossfader = registry
-        .get("[Master]", "crossfader")
-        .expect("the engine has a crossfader");
-    let browse = [
-        (registry.free("[Library]", "MoveVertical"), 1.0),
-        (registry.free("[Library]", "ScrollVertical"), 1.0),
-        (registry.free("[Library]", "MoveDown"), 1.0),
-        (registry.free("[Library]", "MoveUp"), -1.0),
-        (registry.free("[Playlist]", "SelectTrackKnob"), 1.0),
-        (registry.free("[Playlist]", "SelectNextTrack"), 1.0),
-        (registry.free("[Playlist]", "SelectPrevTrack"), -1.0),
-    ];
+    window.set_can_pick_folder(folder::CAN_PICK);
+    window.set_outputs(outputs_text(channels).into());
+    window.set_phones(channels >= 4);
 
     let state = Rc::new(RefCell::new(State {
         tracks: Vec::new(),
         selected: None,
         overviews: Default::default(),
+        covers: Default::default(),
         status: None,
+        folder: music_folder(),
+        cloud: HashSet::new(),
     }));
 
     let load = {
@@ -230,6 +391,13 @@ fn main() -> Result<(), slint::PlatformError> {
             let Some(track) = s.selected.and_then(|i| s.tracks.get(i)) else {
                 return;
             };
+            if let Some(path) = path_of(track).filter(|p| s.cloud.contains(*p)) {
+                folder::download(path);
+                if let Some(w) = window.upgrade() {
+                    w.set_status("That track is still downloading from iCloud".into());
+                }
+                return;
+            }
             if !engine.load_track(deck, track.clone()) {
                 if let Some(w) = window.upgrade() {
                     w.set_status("That deck is playing: pause it first".into());
@@ -255,6 +423,10 @@ fn main() -> Result<(), slint::PlatformError> {
     }
     {
         let decks = decks.clone();
+        window.on_pfl(move |d| decks[d as usize].pfl.toggle());
+    }
+    {
+        let decks = decks.clone();
         window.on_seek(move |d, at| decks[d as usize].position.set(at.clamp(0.0, 1.0) as f64));
     }
     {
@@ -275,10 +447,11 @@ fn main() -> Result<(), slint::PlatformError> {
         window.on_load(move |d| load(d as usize));
     }
     {
-        let (window_weak, state, folder) = (window.as_weak(), state.clone(), folder.clone());
-        window.on_rescan(move || scan(window_weak.clone(), state.clone(), folder.clone()));
+        let (window_weak, state) = (window.as_weak(), state.clone());
+        window.on_rescan(move || scan(window_weak.clone(), state.clone()));
     }
-    scan(window.as_weak(), state.clone(), folder);
+    window.on_pick_folder(folder::pick);
+    scan(window.as_weak(), state.clone());
 
     // Every frame: the controller's browsing, the decks, the waveforms.
     let frame = slint::Timer::default();
@@ -296,6 +469,28 @@ fn main() -> Result<(), slint::PlatformError> {
                 };
                 frames = frames.wrapping_add(1);
                 let now = Instant::now();
+                // In the background (the music playing on), only follow
+                // the audio route: iPadOS stops an app that draws there.
+                if !session::on_screen() {
+                    if frames.is_multiple_of(30) {
+                        let now_channels = session::channels();
+                        if now_channels != channels {
+                            channels = now_channels;
+                            engine.set_outputs(&audio_setup(channels));
+                        }
+                    }
+                    return;
+                }
+
+                // A folder just picked: list its tracks.
+                if let Some(picked) = folder::take_picked() {
+                    state.borrow_mut().folder = picked;
+                    scan(window_weak.clone(), state.clone());
+                }
+                // Every few seconds: the iCloud tracks that have arrived.
+                if frames.is_multiple_of(240) {
+                    arrived(&w, &mut state.borrow_mut());
+                }
 
                 // The browse knob and the LOAD buttons.
                 let steps: f64 = browse.iter().map(|(c, sign)| take(c) * sign).sum();
@@ -316,7 +511,8 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                 }
 
-                // Alerts from the engine, now and then.
+                // About twice a second: alerts, the controllers, and the
+                // audio route (a controller's sound card plugged in or out).
                 if frames.is_multiple_of(30) {
                     let mut s = state.borrow_mut();
                     if let Some(alert) = engine.take_alerts().pop() {
@@ -330,18 +526,33 @@ fn main() -> Result<(), slint::PlatformError> {
                         s.status = None;
                         w.set_status(SharedString::new());
                     }
+                    let names: Vec<String> = controllers
+                        .as_ref()
+                        .map(|c| c.connected().into_iter().map(|c| c.port).collect())
+                        .unwrap_or_default();
+                    w.set_controllers(names.join(", ").into());
+                    let now_channels = session::channels();
+                    if now_channels != channels {
+                        channels = now_channels;
+                        engine.set_outputs(&audio_setup(channels));
+                    }
+                    w.set_outputs(outputs_text(channels).into());
+                    w.set_phones(channels >= 4);
                 }
 
                 // The decks, drawn at the window's real pixel size.
                 let scale = w.window().scale_factor();
                 let width = (w.window().size().width).clamp(256, 2800);
-                let wave_height = (104.0 * scale) as u32;
-                let overview_height = (56.0 * scale) as u32;
+                let wave_height = (100.0 * scale) as u32;
+                let overview_height = (44.0 * scale) as u32;
                 let tracks = loaded.read().map(|t| t.clone()).unwrap_or_default();
                 let mut views = Vec::with_capacity(DECKS);
                 for (d, c) in decks.iter().enumerate() {
                     let Some(track) = &tracks[d] else {
-                        views.push(DeckView::default());
+                        views.push(DeckView {
+                            pfl: c.pfl.get_bool(),
+                            ..Default::default()
+                        });
                         continue;
                     };
                     let (seconds, _) = visual.position(d, now);
@@ -354,6 +565,18 @@ fn main() -> Result<(), slint::PlatformError> {
                         *image = Image::from_rgba8(wave::overview(track, half, overview_height));
                         (*drawn_id, *drawn_len) = (id, finest);
                     }
+                    let overview = image.clone();
+                    let (cover_id, cover) = &mut s.covers[d];
+                    if *cover_id != id {
+                        *cover = track.cover.as_ref().map(|c| {
+                            let mut px = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(
+                                c.width, c.height,
+                            );
+                            px.make_mut_bytes().copy_from_slice(&c.rgba);
+                            Image::from_rgba8(px)
+                        });
+                        *cover_id = id;
+                    }
                     let bpm = c.bpm.get();
                     views.push(DeckView {
                         loaded: true,
@@ -364,12 +587,17 @@ fn main() -> Result<(), slint::PlatformError> {
                         } else {
                             SharedString::new()
                         },
+                        key: track.key.clone().into(),
                         elapsed: clock(seconds).into(),
                         remaining: format!("-{}", clock(track.duration - seconds)).into(),
                         playing: c.play.get_bool(),
                         cue_lit: c.cue_lit.get_bool(),
                         sync: c.sync.get_bool(),
-                        overview: image.clone(),
+                        pfl: c.pfl.get_bool(),
+                        has_cover: cover.is_some(),
+                        cover: cover.clone().unwrap_or_default(),
+                        initials: initials(track).into(),
+                        overview,
                         playhead: if track.duration > 0.0 {
                             (seconds / track.duration).clamp(0.0, 1.0) as f32
                         } else {
@@ -396,6 +624,7 @@ fn main() -> Result<(), slint::PlatformError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn clock_reads_minutes_and_seconds() {
@@ -407,9 +636,41 @@ mod tests {
     #[test]
     fn music_folder_follows_the_environment() {
         // Only checks the override; the defaults depend on the machine.
-        let dir = std::path::Path::new("/tmp/opendj-tablet-music");
+        let dir = Path::new("/tmp/opendj-tablet-music");
         std::env::set_var("OPENDJ_MUSIC", dir);
         assert_eq!(music_folder(), dir);
         std::env::remove_var("OPENDJ_MUSIC");
+    }
+
+    #[test]
+    fn initials_come_from_the_artist() {
+        let mut t = opendj_engine::scan::read_track(0, Path::new("x.mp3"));
+        t.artist = "coastline FM".into();
+        assert_eq!(initials(&t), "CF");
+        t.artist = String::new();
+        t.title = "Midnight Circuit (Dub)".into();
+        assert_eq!(initials(&t), "MC");
+    }
+
+    #[test]
+    fn headphones_only_with_four_channels() {
+        assert_eq!(audio_setup(2).routes.len(), 1);
+        let four = audio_setup(4);
+        assert_eq!(four.routes.len(), 2);
+        assert_eq!(
+            (four.routes[1].role, four.routes[1].pair),
+            (Role::Headphones, 1)
+        );
+    }
+
+    #[test]
+    fn only_the_supported_controllers() {
+        let files: Vec<_> = controller_files().collect();
+        assert!(files.contains(&"Pioneer-DDJ-FLX4.midi.xml"));
+        assert!(files.contains(&"Allen and Heath Xone K2 - 2 Decks.opendj-mapping"));
+        let res = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../res/controllers");
+        for f in files {
+            assert!(res.join(f).is_file(), "{f} is in res/controllers");
+        }
     }
 }

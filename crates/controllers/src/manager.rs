@@ -353,30 +353,53 @@ fn tokens(name: &str) -> Vec<String> {
     joined
         .split(|c: char| !c.is_alphanumeric())
         .filter(|t| !t.is_empty())
-        .filter(|t| !matches!(*t, "midi" | "port" | "in" | "out" | "usb" | "and"))
+        .filter(|t| {
+            !matches!(
+                *t,
+                "midi" | "port" | "in" | "out" | "usb" | "bluetooth" | "and"
+            )
+        })
         .filter(|t| !t.chars().all(|c| c.is_ascii_digit()))
+        .map(str::to_string)
+        .collect()
+}
+
+/// Model numbers standing on their own in a name ("DJControl Inpulse 300" →
+/// "300"). [`tokens`] drops bare numbers as port numbers, so these only
+/// break ties: three digits or more, which port numbers on macOS and Windows
+/// never are.
+fn model_numbers(name: &str) -> Vec<String> {
+    name.split(|c: char| !c.is_alphanumeric())
+        .filter(|t| t.len() >= 3 && t.chars().all(|c| c.is_ascii_digit()))
         .map(str::to_string)
         .collect()
 }
 
 /// The mapping for a MIDI port: every word of the port's name must appear in
 /// the mapping's name ("DDJ-FLX4" → "Pioneer DDJ-FLX4", "XONE:K2" →
-/// "Allen&Heath Xone K1/K2/K3"); among those, the most specific name wins.
+/// "Allen&Heath Xone K1/K2/K3"); among those, one whose model numbers are
+/// all in the port's name comes first ("DJControl Inpulse 300" → "Hercules
+/// DJControl Inpulse 300", not "… 200"), then the most specific name.
 pub fn match_mapping<'a>(port: &str, mappings: &'a [(String, PathBuf)]) -> Option<&'a Path> {
     let port_tokens = tokens(port);
     if port_tokens.is_empty() {
         return None;
     }
+    let port_numbers = model_numbers(port);
     mappings
         .iter()
         .filter_map(|(name, path)| {
             let m = tokens(name);
+            let missing = model_numbers(name)
+                .iter()
+                .filter(|n| !port_numbers.contains(n))
+                .count();
             port_tokens
                 .iter()
                 .all(|t| m.contains(t))
-                .then_some((m.len(), path))
+                .then_some(((missing, m.len()), path))
         })
-        .min_by_key(|(extra, _)| *extra)
+        .min_by_key(|(rank, _)| *rank)
         .map(|(_, p)| p.as_path())
 }
 
@@ -397,24 +420,30 @@ pub fn list_mappings(dir: &Path) -> Vec<(String, PathBuf)> {
 
 /// The HID controllers plugged in, each with a port name of its own and the
 /// mapping Automatic picks: the device's name for itself, or the mapping's,
-/// numbered if two are alike.
-fn hid_ports(
+/// numbered if two are alike. A device that is also a MIDI port running a
+/// MIDI mapping (the DDJ-FLX10, whose jog screens are HID) takes the HID
+/// mapping's name, so the two are told apart and each can be turned off.
+fn hid_ports<'a>(
     devices: Vec<hid::DeviceInfo>,
-    mappings: &[hid::HidMapping],
-) -> Vec<(String, hid::DeviceInfo, &hid::HidMapping)> {
+    mappings: &'a [hid::HidMapping],
+    midi_ports: &[String],
+) -> Vec<(String, hid::DeviceInfo, &'a hid::HidMapping)> {
     let mut out: Vec<(String, hid::DeviceInfo, &hid::HidMapping)> = Vec::new();
     for d in devices {
         let Some(m) = hid::match_mapping(&d, mappings) else {
             continue;
         };
-        let base = if d.product.is_empty() {
+        let midi_twin = midi_ports
+            .iter()
+            .any(|p| *p == d.product || device_key(p) == device_key(&d.product));
+        let base = if d.product.is_empty() || midi_twin {
             m.0.clone()
         } else {
             d.product.clone()
         };
         let mut name = base.clone();
         let mut n = 1;
-        while out.iter().any(|(p, _, _)| *p == name) {
+        while out.iter().any(|(p, _, _)| *p == name) || midi_ports.contains(&name) {
             n += 1;
             name = format!("{base} #{n}");
         }
@@ -563,16 +592,21 @@ fn watch_devices(
                 .filter(|n| !n.contains(CLIENT) && !n.contains("Midi Through"))
                 .collect();
             ports.extend(stand_ins.iter().map(|s| s.name.clone()));
-            let found = match hid_api.as_mut() {
-                Some(h) => hid_ports(h.scan(&hid_vendors), &hid_mappings),
-                None => Vec::new(),
-            };
             let mut picked: Vec<(String, Option<PathBuf>)> = {
                 let choices = shared.choices.lock().unwrap();
                 ports
                     .iter()
                     .map(|p| (p.clone(), pick_mapping(p, &dir, &mappings, &choices)))
                     .collect()
+            };
+            let mapped: Vec<String> = picked
+                .iter()
+                .filter(|(_, m)| m.is_some())
+                .map(|(p, _)| p.clone())
+                .collect();
+            let found = match hid_api.as_mut() {
+                Some(h) => hid_ports(h.scan(&hid_vendors), &hid_mappings, &mapped),
+                None => Vec::new(),
             };
             {
                 let choices = shared.choices.lock().unwrap();
@@ -1268,14 +1302,53 @@ mod tests {
             ("PIONEER DDJ-SX", "Pioneer DDJ-SX.midi.xml"),
             ("PIONEER DDJ-SX2", "Pioneer DDJ-SX2.midi.xml"),
             ("PIONEER DDJ-RX", "Pioneer DDJ-RX.midi.xml"),
+            ("DDJ-RB", "Pioneer-DDJ-RB.midi.xml"),
+            ("DDJ-RR", "Pioneer DDJ-RR.midi.xml"),
+            ("DDJ-RZ", "Pioneer DDJ-RZ.midi.xml"),
+            ("DDJ-RZX", "Pioneer DDJ-RZX.midi.xml"),
+            ("PIONEER DDJ-SZ", "Pioneer DDJ-SZ.midi.xml"),
+            ("PIONEER DDJ-ERGO", "Pioneer-DDJ-ERGO.midi.xml"),
+            ("PIONEER DDJ-WeGO", "Pioneer-DDJ-WeGO.midi.xml"),
+            ("PIONEER DDJ-WeGO2", "Pioneer-DDJ-WeGO2.midi.xml"),
+            ("DDJ-WeGO3", "Pioneer-DDJ-WeGO3.midi.xml"),
+            ("DDJ-WeGO4", "Pioneer-DDJ-WeGO4.midi.xml"),
             ("PIONEER DDJ-800", "Pioneer-DDJ-800.midi.xml"),
             ("XDJ-AZ", "Pioneer-XDJ-AZ.midi.xml"),
             ("OPUS-QUAD", "Pioneer-OPUS-QUAD.midi.xml"),
+            ("PIONEER XDJ-RX", "Pioneer-XDJ-RX.midi.xml"),
+            ("XDJ-RX", "Pioneer-XDJ-RX.midi.xml"),
+            ("Pioneer DJ XDJ-RX2", "Pioneer-XDJ-RX2.midi.xml"),
+            ("XDJ-RX2", "Pioneer-XDJ-RX2.midi.xml"),
+            ("Pioneer DJ XDJ-RR", "Pioneer-XDJ-RR.midi.xml"),
+            ("XDJ-XZ", "Pioneer-XDJ-XZ.midi.xml"),
+            ("PIONEER XDJ-AERO", "Pioneer-XDJ-AERO.midi.xml"),
+            ("PIONEER XDJ-R1", "Pioneer-XDJ-R1.midi.xml"),
+            ("XDJ-AN", "Pioneer-XDJ-AN.midi.xml"),
+            ("OMNIS-DUO", "AlphaTheta-OMNIS-DUO.midi.xml"),
             ("DDJ-FLX10", "Pioneer-DDJ-FLX10.midi.xml"),
             ("DDJ-FLX6", "Pioneer-DDJ-FLX6.midi.xml"),
+            ("DDJ-GRV6", "Pioneer-DDJ-GRV6.midi.xml"),
+            ("DDJ-GRV6:DDJ-GRV6 MIDI 1 24:0", "Pioneer-DDJ-GRV6.midi.xml"),
             ("XDJ-RX3", "Pioneer-XDJ-RX3.midi.xml"),
             ("DDJ-400", "Pioneer-DDJ-400.midi.xml"),
             ("DDJ-200", "Pioneer DDJ-200.midi.xml"),
+            ("DJM-900NXS2", "Pioneer-DJM-900NXS2.midi.xml"),
+            ("DJM-250MK2", "Pioneer-DJM-250MK2.midi.xml"),
+            ("DJM-V10", "Pioneer-DJM-V10.midi.xml"),
+            ("DJM-TOUR1", "Pioneer-DJM-TOUR1.midi.xml"),
+            ("Pioneer DJ DJM-S9", "Pioneer-DJM-S9.midi.xml"),
+            ("DJM-S11", "Pioneer-DJM-S11.midi.xml"),
+            ("PIONEER DJM-T1", "Pioneer-DJM-T1.midi.xml"),
+            ("EUPHONIA", "AlphaTheta-euphonia.midi.xml"),
+            ("PLX-CRSS12", "Pioneer-PLX-CRSS12.midi.xml"),
+            ("DDJ-FLX2", "Pioneer-DDJ-FLX2.midi.xml"),
+            ("DDJ-REV5", "Pioneer-DDJ-REV5.midi.xml"),
+            ("PIONEER DDJ-SR", "Pioneer DDJ-SR.midi.xml"),
+            ("PIONEER DDJ-SP1", "Pioneer DDJ-SP1.midi.xml"),
+            ("DDJ-XP1", "Pioneer-DDJ-XP1.midi.xml"),
+            ("DDJ-XP2", "Pioneer-DDJ-XP2.midi.xml"),
+            ("PIONEER DDJ-SB", "Pioneer-DDJ-SB.midi.xml"),
+            ("PIONEER DDJ-SB2", "Pioneer-DDJ-SB2.midi.xml"),
             (
                 "Midi Fighter Twister",
                 "DJ TechTools MIDI Fighter Twister.midi.xml",
@@ -1284,9 +1357,73 @@ mod tests {
                 "Midi Fighter Twister:Midi Fighter Twister MIDI 1 32:0",
                 "DJ TechTools MIDI Fighter Twister.midi.xml",
             ),
+            // Hercules names its ports by model number alone.
+            (
+                "DJControl Inpulse 200",
+                "Hercules_DJControl_Inpulse_200.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 300",
+                "Hercules_DJControl_Inpulse_300.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 300:DJControl Inpulse 300 MIDI 1 20:0",
+                "Hercules_DJControl_Inpulse_300.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 500",
+                "Hercules_DJControl_Inpulse_500.midi.xml",
+            ),
+            ("DJCONTROL MIX", "Hercules DJControl MIX.midi.xml"),
+            (
+                "DJControl Mix Ultra",
+                "Hercules DJControl Mix Ultra.midi.xml",
+            ),
+            // Its Bluetooth MIDI port.
+            (
+                "DJControl Mix Ultra Bluetooth",
+                "Hercules DJControl Mix Ultra.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 200 Mk2",
+                "Hercules_DJControl_Inpulse_200_MK2.midi.xml",
+            ),
         ] {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");
         }
         assert_eq!(name("Generic USB MIDI 1"), None);
+    }
+
+    #[test]
+    fn hid_twins_of_mapped_midi_ports_take_the_mapping_name() {
+        let mappings = vec![(
+            "Pioneer DDJ-FLX10 jog screens".to_string(),
+            PathBuf::from("Pioneer-DDJ-FLX10-screens.hid.xml"),
+            vec![hid::Product {
+                vendor_id: 0x2b73,
+                product_id: 0x0041,
+                interface: Some(5),
+                ..Default::default()
+            }],
+        )];
+        let device = hid::DeviceInfo {
+            vendor_id: 0x2b73,
+            product_id: 0x0041,
+            interface: 5,
+            product: "DDJ-FLX10".into(),
+            ..Default::default()
+        };
+        let named = |midi: &[&str]| {
+            let midi: Vec<String> = midi.iter().map(|s| s.to_string()).collect();
+            hid_ports(vec![device.clone()], &mappings, &midi)
+                .into_iter()
+                .map(|(p, _, _)| p)
+                .collect::<Vec<_>>()
+        };
+        // macOS and Windows name the MIDI port as the device names itself.
+        assert_eq!(named(&["DDJ-FLX10"]), ["Pioneer DDJ-FLX10 jog screens"]);
+        // Linux adds the port's own name and numbers.
+        assert_eq!(named(&["DDJ-FLX10:DDJ-FLX10 MIDI 1 24:0"]), ["DDJ-FLX10"]);
+        assert_eq!(named(&[]), ["DDJ-FLX10"]);
     }
 }

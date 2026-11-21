@@ -86,9 +86,16 @@ impl Waveform {
     /// waveform, shaded by its sound as the deck waveforms are.
     /// Empty when the track isn't analysed.
     pub fn overview(&self, slices: usize) -> Vec<OverviewSlice> {
+        self.overview_of(0.0, f64::INFINITY, slices)
+    }
+
+    /// As [`Waveform::overview`], for `from..to` seconds only.
+    pub fn overview_of(&self, from: f64, to: f64, slices: usize) -> Vec<OverviewSlice> {
         let Some(finest) = self.levels.first().filter(|l| !l.is_empty()) else {
             return Vec::new();
         };
+        let at = |s: f64| ((s * self.bins_per_second).max(0.0) as usize).min(finest.len() - 1);
+        let finest = &finest[at(from)..=at(to).max(at(from))];
         let power = |b: u8| (b as f32 / 255.0).powi(4);
         (0..slices)
             .map(|i| {
@@ -374,6 +381,9 @@ pub struct LibraryInfo {
     pub grid_locked: bool,
     /// The analysed grid fits the beats poorly: worth checking by ear.
     pub grid_unsure: bool,
+    /// How the DJ wants the track's grid to follow its tempo; None for the
+    /// mode set in Settings (see [`LibraryInfo::grid_mode`]).
+    pub grid_mode: Option<crate::gridfit::GridMode>,
     /// When the track joined the library, as a Unix time (0 if unknown).
     pub added: i64,
     /// The library has the track but its file is not on disk.
@@ -410,6 +420,12 @@ pub struct LibraryInfo {
 }
 
 impl LibraryInfo {
+    /// How the track's grid is fitted: the DJ's choice for it, else the
+    /// mode set in Settings.
+    pub fn grid_mode(&self) -> crate::gridfit::GridMode {
+        self.grid_mode.unwrap_or_else(crate::gridfit::default_mode)
+    }
+
     /// The names of the track's tags in `group`, in the order they were added.
     pub fn tags_in(&self, group: i64) -> impl Iterator<Item = &str> {
         self.tags

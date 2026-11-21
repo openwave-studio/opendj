@@ -47,6 +47,16 @@ pub const DEFAULTS: &[Shortcut] = &[
         key: "s",
         script: "sidelist_add",
     },
+    // Load the picked track onto deck 1 or 2: Shift+← and Shift+→ in
+    // most DJ apps.
+    Shortcut {
+        key: "shift+left",
+        script: "deck 1 load",
+    },
+    Shortcut {
+        key: "shift+right",
+        script: "deck 2 load",
+    },
     // Unload deck 1 or 2, as Serato's keys.
     Shortcut {
         key: "alt+shift+left",

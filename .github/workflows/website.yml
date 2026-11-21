@@ -1,0 +1,23 @@
+name: Website
+
+# Builds opendj.app as Cloudflare Pages does (website/build.sh), so a pull
+# request that breaks the docs build, or links to a docs page or heading that
+# doesn't exist, fails here instead of only in Cloudflare's preview.
+on:
+  push:
+    branches: [main]
+    paths: ["website/**", "res/controllers/**", "crates/controllers/support.json", ".github/workflows/website.yml"]
+  pull_request:
+    paths: ["website/**", "res/controllers/**", "crates/controllers/support.json", ".github/workflows/website.yml"]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: website/.node-version
+          cache: npm
+          cache-dependency-path: website/docs/package-lock.json
+      - run: website/build.sh

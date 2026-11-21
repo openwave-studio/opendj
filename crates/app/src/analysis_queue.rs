@@ -161,6 +161,14 @@ impl AnalysisQueue {
             .count()
     }
 
+    /// Queues a track whose grid is to be fitted again (from the cached
+    /// beats when it can be) in a new grid mode.
+    pub fn add_refit(&mut self, t: &Arc<Track>) {
+        if !t.info.missing {
+            self.send(t, false, false);
+        }
+    }
+
     fn send(&mut self, t: &Arc<Track>, fresh: bool, cover: bool) -> bool {
         if !self.queued.insert(t.id) {
             return false;

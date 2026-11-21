@@ -8,6 +8,8 @@
 //!
 //! The audio arrives over a wait-free queue, and audio it is done with goes
 //! back over another to be freed off the audio thread, as deck tracks do.
+//! A long recording can instead stream in (see [`Stream`]): frames decoded
+//! a few seconds ahead of the playhead, so it is never held whole.
 
 use std::sync::Arc;
 
@@ -17,28 +19,80 @@ use crate::track::Audio;
 
 pub const PREVIEW_GROUP: &str = "[PreviewDeck1]";
 
+/// A file streamed into the player from a point in it: its frames as they
+/// are decoded, at the file's rate.
+pub(crate) struct Stream {
+    pub(crate) frames: rtrb::Consumer<[f32; 2]>,
+    /// The frame of the file the stream starts at.
+    pub(crate) start: usize,
+    /// Frames in the whole file.
+    pub(crate) total: usize,
+    pub(crate) rate: u32,
+}
+
+/// What the player holds.
+pub(crate) enum Loaded {
+    Audio(Arc<Audio>),
+    Stream(Stream),
+}
+
+impl Loaded {
+    /// Frames in the whole file.
+    fn len(&self) -> f64 {
+        match self {
+            Loaded::Audio(a) => a.len() as f64,
+            Loaded::Stream(s) => s.total as f64,
+        }
+    }
+
+    fn rate(&self) -> u32 {
+        match self {
+            Loaded::Audio(a) => a.sample_rate,
+            Loaded::Stream(s) => s.rate,
+        }
+    }
+
+    fn seconds(&self) -> f64 {
+        match self {
+            Loaded::Audio(a) => a.duration(),
+            Loaded::Stream(s) => s.total as f64 / s.rate.max(1) as f64,
+        }
+    }
+}
+
 /// The other side of the player's queues, for [`crate::AudioEngine::preview`].
 pub(crate) struct PreviewInput {
-    audio: rtrb::Producer<(Option<Arc<Audio>>, bool)>,
-    done: rtrb::Consumer<Arc<Audio>>,
+    audio: rtrb::Producer<(Option<Loaded>, bool)>,
+    done: rtrb::Consumer<Loaded>,
 }
 
 impl PreviewInput {
     /// Puts `audio` in the player at its start, playing if `play`, or
     /// empties it. Frees audio the player has finished with.
     pub(crate) fn send(&mut self, audio: Option<Arc<Audio>>, play: bool) {
+        self.load(audio.map(Loaded::Audio), play);
+    }
+
+    /// Puts a stream in the player at its start, playing if `play`.
+    pub(crate) fn send_stream(&mut self, stream: Stream, play: bool) {
+        self.load(Some(Loaded::Stream(stream)), play);
+    }
+
+    fn load(&mut self, loaded: Option<Loaded>, play: bool) {
         while self.done.pop().is_ok() {}
-        let _ = self.audio.push((audio, play));
+        let _ = self.audio.push((loaded, play));
     }
 }
 
 pub(crate) struct Preview {
-    audio: Option<Arc<Audio>>,
+    audio: Option<Loaded>,
     /// Play position in source frames.
     pos: f64,
     /// Source frames per output frame.
     step: f64,
     rate: f64,
+    /// A stream's frames either side of the play position.
+    around: [[f32; 2]; 2],
     play: ControlHandle,
     position: ControlHandle,
     duration: ControlHandle,
@@ -48,8 +102,8 @@ pub(crate) struct Preview {
     /// The position this player last published, so a different one is a seek.
     written: f64,
     gain: f32,
-    incoming: rtrb::Consumer<(Option<Arc<Audio>>, bool)>,
-    done: rtrb::Producer<Arc<Audio>>,
+    incoming: rtrb::Consumer<(Option<Loaded>, bool)>,
+    done: rtrb::Producer<Loaded>,
 }
 
 impl Preview {
@@ -63,6 +117,7 @@ impl Preview {
                 pos: 0.0,
                 step: 1.0,
                 rate: sample_rate,
+                around: [[0.0; 2]; 2],
                 play: reg.toggle(g, "play"),
                 position: reg.create(g, "playposition", 0.0, 0.0, 1.0, Behavior::Linear),
                 duration: reg.indicator(g, "duration", 86_400.0),
@@ -87,7 +142,7 @@ impl Preview {
     }
 
     fn len(&self) -> f64 {
-        self.audio.as_ref().map_or(0.0, |a| a.len() as f64)
+        self.audio.as_ref().map_or(0.0, Loaded::len)
     }
 
     /// Takes new audio and seeks; once per buffer, before [`Preview::next`].
@@ -97,21 +152,28 @@ impl Preview {
                 // If the queue is full it is freed here; rare and harmless.
                 let _ = self.done.push(old);
             }
-            self.pos = 0.0;
-            self.written = 0.0;
-            self.position.set(0.0);
+            self.pos = match &self.audio {
+                Some(Loaded::Stream(s)) => s.start as f64,
+                _ => 0.0,
+            };
+            self.around = [[0.0; 2]; 2];
+            self.written = self.pos / self.len().max(1.0);
+            self.position.set(self.written);
             self.play.set_bool(play && self.audio.is_some());
             self.step = self
                 .audio
                 .as_ref()
-                .map_or(1.0, |a| a.sample_rate as f64 / self.rate);
+                .map_or(1.0, |a| a.rate() as f64 / self.rate);
         }
         self.loaded.set_bool(self.audio.is_some());
         self.duration
-            .set(self.audio.as_ref().map_or(0.0, |a| a.duration()));
+            .set(self.audio.as_ref().map_or(0.0, Loaded::seconds));
         let wanted = self.position.get();
         if (wanted - self.written).abs() > 1e-9 {
-            self.pos = wanted.clamp(0.0, 1.0) * self.len();
+            // A stream seeks by being sent again from the new place.
+            if let Some(Loaded::Audio(_)) = self.audio {
+                self.pos = wanted.clamp(0.0, 1.0) * self.len();
+            }
             self.written = wanted;
         }
         if self.audio.is_none() {
@@ -130,19 +192,41 @@ impl Preview {
             0.0
         };
         self.gain += (target - self.gain) * 0.002;
-        let Some(audio) = &self.audio else {
-            return [0.0; 2];
-        };
         if self.gain < 1e-4 && !playing {
             return [0.0; 2];
         }
-        let i = self.pos as usize;
-        let t = (self.pos - i as f64) as f32;
-        let (a, b) = (audio.frame(i), audio.frame(i + 1));
-        if playing {
-            self.pos += self.step;
-        }
         let g = self.gain;
+        let (a, b, t) = match &mut self.audio {
+            None => return [0.0; 2],
+            Some(Loaded::Audio(audio)) => {
+                let i = self.pos as usize;
+                let t = (self.pos - i as f64) as f32;
+                let (a, b) = (audio.frame(i), audio.frame(i + 1));
+                if playing {
+                    self.pos += self.step;
+                }
+                (a, b, t)
+            }
+            Some(Loaded::Stream(s)) => {
+                let t = self.pos.fract() as f32;
+                let [a, b] = self.around;
+                if playing {
+                    // Waits on the decoder rather than skip ahead.
+                    let next = self.pos + self.step;
+                    let mut whole = next.floor() - self.pos.floor();
+                    while whole >= 1.0 {
+                        match s.frames.pop() {
+                            Ok(f) => self.around = [self.around[1], f],
+                            Err(_) => return [0.0; 2],
+                        }
+                        whole -= 1.0;
+                        self.pos = self.pos.floor() + 1.0;
+                    }
+                    self.pos = next;
+                }
+                (a, b, t)
+            }
+        };
         [
             (a[0] + (b[0] - a[0]) * t) * g,
             (a[1] + (b[1] - a[1]) * t) * g,
@@ -201,5 +285,39 @@ mod tests {
         input.send(None, true);
         p.update();
         assert!(!reg.get(PREVIEW_GROUP, "track_loaded").unwrap().get_bool());
+    }
+
+    #[test]
+    fn streams_from_its_start_and_waits_for_the_decoder() {
+        let reg = ControlRegistry::new();
+        let (mut p, mut input) = Preview::new(&reg, 100.0);
+        let (mut tx, frames) = rtrb::RingBuffer::new(64);
+        for i in 0..10 {
+            tx.push([i as f32; 2]).unwrap();
+        }
+        let stream = Stream {
+            frames,
+            start: 50,
+            total: 200,
+            rate: 100,
+        };
+        input.send_stream(stream, true);
+        p.update();
+        assert_eq!(reg.get(PREVIEW_GROUP, "duration").unwrap().get(), 2.0);
+        assert_eq!(reg.get(PREVIEW_GROUP, "playposition").unwrap().get(), 0.25);
+        // Let the start ramp settle, then it plays the frames in order.
+        let mut heard = Vec::new();
+        for _ in 0..10 {
+            heard.push(p.next()[0]);
+        }
+        assert!(heard.windows(2).all(|w| w[1] >= w[0]), "{heard:?}");
+        p.publish();
+        let at = reg.get(PREVIEW_GROUP, "playposition").unwrap().get();
+        assert!((at - 0.3).abs() < 1e-6, "{at}");
+        // Out of frames it holds its place in silence.
+        assert_eq!(p.next(), [0.0; 2]);
+        p.publish();
+        let held = reg.get(PREVIEW_GROUP, "playposition").unwrap().get();
+        assert!((held - 0.3).abs() < 0.006, "{held}");
     }
 }

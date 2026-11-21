@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use slint::{ComponentHandle, DataTransfer};
 
 use super::health::tracks;
-use super::sidelist::{save_scratch, SIDELIST_TAB};
+use super::sidelist::{is_list_tab, save_scratch, SIDELIST_TAB};
 use super::{columns, dragged, Browser, Dragged, Undo, KIND_CRATE, KIND_LIST};
 use crate::LibraryEdit;
 
@@ -16,8 +16,8 @@ use crate::LibraryEdit;
 enum Source {
     /// Rows of the open list (`.0`), in the track list.
     Open(i64, Vec<usize>),
-    /// Rows `first..=last` of the Sidelist.
-    Side(usize, usize),
+    /// Rows `first..=last` of side tab `.0`, the Shortlist or Playlist.
+    Side(usize, usize, usize),
 }
 
 /// `ids` with the entries at `positions` taken out.
@@ -58,7 +58,7 @@ impl Browser {
     /// What a note calls list `list`.
     fn note_name(&self, list: Option<i64>) -> String {
         let Some(list) = list else {
-            return "the scratch pad".to_string();
+            return "the Shortlist".to_string();
         };
         self.menu_lists
             .iter()
@@ -186,8 +186,10 @@ impl Browser {
                 self.open_list()?,
                 self.chosen_rows(first, last),
             )),
-            Dragged::Side(tab, first, last) if tab == SIDELIST_TAB => {
-                Some(Source::Side(first, last))
+            Dragged::Side(tab, first, last)
+                if is_list_tab(tab) && self.side_list(tab).is_some() =>
+            {
+                Some(Source::Side(tab, first, last))
             }
             _ => None,
         }
@@ -197,7 +199,7 @@ impl Browser {
     fn source_list(&self, source: &Source) -> Option<i64> {
         match source {
             Source::Open(list, _) => Some(*list),
-            Source::Side(..) => self.sidelist_list(),
+            Source::Side(tab, ..) => self.side_list(*tab).flatten(),
         }
     }
 
@@ -205,13 +207,13 @@ impl Browser {
     fn take_out(&mut self, source: Source) {
         match source {
             Source::Open(list, rows) => self.remove_open_rows(list, &rows),
-            Source::Side(first, last) => {
-                let side = &mut self.side[SIDELIST_TAB];
+            Source::Side(tab, first, last) => {
+                let side = &mut self.side[tab];
                 if first < side.len() {
                     let end = (last + 1).min(side.len());
                     side.drain(first..end);
                 }
-                self.sidelist_changed();
+                self.side_changed(tab);
             }
         }
     }
@@ -300,17 +302,23 @@ impl Browser {
         self.moved_note(ids.len(), from, Some(list), before);
     }
 
-    /// Tracks dropped into the Sidelist at `at`; with ⌥ (`moving`) and
-    /// dragged from the open list, they leave it.
-    pub(super) fn drop_tracks_on_sidelist(&mut self, data: &DataTransfer, at: usize, moving: bool) {
-        let source = self
-            .source_of(data)
-            .filter(|s| moving && matches!(s, Source::Open(..)));
+    /// Tracks dropped into side tab `tab` (the Shortlist or Playlist) at
+    /// `at`; with ⌥ (`moving`) they leave the list they came from.
+    pub(super) fn drop_tracks_on_sidelist(
+        &mut self,
+        tab: usize,
+        data: &DataTransfer,
+        at: usize,
+        moving: bool,
+    ) {
+        let Some(to) = self.side_list(tab) else {
+            return;
+        };
+        let source = self.source_of(data).filter(|_| moving);
         let ids = self.dropped_tracks(data);
         if ids.is_empty() {
             return;
         }
-        let to = self.sidelist_list();
         let from = source.as_ref().map(|s| self.source_list(s));
         if from.is_some_and(|f| f == to) {
             return;
@@ -320,10 +328,10 @@ impl Browser {
         } else {
             Vec::new()
         };
-        let side = &mut self.side[SIDELIST_TAB];
+        let side = &mut self.side[tab];
         let at = at.min(side.len());
         side.splice(at..at, ids.iter().copied());
-        self.sidelist_changed();
+        self.side_changed(tab);
         if let Some(source) = source {
             self.take_out(source);
             self.lists_changed();
@@ -333,8 +341,45 @@ impl Browser {
         }
     }
 
-    /// Tracks dropped on the open list from the Sidelist or a deck: added
-    /// to its end, or with ⌥ (`moving`) moved out of the Sidelist.
+    /// Tracks dropped on side tab `tab`'s title: added to the end of its
+    /// list, with a note since the list may not be in view.
+    pub(super) fn drop_tracks_on_side_tab(
+        &mut self,
+        tab: usize,
+        data: &DataTransfer,
+        moving: bool,
+    ) {
+        if tab == 0 {
+            let ids = self.dropped_tracks(data);
+            if !ids.is_empty() {
+                self.side[0].extend(ids);
+                self.refresh_side();
+            }
+            return;
+        }
+        let Some(list) = self.side_list(tab) else {
+            return;
+        };
+        if moving && self.source_of(data).is_some() {
+            self.drop_tracks_on_sidelist(tab, data, usize::MAX, true);
+            return;
+        }
+        let before = self.snapshot(&[list]);
+        let n = self.side[tab].len();
+        self.drop_tracks_on_sidelist(tab, data, usize::MAX, false);
+        let added = self.side[tab].len().saturating_sub(n);
+        if added > 0 {
+            let name = self.note_name(list);
+            self.note(
+                format!("Added {} to {name}", tracks(added)),
+                format!("Undo Add to {name} ({})", tracks(added)),
+                before,
+            );
+        }
+    }
+
+    /// Tracks dropped on the open list from a side list or a deck: added
+    /// to its end, or with ⌥ (`moving`) moved out of the side list.
     pub(super) fn drop_tracks_on_open(&mut self, data: &DataTransfer, moving: bool) {
         let Some(list) = self.open_list() else { return };
         if !matches!(dragged(data), Some(Dragged::Side(..) | Dragged::Deck(_))) {
@@ -436,6 +481,46 @@ impl Browser {
             Some(_) => format!("Move {n}"),
             None => format!("Add {n}"),
         }
+    }
+
+    /// Empties the scratch pad, with Undo.
+    pub(super) fn clear_scratch(&mut self) {
+        if self.side[SIDELIST_TAB].is_empty() {
+            return;
+        }
+        let before = self.snapshot(&[None]);
+        let n = self.side[SIDELIST_TAB].len();
+        self.side[SIDELIST_TAB].clear();
+        self.side_changed(SIDELIST_TAB);
+        self.refresh_side();
+        self.note(
+            format!("Cleared {} from the Shortlist", tracks(n)),
+            "Undo Clear Shortlist".to_string(),
+            before,
+        );
+    }
+
+    /// Takes rows `first..=last` out of side tab `tab` (the Shortlist or
+    /// the playlist the Playlist tab shows), with Undo.
+    pub(super) fn remove_from_sidelist(&mut self, tab: usize, first: usize, last: usize) {
+        let Some(list) = self.side_list(tab) else {
+            return;
+        };
+        let side = &self.side[tab];
+        if first >= side.len() {
+            return;
+        }
+        let end = (last + 1).min(side.len());
+        let before = self.snapshot(&[list]);
+        self.side[tab].drain(first..end);
+        self.side_changed(tab);
+        self.refresh_side();
+        let name = self.note_name(list);
+        self.note(
+            format!("Removed {} from {name}", tracks(end - first)),
+            format!("Undo Remove from {name}"),
+            before,
+        );
     }
 
     /// Puts lists back as they were before the last add, move or removal.

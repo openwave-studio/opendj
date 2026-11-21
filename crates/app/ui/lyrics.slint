@@ -338,11 +338,11 @@ export component LyricsPanel inherits Rectangle {
                     y: parent.height + 2px;
                     width: 150px;
                     Rectangle {
-                        background: Theme.panel-raised;
-                        border-radius: Theme.radius;
+                        background: Theme.pill-list;
+                        border-radius: 9px;
                         border-width: 1px;
                         border-color: Theme.border;
-                        drop-shadow-blur: 12px;
+                        drop-shadow-blur: 14px;
                         drop-shadow-color: Theme.s-000000a0;
                     }
                     VerticalLayout {
@@ -350,7 +350,7 @@ export component LyricsPanel inherits Rectangle {
                         for s[i] in ["Playing track", "Selected track", "Deck A", "Deck B"]: Rectangle {
                             height: 26px;
                             border-radius: 4px;
-                            background: sta.has-hover ? Theme.n-3a3a3d : transparent;
+                            background: sta.has-hover ? Theme.n-38373d : transparent;
                             Text {
                                 x: 10px;
                                 text: s;

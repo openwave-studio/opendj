@@ -330,10 +330,9 @@ pub const USING_FX: Lesson = Lesson {
             action: None,
         },
         Step {
-            target: "[QuickEffectRack1_[Channel1]],loaded_chain_preset",
+            target: "[QuickEffectRack1_[Channel1]],super1",
             title: "Pick a Color FX",
-            body: "The small ▾ beside deck A's filter knob picks what the knob plays. Pick \
-                   Space.",
+            body: "Right-click deck A's filter knob to pick what the knob plays. Pick Space.",
             wait: Wait::Above(CFX_A, "loaded_chain_preset", 1.5),
             action: None,
         },
@@ -548,22 +547,24 @@ pub const AUTOMIX: Lesson = Lesson {
         Step {
             target: "ui,automix_length",
             title: "Pick a length",
-            body: "How long each mix lasts, in seconds or bars. Pick 16 bars.",
+            body: "How long each mix lasts, in seconds or bars. Step it to 16 bars with the \
+                   arrows, or press it for the list.",
             wait: Wait::App(bars_16),
             action: None,
         },
         Step {
             target: "ui,automix_style",
             title: "Pick a style",
-            body: "How the tracks blend. Pick Bass swap: the next track comes in without its \
-                   bass, then the two swap.",
+            body: "How the tracks blend: press Style until it says Bass swap. The next track \
+                   comes in without its bass, then the two swap.",
             wait: Wait::App(bass_swap),
             action: None,
         },
         Step {
             target: "ui,automix_button",
-            title: "Press AUTOMIX",
-            body: "Automix plays the list, beatmatched, mixing each track into the next.",
+            title: "Turn Automix on",
+            body: "Press the power button by its name. Automix plays the list, beatmatched, \
+                   mixing each track into the next.",
             wait: Wait::Above("[AutoDJ]", "enabled", 0.5),
             action: None,
         },
@@ -578,7 +579,7 @@ pub const AUTOMIX: Lesson = Lesson {
         Step {
             target: "ui,automix_button",
             title: "Take over",
-            body: "Press AUTOMIX again and the decks are yours. What's playing keeps playing.",
+            body: "Turn Automix off and the decks are yours. What's playing keeps playing.",
             wait: Wait::Below("[AutoDJ]", "enabled", 0.5),
             action: None,
         },

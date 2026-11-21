@@ -29,6 +29,10 @@
 //  The pads light in colours: hot cues in their colours, loops orange,
 //  rolls purple, stems in theirs.
 //
+//  The jog screens show BPM, time, key and tempo from MIDI. With the
+//  "Pioneer DDJ-FLX10 jog screens" HID mapping running too, they show the
+//  track's waveform instead, and that mapping draws everything on them.
+//
 //  The jog displays show the playhead going round, the cue point, BPM,
 //  time, the tempo, the key and its shift, and light MASTER, SYNC and
 //  MASTER TEMPO.
@@ -243,6 +247,58 @@ PioneerDDJFLX10.init = function() {
     PioneerDDJFLX10.colorFxLights();
     PioneerDDJFLX10.jogDisplays = PioneerDDJFLX10.decks.map(function() { return [-1, -1, -1, -1, -1, -1, -1, -1]; });
     PioneerDDJFLX10.jogDisplayTimer = engine.beginTimer(40, PioneerDDJFLX10.jogDisplayUpdate);
+
+    // openDJ: the jog screens' waveforms come over USB HID, from the
+    // "Pioneer DDJ-FLX10 jog screens" mapping; it says when it runs.
+    engine.makeConnection(PioneerDDJFLX10.screens, "running", PioneerDDJFLX10.screensRunning).trigger();
+};
+
+//
+// Jog screens over HID (openDJ)
+//
+
+// The HID mapping sets `running` while it drives the screens; this script
+// then puts the screens in HID mode with these SysEx messages, keeps them
+// there, and bumps `gate` so the HID mapping sends everything again. The
+// messages are those a DJ app sends to show waveforms, as found by the
+// people who worked out the FLX10's screens for Mixxx (Veezuhz, Loui1979).
+PioneerDDJFLX10.screens = "[DDJFLX10Screens]";
+PioneerDDJFLX10.screenSysex = (function() {
+    const head = [0xF0, 0x00, 0x40, 0x05, 0x00, 0x00, 0x04, 0x01, 0x00];
+    const msg = function(body) { return head.concat(body, [0xF7]); };
+    return {
+        session: [0xF0, 0x00, 0x20, 0x7F, 0x01, 0x02, 0x01, 0x01, 0x22, 0x0F, 0x0C, 0x06, 0x08,
+            0x04, 0x0A, 0x02, 0x02, 0x05, 0x00, 0x00, 0x0E, 0x0A, 0x0E, 0x03, 0x04, 0xF7],
+        enter: msg([0x03, 0x01]),
+        keepalive: msg([0x50, 0x31]),
+        deck: function(i) { return msg([0x11 + i, 0x00, 0x00, 0x02, 0x0E, 0x0E, 0x05]); },
+        globalB: msg([0x0B, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00]),
+        globalC: msg([0x0C, 0x00, 0x00, 0x02, 0x0E, 0x0E, 0x05, 0x00, 0x01]),
+    };
+})();
+PioneerDDJFLX10.screenKeepalive = 0;
+
+PioneerDDJFLX10.screensRunning = function(value) {
+    const sysex = PioneerDDJFLX10.screenSysex;
+    const send = function(bytes) { midi.sendSysexMsg(bytes, bytes.length); };
+    if (PioneerDDJFLX10.screenKeepalive) {
+        engine.stopTimer(PioneerDDJFLX10.screenKeepalive);
+        PioneerDDJFLX10.screenKeepalive = 0;
+    }
+    if (value > 0) {
+        send(sysex.session);
+        send(sysex.enter);
+        for (let i = 0; i < 4; ++i) {
+            send(sysex.deck(i));
+        }
+        send(sysex.globalB);
+        send(sysex.globalC);
+        PioneerDDJFLX10.screenKeepalive = engine.beginTimer(340, function() { send(sysex.keepalive); });
+        engine.setValue(PioneerDDJFLX10.screens, "gate", engine.getValue(PioneerDDJFLX10.screens, "gate") + 1);
+    } else {
+        // Back to the MIDI displays: send all of them again.
+        PioneerDDJFLX10.jogDisplays = PioneerDDJFLX10.decks.map(function() { return [-1, -1, -1, -1, -1, -1, -1, -1]; });
+    }
 };
 
 //
@@ -283,6 +339,11 @@ PioneerDDJFLX10.degrees = function(seconds) {
 
 // The playhead marker, the cue point, BPM and time, sent when they change.
 PioneerDDJFLX10.jogDisplayUpdate = function() {
+    // While the HID mapping draws the screens it shows these too, and the
+    // two fight over the same places on the screen.
+    if (PioneerDDJFLX10.screenKeepalive) {
+        return;
+    }
     PioneerDDJFLX10.decks.forEach(function(group, i) {
         const loaded = engine.getValue(group, "track_loaded");
         const duration = engine.getValue(group, "duration");
@@ -1364,6 +1425,9 @@ PioneerDDJFLX10.pitchPadShiftPressed = function(_channel, control, value, _statu
 
 PioneerDDJFLX10.shutdown = function() {
     engine.stopTimer(PioneerDDJFLX10.jogDisplayTimer);
+    if (PioneerDDJFLX10.screenKeepalive) {
+        engine.stopTimer(PioneerDDJFLX10.screenKeepalive);
+    }
 
     PioneerDDJFLX10.decks.forEach(function(group, i) {
         const status = PioneerDDJFLX10.deckStatus(group);

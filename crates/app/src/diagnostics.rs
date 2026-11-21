@@ -257,24 +257,99 @@ pub fn platform() -> String {
     format!("{os} {}{distro}", std::env::consts::ARCH)
 }
 
+/// The graphics adapter the window renders with, once it is known.
+static GRAPHICS: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+/// Lists the controllers plugged in now.
+type ControllerList = Box<dyn Fn() -> Vec<String>>;
+
+thread_local! {
+    /// Where bug reports read the controllers plugged in now.
+    static CONTROLLERS: std::cell::RefCell<Option<ControllerList>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Remembers the graphics adapter, e.g. "Apple M2 (Metal)", for bug reports.
+pub fn set_graphics(adapter: String) {
+    if let Ok(mut g) = GRAPHICS.lock() {
+        *g = adapter;
+    }
+}
+
+/// Where bug reports read the controllers plugged in now. UI thread only.
+pub fn set_controllers(list: impl Fn() -> Vec<String> + 'static) {
+    CONTROLLERS.with(|c| *c.borrow_mut() = Some(Box::new(list)));
+}
+
+fn encode(s: &str) -> String {
+    s.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' => (b as char).to_string(),
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
+
 /// A new GitHub issue from one of the templates, with the version and
 /// system filled in.
 pub fn issue_url(template: &str) -> String {
-    let encode = |s: &str| {
-        s.bytes()
-            .map(|b| match b {
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' => {
-                    (b as char).to_string()
-                }
-                _ => format!("%{b:02X}"),
-            })
-            .collect::<String>()
-    };
     format!(
         "{REPOSITORY}/issues/new?template={template}&version={}&system={}",
         encode(VERSION),
         encode(&platform())
     )
+}
+
+/// A new bug report with everything openDJ knows about the setup filled
+/// in: version, system, graphics, audio outputs and controllers.
+pub fn bug_report_url() -> String {
+    let graphics = GRAPHICS.lock().map(|g| g.clone()).unwrap_or_default();
+    let controllers = CONTROLLERS.with(|c| c.borrow().as_ref().map(|f| f()).unwrap_or_default());
+    let setup = crate::settings::audio_setup();
+    let default = opendj_engine::default_output_device();
+    let audio = audio_summary(&setup, default.as_deref());
+    bug_report_url_with(&graphics, &audio, &controllers)
+}
+
+fn bug_report_url_with(graphics: &str, audio: &str, controllers: &[String]) -> String {
+    let mut url = issue_url("bug_report.yml");
+    for (field, value) in [
+        ("graphics", graphics.to_string()),
+        ("audio", audio.to_string()),
+        ("controller", controllers.join(", ")),
+    ] {
+        if !value.is_empty() {
+            url.push_str(&format!("&{field}={}", encode(&value)));
+        }
+    }
+    url
+}
+
+/// The output devices in use, e.g. "Built-in Output (system default),
+/// 512 frames".
+fn audio_summary(setup: &opendj_engine::AudioSetup, default: Option<&str>) -> String {
+    let mut devices: Vec<String> = Vec::new();
+    for route in setup.routes.iter().filter(|r| setup.in_use(r)) {
+        let name = if route.device.is_empty() {
+            match default {
+                Some(d) => format!("{d} (system default)"),
+                None => "system default".to_string(),
+            }
+        } else {
+            route.device.clone()
+        };
+        if !devices.contains(&name) {
+            devices.push(name);
+        }
+    }
+    let mut out = devices.join(", ");
+    if let Some(frames) = setup.buffer_frames {
+        out.push_str(&format!(", {frames} frames"));
+    }
+    if setup.external_mixer {
+        out.push_str(", external mixer");
+    }
+    out
 }
 
 #[cfg(test)]
@@ -289,5 +364,44 @@ mod tests {
         ));
         assert!(url.contains(VERSION));
         assert!(!url.contains(' '));
+    }
+
+    #[test]
+    fn bug_reports_carry_the_setup() {
+        let url = bug_report_url_with(
+            "Apple M2 (Metal)",
+            "Built-in Output (system default)",
+            &["DDJ-FLX4 (Pioneer DDJ-FLX4)".to_string(), "X1".to_string()],
+        );
+        assert!(url.contains("template=bug_report.yml"));
+        assert!(url.contains("&graphics=Apple%20M2%20%28Metal%29"));
+        assert!(url.contains("&audio=Built-in%20Output%20%28system%20default%29"));
+        assert!(url.contains("&controller=DDJ-FLX4%20%28Pioneer%20DDJ-FLX4%29%2C%20X1"));
+        // Empty facts are left out, so the form shows its placeholder.
+        let bare = bug_report_url_with("", "", &[]);
+        assert!(!bare.contains("graphics=") && !bare.contains("controller="));
+    }
+
+    #[test]
+    fn audio_summary_names_each_device_once() {
+        use opendj_engine::{AudioSetup, Role, Route};
+        let route = |role, device: &str| Route {
+            role,
+            device: device.into(),
+            pair: 0,
+        };
+        let setup = AudioSetup {
+            routes: vec![
+                route(Role::Master, ""),
+                route(Role::Headphones, "DDJ-FLX4"),
+                route(Role::Booth, ""),
+            ],
+            buffer_frames: Some(256),
+            ..AudioSetup::default()
+        };
+        assert_eq!(
+            audio_summary(&setup, Some("Speakers")),
+            "Speakers (system default), DDJ-FLX4, 256 frames"
+        );
     }
 }

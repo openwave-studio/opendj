@@ -39,6 +39,9 @@ const VOCALS_LYRICS: u32 = 2;
 pub const PHRASES_LABELS: [&str; 4] = ["Off", "Overview", "Waveform", "Both"];
 const PHRASE_BAR_KEY: &str = "phrases_visible";
 const PHRASE_FLAGS_KEY: &str = "phrase_flags_visible";
+/// BPM labels, in the waveforms button's drop-down: the large waveforms'
+/// tempo labels where the tempo changes (on at first).
+pub const TEMPO_LABELS_KEY: &str = "tempo_labels_visible";
 
 /// The color schemes, in the drop-down's order.
 pub const COLOR_LABELS: [&str; 3] = ["RGB", "3-Band", "Stems"];
@@ -59,6 +62,7 @@ static NEEDLE: AtomicU32 = AtomicU32::new(0);
 static VERSION: AtomicU32 = AtomicU32::new(1);
 static GAIN: AtomicU32 = AtomicU32::new(1);
 static VOCALS: AtomicU32 = AtomicU32::new(VOCALS_LYRICS);
+static TEMPO_LABELS: AtomicU32 = AtomicU32::new(1);
 
 /// Reads the saved choices; called once at start.
 pub fn load() {
@@ -70,6 +74,10 @@ pub fn load() {
     NEEDLE.store(read(NEEDLE_KEY, NEEDLE_AT.len()), Ordering::Relaxed);
     GAIN.store(settings::flag(GAIN_KEY, true) as u32, Ordering::Relaxed);
     VOCALS.store(saved_vocals(), Ordering::Relaxed);
+    TEMPO_LABELS.store(
+        settings::flag(TEMPO_LABELS_KEY, true) as u32,
+        Ordering::Relaxed,
+    );
     crate::browser::set_wave_lyrics(vocals() == VOCALS_LYRICS as usize);
     VERSION.fetch_add(1, Ordering::Relaxed);
 }
@@ -156,6 +164,11 @@ pub fn show_vocals() -> bool {
     VOCALS.load(Ordering::Relaxed) == VOCALS_BAR
 }
 
+/// Whether the large waveforms label the tempo where it changes.
+pub fn tempo_labels() -> bool {
+    TEMPO_LABELS.load(Ordering::Relaxed) == 1
+}
+
 /// Which of [`PHRASES_LABELS`] the overviews' phrase bar and the large
 /// waveforms' flags make.
 fn phrases_index(bar: bool, flags: bool) -> usize {
@@ -236,6 +249,17 @@ pub fn install(app: &crate::AppWindow) {
             app.window().request_redraw();
         }
     });
+    // BPM labels on the large waveforms.
+    ui.set_tempo_labels(tempo_labels());
+    let weak = app.as_weak();
+    ui.on_pick_tempo_labels(move |on| {
+        TEMPO_LABELS.store(on as u32, Ordering::Relaxed);
+        settings::set(TEMPO_LABELS_KEY, serde_json::json!(on));
+        if let Some(app) = weak.upgrade() {
+            app.global::<crate::WaveLook>().set_tempo_labels(on);
+            app.window().request_redraw();
+        }
+    });
 }
 
 fn show(ui: &crate::WaveLook) {
@@ -260,7 +284,7 @@ pub fn style() -> Style {
     }
 }
 
-/// The band colours: RGB keeps its red, amber and blue; 3-Band uses the
+/// The band colours: RGB keeps its deep red, amber and ice blue; 3-Band uses the
 /// palette picked.
 pub fn palette() -> Palette {
     match style() {

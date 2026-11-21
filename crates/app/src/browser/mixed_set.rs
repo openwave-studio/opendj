@@ -17,23 +17,30 @@ use std::sync::mpsc::{channel, sync_channel, Receiver, Sender, TryRecvError};
 use std::sync::Arc;
 
 use opendj_control::{ControlHandle, ControlRegistry};
+use opendj_engine::analysis::WaveformMaker;
 use opendj_engine::decode::Decoder;
 use opendj_engine::preview::PREVIEW_GROUP;
 use opendj_engine::set_chapters::{self, clock, Chapter, YoutubeNote};
 use opendj_engine::set_checks::{self, Finding, Severity, Stretch, TrackGrid};
 use opendj_engine::set_fixes::{self, Edits, Fix, Rendered, LOUDNESS_PRESETS};
-use opendj_engine::set_timeline::{CueTrack, LaneKind, Recording, SetTimeline};
+use opendj_engine::set_render::{self, Swap, Target, TransitionEdit};
+use opendj_engine::set_timeline::{CueTrack, LaneKind, LoadedTrack, Recording, SetTimeline, Style};
+use opendj_engine::Waveform;
 use opendj_library::pair_mixes::PairMix;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use super::{file_path, Browser, MIXED_SETS};
 use crate::{
     files, AppWindow, FilesUi, MixedSetUi, SetBlock, SetFindingRow, SetFixRow, SetLane, SetSpan,
-    SetTransitionRow,
+    SetSwapRow, SetTrackRow, SetTransitionRow,
 };
 
-/// Bins in the waveform: across the whole set, 1000 wide.
-const WAVE_BINS: usize = 2000;
+/// Waveform slices a second: fine enough for a view of a few seconds.
+const WAVE_RATE: f64 = 50.0;
+/// The overview's size in pixels; it is stretched to its box.
+const OVERVIEW_PX: (usize, usize) = (1600, 68);
+/// The timeline waveform's height in pixels; stretched to its row.
+const WAVE_PX_HIGH: usize = 240;
 /// A transition plays from this many bars before it.
 const TRANSITION_LEAD_BARS: f64 = 4.0;
 /// A finding plays from this many bars before it.
@@ -51,17 +58,43 @@ const MIN_VIEW: f64 = 0.002;
 
 /// What the editor's threads say.
 enum Said {
-    /// The waveform's path, and the audio checks' findings.
+    /// The waveform, and the audio checks' findings.
     Read {
-        wave: String,
+        waveform: Waveform,
         findings: Vec<Finding>,
     },
     /// What the loudness preset would do.
     Measured(Rendered),
     /// The edited mix is written.
     Saved(PathBuf, Rendered),
+    /// Transitions mixed again or tracks swapped: their new fixes, and
+    /// what to play once they are in.
+    Edited(Vec<Fix>, Focus),
     Failed(String),
 }
+
+/// What to play once an edit is rendered.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Focus {
+    Transition(usize),
+    /// A track of the set (its slot).
+    Track(usize),
+    Nothing,
+}
+
+/// One stretch to render in the background.
+enum Job {
+    Mix(TransitionEdit),
+    Swap(Swap),
+}
+
+/// Replacement tracks offered at once.
+const SWAP_ROWS: usize = 8;
+
+/// The lengths a transition can be mixed again at, in bars.
+const BAR_CHOICES: [f64; 5] = [2.0, 4.0, 8.0, 16.0, 32.0];
+/// The curves it can be mixed again with, as the editor lists them.
+const STYLE_CHOICES: [Style; 4] = [Style::Smooth, Style::BassSwap, Style::Filter, Style::Cut];
 
 /// The preview player's controls, which play the set back.
 struct Player {
@@ -105,6 +138,31 @@ struct Open {
     /// Stops the threads once the editor closes.
     cancel: Arc<AtomicBool>,
     shown_position: (f32, bool),
+    /// Seconds: where listening to a transition stops.
+    listen_until: Option<f64>,
+    /// A transition mixed again being played from its own file: where the
+    /// file starts in the set and how long it is, in seconds, and the file.
+    listen_mix: Option<(f64, f64, PathBuf)>,
+    /// A transition being mixed again.
+    mixing: bool,
+    /// Why it couldn't be, or what to know about it.
+    edit_note: String,
+    /// A track being swapped.
+    swapping: bool,
+    swap_note: String,
+    /// The library tracks offered to swap in (indexes into the library),
+    /// and the slot they were picked for.
+    swap_candidates: Vec<usize>,
+    swap_for: Option<usize>,
+    /// The transition whose choices were last set in the card.
+    shown_edit: std::cell::Cell<Option<usize>>,
+    /// The track playing, as last shown in the Tracks tab.
+    shown_track: i32,
+    /// The recording's waveform, once read.
+    waveform: Option<Waveform>,
+    /// The view the timeline's waveform was last drawn for: start, length
+    /// and width in pixels.
+    drawn_view: (f32, f32, f32),
 }
 
 #[derive(Clone, Default)]
@@ -178,6 +236,18 @@ impl Browser {
         ui.on_select_block(move |i| w(&|b| b.set_select_block(i as usize)));
         let w = with.clone();
         ui.on_select_transition(move |i| w(&|b| b.set_select_transition(i as usize)));
+        let w = with.clone();
+        ui.on_select_track(move |i| w(&|b| b.set_select_track(i as usize)));
+        let w = with.clone();
+        ui.on_swap_search(move || w(&|b| b.swap_search()));
+        let w = with.clone();
+        ui.on_swap_track(move |i| w(&|b| b.set_swap_track(i as usize)));
+        let w = with.clone();
+        ui.on_unswap_track(move || w(&|b| b.set_unswap_track()));
+        let w = with.clone();
+        ui.on_mix_transition(move || w(&|b| b.set_mix_transition()));
+        let w = with.clone();
+        ui.on_unmix_transition(move || w(&|b| b.set_unmix_transition()));
         let w = with.clone();
         ui.on_step_transition(move |d| w(&|b| b.set_step_transition(d)));
         let w = with.clone();
@@ -361,7 +431,17 @@ impl Browser {
             chapters,
             edits: Edits::load(audio),
             row_of,
-            show_decks: false,
+            show_decks: true,
+            listen_until: None,
+            listen_mix: None,
+            mixing: false,
+            edit_note: String::new(),
+            swapping: false,
+            swap_note: String::new(),
+            swap_candidates: Vec::new(),
+            swap_for: None,
+            shown_edit: Default::default(),
+            shown_track: -1,
             selection: None,
             block: None,
             level_db: 0.0,
@@ -379,6 +459,8 @@ impl Browser {
             tell,
             cancel,
             shown_position: (-1.0, false),
+            waveform: None,
+            drawn_view: (-1.0, -1.0, -1.0),
         };
         open.pairs = self.pairs_of(&open);
         if let Some(t) = &open.timeline {
@@ -391,7 +473,6 @@ impl Browser {
         };
         read_set(
             audio.to_path_buf(),
-            length,
             stretches,
             open.tell.clone(),
             open.cancel.clone(),
@@ -399,9 +480,11 @@ impl Browser {
         let ui = app.global::<MixedSetUi>();
         ui.set_open(true);
         ui.set_loading(false);
-        ui.set_wave(SharedString::new());
-        ui.set_tab(0);
-        ui.set_show_decks(false);
+        let blank = slint::Image::default();
+        ui.set_wave_image(blank.clone());
+        ui.set_overview_image(blank);
+        ui.set_tab(3);
+        ui.set_show_decks(true);
         ui.set_show_lanes(false);
         ui.set_view_start(0.0);
         ui.set_view_len(1.0);
@@ -445,12 +528,11 @@ impl Browser {
         self.mixed_set.open = Some(Box::new(open));
         self.show_mixed_set();
         self.measure_loudness();
-        // Plays back through the preview player, into the main mix.
-        if let Some(i) = self.path_index.get(audio).copied() {
-            self.engine.preview(Some(&self.library[i]), false);
-            if let Some(p) = &self.mixed_set.player {
-                p.main.set_bool(true);
-            }
+        // Plays back through the preview player, into the main mix,
+        // streamed from the file so a long set is never held in memory.
+        self.engine.preview_stream(audio.to_path_buf(), 0.0, false);
+        if let Some(p) = &self.mixed_set.player {
+            p.main.set_bool(true);
         }
     }
 
@@ -465,7 +547,11 @@ impl Browser {
         }
         self.engine.preview(None, false);
         if let Some(app) = self.app.upgrade() {
-            app.global::<MixedSetUi>().set_open(false);
+            let ui = app.global::<MixedSetUi>();
+            ui.set_open(false);
+            ui.set_selected_track(-1);
+            ui.set_swap_query(SharedString::new());
+            ui.set_swap_rows(ModelRc::default());
         }
     }
 
@@ -577,18 +663,35 @@ impl Browser {
         let (Some(p), Some(_)) = (&self.mixed_set.player, &self.mixed_set.open) else {
             return;
         };
-        p.play.set_bool(!p.play.get_bool());
+        if p.play.get_bool() {
+            p.play.set_bool(false);
+        } else if let Some((_, len, file)) = self
+            .mixed_set
+            .open
+            .as_ref()
+            .and_then(|o| o.listen_mix.clone())
+        {
+            let at = p.position.get();
+            self.engine.preview_stream(file, at * len, true);
+        } else {
+            // Streamed again from where it is: after the end it starts over.
+            self.set_seek(p.position.get(), true);
+        }
     }
 
     /// Plays from `at` (a fraction of the set); `play` starts it too.
     fn set_seek(&mut self, at: f64, play: bool) {
-        let Some(p) = &self.mixed_set.player else {
+        let (Some(p), Some(o)) = (&self.mixed_set.player, &mut self.mixed_set.open) else {
             return;
         };
-        p.position.set(at.clamp(0.0, 1.0));
-        if play {
-            p.play.set_bool(true);
-        }
+        o.listen_until = None;
+        o.listen_mix = None;
+        let play = play || p.play.get_bool();
+        let at = at.clamp(0.0, 1.0);
+        // Shown there at once; the stream catches up a moment later.
+        p.position.set(at);
+        self.engine
+            .preview_stream(o.audio.clone(), at * o.length, play);
     }
 
     fn set_select_range(&mut self, a: f64, z: f64) {
@@ -645,10 +748,302 @@ impl Browser {
             return;
         };
         o.transition = Some(i);
+        o.edit_note.clear();
+        // Mixed again: heard from its own file, a few bars either side.
+        if let Some((start, end, file, _)) = o
+            .edits
+            .mixes()
+            .into_iter()
+            .find(|m| m.3 == i)
+            .map(|(s, e, f, t)| (s, e, f.to_path_buf(), t))
+        {
+            self.show_mixed_set();
+            self.set_seek(
+                start / self.mixed_set.open.as_ref().map_or(1.0, |o| o.length),
+                false,
+            );
+            self.engine.preview_stream(file.clone(), 0.0, true);
+            if let Some(o) = &mut self.mixed_set.open {
+                o.listen_mix = Some((start, end - start, file));
+            }
+            return;
+        }
         let bar = bar_seconds(t, x.from_track, x.start);
         let at = (x.start - TRANSITION_LEAD_BARS * bar).max(0.0) / o.length;
+        // Heard with a few bars either side, then it stops.
+        let until = x.end + TRANSITION_LEAD_BARS * bar_seconds(t, x.to_track, x.end);
         self.show_mixed_set();
         self.set_seek(at, true);
+        if let Some(o) = &mut self.mixed_set.open {
+            o.listen_until = Some(until);
+        }
+    }
+
+    /// Mixes the selected transition again with the length and curve
+    /// picked, in the background.
+    fn set_mix_transition(&mut self) {
+        let Some(app) = self.app.upgrade() else {
+            return;
+        };
+        let ui = app.global::<MixedSetUi>();
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let (Some(i), Some(t)) = (o.transition, &o.timeline) else {
+            return;
+        };
+        if o.mixing {
+            return;
+        }
+        let bars = BAR_CHOICES[(ui.get_edit_bars().max(0) as usize).min(BAR_CHOICES.len() - 1)];
+        let style =
+            STYLE_CHOICES[(ui.get_edit_style().max(0) as usize).min(STYLE_CHOICES.len() - 1)];
+        let edit = TransitionEdit {
+            transition: i,
+            bars,
+            style,
+        };
+        // Refused at once if it can't fit.
+        if let Err(e) = set_render::transition_window(t, &edit) {
+            o.edit_note = e;
+            self.show_mixed_set();
+            return;
+        }
+        o.mixing = true;
+        o.edit_note = "Mixing it again from the set's log…".into();
+        spawn_edits(o, vec![Job::Mix(edit)], Focus::Transition(i));
+        self.show_mixed_set();
+    }
+
+    /// Back to the selected transition as it was played.
+    fn set_unmix_transition(&mut self) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let Some(i) = o.transition else { return };
+        let mut files = Vec::new();
+        o.edits.fixes.retain(|f| match f {
+            Fix::Mix {
+                transition, file, ..
+            } if *transition == i => {
+                files.push(file.clone());
+                false
+            }
+            _ => true,
+        });
+        o.listen_mix = None;
+        o.edit_note.clear();
+        for f in files {
+            let _ = std::fs::remove_file(f);
+        }
+        self.edits_changed();
+    }
+
+    /// Jumps to the start of track `i` in the tracklist.
+    fn set_select_track(&mut self, i: usize) {
+        let Some(o) = &self.mixed_set.open else {
+            return;
+        };
+        let Some(c) = o.chapters.get(i) else { return };
+        let at = c.start / o.length.max(1e-9);
+        let swapped = o
+            .edits
+            .swaps()
+            .into_iter()
+            .find(|w| w.3 == i)
+            .map(|(s, e, f, _)| (s, e, f.to_path_buf()));
+        self.set_seek(at, false);
+        if let Some((start, end, file)) = swapped {
+            self.listen_file(start, end, file);
+        }
+        self.swap_search();
+    }
+
+    /// Plays an edited stretch from its own file.
+    fn listen_file(&mut self, start: f64, end: f64, file: PathBuf) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let at = start / o.length.max(1e-9);
+        if let Some(p) = &self.mixed_set.player {
+            p.position.set(at);
+        }
+        self.engine.preview_stream(file.clone(), 0.0, true);
+        o.listen_until = None;
+        o.listen_mix = Some((start, end - start, file));
+    }
+
+    /// The library tracks to offer for the track picked in the
+    /// tracklist: those that fit its tempo, best key and tempo matches
+    /// first, narrowed by the search.
+    fn swap_search(&mut self) {
+        let Some(app) = self.app.upgrade() else {
+            return;
+        };
+        let ui = app.global::<MixedSetUi>();
+        let mixing = self.key_rules.0;
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let slot = ui.get_selected_track();
+        let Some(t) = &o.timeline else { return };
+        if slot < 0 {
+            return;
+        }
+        let slot = slot as usize;
+        if o.swap_for != Some(slot) {
+            o.swap_note.clear();
+        }
+        o.swap_for = Some(slot);
+        let Some(k) = set_render::slot_track(t, slot) else {
+            return;
+        };
+        let lt = &t.tracks[k];
+        let speed = t
+            .clips
+            .iter()
+            .find(|c| c.track == k)
+            .map_or(1.0, |c| c.speed);
+        let tempo = lt.bpm * speed;
+        let key = opendj_engine::key::Key::parse(&lt.key);
+        let words: Vec<String> = ui
+            .get_swap_query()
+            .to_lowercase()
+            .split_whitespace()
+            .map(str::to_string)
+            .collect();
+        let mut scored: Vec<(f64, usize)> = self
+            .library
+            .iter()
+            .enumerate()
+            .filter_map(|(i, tr)| {
+                let path = file_path(tr)?;
+                if lt.path.as_deref() == Some(path) || tr.bpm <= 0.0 {
+                    return None;
+                }
+                let hay = format!("{} {}", tr.artist, tr.title).to_lowercase();
+                if !words.iter().all(|w| hay.contains(w.as_str())) {
+                    return None;
+                }
+                let change = if tempo > 0.0 {
+                    tempo / tr.bpm - 1.0
+                } else {
+                    0.0
+                };
+                if change.abs() > 0.25 {
+                    return None;
+                }
+                let steps = match (key, opendj_engine::key::Key::parse(&tr.key)) {
+                    (Some(a), Some(b)) => crate::automix_order::key_steps(a, b, mixing) as f64,
+                    _ => 4.0,
+                };
+                Some((steps + change.abs() * 100.0 / 6.0, i))
+            })
+            .collect();
+        scored.sort_by(|a, b| a.0.total_cmp(&b.0));
+        o.swap_candidates = scored.iter().take(SWAP_ROWS).map(|x| x.1).collect();
+        let rows: Vec<SetSwapRow> = o
+            .swap_candidates
+            .iter()
+            .map(|&i| {
+                let tr = &self.library[i];
+                let change = if tempo > 0.0 {
+                    (tempo / tr.bpm - 1.0) * 100.0
+                } else {
+                    0.0
+                };
+                let fits = match (key, opendj_engine::key::Key::parse(&tr.key)) {
+                    (Some(a), Some(b)) if a == b => "Same key",
+                    (Some(a), Some(b)) if a.mixes(b, mixing) => "Key fits",
+                    _ => "",
+                };
+                let tempo_text = if change.abs() < 0.5 {
+                    "same tempo".to_string()
+                } else {
+                    format!("{change:+.0}%")
+                };
+                let hint = if fits.is_empty() {
+                    tempo_text
+                } else {
+                    format!("{fits}, {tempo_text}")
+                };
+                let info = if tr.key.is_empty() {
+                    format!("{:.1} BPM", tr.bpm)
+                } else {
+                    format!("{:.1} BPM · {}", tr.bpm, tr.key)
+                };
+                SetSwapRow {
+                    title: tr.title.as_str().into(),
+                    artist: tr.artist.as_str().into(),
+                    info: info.into(),
+                    hint: hint.into(),
+                }
+            })
+            .collect();
+        ui.set_swap_rows(ModelRc::new(VecModel::from(rows)));
+        self.show_mixed_set();
+    }
+
+    /// Swaps the track picked in the tracklist for offer `i`, in the
+    /// background; the transitions mixed again next to it are mixed again
+    /// with the replacement.
+    fn set_swap_track(&mut self, i: usize) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let (Some(slot), Some(&lib)) = (o.swap_for, o.swap_candidates.get(i)) else {
+            return;
+        };
+        if o.swapping || o.timeline.is_none() {
+            return;
+        }
+        let tr = &self.library[lib];
+        let Some(path) = file_path(tr) else { return };
+        let swap = Swap {
+            slot,
+            track: LoadedTrack {
+                artist: tr.artist.clone(),
+                title: tr.title.clone(),
+                path: Some(path.to_path_buf()),
+                bpm: tr.bpm,
+                key: tr.key.clone(),
+                ..Default::default()
+            },
+        };
+        let mut jobs = vec![Job::Swap(swap)];
+        jobs.extend(mixes_around(o, slot));
+        o.swapping = true;
+        o.swap_note.clear();
+        spawn_edits(o, jobs, Focus::Track(slot));
+        self.show_mixed_set();
+    }
+
+    /// Back to the picked track as it was played.
+    fn set_unswap_track(&mut self) {
+        let Some(o) = &mut self.mixed_set.open else {
+            return;
+        };
+        let Some(slot) = o.swap_for else { return };
+        let mut files = Vec::new();
+        o.edits.fixes.retain(|f| match f {
+            Fix::Swap { slot: s, file, .. } if *s == slot => {
+                files.push(file.clone());
+                false
+            }
+            _ => true,
+        });
+        for f in files {
+            let _ = std::fs::remove_file(f);
+        }
+        o.listen_mix = None;
+        o.swap_note.clear();
+        // Transitions mixed again next to it, mixed again with it back.
+        let jobs = mixes_around(o, slot);
+        if !jobs.is_empty() {
+            o.swapping = true;
+            spawn_edits(o, jobs, Focus::Nothing);
+        }
+        self.edits_changed();
     }
 
     fn set_step_transition(&mut self, step: i32) {
@@ -937,10 +1332,14 @@ impl Browser {
         };
         let ui = app.global::<MixedSetUi>();
         let mut changed = false;
+        let mut mixed = None;
         loop {
             match o.said.try_recv() {
-                Ok(Said::Read { wave, findings }) => {
-                    ui.set_wave(wave.into());
+                Ok(Said::Read { waveform, findings }) => {
+                    let (w, h) = OVERVIEW_PX;
+                    ui.set_overview_image(crate::waves::draw(&waveform.overview(w), w, h, true));
+                    o.waveform = Some(waveform);
+                    o.drawn_view = (-1.0, -1.0, -1.0);
                     o.audio_findings = findings;
                     o.checking = false;
                     let mut all = o.audio_findings.clone();
@@ -972,7 +1371,31 @@ impl Browser {
                     self.add_recordings(&[path]);
                     break;
                 }
+                Ok(Said::Edited(fixes, focus)) => {
+                    let kept = "Kept with your fixes: Save edited mix writes it into a new file.";
+                    if o.mixing {
+                        o.mixing = false;
+                        o.edit_note = kept.into();
+                    }
+                    if o.swapping {
+                        o.swapping = false;
+                        o.swap_note = kept.into();
+                    }
+                    for fix in fixes {
+                        replace_fix(&mut o.edits, fix);
+                    }
+                    mixed = Some(focus);
+                    changed = true;
+                }
                 Ok(Said::Failed(e)) => {
+                    if o.mixing {
+                        o.mixing = false;
+                        o.edit_note = e.clone();
+                    }
+                    if o.swapping {
+                        o.swapping = false;
+                        o.swap_note = e.clone();
+                    }
                     o.saving = false;
                     o.measuring = false;
                     o.checking = false;
@@ -991,9 +1414,43 @@ impl Browser {
             o.block = None;
             changed = true;
         }
+        // The timeline's waveform, drawn for what it shows at its width.
+        let view = (ui.get_view_start(), ui.get_view_len(), ui.get_wave_px());
+        if view != o.drawn_view && view.2 >= 1.0 {
+            if let Some(w) = &o.waveform {
+                o.drawn_view = view;
+                let px = view.2.round() as usize;
+                let from = view.0 as f64 * o.length;
+                let to = (view.0 + view.1) as f64 * o.length;
+                let slices = w.overview_of(from, to, px);
+                ui.set_wave_image(crate::waves::draw(&slices, px, WAVE_PX_HIGH, true));
+            }
+        }
         if let Some(p) = &self.mixed_set.player {
-            let at = p.position.get() as f32;
+            let at = match &o.listen_mix {
+                // A transition mixed again plays from its own file.
+                Some((start, len, _)) => ((start + p.position.get() * len) / o.length) as f32,
+                None => p.position.get() as f32,
+            };
             let playing = p.play.get_bool();
+            // Only just past the end: until the new stream comes in, the
+            // player still says where the old one was.
+            if let Some(until) = o.listen_until {
+                let now = at as f64 * o.length;
+                if playing && (until..until + 2.0).contains(&now) {
+                    p.play.set_bool(false);
+                    o.listen_until = None;
+                }
+            }
+            let now = o
+                .chapters
+                .iter()
+                .rposition(|c| c.start <= at as f64 * o.length)
+                .map_or(-1, |i| i as i32);
+            if now != o.shown_track {
+                o.shown_track = now;
+                ui.set_playing_track(now);
+            }
             if (at, playing) != o.shown_position {
                 o.shown_position = (at, playing);
                 ui.set_position(at);
@@ -1006,7 +1463,26 @@ impl Browser {
                 }
             }
         }
-        if changed {
+        if let Some(focus) = mixed {
+            self.edits_changed();
+            // Heard straight away.
+            match focus {
+                Focus::Transition(i) => self.set_select_transition(i),
+                Focus::Track(slot) => {
+                    let swapped = self.mixed_set.open.as_ref().and_then(|o| {
+                        o.edits
+                            .swaps()
+                            .into_iter()
+                            .find(|w| w.3 == slot)
+                            .map(|(s, e, f, _)| (s, e, f.to_path_buf()))
+                    });
+                    if let Some((start, end, file)) = swapped {
+                        self.listen_file(start, end, file);
+                    }
+                }
+                Focus::Nothing => {}
+            }
+        } else if changed {
             self.show_mixed_set();
         }
     }
@@ -1048,15 +1524,18 @@ impl Browser {
                 selected,
             };
         if let Some(t) = &o.timeline {
+            let mixes = o.edits.mixes();
             for (i, x) in t.transitions.iter().enumerate() {
-                spans.push(span(
-                    x.start,
-                    x.end,
-                    0,
-                    x.style.name(),
-                    0,
-                    o.transition == Some(i),
-                ));
+                let label = match mixed_again(&o.edits, i) {
+                    Some((bars, style)) => format!("{style} · {bars} bars (new)"),
+                    None => x.style.name().to_string(),
+                };
+                let end = mixes
+                    .iter()
+                    .find(|m| m.3 == i)
+                    .and_then(|_| mixed_end(&o.edits, i, t))
+                    .unwrap_or(x.end);
+                spans.push(span(x.start, end, 0, &label, 0, o.transition == Some(i)));
             }
             let row = |d: usize| o.row_of.get(d).copied().unwrap_or(0);
             for l in &t.loops {
@@ -1146,6 +1625,48 @@ impl Browser {
                     ui.set_detail_at(clock(x.start).into());
                     ui.set_detail_length(transition_length(x).into());
                     ui.set_detail_style(x.style.name().into());
+                    let i = o.transition.unwrap_or(0);
+                    let (bars, style) = match mixed_again(&o.edits, i) {
+                        Some((bars, style)) => {
+                            ui.set_detail_mixed(
+                                format!("Mixed again: {bars} bars, {style}").into(),
+                            );
+                            (
+                                bars,
+                                STYLE_CHOICES
+                                    .iter()
+                                    .position(|s| s.name() == style)
+                                    .unwrap_or(0),
+                            )
+                        }
+                        None => {
+                            ui.set_detail_mixed(SharedString::new());
+                            (
+                                x.bars.unwrap_or(4.0),
+                                STYLE_CHOICES
+                                    .iter()
+                                    .position(|s| *s == x.style)
+                                    .unwrap_or(0),
+                            )
+                        }
+                    };
+                    if o.shown_edit.get() != Some(i) {
+                        // The choices start at what it is now.
+                        o.shown_edit.set(Some(i));
+                        let nearest = BAR_CHOICES
+                            .iter()
+                            .enumerate()
+                            .min_by(|a, b| {
+                                (a.1.ln() - bars.max(1.0).ln())
+                                    .abs()
+                                    .total_cmp(&(b.1.ln() - bars.max(1.0).ln()).abs())
+                            })
+                            .map_or(1, |(k, _)| k);
+                        ui.set_edit_bars(nearest as i32);
+                        ui.set_edit_style(style as i32);
+                    }
+                    ui.set_mixing(o.mixing);
+                    ui.set_edit_note(o.edit_note.as_str().into());
                     ui.set_detail_sync(
                         o.log_findings
                             .iter()
@@ -1165,6 +1686,45 @@ impl Browser {
             ui.set_selected_transition(-1);
         }
         ui.set_transitions(ModelRc::new(VecModel::from(rows)));
+        ui.set_tracks(ModelRc::new(VecModel::from(
+            o.chapters
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    let end = o.chapters.get(i + 1).map_or(o.length, |n| n.start);
+                    let swap = o.edits.swap_of(i);
+                    let (artist, title) = swap.unwrap_or((&c.artist, &c.title));
+                    SetTrackRow {
+                        number: i as i32 + 1,
+                        title: title.into(),
+                        artist: artist.into(),
+                        at: clock(c.start).into(),
+                        length: clock((end - c.start).max(0.0)).into(),
+                        swapped: swap.is_some(),
+                    }
+                })
+                .collect::<Vec<_>>(),
+        )));
+
+        // Swapping the picked track.
+        ui.set_can_swap(o.timeline.is_some());
+        ui.set_swapping(o.swapping);
+        ui.set_swap_note(o.swap_note.as_str().into());
+        ui.set_track_swapped(
+            o.swap_for
+                .and_then(|slot| o.edits.swap_of(slot))
+                .map(|(artist, title)| {
+                    let name = Chapter {
+                        start: 0.0,
+                        artist: artist.to_string(),
+                        title: title.to_string(),
+                    }
+                    .name();
+                    format!("Swapped for {name}")
+                })
+                .unwrap_or_default()
+                .into(),
+        );
 
         // Check my mix.
         ui.set_checking(o.checking);
@@ -1275,6 +1835,166 @@ fn bar_seconds(t: &SetTimeline, track: usize, at: f64) -> f64 {
     }
 }
 
+/// How transition `i` was mixed again, if it was: bars and style name.
+fn mixed_again(edits: &Edits, i: usize) -> Option<(f64, String)> {
+    edits.fixes.iter().rev().find_map(|f| match f {
+        Fix::Mix {
+            transition,
+            bars,
+            style,
+            ..
+        } if *transition == i => Some((*bars, style.clone())),
+        _ => None,
+    })
+}
+
+/// Where transition `i`, mixed again, ends in the set.
+fn mixed_end(edits: &Edits, i: usize, t: &SetTimeline) -> Option<f64> {
+    let (bars, style) = mixed_again(edits, i)?;
+    let x = t.transitions.get(i)?;
+    if style == Style::Cut.name() {
+        return Some(x.start + 0.05);
+    }
+    Some(x.start + bars * set_render::bar_seconds(t, x.to_track, x.start))
+}
+
+/// Renders `jobs` in the background with all the set's edits (the new
+/// ones in place of any they replace), then says [`Said::Edited`].
+fn spawn_edits(o: &Open, jobs: Vec<Job>, focus: Focus) {
+    let Some(t) = &o.timeline else { return };
+    let mut edits = o.edits.set_edits();
+    for j in &jobs {
+        match j {
+            Job::Mix(e) => {
+                edits.transitions.retain(|x| x.transition != e.transition);
+                edits.transitions.push(*e);
+            }
+            Job::Swap(w) => {
+                edits.swaps.retain(|x| x.slot != w.slot);
+                edits.swaps.push(w.clone());
+            }
+        }
+    }
+    let (audio, timeline, tell) = (o.audio.clone(), t.clone(), o.tell.clone());
+    let stamp = chrono::Local::now().format("%H%M%S").to_string();
+    std::thread::spawn(move || {
+        let mut fixes = Vec::new();
+        for j in jobs {
+            let made = match j {
+                Job::Mix(e) => {
+                    let dest = mix_path(&audio, e.transition, &stamp);
+                    set_render::render_edits(
+                        &audio,
+                        &timeline,
+                        &edits,
+                        Target::Transition(e.transition),
+                        &dest,
+                    )
+                    .map(|(start, end)| Fix::Mix {
+                        start,
+                        end,
+                        file: dest,
+                        transition: e.transition,
+                        bars: e.bars,
+                        style: e.style.name().to_string(),
+                    })
+                    .map_err(|e| format!("Couldn't mix the transition again: {e}"))
+                }
+                Job::Swap(w) => {
+                    let dest = swap_path(&audio, w.slot, &stamp);
+                    set_render::render_edits(&audio, &timeline, &edits, Target::Swap(w.slot), &dest)
+                        .map(|(start, end)| Fix::Swap {
+                            start,
+                            end,
+                            file: dest,
+                            slot: w.slot,
+                            path: w.track.path.clone().unwrap_or_default(),
+                            artist: w.track.artist.clone(),
+                            title: w.track.title.clone(),
+                            bpm: w.track.bpm,
+                            key: w.track.key.clone(),
+                        })
+                        .map_err(|e| format!("Couldn't swap the track: {e}"))
+                }
+            };
+            match made {
+                Ok(f) => fixes.push(f),
+                Err(e) => {
+                    for f in &fixes {
+                        if let Fix::Mix { file, .. } | Fix::Swap { file, .. } = f {
+                            let _ = std::fs::remove_file(file);
+                        }
+                    }
+                    let _ = tell.send(Said::Failed(e));
+                    return;
+                }
+            }
+        }
+        let _ = tell.send(Said::Edited(fixes, focus));
+    });
+}
+
+/// The transitions into and out of the set's `slot`th track that were
+/// mixed again, to mix again with whatever plays there now.
+fn mixes_around(o: &Open, slot: usize) -> Vec<Job> {
+    let Some(t) = &o.timeline else {
+        return Vec::new();
+    };
+    let (into, out) = set_render::transitions_around(t, slot);
+    let edits = o.edits.set_edits();
+    [into, out]
+        .into_iter()
+        .flatten()
+        .filter_map(|i| edits.transitions.iter().find(|e| e.transition == i))
+        .map(|e| Job::Mix(*e))
+        .collect()
+}
+
+/// Puts `fix` in, in place of an earlier mix of the same transition or
+/// swap of the same track (whose file goes).
+fn replace_fix(edits: &mut Edits, fix: Fix) {
+    let same = |f: &Fix| match (f, &fix) {
+        (Fix::Mix { transition: a, .. }, Fix::Mix { transition: b, .. }) => a == b,
+        (Fix::Swap { slot: a, .. }, Fix::Swap { slot: b, .. }) => a == b,
+        _ => false,
+    };
+    let new_file = match &fix {
+        Fix::Mix { file, .. } | Fix::Swap { file, .. } => Some(file.clone()),
+        _ => None,
+    };
+    let at = edits.fixes.iter().position(&same);
+    for f in edits.fixes.iter().filter(|f| same(f)) {
+        if let Fix::Mix { file, .. } | Fix::Swap { file, .. } = f {
+            if Some(file) != new_file.as_ref() {
+                let _ = std::fs::remove_file(file);
+            }
+        }
+    }
+    edits.fixes.retain(|f| !same(f));
+    match at {
+        Some(i) => edits.fixes.insert(i.min(edits.fixes.len()), fix),
+        None => edits.fixes.push(fix),
+    }
+}
+
+/// A new file for the set's `slot`th track swapped, beside the recording
+/// (hidden, so the library doesn't list it as a recording).
+fn swap_path(audio: &Path, slot: usize, stamp: &str) -> PathBuf {
+    let edits = set_fixes::edits_path(audio);
+    let name = edits.file_name().unwrap_or_default().to_string_lossy();
+    let stem = name.strip_suffix(".edits.json").unwrap_or(&name);
+    edits.with_file_name(format!(".{stem}.track {} swapped {stamp}.wav", slot + 1))
+}
+
+/// A new file for transition `i` mixed again, beside the recording
+/// (hidden, so the library doesn't list it as a recording).
+fn mix_path(audio: &Path, i: usize, stamp: &str) -> PathBuf {
+    let edits = set_fixes::edits_path(audio);
+    let name = edits.file_name().unwrap_or_default().to_string_lossy();
+    let stem = name.strip_suffix(".edits.json").unwrap_or(&name);
+    edits.with_file_name(format!(".{stem}.transition {} {stamp}.wav", i + 1))
+}
+
 fn transition_length(x: &opendj_engine::set_timeline::Transition) -> String {
     match x.bars {
         Some(b) if b >= 0.95 => format!("{} bars", b.round()),
@@ -1310,6 +2030,32 @@ fn fix_row(f: &Fix) -> SetFixRow {
         Fix::Loudness { lufs, ceiling } => (
             "Loudness".to_string(),
             format!("{lufs} LUFS, peaks under {ceiling} dBTP"),
+        ),
+        Fix::Mix {
+            transition,
+            bars,
+            style,
+            ..
+        } => (
+            format!("Transition {}", transition + 1),
+            format!("Mixed again: {bars} bars, {style}"),
+        ),
+        Fix::Swap {
+            slot,
+            artist,
+            title,
+            ..
+        } => (
+            format!("Track {}", slot + 1),
+            format!(
+                "Swapped for {}",
+                Chapter {
+                    start: 0.0,
+                    artist: artist.clone(),
+                    title: title.clone()
+                }
+                .name()
+            ),
         ),
     };
     SetFixRow {
@@ -1486,13 +2232,7 @@ fn frames(
 }
 
 /// Reads the set once for its waveform and the audio checks.
-fn read_set(
-    audio: PathBuf,
-    length: f64,
-    stretches: Vec<Stretch>,
-    tell: Sender<Said>,
-    cancel: Arc<AtomicBool>,
-) {
+fn read_set(audio: PathBuf, stretches: Vec<Stretch>, tell: Sender<Said>, cancel: Arc<AtomicBool>) {
     spawn("set read", move || {
         let (rate, frames) = match frames(&audio, cancel.clone()) {
             Ok(f) => f,
@@ -1501,48 +2241,17 @@ fn read_set(
                 return;
             }
         };
-        let total = (length * rate as f64).max(1.0);
-        let mut peaks = vec![0f32; WAVE_BINS];
-        let mut n = 0usize;
-        let counted = frames.inspect(|f| {
-            let bin = ((n as f64 / total) * WAVE_BINS as f64) as usize;
-            if let Some(p) = peaks.get_mut(bin) {
-                *p = p.max(f[0].abs().max(f[1].abs()));
-            }
-            n += 1;
-        });
+        let mut maker = WaveformMaker::new(rate, WAVE_RATE);
+        let counted = frames.inspect(|f| maker.push(*f));
         let findings = set_checks::check_audio(counted, rate as f64, &stretches);
         if cancel.load(Ordering::Acquire) {
             return;
         }
         let _ = tell.send(Said::Read {
-            wave: wave_path(&peaks),
+            waveform: maker.finish(),
             findings,
         });
     });
-}
-
-/// The waveform as path commands over 1000 by 100, mirrored round 50.
-fn wave_path(peaks: &[f32]) -> String {
-    use std::fmt::Write;
-    let last = peaks.len().saturating_sub(1).max(1) as f32;
-    let x = |i: usize| i as f32 * 1000.0 / last;
-    let h = |p: f32| 49.0 * p.clamp(0.0, 1.0);
-    let mut out = String::with_capacity(peaks.len() * 24);
-    for (i, p) in peaks.iter().enumerate() {
-        let _ = write!(
-            out,
-            "{} {:.1} {:.1} ",
-            if i == 0 { 'M' } else { 'L' },
-            x(i),
-            50.0 - h(*p)
-        );
-    }
-    for (i, p) in peaks.iter().enumerate().rev() {
-        let _ = write!(out, "L {:.1} {:.1} ", x(i), 50.0 + h(*p));
-    }
-    out.push('Z');
-    out
 }
 
 /// After Save: `<name> (edited).cue` and `.tracklist.txt` beside the
@@ -1669,15 +2378,5 @@ mod tests {
         assert!(recording_started(&named).is_some());
         assert_eq!(recording_started(&dir.join("Some Mix.mp3")), None);
         let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn waveform_is_mirrored() {
-        let p = wave_path(&[0.0, 1.0]);
-        assert!(
-            p.starts_with("M 0.0 50.0 L 1000.0 1.0 L 1000.0 99.0"),
-            "{p}"
-        );
-        assert!(p.ends_with('Z'));
     }
 }

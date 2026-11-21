@@ -13,20 +13,30 @@ use slint::{ComponentHandle, VecModel};
 use crate::{AppWindow, CueList, SideTab, SideTabs};
 
 /// Each tab's name, by its number as SidePanel's `tab` has it.
-const NAMES: [&str; 7] = [
+const NAMES: [&str; 8] = [
     "Automix",
-    "Sidelist",
+    "Shortlist",
     "Related",
     "Info",
     "Cues",
     "Checklist",
     "Lyrics",
+    "Playlist",
 ];
 
+/// A tab's number by name, including names it had before.
+fn number(name: &str) -> Option<usize> {
+    match name {
+        "Sidelist" => Some(1),
+        _ => NAMES.iter().position(|n| *n == name),
+    }
+}
+
 /// The tabs on a fresh install, in order, and whether each shows.
-const DEFAULT: [(usize, bool); 7] = [
+const DEFAULT: [(usize, bool); 8] = [
     (0, true),
     (1, true),
+    (7, true),
     (2, true),
     (3, true),
     (6, false),
@@ -51,7 +61,7 @@ fn from_saved(saved: Option<Vec<(String, bool)>>) -> Vec<(usize, bool)> {
     };
     let mut tabs: Vec<(usize, bool)> = Vec::new();
     for (name, on) in saved {
-        if let Some(i) = NAMES.iter().position(|n| *n == name) {
+        if let Some(i) = number(&name) {
             if !tabs.iter().any(|(t, _)| *t == i) {
                 tabs.push((i, on));
             }
@@ -240,7 +250,8 @@ mod tests {
             names(&tabs),
             [
                 "Automix",
-                "Sidelist",
+                "Shortlist",
+                "Playlist",
                 "Related",
                 "Info",
                 "Lyrics",
@@ -263,8 +274,15 @@ mod tests {
         let tabs = from_saved(Some(saved));
         assert_eq!(tabs[0], (3, true));
         assert_eq!(tabs[1], (0, false));
-        assert_eq!(tabs.len(), 7);
+        assert_eq!(tabs.len(), 8);
         assert!(names(&tabs).contains(&"Lyrics"));
+    }
+
+    #[test]
+    fn sidelist_saved_under_its_old_name_is_the_shortlist() {
+        let saved = vec![("Sidelist".to_string(), false)];
+        let tabs = from_saved(Some(saved));
+        assert_eq!(tabs[0], (1, false));
     }
 
     #[test]
@@ -277,7 +295,7 @@ mod tests {
     #[test]
     fn moving_outside_prep_skips_prep_tabs() {
         let mut tabs = vec![(0, true), (4, true), (1, true), (5, true), (2, true)];
-        // Automix down two of the listed rows: past Sidelist and Related.
+        // Automix down two of the listed rows: past Shortlist and Related.
         moved(&mut tabs, false, 0, 2);
         assert_eq!(
             tabs,
@@ -293,7 +311,7 @@ mod tests {
     #[test]
     fn moving_in_prep() {
         let mut tabs = DEFAULT.to_vec();
-        moved(&mut tabs, true, 5, -6);
+        moved(&mut tabs, true, 5, -10);
         assert_eq!(names(&tabs)[0], "Checklist");
     }
 

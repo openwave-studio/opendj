@@ -372,6 +372,11 @@ impl Mapping {
         let mut inputs: HashMap<(u8, u8), Vec<Input>> = HashMap::new();
         if let Some(controls) = child(controller, "controls") {
             for c in controls.children().filter(|n| n.has_tag_name("control")) {
+                // An empty <key> is a placeholder for a control the
+                // mapping doesn't use yet: it does nothing in Mixxx.
+                if text(c, "key").unwrap_or("").trim().is_empty() {
+                    continue;
+                }
                 let options = child(c, "options")
                     .map(|o| {
                         o.children()
@@ -379,16 +384,21 @@ impl Mapping {
                             .fold(0, |acc, n| acc | Options::from_name(n.tag_name().name()))
                     })
                     .unwrap_or(0);
-                inputs
-                    .entry((byte(text(c, "status"), 0), byte(text(c, "midino"), 0)))
-                    .or_default()
-                    .push(Input {
-                        group: text(c, "group").unwrap_or("").to_string(),
-                        key: text(c, "key").unwrap_or("").to_string(),
-                        options: Options(options),
-                        description: description(c),
-                        ..Default::default()
-                    });
+                let status = byte(text(c, "status"), 0);
+                // Pitch bend's second byte is part of its value, not a
+                // number: Mixxx ignores whatever a mapping wrote there.
+                let number = if status & 0xF0 == 0xE0 {
+                    0
+                } else {
+                    byte(text(c, "midino"), 0)
+                };
+                inputs.entry((status, number)).or_default().push(Input {
+                    group: text(c, "group").unwrap_or("").to_string(),
+                    key: text(c, "key").unwrap_or("").to_string(),
+                    options: Options(options),
+                    description: description(c),
+                    ..Default::default()
+                });
             }
         }
 

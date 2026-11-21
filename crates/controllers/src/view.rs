@@ -716,6 +716,9 @@ pub fn build_from(
 ) -> Result<MappingView, String> {
     let mapping = mapping.clone();
     let layout = Layout::for_file(&file);
+    if mapping.is_hid() {
+        return Ok(hid_view(&mapping, file, layout));
+    }
     let mut notes = Vec::new();
     let probed = match probe(&mapping, registry.clone()) {
         Ok(p) => p,
@@ -809,6 +812,64 @@ pub fn build_from(
         notes,
     })
 }
+
+/// A HID mapping is all script and its controls send reports, not MIDI
+/// messages: its rows come from its picture, which says what each control
+/// does. It can't be edited.
+fn hid_view(mapping: &Mapping, file: String, layout: Option<Layout>) -> MappingView {
+    let mut rows = Vec::new();
+    if let Some(l) = &layout {
+        for (i, p) in l.parts.iter().enumerate() {
+            for d in &p.does {
+                rows.push(Row {
+                    function: Function::new(d.category, d.name.clone(), d.target.clone()),
+                    control: p.label.clone(),
+                    part: Some(p.id.clone()),
+                    layer: d.layer.clone(),
+                    kind: p.kind.clone(),
+                    // Not a MIDI message: a status byte no controller sends,
+                    // and the control's place in the picture.
+                    keys: vec![(HID_STATUS, i.min(255) as u8)],
+                    midi: p.hid.clone(),
+                    script: None,
+                    description: String::new(),
+                    options: String::new(),
+                    sources: Vec::new(),
+                    edited: false,
+                    off: false,
+                    note: String::new(),
+                });
+            }
+        }
+    }
+    rows.sort_by(|a, b| {
+        a.function
+            .order()
+            .cmp(&b.function.order())
+            .then_with(|| natural(&a.function.target, &b.function.target))
+            .then_with(|| natural(&a.function.name, &b.function.name))
+            .then_with(|| a.layer.cmp(&b.layer))
+            .then_with(|| a.keys.cmp(&b.keys))
+    });
+    let notes = if layout.is_none() {
+        vec!["A USB HID controller: its mapping is all script, with no picture yet.".into()]
+    } else {
+        Vec::new()
+    };
+    MappingView {
+        name: mapping.name.clone(),
+        author: mapping.author.clone(),
+        file,
+        rows,
+        lights: Vec::new(),
+        options: mapping.setting_defs.clone(),
+        layout,
+        notes,
+    }
+}
+
+/// The status byte of a HID controller's rows: 0xF4 is undefined in MIDI.
+pub const HID_STATUS: u8 = 0xF4;
 
 #[cfg(test)]
 mod tests {

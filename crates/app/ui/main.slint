@@ -1,8 +1,9 @@
+import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Palette } from "std-widgets.slint";
 import { Theme, KeyNotation, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { Controls, ControlButton, VuMeter, ControlKnob, HoverTipView, HoverTip } from "controls.slint";
-import { Deck, DeckInfo, GridMenu, PadsUi, KeyItem, EffectList, FxRow, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName } from "deck.slint";
+import { Deck, DeckInfo, GridMenu, GridModePicker, PadsUi, KeyItem, EffectList, FxRow, FxGroup, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName } from "deck.slint";
 import { Mixer, ExternalMixer, AudioSettings, OutputRow, MixerMode, InputSettings, InputRow } from "mixer.slint";
 import { MasterPanel, MicPanel, OnAirPanel, BroadcastState, BroadcastStation, AirTime } from "toppanels.slint";
 import { PlayerBar, PlayerDeck, PlayerMixer, TopSearch, QuickResults, QuickSearch, QuickRow } from "player.slint";
@@ -18,6 +19,8 @@ import { WaveHeight, WaveHeightList, WaveHeightGrip } from "wave_height.slint";
 export { WaveHeight }
 import { WaveLook } from "wave_look.slint";
 export { WaveLook }
+import { DeckAuto } from "deck_auto.slint";
+export { DeckAuto }
 import { LayoutsUi, LayoutEntry } from "layouts.slint";
 export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
@@ -27,8 +30,9 @@ import { NowPlayingUi } from "nowplaying.slint";
 import { DeckStrip, FourDeckBar } from "fourdeck.slint";
 import { LiteDeck, LiteMixer, LiteUi, PadBarHalf } from "lite.slint";
 import { FxBar } from "fxbar.slint";
+import { RemixUi } from "remix.slint";
 import { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi } from "instruments.slint";
-import { Browser, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow } from "library.slint";
+import { Browser, BrowserPanels, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, ListText, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow } from "library.slint";
 import { Preferences, PreferencesOverlay, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart } from "preferences.slint";
 import { UsbExport, UsbExportDialog } from "usb_export.slint";
 import { MixedSetEditor, MixedSetUi } from "mixed_set.slint";
@@ -42,7 +46,7 @@ export { SourceUi, SourceTab, SearchItem, FoundRow, QueueLine, StatusLine } from
 export { TrackInfo, InfoField, InfoLine, TagChip, CoverChoice, ValueChoice } from "info.slint";
 export { FilterUi, FilterChip, FilterChoice, FilterSuggestion } from "filters.slint";
 export { SamplerUi, SamplerPad, SamplePack, SampleChoice } from "sampler.slint";
-export { ColumnUi, ListColumn }
+export { ColumnUi, ListColumn, ListText }
 export { Tour, TourSetup }
 export { MapMode }
 export { PrepUi }
@@ -57,7 +61,9 @@ export { KaraokeWindow } from "karaoke.slint";
 export { RemoteUi, RemoteDevice }
 export { MixerMode, InputSettings, InputRow }
 export { BroadcastState, BroadcastStation }
-export { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
+export { RemixUi }
+export { BrowserFocus, BrowserPane }
+export { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, FxGroup, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, BrowserPanels, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
 
 // Macro lanes: an instrument deck's knobs drawn as lines on its scrolling
 // waveform instead of its note roll (2-Deck Basic only), a colour each.
@@ -430,8 +436,8 @@ component Waveform inherits Rectangle {
         width: 232px;
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: 10px;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
             drop-shadow-blur: 14px;
@@ -465,6 +471,7 @@ component Waveform inherits Rectangle {
                 EditGridButton { group: group; key: "beats_translate_earlier"; text: "◀ |"; }
                 EditGridButton { group: group; key: "beats_translate_later"; text: "| ▶"; }
             }
+            if !locked: GridModePicker { group: group; height: 30px; font-size: 13px; }
             if !locked: EditGridButton {
                 text: "More…";
                 ink: Theme.text-dim;
@@ -525,6 +532,38 @@ component Waveform inherits Rectangle {
             clicked => { MacroLanes.toggle(deck); }
         }
     }
+    // A streamed track downloading to load here: its name and how far
+    // along, over the waveform until it loads.
+    if info.fetching: Rectangle {
+        background: Theme.s-000000a0;
+        VerticalLayout {
+            alignment: center;
+            padding-left: 24px;
+            padding-right: 24px;
+            spacing: 8px;
+            Text {
+                text: info.fetch-note;
+                color: info.fetch-failed ? Theme.lilac-text : Theme.text;
+                font-size: 13px;
+                font-weight: 600;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+            if !info.fetch-failed: Rectangle {
+                height: 4px;
+                border-radius: 2px;
+                background: Theme.n-ffffff14;
+                Rectangle {
+                    x: 0px;
+                    width: parent.width * clamp(info.fetch-progress, 0, 1);
+                    height: parent.height;
+                    border-radius: 2px;
+                    background: Theme.accent;
+                    animate width { duration: 200ms; }
+                }
+            }
+        }
+    }
 }
 
 // An icon button in the footer, lit while its panel is open or expanded.
@@ -575,66 +614,53 @@ component FooterButton inherits Rectangle {
 // is, with its level beside it once an input is chosen in the settings.
 // The arrow at its right end opens the MIC panel: the microphone's and
 // auxiliary input's levels, EQ and effects.
+// Mic: one pill putting the microphone on (`[Microphone],talkover`), lit
+// in the mic color while it is, with its level beside it once an input is
+// chosen in the settings. A right-click opens the Mic panel: the
+// microphone's and auxiliary input's levels, EQ and effects.
 component MicButton inherits Rectangle {
     property <int> on-index: Controls.resolve("[Microphone]", "talkover");
     property <bool> on: Controls.value(on-index, Controls.tick) > 0;
     property <bool> configured: Controls.value(Controls.resolve("[Microphone]", "input_configured"), Controls.tick) > 0;
     property <color> tint: Theme.mic;
-    background: on ? tint.with-alpha(0.16) : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? tint : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? tint : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
-    clip: true;
     HorizontalLayout {
-        Rectangle {
-            background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-ffffff10 : transparent;
-            HorizontalLayout {
-                padding-left: 12px;
-                padding-right: 10px;
-                spacing: 7px;
-                // A microphone on a stand.
-                Path {
-                    width: 12px;
-                    height: 16px;
-                    y: (parent.height - self.height) / 2;
-                    viewbox-width: 12;
-                    viewbox-height: 16;
-                    stroke: on ? tint : Theme.text-dim;
-                    stroke-width: 1.5px;
-                    fill: transparent;
-                    commands: "M 3.5 3 A 2.5 2.5 0 0 1 8.5 3 L 8.5 7.5 A 2.5 2.5 0 0 1 3.5 7.5 Z M 1 7 A 5 5 0 0 0 11 7 M 6 12 L 6 15 M 3 15 L 9 15";
-                }
-                Text { text: "MIC"; color: on ? tint : Theme.text-dim; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-                if configured: VerticalLayout {
-                    alignment: center;
-                    VuMeter { group: "[Microphone]"; key: "VuMeter"; width: 4px; height: 16px; segments: 8; }
-                }
-            }
-            ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => { Controls.toggle(on-index); }
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 7px;
+        // A microphone on a stand.
+        Path {
+            width: 12px;
+            height: 16px;
+            y: (parent.height - self.height) / 2;
+            viewbox-width: 12;
+            viewbox-height: 16;
+            stroke: on ? tint : Theme.pill-off-text;
+            stroke-width: 1.5px;
+            fill: transparent;
+            commands: "M 3.5 3 A 2.5 2.5 0 0 1 8.5 3 L 8.5 7.5 A 2.5 2.5 0 0 1 3.5 7.5 Z M 1 7 A 5 5 0 0 0 11 7 M 6 12 L 6 15 M 3 15 L 9 15";
+        }
+        Text { text: "Mic"; color: on ? tint : Theme.pill-off-text; font-size: 12px; font-weight: 500; vertical-alignment: center; }
+        if configured: VerticalLayout {
+            alignment: center;
+            VuMeter { group: "[Microphone]"; key: "VuMeter"; width: 4px; height: 16px; segments: 8; }
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                panel.show();
             }
         }
-        Rectangle { width: 1px; background: on ? tint.with-alpha(0.5) : Theme.n-ffffff18; }
-        Rectangle {
-            width: 26px;
-            background: arrow.pressed ? Theme.control-pressed : arrow.has-hover ? Theme.n-ffffff10 : transparent;
-            Path {
-                width: 8px;
-                height: 5px;
-                commands: "M 0 0 L 4 4 L 8 0";
-                stroke: arrow.has-hover ? Theme.text : on ? tint : Theme.text-dim;
-                stroke-width: 1.4px;
-                fill: transparent;
-            }
-            arrow := TouchArea {
-                mouse-cursor: pointer;
-                clicked => { panel.show(); }
-            }
-        }
+        clicked => { Controls.toggle(on-index); }
     }
     panel := MicPanel {
         x: 0px;
@@ -709,12 +735,12 @@ component RecordButton inherits Rectangle {
     property <int> hours: floor(seconds / 3600);
     property <int> minutes: mod(floor(seconds / 60), 60);
     property <int> secs: mod(floor(seconds), 60);
-    background: ta.pressed ? Theme.control-pressed : on ? #e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? #e5484d : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? Theme.danger : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 12px;
@@ -726,17 +752,17 @@ component RecordButton inherits Rectangle {
                 width: 10px;
                 height: 10px;
                 border-radius: 5px;
-                background: on ? #e5484d : Theme.text-dim;
+                background: on ? Theme.danger : Theme.pill-off-text;
                 // A slow blink while recording.
                 opacity: on && mod(animation-tick() / 1ms, 1400) > 900 ? 0.35 : 1.0;
             }
         }
         Text {
-            text: on ? (hours > 0 ? hours + ":" : "") + (minutes < 10 && hours > 0 ? "0" : "") + minutes + ":" + (secs < 10 ? "0" : "") + secs : "REC";
-            color: on ? Theme.text : Theme.text-dim;
-            font-size: on ? 13px : 11px;
-            font-weight: on ? 500 : 700;
-            letter-spacing: on ? 0px : 0.5px;
+            text: on ? (hours > 0 ? hours + ":" : "") + (minutes < 10 && hours > 0 ? "0" : "") + minutes + ":" + (secs < 10 ? "0" : "") + secs : "Rec";
+            color: on ? Theme.text : Theme.pill-off-text;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: on ? "Inter Tabular" : Theme.font-family;
             vertical-alignment: center;
         }
     }
@@ -1250,12 +1276,12 @@ component WaveformsButton inherits Rectangle {
         width: 300px;
         close-policy: close-on-click-outside;
         Rectangle {
-            background: Theme.panel-raised;
-            border-radius: 12px;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            drop-shadow-blur: 16px;
-            drop-shadow-color: Theme.s-000000b0;
+            drop-shadow-blur: 14px;
+            drop-shadow-color: Theme.s-000000a0;
         }
         WaveHeightList {
             fits: root.fits;
@@ -1274,24 +1300,32 @@ component WaveformsButton inherits Rectangle {
 // Shows or hides the FX bar under the decks: "FX", lit while it shows.
 component FxButton inherits Rectangle {
     in-out property <bool> on;
+    // Folded away by a short window: it looks off, and a press shows it.
+    in property <bool> folded;
+    callback unfold();
+    property <bool> lit: on && !folded;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : on ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? Theme.accent : transparent;
+    border-color: lit ? Theme.accent : transparent;
     height: 36px;
     y: 8px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 11px;
         padding-right: 11px;
-        Text { text: "FX"; color: on ? Theme.lilac-text : Theme.text-dim; font-size: 14px; font-weight: 700; font-italic: true; vertical-alignment: center; }
+        Text { text: "FX"; color: lit ? Theme.lilac-text : Theme.text-dim; font-size: 14px; font-weight: 700; font-italic: true; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
-            on = !on;
-            changed-to(on);
+            if folded {
+                unfold();
+            } else {
+                on = !on;
+                changed-to(on);
+            }
         }
     }
     TourMark { id: "ui,fx_button"; }
@@ -1302,11 +1336,15 @@ component FxButton inherits Rectangle {
 // 4-Deck strips get shorter and the browser gets the room.
 component PadsButton inherits Rectangle {
     in-out property <bool> on;
+    // Folded away by a short window: it looks off, and a press shows it.
+    in property <bool> folded;
+    callback unfold();
+    property <bool> lit: on && !folded;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : on ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? Theme.accent : transparent;
+    border-color: lit ? Theme.accent : transparent;
     height: 36px;
     y: 8px;
     horizontal-stretch: 0;
@@ -1323,7 +1361,7 @@ component PadsButton inherits Rectangle {
                     width: 4px;
                     height: 4px;
                     border-radius: 1px;
-                    background: on ? Theme.accent : Theme.text-dim;
+                    background: lit ? Theme.accent : Theme.text-dim;
                 }
             }
         }
@@ -1331,8 +1369,12 @@ component PadsButton inherits Rectangle {
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
-            on = !on;
-            changed-to(on);
+            if folded {
+                unfold();
+            } else {
+                on = !on;
+                changed-to(on);
+            }
         }
     }
     TourMark { id: "ui,pads_button"; }
@@ -1379,52 +1421,62 @@ component JogsButton inherits Rectangle {
     }
 }
 
-// MASTER: the main meters and the clock. A click opens the MASTER panel
-// with the output levels, Ableton Link and MIDI clock; LINK and CLOCK
-// show while they are on.
+// The master level as a large arc knob, unframed, with the left and right
+// meters standing beside it, as tall as it, then the clock. A right-click
+// on the knob, or a click on the clock, opens the Master panel with the
+// output levels, Link and MIDI clock; LINK and CLOCK show while they are
+// on.
 component MasterPill inherits Rectangle {
     in property <string> clock;
     property <bool> link: Controls.value(Controls.resolve("[Link]", "enabled"), Controls.tick) > 0;
     property <bool> midi-clock: Controls.value(Controls.resolve("[MidiClock]", "enabled"), Controls.tick) > 0;
-    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
-    border-radius: 10px;
-    height: 36px;
-    y: 8px;
+    function open() {
+        AudioSettings.refresh();
+        panel.show();
+    }
+    // No frame: the knob, meters and clock stand on the bar.
+    height: 44px;
+    y: 4px;
     horizontal-stretch: 0;
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { open(); }
+    }
     HorizontalLayout {
-        padding-left: 12px;
-        padding-right: 12px;
-        spacing: 10px;
-        Text { text: "MASTER"; color: Theme.text-dim; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; vertical-alignment: center; }
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 8px;
         VerticalLayout {
             alignment: center;
-            spacing: 2px;
-            VuMeter { group: "[Master]"; key: "VuMeterL"; width: 120px; height: 4px; vertical: false; segments: 24; }
-            VuMeter { group: "[Master]"; key: "VuMeterR"; width: 120px; height: 4px; vertical: false; segments: 24; }
+            ControlKnob {
+                group: "[Master]";
+                key: "gain";
+                label: "";
+                size: 34px;
+                look: 4;
+                arc-color: Theme.accent;
+                right-clicked => { open(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            HorizontalLayout {
+                spacing: 2px;
+                VuMeter { group: "[Master]"; key: "VuMeterL"; width: 4px; height: 34px; segments: 14; }
+                VuMeter { group: "[Master]"; key: "VuMeterR"; width: 4px; height: 34px; segments: 14; }
+            }
         }
         if link: Text { text: "LINK"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
         if midi-clock: Text { text: "CLOCK"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-        Text { text: clock; color: Theme.text; font-size: 14px; font-weight: 500; vertical-alignment: center; }
-        Path {
-            width: 8px;
-            height: 5px;
-            y: (parent.height - self.height) / 2;
-            commands: "M 0 0 L 4 4 L 8 0";
-            stroke: ta.has-hover ? Theme.text : Theme.text-dim;
-            stroke-width: 1.4px;
-            fill: transparent;
-        }
-    }
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => {
-            AudioSettings.refresh();
-            panel.show();
+        VerticalLayout {
+            alignment: center;
+            spacing: 0px;
+            Text { text: clock; color: ta.has-hover ? Theme.n-ffffff : Theme.text; font-size: 14px; font-weight: 500; font-family: "Inter Tabular"; }
         }
     }
     panel := MasterPanel {
         x: root.width - 300px;
-        y: root.height + 6px;
+        y: root.height + 4px;
     }
 }
 
@@ -1434,7 +1486,7 @@ export component AppWindow inherits Window {
     preferred-width: 1680px;
     preferred-height: 1050px;
     min-width: 1280px;
-    min-height: 800px;
+    min-height: 720px;
     background: Theme.n-000000;
     default-font-family: Theme.font-family;
 
@@ -1487,6 +1539,19 @@ export component AppWindow inherits Window {
     // Footer toggles: the library over the decks, and the side panel.
     in-out property <bool> library-expanded: false;
     in-out property <bool> side-panel-visible: true;
+    // Under 1440 wide (not in Player) the side panel lies over the track
+    // list: it starts closed, and the window growing back brings back
+    // whatever it was before.
+    property <bool> browser-narrow: !player && LibraryEdit.window-width < 1440px;
+    property <bool> side-before: true;
+    changed browser-narrow => {
+        if browser-narrow {
+            side-before = side-panel-visible;
+            side-panel-visible = false;
+        } else {
+            side-panel-visible = side-before || side-panel-visible;
+        }
+    }
     in property <bool> automix-on;
     in property <string> automix-status;
     in property <int> automix-length;
@@ -1537,9 +1602,32 @@ export component AppWindow inherits Window {
     // decks, the FX bar and the footer, with the lines between.
     property <length> deck-rows: layout == 0 ? LiteUi.deck-height + 1px + LiteUi.bar-height
         : lite ? lite-row + (PadsUi.visible ? 1px + LiteUi.bar-height : 0px)
-        : four ? (PadsUi.visible ? 330px : 247px) + 1px + 48px
+        : four ? (four-pads ? 330px : 247px) + 1px + 48px
         : prep ? 280px : 0px;
-    property <length> other-rows: 52px + 1px + 1px + deck-rows + 1px + (fx-bar-visible && !prep ? (four ? 96px : 68px) + 1px : 0px) + 1px + 36px;
+    property <length> other-rows: 52px + 1px + 1px + deck-rows + 1px + (fx-bar-shown ? (four ? 96px : 100px) + 1px : 0px) + 1px + 36px;
+    // A short window gives way in order: the waveforms step down first
+    // (wave-level), keeping about five tracks in the library. When even the
+    // lowest step leaves fewer than about three, 4-Deck's pads fold, then
+    // the FX bar. Both come back when the window grows. Pressing PADS or
+    // FX while folded shows it anyway, until the window has room again.
+    property <length> rows-floor: 170px;
+    property <length> fold-room: LibraryEdit.window-height - 92px - strip-heights[0] - rows-floor;
+    property <length> fx-row: four ? 97px : 100px + 1px;
+    // A deck playing the Mixer or an instrument keeps the pads' room: its
+    // strips or keys fill it.
+    property <bool> four-live: (!decks[0].loaded && InstrumentsUi.live(0) > 0) || (!decks[1].loaded && InstrumentsUi.live(1) > 0)
+        || (!decks[2].loaded && InstrumentsUi.live(2) > 0) || (!decks[3].loaded && InstrumentsUi.live(3) > 0);
+    property <bool> pads-short: four && PadsUi.visible && !four-live && fold-room < 379px + (fx-bar-visible ? fx-row : 0px);
+    changed pads-short => { if !pads-short { pads-unfold = false; } }
+    property <bool> pads-unfold;
+    property <bool> pads-folded: pads-short && !pads-unfold;
+    property <bool> four-pads: PadsUi.visible && !pads-folded;
+    property <length> deck-room: four ? (four-pads ? 330px : 247px) + 1px + 48px : deck-rows;
+    property <bool> fx-short: fx-bar-visible && !prep && !player && !library-expanded && fold-room < deck-room + fx-row;
+    changed fx-short => { if !fx-short { fx-unfold = false; } }
+    property <bool> fx-unfold;
+    property <bool> fx-folded: fx-short && !fx-unfold;
+    property <bool> fx-bar-shown: fx-bar-visible && !prep && !fx-folded;
     // The library keeps room for about five tracks under its header: a
     // step with less shows the highest one that fits, but never below 3
     // unless the DJ chose less. The chosen one comes back
@@ -1554,7 +1642,9 @@ export component AppWindow inherits Window {
     property <float> slide-at: clamp(WaveHeight.slide, 1, max(wave-fits, 1));
     property <int> slide-low: floor(slide-at);
     property <length> slide-height: strip-heights[slide-low - 1] + (strip-heights[min(slide-low, 9)] - strip-heights[slide-low - 1]) * (slide-at - slide-low);
-    property <int> wave-level: min(WaveHeight.level, max(wave-fits, min(WaveHeight.level, WaveHeight.default-level)));
+    // The chosen step, or the highest that leaves the library about five
+    // tracks on a short window, down to the lowest step.
+    property <int> wave-level: min(WaveHeight.level, wave-fits);
     // From whichever layout's deck A is showing.
     // 2-Deck measures the overviews on deck 1, or on deck 2 while deck 1
     // is a Mixer deck: that has no overview, and its zero height would draw
@@ -1578,6 +1668,7 @@ export component AppWindow inherits Window {
     // on-screen mixer, only each deck's level.
     property <bool> external-mixer: Controls.value(Controls.resolve("[Master]", "external_mixer"), Controls.tick) > 0;
     property <bool> prep: layout == 3 && !library-expanded;
+    changed prep => { BrowserFocus.prep = prep; }
     // The Player layout: one bar, no waveforms or FX bar.
     property <bool> player: layout == 1;
     property <bool> recording: Controls.value(Controls.resolve("[Recording]", "status"), Controls.tick) > 1;
@@ -1598,6 +1689,7 @@ export component AppWindow inherits Window {
     callback spotify-refresh();
     callback select-folder(index: int);
     callback toggle-folder(index: int);
+    callback navigate-folders(direction: int);
     callback sort(column: int);
     callback search(text: string);
     callback activate-track(row: int);
@@ -1648,6 +1740,7 @@ export component AppWindow inherits Window {
         Palette.color-scheme = Theme.light ? ColorScheme.light : ColorScheme.dark;
         Theme.player = player;
         WaveHeight.layout = layout;
+        BrowserFocus.prep = prep;
         keys.focus();
         LibraryEdit.window-height = root.height;
         LibraryEdit.window-width = root.width;
@@ -1696,10 +1789,29 @@ export component AppWindow inherits Window {
     property <bool> playing-4: Controls.value(play-index[3], Controls.tick) > 0;
     property <[bool]> playing: [playing-1, playing-2, playing-3, playing-4];
     property <int> master-deck: 0;
-    // The deck started last, the one being mixed in: ← and → bend it.
+    // The deck started last, the one being mixed in: ← and → bend it
+    // while no part of the browser has the keys.
     property <int> last-started: 0;
-    // The bend control an arrow key holds down, -1 for none.
+    // The bend control a key holds down, -1 for none, and that key.
     property <int> bend-held: -1;
+    property <string> bend-key;
+    // W and E bend deck 1 down and up while held, U and I deck 2 (Shift
+    // for a bigger bend); ← and → the deck started last. True when the key
+    // is one of them.
+    function bend-press(text: string, shift: bool) -> bool {
+        let k = text == "W" ? "w" : text == "E" ? "e" : text == "U" ? "u" : text == "I" ? "i" : text;
+        let deck = k == "w" || k == "e" ? 0 : k == "u" || k == "i" ? 1 : text == Key.LeftArrow || text == Key.RightArrow ? last-started : -1;
+        if deck < 0 {
+            return false;
+        }
+        if bend-held < 0 {
+            let up = k == "e" || k == "i" || text == Key.RightArrow;
+            bend-held = Controls.resolve("[Channel" + (deck + 1) + "]", (up ? "rate_temp_up" : "rate_temp_down") + (shift ? "" : "_small"));
+            bend-key = k;
+            Controls.set-value(bend-held, 1);
+        }
+        true
+    }
     // Presses one of deck 1's controls once, for Prep's keys.
     function press(key: string) {
         Controls.set-value(Controls.resolve("[Channel1]", key), 1);
@@ -1826,10 +1938,11 @@ export component AppWindow inherits Window {
             }
             reject
         }
-        // ← and → bend the deck started last while held, by 2% (4% with
-        // Shift), to nudge its beat into line (see key-pressed).
+        // The bend keys bend a deck while held, by 2% (4% with Shift), to
+        // nudge its beat into line (see bend-press). Shift may be let go
+        // first, which changes the letter's case.
         key-released(e) => {
-            if (e.text == Key.LeftArrow || e.text == Key.RightArrow) && bend-held >= 0 {
+            if bend-held >= 0 && (e.text == bend-key || e.text == bend-key.to-uppercase()) {
                 Controls.set-value(bend-held, 0);
                 bend-held = -1;
                 return accept;
@@ -1901,6 +2014,14 @@ export component AppWindow inherits Window {
                 Controls.set-value(Controls.resolve("[Channel4]", "beats_edit"), 0);
                 return accept;
             }
+            // Esc closes a browser panel lying over the track list.
+            if e.text == Key.Escape && !Preferences.open && (browser.lists-out || (browser-narrow && side-panel-visible)) {
+                browser.lists-out = false;
+                if browser-narrow {
+                    side-panel-visible = false;
+                }
+                return accept;
+            }
             // Esc clears the library search, as in the search box itself.
             if e.text == Key.Escape && StoreUi.search-text != "" && !Preferences.open && !ImportWizard.open && !UsbExport.open {
                 StoreUi.search-text = "";
@@ -1912,6 +2033,11 @@ export component AppWindow inherits Window {
             // ⇧⌘M (Ctrl+Shift+M on Linux and Windows): the mini player.
             if (e.text == "m" || e.text == "M") && e.modifiers.control && e.modifiers.shift && !e.modifiers.alt && !Preferences.open {
                 mini-player();
+                return accept;
+            }
+            // ⇧⌘K (Ctrl+Shift+K): the karaoke screen, from any layout.
+            if (e.text == "k" || e.text == "K") && e.modifiers.control && e.modifiers.shift && !e.modifiers.alt && !Preferences.open {
+                LyricsUi.set-karaoke(!LyricsUi.karaoke);
                 return accept;
             }
             // ⌘F (Ctrl+F on Linux and Windows) goes to the library search.
@@ -1962,13 +2088,24 @@ export component AppWindow inherits Window {
             if !Preferences.open && shortcut(e.text, e.modifiers.control, e.modifiers.alt, e.modifiers.shift, master-deck, browser.first-picked, browser.last-picked) {
                 return accept;
             }
-            // Unless the DJ gave the arrows shortcuts of their own.
-            if (e.text == Key.LeftArrow || e.text == Key.RightArrow) && !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt {
-                if bend-held < 0 {
-                    let group = "[Channel" + (last-started + 1) + "]";
-                    bend-held = Controls.resolve(group, (e.text == Key.RightArrow ? "rate_temp_up" : "rate_temp_down") + (e.modifiers.shift ? "" : "_small"));
-                    Controls.set-value(bend-held, 1);
-                }
+            // Unless the DJ gave these keys shortcuts of their own.
+            if !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && bend-press(e.text, e.modifiers.shift) {
+                return accept;
+            }
+            // With no part of the browser holding the keys, ↑ and ↓ move
+            // through the tracks and Tab goes to them; Esc in the browser
+            // hands the keys back here, to the decks.
+            if !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && !e.modifiers.shift && (e.text == Key.UpArrow || e.text == Key.DownArrow) {
+                BrowserFocus.focus(BrowserPane.content);
+                BrowserFocus.navigate(e.text == Key.UpArrow ? 0 : 1, 1);
+                return accept;
+            }
+            if !Preferences.open && !prep && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && (e.text == Key.Tab || e.text == Key.Backtab) {
+                BrowserFocus.focus(e.text == Key.Backtab || e.modifiers.shift ? BrowserPane.folders : BrowserPane.content);
+                return accept;
+            }
+            if e.text == Key.Escape && !keys.has-focus {
+                keys.focus();
                 return accept;
             }
             reject
@@ -2017,8 +2154,8 @@ export component AppWindow inherits Window {
                     // Prep always shows its waveform and never the FX bar,
                     // so neither button is offered there.
                     if !player && layout != 3: WaveformsButton { on <=> root.waveforms-visible; fits: wave-fits; changed-to(on) => { waveforms-visible-changed(on); } }
-                    if !player && layout != 3: FxButton { on <=> root.fx-bar-visible; changed-to(on) => { fx-bar-visible-changed(on); } }
-                    if layout == 2 || layout == 4: PadsButton { on <=> root.pads-visible; changed-to(on) => { pads-visible-changed(on); } }
+                    if !player && layout != 3: FxButton { on <=> root.fx-bar-visible; folded: fx-folded; unfold => { fx-unfold = true; } changed-to(on) => { fx-bar-visible-changed(on); } }
+                    if layout == 2 || layout == 4: PadsButton { on <=> root.pads-visible; folded: pads-folded; unfold => { pads-unfold = true; } changed-to(on) => { pads-visible-changed(on); } }
                     if layout == 4: JogsButton { on <=> root.jogs-visible; changed-to(on) => { jogs-visible-changed(on); } }
                     if !player: Rectangle { horizontal-stretch: 1; }
                     // Between the pills, centred on the window (as the
@@ -2201,12 +2338,12 @@ export component AppWindow inherits Window {
                 // layouts.
                 HorizontalLayout {
                     spacing: 1px;
-                    height: four ? (PadsUi.visible ? 330px : 247px) : 0px;
+                    height: four ? (four-pads ? 330px : 247px) : 0px;
                     visible: four;
-                    DeckStrip { deck: 2; info: decks[2]; overview: overview-3; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
-                    strip-1 := DeckStrip { deck: 0; info: decks[0]; overview: overview-1; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
-                    DeckStrip { deck: 1; info: decks[1]; overview: overview-2; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
-                    DeckStrip { deck: 3; info: decks[3]; overview: overview-4; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    DeckStrip { deck: 2; info: decks[2]; overview: overview-3; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    strip-1 := DeckStrip { deck: 0; info: decks[0]; overview: overview-1; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    DeckStrip { deck: 1; info: decks[1]; overview: overview-2; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
+                    DeckStrip { deck: 3; info: decks[3]; overview: overview-4; pads-shown: four-pads; horizontal-stretch: 1; min-width: 270px; preferred-width: 270px; }
                 }
 
                 // Over the expanded library: the deck headers either side of
@@ -2244,13 +2381,18 @@ export component AppWindow inherits Window {
             // bar hides it.
             FxBar {
                 four: four;
-                height: library-expanded || !fx-bar-visible || player || prep ? 0px : four ? 96px : 68px;
-                visible: !library-expanded && fx-bar-visible && !player && !prep;
+                height: library-expanded || !fx-bar-shown || player ? 0px : four ? 96px : 100px;
+                visible: !library-expanded && fx-bar-shown && !player;
             }
 
-            Rectangle { height: !library-expanded && fx-bar-visible && !player && !prep ? 1px : 0px; }
+            Rectangle { height: !library-expanded && fx-bar-shown && !player ? 1px : 0px; }
 
             browser := Browser {
+                narrow: browser-narrow;
+                layout: root.layout;
+                side-dismissed => { side-panel-visible = false; }
+                side-wanted => { side-panel-visible = true; }
+                side-offered: !(player && NowPlayingUi.open);
                 vertical-stretch: 1;
                 folders: folders;
                 current-folder: current-folder;
@@ -2274,9 +2416,10 @@ export component AppWindow inherits Window {
                 ascending: sort-ascending;
                 side-rows: side-rows;
                 side-total: side-total;
-                list-clicked => { keys.focus(); }
+                list-clicked => { BrowserFocus.pane = BrowserPane.content; }
                 select-folder(i) => { select-folder(i); }
                 toggle-folder(i) => { toggle-folder(i); }
+                navigate-folders(d) => { root.navigate-folders(d); }
                 sort(c) => { sort(c); }
                 search(t) => { search(t); }
                 activate(r) => { activate-track(r); }

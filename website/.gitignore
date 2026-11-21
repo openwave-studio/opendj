@@ -1,4 +1,7 @@
 dist/
 .bin/
-book/src/SUMMARY.md
-book/src/controllers/
+docs/node_modules/
+docs/.astro/
+# Written by tools/controllers.py when the site builds.
+docs/src/content/docs/controllers/
+docs/src/controllers.json

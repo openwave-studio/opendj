@@ -1,0 +1,15 @@
+{
+ "file": "Pioneer-DJM-V5.midi.xml",
+ "width": 664,
+ "height": 838,
+ "panels": [[2, 18, 660, 816, 18]],
+ "controls": [
+  {"id": "ch1-input", "label": "INPUT SELECT 1", "kind": "switch", "round": false, "x": 106, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 35", "LINE|90 33", "PHONO|90 34"]},
+  {"id": "ch2-input", "label": "INPUT SELECT 2", "kind": "switch", "round": false, "x": 300, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 39", "LINE|90 37", "PHONO|90 38"]},
+  {"id": "ch3-input", "label": "INPUT SELECT 3", "kind": "switch", "round": false, "x": 494, "y": 59, "w": 60, "h": 26, "midi": ["USB A|90 3D", "LINE|90 3B", "PHONO|90 3C"]},
+  {"id": "ch1-fader", "label": "CH FADER 1", "kind": "fader", "round": false, "x": 124, "y": 491, "w": 24, "h": 196, "midi": ["B0 11"]},
+  {"id": "ch2-fader", "label": "CH FADER 2", "kind": "fader", "round": false, "x": 318, "y": 491, "w": 24, "h": 196, "midi": ["B0 12"]},
+  {"id": "ch3-fader", "label": "CH FADER 3", "kind": "fader", "round": false, "x": 512, "y": 491, "w": 24, "h": 196, "midi": ["Deck 3|B0 13"]},
+  {"id": "usb", "label": "USB A/B", "kind": "switch", "round": false, "x": 550, "y": 30, "w": 90, "h": 26, "midi": ["USB A|90 4E"]}
+ ]
+}

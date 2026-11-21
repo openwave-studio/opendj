@@ -50,6 +50,8 @@ struct Params {
     half: u32,                         // 1: drawn from the bottom edge up
     grid_edit: u32,                    // 1: the grid is being edited: drawn louder, over the waveform too
     needle: f32,                       // scrolling: where the play line is, as a fraction of the width
+    detail: f32,                       // 1: the detail texture holds this frame's columns of real audio
+    detail_scale: f32,                 // 1 / the track's loudest sample, as the summary is scaled
     lane_tint: vec4<u32>,              // bit n: row n tinted (a scale note)
     mark_color: vec4<f32>,
     lit_color: vec4<f32>,
@@ -58,6 +60,10 @@ struct Params {
     vocal: vec4<f32>,                  // vocal levels: first texel, count, finest slices per level, 1 = tint the sung parts
     stems: vec4<f32>,                  // stem levels: first texel (two a level), count, finest slices per level, stems (0 = not drawn)
     stem_colors: array<vec4<f32>, 5>,  // each stem's colour
+    phrase_tempo: array<vec4<u32>, 8>, // the tempo after each phrase's name (as tempo_value), 0 = none
+    tempo_at: array<vec4<f32>, 4>,     // each tempo label on its own, in slices
+    tempo_value: array<vec4<u32>, 4>,  // its BPM in tenths; top bit: show the tenth
+    tempo_count: vec4<u32>,            // x: how many
 };
 
 @group(0) @binding(0) var<uniform> p: Params;
@@ -66,7 +72,12 @@ struct Params {
 // side in the first row of cells, then a row for each phrase name, by kind.
 @group(0) @binding(2) var digits_atlas: texture_2d<f32>;
 @group(0) @binding(3) var digits_sampler: sampler;
+// Scrolling, zoomed right in: the real audio's lowest and highest sample
+// under each screen column (column x at x % DETAIL_ROW, x / DETAIL_ROW);
+// min > max where it isn't known yet.
+@group(0) @binding(4) var detail: texture_2d<f32>;
 const ROW: u32 = 2048u;
+const DETAIL_ROW: i32 = 2048;
 
 // Hotcue colours, matching the pads in the skin.
 const HOTCUE_COLORS = array<vec3<f32>, 8>(
@@ -92,6 +103,9 @@ const MONO_GREY = vec3<f32>(0.40, 0.40, 0.44);
 // 3-Band weights (see three_band): the mids and highs against the lows,
 // the highs' extra share when the overview stacks the bands, and how much
 // darker the mid colour is where the low and the mids overlap.
+// The analyser's lift of the low, mid and high levels (BAND_GAIN in
+// crates/engine/src/analysis.rs).
+const BAND_LIFT = vec3<f32>(1.0, 1.4, 2.0);
 const BAND_MID: f32 = 0.75;
 const BAND_HIGH: f32 = 0.2;
 const BAND_HIGH_STACKED: f32 = 2.5;
@@ -111,6 +125,9 @@ const PHRASE_COLORS = array<vec3<f32>, 7>(
     vec3<f32>(0.282, 0.773, 0.631), // #48C5A1
     vec3<f32>(0.788, 0.663, 0.306), // #C9A94E
 );
+
+// Tempo labels: a neutral grey tab with white figures.
+const TEMPO_GREY = vec3<f32>(0.333, 0.333, 0.353); // #55555A
 
 // The colours knobs' levels can be drawn in (MarkKind::Level's colour 1 to 8).
 const LEVEL_COLORS = array<vec3<f32>, 8>(
@@ -423,12 +440,22 @@ fn over(base: vec3<f32>, c: vec3<f32>, a: f32) -> vec3<f32> {
 }
 
 // Colour of a column from the balance of its bands, like Mixxx's RGB waveform:
-// bass-heavy is red, mids amber, hats and vocals blue.
+// bass-heavy is deep red, mids amber, hats and vocals ice blue.
 fn band_color(s: Slice) -> vec3<f32> {
-    let w = s.rms.xyz * s.rms.xyz + 1e-5;
-    let c = (w.x * p.low_color.rgb + w.y * p.mid_color.rgb + w.z * p.high_color.rgb) / (w.x + w.y + w.z);
-    // Normalise brightness so mixed colours stay as vivid as pure ones.
-    return c / max(max(c.r, max(c.g, c.b)), 0.35);
+    // Each band's level, without the lift the analyser gives the mids and
+    // highs (BAND_GAIN in analysis.rs) so the 3-Band layers read: a quiet
+    // pad over a bassline still leans to the bass, as on other DJ apps.
+    let w = s.rms.xyz * s.rms.xyz / BAND_LIFT + 1e-5;
+    let sum = w.x + w.y + w.z;
+    let c = (w.x * p.low_color.rgb + w.y * p.mid_color.rgb + w.z * p.high_color.rgb) / sum;
+    // Mixed colours stay as vivid as pure ones, at the brightness of the
+    // palette colours they come from, so the deep red lows stay darker than the ice-blue highs.
+    let v = (w.x * vmax(p.low_color.rgb) + w.y * vmax(p.mid_color.rgb) + w.z * vmax(p.high_color.rgb)) / sum;
+    return c / max(vmax(c), 0.35) * v;
+}
+
+fn vmax(c: vec3<f32>) -> f32 {
+    return max(c.r, max(c.g, c.b));
 }
 
 // Coverage of pixel (x, y) by the number of the bar whose line is the last
@@ -503,6 +530,74 @@ fn phrase_name(x: f32, y: f32, k: f32, kind: u32, left: f32, top: f32) -> f32 {
     return clamp(dist + 0.5, 0.0, 1.0);
 }
 
+// Coverage of pixel (x, y) by digit `d`, 8 points tall, its pen at `left`
+// and its top at `top`.
+fn digit_at(x: f32, y: f32, k: f32, d: u32, left: f32, top: f32) -> f32 {
+    let s = p.digit.w / (8.0 * k);
+    let ay = (y - top) * s + p.spread;
+    let gx = (x - left) * s + p.spread;
+    if (ay < 0.0 || ay > p.digit.y || gx < 0.0 || gx > p.digit.x) {
+        return 0.0;
+    }
+    let uv = vec2<f32>((f32(d) * p.digit.x + gx) / p.atlas_w, ay / p.atlas_h);
+    let field = textureSampleLevel(digits_atlas, digits_sampler, uv, 0.0).r;
+    let dist = (field - 0.5) * 2.0 * p.spread / s;
+    return clamp(dist + 0.5, 0.0, 1.0);
+}
+
+// How many digits a whole number has.
+fn digit_count(n: u32) -> u32 {
+    var digits = 1u;
+    var rest = n / 10u;
+    while (rest > 0u) {
+        digits = digits + 1u;
+        rest = rest / 10u;
+    }
+    return digits;
+}
+
+// The width of a tempo (see tempo_value) drawn by tempo_text, in pixels.
+fn tempo_width(value: u32, k: f32) -> f32 {
+    let s = p.digit.w / (8.0 * k);
+    let adv = p.digit.z / s;
+    let tenths = value & 0x7fffffffu;
+    var w = f32(digit_count(tenths / 10u)) * adv;
+    if ((value >> 31u) == 1u) {
+        w = w + 2.5 * k + adv;
+    }
+    return w;
+}
+
+// Coverage of pixel (x, y) by a tempo (see tempo_value), 8 points tall, its
+// pen at `left` and its top at `top`: the whole BPM, then a point and the
+// tenth where it is shown.
+fn tempo_text(x: f32, y: f32, k: f32, value: u32, left: f32, top: f32) -> f32 {
+    let s = p.digit.w / (8.0 * k);
+    let adv = p.digit.z / s;
+    let tenths = value & 0x7fffffffu;
+    let whole = tenths / 10u;
+    let n = digit_count(whole);
+    let ax = x - left;
+    if (ax < 0.0) {
+        return 0.0;
+    }
+    let which = u32(floor(ax / adv));
+    if (which < n) {
+        var place = 1u;
+        for (var i = 1u; i < n - which; i = i + 1u) {
+            place = place * 10u;
+        }
+        return digit_at(x, y, k, (whole / place) % 10u, left + f32(which) * adv, top);
+    }
+    if ((value >> 31u) == 0u) {
+        return 0.0;
+    }
+    // The point, a round dot on the baseline, then the tenth.
+    let dot_x = left + f32(n) * adv + 1.25 * k;
+    let dot = clamp(0.9 * k - length(vec2<f32>(x - dot_x, y - (top + 7.2 * k))) + 0.5, 0.0, 1.0);
+    return max(dot, digit_at(x, y, k, tenths % 10u, left + f32(n) * adv + 2.5 * k, top));
+}
+
 // A phrase kind's colour.
 fn phrase_color(kind: u32) -> vec3<f32> {
     return PHRASE_COLORS[min(kind, 6u)];
@@ -544,37 +639,94 @@ fn three_band(base: vec3<f32>, s: Slice, d: f32, span: f32) -> vec3<f32> {
 }
 
 // Column `s`'s waveform over `base`, at `d` pixels from the centre line.
-fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
-    var color = base;
+// How tall the one-shape looks draw a slice, 0 to 1. Zoomed out, levels
+// are squashed (stored as square roots, then curved by `height`) so quiet
+// parts stay readable. Zoomed in, the shape moves towards the slice's true
+// loudness, so the gaps between hits and between bass cycles stay open
+// instead of filling in to a solid block.
+fn shape(s: Slice) -> f32 {
+    let squashed = height(body(s.rms.w, s.peak.w));
+    let loud = clamp(pow(s.peak.w * s.peak.w, 0.85) * 0.94 * p.gain, 0.0, 1.0);
+    return mix(squashed, loud, close_zoom());
+}
+
+// 0 for the overview and zoomed-out scrolling, rising to 1 once a screen
+// pixel covers about one slice (a millisecond) or less.
+fn close_zoom() -> f32 {
+    if (p.mode != 0u) {
+        return 0.0;
+    }
+    return 1.0 - smoothstep(1.0, 4.0, p.bins_per_pixel);
+}
+
+// The colour a style draws a slice in; alpha 1 where it shades darker
+// towards its edges, for depth.
+fn wave_ink(s: Slice, bin: f32) -> vec4<f32> {
     if (p.style == 2u) {
-        // Mono: played in lilac, the mix zone in a dim lilac, the rest
-        // grey, as one solid shape (the RMS body, without a peak outline).
+        // Mono: played in lilac, the mix zone in a dim lilac, the rest grey.
         var c = MONO_GREY;
         if (bin < p.play_bin) {
             c = MONO_LILAC;
         } else if (p.mix_end_bin > p.mix_start_bin && bin >= p.mix_start_bin && bin <= p.mix_end_bin) {
             c = MONO_MIX;
         }
-        let rms_h = height(body(s.rms.w, s.peak.w)) * span;
-        color = over(color, c, fill(rms_h, d));
-    } else if (p.style == 3u) {
-        // Blue: one shape, lighter where the highs are loud.
-        let highs = clamp(s.rms.z / max(s.rms.w, 0.05) * 1.2, 0.0, 1.0);
-        let c = mix(BLUE_BODY, BLUE_HIGHS, highs * 0.8);
-        let rms_h = height(body(s.rms.w, s.peak.w)) * span;
-        color = over(color, c, fill(rms_h, d));
-    } else if (p.style == 0u || p.style == 4u) {
-        // RGB, and Stems for a track without them.
-        let c = band_color(s);
-        let rms_h = height(body(s.rms.w, s.peak.w)) * span;
-        // One solid shape (the RMS body, without a peak outline), slightly
-        // brighter towards the centre.
-        let shade = 0.82 + 0.18 * clamp(1.0 - d / max(rms_h, 1.0), 0.0, 1.0);
-        color = over(color, c * shade, fill(rms_h, d));
-    } else {
-        color = three_band(color, s, d, span);
+        return vec4<f32>(c, 0.0);
     }
-    return color;
+    if (p.style == 3u) {
+        // Blue: lighter where the highs are loud.
+        let highs = clamp(s.rms.z / max(s.rms.w, 0.05) * 1.2, 0.0, 1.0);
+        return vec4<f32>(mix(BLUE_BODY, BLUE_HIGHS, highs * 0.8), 0.0);
+    }
+    // RGB, and Stems for a track without them.
+    return vec4<f32>(band_color(s), 1.0);
+}
+
+// A bright core fading darker towards the edges; `t` is how far out the
+// pixel is, from 0 at the core to 1 on the edge.
+fn shaded(ink: vec4<f32>, t: f32) -> vec3<f32> {
+    if (ink.a < 0.5) {
+        return ink.rgb;
+    }
+    return ink.rgb * (0.6 + 0.4 * sqrt(clamp(1.0 - t, 0.0, 1.0)));
+}
+
+fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
+    if (p.style == 1u) {
+        return three_band(base, s, d, span);
+    }
+    // One solid shape (the RMS body, without a peak outline).
+    let ink = wave_ink(s, bin);
+    let rms_h = shape(s) * span;
+    return over(base, shaded(ink, d / max(rms_h, 1.0)), fill(rms_h, d));
+}
+
+// The real audio under pixel column x: its lowest and highest sample.
+fn detail_at(x: f32) -> vec2<f32> {
+    let i = i32(floor(x));
+    return textureLoad(detail, vec2<i32>(i % DETAIL_ROW, i / DETAIL_ROW), 0).xy;
+}
+
+// A sample's height, signed, on the same curve as the zoomed-in summary.
+fn sample_height(v: f32) -> f32 {
+    let a = max(abs(v) * p.detail_scale, 1e-9);
+    return sign(v) * clamp(pow(a, 0.85) * 0.94 * p.gain, 0.0, 1.0);
+}
+
+// The real wave, zoomed right in: the column's samples from lowest to
+// highest, above and below the centre line as they swing (for a half
+// waveform, the larger swing up from the bottom edge). `yy` is pixels above
+// the centre line.
+fn detail_wave(base: vec3<f32>, s: Slice, bin: f32, yy: f32, d: f32, span: f32, mm: vec2<f32>) -> vec3<f32> {
+    let ink = wave_ink(s, bin);
+    let lo = sample_height(mm.x) * span;
+    let hi = sample_height(mm.y) * span;
+    if (p.half == 1u) {
+        let edge = max(-lo, hi);
+        return over(base, shaded(ink, d / max(edge, 1.0)), fill(edge, d));
+    }
+    let cover = clamp(hi - yy + 1.0, 0.0, 1.0) * clamp(yy - lo + 1.0, 0.0, 1.0);
+    let reach = max(select(-lo, hi, yy > 0.0), 1.0);
+    return over(base, shaded(ink, abs(yy) / reach), cover);
 }
 
 @fragment
@@ -669,7 +821,17 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
             let hb = stems_range(cols.start + cols.width, cols.start + 2.0 * cols.width);
             color = mix(stems_wave(color, ha, d, span), stems_wave(color, hb, d, span), cols.t);
         } else {
-            color = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
+            let summary = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
+            // Zoomed right in, the real wave takes over from the summary.
+            var real = summary;
+            let k_detail = select(0.0, close_zoom(), p.detail > 0.5 && p.style != 1u);
+            if (k_detail > 0.0) {
+                let mm = detail_at(x);
+                if (mm.x <= mm.y) {
+                    real = detail_wave(color, cols.a, bin, half_h - y, d, span, mm);
+                }
+            }
+            color = mix(summary, real, k_detail);
         }
     }
 
@@ -809,13 +971,19 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
         let s = p.digit.w / (8.0 * k);
         for (var i = 0u; i < p.phrase_count; i = i + 1u) {
             let sx = bin_x(p.phrase_start[i / 4u][i % 4u]);
-            if (x < sx - 2.0 * k || x > sx + 80.0 * k) { continue; }
+            if (x < sx - 2.0 * k || x > sx + 120.0 * k) { continue; }
             let kind = min(p.phrase_kind[i / 4u][i % 4u], 6u);
             let c = phrase_color(kind);
             color = over(color, c, line(x, sx, 0.75 * k) * 0.9);
             if (tabs && y >= tab_top && y <= tab_top + tab_h) {
                 let text_w = p.word_width[kind / 4u][kind % 4u] / s;
-                let tab_w = text_w + 8.0 * k;
+                // A tempo label that joined the flag: a dot, then its BPM.
+                let tempo = p.phrase_tempo[i / 4u][i % 4u];
+                var tempo_w = 0.0;
+                if (tempo != 0u) {
+                    tempo_w = 8.0 * k + tempo_width(tempo, k);
+                }
+                let tab_w = text_w + tempo_w + 8.0 * k;
                 // How much of this pixel the tab covers. Its sides are
                 // smoothed like the lines, so the tab glides with the name
                 // in it: cut at whole pixels, its edges stepped while the
@@ -827,6 +995,12 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
                     let lum = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
                     let ink = select(vec3<f32>(1.0), vec3<f32>(0.08, 0.07, 0.16), lum > 0.55);
                     color = over(color, ink, phrase_name(x, y, k, kind, sx + 4.0 * k, tab_top + 2.5 * k));
+                    if (tempo != 0u) {
+                        let after = sx + 4.0 * k + text_w;
+                        let mid = clamp(0.9 * k - length(vec2<f32>(x - (after + 4.0 * k), y - (tab_top + 6.5 * k))) + 0.5, 0.0, 1.0);
+                        let digits = tempo_text(x, y, k, tempo, after + 8.0 * k, tab_top + 2.5 * k);
+                        color = over(color, ink, max(mid, digits));
+                    }
                 }
             }
         }
@@ -844,6 +1018,37 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
                 let c = phrase_color(p.phrase_kind[i / 4u][i % 4u]);
                 color = over(color, c, 0.9 * (1.0 - edge));
             }
+        }
+    }
+
+    // Tempo labels (scrolling): where the tempo changes, a faint line and
+    // the BPM in a grey tab at the phrase flags' height. One at a phrase
+    // start is in its flag instead.
+    if (p.mode == 0u && p.tempo_count.x > 0u) {
+        let tab_top = 15.0 * k;
+        let tab_h = 13.0 * k;
+        let tabs = p.size.y >= 40.0 * k;
+        for (var i = 0u; i < min(p.tempo_count.x, 16u); i = i + 1u) {
+            let sx = bin_x(p.tempo_at[i / 4u][i % 4u]);
+            if (x < sx - 2.0 * k || x > sx + 60.0 * k) { continue; }
+            color = over(color, TEMPO_GREY, line(x, sx, 0.75 * k) * 0.6);
+            if (tabs && y >= tab_top && y <= tab_top + tab_h) {
+                let value = p.tempo_value[i / 4u][i % 4u];
+                let tab_w = tempo_width(value, k) + 8.0 * k;
+                let cover = clamp(min(x + 0.5, sx + tab_w) - max(x - 0.5, sx), 0.0, 1.0);
+                if (cover > 0.0) {
+                    color = over(color, TEMPO_GREY, 0.92 * cover);
+                    color = over(color, vec3<f32>(1.0), tempo_text(x, y, k, value, sx + 4.0 * k, tab_top + 2.5 * k));
+                }
+            }
+        }
+    }
+
+    // Tempo labels (overview): a short light tick down from the top.
+    if (p.mode == 1u && p.tempo_count.x > 0u && y < 4.0 * k) {
+        for (var i = 0u; i < min(p.tempo_count.x, 16u); i = i + 1u) {
+            let sx = bin_x(p.tempo_at[i / 4u][i % 4u]);
+            color = over(color, vec3<f32>(0.85), line(x, sx, 0.75 * k) * 0.9);
         }
     }
 

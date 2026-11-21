@@ -172,6 +172,13 @@ impl Target {
                     }
                 } else if RELATIVE.contains(&h.key().item.as_str()) {
                     h.set(h.get() + v);
+                } else if h.behavior() == Behavior::Push && v > 0.0 && h.get_bool() {
+                    // Mixxx acts on every write of a push control, and
+                    // scripts set triggers such as `beatsync`, `loop_halve`
+                    // or `reloop_toggle` to 1 without setting them back to
+                    // 0: a write over a held push is a release and a press.
+                    h.set(0.0);
+                    h.set(v);
                 } else {
                     h.set(v);
                 }
@@ -335,9 +342,11 @@ const SCRATCH_QUICK_NOISE: f64 = 16.0;
 /// smooth filter is pulled to the quick one, so a steady hand still plays
 /// as smoothly as before.
 const SCRATCH_TRUST: f64 = 2.0;
-/// openDJ: in slip mode, how long a let-go wheel has to be still before
-/// the deck lets go of it and slip returns.
-const SLIP_RELEASE_STILL: Duration = Duration::from_millis(80);
+/// The DDJ-400 switches jog messages at lift-off. A short window on either
+/// side of the release accepts that handoff without catching a later rim nudge.
+const WHEEL_COAST_START: Duration = Duration::from_millis(12);
+/// How long a let-go wheel has to be still before the deck lets go of it.
+const WHEEL_RELEASE_STILL: Duration = Duration::from_millis(80);
 const BRAKE_RAMP_TO: f64 = 0.01;
 const MAX_DECKS: usize = 8;
 /// Deck controls a controller holds on while a button is down, let go of
@@ -351,6 +360,29 @@ const HELD_KEYS: [&str; 6] = [
     "rate_temp_down_small",
 ];
 
+#[derive(Clone, Copy)]
+enum WheelCoast {
+    Inactive,
+    AwaitingMotion,
+    Moving,
+}
+
+impl WheelCoast {
+    fn accepts_tick(self, idle: Duration) -> bool {
+        match self {
+            Self::Inactive => false,
+            Self::AwaitingMotion => idle < WHEEL_COAST_START,
+            Self::Moving => idle < WHEEL_RELEASE_STILL,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct WheelRelease {
+    slip: bool,
+    coast: WheelCoast,
+}
+
 #[derive(Default)]
 struct Scratch {
     /// Running at 1 kHz (Mixxx's scratch timer).
@@ -362,8 +394,8 @@ struct Scratch {
     accumulator: f64,
     ramp: bool,
     ramp_to: f64,
-    /// Let go in slip mode: following the wheel until it is still.
-    slip_release: bool,
+    /// Follow the released wheel until it is still, then finish the release.
+    wheel_release: Option<WheelRelease>,
     brake: bool,
     spinback: bool,
     soft_start: bool,
@@ -464,6 +496,10 @@ pub(crate) struct HidLink {
 /// The deck 3 and 4 switches and the deck shift (see [`Host::route_state`]).
 pub(crate) type RouteState = ([bool; 2], usize);
 
+/// The shortest timer a script can ask for, with `engine.beginFastTimer`:
+/// what a jog screen fed 200 times a second needs (the DDJ-FLX10's).
+pub(crate) const FAST_TIMER_MS: f64 = 5.0;
+
 pub(crate) fn deck_group(deck: usize) -> String {
     format!("[Channel{deck}]")
 }
@@ -542,7 +578,7 @@ impl Host {
     /// `group` with deck 1 or 2 swapped for 3 or 4 when that side is
     /// switched over (`[Channel1]`, its EQ and filter racks and its stems),
     /// then moved along to the deck the device follows.
-    fn layered<'a>(&self, group: &'a str) -> std::borrow::Cow<'a, str> {
+    pub(crate) fn layered<'a>(&self, group: &'a str) -> std::borrow::Cow<'a, str> {
         let out = self.switched(group);
         if let std::borrow::Cow::Owned(s) = crate::routing::shift_group(&out, self.shift) {
             return std::borrow::Cow::Owned(s);
@@ -880,15 +916,19 @@ impl Host {
         out
     }
 
-    pub(crate) fn timer_start(&mut self, ms: f64, one_shot: bool) -> u32 {
+    /// Starts a timer of `ms`, raised to `floor` ms: 20 for
+    /// `engine.beginTimer`, as in Mixxx, and [`FAST_TIMER_MS`] for openDJ's
+    /// `engine.beginFastTimer`.
+    pub(crate) fn timer_start(&mut self, ms: f64, one_shot: bool, floor: f64) -> u32 {
         let id = self.next_timer;
         self.next_timer += 1;
         // Mixxx takes the interval as a 32-bit int and raises it to 20 ms;
         // Infinity converts to 0 there, so it gets 20 ms too.
+        let floor = floor.clamp(FAST_TIMER_MS, 20.0);
         let ms = if ms.is_finite() {
-            ms.clamp(20.0, i32::MAX as f64)
+            ms.clamp(floor, i32::MAX as f64)
         } else {
-            20.0
+            floor
         };
         let interval = Duration::from_secs_f64(ms / 1000.0);
         self.timers.insert(
@@ -996,7 +1036,8 @@ impl Host {
         s.accumulator = 0.0;
         s.ramp = false;
         s.brake = false;
-        s.slip_release = false;
+        s.wheel_release = None;
+        s.last_movement = None;
         let (alpha, beta) = if alpha != 0.0 && beta != 0.0 {
             (alpha, beta)
         } else {
@@ -1028,25 +1069,50 @@ impl Host {
     pub(crate) fn scratch_tick(&mut self, deck: f64, interval: f64) {
         let Some(d) = Self::deck_ok(deck) else { return };
         let s = &mut self.scratch[d];
-        s.last_movement = Some(Instant::now());
+        if interval != 0.0 {
+            let now = Instant::now();
+            if let Some(release) = &mut s.wheel_release {
+                if s.last_movement
+                    .is_some_and(|at| release.coast.accepts_tick(now.duration_since(at)))
+                {
+                    release.coast = WheelCoast::Moving;
+                } else {
+                    release.coast = WheelCoast::Inactive;
+                }
+            }
+            s.last_movement = Some(now);
+        }
         s.accumulator += interval;
     }
 
-    pub(crate) fn scratch_disable(&mut self, deck: f64, ramp: bool) {
+    pub(crate) fn scratch_disable(&mut self, deck: f64, ramp: bool, follow_wheel: bool) {
         let Some(d) = Self::deck_ok(deck) else { return };
-        // openDJ: in slip mode the deck keeps following the wheel while it
-        // spins on after the hand lets go (a back-spin), and lets go once
-        // the wheel is still; the track then carries on where it would be.
-        if self.scratch[d].active
-            && !self.scratch[d].ramp
-            && self.control(d, "scratch2_enable").get_bool()
-            && self.control(d, "slip_enabled").get_bool()
-        {
-            let s = &mut self.scratch[d];
-            s.slip_release = true;
-            s.last_movement = Some(Instant::now());
-            return;
+        let now = Instant::now();
+        let s = &self.scratch[d];
+        if s.active && !s.ramp && self.control(d, "scratch2_enable").get_bool() {
+            let await_coast = follow_wheel
+                && s.last_movement
+                    .is_some_and(|at| now.duration_since(at) < WHEEL_COAST_START);
+            let slip = self.control(d, "slip_enabled").get_bool();
+            if slip || (ramp && await_coast) {
+                let s = &mut self.scratch[d];
+                s.wheel_release = Some(WheelRelease {
+                    slip,
+                    coast: if await_coast {
+                        WheelCoast::AwaitingMotion
+                    } else {
+                        WheelCoast::Inactive
+                    },
+                });
+                s.last_movement = Some(now);
+                return;
+            }
         }
+        self.scratch[d].last_movement = Some(now);
+        self.start_scratch_release(d, ramp);
+    }
+
+    fn start_scratch_release(&mut self, d: usize, ramp: bool) {
         let mut ramp_to = 0.0;
         if !ramp {
             self.control(d, "scratch2_enable").set_bool(false);
@@ -1056,12 +1122,22 @@ impl Host {
         }
         let s = &mut self.scratch[d];
         s.ramp_to = ramp_to;
-        s.last_movement = Some(Instant::now());
+        s.wheel_release = None;
         s.ramp = true;
     }
 
     pub(crate) fn is_scratching(&self, deck: f64) -> bool {
         Self::deck_ok(deck).is_some_and(|d| self.control(d, "scratch2_enable").get_bool())
+    }
+
+    pub(crate) fn is_scratch_coasting(&self, deck: f64) -> bool {
+        Self::deck_ok(deck).is_some_and(|d| {
+            let s = &self.scratch[d];
+            s.wheel_release.is_some_and(|release| {
+                s.last_movement
+                    .is_some_and(|at| release.coast.accepts_tick(at.elapsed()))
+            })
+        })
     }
 
     /// `engine.brake`, `engine.spinback` and `engine.softStart`, which Mixxx
@@ -1075,6 +1151,7 @@ impl Host {
         let (alpha, beta) = (1.0 / 512.0, (1.0 / 512.0) / 1024.0 * factor);
         let enable = self.control(d, "scratch2_enable");
         self.scratch[d].held = activate;
+        self.scratch[d].wheel_release = None;
         if kind == "softStart" {
             enable.set_bool(activate);
             let mut v0 = 0.0;
@@ -1181,17 +1258,28 @@ impl Host {
     fn scratch_step(&mut self, d: usize, now: Instant) {
         let playing = self.control(d, "play").get_bool();
         let loaded = self.control(d, "track_loaded").get_bool();
-        let s = &mut self.scratch[d];
-        let still = |t: Duration| {
-            s.last_movement
-                .is_none_or(|at| now.saturating_duration_since(at) >= t)
-        };
+        let last_movement = self.scratch[d].last_movement;
+        let still =
+            |t: Duration| last_movement.is_none_or(|at| now.saturating_duration_since(at) >= t);
         let idle = still(Duration::from_millis(1));
-        if s.slip_release && (still(SLIP_RELEASE_STILL) || !loaded) {
-            *s = Scratch::default();
-            self.control(d, "scratch2_enable").set_bool(false);
-            return;
+        if let Some(release) = self.scratch[d].wheel_release {
+            let quiet = match release.coast {
+                WheelCoast::Moving => WHEEL_RELEASE_STILL,
+                _ if release.slip => WHEEL_RELEASE_STILL,
+                WheelCoast::AwaitingMotion => WHEEL_COAST_START,
+                WheelCoast::Inactive => Duration::ZERO,
+            };
+            let wheel_stopped = still(quiet);
+            if !loaded || (wheel_stopped && release.slip) {
+                self.scratch[d] = Scratch::default();
+                self.control(d, "scratch2_enable").set_bool(false);
+                return;
+            }
+            if wheel_stopped {
+                self.start_scratch_release(d, true);
+            }
         }
+        let s = &mut self.scratch[d];
         // Ramping after the wheel was let go, or a soft start: steer towards
         // the target speed; otherwise follow the wheel.
         if s.soft_start || (s.ramp && idle) {
@@ -1567,7 +1655,7 @@ mod tests {
         let mut h = host();
         h.resolve("[Channel1]", "slip_enabled").set(1.0);
         h.scratch_enable(1.0, 720.0, 100.0 / 3.0, 1.0 / 8.0, 1.0 / 256.0, true);
-        h.scratch_disable(1.0, true);
+        h.scratch_disable(1.0, true, false);
         // A back-spin: the let-go wheel keeps turning for 200 ms (in real
         // time: the wheel's last movement is stamped with the clock).
         for step in 0..100 {
@@ -1581,14 +1669,14 @@ mod tests {
         }
         assert!(h.resolve("[Channel1]", "scratch2").get() < -1.0);
         // Once the wheel is still, the deck lets go (and slip returns).
-        std::thread::sleep(SLIP_RELEASE_STILL + Duration::from_millis(20));
+        std::thread::sleep(WHEEL_RELEASE_STILL + Duration::from_millis(20));
         h.process_scratch(Instant::now());
         assert!(!h.is_scratching(1.0));
         // Without slip, letting go ramps back as before.
         h.resolve("[Channel1]", "slip_enabled").set(0.0);
         h.scratch_enable(1.0, 720.0, 100.0 / 3.0, 1.0 / 8.0, 1.0 / 256.0, true);
-        h.scratch_disable(1.0, true);
-        assert!(h.scratch[1].ramp && !h.scratch[1].slip_release);
+        h.scratch_disable(1.0, true, false);
+        assert!(h.scratch[1].ramp && h.scratch[1].wheel_release.is_none());
     }
 
     #[test]
@@ -1649,7 +1737,7 @@ mod tests {
         }
         let speed = h.resolve("[Channel1]", "scratch2").get();
         assert!((speed + 1.0).abs() < 0.1, "{speed}");
-        h.scratch_disable(1.0, false);
+        h.scratch_disable(1.0, false, false);
         assert!(!h.is_scratching(1.0));
     }
 }

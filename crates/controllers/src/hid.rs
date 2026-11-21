@@ -94,6 +94,9 @@ pub trait Io {
     fn get_feature(&self, id: u8) -> Option<Vec<u8>>;
 }
 
+/// How many reports sent with `useNonSkippingFIFO` can wait at once.
+const FIFO_REPORTS: usize = 4096;
+
 /// Output reports waiting to be sent, kept as Mixxx keeps them: a report
 /// sent in the default mode replaces any of the same ID not yet sent, and
 /// isn't sent at all if it's what the device already has. One sent with
@@ -114,8 +117,10 @@ impl Outputs {
             // What the device has is no longer known.
             self.cached.remove(&id);
             self.last.remove(&id);
-            // Mixxx's FIFO holds 32 reports; a script flooding it loses the oldest.
-            if self.fifo.len() >= 32 {
+            // Mixxx's FIFO holds 32 reports; ours holds more, for screens
+            // uploading a waveform (the DDJ-FLX10's take thousands). A
+            // script flooding it still loses the oldest.
+            if self.fifo.len() >= FIFO_REPORTS {
                 self.fifo.pop_front();
             }
             self.fifo.push_back(report);

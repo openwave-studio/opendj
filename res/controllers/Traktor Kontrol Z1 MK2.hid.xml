@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxControllerPreset mixxxVersion="2.4.0" schemaVersion="1">
+  <info>
+    <name>Traktor Kontrol Z1 MK2</name>
+    <author>openDJ</author>
+    <description>openDJ's HID mapping for the Traktor Kontrol Z1 MK2: a two-channel mixer with Traktor's STEMS mode, Mixer FX and the deck A/B or C/D switch. Written from the controller's published HID report layout. Its displays stay dark.</description>
+    <devices>
+      <product protocol="hid" vendor_id="0x17cc" product_id="0x2400" />
+    </devices>
+  </info>
+  <controller id="Traktor">
+    <scriptfiles>
+      <file filename="Traktor-Kontrol-Z1-MK2.js" functionprefix="TraktorZ1MK2" />
+    </scriptfiles>
+  </controller>
+</MixxxControllerPreset>

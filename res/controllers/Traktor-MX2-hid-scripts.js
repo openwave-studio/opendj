@@ -382,7 +382,8 @@ class TraktorMX2Class {
 
     cueHandler(field) {
         if (this.shiftPressed[field.group]) {
-            engine.setValue(field.group, "cue_gotoandstop", field.value);
+            // openDJ: back to the start of the track, as in Traktor.
+            engine.setValue(field.group, "start", field.value);
         } else {
             engine.setValue(field.group, "cue_default", field.value);
         }
@@ -1072,10 +1073,12 @@ class TraktorMX2Class {
     };
 
     reverseHandler(field) {
+        // openDJ: as in Traktor, REV plays backwards while held and the track
+        // carries on where it would have been (flux reverse); SHIFT: plain reverse.
         if (this.shiftPressed[field.group]) {
-            engine.setValue(field.group, "reverseroll", field.value);
-        } else {
             engine.setValue(field.group, "reverse", field.value);
+        } else {
+            engine.setValue(field.group, "reverseroll", field.value);
         }
 
         this.outputHandler(field.value, field.group, "reverse");

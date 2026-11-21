@@ -166,24 +166,39 @@ impl Waves {
 
 /// The lilac shades a slice is drawn in by its tone: deep where the bass
 /// leads, the brand lilac (#B69CFF) for mids, pale where the highs lead,
-/// as the deck waveforms color red, amber and blue.
+/// as the deck waveforms color deep red, amber and ice blue.
 const DEEP: [f32; 3] = [122.0, 92.0, 214.0]; // #7A5CD6
 const LILAC: [f32; 3] = [182.0, 156.0, 255.0]; // #B69CFF
 const PALE: [f32; 3] = [232.0, 224.0, 255.0]; // #E8E0FF
 
 /// The deck waveforms' colors for the lows, mids and highs.
-const LOW: [f32; 3] = [1.0, 0.22, 0.16];
-const MID: [f32; 3] = [1.0, 0.72, 0.12];
-const HIGH: [f32; 3] = [0.30, 0.62, 1.0];
+const LOW: [f32; 3] = [0.784, 0.216, 0.176];
+const MID: [f32; 3] = [0.941, 0.659, 0.188];
+const HIGH: [f32; 3] = [0.706, 0.894, 1.0];
+
+/// The analyser's lift of the low, mid and high levels (`BAND_GAIN` in the
+/// engine's analysis), which the stored power shares include.
+const BAND_LIFT: [f32; 3] = [1.0, 1.4, 2.0];
 
 /// The full color for a slice, mixed as the deck waveforms mix it: each
-/// band's color by its share of the power, brought up to full brightness.
+/// band's color by its level without the analyser's lift, as vivid as a
+/// pure color and as bright as the colors it comes from.
 fn full(mid: u8, high: u8) -> [f32; 3] {
     let (mid, high) = (mid as f32 / 255.0, high as f32 / 255.0);
     let low = (1.0 - mid - high).max(0.0);
-    let c: [f32; 3] = std::array::from_fn(|i| low * LOW[i] + mid * MID[i] + high * HIGH[i]);
+    // Power shares to levels, without the lift.
+    let shares = [low, mid, high];
+    let w: [f32; 3] = std::array::from_fn(|k| shares[k].sqrt() / BAND_LIFT[k]);
+    let sum = (w[0] + w[1] + w[2]).max(1e-5);
+    let colors = [LOW, MID, HIGH];
+    let c: [f32; 3] =
+        std::array::from_fn(|i| (0..3).map(|k| w[k] * colors[k][i]).sum::<f32>() / sum);
+    let value = (0..3)
+        .map(|k| w[k] * colors[k].iter().copied().fold(0.0, f32::max))
+        .sum::<f32>()
+        / sum;
     let top = c[0].max(c[1]).max(c[2]).max(0.35);
-    c.map(|v| (v / top).min(1.0) * 255.0)
+    c.map(|v| (v / top * value).min(1.0) * 255.0)
 }
 
 /// The shade for a slice whose mids and highs have these shares of its
@@ -204,17 +219,31 @@ fn shade(mid: u8, high: u8) -> [f32; 3] {
 /// towards the centre. Rows that color it (the selection, missing
 /// tracks) use it as a mask.
 fn image(overview: &[OverviewSlice], in_full: bool) -> slint::Image {
-    let mut pixels =
-        slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(WIDTH as u32, HEIGHT as u32);
+    draw(overview, WIDTH, HEIGHT, in_full)
+}
+
+/// [`image`] at any size: a column per pixel, each from its part of the
+/// overview. The Mixed Set Editor draws a recorded set's waveform with it.
+pub(crate) fn draw(
+    overview: &[OverviewSlice],
+    width: usize,
+    height: usize,
+    in_full: bool,
+) -> slint::Image {
+    let (w, h) = (width.max(1), height.max(1));
+    if overview.is_empty() {
+        return slint::Image::from_rgba8(slint::SharedPixelBuffer::new(1, 1));
+    }
+    let mut pixels = slint::SharedPixelBuffer::<slint::Rgba8Pixel>::new(w as u32, h as u32);
     let buf = pixels.make_mut_slice();
-    let half = HEIGHT as f32 / 2.0;
-    for x in 0..WIDTH {
+    let half = h as f32 / 2.0;
+    for x in 0..w {
         // One solid shape, sized as on the deck waveforms: the body (RMS)
         // doubled, never past the peaks, on the same gentle curve. Slices
         // hold square roots of the levels, so they're squared first;
         // doubling the stored value instead would fill loud tracks to the
         // edges as flat blocks.
-        let [peak, rms, mid, high] = overview[x * overview.len() / WIDTH];
+        let [peak, rms, mid, high] = overview[x * overview.len() / w];
         let color = if in_full {
             full(mid, high)
         } else {
@@ -223,7 +252,7 @@ fn image(overview: &[OverviewSlice], in_full: bool) -> slint::Image {
         let linear = |b: u8| (b as f32 / 255.0).powi(2);
         let body = (2.0 * linear(rms)).min(linear(peak));
         let rms = body.powf(0.8) * 0.94 * half;
-        for y in 0..HEIGHT {
+        for y in 0..h {
             // How far this pixel's middle is from the centre line, and how
             // much of it each part covers, for soft edges.
             let d = (y as f32 + 0.5 - half).abs() - 0.5;
@@ -231,7 +260,7 @@ fn image(overview: &[OverviewSlice], in_full: bool) -> slint::Image {
             let a = cover(rms.max(0.5));
             let lift = 0.88 + 0.12 * (1.0 - d / rms.max(1.0)).clamp(0.0, 1.0);
             let c = |i: usize| (color[i] * lift).round().clamp(0.0, 255.0) as u8;
-            buf[y * WIDTH + x] = slint::Rgba8Pixel {
+            buf[y * w + x] = slint::Rgba8Pixel {
                 r: c(0),
                 g: c(1),
                 b: c(2),
@@ -320,10 +349,17 @@ mod tests {
             let p = buf.as_slice()[HEIGHT / 2 * WIDTH];
             (p.r, p.g, p.b)
         };
-        // Bass red, mids amber, highs blue, as on the decks.
+        // Dark to light, as on the decks: bass deep red, mids amber, highs
+        // ice blue, each brighter than the last.
         let (bass, mids, highs) = (color((0, 0)), color((255, 0)), color((0, 255)));
-        assert!(bass.0 > 200 && bass.1 < 80 && bass.2 < 80, "{bass:?}");
-        assert!(mids.0 > 200 && mids.1 > 140 && mids.2 < 60, "{mids:?}");
-        assert!(highs.2 > 200 && highs.0 < 100, "{highs:?}");
+        assert!(bass.0 > 150 && bass.1 < 80 && bass.2 < 80, "{bass:?}");
+        assert!(mids.0 > 200 && mids.1 > 130 && mids.2 < 80, "{mids:?}");
+        assert!(highs.2 > 220 && highs.1 > 190 && highs.0 > 150, "{highs:?}");
+        let sum = |c: (u8, u8, u8)| c.0 as u32 + c.1 as u32 + c.2 as u32;
+        assert!(sum(bass) < sum(mids) && sum(mids) < sum(highs));
+        // Bass and mids at the same level (the mids lifted in the stored
+        // shares) blend to orange.
+        let both = color((169, 0));
+        assert!(both.0 > both.1 && both.1 > both.2, "{both:?}");
     }
 }

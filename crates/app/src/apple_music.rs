@@ -239,6 +239,9 @@ impl Worker {
                     list,
                     error: "Only Spotify can be exported to.".into(),
                 }),
+                // Only TIDAL browses through an add-on, or searches the
+                // catalog.
+                Request::Catalog(_) | Request::Search(_) | Request::Artist(_) => {}
                 Request::Disconnect => {
                     if let Some(s) = self.session.take() {
                         s.key.saved("").store(SAVED);
@@ -450,6 +453,7 @@ fn parse_song(v: &Value) -> Option<StreamTrack> {
             .unwrap_or_default(),
         album: a["albumName"].as_str().unwrap_or_default().to_string(),
         duration: a["durationInMillis"].as_f64().unwrap_or(0.0) / 1000.0,
+        ..Default::default()
     })
 }
 
