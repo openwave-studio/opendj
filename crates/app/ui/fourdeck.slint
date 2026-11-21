@@ -5,7 +5,7 @@
 // are in the FX bar under that.
 // A two-deck controller (the DDJ-FLX4) plays decks 1 and 2 until a strip's
 // deck number is clicked: then that side plays deck 3 or 4.
-import { TrackDrag } from "library.slint";
+import { LibraryEdit, TrackDrag } from "library.slint";
 import { InstrumentsUi } from "instruments.slint";
 import { Theme } from "theme.slint";
 import { ControlButton, ControlFader, Controls, Crossfader, CueHeadphones, StereoMeter, SyncButton } from "controls.slint";
@@ -147,15 +147,16 @@ export component DeckStrip inherits Rectangle {
                 // PLAY, CUE and the loop.
                 if live == 0: HorizontalLayout {
                     spacing: 6px;
-                    PlayButton { group: group; tint: tint; width: 52px; height: 32px; }
-                    ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 13px; width: 52px; height: 32px; }
+                    PlayButton { group: group; tint: tint; width: 48px; height: 32px; }
+                    ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 13px; width: 48px; height: 32px; }
                     // The loop as on 2-Deck: length, LOOP, then IN/OUT.
                     HorizontalLayout {
                         horizontal-stretch: 1;
                         alignment: end;
                         spacing: 6px;
-                        LoopStepper { group: group; info: info; width: 96px; height: 32px; }
-                        SectionTitle { title: "Loop"; font-size: 11px; }
+                        LoopStepper { group: group; info: info; width: 88px; height: 32px; }
+                        // The word goes in a small window, so OUT keeps its room.
+                        if LibraryEdit.window-width >= 1440px: SectionTitle { title: "Loop"; font-size: 11px; }
                         ControlButton { group: group; key: "loop_in"; light-key: "loop_in_pending"; text: "IN"; momentary: true; tint: Theme.n-d1d1d6; font-size: 11px; width: 40px; height: 32px; }
                         ControlButton { group: group; key: "loop_out"; light-key: "loop_enabled"; text: "OUT"; momentary: true; tint: Theme.lilac; font-size: 11px; width: 40px; height: 32px; }
                     }

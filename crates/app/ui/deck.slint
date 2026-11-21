@@ -3,7 +3,7 @@
 // the loop controls, and the jog with play and CUE under it beside the
 // mixer. Deck B is mirrored.
 // Large artwork, flat dark controls, white pointers.
-import { TrackDrag } from "library.slint";
+import { LibraryEdit, TrackDrag } from "library.slint";
 import { SamplerPanel } from "sampler.slint";
 import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint";
 import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
@@ -1528,7 +1528,9 @@ export component Header inherits Rectangle {
                 if beat-counter && info.loaded && BeatCounter.decks[deck].shown: BeatBox {
                     count: BeatCounter.decks[deck];
                     tint: tint;
-                    compact: compact || BeatCounter.mode == 1;
+                    // A small window (2-Deck at 1280) keeps the cells and
+                    // gives the title the room.
+                    compact: compact || BeatCounter.mode == 1 || LibraryEdit.window-width < 1360px;
                 }
                 // An instrument: which keyboard plays it, picked here.
                 if live == 3: VerticalLayout {
@@ -2605,7 +2607,8 @@ component PadTabs inherits Rectangle {
     StepperPill {
         x: (root.width - grid-w) / 2;
         y: 0;
-        width: (grid-w - 15px) / 4;
+        // One pad wide, but never so narrow that the page's name elides.
+        width: max((grid-w - 15px) / 4, 108px);
         height: 24px;
         prev => { selected = mod(selected + 7, 8); }
         next => { selected = mod(selected + 1, 8); }
@@ -3337,7 +3340,7 @@ component Pitch inherits VerticalLayout {
     in property <bool> mirrored;
     property <int> keylock-index: Controls.resolve(group, "keylock");
     // The BPM is on the jog.
-    width: 72px;
+    width: 66px;
     spacing: 3px;
     // The tempo % on top; SYNC at the bottom, in line with the deck's bar
     // (Play, CUE and the loop) and as tall.
@@ -3570,16 +3573,16 @@ component DeckBar inherits Rectangle {
         HorizontalLayout {
             horizontal-stretch: 1;
             alignment: center;
-            spacing: 14px;
+            spacing: 10px;
             // Both sides of LOOP the same width, so it sits in the middle.
-            LoopStepper { group: group; info: info; width: 110px; }
+            LoopStepper { group: group; info: info; width: 98px; }
             SectionTitle { title: "Loop"; font-size: 12px; }
             // A loop of any length: IN on the nearest beat lights grey while the
             // waveform marks the loop out; OUT closes it, and it turns lilac.
             HorizontalLayout {
             spacing: 6px;
-            ControlButton { group: group; key: "loop_in"; light-key: "loop_in_pending"; text: "IN"; momentary: true; tint: Theme.n-d1d1d6; font-size: 11px; width: 52px; tour-id: group + ",loop_in"; }
-            ControlButton { group: group; key: "loop_out"; light-key: "loop_enabled"; text: "OUT"; momentary: true; tint: Theme.lilac; font-size: 11px; width: 52px; tour-id: group + ",loop_out"; }
+            ControlButton { group: group; key: "loop_in"; light-key: "loop_in_pending"; text: "IN"; momentary: true; tint: Theme.n-d1d1d6; font-size: 11px; width: 46px; tour-id: group + ",loop_in"; }
+            ControlButton { group: group; key: "loop_out"; light-key: "loop_enabled"; text: "OUT"; momentary: true; tint: Theme.lilac; font-size: 11px; width: 46px; tour-id: group + ",loop_out"; }
             }
         }
         if !mirrored: Rectangle { width: 6px; }
