@@ -1,7 +1,9 @@
 // The openDJ docs, served at opendj.app/docs. Pages are Markdown files in
 // src/content/docs; the sidebar below lists them in reading order. The
 // controller pages and their sidebar list are written by
-// ../tools/controllers.py before each build (npm run build / npm run dev).
+// ../tools/controllers.py, which runs here whenever Astro loads this config,
+// so `astro build` and `astro dev` always have them.
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
@@ -10,9 +12,13 @@ import linksValidator from 'starlight-links-validator';
 import mdLinks from './plugins/md-links.mjs';
 
 const base = '/docs/';
-const controllers = fs.existsSync('./src/controllers.json')
-  ? JSON.parse(fs.readFileSync('./src/controllers.json', 'utf8'))
-  : [];
+execFileSync('python3', ['../tools/controllers.py', '../../res/controllers', '.'], {
+  cwd: new URL('.', import.meta.url),
+  stdio: 'inherit',
+});
+const controllers = JSON.parse(
+  fs.readFileSync(new URL('./src/controllers.json', import.meta.url), 'utf8'),
+);
 
 export default defineConfig({
   site: 'https://opendj.app',
