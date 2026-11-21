@@ -135,6 +135,8 @@ export component RemixSource inherits HorizontalLayout {
 // titled list of the others.
 export component RemixEffectPill inherits HorizontalLayout {
     in property <string> label;
+    // The list's title; the label unless given.
+    in property <string> title: label;
     in property <string> group;
     in property <string> key;
     in property <[string]> names;
@@ -169,7 +171,7 @@ export component RemixEffectPill inherits HorizontalLayout {
         width: 170px;
         close-policy: close-on-click-outside;
         TitledList {
-            title: root.label;
+            title: root.title;
             for name[i] in root.names: ListRow {
                 selected: i == root.current;
                 clicked => {
@@ -198,55 +200,53 @@ component Lever inherits VerticalLayout {
     property <bool> on: Controls.value(index, Controls.tick) > 0;
     property <bool> was-on;
     property <bool> long;
+    // As wide as the band's knob, right under it.
+    in property <length> size: 40px;
     alignment: center;
-    spacing: 3px;
-    Rectangle {
-        width: 30px;
-        height: 36px;
-        border-radius: 7px;
-        background: Theme.pill;
-        border-width: 1px;
-        border-color: root.on ? root.tint : ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
-        // The handle: up while off, down and lit while on.
+    HorizontalLayout {
+        alignment: center;
         Rectangle {
-            x: 4px;
-            y: root.on ? parent.height - self.height - 4px : 4px;
-            width: parent.width - 8px;
-            height: 13px;
-            border-radius: 5px;
-            background: root.on ? root.tint : Theme.n-48484c;
-            animate y { duration: 60ms; }
-        }
-        hold := Timer {
-            interval: 300ms;
-            running: false;
-            triggered => {
-                root.long = true;
-                self.running = false;
+            width: root.size;
+            height: 42px;
+            border-radius: 7px;
+            background: Theme.pill;
+            border-width: 1px;
+            border-color: root.on ? root.tint : ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+            // The handle: up while off, down and lit while on.
+            Rectangle {
+                x: 4px;
+                y: root.on ? parent.height - self.height - 4px : 4px;
+                width: parent.width - 8px;
+                height: 16px;
+                border-radius: 5px;
+                background: root.on ? root.tint : Theme.n-48484c;
+                animate y { duration: 60ms; }
             }
-        }
-        ta := TouchArea {
-            mouse-cursor: pointer;
-            pointer-event(e) => {
-                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
-                    root.was-on = root.on;
-                    root.long = false;
-                    Controls.set-value(root.index, root.was-on ? 0 : 1);
-                    hold.running = !root.was-on;
-                } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
-                    hold.running = false;
-                    if !root.was-on && root.long {
-                        Controls.set-value(root.index, 0);
+            hold := Timer {
+                interval: 300ms;
+                running: false;
+                triggered => {
+                    root.long = true;
+                    self.running = false;
+                }
+            }
+            ta := TouchArea {
+                mouse-cursor: pointer;
+                pointer-event(e) => {
+                    if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                        root.was-on = root.on;
+                        root.long = false;
+                        Controls.set-value(root.index, root.was-on ? 0 : 1);
+                        hold.running = !root.was-on;
+                    } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                        hold.running = false;
+                        if !root.was-on && root.long {
+                            Controls.set-value(root.index, 0);
+                        }
                     }
                 }
             }
         }
-    }
-    Text {
-        text: !root.on ? "off" : ta.pressed && root.long ? "held" : "latched";
-        color: root.on ? root.tint : Theme.text-dim;
-        font-size: 10px;
-        horizontal-alignment: center;
     }
 }
 
@@ -282,7 +282,8 @@ component BandLane inherits VerticalLayout {
         letter-spacing: 0.8px;
         horizontal-alignment: center;
     }
-    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; }
+    Rectangle { height: 2px; }
+    Lever { group: root.group; key: "lever_" + root.key + "_on"; tint: root.tint; size: 40px; }
 }
 
 // The three bands side by side, LOW to HIGH, on a panel whose tip
@@ -312,6 +313,29 @@ component IsolateArrow inherits Rectangle {
         padding-top: 6px;
         padding-bottom: 4px;
         alignment: space-around;
+        // The Isolate effect beside the knobs, the Lever effect beside
+        // the levers: rows as tall as the bands' knob, name and lever.
+        VerticalLayout {
+            width: 104px;
+            alignment: center;
+            spacing: 2px;
+            HorizontalLayout {
+                height: 40px;
+                VerticalLayout {
+                    alignment: center;
+                    RemixEffectPill { label: ""; title: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
+                }
+            }
+            Text { text: " "; font-size: 10px; }
+            Rectangle { height: 2px; }
+            HorizontalLayout {
+                height: 42px;
+                VerticalLayout {
+                    alignment: center;
+                    RemixEffectPill { label: ""; title: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
+                }
+            }
+        }
         for b in [0, 1, 2]: BandLane { group: root.group; band: b; insert: root.insert; }
     }
 }
@@ -626,10 +650,10 @@ component SceneColor inherits VerticalLayout {
     }
 }
 
-// The Remix deck under its title, on a grid of three rows: the effect
-// pickers and TIME over the ISOLATE arrow, SCENE wheel and COLOR, over the
-// X-PAD and its kit. The arrow sits on the wheel's middle and its tip
-// reaches the wheel.
+// The Remix deck under its title, on a grid of three rows: TIME over the
+// ISOLATE arrow (its effect pickers beside the knobs and levers), SCENE
+// wheel and COLOR, over the X-PAD and its kit. The arrow sits on the
+// wheel's middle and its tip reaches the wheel.
 export component RemixPanel inherits Rectangle {
     in property <int> deck;
     property <string> group: "[Remix" + (deck + 1) + "]";
@@ -649,20 +673,7 @@ export component RemixPanel inherits Rectangle {
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: 6px;
-            HorizontalLayout {
-                height: root.band;
-                padding-right: root.tip;
-                spacing: 12px;
-                VerticalLayout {
-                    alignment: end;
-                    RemixEffectPill { label: "Isolate"; group: root.group; key: "isolate_effect"; names: RemixUi.isolate-effects; }
-                }
-                VerticalLayout {
-                    alignment: end;
-                    RemixEffectPill { label: "Lever"; group: root.group; key: "lever_effect"; names: RemixUi.lever-effects; }
-                }
-                Rectangle { }
-            }
+            Rectangle { height: root.band; }
             IsolateArrow { group: root.group; insert: root.insert; tip: root.tip; vertical-stretch: 1; }
             HorizontalLayout {
                 height: root.band;
@@ -687,7 +698,7 @@ export component RemixPanel inherits Rectangle {
                 BlockTitle { text: "KIT"; }
                 HorizontalLayout {
                     alignment: center;
-                    RemixEffectPill { label: ""; group: root.group; key: "pad_bank"; names: RemixUi.kits; }
+                    RemixEffectPill { label: ""; title: "Kit"; group: root.group; key: "pad_bank"; names: RemixUi.kits; }
                 }
             }
         }

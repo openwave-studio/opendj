@@ -372,6 +372,11 @@ impl Mapping {
         let mut inputs: HashMap<(u8, u8), Vec<Input>> = HashMap::new();
         if let Some(controls) = child(controller, "controls") {
             for c in controls.children().filter(|n| n.has_tag_name("control")) {
+                // An empty <key> is a placeholder for a control the
+                // mapping doesn't use yet: it does nothing in Mixxx.
+                if text(c, "key").unwrap_or("").trim().is_empty() {
+                    continue;
+                }
                 let options = child(c, "options")
                     .map(|o| {
                         o.children()
