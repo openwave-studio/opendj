@@ -2542,6 +2542,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed17f5901b6630b993ca003def43f2f8ef4014fc13b047b57aad617ff32bc2ec"
+dependencies = [
+ "darling_core 0.24.1",
+ "darling_macro 0.24.1",
+]
+
+[[package]]
 name = "darling_core"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2570,6 +2580,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6837e2cf7485aaae18f86181d2f0e9a7ed297a025e220aeabf63fdebd3a2ddff"
+dependencies = [
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn 3.0.8",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2589,6 +2612,17 @@ dependencies = [
  "darling_core 0.21.3",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ac7135c3ef02b2f7833bbeb1be5ba7f966dcde8a87c6b87f65a778d71a02785"
+dependencies = [
+ "darling_core 0.24.1",
+ "quote",
+ "syn 3.0.8",
 ]
 
 [[package]]
@@ -2810,38 +2844,53 @@ checksum = "abd57806937c9cc163efc8ea3910e00a62e2aeb0b8119f1793a978088f8f6b04"
 
 [[package]]
 name = "diesel"
-version = "2.3.14"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebe9f7eaef33febd60290c5a9f3b0571d03c4c04a24739cd64808ce30e65a5d3"
+checksum = "9824c36a57a17ece4c8883baed41dc3eb81b2b949364c174750acc462e19b5ec"
 dependencies = [
+ "bitflags 2.13.2",
  "diesel_derives",
  "downcast-rs 2.0.2",
  "libsqlite3-sys",
  "r2d2",
+ "serde_json",
  "sqlite-wasm-rs",
+ "sqlstate",
  "time",
 ]
 
 [[package]]
-name = "diesel_derives"
-version = "2.3.10"
+name = "diesel_attribute_parser"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecbd51fb6c020672543641167efa4e6417ff7ad76849ed556ace3595e72de03a"
+checksum = "de6c008369e0bc4e26f385874b8d1da517112b4ebe2f8e6b1e3331c781039d71"
 dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.8",
+]
+
+[[package]]
+name = "diesel_derives"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90c0b085880f70a6668dd2365040f4dd07aaf6ebe9e6b8626528efcb0553a780"
+dependencies = [
+ "diesel_attribute_parser",
  "diesel_table_macro_syntax",
  "dsl_auto_type",
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.8",
 ]
 
 [[package]]
 name = "diesel_table_macro_syntax"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe2444076b48641147115697648dc743c2c00b61adade0f01ce67133c7babe8c"
+checksum = "d05c7977b58892eda3f17d46fd57fb23e865d1e54f59b224a6cc09935013747c"
 dependencies = [
- "syn 2.0.119",
+ "syn 3.0.8",
 ]
 
 [[package]]
@@ -3040,16 +3089,16 @@ dependencies = [
 
 [[package]]
 name = "dsl_auto_type"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd122633e4bef06db27737f21d3738fb89c8f6d5360d6d9d7635dda142a7757e"
+checksum = "cc51ea5a4c1cfac05a51e51cdbb6a5471bbb88091fcb045a27ff13b38e9a3204"
 dependencies = [
- "darling 0.21.3",
+ "darling 0.24.1",
  "either",
  "heck",
  "proc-macro2",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.8",
 ]
 
 [[package]]
@@ -3372,7 +3421,7 @@ dependencies = [
  "swash",
  "wasm-bindgen",
  "web-sys",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
 ]
 
 [[package]]
@@ -4463,7 +4512,7 @@ dependencies = [
  "memmap2",
  "nix 0.31.3",
  "raw-window-handle",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
  "xkbcommon",
 ]
 
@@ -4647,7 +4696,7 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "web-time",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
  "windows 0.62.2",
 ]
 
@@ -4681,7 +4730,7 @@ dependencies = [
  "rgb",
  "wasm-bindgen",
  "web-sys",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
 ]
 
 [[package]]
@@ -4716,7 +4765,7 @@ dependencies = [
  "spin_on",
  "unicode-segmentation",
  "vtable",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
  "wgpu-hal 30.0.1",
  "windows 0.62.2",
  "windows-core 0.62.2",
@@ -6690,7 +6739,7 @@ dependencies = [
  "winresource",
  "write-fonts",
  "x11-dl",
- "zip 9.4.2",
+ "zip 9.7.0",
 ]
 
 [[package]]
@@ -6838,7 +6887,7 @@ dependencies = [
  "rusqlite",
  "serde_json",
  "ureq",
- "zip 9.4.2",
+ "zip 9.7.0",
 ]
 
 [[package]]
@@ -6912,7 +6961,7 @@ dependencies = [
  "ab_glyph",
  "bytemuck",
  "pollster 0.4.0",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
 ]
 
 [[package]]
@@ -7243,9 +7292,9 @@ checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
 name = "plist"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "327a4cb2ad49dc48adfdc9da89e22c64d488b508c67a044d71ba729e4521a285"
+checksum = "d86a77b7d9cdebd9643c180c158748db7d894b24a3935ed4b5843e698ae086eb"
 dependencies = [
  "base64 0.23.1",
  "indexmap",
@@ -7783,9 +7832,9 @@ dependencies = [
 
 [[package]]
 name = "rbox-anlz"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad5d7d66b60185443e4ac5d56fdd5e13321d49cf8650f3b89d273c26d09825b7"
+checksum = "86c66205953efcf7aca89794afe478912600a3ae0a327fc67e7ced7b3bef0800"
 dependencies = [
  "binrw",
  "modular-bitfield",
@@ -7794,9 +7843,9 @@ dependencies = [
 
 [[package]]
 name = "rbox-core"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a71cc0e5a5e97f21b1552efa4c5a609e5dc68ec263542e96202d4a91998fcec"
+checksum = "229482bacb0948c7d49a49f6471a990e855437e73f28f336496c005cd3915fa1"
 dependencies = [
  "diesel",
  "fast_image_resize",
@@ -7811,9 +7860,9 @@ dependencies = [
 
 [[package]]
 name = "rbox-db"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdbb2cfed0d7e512e2a99e25b9427fc8d72af461ebca1f9193fd5e51aac48121"
+checksum = "1188cad6ce71a0b1c9c99ae40db4d57d414719c64ac7835cdfd7581c8a08e8e3"
 dependencies = [
  "diesel",
  "libsqlite3-sys",
@@ -7822,9 +7871,9 @@ dependencies = [
 
 [[package]]
 name = "rbox-devlib"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3ae36d37af7d6309027d2582b3d4ba22f761985754cfacfee15b7ef41c13597"
+checksum = "814159cfbea7143ac816a1de4e53415f618dbc3d8742fbea38a4c1bf0853baab"
 dependencies = [
  "binrw",
  "rbox-core",
@@ -7834,9 +7883,9 @@ dependencies = [
 
 [[package]]
 name = "rbox-masterdb"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8bb113234f3f59a1aca2486a0d438a799990ab15891e067093c5d4c6509d1b9"
+checksum = "0125d5aabd9cfcac70644bb710c9bb41877adabe1f00365f0bce9d69019e3795"
 dependencies = [
  "chrono",
  "diesel",
@@ -8934,7 +8983,7 @@ dependencies = [
  "slint-macros",
  "unicode-segmentation",
  "vtable",
- "wgpu 30.0.1",
+ "wgpu 30.0.2",
 ]
 
 [[package]]
@@ -9190,6 +9239,12 @@ dependencies = [
  "rsqlite-vfs",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "sqlstate"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "858cea190fe7555971c35a5eb336858f1bf962a2bd7ceb8704fb1759b36af2cd"
 
 [[package]]
 name = "stable-vec"
@@ -10352,9 +10407,9 @@ checksum = "6d49784317cd0d1ee7ec5c716dd598ec5b4483ea832a2dced265471cc0f690ae"
 
 [[package]]
 name = "ureq"
-version = "3.5.1"
+version = "3.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7be76686bdf7198002062423ca0d8cf9b75a27c8e1de804513b97e97b555d9d"
+checksum = "3ac5cecf619ca81f66a96482db09687c9f7465af65f4300a8c30cca05bd5a59d"
 dependencies = [
  "base64 0.23.1",
  "cookie_store",
@@ -10766,9 +10821,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.11"
+version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5f280bbb2b287bc8e7de7e3852945a0ff50d1bbcb5ed42b6c7a568c546df171"
+checksum = "7265c9301c16a8711c992c2d8da90ee77ef54b1ed51482d6dfeb00dc756b1297"
 dependencies = [
  "rustls-pki-types",
 ]
@@ -10810,9 +10865,9 @@ dependencies = [
 
 [[package]]
 name = "wgpu"
-version = "30.0.1"
+version = "30.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e"
+checksum = "146fc3d654250e6207921a66c87534c621bc886c70df83dcf466c1d66813810e"
 dependencies = [
  "arrayvec",
  "bitflags 2.13.2",
@@ -12283,9 +12338,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "9.4.2"
+version = "9.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df3845f734baabdd02de353a20580e30ceccd03897def44a4eb8e9654992e294"
+checksum = "08687262e7c0f1284b259686f322805a8adaa8ef4d7210e76448950b3f083bf7"
 dependencies = [
  "constant_time_eq",
  "crc32fast",
