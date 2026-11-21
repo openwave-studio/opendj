@@ -1,0 +1,2317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MixxxControllerPreset schemaVersion="1" mixxxVersion="2.6">
+    <info>
+        <name>AlphaTheta OMNIS-DUO</name>
+        <author>openDJ</author>
+        <description>openDJ mapping for the OMNIS-DUO all-in-one in PC control (MIDI) mode: four decks on two channels, the mixer, Beat FX and hot cue pads. Beta: written from AlphaTheta's OMNIS-DUO MIDI message list and rekordbox's OMNIS-DUO mapping, not yet tried on the hardware.</description>
+        <manual>alphatheta_omnis_duo</manual>
+    </info>
+    <controller id="OMNIS-DUO">
+        <scriptfiles>
+            <file functionprefix="" filename="Pioneer-all-in-one-script.js"/>
+            <file functionprefix="AlphaThetaOMNISDUO" filename="AlphaTheta-OMNIS-DUO-script.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <description>AutoLoop (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopTurn</key>
+                <status>0xB0</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopTurn</key>
+                <status>0xB1</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopTurn</key>
+                <status>0xB2</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopTurn</key>
+                <status>0xB3</status>
+                <midino>0x2E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopPressed</key>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopPressed</key>
+                <status>0x91</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopPressed</key>
+                <status>0x92</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.beatLoopPressed</key>
+                <status>0x93</status>
+                <midino>0x43</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.reloop</key>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.reloop</key>
+                <status>0x91</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press+Shift (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.reloop</key>
+                <status>0x92</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>AutoLoop+Press+Shift (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.reloop</key>
+                <status>0x93</status>
+                <midino>0x44</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogTurn</key>
+                <status>0xB0</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogTurn</key>
+                <status>0xB1</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogTurn</key>
+                <status>0xB2</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogScratch (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogTurn</key>
+                <status>0xB3</status>
+                <midino>0x22</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogSearch</key>
+                <status>0xB0</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogSearch</key>
+                <status>0xB1</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogSearch</key>
+                <status>0xB2</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogSearch (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogSearch</key>
+                <status>0xB3</status>
+                <midino>0x29</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x92</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x93</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x92</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>JogTouch+Shift (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogTouch</key>
+                <status>0x93</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB0</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB1</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB2</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB3</status>
+                <midino>0x21</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB0</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB1</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB2</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>WheelPitchBend (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogBend</key>
+                <status>0xB3</status>
+                <midino>0x26</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>cue_default</key>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>cue_default</key>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.toStart</key>
+                <status>0x90</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.toStart</key>
+                <status>0x91</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.toStart</key>
+                <status>0x92</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Cue+Shift (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.toStart</key>
+                <status>0x93</status>
+                <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.play</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.play</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.play</key>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PLAY/PAUSE</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.play</key>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x95</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_activate</key>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x95</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x97</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 1 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_1_clear</key>
+                <status>0x98</status>
+                <midino>0x08</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x95</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x96</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_activate</key>
+                <status>0x98</status>
+                <midino>0x01</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x95</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x97</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 2 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_2_clear</key>
+                <status>0x98</status>
+                <midino>0x09</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x95</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_activate</key>
+                <status>0x98</status>
+                <midino>0x02</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x95</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x96</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x97</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 3 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_3_clear</key>
+                <status>0x98</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x95</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_activate</key>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x95</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x97</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 4 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_4_clear</key>
+                <status>0x98</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x95</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x96</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_activate</key>
+                <status>0x98</status>
+                <midino>0x04</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x95</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x96</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x97</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 5 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_5_clear</key>
+                <status>0x98</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x95</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x96</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_activate</key>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x95</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x96</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x97</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 6 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_6_clear</key>
+                <status>0x98</status>
+                <midino>0x0D</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x95</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x96</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_activate</key>
+                <status>0x98</status>
+                <midino>0x06</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x95</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x96</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x97</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 7 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_7_clear</key>
+                <status>0x98</status>
+                <midino>0x0E</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x95</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x96</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_activate</key>
+                <status>0x98</status>
+                <midino>0x07</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue SHIFT (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x95</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue SHIFT (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x96</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue SHIFT (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x97</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>PAD 8 Hot cue SHIFT (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>hotcue_8_clear</key>
+                <status>0x98</status>
+                <midino>0x0F</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderMSB</key>
+                <status>0xB0</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderLSB</key>
+                <status>0xB0</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderMSB</key>
+                <status>0xB1</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderLSB</key>
+                <status>0xB1</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderMSB</key>
+                <status>0xB2</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderLSB</key>
+                <status>0xB2</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO MSB (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderMSB</key>
+                <status>0xB3</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>TEMPO LSB (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.tempoSliderLSB</key>
+                <status>0xB3</status>
+                <midino>0x20</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x90</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x91</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x92</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>LOAD (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>LoadSelectedTrack</key>
+                <status>0x93</status>
+                <midino>0x51</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.jogMode</key>
+                <status>0x90</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.jogMode</key>
+                <status>0x91</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.jogMode</key>
+                <status>0x92</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Vinyl (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.jogMode</key>
+                <status>0x93</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Quantize (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.quantize</key>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Quantize (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.quantize</key>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Quantize (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.quantize</key>
+                <status>0x92</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Quantize (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.quantize</key>
+                <status>0x93</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Slip (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.slip</key>
+                <status>0x90</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Slip (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.slip</key>
+                <status>0x91</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Slip (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.slip</key>
+                <status>0x92</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Slip (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.slip</key>
+                <status>0x93</status>
+                <midino>0x2B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.keylock</key>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.keylock</key>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.keylock</key>
+                <status>0x92</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>MasterTempo (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.keylock</key>
+                <status>0x93</status>
+                <midino>0x11</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.sync</key>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.sync</key>
+                <status>0x91</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.sync</key>
+                <status>0x92</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Sync (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.sync</key>
+                <status>0x93</status>
+                <midino>0x1F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.master</key>
+                <status>0x90</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.master</key>
+                <status>0x91</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.master</key>
+                <status>0x92</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Master (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.master</key>
+                <status>0x93</status>
+                <midino>0x1E</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Right_HotCue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.loopDouble</key>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Right_HotCue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.loopDouble</key>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Right_HotCue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.loopDouble</key>
+                <status>0x92</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Right_HotCue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.loopDouble</key>
+                <status>0x93</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Left_HotCue (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.loopHalve</key>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Left_HotCue (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.loopHalve</key>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Left_HotCue (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.loopHalve</key>
+                <status>0x92</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Parameter1Left_HotCue (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.loopHalve</key>
+                <status>0x93</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NeedleSearch (deck 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.needle</key>
+                <status>0xB0</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NeedleSearch (deck 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.needle</key>
+                <status>0xB1</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NeedleSearch (deck 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.needle</key>
+                <status>0xB2</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>NeedleSearch (deck 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.needle</key>
+                <status>0xB3</status>
+                <midino>0x1C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1BeatDown</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>AlphaThetaOMNISDUO.beatFxBeatsDown</key>
+                <status>0xB4</status>
+                <midino>0x4C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1BeatUp</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>AlphaThetaOMNISDUO.beatFxBeatsUp</key>
+                <status>0xB4</status>
+                <midino>0x4D</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1-1</description>
+                <group>[EffectRack1_EffectUnit5]</group>
+                <key>AlphaThetaOMNISDUO.beatFxLevel</key>
+                <status>0xB4</status>
+                <midino>0x5B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>FX1-1On</description>
+                <group>[EffectRack1_EffectUnit5_Effect1]</group>
+                <key>AlphaThetaOMNISDUO.beatFxOnOff</key>
+                <status>0xB4</status>
+                <midino>0x72</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 1)</description>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x05</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 2)</description>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x0A</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 3)</description>
+                <group>[QuickEffectRack1_[Channel3]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x16</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>COLOR (channel 4)</description>
+                <group>[QuickEffectRack1_[Channel4]]</group>
+                <key>super1</key>
+                <status>0xB4</status>
+                <midino>0x53</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x01</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x06</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 3)</description>
+                <group>[Channel3]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x0C</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Gain (channel 4)</description>
+                <group>[Channel4]</group>
+                <key>pregain</key>
+                <status>0xB4</status>
+                <midino>0x50</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x02</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x07</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 3)</description>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x0E</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQHigh (channel 4)</description>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>parameter3</key>
+                <status>0xB4</status>
+                <midino>0x51</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x08</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 3)</description>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x0F</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQMid (channel 4)</description>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>parameter2</key>
+                <status>0xB4</status>
+                <midino>0x5C</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 1)</description>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x04</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 2)</description>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x09</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 3)</description>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x15</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>EQLow (channel 4)</description>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>parameter1</key>
+                <status>0xB4</status>
+                <midino>0x52</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>AlphaThetaOMNISDUO.pfl</key>
+                <status>0xB4</status>
+                <midino>0x46</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>AlphaThetaOMNISDUO.pfl</key>
+                <status>0xB4</status>
+                <midino>0x47</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 3)</description>
+                <group>[Channel3]</group>
+                <key>AlphaThetaOMNISDUO.pfl</key>
+                <status>0xB4</status>
+                <midino>0x48</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>HeadphoneCue (channel 4)</description>
+                <group>[Channel4]</group>
+                <key>AlphaThetaOMNISDUO.pfl</key>
+                <status>0xB4</status>
+                <midino>0x49</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>CrossFader</description>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <status>0xB4</status>
+                <midino>0x0B</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 1)</description>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x11</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 2)</description>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x12</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 3)</description>
+                <group>[Channel3]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x13</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>ChannelFader (channel 4)</description>
+                <group>[Channel4]</group>
+                <key>volume</key>
+                <status>0xB4</status>
+                <midino>0x14</midino>
+                <options>
+                    <soft-takeover />
+                </options>
+            </control>
+            <control>
+                <description>Browse</description>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <status>0xB0</status>
+                <midino>0x4F</midino>
+                <options>
+                    <SelectKnob />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Shift</description>
+                <group>[Library]</group>
+                <key>AlphaThetaOMNISDUO.waveformZoom</key>
+                <status>0xB0</status>
+                <midino>0x60</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press</description>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+            <control>
+                <description>Browse+Press+Shift</description>
+                <group>[Library]</group>
+                <key>MoveFocusForward</key>
+                <status>0x90</status>
+                <midino>0x61</midino>
+                <options>
+                    <Normal />
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>cue_indicator</key>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>cue_indicator</key>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>play_indicator</key>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>play_indicator</key>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_1_status</key>
+                <status>0x95</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_1_status</key>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_1_status</key>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_1_status</key>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_2_status</key>
+                <status>0x95</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_2_status</key>
+                <status>0x96</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_2_status</key>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_2_status</key>
+                <status>0x98</status>
+                <midino>0x01</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_3_status</key>
+                <status>0x95</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_3_status</key>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_3_status</key>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_3_status</key>
+                <status>0x98</status>
+                <midino>0x02</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_4_status</key>
+                <status>0x95</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_4_status</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_4_status</key>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_4_status</key>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_5_status</key>
+                <status>0x95</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_5_status</key>
+                <status>0x96</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_5_status</key>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_5_status</key>
+                <status>0x98</status>
+                <midino>0x04</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_6_status</key>
+                <status>0x95</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_6_status</key>
+                <status>0x96</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_6_status</key>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_6_status</key>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_7_status</key>
+                <status>0x95</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_7_status</key>
+                <status>0x96</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_7_status</key>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_7_status</key>
+                <status>0x98</status>
+                <midino>0x06</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_8_status</key>
+                <status>0x95</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_8_status</key>
+                <status>0x96</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>hotcue_8_status</key>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>hotcue_8_status</key>
+                <status>0x98</status>
+                <midino>0x07</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit5_Effect1]</group>
+                <key>enabled</key>
+                <status>0xB4</status>
+                <midino>0x72</midino>
+                <on>0x7F</on>
+                <minimum>0.5</minimum>
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>

@@ -3,11 +3,11 @@
 
 Each page lists the mapping's controls from the descriptions in its XML file,
 with SHIFT actions in their own column. Controls that drive something openDJ
-doesn't have yet are marked, using website/book/supported-controls.txt (the
-output of `opendj --list-controls`). Also writes the docs' SUMMARY.md from
-SUMMARY.in.md, with one entry per controller.
+doesn't have yet are marked, using website/docs/supported-controls.txt (the
+output of `opendj --list-controls`). Also writes the controllers' index page
+and src/controllers.json, their entries in the docs' sidebar.
 
-Usage: controllers.py <res/controllers> <book dir>
+Usage: controllers.py <res/controllers> <website/docs>
 """
 
 import html
@@ -125,8 +125,39 @@ def group_section(group):
     return "Other"
 
 
+BADGES = {"supported": {"text": "Supported", "variant": "success"},
+          "beta": {"text": "Beta", "variant": "tip"}}
+
+
+def front_matter(title, status=None):
+    """Starlight's front matter: the title, a sidebar badge for the controllers
+    openDJ looks after, and no edit link, since the page is generated."""
+    out = ["---", f"title: {json.dumps(title)}", "editUrl: false"]
+    if status in BADGES:
+        out.append("sidebar:\n  badge: " + json.dumps(BADGES[status]))
+    return out + ["---", ""]
+
+
 def md(text):
     return html.escape(" ".join(text.split()), quote=False).replace("|", "\\|")
+
+
+# Makers as the popular list groups them: Pioneer DJ became AlphaTheta, so
+# their gear sits together, and Traktor gear comes under Native Instruments.
+MAKERS = [("Pioneer", "Pioneer DJ and AlphaTheta"), ("AlphaTheta", "Pioneer DJ and AlphaTheta"),
+          ("Native Instruments", "Native Instruments"), ("Allen & Heath", "Allen & Heath"),
+          ("DJ TechTools", "DJ TechTools")]
+
+
+def maker(name):
+    for prefix, label in MAKERS:
+        if name.startswith(prefix):
+            return label
+    return name.split()[0]
+
+
+def natural(text):
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", text)]
 
 
 def slug(path):
@@ -255,7 +286,7 @@ class Mapping:
         return [(l["section"], l) for s in sections for l in lines if l["section"] == s]
 
     def page(self, status=None, guide=None):
-        out = [f"# {md(self.name)}", ""]
+        out = front_matter(self.name, status)
         if status:
             out += [STATUS[status].format(ISSUE_URL), ""]
         if guide:
@@ -334,7 +365,7 @@ class OwnMapping:
         self.author = data.get("author", "")
 
     def page(self, status=None, guide=None):
-        out = [f"# {md(self.name)}", ""]
+        out = front_matter(self.name, status)
         if status:
             out += [STATUS[status].format(ISSUE_URL), ""]
         if guide:
@@ -346,14 +377,13 @@ class OwnMapping:
 
 
 def main():
-    controllers, book = Path(sys.argv[1]), Path(sys.argv[2])
-    listing = book / "supported-controls.txt"
+    controllers, docs = Path(sys.argv[1]), Path(sys.argv[2])
+    listing = docs / "supported-controls.txt"
     supported = set(listing.read_text().split()) if listing.exists() else None
-    out = book / "src" / "controllers"
+    out = docs / "src" / "content" / "docs" / "controllers"
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob("*.md"):
-        if old.name != "README.md":
-            old.unlink()
+        old.unlink()
 
     mappings = []
     paths = list(controllers.glob("*.midi.xml")) + list(controllers.glob("*.hid.xml"))
@@ -370,24 +400,32 @@ def main():
     support = json.loads((controllers.parent.parent / "crates/controllers/support.json").read_text())
     looked_after = support["controllers"]
     status = {c["file"]: c["status"] for c in looked_after if c["file"]}
-    guides = book / "controller-guides"
+    guides = docs / "controller-guides"
 
-    index = ["# Supported controllers", "",
+    index = front_matter("Supported controllers") + [
              "openDJ uses Mixxx's controller mappings, so these MIDI and USB HID controllers "
              "load their mapping as soon as they're plugged in.", "",
              "## Popular controllers", "",
              "openDJ looks after these itself: each has a picture in the Controller Editor and "
              "a guide. **Beta** means nobody has tried it in openDJ on the real controller yet; "
              f"if you have one, [tell us how it goes]({ISSUE_URL}). It becomes **Supported** "
-             "once it has been tried and its mapping is settled.", "",
-             "| Controller | Status | Notes |", "|---|---|---|"]
+             "once it has been tried and its mapping is settled.", ""]
     by_file = {m.path.name: m for m in mappings}
     labels = {"supported": "Supported", "beta": "Beta", "planned": "Coming soon"}
+    by_maker = {}
     for c in looked_after:
-        m = by_file.get(c["file"] or "")
-        name = f"[{md(c['name'])}]({slug(m.path)}.md)" if m else md(c["name"])
-        index.append(f"| {name} | {labels[c['status']]} | {md(c['note']) or '–'} |")
-    index += ["", "## Every mapping", "",
+        by_maker.setdefault(maker(c["name"]), []).append(c)
+    for name_of_maker in sorted(by_maker, key=str.lower):
+        index += [f"### {md(name_of_maker)}", "",
+                  "| Controller | Status | Notes |", "|---|---|---|"]
+        # Coming soon last, the rest by name with numbers in order (DDJ-200 before DDJ-1000).
+        for c in sorted(by_maker[name_of_maker],
+                        key=lambda c: (c["status"] == "planned", natural(c["name"]))):
+            m = by_file.get(c["file"] or "")
+            name = f"[{md(c['name'])}]({slug(m.path)}.md)" if m else md(c["name"])
+            index.append(f"| {name} | {labels[c['status']]} | {md(c['note']) or '–'} |")
+        index.append("")
+    index += ["## Every mapping", "",
               "| Controller | Mapping by | Controls listed |", "|---|---|---|"]
     entries = []
     for m in mappings:
@@ -397,16 +435,10 @@ def main():
         (out / f"{s}.md").write_text(page)
         listed = "Yes" if m.documented else "Not yet"
         index.append(f"| [{md(m.name)}]({s}.md) | {md(m.author) or '–'} | {listed} |")
-        entries.append(f"  - [{m.name.replace(']', '')}](controllers/{s}.md)")
+        entries.append(f"controllers/{s}")
     index += ["", f"Don't see yours, or does it misbehave? [Tell us which one]({ISSUE_URL}).", ""]
-    (out / "README.md").write_text("\n".join(index))
-
-    template = (book / "src" / "SUMMARY.in.md").read_text()
-    summary = template.replace(
-        "<!-- controllers -->",
-        "- [Supported controllers](controllers/README.md)\n" + "\n".join(entries),
-    )
-    (book / "src" / "SUMMARY.md").write_text(summary)
+    (out / "index.md").write_text("\n".join(index))
+    (docs / "src" / "controllers.json").write_text(json.dumps(entries, indent=1) + "\n")
     documented = sum(m.documented for m in mappings)
     print(f"Wrote {len(mappings)} controller pages ({documented} with control lists)")
 

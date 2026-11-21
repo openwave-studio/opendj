@@ -1,4 +1,6 @@
-/assets/*
+/assets/docs/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+/*
   Cache-Control: public, max-age=604800
 /*
   X-Content-Type-Options: nosniff

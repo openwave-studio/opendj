@@ -1,0 +1,18 @@
+---
+// The openDJ logo and name, linking back to opendj.app, in place of
+// Starlight's title (which links to the docs' first page).
+import logo from '../../../assets/logo.svg';
+---
+
+<a href="/" class="opendj-home" aria-label="openDJ home">
+  <img src={logo.src} width="28" height="28" alt="" />
+  <span class="name">openDJ</span>
+  <span class="docs">Docs</span>
+</a>
+
+<style>
+  .opendj-home { display: inline-flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--sl-color-white); white-space: nowrap; }
+  .opendj-home img { border-radius: 6px; }
+  .name { font-family: 'Zen Dots', var(--sl-font); font-size: 1.15rem; }
+  .docs { color: var(--sl-color-gray-3); font-weight: 600; font-size: 0.95rem; }
+</style>

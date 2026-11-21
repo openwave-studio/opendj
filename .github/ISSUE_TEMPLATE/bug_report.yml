@@ -27,14 +27,26 @@ body:
       label: Computer
       placeholder: macOS aarch64, or Linux x86_64 (Ubuntu 24.04)
   - type: input
+    id: graphics
+    attributes:
+      label: Graphics
+      placeholder: e.g. Apple M2 (Metal), or NVIDIA GeForce RTX 3060 (Vulkan)
+  - type: input
+    id: audio
+    attributes:
+      label: Audio output
+      placeholder: e.g. built-in speakers, or the controller's sound card
+  - type: input
     id: controller
     attributes:
-      label: Controller and audio interface, if any
-      placeholder: e.g. a two-deck MIDI controller, built-in audio
+      label: Controllers, if any
+      placeholder: e.g. a two-deck MIDI controller
   - type: textarea
     id: logs
     attributes:
       label: Logs or crash report
       description: >
-        In openDJ, open Settings → Feedback → Logs and crash reports, and drag
+        Help › Report a Problem fills in the version, computer, graphics,
+        audio and controllers for you. In openDJ, open Help › Show Logs and
+        Crash Reports, and drag
         opendj.log (and any crash-….txt) here.

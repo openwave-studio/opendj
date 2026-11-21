@@ -23,9 +23,10 @@ The first build takes about as long as a release build. After that, dependencies
 - Keep a PR to one change. Pull requests are squash-merged.
 - **Enable auto-merge** (squash) when you open a PR that is ready, so it merges as soon as its required checks pass; leave it off only for a PR that waits on a decision or a test by hand. Keep an open PR current by merging `main` into it when `main` moves, and avoid stacking PRs on each other unless one really needs the other. (CI also runs on `merge_group`, ready for a merge queue if the repository moves to an organization, where GitHub offers one.)
 - **A PR built on another PR** (only when it really needs it): once the first one is squash-merged, its commits are no longer in `main`, so merging `main` into the second branch conflicts on every line the first one touched. Replay only your own commits instead: `git rebase --onto origin/main <last commit of the first PR's branch> && git push --force-with-lease`.
-- **Lists everyone appends to** (`openspec/roadmap.md`, the guide's `SUMMARY.in.md`, `supported-controls.txt`) merge with git's union driver (see `.gitattributes`), so a local `git merge origin/main` keeps both sides. Settings code goes in its section's file under `crates/app/src/prefs/`.
+- **Lists everyone appends to** (`openspec/roadmap.md`, `supported-controls.txt`) merge with git's union driver (see `.gitattributes`), so a local `git merge origin/main` keeps both sides. Settings code goes in its section's file under `crates/app/src/prefs/`.
 - Before pushing, run `cargo fmt --check`, `cargo clippy --workspace --all-targets` and the tests for the crates you changed.
-- If the change alters what a DJ sees, update the matching page in `website/book/src/guide`. If it adds controls, regenerate `website/book/supported-controls.txt`.
+- If the change alters what a DJ sees, update the matching page in `website/docs/src/content/docs/guide`. If it adds controls, regenerate `website/docs/supported-controls.txt`.
+- Docs pages are Markdown with a `title:` front matter in place of a `#` heading. Link to other pages by file (`[Looping](looping.md#loop-rolls)`); the build turns that into the page's address and fails on a broken link. A new page also goes in the sidebar list in `website/docs/astro.config.mjs`.
 
 ## UI
 

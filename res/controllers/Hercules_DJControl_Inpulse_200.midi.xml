@@ -625,6 +625,46 @@
                     <normal />
                 </options>
             </control>
+            <control>
+                <group>[Sampler1]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 1 - Deck A: stop sample</description>
+                <status>0x96</status>
+                <midino>0x38</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Sampler2]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 2 - Deck A: stop sample</description>
+                <status>0x96</status>
+                <midino>0x39</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Sampler3]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 3 - Deck A: stop sample</description>
+                <status>0x96</status>
+                <midino>0x3A</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Sampler4]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 4 - Deck A: stop sample</description>
+                <status>0x96</status>
+                <midino>0x3B</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
             <!-- NN's MIDI Channel 8 (0x97 Deck B - Pads)-->
             <!--Hot Cues (SET)-->
             <control>
@@ -872,6 +912,46 @@
                     <normal />
                 </options>
             </control>
+            <control>
+                <group>[Sampler5]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 1 - Deck B: stop sample</description>
+                <status>0x97</status>
+                <midino>0x38</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Sampler6]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 2 - Deck B: stop sample</description>
+                <status>0x97</status>
+                <midino>0x39</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Sampler7]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 3 - Deck B: stop sample</description>
+                <status>0x97</status>
+                <midino>0x3A</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Sampler8]</group>
+                <key>cue_gotoandstop</key>
+                <description>SHIFT + PAD 4 - Deck B: stop sample</description>
+                <status>0x97</status>
+                <midino>0x3B</midino>
+                <options>
+                    <normal />
+                </options>
+            </control>
 
             <!--Continuous Controllers (CC) - Faders/knobs -->
             <!-- CC's MIDI Channel 1 (0xB0 Standard mode)-->
@@ -992,16 +1072,6 @@
                     <script-binding />
                 </options>
             </control>
-            <control>
-                <group>[Channel1]</group>
-                <key>DJCi200.scratchPad</key>
-                <description>Pitch Bend Deck A (FX PAD 7 / 8 )</description>
-                <status>0xB1</status>
-                <midino>0x0C</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
             <!-- CC's MIDI Channel 3 (0xB2  Deck B - Standard mode)-->
             <!-- Volume-->
             <control>
@@ -1093,16 +1163,6 @@
                 <description>Pitch Bend Deck B (Jog-Wheel)</description>
                 <status>0xB2</status>
                 <midino>0x09</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[Channel2]</group>
-                <key>DJCi200.scratchPad</key>
-                <description>Pitch Bend Deck B (FX PAD 7 / 8 )</description>
-                <status>0xB2</status>
-                <midino>0x0C</midino>
                 <options>
                     <script-binding />
                 </options>

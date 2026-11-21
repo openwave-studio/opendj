@@ -5,12 +5,17 @@
 //!
 //! A message is written `"[layer|]SS NN"` in hex: `"SHIFT|90 0E"`, or
 //! `"B? 00"` for any channel (the Xone K2's channel is set on the device).
+//!
+//! USB HID controllers send reports, not MIDI messages, and their mappings
+//! are all script, so the picture says what each control does instead:
+//! `"does": ["[layer]|Category|What it does|Target"]`, with `"hid"` naming
+//! where the control is in the input report ("Report 01 · byte 5 · 0x08").
 
 use serde_json::Value;
 
 use crate::probe::message_key;
 
-const LAYOUTS: [&str; 38] = [
+const LAYOUTS: [&str; 88] = [
     include_str!("../layouts/flx4.json"),
     include_str!("../layouts/ddj-flx6.json"),
     include_str!("../layouts/ddj-flx10.json"),
@@ -18,6 +23,14 @@ const LAYOUTS: [&str; 38] = [
     include_str!("../layouts/xdj-rx3.json"),
     include_str!("../layouts/xdj-az.json"),
     include_str!("../layouts/opus-quad.json"),
+    include_str!("../layouts/xdj-rx.json"),
+    include_str!("../layouts/xdj-rx2.json"),
+    include_str!("../layouts/xdj-rr.json"),
+    include_str!("../layouts/xdj-xz.json"),
+    include_str!("../layouts/xdj-aero.json"),
+    include_str!("../layouts/xdj-r1.json"),
+    include_str!("../layouts/xdj-an.json"),
+    include_str!("../layouts/omnis-duo.json"),
     include_str!("../layouts/ddj-400.json"),
     include_str!("../layouts/ddj-800.json"),
     include_str!("../layouts/ddj-200.json"),
@@ -38,9 +51,28 @@ const LAYOUTS: [&str; 38] = [
     include_str!("../layouts/mixtrack-platinum-fx.json"),
     include_str!("../layouts/mixtrack-pro-fx.json"),
     include_str!("../layouts/inpulse-500.json"),
+    include_str!("../layouts/hercules-inpulse-200.json"),
+    include_str!("../layouts/hercules-inpulse-300.json"),
+    include_str!("../layouts/hercules-jogvision.json"),
+    include_str!("../layouts/hercules-djcontrol-mix.json"),
     include_str!("../layouts/xone-k2.json"),
     include_str!("../layouts/twister.json"),
     include_str!("../layouts/numark-v7.json"),
+    include_str!("../layouts/numark-ns4fx.json"),
+    include_str!("../layouts/numark-dj2go2-touch.json"),
+    include_str!("../layouts/numark-mixstream-pro.json"),
+    include_str!("../layouts/numark-party-mix.json"),
+    include_str!("../layouts/numark-party-mix-mkii.json"),
+    include_str!("../layouts/numark-scratch.json"),
+    include_str!("../layouts/denon-mc7000.json"),
+    include_str!("../layouts/denon-mc6000mk2.json"),
+    include_str!("../layouts/denon-mc4000.json"),
+    include_str!("../layouts/denon-mc3000.json"),
+    include_str!("../layouts/denon-sc2000.json"),
+    include_str!("../layouts/denon-hs5500.json"),
+    include_str!("../layouts/denon-sclive4.json"),
+    include_str!("../layouts/denon-prime4.json"),
+    include_str!("../layouts/denon-primego.json"),
     include_str!("../layouts/ddj-flx2.json"),
     include_str!("../layouts/ddj-rev5.json"),
     include_str!("../layouts/ddj-sr.json"),
@@ -49,6 +81,29 @@ const LAYOUTS: [&str; 38] = [
     include_str!("../layouts/ddj-xp2.json"),
     include_str!("../layouts/ddj-sb.json"),
     include_str!("../layouts/ddj-sb2.json"),
+    include_str!("../layouts/djm-250mk2.json"),
+    include_str!("../layouts/djm-450.json"),
+    include_str!("../layouts/djm-750mk2.json"),
+    include_str!("../layouts/djm-900nxs2.json"),
+    include_str!("../layouts/djm-a9.json"),
+    include_str!("../layouts/djm-v10.json"),
+    include_str!("../layouts/djm-v5.json"),
+    include_str!("../layouts/djm-tour1.json"),
+    include_str!("../layouts/euphonia.json"),
+    include_str!("../layouts/djm-s7.json"),
+    include_str!("../layouts/djm-s9.json"),
+    include_str!("../layouts/djm-s11.json"),
+    include_str!("../layouts/djm-t1.json"),
+    include_str!("../layouts/plx-crss12.json"),
+    include_str!("../layouts/traktor-kontrol-s2-mk3.json"),
+    include_str!("../layouts/traktor-kontrol-s3.json"),
+    include_str!("../layouts/traktor-kontrol-s4-mk3.json"),
+    include_str!("../layouts/traktor-mx2.json"),
+    include_str!("../layouts/traktor-kontrol-x1-mk3.json"),
+    include_str!("../layouts/traktor-kontrol-z1-mk2.json"),
+    include_str!("../layouts/traktor-kontrol-d2.json"),
+    include_str!("../layouts/traktor-kontrol-s8.json"),
+    include_str!("../layouts/traktor-kontrol-s5.json"),
 ];
 
 #[derive(Clone, Debug, PartialEq)]
@@ -87,6 +142,38 @@ pub struct Part {
     pub w: f32,
     pub h: f32,
     pub midi: Vec<PartMessage>,
+    /// What it does, for a HID controller's picture.
+    pub does: Vec<PartDoes>,
+    /// Where it is in the HID input report, for a HID controller's picture.
+    pub hid: String,
+}
+
+/// One thing a HID controller's control does, in one layer.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PartDoes {
+    /// "SHIFT", "Stems"; empty for the plain press.
+    pub layer: String,
+    /// One of [`crate::catalog::CATEGORIES`].
+    pub category: &'static str,
+    pub name: String,
+    /// "Deck 1", "Mixer"; empty when it acts on nothing in particular.
+    pub target: String,
+}
+
+fn parse_does(s: &str) -> Option<PartDoes> {
+    let mut it = s.split('|');
+    let layer = it.next()?.to_string();
+    let category = it.next()?;
+    let category = crate::catalog::CATEGORIES
+        .iter()
+        .find(|c| **c == category)
+        .copied()?;
+    Some(PartDoes {
+        layer,
+        category,
+        name: it.next()?.to_string(),
+        target: it.next().unwrap_or("").to_string(),
+    })
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -151,6 +238,15 @@ fn parse(json: &str) -> Option<Layout> {
                         .collect()
                 })
                 .unwrap_or_default(),
+            does: c["does"]
+                .as_array()
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|d| d.as_str().and_then(parse_does))
+                        .collect()
+                })
+                .unwrap_or_default(),
+            hid: c["hid"].as_str().unwrap_or("").into(),
         })
         .collect();
     let panels = v["panels"]

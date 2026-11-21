@@ -149,7 +149,7 @@
                 <group>[Channel1]</group>
                 <key>rate_temp_up_small</key>
                 <status>0x90</status>
-                <midino>0x0D</midino>
+                <midino>0x0B</midino>
                 <options>
                     <normal/>
                 </options>
@@ -158,7 +158,7 @@
                 <group>[Channel2]</group>
                 <key>rate_temp_up_small</key>
                 <status>0x91</status>
-                <midino>0x0D</midino>
+                <midino>0x0B</midino>
                 <options>
                     <normal/>
                 </options>

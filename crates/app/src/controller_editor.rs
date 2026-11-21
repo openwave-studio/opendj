@@ -498,6 +498,9 @@ impl Editor {
             return;
         };
         let g = app.global::<ControllerEditor>();
+        // A HID mapping is all script: shown, never copied or changed.
+        let hid = base.ends_with(".hid.xml");
+        g.set_hid(hid);
         if is_own_file(base) {
             // One that stands alone: there's no original to go back to.
             let id = base.trim_end_matches(".json");
@@ -528,11 +531,17 @@ impl Editor {
             settings::controller_version(base).filter(|id| self.own.iter().any(|m| &m.id == id));
         let mut items: Vec<SharedString> = vec!["Original mapping".into()];
         items.extend(self.own.iter().map(|m| SharedString::from(m.name.as_str())));
-        self.actions = vec![Action::Duplicate];
+        self.actions = if hid {
+            Vec::new()
+        } else {
+            vec![Action::Duplicate]
+        };
         if self.version.is_some() {
             self.actions.extend([Action::Rename, Action::Delete]);
         }
-        self.actions.push(Action::Import);
+        if !hid {
+            self.actions.push(Action::Import);
+        }
         if self.version.is_some() {
             self.actions.extend([Action::Export, Action::ExportMixxx]);
         }
@@ -1253,6 +1262,7 @@ impl Editor {
             return;
         };
         let b = Binding::of(row);
+        let hid_row = row.keys.first().is_some_and(|k| k.0 == view::HID_STATUS);
         g.set_editing(true);
         g.set_edit_control(
             if row.layer.is_empty() {
@@ -1270,7 +1280,7 @@ impl Editor {
             .is_some_and(|s| !s.is_control() && s.action.is_none());
         g.set_edit_function(
             match (&b.control, script) {
-                _ if row.off => row.function.name.clone(),
+                _ if row.off || hid_row => row.function.name.clone(),
                 (Some(_), _) => row.function.name.clone(),
                 (None, true) => format!("{} (by the script)", row.function.name),
                 (None, false) => "Does nothing".to_string(),
@@ -1345,7 +1355,13 @@ impl Editor {
         g.set_edit_edited(row.edited);
         g.set_edit_enabled(!row.off && first.is_some());
         let mut hint = Vec::new();
-        if row.off {
+        if hid_row {
+            hint.push(
+                "A USB HID controller: its mapping's script does this, and it can't be \
+                 remapped here."
+                    .to_string(),
+            );
+        } else if row.off {
             hint.push(if row.note.is_empty() {
                 "Kept from the import but not working yet.".to_string()
             } else {

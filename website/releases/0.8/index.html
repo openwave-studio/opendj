@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>openDJ 0.8 · Release notes</title>
+  <meta name="description" content="openDJ 0.8: the Mixed Set Editor, a rebuilt Collection Health, Beat FX on every controller, a step sequencer and Room EQ.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0e0d17">
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <meta property="og:title" content="openDJ 0.8 · Release notes">
+  <meta property="og:description" content="openDJ 0.8: the Mixed Set Editor, a rebuilt Collection Health, Beat FX on every controller, a step sequencer and Room EQ.">
+  <meta property="og:image" content="https://opendj.app/assets/og.png">
+  <meta property="og:url" content="https://opendj.app/releases/0.8/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/style.css?v=202611201900">
+  <link rel="stylesheet" href="/home.css?v=202611201900">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/" aria-label="openDJ home">
+      <img src="/assets/logo.svg" alt="" width="32" height="32">
+      <span class="wordmark">openDJ</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="/#features">Features</a>
+      <a href="/#screenshots">Screenshots</a>
+      <a href="/docs/">Docs</a>
+      <a href="/releases/" aria-current="page">Releases</a>
+      <a href="/about/">About</a>
+      <a href="https://github.com/openwave-studio/opendj">GitHub</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="/#download">Download</a>
+  </div>
+</header>
+
+
+
+<main id="main" class="rn-page">
+  <div class="wrap">
+    <header class="rn-hero">
+      <p class="rn-kicker"><span class="soon">Stable</span> Released 18 November 2026 · 0.8.1 on 19 November</p>
+      <h1>openDJ 0.8</h1>
+      <p class="rn-lede">From the booth to the studio. Open a recorded set as a timeline, check it, fix it and export it with chapters. Collection Health is rebuilt, Beat FX work the same on every controller, the instrument deck gets a step sequencer, and Room EQ tunes your outputs to the venue.</p>
+      <p class="rn-cta"><a class="btn btn-primary" href="/#download">Download openDJ 0.8.1</a> <a href="https://github.com/openwave-studio/opendj/releases/tag/v0.8.1">Full release notes on GitHub</a></p>
+      <nav class="rn-toc" aria-label="On this page">
+        <a href="#mixed-set-editor">Mixed Set Editor</a><a href="#health">Collection Health</a><a href="#beat-fx">Beat FX</a><a href="#instruments">Instruments</a><a href="#room-eq">Room EQ</a><a href="#library">Library and DJing</a><a href="#controllers">Controllers</a><a href="#fixed">Fixed in 0.8.1</a>
+      </nav>
+    </header>
+
+    <section class="rn-area rn-wide" id="mixed-set-editor">
+      <div class="rn-text">
+        <h2>Mixed Set Editor</h2>
+        <ul>
+          <li>Right-click a recording or a History session and choose <strong>Open in Mixed Set Editor</strong>: the set as track blocks over its waveform, with a row per deck.</li>
+          <li>Step through every <strong>transition</strong> with its length, style and whether the beats stayed in time.</li>
+          <li><strong>Check my mix</strong> finds clipping, silences, level jumps and drifting beats.</li>
+          <li>Trim, cut, fix levels and set loudness, then <strong>export</strong> a Mixcloud tracklist, YouTube chapters or a cue sheet.</li>
+          <li>Save the transitions you liked as <strong>pair mixes</strong>, so Automix mixes those tracks the same way next time.</li>
+        </ul>
+      </div>
+      <a class="rn-shot" href="/assets/releases/0.8/mixed-set-editor.webp"><img src="/assets/releases/0.8/mixed-set-editor.webp" width="1680" height="1050" loading="lazy" alt="The Mixed Set Editor: a recorded set as track blocks per deck over its waveform, with the Transitions list beside it"></a>
+    </section>
+    <section class="rn-area" id="health">
+      <div class="rn-text">
+        <h2>Collection Health</h2>
+        <ul>
+          <li>One row per check, grouped under Files, Location, Duplicates, Metadata, Prep and Organization.</li>
+          <li>The Overview explains the score: which checks hold it back, and by how much.</li>
+          <li><strong>Duplicates found by sound</strong>, even with different or missing tags, grouped as Sure, Likely or Versions.</li>
+          <li>New <strong>Tags</strong> and <strong>Lists</strong> pages, and <strong>Quarantine</strong> with Bring back.</li>
+        </ul>
+      </div>
+      <a class="rn-shot" href="/assets/home/collection-health.webp"><img src="/assets/home/collection-health.webp" width="2400" height="1328" loading="lazy" alt="Collection Health: one row per check, with the score and what holds it back"></a>
+    </section>
+    <section class="rn-area rn-wide" id="beat-fx">
+      <div class="rn-text">
+        <h2>Beat FX</h2>
+        <ul>
+          <li>Beat FX work the same on every controller, stepping through effects in list order.</li>
+          <li>When an effect changes from a controller, its name glows and a strip shows the effects either side.</li>
+          <li><strong>MST</strong> sends the effect to the main mix. Echoes and rolls go up to 16 beats.</li>
+        </ul>
+      </div>
+      <a class="rn-shot" href="/assets/releases/0.8/beat-fx.webp"><img src="/assets/releases/0.8/beat-fx.webp" width="2000" height="220" loading="lazy" alt="The Beat FX strip: the selected effect glows, with the effects either side"></a>
+    </section>
+    <section class="rn-area" id="instruments">
+      <div class="rn-text">
+        <h2>Instruments</h2>
+        <ul>
+          <li>A redesigned instrument deck: a slim title, preset heart, bigger knobs in the instrument's color, and Scale, Chord and Arp pills.</li>
+          <li>A <strong>step sequencer</strong> with pitch, octave, velocity, gate and chance lanes, four pattern slots, REC from keys and pads, and <strong>Dice</strong> for a new riff.</li>
+          <li><strong>HOLD</strong> for any instrument.</li>
+        </ul>
+      </div>
+      <a class="rn-shot" href="/assets/releases/0.8/step-sequencer.webp"><img src="/assets/releases/0.8/step-sequencer.webp" width="712" height="300" loading="lazy" alt="The instrument deck with the step sequencer: pattern slots A to D and velocity, gate and chance lanes"></a>
+    </section>
+    <section class="rn-area" id="room-eq">
+      <div class="rn-text">
+        <h2>Room EQ</h2>
+        <ul>
+          <li>Six bands on the main and booth outputs, with presets for common rooms.</li>
+          <li>A live spectrum with Before and After. Click a peak to cut it.</li>
+          <li>Bypass and A/B to hear the difference. Recordings are taken before Room EQ.</li>
+        </ul>
+      </div>
+      <a class="rn-shot" href="/assets/releases/0.8/room-eq.webp"><img src="/assets/releases/0.8/room-eq.webp" width="1400" height="900" loading="lazy" alt="Settings, Audio, Room EQ: a six-band curve over the live spectrum"></a>
+    </section>
+    <section class="rn-area" id="library">
+      <div class="rn-text">
+        <h2>Library and DJing</h2>
+        <ul>
+          <li><strong>Played marks</strong>: tracks played in this session are dimmed with a lilac check.</li>
+          <li><strong>TIDAL</strong> catalog search, with a dropdown as you type.</li>
+          <li><strong>Jog wheels</strong> bend like Mixxx mappings, and touching a platter no longer clicks.</li>
+          <li><strong>Karaoke</strong> shows the cover beside the lyrics, full screen.</li>
+          <li>Steadier <strong>tap tempo</strong>, and the MASTER clock shows the time of day.</li>
+        </ul>
+      </div>
+      <a class="rn-shot" href="/assets/releases/0.8/played-marks.webp"><img src="/assets/releases/0.8/played-marks.webp" width="1340" height="300" loading="lazy" alt="A track list where the tracks already played tonight are dimmed with a lilac check"></a>
+    </section>
+    <section class="rn-area rn-noimg" id="controllers">
+      <div class="rn-text">
+        <h2>Controllers</h2>
+        <ul>
+          <li><strong>Pioneer OPUS-QUAD</strong> (Beta).</li>
+          <li><strong>DDJ-FLX10</strong>: jogs scaled for its big platters, pad colors that match the screen, and tempo and key on the jog displays.</li>
+          <li><strong>DDJ-400</strong>: Beat FX, rim sensitivity, Slip release and the SHIFT pad modes work.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="fixed">
+      <div class="rn-text">
+        <h2>Fixed in 0.8.1</h2>
+        <ul>
+          <li><strong>Windows</strong> starts again: 0.8.0 closed before its window opened.</li>
+          <li><strong>High Quality stems</strong> work in the installed app.</li>
+          <li><strong>RGB waveforms</strong> get new colors, true loudness up close, and the real wave at the closest zoom.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-foot">
+      <p>Every change, fix and known limit is in the release notes on GitHub: <a href="https://github.com/openwave-studio/opendj/releases/tag/v0.8.0">0.8.0</a> · <a href="https://github.com/openwave-studio/opendj/releases/tag/v0.8.1">0.8.1</a>.</p>
+      <p>Found a problem? In openDJ, choose <strong>Help › Report a Problem…</strong>: it fills in your version, computer, graphics, audio and controllers. <a href="/releases/">All releases →</a></p>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <a class="brand" href="/"><img src="/assets/logo.svg" alt="" width="28" height="28"><span class="wordmark">openDJ</span></a>
+      <p>Free, open-source DJ software for macOS, Linux and Windows.</p>
+      <p class="made">Built with love in Oakland, CA by DJ Nahuel.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/#download">Download</a>
+      <a href="/releases/">Release notes</a>
+    </div>
+    <div class="footer-col">
+      <h4>Learn</h4>
+      <a href="/docs/">Docs</a>
+      <a href="/tutorials/">Tutorials</a>
+      <a href="https://github.com/openwave-studio/opendj/issues/new/choose">Report a problem</a>
+    </div>
+    <div class="footer-col">
+      <h4>Project</h4>
+      <a href="/about/">About</a>
+      <a href="https://github.com/openwave-studio/opendj">Source code</a>
+      <a href="https://github.com/openwave-studio/opendj/blob/main/LICENSE">Licence (GPL-2.0+)</a>
+      <a href="https://github.com/openwave-studio/opendj#building-from-source">Build from source</a>
+      <a href="https://buymeacoffee.com/opendj">Buy me a coffee</a>
+    </div>
+  </div>
+  <div class="wrap fine">
+    <p>openDJ is not affiliated with or endorsed by the Mixxx project. Ableton Link is a trademark of Ableton AG. Other names are trademarks of their owners.</p>
+  </div>
+</footer>
+
+</body>
+</html>
