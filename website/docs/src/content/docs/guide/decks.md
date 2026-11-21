@@ -25,8 +25,9 @@ In 2-Deck each deck runs, from the outer edge in:
   shows the tempo %, the BPM, and the time played and left. Pick how it
   and the tempo fader look under **Settings › Appearance › Style**:
   **Classic**, **Modern** or **Tron**.
-  **SLIP** sits in its top right corner (see
-  [Slip, bend and censor](#slip-bend-and-censor)).
+  Right-click it for **Vinyl** and **Slip** (see
+  [Slip, bend and censor](#slip-bend-and-censor)); while Slip is on, its
+  word shows in the jog's top right corner.
 
 Above them, the deck's header shows the cover, title and artist, the time
 left and the key, with the overview waveform of the whole
@@ -246,9 +247,9 @@ to a track deck, drop a track on it.
 
 ## Slip, bend and censor
 
-**SLIP** keeps the track in time while you play with it. Click the word
-SLIP in the jog's top right corner (2-Deck only): it turns lilac
-when on and light grey when off. While it's on,
+**SLIP** keeps the track in time while you play with it. Right-click the
+jog and switch **Slip** on (2-Deck only): the word Slip then shows in lilac
+in the jog's top right corner; click it to switch Slip off. While it's on,
 scratching, a loop, a hot cue held down, reverse or a pause takes the sound
 away, but a silent playhead carries on, drawn as a dashed lilac line on the
 waveforms. When the trick ends (you let go of the jog or the pad, end the

@@ -277,6 +277,32 @@ export component GridMenu inherits PopupWindow {
 // The jog: a black platter with the progress ring on its rim,
 // a colored sticker that turns with the record, and a grey centre with the
 // rate, tempo, and elapsed and remaining time.
+// A switch row in the jog's right-click panel.
+component JogMenuSwitch inherits Rectangle {
+    in property <string> group;
+    in property <string> key;
+    in property <string> text;
+    in property <string> detail;
+    property <int> index: Controls.resolve(group, key);
+    property <bool> on: Controls.value(index, Controls.tick) > 0;
+    height: 40px;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 4px;
+        spacing: 8px;
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Text { text: root.text; color: on ? Theme.lilac-text : Theme.text; font-size: 12px; font-weight: 500; }
+            Text { text: root.detail; color: Theme.text-dim; font-size: 10px; }
+        }
+        VerticalLayout {
+            alignment: center;
+            Switch { on: root.on; toggled(v) => { Controls.set-value(root.index, v ? 1 : 0); } }
+        }
+    }
+}
+
 export component Jog inherits Rectangle {
     in property <string> group;
     in property <DeckInfo> info;
@@ -306,6 +332,10 @@ export component Jog inherits Rectangle {
     rim := TouchArea {
         mouse-cursor: bending ? MouseCursor.grabbing : MouseCursor.default;
         pointer-event(e) => {
+            if e.button == PointerEventButton.right && e.kind == PointerEventKind.down && !plain {
+                jog-menu.show();
+                return;
+            }
             if e.button != PointerEventButton.left && e.kind != PointerEventKind.cancel {
                 return;
             }
@@ -471,6 +501,11 @@ export component Jog inherits Rectangle {
         vertical-alignment: center;
         bta := TouchArea {
             mouse-cursor: info.loaded ? pointer : default;
+            pointer-event(e) => {
+                if e.button == PointerEventButton.right && e.kind == PointerEventKind.down {
+                    jog-menu.show();
+                }
+            }
             clicked => {
                 if info.loaded {
                     grid-menu.show();
@@ -487,6 +522,18 @@ export component Jog inherits Rectangle {
         background: tint;
     }
     grid-menu := GridMenu { group: group; info: info; x: (parent.width - 240px) / 2; y: parent.height / 2; }
+    // Right-click: how the jog behaves.
+    jog-menu := PopupWindow {
+        x: (parent.width - 190px) / 2;
+        y: parent.height / 2;
+        width: 190px;
+        close-policy: close-on-click-outside;
+        TitledList {
+            title: "Jog";
+            JogMenuSwitch { group: group; key: "vinyl_mode"; text: "Vinyl"; detail: "The top holds the track"; }
+            JogMenuSwitch { group: group; key: "slip_enabled"; text: "Slip"; detail: "Tricks keep the track in time"; }
+        }
+    }
     // Elapsed over remaining, right-aligned to each other so the digits
     // line up, and centred in the jog as one block.
     if !plain: VerticalLayout {
@@ -3514,22 +3561,15 @@ component JogSection inherits VerticalLayout {
             width: min(parent.width, parent.height);
             height: self.width;
         }
-        JogPill {
-            group: group;
-            key: "vinyl_mode";
-            text: "Vinyl";
-            tip-title: "Vinyl";
-            tip-body: "On: the top of the jog holds the track, as on a turntable.\nOff: the jog only bends the tempo.";
-            tip-right-aligned: mirrored;
-            x: 0px;
-            y: 0px;
-        }
-        JogPill {
+        // Vinyl and Slip are in the jog's right-click panel; while Slip is
+        // on, its word stays in the corner (blinking while the track is held
+        // elsewhere).
+        if Controls.value(Controls.resolve(group, "slip_enabled"), Controls.tick) > 0: JogPill {
             group: group;
             key: "slip_enabled";
             text: "Slip";
             tip-title: "Slip";
-            tip-body: "Scratch, loop, hold a hot cue, reverse or pause,\nthen carry on as if the track had played on.";
+            tip-body: "Scratch, loop, hold a hot cue, reverse or pause,\nthen carry on as if the track had played on.\nRight-click the jog for Vinyl and Slip.";
             tip-right-aligned: mirrored;
             x: parent.width - self.width;
             y: 0px;
@@ -3543,12 +3583,6 @@ component JogSection inherits VerticalLayout {
 // The bar along the bottom of a deck: Play and CUE, then the loop: its
 // length, IN and OUT. Deck A's runs the other way, so Play and CUE sit
 // under the jog on the mixer side.
-// A light grey hairline between PLAY/CUE and the loop controls.
-component BarRule inherits Rectangle {
-    width: 9px;
-    Rectangle { width: 1px; height: parent.height; background: Theme.n-48484c; }
-}
-
 component DeckBar inherits Rectangle {
     in property <string> group;
     in property <DeckInfo> info;
@@ -3560,20 +3594,24 @@ component DeckBar inherits Rectangle {
         padding-bottom: 5px;
         spacing: 6px;
         if mirrored: Transport { group: group; tint: tint; }
-        if mirrored: BarRule { }
+        if mirrored: Rectangle { width: 6px; }
         // The loop controls centred in the rest: length, LOOP, then IN/OUT.
         HorizontalLayout {
             horizontal-stretch: 1;
             alignment: center;
-            spacing: 6px;
-            LoopStepper { group: group; info: info; width: 104px; }
+            spacing: 14px;
+            // Both sides of LOOP the same width, so it sits in the middle.
+            LoopStepper { group: group; info: info; width: 110px; }
             SectionTitle { title: "Loop"; font-size: 12px; }
             // A loop of any length: IN on the nearest beat lights grey while the
             // waveform marks the loop out; OUT closes it, and it turns lilac.
+            HorizontalLayout {
+            spacing: 6px;
             ControlButton { group: group; key: "loop_in"; light-key: "loop_in_pending"; text: "IN"; momentary: true; tint: Theme.n-d1d1d6; font-size: 11px; width: 52px; tour-id: group + ",loop_in"; }
             ControlButton { group: group; key: "loop_out"; light-key: "loop_enabled"; text: "OUT"; momentary: true; tint: Theme.lilac; font-size: 11px; width: 52px; tour-id: group + ",loop_out"; }
+            }
         }
-        if !mirrored: BarRule { }
+        if !mirrored: Rectangle { width: 6px; }
         if !mirrored: Transport { group: group; tint: tint; }
     }
 }
@@ -7855,11 +7893,11 @@ export component Deck inherits Rectangle {
                         vertical-stretch: 1;
                         spacing: 0px;
                         if mirrored: JogSection { group: group; info: info; tint: tint; spin: spin; mirrored: true; transport: false; }
-                        if mirrored: VDivider { }
+                        if mirrored: Rectangle { width: 12px; }
                         // 2-Deck always shows the pads (PADS is for 2-Deck Basic and
                         // 4-Deck).
                         Pads { deck: deck; group: group; info: info; horizontal-stretch: 1; }
-                        if !mirrored: VDivider { }
+                        if !mirrored: Rectangle { width: 12px; }
                         if !mirrored: JogSection { group: group; info: info; tint: tint; spin: spin; transport: false; }
                     }
                     DeckBar { group: group; info: info; tint: tint; mirrored: mirrored; }

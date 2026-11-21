@@ -6,6 +6,7 @@
 import { Theme } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
+import { WaveLook } from "wave_look.slint";
 
 export global Controls {
     in property <int> tick;
@@ -773,6 +774,8 @@ export component Crossfader inherits Rectangle {
         vertical: false;
         center-mark: true;
         ticks: 9;
+        // Classic, Modern or Tron (Settings › Appearance › Style).
+        look: WaveLook.jog;
         disabled: !on && !automix;
         locked: automix;
         context-menu(x, y) => {

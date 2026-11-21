@@ -6,6 +6,7 @@ import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { Caption, Controls, ControlButton, ControlFader, ControlKnob, Crossfader, CueHeadphones, StereoMeter, VuMeter } from "controls.slint";
 import { EffectList } from "deck.slint";
+import { WaveLook } from "wave_look.slint";
 import { ListRow, PillCaret, SwitchPill, TitledList } from "pills.slint";
 
 // One output route in the settings table.
@@ -530,7 +531,7 @@ component Channel inherits VerticalLayout {
     HorizontalLayout {
         alignment: center;
         vertical-stretch: 1;
-        ControlFader { group: group; key: "volume"; tint: tint; ticks: 11; width: 36px; tour-id: group + ",volume"; }
+        ControlFader { group: group; key: "volume"; tint: tint; ticks: 11; width: 36px; look: WaveLook.jog; tour-id: group + ",volume"; }
     }
     HorizontalLayout { alignment: center; CueHeadphones { group: group; tint: tint; tour-id: group + ",pfl"; } }
 }
