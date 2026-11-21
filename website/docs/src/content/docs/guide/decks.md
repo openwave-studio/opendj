@@ -12,10 +12,10 @@ doesn't pass file drops to openDJ yet.)
 
 In 2-Deck each deck runs, from the outer edge in:
 
-- **The tempo column**, as in djay Pro: **SYNC** on top, the BPM, the
-  tempo % (click it for the [tempo panel](#tempo-panel-and-range)), the
-  tempo fader, and **−** and **+** under it for small steps. The triangle
-  beside the fader puts the tempo back to the track's own. A lilac line
+- **The tempo column**: the tempo % on top (click it for the
+  [tempo panel](#tempo-panel-and-range), with fine steps), the tempo
+  fader, and **SYNC** at the bottom, in line with **PLAY** and **CUE**. The
+  0 notch beside the fader glides the tempo back to the track's own. A lilac line
   down the fader means [key lock](#keys) is on; right-click the fader to
   switch it.
 - **The pads**, with their tabs on top (see [Pads](pads.md)).
@@ -315,7 +315,7 @@ raw range control.
 
 ## Sync and quantize
 
-**SYNC** sits over the tempo fader. It stays on while it's lit: the deck
+**SYNC** sits under the tempo fader. It stays on while it's lit: the deck
 follows the **master** deck's tempo and keeps its beats in step, at half or
 double tempo when that's closer. Press it again to let go. **Shift-click**
 SYNC to match the tempo and beat once, without staying synced, as SYNC does

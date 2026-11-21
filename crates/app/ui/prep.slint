@@ -52,10 +52,12 @@ export global PrepUi {
 
 // A small caption over a group of buttons.
 component PrepLabel inherits Text {
-    color: Theme.label;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
+    // A section title, as the kit's: condensed capitals.
+    font-family: Theme.title-font;
+    color: Theme.section-title;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
     vertical-alignment: center;
 }
 
@@ -160,7 +162,7 @@ component PrepTransport inherits VerticalLayout {
         PressButton { group: group; key: "loop_out"; text: "OUT"; width: 44px; }
         Rectangle { width: 6px; }
         VerticalLayout { alignment: center; CueHeadphones { group: group; tint: tint; } }
-        ControlKnob { group: group; key: "volume"; size: 28px; }
+        ControlKnob { group: group; key: "volume"; size: 28px; look: 4; readout: 1; arc-color: Theme.accent; }
     }
 }
 
@@ -181,10 +183,11 @@ component PrepPad inherits Rectangle {
     property <float> secs: mod(seconds, 60);
     property <int> tenths: floor(mod(seconds * 10, 10));
     property <string> time: minutes + ":" + (secs < 10 ? "0" : "") + floor(secs) + "." + tenths;
-    border-radius: Theme.radius;
+    // A rounded tile, as the decks' pads.
+    border-radius: 7px;
     background: set ? (touch.pressed ? tint.darker(0.3) : tint) : touch.pressed ? Theme.control-pressed : touch.has-hover ? Theme.n-1d1d20 : Theme.control;
     border-width: set ? 0px : 1px;
-    border-color: Theme.border;
+    border-color: touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
     VerticalLayout {
         padding: 7px;
         HorizontalLayout {
@@ -227,10 +230,10 @@ component ZoomButton inherits Rectangle {
     in property <string> text;
     callback clicked();
     width: 28px;
-    border-radius: Theme.radius;
+    border-radius: 7px;
     border-width: 1px;
-    border-color: Theme.border;
-    background: zt.pressed ? Theme.control-pressed : Theme.control;
+    border-color: zt.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    background: zt.pressed ? Theme.control-pressed : zt.has-hover ? Theme.pill-hover : Theme.pill;
     Text { text: root.text; color: Theme.text; font-size: 15px; }
     zt := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }

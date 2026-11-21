@@ -536,10 +536,10 @@ component InputSection inherits VerticalLayout {
         }
         HorizontalLayout {
             alignment: space-around;
-            Knob { group: group; key: "pregain"; label: "GAIN"; size: 22px; }
-            Knob { group: eq; key: "parameter3"; label: "HIGH"; size: 22px; }
-            Knob { group: eq; key: "parameter2"; label: "MID"; size: 22px; }
-            Knob { group: eq; key: "parameter1"; label: "LOW"; size: 22px; }
+            Knob { group: group; key: "pregain"; label: "Gain"; size: 22px; look: 4; readout: 1; arc-color: Theme.accent; }
+            Knob { group: eq; key: "parameter3"; label: "High"; size: 22px; look: 4; readout: 1; arc-color: Theme.band-high; }
+            Knob { group: eq; key: "parameter2"; label: "Mid"; size: 22px; look: 4; readout: 1; arc-color: Theme.band-mid; }
+            Knob { group: eq; key: "parameter1"; label: "Low"; size: 22px; look: 4; readout: 1; arc-color: Theme.band-low; }
         }
     }
 }

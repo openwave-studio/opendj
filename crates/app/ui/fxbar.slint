@@ -422,7 +422,7 @@ component FxControls inherits HorizontalLayout {
     padding-right: with-name ? 6px : 10px;
     spacing: with-name ? 5px : 8px;
     if with-name: VerticalLayout { alignment: center; FxPower { fx: root.fx; size: 22px; } }
-    if with-name: EffectPicker { fx: fx; title: root.title; tint: tint; font-size: 13px; centred: false; min-width: 64px; preferred-width: 110px; horizontal-stretch: 0; }
+    if with-name: VerticalLayout { alignment: center; horizontal-stretch: 0; NamePill { fx: root.fx; title: root.title; tint: root.tint; height: 24px; horizontal-stretch: 0; min-width: 96px; preferred-width: 124px; } }
     // A plugin's own window, for its presets and every setting: lit while
     // it is open.
     if plugin: ControlButton {

@@ -2032,7 +2032,7 @@ export component FxSlot inherits HorizontalLayout {
         }
     }
     Rectangle { width: 6px; }
-    ControlKnob { group: fx; key: "meta"; size: 22px; }
+    ControlKnob { group: fx; key: "meta"; size: 22px; look: 4; arc-color: Theme.accent; }
     Rectangle { width: 6px; }
     // The effect's length, halved and doubled from 1/16 to 4 beats; blank
     // for effects that have none. Just wide enough for "‹ 1/16 ›", leaving
@@ -3240,7 +3240,7 @@ export component TempoRangeRow inherits Rectangle {
     }
 }
 
-// The tempo % with ▾ (2-Deck under the BPM, 2-Deck Basic beside SYNC).
+// The tempo % in a small value pill (2-Deck under SYNC, 2-Deck Basic beside it).
 // A click opens the tempo panel: a short tempo slider with fine − and +,
 // key lock, quantize, reset and the fader's range. It opens towards the
 // middle of the screen.
@@ -3251,12 +3251,20 @@ export component TempoPanelMenu inherits Rectangle {
     // Deck B: the panel opens leftwards.
     in property <bool> mirrored;
     property <int> rate-index: Controls.resolve(group, "rate");
-    height: 14px;
-    HorizontalLayout {
+    // A small value pill, as the kit's: the tempo % and its caret.
+    height: 18px;
+    min-width: rate-row.preferred-width;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    rate-row := HorizontalLayout {
         alignment: center;
-        spacing: 3px;
+        padding-left: 6px;
+        padding-right: 6px;
+        spacing: 4px;
         Text { text: info.rate; color: ta.has-hover ? Theme.text : Theme.text-dim; font-size: 10px; font-family: "Inter Tabular"; vertical-alignment: center; }
-        TempoChevron { hover: ta.has-hover; y: (parent.height - self.height) / 2; }
+        VerticalLayout { alignment: center; PillCaret { } }
     }
     ta := TouchArea { mouse-cursor: pointer; clicked => { panel.show(); } }
     panel := PopupWindow {
@@ -3331,11 +3339,9 @@ component Pitch inherits VerticalLayout {
     // The BPM is on the jog.
     width: 72px;
     spacing: 3px;
-    SyncButton { group: group; tint: tint; font-size: 13px; height: 26px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
-    VerticalLayout {
-        spacing: 1px;
-        TempoPanelMenu { group: group; info: info; tint: tint; mirrored: mirrored; }
-    }
+    // The tempo % on top; SYNC at the bottom, in line with the deck's bar
+    // (Play, CUE and the loop) and as tall.
+    HorizontalLayout { alignment: center; TempoPanelMenu { group: group; info: info; tint: tint; mirrored: mirrored; } }
     Rectangle {
         vertical-stretch: 1;
         // The handle's half at each end reaches into the gaps above and
@@ -3363,13 +3369,8 @@ component Pitch inherits VerticalLayout {
             notch: true;
         }
     }
-    // The fine − and + under the fader.
-    HorizontalLayout {
-        alignment: space-around;
-        height: 16px;
-        TempoStep { group: group; key: "rate_perm_down_small"; text: "−"; tint: tint; height: 16px; }
-        TempoStep { group: group; key: "rate_perm_up_small"; text: "+"; tint: tint; height: 16px; }
-    }
+    Rectangle { height: 5px; }
+    SyncButton { group: group; tint: tint; font-size: 13px; height: 32px; menu-right-aligned: mirrored; tour-id: group + ",sync_enabled"; }
 }
 
 // Play and pause in one button showing ▶: outlined and drawn in green
@@ -3724,7 +3725,7 @@ component GrooveDice inherits GrooveButton {
             HorizontalLayout {
                 padding: 4px;
                 spacing: 8px;
-                ControlKnob { group: g; key: "vary"; label: "VARY"; size: 26px; }
+                ControlKnob { group: g; key: "vary"; label: "Vary"; size: 26px; look: 4; arc-color: Theme.accent; }
                 Text { text: "Lets the groove change by itself:\nweak hits drop out, ghost notes\ncome in, hits waver in loudness."; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; }
             }
             Rectangle { height: 1px; background: Theme.border; }
@@ -4053,7 +4054,7 @@ component GrooveTempo inherits Rectangle {
             HorizontalLayout {
                 spacing: 6px;
                 alignment: start;
-                ControlKnob { group: g; key: "swing"; label: "SWING"; size: 24px; }
+                ControlKnob { group: g; key: "swing"; label: "Swing"; size: 24px; look: 4; arc-color: Theme.accent; }
                 Text { text: "Every second 16th plays late,\nfor a shuffle."; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; }
             }
         }
@@ -4108,15 +4109,15 @@ component GrooveVoice inherits VerticalLayout {
     }
     HorizontalLayout {
         alignment: center;
-        ControlKnob { group: groove-group; key: rk + "_pitch"; label: "PITCH"; size: 26px; bipolar: true; tint: tint; }
+        ControlKnob { group: groove-group; key: rk + "_pitch"; label: "Pitch"; size: 26px; bipolar: true; tint: tint; look: 4; arc-color: tint; }
     }
     HorizontalLayout {
         alignment: center;
-        ControlKnob { group: groove-group; key: rk + "_decay"; label: "DECAY"; size: 26px; tint: tint; }
+        ControlKnob { group: groove-group; key: rk + "_decay"; label: "Decay"; size: 26px; tint: tint; look: 4; arc-color: tint; }
     }
     HorizontalLayout {
         alignment: center;
-        ControlKnob { group: groove-group; key: rk + "_tone"; label: "TONE"; size: 26px; bipolar: true; tint: tint; }
+        ControlKnob { group: groove-group; key: rk + "_tone"; label: "Tone"; size: 26px; bipolar: true; tint: tint; look: 4; arc-color: tint; }
     }
     // The kick only: KEY tunes it to the playing track's root or fifth.
     if row-index == 0: GrooveKickKey { groove-group: groove-group; tint: tint; }
@@ -4152,13 +4153,13 @@ component GrooveStrip inherits VerticalLayout {
     }
     HorizontalLayout {
         alignment: center;
-        ControlKnob { group: groove-group; key: rk + "_pan"; label: "PAN"; size: 22px; bipolar: true; tint: tint; }
+        ControlKnob { group: groove-group; key: rk + "_pan"; label: "Pan"; size: 22px; bipolar: true; tint: tint; look: 4; arc-color: tint; }
     }
     HorizontalLayout {
         vertical-stretch: 1;
         alignment: center;
         spacing: 4px;
-        ControlFader { group: groove-group; key: rk + "_level"; tint: tint; width: 24px; ticks: 7; }
+        ControlFader { group: groove-group; key: rk + "_level"; tint: tint; width: 24px; ticks: 7; look: 1; }
         // The track's meter.
         Rectangle {
             width: 5px;
@@ -5987,8 +5988,8 @@ component MixerStrip inherits Rectangle {
                         vertical-alignment: center;
                     }
                 }
-                HorizontalLayout { alignment: center; ControlKnob { group: group; key: "pregain"; label: "TRIM"; size: 18px; } }
-                HorizontalLayout { alignment: center; ControlKnob { group: group; key: "pan"; label: "PAN"; size: 18px; bipolar: true; } }
+                HorizontalLayout { alignment: center; ControlKnob { group: group; key: "pregain"; label: "Trim"; size: 18px; look: 4; arc-color: Theme.accent; } }
+                HorizontalLayout { alignment: center; ControlKnob { group: group; key: "pan"; label: "Pan"; size: 18px; bipolar: true; look: 4; arc-color: Theme.accent; } }
                 ControlButton { group: group; key: "fx"; text: "FX"; tint: Theme.accent; height: 18px; font-size: 9px; pill: true; }
                 Rectangle { vertical-stretch: 1; }
                 StripOn { group: group; number: info.number; badge: info.badge; on-key: info.on-key; height: column; }
@@ -7491,8 +7492,8 @@ component LivePanel inherits Rectangle {
         VerticalLayout {
             alignment: center;
             spacing: 4px;
-            ControlKnob { group: group; key: "live_trim"; label: "TRIM"; size: 28px; }
-            ControlKnob { group: group; key: "live_pan"; label: "PAN"; size: 28px; bipolar: true; }
+            ControlKnob { group: group; key: "live_trim"; label: "Trim"; size: 28px; look: 4; arc-color: Theme.accent; }
+            ControlKnob { group: group; key: "live_pan"; label: "Pan"; size: 28px; bipolar: true; look: 4; arc-color: Theme.accent; }
         }
         if live == 3: InstrumentKnobs { tint: tint; page <=> InstrumentsUi.knob-page; }
         if live == 3 && !titled: VerticalLayout {
@@ -7754,11 +7755,11 @@ export component LiveStrip inherits Rectangle {
             }
             VerticalLayout {
                 alignment: center;
-                ControlKnob { group: group; key: "live_trim"; label: "TRIM"; size: 28px; }
+                ControlKnob { group: group; key: "live_trim"; label: "Trim"; size: 28px; look: 4; arc-color: Theme.accent; }
             }
             if live != 3: VerticalLayout {
                 alignment: center;
-                ControlKnob { group: group; key: "live_pan"; label: "PAN"; size: 28px; bipolar: true; }
+                ControlKnob { group: group; key: "live_pan"; label: "Pan"; size: 28px; bipolar: true; look: 4; arc-color: Theme.accent; }
             }
         }
     }

@@ -7312,21 +7312,42 @@ component SidePanel inherits Rectangle {
                 // that mix follow, from the pool picked here.
                 if KeepGoingUi.player: HorizontalLayout {
                     spacing: 6px;
-                    SmallButton {
-                        text: "Keep going";
-                        lit: KeepGoingUi.on;
+                    SwitchPill {
+                        text: "Keep Going";
+                        on: KeepGoingUi.on;
                         clicked => { KeepGoingUi.set-on(!KeepGoingUi.on); }
                     }
-                    Dropdown {
-                        horizontal-stretch: 1;
-                        label: "FROM";
-                        text: KeepGoingUi.pool;
-                        current: -1;
-                        choices: KeepGoingUi.list-name != ""
-                            ? [{ text: "Everything", value: 0 }, { text: KeepGoingUi.list-name, value: 1 }]
-                            : [{ text: "Everything", value: 0 }];
-                        picked(i) => { KeepGoingUi.pick-pool(i); }
+                    Rectangle { width: 4px; }
+                    Text { text: "From"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
+                    // Where its tracks come from: everything, or the open list.
+                    ValuePill {
+                        open: false;
+                        clicked => { pool-menu.show(); }
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 9px;
+                            spacing: 6px;
+                            Text { text: KeepGoingUi.pool; color: Theme.lilac-text; font-size: 12px; font-weight: 500; vertical-alignment: center; overflow: elide; }
+                            VerticalLayout { alignment: center; PillCaret { } }
+                        }
+                        pool-menu := PopupWindow {
+                            y: parent.height + 4px;
+                            width: 180px;
+                            close-policy: close-on-click-outside;
+                            TitledList {
+                                title: "From";
+                                for name[i] in (KeepGoingUi.list-name != "" ? ["Everything", KeepGoingUi.list-name] : ["Everything"]): ListRow {
+                                    selected: name == KeepGoingUi.pool;
+                                    clicked => {
+                                        KeepGoingUi.pick-pool(i);
+                                        pool-menu.close();
+                                    }
+                                    Text { x: 10px; text: name; color: name == KeepGoingUi.pool ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                                }
+                            }
+                        }
                     }
+                    Rectangle { horizontal-stretch: 1; }
                 }
             }
             if tab == 0 && KeepGoingUi.player && UpNextUi.now-loaded: HorizontalLayout {
