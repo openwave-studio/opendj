@@ -11,7 +11,7 @@ import { Theme } from "theme.slint";
 import { ControlButton, ControlFader, Controls, Crossfader, CueHeadphones, StereoMeter, SyncButton } from "controls.slint";
 import { DeckInfo, Header, LiveStrip, LoopStepper, Pads, PadsUi, PlayButton, TempoRangeRow } from "deck.slint";
 import { AudioSettings, Knob, ModeMenu, SideKnob } from "mixer.slint";
-import { PillCaret, PowerButton, SectionTitle, SwitchPill } from "pills.slint";
+import { PillCaret, SectionTitle, SwitchPill } from "pills.slint";
 
 // Which side of the crossfader a deck is on, as Mixxx's `orientation`:
 // 0 left, 1 thru (not faded), 2 right. Click to pick, as in djay.
@@ -268,7 +268,7 @@ component DeckBarSection inherits Rectangle {
 }
 
 // 4-Deck: the bar under the strips, decks 3, 1 | the crossfader | 2, 4,
-// the middle as wide as the Beat FX under it. The power button beside the
+// the middle as wide as the Beat FX under it. A right-click on the
 // crossfader switches it off and on.
 export component FourDeckBar inherits Rectangle {
     in property <[DeckInfo]> decks;
@@ -287,17 +287,10 @@ export component FourDeckBar inherits Rectangle {
             if external: Text { text: "EXTERNAL MIXER"; color: Theme.text-dim; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
             if !external: HorizontalLayout {
                 padding-left: 14px;
-                padding-right: 10px;
+                padding-right: 14px;
                 spacing: 10px;
+                // A right-click switches it off and on.
                 VerticalLayout { alignment: center; horizontal-stretch: 1; Crossfader { } }
-                // Switches the crossfader on and off (off: every deck plays
-                // at full level, whatever its side).
-                PowerButton {
-                    size: 22px;
-                    y: (parent.height - self.height) / 2;
-                    on: root.on;
-                    clicked => { Controls.toggle(enabled-index); }
-                }
             }
         }
         DeckBarSection { deck: 1; info: decks[1]; }

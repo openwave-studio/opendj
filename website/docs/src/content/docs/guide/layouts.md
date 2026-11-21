@@ -209,9 +209,9 @@ everywhere.
 
 ## Crossfader assignment
 
-In 4-Deck, each deck says which side of the crossfader it is on: **LEFT**,
-**RIGHT** or **THRU** (not affected by the crossfader). Decks 1 and 3 start on
-the left, 2 and 4 on the right. Click the label to change it.
+In 4-Deck, each deck says which side of the crossfader it is on: **Left**,
+**Right** or **Thru** (not affected by the crossfader). Decks 1 and 3 start on
+the left, 2 and 4 on the right. Click the pill to step to the next side.
 
 ## Decks 3 and 4 on a two-deck controller
 
