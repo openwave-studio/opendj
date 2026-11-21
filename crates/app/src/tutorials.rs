@@ -330,10 +330,9 @@ pub const USING_FX: Lesson = Lesson {
             action: None,
         },
         Step {
-            target: "[QuickEffectRack1_[Channel1]],loaded_chain_preset",
+            target: "[QuickEffectRack1_[Channel1]],super1",
             title: "Pick a Color FX",
-            body: "The small ▾ beside deck A's filter knob picks what the knob plays. Pick \
-                   Space.",
+            body: "Right-click deck A's filter knob to pick what the knob plays. Pick Space.",
             wait: Wait::Above(CFX_A, "loaded_chain_preset", 1.5),
             action: None,
         },

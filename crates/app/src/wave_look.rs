@@ -55,6 +55,13 @@ pub const SHAPE_LABELS: [&str; 2] = ["Full", "Half"];
 /// and Left.
 pub const NEEDLE_AT: [f32; 2] = [0.5, 0.25];
 
+/// How the decks' jog wheels and tempo faders are drawn (Settings ›
+/// Appearance › Style).
+pub const JOG_KEY: &str = "deck_style";
+pub const JOG_LABELS: [&str; 3] = ["Classic", "Modern", "Tron"];
+/// Modern (the thin tracks and matte caps of the mixer's knobs) to start.
+const JOG_DEFAULT: u32 = 1;
+
 static COLOR: AtomicU32 = AtomicU32::new(0);
 static PALETTE: AtomicU32 = AtomicU32::new(0);
 static HALF: AtomicU32 = AtomicU32::new(0);
@@ -63,6 +70,7 @@ static VERSION: AtomicU32 = AtomicU32::new(1);
 static GAIN: AtomicU32 = AtomicU32::new(1);
 static VOCALS: AtomicU32 = AtomicU32::new(VOCALS_LYRICS);
 static TEMPO_LABELS: AtomicU32 = AtomicU32::new(1);
+static JOG: AtomicU32 = AtomicU32::new(JOG_DEFAULT);
 
 /// Reads the saved choices; called once at start.
 pub fn load() {
@@ -72,6 +80,11 @@ pub fn load() {
     PALETTE.store(read(PALETTE_KEY, PALETTE_LABELS.len()), Ordering::Relaxed);
     HALF.store(read(HALF_KEY, SHAPE_LABELS.len()), Ordering::Relaxed);
     NEEDLE.store(read(NEEDLE_KEY, NEEDLE_AT.len()), Ordering::Relaxed);
+    JOG.store(
+        (settings::number(JOG_KEY, JOG_DEFAULT as f64).max(0.0) as usize).min(JOG_LABELS.len() - 1)
+            as u32,
+        Ordering::Relaxed,
+    );
     GAIN.store(settings::flag(GAIN_KEY, true) as u32, Ordering::Relaxed);
     VOCALS.store(saved_vocals(), Ordering::Relaxed);
     TEMPO_LABELS.store(
@@ -268,6 +281,20 @@ fn show(ui: &crate::WaveLook) {
     ui.set_half(half());
     ui.set_needle(needle());
     ui.set_vocals(vocals() as i32);
+    ui.set_jog(jog() as i32);
+}
+
+/// Picks the style in Settings › Appearance.
+pub fn choose_jog(app: &crate::AppWindow, index: usize) {
+    use slint::ComponentHandle;
+    pick(&JOG, JOG_KEY, index, JOG_LABELS.len());
+    app.global::<crate::WaveLook>().set_jog(jog() as i32);
+    app.window().request_redraw();
+}
+
+/// Which of [`JOG_LABELS`] the jog wheels and tempo faders are drawn in.
+pub fn jog() -> usize {
+    JOG.load(Ordering::Relaxed) as usize
 }
 
 /// Changes whenever a choice does.

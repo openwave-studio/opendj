@@ -1584,6 +1584,18 @@ impl Prefs {
                     )
                 }]);
                 items.extend([PrefItem {
+                    choices: strings(&crate::wave_look::JOG_LABELS),
+                    chosen: crate::wave_look::jog() as i32,
+                    ..item(
+                        crate::wave_look::JOG_KEY,
+                        SEGMENTED,
+                        "Style",
+                        "How the decks' jog wheels and tempo faders look: Classic, \
+                         Modern (thin tracks and matte caps, like the mixer's knobs) \
+                         or Tron (lit segments).",
+                    )
+                }]);
+                items.extend([PrefItem {
                     choices: strings(&crate::ui_scale::LABELS),
                     chosen: crate::ui_scale::step() as i32,
                     ..item(
@@ -3075,6 +3087,11 @@ impl Prefs {
             crate::appearance::KEY => {
                 if let Some(app) = self.app.upgrade() {
                     crate::appearance::choose(&app, index);
+                }
+            }
+            crate::wave_look::JOG_KEY => {
+                if let Some(app) = self.app.upgrade() {
+                    crate::wave_look::choose_jog(&app, index);
                 }
             }
             crate::list_text::KEY => {

@@ -6,7 +6,7 @@
 // TIME and COLOR shape the scenes' echoes and filters.
 import { Theme } from "theme.slint";
 import { ControlKnob, Controls, KnobArc } from "controls.slint";
-import { ListRow, PillCaret, TitledList, ValuePill } from "pills.slint";
+import { ListRow, PillCaret, SectionTitle, TitledList, ValuePill } from "pills.slint";
 
 // The engine's names for what the Remix controls pick, by their values
 // (set from opendj_engine::remix).
@@ -34,13 +34,16 @@ component Segment inherits Rectangle {
     width: label.preferred-width + 16px;
     height: 22px;
     border-radius: 6px;
-    background: picked ? Theme.accent : ta.has-hover ? Theme.n-2a2a2e : transparent;
+    // The Tron look: the one set in lilac (text and a faint fill), the
+    // others dim.
+    background: picked ? Theme.lit-fill : ta.has-hover ? Theme.pill-hover : transparent;
+    border-width: picked ? 1px : 0px;
+    border-color: Theme.n-6e58a8;
     label := Text {
         text: root.text;
-        color: root.picked ? Theme.on-selection : Theme.text-dim;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
+        color: root.picked ? Theme.lilac-text : Theme.pill-off-text;
+        font-size: 11.5px;
+        font-weight: 500;
         horizontal-alignment: center;
         vertical-alignment: center;
     }
@@ -64,13 +67,13 @@ component Segments inherits Rectangle {
     }
 }
 
-// SEND or INSERT.
+// Send or Insert.
 export component RemixMode inherits Segments {
     in property <string> group;
     property <int> index: Controls.resolve(group, "mode");
     property <bool> insert: Controls.value(index, Controls.tick) > 0.5;
-    Segment { text: "SEND"; picked: !root.insert; clicked => { Controls.set-value(root.index, 0); } }
-    Segment { text: "INSERT"; picked: root.insert; clicked => { Controls.set-value(root.index, 1); } }
+    Segment { text: "Send"; picked: !root.insert; clicked => { Controls.set-value(root.index, 0); } }
+    Segment { text: "Insert"; picked: root.insert; clicked => { Controls.set-value(root.index, 1); } }
 }
 
 // What the Remix deck plays: another deck, the mic or an aux input, in a
@@ -270,16 +273,15 @@ component BandLane inherits VerticalLayout {
             key: "isolate_" + root.key;
             size: 40px;
             bipolar: true;
-            look: 3;
+            look: 4;
             arc-color: root.isolate >= 0 ? root.tint : root.insert ? Theme.danger : Theme.n-58585d;
         }
     }
     Text {
-        text: root.key.to-uppercase();
+        text: root.band == 0 ? "Low" : root.band == 1 ? "Mid" : "High";
         color: root.tint;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.8px;
+        font-size: 11px;
+        font-weight: 500;
         horizontal-alignment: center;
     }
     Rectangle { height: 2px; }
@@ -359,12 +361,14 @@ component XPad inherits VerticalLayout {
             x: i * strip.width / max(1, root.count);
             width: strip.width / max(1, root.count);
             border-radius: 5px;
-            background: root.rate == i + 1 ? Theme.accent : transparent;
+            background: root.rate == i + 1 ? Theme.lit-fill : transparent;
+            border-width: root.rate == i + 1 ? 1px : 0px;
+            border-color: Theme.n-6e58a8;
             Text {
                 text: name;
-                color: root.rate == i + 1 ? Theme.on-selection : Theme.text-dim;
-                font-size: 10px;
-                font-weight: 700;
+                color: root.rate == i + 1 ? Theme.lilac-text : Theme.pill-off-text;
+                font-size: 10.5px;
+                font-weight: 500;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -396,15 +400,14 @@ component XPad inherits VerticalLayout {
             height: 26px;
             horizontal-stretch: 1;
             border-radius: 6px;
-            background: pad.down ? Theme.accent : hit.has-hover ? Theme.pill-hover : Theme.pill;
+            background: pad.down ? Theme.lit-fill-hover : hit.has-hover ? Theme.pill-hover : Theme.pill;
             border-width: 1px;
-            border-color: pad.down ? Theme.accent : Theme.n-2c2c31;
+            border-color: pad.down ? Theme.n-6e58a8 : hit.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
             Text {
-                text: name.to-uppercase();
-                color: pad.down ? Theme.on-selection : Theme.text;
-                font-size: 10.5px;
-                font-weight: 700;
-                letter-spacing: 0.8px;
+                text: name;
+                color: pad.down ? Theme.lilac-text : Theme.text;
+                font-size: 11.5px;
+                font-weight: 500;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -545,10 +548,11 @@ component SceneWheel inherits Rectangle {
         spacing: 2px;
         Text {
             text: root.building ? "BUILD UP" : root.breaking ? "BREAK DOWN" : "SCENE";
-            color: Theme.text-dim;
-            font-size: root.font * 0.9;
-            font-weight: 700;
-            letter-spacing: 1px;
+            color: Theme.section-title;
+            font-family: Theme.title-font;
+            font-size: root.font;
+            font-weight: 500;
+            letter-spacing: 0.4px;
             horizontal-alignment: center;
         }
         Text {
@@ -603,12 +607,9 @@ component SceneWheel inherits Rectangle {
     }
 }
 
-// A small capital title over a control, as in TIME, COLOR and KIT.
-component BlockTitle inherits Text {
-    color: Theme.text-dim;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
+// A section title over a control, as in TIME, COLOR and KIT: the shared
+// condensed capitals.
+component BlockTitle inherits SectionTitle {
     horizontal-alignment: center;
 }
 
@@ -618,7 +619,7 @@ component SceneTime inherits VerticalLayout {
     property <int> time-index: Controls.resolve(group, "scene_time");
     property <int> time: round(2 * Controls.value(time-index, Controls.tick));
     spacing: 4px;
-    BlockTitle { text: "TIME"; }
+    BlockTitle { title: "Time"; }
     HorizontalLayout {
         alignment: center;
         Segments {
@@ -637,10 +638,10 @@ component SceneColor inherits VerticalLayout {
     property <float> color: Controls.value(Controls.resolve(group, "scene_color"), Controls.tick);
     alignment: center;
     spacing: 4px;
-    BlockTitle { text: "COLOR"; }
+    BlockTitle { title: "Color"; }
     HorizontalLayout {
         alignment: center;
-        ControlKnob { group: root.group; key: "scene_color"; size: 32px; bipolar: true; look: 3; arc-color: Theme.accent; }
+        ControlKnob { group: root.group; key: "scene_color"; size: 32px; bipolar: true; look: 4; arc-color: Theme.accent; }
     }
     Text {
         text: (root.color > 0.505 ? "+" : "") + round((root.color - 0.5) * 200);
@@ -695,7 +696,7 @@ export component RemixPanel inherits Rectangle {
                 height: root.band;
                 alignment: start;
                 spacing: 4px;
-                BlockTitle { text: "KIT"; }
+                BlockTitle { title: "Kit"; }
                 HorizontalLayout {
                     alignment: center;
                     RemixEffectPill { label: ""; title: "Kit"; group: root.group; key: "pad_bank"; names: RemixUi.kits; }

@@ -183,7 +183,7 @@ export component DeckStrip inherits Rectangle {
                     if !external: HorizontalLayout {
                         spacing: 4px;
                         horizontal-stretch: 4;
-                        for place in 4: SideKnob { deck: deck; place: [2, 1, 0, 3][place]; size: 32px; cfx-arrow-left: false; horizontal-stretch: 1; min-width: 40px; }
+                        for place in 4: SideKnob { deck: deck; place: [2, 1, 0, 3][place]; size: 32px; cfx-menu-left: false; horizontal-stretch: 1; min-width: 40px; }
                     }
                     if !external: ControlFader { group: group; key: "volume"; tint: tint; ticks: 5; width: 40px; }
                     VerticalLayout {

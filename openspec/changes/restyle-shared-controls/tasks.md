@@ -8,12 +8,12 @@
 ## 2. Instrument decks
 
 - [x] 2.1 Groove Box header: power, page pills, Kit and Pattern steppers, Scene / Playback / Generation sections, tempo arc knob, Fills switch pill
-- [ ] 2.2 Looper and synth decks on the same frame
+- [x] 2.2 Looper and synth decks on the same frame
 
 ## 3. Decks
 
 - [x] 3.1 Deck controls: Sync, Key lock, Master, Vinyl and Slip switch pills; pad mode stepper; square pads; Loop section without on/off; Key stepper; tempo range value pill
-- [ ] 3.2 Pad pages: each page's setting in the stepper row, pad text layout
+- [x] 3.2 Pad pages: each page's setting in the stepper row, pad text layout
 
 ## 4. Mixer and menus
 

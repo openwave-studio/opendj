@@ -274,7 +274,21 @@ export component ControlKnob inherits Rectangle {
         MoveTo { x: 50 + from-r * sin(value-angle); y: 50 - from-r * cos(value-angle); }
         LineTo { x: 50 + to-r * sin(value-angle); y: 50 - to-r * cos(value-angle); }
     }
-    if hardware >= 0: PickupDot {
+    // On the thin track, where the controller's knob is: a short lilac notch
+    // on the track, gone once the knob picks the control up.
+    if thin && hardware >= 0: KnobArc {
+        x: 4px;
+        y: 3px;
+        width: size;
+        height: size;
+        r: 45;
+        from: -135deg + hardware * 270deg - 7deg;
+        to: -135deg + hardware * 270deg + 7deg;
+        stroke: root.tint == Theme.text ? Theme.accent : root.tint;
+        stroke-width: max(3px, size / 9);
+        stroke-line-cap: butt;
+    }
+    if !thin && hardware >= 0: PickupDot {
         x: cap.x;
         y: cap.y;
         width: cap.width;
@@ -282,7 +296,9 @@ export component ControlKnob inherits Rectangle {
         at: hardware;
         tint: root.tint == Theme.text ? Theme.accent : root.tint;
     }
-    if bipolar && origin == 0.5: Rectangle {
+    // The centre mark above the knob; the thin track's arc already grows
+    // from the centre.
+    if bipolar && origin == 0.5 && !thin: Rectangle {
         x: 4px + size / 2 - 1px;
         y: 0px;
         width: 2px;
@@ -528,6 +544,11 @@ export component ControlFader inherits Rectangle {
     // fader); unlike `locked` it still moves by hand.
     in property <bool> glowing: false;
     in property <color> glow: Theme.lilac;
+    // 0 the usual slot, ticks and cap. For the tempo faders' Modern and
+    // Tron styles (Settings › Appearance › Style): 1 a thin track lit lilac
+    // from the centre to a matte cap; 2 a ladder of segments lit lilac
+    // from the centre to a white bar.
+    in property <int> look: 0;
     // A right-click, at that point along the fader.
     callback context-menu(length, length);
     property <int> index: Controls.resolve(group, key);
@@ -548,6 +569,7 @@ export component ControlFader inherits Rectangle {
     opacity: disabled ? 0.35 : 1;
 
     // Tick marks
+    if look == 0: Rectangle {
     for i in ticks: Rectangle {
         property <length> along: handle / 2 + travel * i / (ticks - 1);
         property <bool> major: i == 0 || i == ticks - 1 || (center-mark && i * 2 == ticks - 1);
@@ -558,8 +580,9 @@ export component ControlFader inherits Rectangle {
         height: vertical ? 1px : (major ? root.height : root.height * 0.6);
         background: major ? Theme.n-55555a.with-alpha(0.8) : Theme.tick.with-alpha(0.6);
     }
+    }
     // Slot
-    Rectangle {
+    if look == 0: Rectangle {
         x: vertical ? (parent.width - 3px) / 2 : handle / 2;
         y: vertical ? handle / 2 : (parent.height - 3px) / 2;
         width: vertical ? 3px : travel;
@@ -582,6 +605,43 @@ export component ControlFader inherits Rectangle {
         border-radius: 2px;
         background: Theme.automix;
     }
+    // Modern: the thin track, lit from the centre (or the bottom) to the cap.
+    if look == 1: Rectangle {
+        x: vertical ? (parent.width - 3px) / 2 : handle / 2;
+        y: vertical ? handle / 2 : (parent.height - 3px) / 2;
+        width: vertical ? 3px : travel;
+        height: vertical ? travel : 3px;
+        border-radius: 1.5px;
+        background: glowing && !locked ? glow.with-alpha(0.45) : Theme.n-3a3a3f;
+    }
+    if look == 1: Rectangle {
+        property <float> from: center-mark ? 0.5 : 0;
+        property <float> lo: min(from, pos);
+        property <float> hi: max(from, pos);
+        x: vertical ? (parent.width - 4px) / 2 : handle / 2 + lo * travel;
+        y: vertical ? handle / 2 + (1 - hi) * travel : (parent.height - 4px) / 2;
+        width: vertical ? 4px : (hi - lo) * travel;
+        height: vertical ? (hi - lo) * travel : 4px;
+        border-radius: 2px;
+        background: locked ? Theme.automix : Theme.accent;
+    }
+    // Tron: segments, lit from the centre (or the bottom) to the bar.
+    if look == 2: Rectangle {
+        property <int> count: max(9, floor(travel / 7px));
+        for i in count: Rectangle {
+            property <float> at: i / (count - 1);
+            property <float> from: center-mark ? 0.5 : 0;
+            property <bool> lit: at >= min(from, pos) - 0.001 && at <= max(from, pos) + 0.001;
+            property <bool> middle: center-mark && abs(at - 0.5) < 0.5 / (count - 1);
+            property <length> span: (vertical ? root.width : root.height) * (middle ? 0.8 : 0.6);
+            x: vertical ? (root.width - span) / 2 : handle / 2 + at * travel - 1.5px;
+            y: vertical ? handle / 2 + (1 - at) * travel - 1.5px : (root.height - span) / 2;
+            width: vertical ? span : 3px;
+            height: vertical ? 3px : span;
+            border-radius: 1.5px;
+            background: lit ? (locked ? Theme.automix : Theme.accent) : glowing && !locked ? glow.with-alpha(0.3) : Theme.n-2c2c31;
+        }
+    }
     // The controller's fader, under the handle.
     if hardware >= 0: PickupGhost {
         x: vertical ? 2px : hardware-pos * travel;
@@ -592,7 +652,7 @@ export component ControlFader inherits Rectangle {
         towards: vertical ? (hardware-pos < pos ? 0 : 1) : (hardware-pos < pos ? 3 : 2);
     }
     // Handle
-    Rectangle {
+    if look == 0: Rectangle {
         x: vertical ? 2px : pos * travel;
         y: vertical ? (1 - pos) * travel : 2px;
         width: vertical ? parent.width - 4px : handle;
@@ -612,6 +672,35 @@ export component ControlFader inherits Rectangle {
             border-radius: 1px;
             background: Theme.lilac-text;
         }
+    }
+    if look == 1: Rectangle {
+        x: vertical ? (parent.width - self.width) / 2 : pos * travel;
+        y: vertical ? (1 - pos) * travel : (parent.height - self.height) / 2;
+        width: vertical ? min(parent.width - 4px, 40px) : handle;
+        height: vertical ? handle : min(parent.height - 4px, 40px);
+        border-radius: min(self.width, self.height) / 2;
+        background: @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%);
+        border-width: locked ? 1px : 0px;
+        border-color: Theme.automix;
+        drop-shadow-blur: 4px;
+        drop-shadow-offset-y: 1px;
+        drop-shadow-color: Theme.s-000000b0;
+        Rectangle {
+            width: vertical ? parent.width - 14px : 2px;
+            height: vertical ? 2px : parent.height - 14px;
+            border-radius: 1px;
+            background: touch.has-hover || touch.pressed ? Theme.lilac-text : Theme.n-e4e4e8;
+        }
+    }
+    if look == 2: Rectangle {
+        x: vertical ? (parent.width - self.width) / 2 : pos * travel + handle / 2 - 3px;
+        y: vertical ? (1 - pos) * travel + handle / 2 - 3px : (parent.height - self.height) / 2;
+        width: vertical ? parent.width - 4px : 6px;
+        height: vertical ? 6px : parent.height - 4px;
+        border-radius: 3px;
+        background: locked ? Theme.automix : touch.has-hover || touch.pressed ? Theme.lilac-text : Theme.n-ffffff;
+        drop-shadow-blur: 6px;
+        drop-shadow-color: Theme.accent.with-alpha(0.5);
     }
     touch := TouchArea {
         mouse-cursor: locked ? MouseCursor.not-allowed : MouseCursor.default;
@@ -734,7 +823,7 @@ export component Crossfader inherits Rectangle {
 }
 
 // Segmented level meter: green, then yellow, then red at the top.
-// Headphone cue (PFL) as a bare headphone icon: grey when off, green when on.
+// Headphone cue (PFL) as a bare headphone icon: grey when off, lilac when on.
 export component CueHeadphones inherits Rectangle {
     // Names it for the guided tour (see TourMark).
     in property <string> tour-id;
@@ -744,16 +833,10 @@ export component CueHeadphones inherits Rectangle {
     property <int> index: Controls.resolve(group, "pfl");
     property <bool> lit: Controls.value(index, Controls.tick) > 0;
     property <color> icon-color: lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.text-dim;
-    // A round button under the fader, glowing lilac while cueing.
+    // Just the icon under the fader, no rim or fill: lilac while cueing.
     width: 26px;
     height: 26px;
-    border-radius: self.height / 2;
-    border-width: 1.5px;
-    border-color: lit ? Theme.accent : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
-    background: lit ? (touch.has-hover ? Theme.lit-fill-hover : Theme.lit-fill) : touch.pressed ? Theme.control-pressed : Theme.pill;
-    drop-shadow-blur: lit ? Theme.glow-blur : 0px;
-    drop-shadow-color: Theme.glow;
-    HeadphoneIcon { size: 14px; tint: icon-color; }
+    HeadphoneIcon { size: 18px; tint: icon-color; }
     touch := TouchArea {
         mouse-cursor: pointer;
         clicked => { Controls.set-value(index, lit ? 0 : 1); }
@@ -835,6 +918,9 @@ export component PitchReset inherits Rectangle {
     in property <string> group;
     in property <color> tint: Theme.accent;
     in property <bool> points-left: false;
+    // The Modern and Tron styles: a short line at the fader's centre
+    // instead of the triangle; it works the same.
+    in property <bool> notch: false;
     property <int> index: Controls.resolve(group, "rate_reset");
     property <int> rate-index: Controls.resolve(group, "rate");
     property <bool> lit: Controls.value(index, Controls.tick) > 0;
@@ -843,7 +929,14 @@ export component PitchReset inherits Rectangle {
     property <bool> armed;
     width: 12px;
     height: 16px;
-    Path {
+    if notch: Rectangle {
+        x: points-left ? parent.width - self.width - 1px : 1px;
+        width: 8px;
+        height: 2px;
+        border-radius: 1px;
+        background: lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.n-6e6e73;
+    }
+    if !notch: Path {
         width: 8px;
         height: 10px;
         viewbox-width: 8;

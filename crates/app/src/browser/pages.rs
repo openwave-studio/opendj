@@ -393,7 +393,7 @@ impl Browser {
                     artist: t.artist.clone().into(),
                     length: short_time(t.duration),
                     bpm: if t.bpm > 0.0 {
-                        format!("{:.0}", t.bpm).into()
+                        format!("{:.1}", t.bpm).into()
                     } else {
                         SharedString::new()
                     },

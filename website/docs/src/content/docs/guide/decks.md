@@ -21,13 +21,15 @@ In 2-Deck each deck runs, from the outer edge in:
 - **The pads**, with their tabs on top (see [Pads](pads.md)).
 - **The LOOP column** (see [Looping](looping.md)).
 - **The jog wheel**, with **CUE** and **PLAY** under it, next to the mixer.
-  Drag round its black rim to bend the tempo, scroll over it to nudge, and
-  hold **«** or **»** in its lower corners to bend slower or faster.
+  Drag round its rim to bend the tempo, and scroll over it to nudge. It
+  shows the tempo %, the BPM, and the time played and left. Pick how it
+  and the tempo fader look under **Settings › Appearance › Style**:
+  **Classic**, **Modern** or **Tron**.
   **SLIP** sits in its top right corner (see
   [Slip, bend and censor](#slip-bend-and-censor)).
 
 Above them, the deck's header shows the cover, title and artist, the time
-left and the track's tempo and key, with the overview waveform of the whole
+left and the key, with the overview waveform of the whole
 track. Click the overview to jump; dragging it moves without playing what it
 passes.
 
@@ -275,8 +277,7 @@ button still switches it for its deck.
 
 **Pitch bend** nudges a deck's beat into line by ear: it plays a little
 faster or slower while you bend and springs back when you stop. Turn a
-controller's jog rim, drag round the on-screen jog's rim, or hold **«** or
-**»** beside the jog (2%, or 4% with Shift). On the keyboard, hold
+controller's jog rim, or drag round the on-screen jog's rim. On the keyboard, hold
 <kbd>W</kbd> or <kbd>E</kbd> to bend deck 1 slower or faster, and <kbd>U</kbd>
 or <kbd>I</kbd> for deck 2. <kbd>←</kbd> and <kbd>→</kbd> bend the deck you
 started last, the one you're mixing in, while the browser doesn't have the
@@ -380,7 +381,7 @@ the headphone **CUE** buttons and the crossfader.
 The menu over the meters picks what the four knobs do:
 
 - **EQ**: high, mid and low, and the [Color FX](fx.md#color-fx) filter knob,
-  with a small **▾** beside it to pick the Color FX.
+  which you right-click to pick the Color FX.
 - **STEMS**: the level of each [stem](stems.md).
 - **SCULPT**: a low-pass, a sculpt band with its frequency and cut or boost,
   and a high-pass, after PlayDifferently's Model 1.

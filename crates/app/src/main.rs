@@ -2551,7 +2551,7 @@ impl Decks {
             cover: Default::default(),
             has_cover: false,
             bpm: if t.bpm > 0.0 {
-                format!("{:.2}", h.bpm.get())
+                format!("{:.1}", h.bpm.get())
             } else {
                 "--".into()
             }

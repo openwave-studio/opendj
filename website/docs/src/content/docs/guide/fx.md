@@ -135,8 +135,8 @@ The controller’s **BEAT FX** section controls the Beat FX under the mixer:
 
 ## Color FX
 
-Each channel's filter knob plays a **Color FX**. The small **▾** beside the
-knob picks which. Each deck keeps its own. The knob does nothing in the
+Each channel's filter knob plays a **Color FX**. Right-click the knob to pick
+which. Each deck keeps its own. The knob does nothing in the
 middle and more the further you turn it either way.
 
 - **Filter**: a low-pass to the left, a high-pass to the right.

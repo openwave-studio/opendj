@@ -16,7 +16,7 @@ import { PageView, PageUi } from "pages.slint";
 import { FilterBar, FilterUi, SuggestionList } from "filters.slint";
 import { CrateIcon, CrateColors } from "crate_icon.slint";
 import { TourMark } from "tourmark.slint";
-import { ListRow, PowerButton, StepperPill, SwitchPill, TitledList } from "pills.slint";
+import { ListRow, PillCaret, PowerButton, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
 
 export struct Folder {
     name: string,
@@ -6861,6 +6861,8 @@ component SidePanel inherits Rectangle {
         // Intro over outro: from the outgoing outro, as long as the incoming intro.
         { text: "Intro over outro", value: 6 },
     ];
+    // The mix styles, in the Style menu.
+    property <[string]> style-names: ["Smooth", "Bass swap", "Filter", "Cut"];
     in property <int> automix-length;
     in property <int> automix-style;
     // Played tracks go back to the end of the list instead of leaving it.
@@ -7236,16 +7238,16 @@ component SidePanel inherits Rectangle {
                     spacing: 6px;
                     Text { text: "Length"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
                     Rectangle {
-                      width: 112px;
+                      width: 150px;
                       StepperPill {
-                        width: 112px;
+                        width: 150px;
                         prev-enabled: automix-length > 0;
                         next-enabled: automix-length < 6;
                         prev => { automix-set-length(automix-length - 1); }
                         next => { automix-set-length(automix-length + 1); }
                         Text {
                             horizontal-stretch: 1;
-                            text: ["0 s", "12 s", "15 s", "30 s", "16 bars", "32 bars", "Phrases"][automix-length];
+                            text: ["0 s", "12 s", "15 s", "30 s", "16 bars", "32 bars", "Intro over outro"][automix-length];
                             color: len-ta.has-hover ? Theme.n-ffffff : Theme.text;
                             font-size: 12px;
                             font-weight: 500;
@@ -7258,10 +7260,17 @@ component SidePanel inherits Rectangle {
                     }
                     Rectangle { width: 4px; }
                     Text { text: "Style"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
-                    // Four styles: a press steps to the next.
-                    SwitchPill {
-                        text: ["Smooth", "Bass swap", "Filter", "Cut"][automix-style];
-                        clicked => { automix-set-style(mod(automix-style + 1, 4)); }
+                    // Opens the list of styles.
+                    ValuePill {
+                        open: false;
+                        clicked => { style-menu.show(); }
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 9px;
+                            spacing: 6px;
+                            Text { text: root.style-names[automix-style]; color: Theme.lilac-text; font-size: 12px; font-weight: 500; vertical-alignment: center; }
+                            VerticalLayout { alignment: center; PillCaret { } }
+                        }
                         TourMark { id: "ui,automix_style"; }
                     }
                     Rectangle { horizontal-stretch: 1; }
@@ -7397,6 +7406,24 @@ component SidePanel inherits Rectangle {
                         color: Theme.text-dim;
                         font-size: 11px;
                         wrap: word-wrap;
+                    }
+                }
+            }
+            // The mix styles.
+            style-menu := PopupWindow {
+                x: 214px;
+                y: 64px;
+                width: 160px;
+                close-policy: close-on-click-outside;
+                TitledList {
+                    title: "Style";
+                    for name[i] in root.style-names: ListRow {
+                        selected: i == automix-style;
+                        clicked => {
+                            automix-set-style(i);
+                            style-menu.close();
+                        }
+                        Text { x: 10px; text: name; color: i == automix-style ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
                     }
                 }
             }

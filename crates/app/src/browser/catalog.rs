@@ -149,7 +149,7 @@ fn track_rows(tracks: Vec<(StreamTrack, String)>) -> Vec<Row> {
             detail.push_str(&format!(" · {}:{:02}", secs / 60, secs % 60));
         }
         if t.bpm > 0.0 {
-            detail.push_str(&format!(" · {:.0} BPM", t.bpm));
+            detail.push_str(&format!(" · {:.1} BPM", t.bpm));
         }
         if !t.key.is_empty() {
             detail.push_str(" · ");
