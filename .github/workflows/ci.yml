@@ -96,9 +96,16 @@ jobs:
       # large generated module): its binary and tests one at a time, so the
       # runner doesn't run out of memory.
       - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
+      - run: cargo test --workspace --exclude opendj
+      # Compiling the app's tests takes about 13.5 GB on its own (rust-cache
+      # turns incremental builds off). Built inside the workspace run, other
+      # crates' tests compiled next to it and the runner swapped until it was
+      # lost ("The hosted runner lost communication with the server"). The
+      # app's test binary is the last thing this step builds, so it compiles
+      # alone.
       # Includes the check that website/docs/supported-controls.txt matches
       # `opendj --list-controls` (control_list_tests in crates/app).
-      - run: cargo test --workspace
+      - run: cargo test -p opendj
 
   windows:
     if: github.event_name != 'pull_request' && github.event_name != 'merge_group'
@@ -142,7 +149,10 @@ jobs:
       # large generated module): its binary and tests one at a time, so the
       # runner doesn't run out of memory.
       - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
-      - run: cargo test --workspace
+      # The app's tests on their own, as on Linux, so nothing else compiles
+      # next to them.
+      - run: cargo test --workspace --exclude opendj
+      - run: cargo test -p opendj
 
   dependencies:
     # Known vulnerabilities in dependencies, and licences that can't ship in a
