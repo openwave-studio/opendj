@@ -1,0 +1,14 @@
+// The four automatic deck helpers under each deck's key (B, K, S, P),
+// kept in Settings › Decks; the app shows them and takes the toggles.
+export global DeckAuto {
+    // Match tempo on load.
+    in property <bool> bpm;
+    // Match key on load.
+    in property <bool> key;
+    // Sync on play.
+    in property <bool> sync;
+    // Key lock on at start.
+    in property <bool> pitch;
+    // A letter pressed: its setting's id and its new state.
+    callback toggle(id: string, on: bool);
+}

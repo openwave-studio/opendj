@@ -17,10 +17,6 @@ export global WaveLook {
     in property <int> phrases: 3;
     // BPM labels on the large waveforms where the tempo changes.
     in property <bool> tempo-labels: true;
-    // The decks' style (Settings › Appearance › Style), for the jog wheels
-    // and tempo faders: 0 Classic (a black platter), 1 Modern (thin tracks
-    // and matte caps, as on the mixer's knobs), 2 Tron (lit segments).
-    in property <int> jog: 1;
     callback pick-color(index: int);
     callback pick-palette(index: int);
     callback pick-half(half: bool);

@@ -264,6 +264,8 @@ struct Deck {
     eject_edge: Edge,
     sync_edge: Edge,
     was_synced: bool,
+    /// Playing when sync last looked, so `sync_on_play` sees PLAY pressed.
+    played_for_sync: bool,
     /// Followed a synced leader last buffer.
     following: bool,
     /// While following a sync leader: the speed that matches it, which may
@@ -1950,6 +1952,7 @@ impl Engine {
             eject_edge: Edge::default(),
             sync_edge: Edge::default(),
             was_synced: false,
+            played_for_sync: false,
             following: false,
             sync_speed: None,
             sync_bend: 0.0,
@@ -2314,6 +2317,9 @@ impl Engine {
                         let range = d.c.rate_range.get() * d.rate_dir();
                         d.c.rate.set((speed - 1.0) / range);
                     }
+                    if held_bpm.is_none() {
+                        self.match_bpm_on_load(deck, &track);
+                    }
                     self.match_key_on_load(deck, &track);
                     // The headphones follow the deck the DJ just loaded, as
                     // VirtualDJ's pflOnSelect does. The cue never reaches
@@ -2597,7 +2603,10 @@ impl Engine {
             let d = &mut self.decks[i];
             d.was_synced = synced[i];
             let was_following = std::mem::replace(&mut d.following, following);
-            let once = d.sync_edge.pressed(&d.c.beatsync);
+            let playing = d.c.play.get_bool();
+            let started = playing && !std::mem::replace(&mut d.played_for_sync, playing);
+            let once = d.sync_edge.pressed(&d.c.beatsync)
+                || (started && !synced[i] && self.master.sync_on_play.get_bool());
             // Set again below while following.
             d.sync_speed = None;
             d.sync_bend = 0.0;
@@ -2778,8 +2787,34 @@ impl Engine {
             .or_else(|| (0..NUM_DECKS).find(|&k| candidate(k)));
     }
 
-    /// The deck `deck` syncs to: the leader, or else a playing deck, or
-    /// else any deck with a track.
+    /// BPM matching on load (`bpm_match_on_load`): a track loaded while
+    /// another deck plays takes that deck's tempo, or half or double it,
+    /// whichever is nearest its own. Its beats aren't lined up: PLAY (with
+    /// sync on play) or SYNC does that.
+    fn match_bpm_on_load(&mut self, deck: usize, track: &Track) {
+        if !self.master.bpm_match_on_load.get_bool() || track.bpm <= 0.0 {
+            return;
+        }
+        let Some(o) = self
+            .sync_target(deck)
+            .filter(|&o| self.decks[o].c.play.get_bool())
+        else {
+            return;
+        };
+        let theirs = self.decks[o].effective_bpm();
+        if theirs <= 0.0 {
+            return;
+        }
+        let d = &self.decks[deck];
+        if d.c.rate.is_locked() {
+            return;
+        }
+        let own = track.bpm_at(track.first_beat);
+        let speed = theirs * sync_ratio(theirs, own) / own;
+        let range = d.c.rate_range.get() * d.rate_dir();
+        d.c.rate.set(((speed - 1.0) / range).clamp(-1.0, 1.0));
+    }
+
     /// Key matching on load: a track loaded while another deck plays is
     /// shifted by up to `key_match_on_load` semitones so its key mixes with
     /// that deck's, with key lock on so the tempo fader doesn't move it
@@ -2813,6 +2848,8 @@ impl Engine {
         }
     }
 
+    /// The deck `deck` syncs to: the leader, or else a playing deck, or
+    /// else any deck with a track.
     fn sync_target(&self, deck: usize) -> Option<usize> {
         let has_bpm = |d: &Deck| d.track.as_ref().is_some_and(|t| t.bpm > 0.0);
         self.sync_leader

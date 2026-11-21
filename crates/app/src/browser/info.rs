@@ -1847,7 +1847,7 @@ mod tests {
             "no file"
         );
         let line = |label: &str| f.iter().find(|f| f.label == label).unwrap();
-        assert_eq!(line("BPM").value, "100");
+        assert_eq!(line("BPM").value, "100.0");
         assert_eq!(line("GAIN").value, "-1.5 dB");
         assert_eq!(line("PLAYS").value, "3");
     }

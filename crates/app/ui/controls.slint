@@ -6,7 +6,6 @@
 import { Theme } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
-import { WaveLook } from "wave_look.slint";
 
 export global Controls {
     in property <int> tick;
@@ -545,10 +544,9 @@ export component ControlFader inherits Rectangle {
     // fader); unlike `locked` it still moves by hand.
     in property <bool> glowing: false;
     in property <color> glow: Theme.lilac;
-    // 0 the usual slot, ticks and cap. For the tempo faders' Modern and
-    // Tron styles (Settings › Appearance › Style): 1 a thin track lit lilac
-    // from the centre to a matte cap; 2 a ladder of segments lit lilac
-    // from the centre to a white bar.
+    // 0 the usual slot, ticks and cap; 1 a thin track lit lilac from the
+    // centre (or the bottom) to a matte cap, as on the mixer's knobs (the
+    // tempo, channel and cross faders).
     in property <int> look: 0;
     // A right-click, at that point along the fader.
     callback context-menu(length, length);
@@ -626,25 +624,18 @@ export component ControlFader inherits Rectangle {
         border-radius: 2px;
         background: locked ? Theme.automix : Theme.accent;
     }
-    // Tron: segments, lit from the centre (or the bottom) to the bar.
-    if look == 2: Rectangle {
-        property <int> count: max(9, floor(travel / 7px));
-        for i in count: Rectangle {
-            property <float> at: i / (count - 1);
-            property <float> from: center-mark ? 0.5 : 0;
-            property <bool> lit: at >= min(from, pos) - 0.001 && at <= max(from, pos) + 0.001;
-            property <bool> middle: center-mark && abs(at - 0.5) < 0.5 / (count - 1);
-            property <length> span: (vertical ? root.width : root.height) * (middle ? 0.8 : 0.6);
-            x: vertical ? (root.width - span) / 2 : handle / 2 + at * travel - 1.5px;
-            y: vertical ? handle / 2 + (1 - at) * travel - 1.5px : (root.height - span) / 2;
-            width: vertical ? span : 3px;
-            height: vertical ? 3px : span;
-            border-radius: 1.5px;
-            background: lit ? (locked ? Theme.automix : Theme.accent) : glowing && !locked ? glow.with-alpha(0.3) : Theme.n-2c2c31;
-        }
+    // The controller's fader on the thin track: a short notch across it
+    // in the deck color, gone once the fader picks the control up.
+    if hardware >= 0 && look == 1: Rectangle {
+        x: vertical ? (parent.width - self.width) / 2 : handle / 2 + hardware-pos * travel - 2px;
+        y: vertical ? handle / 2 + (1 - hardware-pos) * travel - 2px : (parent.height - self.height) / 2;
+        width: vertical ? min(parent.width - 8px, 22px) : 4px;
+        height: vertical ? 4px : min(parent.height - 8px, 22px);
+        border-radius: 2px;
+        background: root.tint;
     }
     // The controller's fader, under the handle.
-    if hardware >= 0: PickupGhost {
+    if hardware >= 0 && look == 0: PickupGhost {
         x: vertical ? 2px : hardware-pos * travel;
         y: vertical ? (1 - hardware-pos) * travel : 2px;
         width: vertical ? root.width - 4px : handle;
@@ -692,16 +683,6 @@ export component ControlFader inherits Rectangle {
             border-radius: 1px;
             background: touch.has-hover || touch.pressed ? Theme.lilac-text : Theme.n-e4e4e8;
         }
-    }
-    if look == 2: Rectangle {
-        x: vertical ? (parent.width - self.width) / 2 : pos * travel + handle / 2 - 3px;
-        y: vertical ? (1 - pos) * travel + handle / 2 - 3px : (parent.height - self.height) / 2;
-        width: vertical ? parent.width - 4px : 6px;
-        height: vertical ? 6px : parent.height - 4px;
-        border-radius: 3px;
-        background: locked ? Theme.automix : touch.has-hover || touch.pressed ? Theme.lilac-text : Theme.n-ffffff;
-        drop-shadow-blur: 6px;
-        drop-shadow-color: Theme.accent.with-alpha(0.5);
     }
     touch := TouchArea {
         mouse-cursor: locked ? MouseCursor.not-allowed : MouseCursor.default;
@@ -774,8 +755,7 @@ export component Crossfader inherits Rectangle {
         vertical: false;
         center-mark: true;
         ticks: 9;
-        // Classic, Modern or Tron (Settings › Appearance › Style).
-        look: WaveLook.jog;
+        look: 1;
         disabled: !on && !automix;
         locked: automix;
         context-menu(x, y) => {
@@ -921,8 +901,8 @@ export component PitchReset inherits Rectangle {
     in property <string> group;
     in property <color> tint: Theme.accent;
     in property <bool> points-left: false;
-    // The Modern and Tron styles: a short line at the fader's centre
-    // instead of the triangle; it works the same.
+    // A short line at the fader's centre instead of the triangle (the
+    // thin-track tempo faders); it works the same.
     in property <bool> notch: false;
     property <int> index: Controls.resolve(group, "rate_reset");
     property <int> rate-index: Controls.resolve(group, "rate");
@@ -1092,13 +1072,15 @@ export component SyncButton inherits Rectangle {
 export component MasterBadge inherits Rectangle {
     in property <string> group;
     in property <length> font-size: 10px;
+    // Just "M", in a square (the row of letters under a deck's key).
+    in property <bool> letter: false;
     property <int> index: Controls.resolve(group, "sync_leader");
     property <float> state: Controls.value(index, Controls.tick);
     property <bool> leading: state > 0.5;
     property <bool> pinned: state > 1.5;
     property <bool> tip-mine;
     height: 18px;
-    preferred-width: label.preferred-width + (root.font-size >= 10px ? 12px : 10px);
+    preferred-width: letter ? root.height : label.preferred-width + (root.font-size >= 10px ? 12px : 10px);
     // A switch pill: lilac while this deck leads, with a lilac fill too
     // while it is pinned there.
     border-radius: min(7px, self.height / 2);
@@ -1106,10 +1088,10 @@ export component MasterBadge inherits Rectangle {
     border-color: leading ? Theme.n-6e58a8 : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
     background: pinned ? Theme.accent.with-alpha(0.28) : leading ? Theme.accent.with-alpha(0.12) : Theme.pill;
     label := Text {
-        text: "Master";
+        text: letter ? "M" : "Master";
+        font-weight: letter ? 600 : 500;
         color: leading ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.pill-off-text;
         font-size: root.font-size + 1px;
-        font-weight: 500;
         horizontal-alignment: center;
         vertical-alignment: center;
     }

@@ -22,9 +22,7 @@ In 2-Deck each deck runs, from the outer edge in:
 - **The LOOP column** (see [Looping](looping.md)).
 - **The jog wheel**, with **CUE** and **PLAY** under it, next to the mixer.
   Drag round its rim to bend the tempo, and scroll over it to nudge. It
-  shows the tempo %, the BPM, and the time played and left. Pick how it
-  and the tempo fader look under **Settings › Appearance › Style**:
-  **Classic**, **Modern** or **Tron**.
+  shows the tempo %, the BPM, and the time played and left.
   Right-click it for **Vinyl** and **Slip** (see
   [Slip, bend and censor](#slip-bend-and-censor)); while Slip is on, its
   word shows in the jog's top right corner.
@@ -145,7 +143,7 @@ Next to the squares, the count reads **phrase.bar.beat** (for example
 next phrase, a drop, starts in 6 bars. The phrases come from the track's
 [phrase analysis](music.md#phrases); a track without phrases is counted in phrases of
 eight bars from its first bar. If beat 1 doesn't land on the downbeat, the
-beat grid is off: click the tempo on the jog and choose **Bar 1 here** on a
+beat grid is off: click the pencil on the waveform and choose **Set Downbeat** on a
 downbeat (see [Beat grids](music.md)).
 
 Choose **Off**, **Beats** (squares only) or **Beats and phrases** under
@@ -323,10 +321,20 @@ double tempo when that's closer. Press it again to let go. **Shift-click**
 SYNC to match the tempo and beat once, without staying synced, as SYNC does
 in VirtualDJ.
 
-The deck that synced decks follow shows a small **MASTER** under its key.
+The deck that synced decks follow shows a lit **M** under its key.
 openDJ picks it by itself, the deck that has been playing longest, and hands
-over when it stops. Click **MASTER** on a deck to keep that deck the master
+over when it stops. Click **M** on a deck to keep that deck the master
 (it fills in), and click it again to let openDJ pick.
+
+Beside **M** sit four letters that light while their setting is on. Click
+one to switch it for every deck:
+
+- **B** matches a new track's tempo to the playing deck when it loads.
+- **K** matches its key on load (**Settings › Decks › Match key on load**).
+- **S** syncs a deck once when you press play, if it isn't synced already.
+- **P** turns key lock on for each track you load.
+
+The same switches live under **Settings › Decks**.
 
 **Right-click SYNC** for **quantize**. While it's on, cues and loops are set
 on the beat, and play, CUE, hot cues and jumps land in step with the other

@@ -326,7 +326,7 @@ each label with a small tick along its top. While you edit the grid, every
 tempo change is labelled, to a tenth of a BPM. Turn them off with **BPM
 labels** in the drop-down on the waveforms button.
 
-The grid menu (click the BPM on a deck) says where the grid came from:
+The grid menu (**More…** under the waveform's pencil) says where the grid came from:
 **Detected**, **Edited** or the app it was imported from. A detected grid
 that fits the beats poorly says **may be off, check by ear**. **Lock grid**
 keeps a grid as it is: a locked grid can't be edited, and analysing the
