@@ -353,7 +353,12 @@ fn tokens(name: &str) -> Vec<String> {
     joined
         .split(|c: char| !c.is_alphanumeric())
         .filter(|t| !t.is_empty())
-        .filter(|t| !matches!(*t, "midi" | "port" | "in" | "out" | "usb" | "and"))
+        .filter(|t| {
+            !matches!(
+                *t,
+                "midi" | "port" | "in" | "out" | "usb" | "bluetooth" | "and"
+            )
+        })
         .filter(|t| !t.chars().all(|c| c.is_ascii_digit()))
         .map(str::to_string)
         .collect()
@@ -1368,6 +1373,20 @@ mod tests {
             (
                 "DJControl Inpulse 500",
                 "Hercules_DJControl_Inpulse_500.midi.xml",
+            ),
+            ("DJCONTROL MIX", "Hercules DJControl MIX.midi.xml"),
+            (
+                "DJControl Mix Ultra",
+                "Hercules DJControl Mix Ultra.midi.xml",
+            ),
+            // Its Bluetooth MIDI port.
+            (
+                "DJControl Mix Ultra Bluetooth",
+                "Hercules DJControl Mix Ultra.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 200 Mk2",
+                "Hercules_DJControl_Inpulse_200_MK2.midi.xml",
             ),
         ] {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");

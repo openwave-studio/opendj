@@ -199,7 +199,7 @@ in the Controller Editor and a guide page:
   MC3000, DN-SC2000 and DN-HS5500.
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,
   DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7.
-- **Hercules:** DJControl Inpulse 200, 300 and 500, Jogvision and Mix.
+- **Hercules:** DJControl Inpulse 200, 200 MK2, 300, 300 MK2 and 500, Jogvision, Mix and Mix Ultra.
 - **Others:** Allen & Heath Xone:K2 and DJ TechTools Midi Fighter Twister.
 
 The DDJ-REV1, DDJ-1000 and DDJ-REV7 are coming.

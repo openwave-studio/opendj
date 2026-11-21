@@ -2783,3 +2783,125 @@ fn hercules_inpulse_200_sampler_stop() {
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
+
+/// Inpulse 200 MK2: the loop section's LOOP, 1/2 and x2, and the Stems pads
+/// (a pad mutes a stem, SHIFT and a pad plays it alone).
+#[test]
+fn hercules_inpulse_200_mk2_loops_and_stems() {
+    let (reg, mut c) = load("Hercules_DJControl_Inpulse_200_MK2.midi.xml");
+    settle(&mut c, 50);
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    for (key, status, no) in [
+        ("beatloop_activate", 0x91u8, 0x03u8),
+        ("loop_halve", 0x91, 0x09),
+        ("loop_double", 0x92, 0x0A),
+        ("loop_in", 0x94, 0x09),
+        ("loop_out", 0x95, 0x0A),
+    ] {
+        let group = if matches!(status, 0x91 | 0x94) {
+            "[Channel1]"
+        } else {
+            "[Channel2]"
+        };
+        let h = reg.get(group, key).unwrap();
+        let before = h.version();
+        press(&mut c, status, no);
+        assert_ne!(h.version(), before, "{group} {key}");
+    }
+    let mute = |reg: &ControlRegistry, s: u8| {
+        reg.get(&format!("[Channel1_Stem{s}]"), "mute")
+            .unwrap()
+            .get()
+    };
+    press(&mut c, 0x96, 0x11);
+    assert_eq!(mute(&reg, 2), 1.0);
+    press(&mut c, 0x96, 0x11);
+    assert_eq!(mute(&reg, 2), 0.0);
+    press(&mut c, 0x96, 0x1B);
+    assert_eq!([1, 2, 3, 4].map(|s| mute(&reg, s)), [1.0, 1.0, 1.0, 0.0]);
+    press(&mut c, 0x96, 0x1B);
+    assert_eq!([1, 2, 3, 4].map(|s| mute(&reg, s)), [0.0; 4]);
+    press(&mut c, 0x94, 0x03);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// Inpulse 300 MK2: LOOP ON where VINYL was, SHIFT + Q steps the tempo
+/// range, and the FX knobs are DEPTH (dry/wet) then BEAT.
+#[test]
+fn hercules_inpulse_300_mk2_buttons() {
+    let (reg, mut c) = load("Hercules_DJControl_Inpulse_300_MK2.midi.xml");
+    settle(&mut c, 50);
+    let loop_on = reg.get("[Channel1]", "beatloop_activate").unwrap();
+    let before = loop_on.version();
+    c.receive(&[0x91, 0x03, 0x7F]);
+    c.receive(&[0x91, 0x03, 0x00]);
+    assert_ne!(loop_on.version(), before);
+    let range = reg.get("[Channel2]", "rateRange").unwrap();
+    range.set(0.08);
+    c.receive(&[0x95, 0x02, 0x7F]);
+    c.receive(&[0x95, 0x02, 0x00]);
+    assert!((range.get() - 0.16).abs() < 1e-9, "{}", range.get());
+    // Down from the top a step at a time, past soft takeover.
+    for v in (0..=127u8).rev() {
+        c.receive(&[0xB1, 0x06, v]);
+    }
+    assert_eq!(
+        reg.get("[EffectRack1_EffectUnit1]", "mix").unwrap().get(),
+        0.0
+    );
+    c.receive(&[0x94, 0x01, 0x7F]);
+    c.receive(&[0x94, 0x01, 0x00]);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// Mix Ultra: NEURAL MIX turns the EQ knobs into stem volumes, the top
+/// NEURAL MIX pads solo a stem, and loops and samplers follow the pads.
+#[test]
+fn hercules_mix_ultra_neural_mix_and_pads() {
+    let (reg, mut c) = load("Hercules DJControl Mix Ultra.midi.xml");
+    settle(&mut c, 50);
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    let low = reg
+        .get("[EqualizerRack1_[Channel1]_Effect1]", "parameter1")
+        .unwrap();
+    c.receive(&[0xB1, 0x02, 0x00]);
+    assert_eq!(low.get(), 0.0);
+    press(&mut c, 0x90, 0x01);
+    c.receive(&[0xB1, 0x04, 0x00]);
+    let vocals = reg.get("[Channel1_Stem4]", "volume").unwrap();
+    assert_eq!(vocals.get(), 0.0);
+    press(&mut c, 0x90, 0x01);
+    let mute = |s: u8| {
+        reg.get(&format!("[Channel2_Stem{s}]"), "mute")
+            .unwrap()
+            .get()
+    };
+    press(&mut c, 0x97, 0x31);
+    assert_eq!([1, 2, 3, 4].map(mute), [1.0, 0.0, 1.0, 1.0]);
+    press(&mut c, 0x97, 0x31);
+    assert_eq!([1, 2, 3, 4].map(mute), [0.0; 4]);
+    press(&mut c, 0x97, 0x37);
+    assert_eq!(mute(4), 1.0);
+    let sampler = reg.get("[Sampler8]", "cue_gotoandplay").unwrap();
+    let before = sampler.version();
+    press(&mut c, 0x96, 0x77);
+    assert_ne!(sampler.version(), before);
+    for v in [0x01, 0x01, 0x7F] {
+        c.receive(&[0xB1, 0x09, v]);
+        c.receive(&[0xB4, 0x0A, v]);
+    }
+    c.receive(&[0x91, 0x08, 0x7F]);
+    c.receive(&[0xB1, 0x0A, 0x01]);
+    c.receive(&[0x91, 0x08, 0x00]);
+    c.receive(&[0xB0, 0x01, 0x01]);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
