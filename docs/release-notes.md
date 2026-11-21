@@ -14,7 +14,7 @@ openDJ 0.9.0 gets openDJ ready for the club. A new look runs across the whole ap
 - **Mixer**: EQ, gain, filter and stem knobs have a matte cap and an arc in the waveform's band colors, and show dB or LP/HP % on hover. Right-click the filter knob for the Color FX list. Headphone cue is a headphone icon that lights lilac.
 - **Top bar**: Mic is one pill (click to switch it on, right-click for the Mic panel), and Rec shows the time while recording. A master knob with two tall meters replaces the MASTER pill: right-click it, or click the clock, for the Master panel.
 - **FX bar**: a power button per effect, ‹ Reverb › name steppers, the parameter's name on its slider, and an arc knob for D/W. The effect menu shows the built-in effects in two columns by kind, with an icon each, and plugins by maker.
-- **Groove Box, looper and synth decks** share one frame with Kit and Pattern steppers and Fills as a switch pill. **Automix** has a power button, a Length stepper and Style and Repeat pills. **Settings** choices are rows of pills.
+- **Groove Box, looper and synth decks** share one frame with Kit and Pattern steppers and Fills as a switch pill. **Automix** has a cyan power button, a Length stepper, a Style list and a Repeat pill, and its crossfader fills cyan while it mixes. In 4-Deck, right-click the crossfader to switch it off. **Settings** choices are rows of pills.
 
 **Remix FX**
 
