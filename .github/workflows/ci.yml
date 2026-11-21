@@ -70,10 +70,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libfontconfig-dev libxkbcommon-dev libasound2-dev libudev-dev mesa-vulkan-drivers cmake libclang-dev
       - name: Add swap
-        # Checking the app crate's generated UI code takes most of the
-        # runner's 16 GB, and clippy checks the app and its tests side by side.
-        # Without more swap the runner is killed mid-clippy and the job fails
-        # with "The hosted runner lost communication with the server".
+        # Building the app's tests needs about 16.5 GB, more than the
+        # runner's 16 GB (its Slint UI is one generated module of over
+        # 800,000 lines). The rest goes to swap.
         run: |
           sudo swapoff -a
           sudo rm -f /mnt/swapfile
@@ -82,6 +81,16 @@ jobs:
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
           free -h
+      - name: Memory fence for the app build
+        # Left alone, rustc pushes the runner's own agent out to swap too,
+        # the agent stops answering, and the job fails with "The hosted
+        # runner lost communication with the server". The app steps below
+        # run in this cgroup: past 12 GB the kernel swaps rustc's own pages
+        # and leaves the rest of the runner's memory alone.
+        run: |
+          echo +memory | sudo tee /sys/fs/cgroup/cgroup.subtree_control
+          sudo mkdir -p /sys/fs/cgroup/app-build
+          echo 12G | sudo tee /sys/fs/cgroup/app-build/memory.max
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -95,17 +104,26 @@ jobs:
       # Checking the app takes several GB per target (its Slint UI is one
       # large generated module): its binary and tests one at a time, so the
       # runner doesn't run out of memory.
-      - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
+      - name: cargo clippy -p opendj --all-targets -j1
+        run: |
+          echo $$ | sudo tee /sys/fs/cgroup/app-build/cgroup.procs
+          cargo clippy -p opendj --all-targets -j1 -- -D warnings
       - run: cargo test --workspace --exclude opendj
-      # Compiling the app's tests takes about 13.5 GB on its own (rust-cache
-      # turns incremental builds off). Built inside the workspace run, other
-      # crates' tests compiled next to it and the runner swapped until it was
-      # lost ("The hosted runner lost communication with the server"). The
-      # app's test binary is the last thing this step builds, so it compiles
-      # alone.
+      # Compiling the app's tests takes about 16.5 GB on its own (rust-cache
+      # turns incremental builds off), so it runs alone and inside the
+      # memory fence. The app's test binary is the last thing this step
+      # builds.
       # Includes the check that website/docs/supported-controls.txt matches
       # `opendj --list-controls` (control_list_tests in crates/app).
-      - run: cargo test -p opendj
+      - name: cargo test -p opendj
+        run: |
+          echo $$ | sudo tee /sys/fs/cgroup/app-build/cgroup.procs
+          cargo test -p opendj
+      - name: Memory used
+        if: always()
+        run: |
+          free -h
+          grep -H . /sys/fs/cgroup/app-build/memory.peak /sys/fs/cgroup/app-build/memory.events /sys/fs/cgroup/app-build/memory.swap.peak 2>/dev/null || true
 
   windows:
     if: github.event_name != 'pull_request' && github.event_name != 'merge_group'
