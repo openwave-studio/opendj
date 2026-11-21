@@ -318,7 +318,7 @@ component IsolateArrow inherits Rectangle {
         // The Isolate effect beside the knobs, the Lever effect beside
         // the levers: rows as tall as the bands' knob, name and lever.
         VerticalLayout {
-            width: 104px;
+            width: 96px;
             alignment: center;
             spacing: 2px;
             HorizontalLayout {
@@ -469,7 +469,7 @@ component SceneWheel inherits Rectangle {
     property <float> drag-start;
     property <bool> building: scene > 0.005;
     property <bool> breaking: scene < -0.005;
-    property <length> font: clamp(size / 26, 9px, 12px);
+    property <length> font: clamp(size / 26, 8px, 12px);
 
     for i in 10: Sector {
         x: (root.width - root.size) / 2;
@@ -493,8 +493,9 @@ component SceneWheel inherits Rectangle {
         property <int> n: up-side ? i : i - 5;
         property <angle> mid: up-side ? n * 36deg + 18deg : -n * 36deg - 18deg;
         property <bool> picked: up-side ? root.up == n : root.down == n;
-        width: root.size * 0.2;
-        height: root.size * 0.12;
+        // Room for two short lines, even on the smallest wheel.
+        width: max(root.size * 0.2, 34px);
+        height: max(root.size * 0.12, root.font * 2.6);
         x: root.cx + root.size * 0.4 * sin(mid) - self.width / 2;
         y: root.cy - root.size * 0.4 * cos(mid) - self.height / 2;
         text: up-side ? (n < RemixUi.scenes-up.length ? RemixUi.scenes-up[n] : "") : (n < RemixUi.scenes-down.length ? RemixUi.scenes-down[n] : "");
@@ -664,14 +665,16 @@ export component RemixPanel inherits Rectangle {
     property <length> band: 46px;
     property <length> gap: 8px;
     property <length> tip: 22px;
-    property <length> wheel: min(root.height - 2 * root.gap, max(120px, root.width * 0.38));
+    // The wheel gives way first on a narrow deck, so the controls on both
+    // sides keep their room (the smallest window's 2-Deck).
+    property <length> wheel: min(root.height - 2 * root.gap, max(120px, min(root.width * 0.38, root.width - 2 * root.gap - 96px - left.min-width)));
     background: Theme.panel;
     // Clicks between the controls stay on the deck.
     TouchArea { }
     HorizontalLayout {
         padding: root.gap;
         spacing: 0px;
-        VerticalLayout {
+        left := VerticalLayout {
             horizontal-stretch: 1;
             spacing: 6px;
             Rectangle { height: root.band; }
