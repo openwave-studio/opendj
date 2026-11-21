@@ -210,7 +210,7 @@ fn row(t: &Track, in_cloud: bool) -> Row {
         title: t.title.clone().into(),
         artist: t.artist.clone().into(),
         bpm: if t.bpm > 0.0 {
-            format!("{:.0}", t.bpm).into()
+            format!("{:.1}", t.bpm).into()
         } else {
             SharedString::new()
         },
@@ -583,7 +583,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         title: track.title.clone().into(),
                         artist: track.artist.clone().into(),
                         bpm: if bpm > 0.0 {
-                            format!("{bpm:.2}").into()
+                            format!("{bpm:.1}").into()
                         } else {
                             SharedString::new()
                         },

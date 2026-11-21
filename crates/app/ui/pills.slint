@@ -159,20 +159,28 @@ export component PowerButton inherits Rectangle {
     in property <bool> on;
     in property <bool> active: true;
     in property <length> size: 26px;
+    // Filled in `lit` while on, the symbol in `ink` (Automix: cyan);
+    // otherwise lit lilac, as every other power button.
+    in property <bool> filled;
+    in property <color> lit: Theme.accent;
+    in property <color> ink: Theme.automix-ink;
     callback clicked();
     width: size;
     height: size;
     border-radius: size / 2;
-    background: on ? Theme.accent.with-alpha(ta.has-hover ? 0.32 : 0.2) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.pill;
+    background: on && filled ? (ta.has-hover ? lit.brighter(0.15) : lit) : on ? (ta.has-hover ? Theme.lit-fill-hover : Theme.lit-fill) : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.pill;
+    // The shared glow of a lit round button (see Theme.glow).
+    drop-shadow-blur: on ? Theme.glow-blur : 0px;
+    drop-shadow-color: on && filled ? lit.with-alpha(0.55) : Theme.glow;
     border-width: 1.5px;
-    border-color: on ? Theme.accent : Theme.n-48484c;
+    border-color: on ? (filled ? lit : Theme.accent) : Theme.n-48484c;
     Path {
         width: root.size * 0.5;
         height: root.size * 0.5;
         viewbox-width: 20;
         viewbox-height: 20;
         commands: "M 10 2 L 10 9 M 5.4 5 A 7 7 0 1 0 14.6 5";
-        stroke: root.on ? Theme.lilac-text : root.active ? Theme.n-a8a8ad : Theme.n-58585d;
+        stroke: root.on && root.filled ? root.ink : root.on ? Theme.lilac-text : root.active ? Theme.n-a8a8ad : Theme.n-58585d;
         stroke-width: 2px;
         stroke-line-cap: round;
         fill: transparent;

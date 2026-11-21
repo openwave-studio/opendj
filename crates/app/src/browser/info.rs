@@ -347,10 +347,7 @@ fn fields_of(t: &Track, camelot: bool, file_manager: &str, more: bool) -> Vec<In
     let names = query::field_names();
     let text = |id: &str, label: &str, value: &str| field(id, label, value, TEXT);
     let bpm = if t.bpm > 0.0 {
-        format!("{:.2}", t.bpm)
-            .trim_end_matches('0')
-            .trim_end_matches('.')
-            .to_string()
+        format!("{:.1}", t.bpm)
     } else {
         String::new()
     };
@@ -1850,7 +1847,7 @@ mod tests {
             "no file"
         );
         let line = |label: &str| f.iter().find(|f| f.label == label).unwrap();
-        assert_eq!(line("BPM").value, "100");
+        assert_eq!(line("BPM").value, "100.0");
         assert_eq!(line("GAIN").value, "-1.5 dB");
         assert_eq!(line("PLAYS").value, "3");
     }

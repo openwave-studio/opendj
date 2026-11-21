@@ -14,7 +14,7 @@ and the EQ move, and you can take over at any time.
    change their order. The top of the panel shows how long the list runs.
 2. **Pick a length and a style** at the top of the panel (see below):
    step **Length** with its arrows or press it for the list, and press
-   **Style** to step through the styles.
+   **Style** to pick one from its list.
 3. **Press the power button** by the Automix name. It lights up. If nothing is playing, openDJ loads the
    first track and starts it; if a deck is already playing, Automix mixes out
    of it into the list.

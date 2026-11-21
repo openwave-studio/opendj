@@ -1462,8 +1462,10 @@
 [Controls],auto_reset_fx
 [Controls],auto_reset_gain
 [Controls],auto_reset_tempo
+[Controls],bpm_match_on_load
 [Controls],key_match_on_load
 [Controls],pfl_on_load
+[Controls],sync_on_play
 [EffectRack1_EffectUnit10],bpm
 [EffectRack1_EffectUnit10],bpm_auto
 [EffectRack1_EffectUnit10],bpm_tap

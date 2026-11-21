@@ -128,9 +128,9 @@ shows:
 
 The readings are green within 1 LU of your target, amber within 3 and red
 further off. **Reset** starts integrated loudness, the range and the true peak
-again. They also start again when you press **REC** or go on air.
+again. They also start again when you press **Rec** or go on air.
 
-While recording, the **REC** button in the top bar shows the short-term
+While recording, the **Rec** button in the top bar shows the short-term
 loudness next to the time.
 
 ## Choosing a target

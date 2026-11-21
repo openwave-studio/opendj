@@ -577,24 +577,35 @@ component SamplerPadCell inherits Rectangle {
 // grid as the other pad pages.
 export component SamplerPanel inherits Rectangle {
     in property <int> bank;
-    background: Theme.n-000000;
-    border-width: 1px;
-    border-color: Theme.edge;
+    // As the other pad pages' grid (see Pads): rounded tiles, the same
+    // size on every page.
+    property <length> gap: 5px;
     VerticalLayout {
-        padding: 1px;
-        spacing: 1px;
+        padding-top: 4px;
+        spacing: root.gap;
         for row in [0, 1]: HorizontalLayout {
-            spacing: 1px;
-            min-height: 26px;
+            spacing: 0px;
+            min-height: 24px;
             vertical-stretch: 1;
-            for i in 4: SamplerPadCell {
-                slot: bank * 8 + row * 4 + i;
-                pad: SamplerUi.pads[bank * 8 + row * 4 + i];
-                tint: Theme.hotcues[row * 4 + i];
+            Rectangle { horizontal-stretch: 0.001; }
+            HorizontalLayout {
+                spacing: root.gap;
                 horizontal-stretch: 1;
-                min-width: 0px;
-                preferred-width: 0px;
+                for i in 4: SamplerPadCell {
+                    slot: bank * 8 + row * 4 + i;
+                    pad: SamplerUi.pads[bank * 8 + row * 4 + i];
+                    tint: Theme.hotcues[row * 4 + i];
+                    horizontal-stretch: 1;
+                    min-width: 0px;
+                    preferred-width: 0px;
+                    max-width: 120px;
+                    max-height: 64px;
+                    border-radius: 7px;
+                    border-width: 1px;
+                    border-color: Theme.n-2c2c31;
+                }
             }
+            Rectangle { horizontal-stretch: 0.001; }
         }
     }
 }

@@ -149,13 +149,29 @@ export component ControlKnob inherits Rectangle {
     // cap (sculpt) and 2 a black cap ringed in white (contour filters);
     // 3 a rack knob (instrument decks): a dark cap inside a ring, the
     // ring's arc in `arc-color` with a soft glow.
+    // 4 a matte cap in a thin track (the mixer), described below.
     in property <int> look: 0;
     in property <color> arc-color: Theme.knob-arc;
+    // 4 a matte cap with a short pointer inside a thin track (the mixer);
+    // the arc thickens under the pointer.
+    property <bool> thin: look == 4;
+    property <bool> lit: touch.has-hover || touch.pressed;
+    // What the label says under the pointer: 0 nothing new, 1 the gain in
+    // dB (EQs, volumes), 2 the filter's side and amount.
+    in property <int> readout: 0;
+    property <float> raw: Controls.value(index, Controls.tick);
+    property <float> db: raw < 0.001 ? -999 : 20 * log(raw, 10);
+    property <string> readout-text: readout == 1
+        ? (raw < 0.001 ? "−∞ dB" : abs(db) < 0.05 ? "0 dB" : (db > 0 ? "+" : "") + round(db * 10) / 10 + " dB")
+        : abs(param - 0.5) < 0.01 ? "Off"
+        : (param < 0.5 ? "LP " : "HP ") + round(abs(param - 0.5) * 200) + "%";
     // A rack knob's cap sits inside its ring.
-    property <length> inset: look == 3 ? round(size * 0.17 / 1px) * 1px : 0px;
+    property <length> inset: look == 3 ? round(size * 0.17 / 1px) * 1px
+        : look == 4 ? round(size * 0.2 / 1px) * 1px
+        : 0px;
     property <angle> origin-angle: -135deg + origin * 270deg;
     // Soft shadow, then the cap.
-    Rectangle {
+    if !thin: Rectangle {
         x: 4px;
         y: 4px;
         width: size;
@@ -174,13 +190,27 @@ export component ControlKnob inherits Rectangle {
         stroke: Theme.n-26262a;
         stroke-width: max(3px, size / 10);
     }
+    // The thin knobs' track: the whole sweep, under the arc.
+    if thin: KnobArc {
+        x: 4px;
+        y: 3px;
+        width: size;
+        height: size;
+        r: 45;
+        from: -135deg;
+        to: 135deg;
+        stroke: Theme.n-3a3a3f;
+        stroke-width: lit ? max(3px, size / 10.5) : max(2px, size / 16);
+    }
     cap := Rectangle {
         x: 4px + inset;
         y: 3px + inset;
         width: size - 2 * inset;
         height: size - 2 * inset;
         border-radius: self.width / 2;
-        background: look == 3
+        background: look == 4
+            ? @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%)
+            : look == 3
             ? (touch.has-hover ? @radial-gradient(circle, #55575f 0%, #24252a 100%) : @radial-gradient(circle, #4a4c54 0%, #1d1e23 100%))
             : look == 1
             ? (touch.has-hover ? @linear-gradient(180deg, #ffffff 0%, #d4d4d8 100%) : @linear-gradient(180deg, #f2f2f4 0%, #c8c8cc 100%))
@@ -189,8 +219,8 @@ export component ControlKnob inherits Rectangle {
             : touch.has-hover
             ? @linear-gradient(180deg, #505055 0%, #303034 100%)
             : @linear-gradient(180deg, #46464b 0%, #2a2a2e 100%);
-        border-width: look == 2 ? max(2px, size / 12) : 1px;
-        drop-shadow-blur: look == 3 ? 4px : 0px;
+        border-width: look == 4 ? 0px : look == 2 ? max(2px, size / 12) : 1px;
+        drop-shadow-blur: look == 3 || look == 4 ? 4px : 0px;
         drop-shadow-color: Theme.s-000000b0;
         border-color: look == 2 ? Theme.n-e4e4e8 : Theme.n-141416;
     }
@@ -206,7 +236,18 @@ export component ControlKnob inherits Rectangle {
         stroke: root.arc-color.with-alpha(0.28);
         stroke-width: max(7px, size / 4.5);
     }
-    if abs(param - origin) > 0.004: KnobArc {
+    if thin && abs(param - origin) > 0.004: KnobArc {
+        x: 4px;
+        y: 3px;
+        width: size;
+        height: size;
+        r: 45;
+        from: origin-angle;
+        to: value-angle;
+        stroke: root.arc-color;
+        stroke-width: lit ? max(3px, size / 10.5) : max(2px, size / 16);
+    }
+    if !thin && abs(param - origin) > 0.004: KnobArc {
         x: 4px + 1px;
         y: 3px + 1px;
         width: size - 2px;
@@ -227,10 +268,27 @@ export component ControlKnob inherits Rectangle {
         stroke: look == 1 ? Theme.n-1c1c1e : root.tint == Theme.text ? Theme.n-e4e4e8 : root.tint;
         stroke-width: max(1.5px, size / 14);
         stroke-line-cap: round;
-        MoveTo { x: 50 + (look == 3 ? 12 : 8) * sin(value-angle); y: 50 - (look == 3 ? 12 : 8) * cos(value-angle); }
-        LineTo { x: 50 + (look == 3 ? 38 : 40) * sin(value-angle); y: 50 - (look == 3 ? 38 : 40) * cos(value-angle); }
+        // A short pointer near the rim on the matte cap.
+        property <float> from-r: look == 4 ? 13 : look == 3 ? 12 : 8;
+        property <float> to-r: look == 4 ? 39 : look == 3 ? 38 : 40;
+        MoveTo { x: 50 + from-r * sin(value-angle); y: 50 - from-r * cos(value-angle); }
+        LineTo { x: 50 + to-r * sin(value-angle); y: 50 - to-r * cos(value-angle); }
     }
-    if hardware >= 0: PickupDot {
+    // On the thin track, where the controller's knob is: a short lilac notch
+    // on the track, gone once the knob picks the control up.
+    if thin && hardware >= 0: KnobArc {
+        x: 4px;
+        y: 3px;
+        width: size;
+        height: size;
+        r: 45;
+        from: -135deg + hardware * 270deg - 7deg;
+        to: -135deg + hardware * 270deg + 7deg;
+        stroke: root.tint == Theme.text ? Theme.accent : root.tint;
+        stroke-width: max(3px, size / 9);
+        stroke-line-cap: butt;
+    }
+    if !thin && hardware >= 0: PickupDot {
         x: cap.x;
         y: cap.y;
         width: cap.width;
@@ -238,7 +296,9 @@ export component ControlKnob inherits Rectangle {
         at: hardware;
         tint: root.tint == Theme.text ? Theme.accent : root.tint;
     }
-    if bipolar && origin == 0.5: Rectangle {
+    // The centre mark above the knob; the thin track's arc already grows
+    // from the centre.
+    if bipolar && origin == 0.5 && !thin: Rectangle {
         x: 4px + size / 2 - 1px;
         y: 0px;
         width: 2px;
@@ -252,7 +312,9 @@ export component ControlKnob inherits Rectangle {
         y: size + 6px;
         x: (parent.width - self.width) / 2;
         width: 80px;
-        text: label;
+        // The value while the pointer is over it, in the arc's color.
+        text: readout != 0 && lit ? readout-text : label;
+        color: readout != 0 && lit ? (thin ? root.arc-color : Theme.text) : Theme.n-6e6e73;
     }
 
     touch := TouchArea {
@@ -475,13 +537,17 @@ export component ControlFader inherits Rectangle {
     // be moved.
     in property <bool> disabled: false;
     // Held by something else (Automix and the crossfader): it still moves,
-    // outlined in Automix green (the green glow says who holds it), but can't be
+    // outlined in Automix cyan (the cyan glow says who holds it), but can't be
     // dragged or scrolled.
     in property <bool> locked: false;
     // The slot's dark line lit solid in `glow` (key lock on the tempo
     // fader); unlike `locked` it still moves by hand.
     in property <bool> glowing: false;
     in property <color> glow: Theme.lilac;
+    // 0 the usual slot, ticks and cap; 1 a thin track lit lilac from the
+    // centre (or the bottom) to a matte cap, as on the mixer's knobs (the
+    // tempo, channel and cross faders).
+    in property <int> look: 0;
     // A right-click, at that point along the fader.
     callback context-menu(length, length);
     property <int> index: Controls.resolve(group, key);
@@ -502,6 +568,7 @@ export component ControlFader inherits Rectangle {
     opacity: disabled ? 0.35 : 1;
 
     // Tick marks
+    if look == 0: Rectangle {
     for i in ticks: Rectangle {
         property <length> along: handle / 2 + travel * i / (ticks - 1);
         property <bool> major: i == 0 || i == ticks - 1 || (center-mark && i * 2 == ticks - 1);
@@ -512,8 +579,9 @@ export component ControlFader inherits Rectangle {
         height: vertical ? 1px : (major ? root.height : root.height * 0.6);
         background: major ? Theme.n-55555a.with-alpha(0.8) : Theme.tick.with-alpha(0.6);
     }
+    }
     // Slot
-    Rectangle {
+    if look == 0: Rectangle {
         x: vertical ? (parent.width - 3px) / 2 : handle / 2;
         y: vertical ? handle / 2 : (parent.height - 3px) / 2;
         width: vertical ? 3px : travel;
@@ -523,7 +591,7 @@ export component ControlFader inherits Rectangle {
         border-width: 1px;
         border-color: locked ? Theme.automix.with-alpha(0.6) : glowing ? glow : Theme.n-2a2a2d;
     }
-    // Locked: the slot lights green from the centre (or the bottom) to the
+    // Locked: the slot lights cyan from the centre (or the bottom) to the
     // handle.
     if locked: Rectangle {
         property <float> from: center-mark ? 0.5 : 0;
@@ -536,8 +604,38 @@ export component ControlFader inherits Rectangle {
         border-radius: 2px;
         background: Theme.automix;
     }
+    // Modern: the thin track, lit from the centre (or the bottom) to the cap.
+    if look == 1: Rectangle {
+        x: vertical ? (parent.width - 3px) / 2 : handle / 2;
+        y: vertical ? handle / 2 : (parent.height - 3px) / 2;
+        width: vertical ? 3px : travel;
+        height: vertical ? travel : 3px;
+        border-radius: 1.5px;
+        background: glowing && !locked ? glow.with-alpha(0.45) : Theme.n-3a3a3f;
+    }
+    if look == 1: Rectangle {
+        property <float> from: center-mark ? 0.5 : 0;
+        property <float> lo: min(from, pos);
+        property <float> hi: max(from, pos);
+        x: vertical ? (parent.width - 4px) / 2 : handle / 2 + lo * travel;
+        y: vertical ? handle / 2 + (1 - hi) * travel : (parent.height - 4px) / 2;
+        width: vertical ? 4px : (hi - lo) * travel;
+        height: vertical ? (hi - lo) * travel : 4px;
+        border-radius: 2px;
+        background: locked ? Theme.automix : Theme.accent;
+    }
+    // The controller's fader on the thin track: a short notch across it
+    // in the deck color, gone once the fader picks the control up.
+    if hardware >= 0 && look == 1: Rectangle {
+        x: vertical ? (parent.width - self.width) / 2 : handle / 2 + hardware-pos * travel - 2px;
+        y: vertical ? handle / 2 + (1 - hardware-pos) * travel - 2px : (parent.height - self.height) / 2;
+        width: vertical ? min(parent.width - 8px, 22px) : 4px;
+        height: vertical ? 4px : min(parent.height - 8px, 22px);
+        border-radius: 2px;
+        background: root.tint;
+    }
     // The controller's fader, under the handle.
-    if hardware >= 0: PickupGhost {
+    if hardware >= 0 && look == 0: PickupGhost {
         x: vertical ? 2px : hardware-pos * travel;
         y: vertical ? (1 - hardware-pos) * travel : 2px;
         width: vertical ? root.width - 4px : handle;
@@ -546,7 +644,7 @@ export component ControlFader inherits Rectangle {
         towards: vertical ? (hardware-pos < pos ? 0 : 1) : (hardware-pos < pos ? 3 : 2);
     }
     // Handle
-    Rectangle {
+    if look == 0: Rectangle {
         x: vertical ? 2px : pos * travel;
         y: vertical ? (1 - pos) * travel : 2px;
         width: vertical ? parent.width - 4px : handle;
@@ -565,6 +663,26 @@ export component ControlFader inherits Rectangle {
             height: vertical ? 2px : parent.height - 8px;
             border-radius: 1px;
             background: Theme.lilac-text;
+        }
+    }
+    if look == 1: Rectangle {
+        x: vertical ? (parent.width - self.width) / 2 : pos * travel;
+        y: vertical ? (1 - pos) * travel : (parent.height - self.height) / 2;
+        width: vertical ? min(parent.width - 4px, 40px) : handle;
+        height: vertical ? handle : min(parent.height - 4px, 40px);
+        border-radius: min(self.width, self.height) / 2;
+        // Held by Automix: the cap fills with its cyan.
+        background: locked ? @radial-gradient(circle, Theme.automix 0%, Theme.automix 100%) : @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%);
+        border-width: locked ? 1px : 0px;
+        border-color: Theme.automix;
+        drop-shadow-blur: 4px;
+        drop-shadow-offset-y: 1px;
+        drop-shadow-color: Theme.s-000000b0;
+        Rectangle {
+            width: vertical ? parent.width - 14px : 2px;
+            height: vertical ? 2px : parent.height - 14px;
+            border-radius: 1px;
+            background: touch.has-hover || touch.pressed ? Theme.lilac-text : Theme.n-e4e4e8;
         }
     }
     touch := TouchArea {
@@ -619,7 +737,7 @@ export component ControlFader inherits Rectangle {
 // (`[Mixer],crossfader_enabled`, also in Settings > Mixer): while it is off
 // every deck plays as if set to thru, and the fader sits greyed out in the
 // centre. While Automix is on it drives the crossfader and holds it locked
-// (switched off or not): it slides with each mix, glowing Automix green,
+// (switched off or not): it slides with each mix, glowing Automix cyan,
 // and the mouse and controllers can't move it until Automix stops.
 export component Crossfader inherits Rectangle {
     // Names it for the guided tour (see TourMark).
@@ -638,6 +756,7 @@ export component Crossfader inherits Rectangle {
         vertical: false;
         center-mark: true;
         ticks: 9;
+        look: 1;
         disabled: !on && !automix;
         locked: automix;
         context-menu(x, y) => {
@@ -688,7 +807,7 @@ export component Crossfader inherits Rectangle {
 }
 
 // Segmented level meter: green, then yellow, then red at the top.
-// Headphone cue (PFL) as a bare headphone icon: grey when off, green when on.
+// Headphone cue (PFL) as a bare headphone icon: grey when off, lilac when on.
 export component CueHeadphones inherits Rectangle {
     // Names it for the guided tour (see TourMark).
     in property <string> tour-id;
@@ -698,16 +817,10 @@ export component CueHeadphones inherits Rectangle {
     property <int> index: Controls.resolve(group, "pfl");
     property <bool> lit: Controls.value(index, Controls.tick) > 0;
     property <color> icon-color: lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.text-dim;
-    // A round button under the fader, glowing lilac while cueing.
+    // Just the icon under the fader, no rim or fill: lilac while cueing.
     width: 26px;
     height: 26px;
-    border-radius: self.height / 2;
-    border-width: 1.5px;
-    border-color: lit ? Theme.accent : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
-    background: lit ? Theme.accent.with-alpha(0.22) : touch.pressed ? Theme.control-pressed : Theme.pill;
-    drop-shadow-blur: lit ? 8px : 0px;
-    drop-shadow-color: Theme.accent.with-alpha(0.55);
-    HeadphoneIcon { size: 14px; tint: icon-color; }
+    HeadphoneIcon { size: 18px; tint: icon-color; }
     touch := TouchArea {
         mouse-cursor: pointer;
         clicked => { Controls.set-value(index, lit ? 0 : 1); }
@@ -789,6 +902,9 @@ export component PitchReset inherits Rectangle {
     in property <string> group;
     in property <color> tint: Theme.accent;
     in property <bool> points-left: false;
+    // A short line at the fader's centre instead of the triangle (the
+    // thin-track tempo faders); it works the same.
+    in property <bool> notch: false;
     property <int> index: Controls.resolve(group, "rate_reset");
     property <int> rate-index: Controls.resolve(group, "rate");
     property <bool> lit: Controls.value(index, Controls.tick) > 0;
@@ -797,7 +913,14 @@ export component PitchReset inherits Rectangle {
     property <bool> armed;
     width: 12px;
     height: 16px;
-    Path {
+    if notch: Rectangle {
+        x: points-left ? parent.width - self.width - 1px : 1px;
+        width: 8px;
+        height: 2px;
+        border-radius: 1px;
+        background: lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.n-6e6e73;
+    }
+    if !notch: Path {
         width: 8px;
         height: 10px;
         viewbox-width: 8;
@@ -868,7 +991,7 @@ export component SyncButton inherits Rectangle {
         group: group;
         key: "sync_enabled";
         shift-key: "beatsync";
-        text: "Sync";
+        text: "SYNC";
         tint: tint;
         pill: true;
         font-size: root.font-size;
@@ -950,13 +1073,15 @@ export component SyncButton inherits Rectangle {
 export component MasterBadge inherits Rectangle {
     in property <string> group;
     in property <length> font-size: 10px;
+    // Just "M", in a square (the row of letters under a deck's key).
+    in property <bool> letter: false;
     property <int> index: Controls.resolve(group, "sync_leader");
     property <float> state: Controls.value(index, Controls.tick);
     property <bool> leading: state > 0.5;
     property <bool> pinned: state > 1.5;
     property <bool> tip-mine;
     height: 18px;
-    preferred-width: label.preferred-width + (root.font-size >= 10px ? 12px : 10px);
+    preferred-width: letter ? root.height : label.preferred-width + (root.font-size >= 10px ? 12px : 10px);
     // A switch pill: lilac while this deck leads, with a lilac fill too
     // while it is pinned there.
     border-radius: min(7px, self.height / 2);
@@ -964,10 +1089,10 @@ export component MasterBadge inherits Rectangle {
     border-color: leading ? Theme.n-6e58a8 : touch.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
     background: pinned ? Theme.accent.with-alpha(0.28) : leading ? Theme.accent.with-alpha(0.12) : Theme.pill;
     label := Text {
-        text: "Master";
+        text: letter ? "M" : "Master";
+        font-weight: letter ? 600 : 500;
         color: leading ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.pill-off-text;
         font-size: root.font-size + 1px;
-        font-weight: 500;
         horizontal-alignment: center;
         vertical-alignment: center;
     }

@@ -64,14 +64,14 @@ component DeviceRow inherits HorizontalLayout {
             width: 8px;
             height: 8px;
             border-radius: 4px;
-            background: device.connected ? Theme.automix : Theme.n-48484c;
+            background: device.connected ? Theme.play-lit : Theme.n-48484c;
         }
     }
     VerticalLayout {
         horizontal-stretch: 1;
         alignment: center;
         Text { text: device.name; color: Theme.text; font-size: 12px; font-weight: 600; overflow: elide; }
-        Text { text: device.seen; color: device.connected ? Theme.automix : Theme.text-dim; font-size: 11px; overflow: elide; }
+        Text { text: device.seen; color: device.connected ? Theme.play-lit : Theme.text-dim; font-size: 11px; overflow: elide; }
     }
     SmallLink {
         text: "Remove";
@@ -168,11 +168,11 @@ export component RemotePanel inherits PopupWindow {
     }
 }
 
-// The top bar button: a phone, no label. Outlined while on, Automix green
+// The top bar button: a phone, no label. Outlined while on, green
 // once a phone is connected.
 export component RemoteButton inherits Rectangle {
     property <bool> on: RemoteUi.on;
-    property <color> tint: RemoteUi.connected ? Theme.automix : Theme.lilac;
+    property <color> tint: RemoteUi.connected ? Theme.play-lit : Theme.lilac;
     background: ta.pressed ? Theme.control-pressed : on ? tint.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;

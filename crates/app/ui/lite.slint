@@ -142,11 +142,11 @@ component LiteChannel inherits VerticalLayout {
     in property <color> tint;
     in property <length> knob: 16px;
     spacing: 2px;
-    Knob { group: group; key: "pregain"; size: knob; tour-id: group + ",pregain"; }
+    Knob { group: group; key: "pregain"; size: knob; look: 4; readout: 1; arc-color: Theme.accent; tour-id: group + ",pregain"; }
     HorizontalLayout {
         alignment: center;
         vertical-stretch: 1;
-        ControlFader { group: group; key: "volume"; tint: tint; ticks: 7; width: 30px; tour-id: group + ",volume"; }
+        ControlFader { group: group; key: "volume"; tint: tint; ticks: 7; width: 30px; look: 1; tour-id: group + ",volume"; }
     }
 }
 

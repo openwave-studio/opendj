@@ -9,8 +9,9 @@ import { TrackDrag } from "library.slint";
 import { InstrumentsUi } from "instruments.slint";
 import { Theme } from "theme.slint";
 import { ControlButton, ControlFader, Controls, Crossfader, CueHeadphones, StereoMeter, SyncButton } from "controls.slint";
-import { DeckInfo, Header, LiveStrip, LoopStepper, Pads, PadsUi, PlayButton, TempoRangeRow, TempoStep } from "deck.slint";
+import { DeckInfo, Header, LiveStrip, LoopStepper, Pads, PadsUi, PlayButton, TempoRangeRow } from "deck.slint";
 import { AudioSettings, Knob, ModeMenu, SideKnob } from "mixer.slint";
+import { PillCaret, SectionTitle, SwitchPill } from "pills.slint";
 
 // Which side of the crossfader a deck is on, as Mixxx's `orientation`:
 // 0 left, 1 thru (not faded), 2 right. Click to pick, as in djay.
@@ -19,67 +20,17 @@ component CrossfaderAssign inherits Rectangle {
     property <string> group: "[Channel" + (deck + 1) + "]";
     property <int> index: Controls.resolve(group, "orientation");
     property <int> side: Controls.value(index, Controls.tick);
-    property <[string]> names: ["LEFT", "THRU", "RIGHT"];
     // Dimmed while the crossfader is switched off; the choice stays.
     property <int> enabled-index: Controls.resolve("[Mixer]", "crossfader_enabled");
-    width: 64px;
+    width: 56px;
     opacity: Controls.value(enabled-index, Controls.tick) > 0 ? 1 : 0.35;
-    HorizontalLayout {
-        alignment: start;
-        spacing: 3px;
-        Text {
-            text: names[side];
-            color: side == 0 ? Theme.cue : side == 2 ? Theme.lilac-text : Theme.text-dim;
-            font-size: 12px;
-            font-weight: 700;
-            vertical-alignment: center;
-        }
-        Path {
-            width: 8px;
-            height: 5px;
-            y: (parent.height - self.height) / 2;
-            commands: "M 0 0 L 4 4 L 8 0";
-            stroke: ta.has-hover ? Theme.text : Theme.text-dim;
-            stroke-width: 1.4px;
-            fill: transparent;
-        }
-    }
-    ta := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
-    menu := PopupWindow {
-        x: 0px;
-        y: root.height + 4px;
-        width: 220px;
-        close-policy: close-on-click-outside;
-        Rectangle {
-            background: Theme.pill-list;
-            border-radius: 9px;
-            border-width: 1px;
-            border-color: Theme.border;
-            drop-shadow-blur: 14px;
-            drop-shadow-color: Theme.s-000000a0;
-        }
-        VerticalLayout {
-            padding: 12px;
-            spacing: 8px;
-            Text { text: "Deck " + (deck + 1); color: Theme.text; font-size: 15px; font-weight: 700; }
-            Text { text: "Crossfader Assignment"; color: Theme.text-dim; font-size: 12px; }
-            HorizontalLayout {
-                height: 28px;
-                spacing: 1px;
-                for name[i] in ["Left", "Thru", "Right"]: Rectangle {
-                    horizontal-stretch: 1;
-                    border-radius: 4px;
-                    background: i == side ? Theme.accent : ita.has-hover ? Theme.n-3a3a3d : Theme.control;
-                    Text { text: name; color: i == side ? Theme.on-selection : Theme.text; font-size: 12px; font-weight: 600; }
-                    ita := TouchArea {
-                        clicked => {
-                            Controls.set-value(index, i);
-                            menu.close();
-                        }
-                    }
-                }
-            }
-        }
+    // A press steps Left, Thru, Right and round; lit while on a side.
+    SwitchPill {
+        y: (parent.height - self.height) / 2;
+        width: parent.width;
+        text: ["Left", "Thru", "Right"][side];
+        on: side != 1;
+        clicked => { Controls.set-value(index, Math.mod(side + 1, 3)); }
     }
 }
 
@@ -183,12 +134,12 @@ export component DeckStrip inherits Rectangle {
                     if !external: HorizontalLayout {
                         spacing: 4px;
                         horizontal-stretch: 4;
-                        for place in 4: SideKnob { deck: deck; place: [2, 1, 0, 3][place]; size: 32px; cfx-arrow-left: false; horizontal-stretch: 1; min-width: 40px; }
+                        for place in 4: SideKnob { deck: deck; place: [2, 1, 0, 3][place]; size: 32px; cfx-menu-left: false; horizontal-stretch: 1; min-width: 40px; }
                     }
-                    if !external: ControlFader { group: group; key: "volume"; tint: tint; ticks: 5; width: 40px; }
+                    if !external: ControlFader { group: group; key: "volume"; tint: tint; ticks: 5; width: 40px; look: 1; }
                     VerticalLayout {
                         spacing: 4px;
-                        if !external: Knob { group: group; key: "pregain"; size: 20px; }
+                        if !external: Knob { group: group; key: "pregain"; size: 20px; look: 4; readout: 1; arc-color: Theme.accent; }
                         HorizontalLayout { alignment: center; vertical-stretch: 1; StereoMeter { group: group; } }
                     }
                 }
@@ -197,12 +148,16 @@ export component DeckStrip inherits Rectangle {
                 if live == 0: HorizontalLayout {
                     spacing: 6px;
                     PlayButton { group: group; tint: tint; width: 52px; height: 32px; }
-                    ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 13px; horizontal-stretch: 1; height: 32px; }
-                    VerticalLayout {
-                        spacing: 2px;
+                    ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 13px; width: 52px; height: 32px; }
+                    // The loop as on 2-Deck: length, LOOP, then IN/OUT.
+                    HorizontalLayout {
                         horizontal-stretch: 1;
-                        LoopStepper { group: group; info: info; height: 32px; }
-                        Text { text: "LOOP"; color: Theme.text-dim; font-size: 9px; font-weight: 600; letter-spacing: 0.5px; horizontal-alignment: center; }
+                        alignment: end;
+                        spacing: 6px;
+                        LoopStepper { group: group; info: info; width: 96px; height: 32px; }
+                        SectionTitle { title: "Loop"; font-size: 11px; }
+                        ControlButton { group: group; key: "loop_in"; light-key: "loop_in_pending"; text: "IN"; momentary: true; tint: Theme.n-d1d1d6; font-size: 11px; width: 40px; height: 32px; }
+                        ControlButton { group: group; key: "loop_out"; light-key: "loop_enabled"; text: "OUT"; momentary: true; tint: Theme.lilac; font-size: 11px; width: 40px; height: 32px; }
                     }
                 }
                 if live == 0 && pads-shown: Pads { deck: deck; group: group; info: info; vertical-stretch: 1; min-height: 77px; }
@@ -229,20 +184,19 @@ export component TempoMenu inherits Rectangle {
     // Decks 2 and 4: the range list opens leftwards.
     in property <bool> mirrored;
     property <int> rate-index: Controls.resolve(group, "rate");
-    height: 14px;
-    HorizontalLayout {
+    height: 18px;
+    min-width: rate-row.preferred-width;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    rate-row := HorizontalLayout {
         alignment: center;
-        spacing: 3px;
-        Text { text: rate; color: ta.has-hover ? Theme.text : Theme.text-dim; font-size: 10px; vertical-alignment: center; }
-        Path {
-            width: 6px;
-            height: 4px;
-            y: (parent.height - self.height) / 2;
-            commands: "M 0 0 L 3 3.5 L 6 0";
-            stroke: ta.has-hover ? Theme.text : Theme.text-dim;
-            stroke-width: 1.2px;
-            fill: transparent;
-        }
+        padding-left: 6px;
+        padding-right: 6px;
+        spacing: 4px;
+        Text { text: rate; color: ta.has-hover ? Theme.text : Theme.text-dim; font-size: 10px; font-family: "Inter Tabular"; vertical-alignment: center; }
+        VerticalLayout { alignment: center; PillCaret { } }
     }
     ta := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
     menu := PopupWindow {
@@ -307,20 +261,15 @@ component DeckBarSection inherits Rectangle {
             width: 52px;
             alignment: center;
             Text { text: info.loaded ? info.bpm : "--"; color: Theme.text; font-size: 14px; font-weight: 600; horizontal-alignment: center; }
-            TempoMenu { group: group; rate: info.rate; range: info.range; tint: tint; mirrored: right; }
-        }
-        VerticalLayout {
-            alignment: center;
-            TempoStep { group: group; key: "rate_perm_up_small"; text: "+"; tint: tint; height: 18px; }
-            TempoStep { group: group; key: "rate_perm_down_small"; text: "−"; tint: tint; height: 18px; }
+            HorizontalLayout { alignment: center; TempoMenu { group: group; rate: info.rate; range: info.range; tint: tint; mirrored: right; } }
         }
         if right && !external: CrossfaderAssign { deck: deck; }
     }
 }
 
 // 4-Deck: the bar under the strips, decks 3, 1 | the crossfader | 2, 4,
-// the middle as wide as the Beat FX under it. The crossfader's ▾ (or a
-// right-click) switches it off and on.
+// the middle as wide as the Beat FX under it. A right-click on the
+// crossfader switches it off and on.
 export component FourDeckBar inherits Rectangle {
     in property <[DeckInfo]> decks;
     property <int> enabled-index: Controls.resolve("[Mixer]", "crossfader_enabled");
@@ -338,54 +287,10 @@ export component FourDeckBar inherits Rectangle {
             if external: Text { text: "EXTERNAL MIXER"; color: Theme.text-dim; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
             if !external: HorizontalLayout {
                 padding-left: 14px;
-                padding-right: 10px;
+                padding-right: 14px;
                 spacing: 10px;
+                // A right-click switches it off and on.
                 VerticalLayout { alignment: center; horizontal-stretch: 1; Crossfader { } }
-                Rectangle {
-                    width: 22px;
-                    height: 22px;
-                    y: (parent.height - self.height) / 2;
-                    border-radius: 11px;
-                    background: xta.has-hover ? Theme.n-48484c : Theme.n-3a3a3d;
-                    Path {
-                        width: 8px;
-                        height: 5px;
-                        commands: "M 0 0 L 4 4 L 8 0";
-                        stroke: Theme.text;
-                        stroke-width: 1.4px;
-                        fill: transparent;
-                    }
-                    xta := TouchArea { mouse-cursor: pointer; clicked => { xmenu.show(); } }
-                    xmenu := PopupWindow {
-                        x: parent.width - 150px;
-                        y: parent.height + 4px;
-                        width: 150px;
-                        close-policy: close-on-click-outside;
-                        Rectangle {
-                            background: Theme.pill-list;
-                            border-radius: 9px;
-                            border-width: 1px;
-                            border-color: Theme.border;
-                            drop-shadow-blur: 14px;
-                            drop-shadow-color: Theme.s-000000a0;
-                        }
-                        VerticalLayout {
-                            padding: 5px;
-                            Rectangle {
-                                height: 26px;
-                                border-radius: 4px;
-                                background: ita.has-hover ? Theme.n-38373d : transparent;
-                                Text { x: 8px; text: on ? "Turn crossfader off" : "Turn crossfader on"; color: Theme.text; font-size: 12px; vertical-alignment: center; height: parent.height; }
-                                ita := TouchArea {
-                                    clicked => {
-                                        Controls.toggle(enabled-index);
-                                        xmenu.close();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
         DeckBarSection { deck: 1; info: decks[1]; }

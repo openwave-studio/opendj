@@ -89,8 +89,8 @@ The menu at the top left of the window switches layouts:
   which mixes into it straight away; on an album these take the whole
   album in order, and on an artist **Show tracks** searches for them. The keys are **↵**, **⇧↵** and **⌘↵**; **Esc**
   clears the box and the list's search. There is no MASTER button (the
-  bar's volume is the master volume); **REC** shows only while recording
-  (start it from **File › Record Mix**), and there is no **MIC** button
+  bar's volume is the master volume); **Rec** shows only while recording
+  (start it from **File › Record Mix**), and there is no **Mic** button
   (switch to another layout to use the microphone).
   Underneath, decks 1 and 2 take turns and [Automix](automix.md) mixes from
   one to the other. **Play** switches Automix on, **Next** mixes into the next
@@ -209,9 +209,9 @@ everywhere.
 
 ## Crossfader assignment
 
-In 4-Deck, each deck says which side of the crossfader it is on: **LEFT**,
-**RIGHT** or **THRU** (not affected by the crossfader). Decks 1 and 3 start on
-the left, 2 and 4 on the right. Click the label to change it.
+In 4-Deck, each deck says which side of the crossfader it is on: **Left**,
+**Right** or **Thru** (not affected by the crossfader). Decks 1 and 3 start on
+the left, 2 and 4 on the right. Click the pill to step to the next side.
 
 ## Decks 3 and 4 on a two-deck controller
 
