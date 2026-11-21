@@ -60,7 +60,11 @@ export global Theme {
     out property <color> control-pressed: root.light ? #e2e0ea : #2c2c2f;
     out property <color> border: root.light ? #c9c7d3 : #353538;
     // Automix: its button while on, and the crossfader while Automix holds it.
-    out property <color> automix: root.light ? #24a148 : #30c158;
+    // Automix's colour: cyan, apart from Play's green and the lilac of
+    // selections, on its power button, the crossfader it holds and its mixes.
+    out property <color> automix: root.light ? #1597ad : #3ccbe0;
+    // Ink on an Automix-filled button.
+    out property <color> automix-ink: #0b2a30;
     out property <color> separator: root.light ? #d8d6e0 : #28282b;
     out property <color> text: root.light ? #16151b : #f2f2f7;
     out property <color> text-dim: root.light ? #5d5b69 : #8e8e93;
@@ -70,6 +74,9 @@ export global Theme {
     // The lit part of the ring round mixer knobs.
     out property <color> knob-arc: root.light ? #0060df : #0a84ff;
     out property <color> knob-ring: root.light ? #d5d3de : #3a3a3e;
+    // Matte knob caps (look 4): lit from above left.
+    out property <color> knob-matte-hi: root.light ? #ffffff : #4a4a50;
+    out property <color> knob-matte-lo: root.light ? #dcdae4 : #2a2a2f;
     out property <color> fader-handle: root.light ? #6e6c7a : #8e8e93;
     out property <color> tick: root.light ? #b5b3c0 : #3e3e42;
     // Electric Lilac, openDJ's own color: the logo, the accent and the
@@ -158,6 +165,13 @@ export global Theme {
 
     // Play while playing (green) and CUE while held or at the cue point
     // (yellow), as on players, whatever the deck's own colour.
+    // The one glow every lit round button shares (headphone cue, power):
+    // a soft lilac halo, and a faint lilac fill inside the ring.
+    out property <length> glow-blur: 4px;
+    out property <color> glow: root.accent.with-alpha(0.3);
+    // Opaque, so the glow under the button stays outside it.
+    out property <color> lit-fill: root.pill.mix(root.accent, 0.9);
+    out property <color> lit-fill-hover: root.pill.mix(root.accent, 0.84);
     out property <color> play-lit: root.light ? #1f9d3a : #30d158;
     out property <color> cue-lit: root.light ? #b38600 : #ffcc00;
 

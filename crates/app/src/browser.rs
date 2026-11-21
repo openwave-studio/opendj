@@ -6614,7 +6614,7 @@ impl Browser {
                 title: t.title.clone().into(),
                 artist: t.artist.clone().into(),
                 bpm: if t.bpm > 0.0 {
-                    format!("{:.0}", t.bpm).into()
+                    format!("{:.1}", t.bpm).into()
                 } else {
                     SharedString::new()
                 },
@@ -6713,7 +6713,7 @@ impl Browser {
                     title: t.title.clone().into(),
                     artist: t.artist.clone().into(),
                     bpm: if t.bpm > 0.0 {
-                        format!("{:.0}", t.bpm).into()
+                        format!("{:.1}", t.bpm).into()
                     } else {
                         SharedString::new()
                     },

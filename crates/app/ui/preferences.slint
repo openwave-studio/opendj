@@ -1333,9 +1333,9 @@ export component PrefRow inherits Rectangle {
             alignment: start;
             spacing: 36px;
             padding-top: 4px;
-            ControlKnob { group: "[Master]"; key: "headMix"; label: "CUE MIX"; bipolar: true; size: 36px; }
-            ControlKnob { group: "[Master]"; key: "headGain"; label: "CUE LEVEL"; size: 36px; }
-            ControlKnob { group: "[Master]"; key: "booth_gain"; label: "BOOTH"; size: 36px; }
+            ControlKnob { group: "[Master]"; key: "headMix"; label: "Cue Mix"; bipolar: true; size: 36px; look: 4; arc-color: Theme.accent; }
+            ControlKnob { group: "[Master]"; key: "headGain"; label: "Cue Level"; size: 36px; look: 4; arc-color: Theme.accent; }
+            ControlKnob { group: "[Master]"; key: "booth_gain"; label: "Booth"; size: 36px; look: 4; arc-color: Theme.accent; }
         }
     }
     // A thin line under each row, as between rows of a settings list.

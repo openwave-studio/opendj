@@ -304,7 +304,7 @@ impl DeckControls {
         // A pad panel a controller's pad mode buttons ask the deck to show
         // (0 hot cues, 1 pad FX 1, 2 beat jump, 3 sampler, 4 stems, 5 beat
         // loop, 6 pad FX 2, 7 keyboard, 8 key shift, 9 loop roll, 10 slicer,
-        // 11 freeze); the skin shows it and sets this back to -1.
+        // 11 freeze); the skin shows it and the app sets this back to -1.
         reg.create(g, "pad_panel", -1.0, -1.0, 16.0, Behavior::Free);
         // Touching the jog's top scratches (on, as on vinyl) or only bends
         // like the rim (off, CDJ mode). Only controller mappings read it;
@@ -312,7 +312,7 @@ impl DeckControls {
         reg.create(g, "vinyl_mode", 1.0, 0.0, 1.0, Behavior::Toggle);
         // Asks the skin to open pad tab 0-7 by its place (a controller's pad
         // mode buttons: 0-3 plain, 4-7 with Shift), whatever panel it shows;
-        // the skin sets this back to -1.
+        // the app sets this back to -1 once the skin has seen it.
         reg.create(g, "pad_tab", -1.0, -1.0, 7.0, Behavior::Free);
         // The pad panel in each of the eight pad tabs (numbers as for
         // `pad_panel`), in the DDJ-FLX4's pad mode order. The skin changes
@@ -781,6 +781,13 @@ pub(crate) struct MasterControls {
     /// headphones and takes the other decks out of the cue. On to start;
     /// automix loads leave the cue alone.
     pub(crate) pfl_on_load: ControlHandle,
+    /// `[Controls] bpm_match_on_load`: a track loaded while another deck
+    /// plays takes that deck's tempo (or half or double it), as sync would,
+    /// without syncing. Off to start.
+    pub(crate) bpm_match_on_load: ControlHandle,
+    /// `[Controls] sync_on_play`: pressing PLAY on a deck that isn't synced
+    /// lines it up with the deck it would sync to, once. Off to start.
+    pub(crate) sync_on_play: ControlHandle,
     /// `[Master] test_tone`: beeps for checking the outputs, 1 in the
     /// master mix, 2 in the headphones, 0 off. The guided tour plays it.
     pub(crate) test_tone: ControlHandle,
@@ -922,6 +929,8 @@ pub(crate) fn create_global_controls(reg: &ControlRegistry) -> MasterControls {
             c.set_bool(true);
             c
         },
+        bpm_match_on_load: reg.toggle("[Controls]", "bpm_match_on_load"),
+        sync_on_play: reg.toggle("[Controls]", "sync_on_play"),
     }
 }
 

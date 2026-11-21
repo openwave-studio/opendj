@@ -1577,6 +1577,20 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let positions = engine.visual_positions();
     // Recordings finished so far, to add the next one's files to Mixed Sets.
     let recordings_seen = Cell::new(recorder.finished().0);
+    // A controller's pad mode buttons ask every deck's pads through
+    // `pad_tab` and `pad_panel`. The skin has more than one set of pads
+    // (one per layout), so none of them takes the request back: it is put
+    // back to -1 here, a few frames later, once each has seen it.
+    let pad_requests: Vec<(ControlHandle, Cell<u8>)> = (0..NUM_DECKS)
+        .flat_map(|d| {
+            let g = opendj_engine::deck_group(d);
+            ["pad_tab", "pad_panel"]
+                .into_iter()
+                .filter_map(|k| registry.get(&g, k))
+                .collect::<Vec<_>>()
+        })
+        .map(|h| (h, Cell::new(0)))
+        .collect();
     let finished_recorder = recorder.clone();
     let quitting_engine = engine.clone();
     {
@@ -1590,6 +1604,16 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 };
                 // The skin reads controls through `tick`; moving it makes
                 // every one of them look again, so only when one changed.
+                for (h, frames) in &pad_requests {
+                    if h.get() < 0.0 {
+                        frames.set(0);
+                    } else if frames.get() >= 3 {
+                        h.set(-1.0);
+                        frames.set(0);
+                    } else {
+                        frames.set(frames.get() + 1);
+                    }
+                }
                 let version = controls_version();
                 let controls_changed = shown_controls.replace(version) != version;
                 if controls_changed {
@@ -2551,7 +2575,7 @@ impl Decks {
             cover: Default::default(),
             has_cover: false,
             bpm: if t.bpm > 0.0 {
-                format!("{:.2}", h.bpm.get())
+                format!("{:.1}", h.bpm.get())
             } else {
                 "--".into()
             }

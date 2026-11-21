@@ -16,7 +16,7 @@ import { PageView, PageUi } from "pages.slint";
 import { FilterBar, FilterUi, SuggestionList } from "filters.slint";
 import { CrateIcon, CrateColors } from "crate_icon.slint";
 import { TourMark } from "tourmark.slint";
-import { ListRow, PowerButton, StepperPill, SwitchPill, TitledList } from "pills.slint";
+import { ListRow, PillCaret, PowerButton, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
 
 export struct Folder {
     name: string,
@@ -6327,7 +6327,7 @@ component TrackList inherits Rectangle {
     }
 }
 
-// Starts and stops Automix: a play triangle and the word, green while on.
+// Starts and stops Automix: a play triangle and the word, cyan while on.
 // A small flat button with a word on it.
 component SmallButton inherits Rectangle {
     in property <string> text;
@@ -6861,6 +6861,8 @@ component SidePanel inherits Rectangle {
         // Intro over outro: from the outgoing outro, as long as the incoming intro.
         { text: "Intro over outro", value: 6 },
     ];
+    // The mix styles, in the Style menu.
+    property <[string]> style-names: ["Smooth", "Bass swap", "Filter", "Cut"];
     in property <int> automix-length;
     in property <int> automix-style;
     // Played tracks go back to the end of the list instead of leaving it.
@@ -7201,6 +7203,8 @@ component SidePanel inherits Rectangle {
                     alignment: center;
                     PowerButton {
                         on: automix-on;
+                        filled: true;
+                        lit: Theme.automix;
                         clicked => { automix-toggle(); }
                         TourMark { id: "ui,automix_button"; }
                     }
@@ -7236,16 +7240,16 @@ component SidePanel inherits Rectangle {
                     spacing: 6px;
                     Text { text: "Length"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
                     Rectangle {
-                      width: 112px;
+                      width: 150px;
                       StepperPill {
-                        width: 112px;
+                        width: 150px;
                         prev-enabled: automix-length > 0;
                         next-enabled: automix-length < 6;
                         prev => { automix-set-length(automix-length - 1); }
                         next => { automix-set-length(automix-length + 1); }
                         Text {
                             horizontal-stretch: 1;
-                            text: ["0 s", "12 s", "15 s", "30 s", "16 bars", "32 bars", "Phrases"][automix-length];
+                            text: ["0 s", "12 s", "15 s", "30 s", "16 bars", "32 bars", "Intro over outro"][automix-length];
                             color: len-ta.has-hover ? Theme.n-ffffff : Theme.text;
                             font-size: 12px;
                             font-weight: 500;
@@ -7258,10 +7262,17 @@ component SidePanel inherits Rectangle {
                     }
                     Rectangle { width: 4px; }
                     Text { text: "Style"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
-                    // Four styles: a press steps to the next.
-                    SwitchPill {
-                        text: ["Smooth", "Bass swap", "Filter", "Cut"][automix-style];
-                        clicked => { automix-set-style(mod(automix-style + 1, 4)); }
+                    // Opens the list of styles.
+                    ValuePill {
+                        open: false;
+                        clicked => { style-menu.show(); }
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 9px;
+                            spacing: 6px;
+                            Text { text: root.style-names[automix-style]; color: Theme.lilac-text; font-size: 12px; font-weight: 500; vertical-alignment: center; }
+                            VerticalLayout { alignment: center; PillCaret { } }
+                        }
                         TourMark { id: "ui,automix_style"; }
                     }
                     Rectangle { horizontal-stretch: 1; }
@@ -7303,21 +7314,42 @@ component SidePanel inherits Rectangle {
                 // that mix follow, from the pool picked here.
                 if KeepGoingUi.player: HorizontalLayout {
                     spacing: 6px;
-                    SmallButton {
-                        text: "Keep going";
-                        lit: KeepGoingUi.on;
+                    SwitchPill {
+                        text: "Keep Going";
+                        on: KeepGoingUi.on;
                         clicked => { KeepGoingUi.set-on(!KeepGoingUi.on); }
                     }
-                    Dropdown {
-                        horizontal-stretch: 1;
-                        label: "FROM";
-                        text: KeepGoingUi.pool;
-                        current: -1;
-                        choices: KeepGoingUi.list-name != ""
-                            ? [{ text: "Everything", value: 0 }, { text: KeepGoingUi.list-name, value: 1 }]
-                            : [{ text: "Everything", value: 0 }];
-                        picked(i) => { KeepGoingUi.pick-pool(i); }
+                    Rectangle { width: 4px; }
+                    Text { text: "From"; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; }
+                    // Where its tracks come from: everything, or the open list.
+                    ValuePill {
+                        open: false;
+                        clicked => { pool-menu.show(); }
+                        HorizontalLayout {
+                            padding-left: 10px;
+                            padding-right: 9px;
+                            spacing: 6px;
+                            Text { text: KeepGoingUi.pool; color: Theme.lilac-text; font-size: 12px; font-weight: 500; vertical-alignment: center; overflow: elide; }
+                            VerticalLayout { alignment: center; PillCaret { } }
+                        }
+                        pool-menu := PopupWindow {
+                            y: parent.height + 4px;
+                            width: 180px;
+                            close-policy: close-on-click-outside;
+                            TitledList {
+                                title: "From";
+                                for name[i] in (KeepGoingUi.list-name != "" ? ["Everything", KeepGoingUi.list-name] : ["Everything"]): ListRow {
+                                    selected: name == KeepGoingUi.pool;
+                                    clicked => {
+                                        KeepGoingUi.pick-pool(i);
+                                        pool-menu.close();
+                                    }
+                                    Text { x: 10px; text: name; color: name == KeepGoingUi.pool ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                                }
+                            }
+                        }
                     }
+                    Rectangle { horizontal-stretch: 1; }
                 }
             }
             if tab == 0 && KeepGoingUi.player && UpNextUi.now-loaded: HorizontalLayout {
@@ -7400,6 +7432,24 @@ component SidePanel inherits Rectangle {
                     }
                 }
             }
+            // The mix styles.
+            style-menu := PopupWindow {
+                x: 214px;
+                y: 64px;
+                width: 160px;
+                close-policy: close-on-click-outside;
+                TitledList {
+                    title: "Style";
+                    for name[i] in root.style-names: ListRow {
+                        selected: i == automix-style;
+                        clicked => {
+                            automix-set-style(i);
+                            style-menu.close();
+                        }
+                        Text { x: 10px; text: name; color: i == automix-style ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
+                    }
+                }
+            }
             // The mix lengths, by time, bars and phrases.
             length-menu := PopupWindow {
                 x: 6px;
@@ -7426,7 +7476,8 @@ component SidePanel inherits Rectangle {
                 vertical-stretch: 1;
                 border-radius: 4px;
                 border-width: drop.has-drag ? 2px : TrackDrag.active ? 1px : 0px;
-                border-color: drop.has-drag ? #30c158 : #30c15880;
+                // Automix's drop box in its cyan; the other panels in lilac.
+                border-color: (tab == 0 ? Theme.automix : Theme.accent).with-alpha(drop.has-drag ? 1 : 0.5);
                 lv := ListView {
                     gutter: true;
                     for r[i] in rows: Rectangle {
@@ -7528,7 +7579,7 @@ component SidePanel inherits Rectangle {
                     y: max(0px, min(parent.height - 2px, drop-at * row-height + lv.content-y - 1px));
                     width: parent.width - 8px;
                     height: 2px;
-                    background: #30c158;
+                    background: tab == 0 ? Theme.automix : Theme.accent;
                 }
                 if rows.length == 0: Text {
                     x: 8px;

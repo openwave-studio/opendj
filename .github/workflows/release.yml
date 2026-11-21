@@ -258,9 +258,9 @@ jobs:
           files: dist/*
 
   nightly:
-    # Replaces the "nightly" pre-release with this build: the old one and its
-    # tag are deleted, then made again at this commit, so the page only ever
-    # holds one set of downloads.
+    # Replaces the "nightly" pre-release with this build: the tag moves to
+    # this commit, then the old release is deleted and made again, so the
+    # page only ever holds one set of downloads.
     if: needs.version.outputs.nightly == 'true' && needs.version.outputs.skip != 'true'
     needs: [version, macos, linux, windows]
     runs-on: ubuntu-24.04
@@ -291,9 +291,19 @@ jobs:
             echo
             echo "The app's update check only offers releases, so install a newer nightly by downloading it again from this page."
           } > notes.md
-          gh release delete nightly --cleanup-tag --yes 2>/dev/null || true
+          # Move the tag before touching the release, so a refused push
+          # leaves the last nightly up. The job's token has no workflows
+          # permission, so GitHub refuses a tag on a commit whose
+          # .github/workflows differ from main's: when main changes them
+          # during the build, this night is skipped and the next run
+          # publishes.
+          if ! git push --force origin "$GITHUB_SHA:refs/tags/nightly"; then
+            echo "::error::GitHub refused to move the nightly tag to $GITHUB_SHA (likely main's workflow files changed since this commit). The last nightly is still up; run the workflow again on main."
+            exit 1
+          fi
+          gh release delete nightly --yes 2>/dev/null || true
           gh release create nightly dist/* \
-            --target "$GITHUB_SHA" \
+            --verify-tag \
             --title "openDJ ${VERSION%%-*} nightly ($VERSION)" \
             --notes-file notes.md \
             --prerelease --latest=false

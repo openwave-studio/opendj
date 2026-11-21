@@ -5,8 +5,8 @@
   "description": "The openDJ docs at opendj.app/docs, built with Starlight. website/build.sh builds them with the rest of the site.",
   "scripts": {
     "controllers": "python3 ../tools/controllers.py ../../res/controllers .",
-    "dev": "npm run controllers && astro dev",
-    "build": "npm run controllers && astro build"
+    "dev": "astro dev",
+    "build": "astro build"
   },
   "engines": {
     "node": ">=22"

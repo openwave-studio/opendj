@@ -101,8 +101,8 @@ component PlayerChannel inherits HorizontalLayout {
     if !right: PlayerTransport { deck: deck; info: info; spin: spin; }
     if right: VerticalLayout {
         spacing: 4px;
-        Knob { group: group; key: "pregain"; size: 20px; }
-        ControlFader { group: group; key: "volume"; tint: Theme.deck-color(deck); ticks: 9; width: 32px; vertical-stretch: 1; }
+        Knob { group: group; key: "pregain"; size: 20px; look: 4; readout: 1; arc-color: Theme.accent; }
+        ControlFader { group: group; key: "volume"; tint: Theme.deck-color(deck); ticks: 9; width: 32px; look: 1; vertical-stretch: 1; }
     }
     // HIGH and MID over LOW and FILTER.
     VerticalLayout {
@@ -114,8 +114,8 @@ component PlayerChannel inherits HorizontalLayout {
     }
     if !right: VerticalLayout {
         spacing: 4px;
-        Knob { group: group; key: "pregain"; size: 20px; }
-        ControlFader { group: group; key: "volume"; tint: Theme.deck-color(deck); ticks: 9; width: 32px; vertical-stretch: 1; }
+        Knob { group: group; key: "pregain"; size: 20px; look: 4; readout: 1; arc-color: Theme.accent; }
+        ControlFader { group: group; key: "volume"; tint: Theme.deck-color(deck); ticks: 9; width: 32px; look: 1; vertical-stretch: 1; }
     }
     if right: PlayerTransport { deck: deck; info: info; spin: spin; }
 }
@@ -273,7 +273,7 @@ export component PlayerBar inherits Rectangle {
     property <int> hover-s: info.loaded ? floor(clamp(line-ta.mouse-x / line-ta.width, 0, 1) * info.duration) : 0;
     property <string> hover-time: floor(hover-s / 60) + ":" + (mod(hover-s, 60) < 10 ? "0" : "") + mod(hover-s, 60);
     // BPM to one decimal, without a trailing ".0".
-    property <string> bpm: info.bpm.is-float() ? "" + round(info.bpm.to-float() * 10) / 10 : "";
+    property <string> bpm: info.bpm.is-float() ? info.bpm : "";
     // Both sides of the transport are this wide, so it sits in the middle
     // of the window.
     property <length> side: clamp(root.width * 0.28, 340px, 480px);

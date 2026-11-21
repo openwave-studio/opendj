@@ -345,6 +345,9 @@ pub fn apply_saved(registry: &ControlRegistry) {
         "pfl_on_load",
         f(settings::flag("pfl_on_load", true)),
     );
+    for id in ["bpm_match_on_load", "sync_on_play"] {
+        set("[Controls]", id, f(settings::flag(id, false)));
+    }
     // The levels as the DJ left them; the first time, the engine's own
     // starting levels stand (master 50%, phones 25%, cue only).
     for (key, id) in LEVEL_KEYS {
@@ -427,6 +430,15 @@ fn key_mixing() -> key::Mixing {
 
 /// How far tracks are shifted to match keys on load: 0 (off), 1 or 2
 /// semitones.
+/// Shows the automatic deck helpers on the letters under each deck's key.
+fn show_deck_auto(app: &AppWindow) {
+    let g = app.global::<crate::DeckAuto>();
+    g.set_bpm(settings::flag("bpm_match_on_load", false));
+    g.set_key(key_match_range() > 0);
+    g.set_sync(settings::flag("sync_on_play", false));
+    g.set_pitch(settings::flag("keylock_default", true));
+}
+
 pub fn key_match_range() -> u8 {
     settings::number("key_match_on_load", 1.0).clamp(0.0, 2.0) as u8
 }
@@ -743,9 +755,37 @@ impl Prefs {
         let p = prefs.clone();
         audio.on_set_buffer(move |i| p.borrow_mut().picked("buffer_frames", i.max(0) as usize));
         let p = prefs.clone();
-        g.on_toggled(move |id, on| p.borrow_mut().toggled(&id, on));
+        let weak = app.as_weak();
+        g.on_toggled(move |id, on| {
+            p.borrow_mut().toggled(&id, on);
+            if let Some(app) = weak.upgrade() {
+                show_deck_auto(&app);
+            }
+        });
+        // The B K S P letters under each deck's key: the same settings.
+        show_deck_auto(app);
         let p = prefs.clone();
-        g.on_picked(move |id, i| p.borrow_mut().picked(&id, i.max(0) as usize));
+        app.global::<crate::DeckAuto>().on_toggle(move |id, on| {
+            let mut p = p.borrow_mut();
+            if id == "key_match_on_load" {
+                p.picked(&id, on as usize);
+            } else {
+                p.toggled(&id, on);
+            }
+            if let Some(app) = p.app.upgrade() {
+                show_deck_auto(&app);
+            }
+            // The settings page shows them too.
+            p.refresh();
+        });
+        let p = prefs.clone();
+        let weak = app.as_weak();
+        g.on_picked(move |id, i| {
+            p.borrow_mut().picked(&id, i.max(0) as usize);
+            if let Some(app) = weak.upgrade() {
+                show_deck_auto(&app);
+            }
+        });
         let p = prefs.clone();
         g.on_pressed(move |id| p.borrow_mut().pressed(&id));
         let p = prefs.clone();
@@ -1502,6 +1542,18 @@ impl Prefs {
                                  the shift they'd get.",
                             )
                         },
+                        switch(
+                            "bpm_match_on_load",
+                            "Match tempo on load",
+                            "A track loaded while another deck plays takes its tempo (or half or double it), without syncing.",
+                            settings::flag("bpm_match_on_load", false),
+                        ),
+                        switch(
+                            "sync_on_play",
+                            "Sync on play",
+                            "Pressing PLAY on a deck that isn't synced lines its beats up with the other deck once.",
+                            settings::flag("sync_on_play", false),
+                        ),
                     ]);
                 }
                 if shows(2) {
@@ -2815,6 +2867,8 @@ impl Prefs {
             "xfader_enabled" => self.set("[Mixer]", "crossfader_enabled", f(on)),
             "head_split" => self.set("[Master]", "headSplit", f(on)),
             "pfl_on_load" => self.set("[Controls]", "pfl_on_load", f(on)),
+            "bpm_match_on_load" => self.set("[Controls]", "bpm_match_on_load", f(on)),
+            "sync_on_play" => self.set("[Controls]", "sync_on_play", f(on)),
             "auto_gain" => self.set("[ReplayGain]", "ReplayGainEnabled", f(on)),
             "stems_on_load" => separation::set_on_load(on),
             crate::wave_look::GAIN_KEY => crate::wave_look::set_follows_gain(on),

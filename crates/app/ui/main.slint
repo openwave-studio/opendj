@@ -19,6 +19,8 @@ import { WaveHeight, WaveHeightList, WaveHeightGrip } from "wave_height.slint";
 export { WaveHeight }
 import { WaveLook } from "wave_look.slint";
 export { WaveLook }
+import { DeckAuto } from "deck_auto.slint";
+export { DeckAuto }
 import { LayoutsUi, LayoutEntry } from "layouts.slint";
 export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
@@ -612,66 +614,53 @@ component FooterButton inherits Rectangle {
 // is, with its level beside it once an input is chosen in the settings.
 // The arrow at its right end opens the MIC panel: the microphone's and
 // auxiliary input's levels, EQ and effects.
+// Mic: one pill putting the microphone on (`[Microphone],talkover`), lit
+// in the mic color while it is, with its level beside it once an input is
+// chosen in the settings. A right-click opens the Mic panel: the
+// microphone's and auxiliary input's levels, EQ and effects.
 component MicButton inherits Rectangle {
     property <int> on-index: Controls.resolve("[Microphone]", "talkover");
     property <bool> on: Controls.value(on-index, Controls.tick) > 0;
     property <bool> configured: Controls.value(Controls.resolve("[Microphone]", "input_configured"), Controls.tick) > 0;
     property <color> tint: Theme.mic;
-    background: on ? tint.with-alpha(0.16) : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? tint : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? tint : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    animate border-color { duration: 120ms; }
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
-    clip: true;
     HorizontalLayout {
-        Rectangle {
-            background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-ffffff10 : transparent;
-            HorizontalLayout {
-                padding-left: 12px;
-                padding-right: 10px;
-                spacing: 7px;
-                // A microphone on a stand.
-                Path {
-                    width: 12px;
-                    height: 16px;
-                    y: (parent.height - self.height) / 2;
-                    viewbox-width: 12;
-                    viewbox-height: 16;
-                    stroke: on ? tint : Theme.text-dim;
-                    stroke-width: 1.5px;
-                    fill: transparent;
-                    commands: "M 3.5 3 A 2.5 2.5 0 0 1 8.5 3 L 8.5 7.5 A 2.5 2.5 0 0 1 3.5 7.5 Z M 1 7 A 5 5 0 0 0 11 7 M 6 12 L 6 15 M 3 15 L 9 15";
-                }
-                Text { text: "MIC"; color: on ? tint : Theme.text-dim; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-                if configured: VerticalLayout {
-                    alignment: center;
-                    VuMeter { group: "[Microphone]"; key: "VuMeter"; width: 4px; height: 16px; segments: 8; }
-                }
-            }
-            ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => { Controls.toggle(on-index); }
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 7px;
+        // A microphone on a stand.
+        Path {
+            width: 12px;
+            height: 16px;
+            y: (parent.height - self.height) / 2;
+            viewbox-width: 12;
+            viewbox-height: 16;
+            stroke: on ? tint : Theme.pill-off-text;
+            stroke-width: 1.5px;
+            fill: transparent;
+            commands: "M 3.5 3 A 2.5 2.5 0 0 1 8.5 3 L 8.5 7.5 A 2.5 2.5 0 0 1 3.5 7.5 Z M 1 7 A 5 5 0 0 0 11 7 M 6 12 L 6 15 M 3 15 L 9 15";
+        }
+        Text { text: "Mic"; color: on ? tint : Theme.pill-off-text; font-size: 12px; font-weight: 500; vertical-alignment: center; }
+        if configured: VerticalLayout {
+            alignment: center;
+            VuMeter { group: "[Microphone]"; key: "VuMeter"; width: 4px; height: 16px; segments: 8; }
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                panel.show();
             }
         }
-        Rectangle { width: 1px; background: on ? tint.with-alpha(0.5) : Theme.n-ffffff18; }
-        Rectangle {
-            width: 26px;
-            background: arrow.pressed ? Theme.control-pressed : arrow.has-hover ? Theme.n-ffffff10 : transparent;
-            Path {
-                width: 8px;
-                height: 5px;
-                commands: "M 0 0 L 4 4 L 8 0";
-                stroke: arrow.has-hover ? Theme.text : on ? tint : Theme.text-dim;
-                stroke-width: 1.4px;
-                fill: transparent;
-            }
-            arrow := TouchArea {
-                mouse-cursor: pointer;
-                clicked => { panel.show(); }
-            }
-        }
+        clicked => { Controls.toggle(on-index); }
     }
     panel := MicPanel {
         x: 0px;
@@ -746,12 +735,12 @@ component RecordButton inherits Rectangle {
     property <int> hours: floor(seconds / 3600);
     property <int> minutes: mod(floor(seconds / 60), 60);
     property <int> secs: mod(floor(seconds), 60);
-    background: ta.pressed ? Theme.control-pressed : on ? #e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? #e5484d : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? Theme.danger : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 12px;
@@ -763,17 +752,17 @@ component RecordButton inherits Rectangle {
                 width: 10px;
                 height: 10px;
                 border-radius: 5px;
-                background: on ? #e5484d : Theme.text-dim;
+                background: on ? Theme.danger : Theme.pill-off-text;
                 // A slow blink while recording.
                 opacity: on && mod(animation-tick() / 1ms, 1400) > 900 ? 0.35 : 1.0;
             }
         }
         Text {
-            text: on ? (hours > 0 ? hours + ":" : "") + (minutes < 10 && hours > 0 ? "0" : "") + minutes + ":" + (secs < 10 ? "0" : "") + secs : "REC";
-            color: on ? Theme.text : Theme.text-dim;
-            font-size: on ? 13px : 11px;
-            font-weight: on ? 500 : 700;
-            letter-spacing: on ? 0px : 0.5px;
+            text: on ? (hours > 0 ? hours + ":" : "") + (minutes < 10 && hours > 0 ? "0" : "") + minutes + ":" + (secs < 10 ? "0" : "") + secs : "Rec";
+            color: on ? Theme.text : Theme.pill-off-text;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: on ? "Inter Tabular" : Theme.font-family;
             vertical-alignment: center;
         }
     }
@@ -1432,52 +1421,62 @@ component JogsButton inherits Rectangle {
     }
 }
 
-// MASTER: the main meters and the clock. A click opens the MASTER panel
-// with the output levels, Ableton Link and MIDI clock; LINK and CLOCK
-// show while they are on.
+// The master level as a large arc knob, unframed, with the left and right
+// meters standing beside it, as tall as it, then the clock. A right-click
+// on the knob, or a click on the clock, opens the Master panel with the
+// output levels, Link and MIDI clock; LINK and CLOCK show while they are
+// on.
 component MasterPill inherits Rectangle {
     in property <string> clock;
     property <bool> link: Controls.value(Controls.resolve("[Link]", "enabled"), Controls.tick) > 0;
     property <bool> midi-clock: Controls.value(Controls.resolve("[MidiClock]", "enabled"), Controls.tick) > 0;
-    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
-    border-radius: 10px;
-    height: 36px;
-    y: 8px;
+    function open() {
+        AudioSettings.refresh();
+        panel.show();
+    }
+    // No frame: the knob, meters and clock stand on the bar.
+    height: 44px;
+    y: 4px;
     horizontal-stretch: 0;
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { open(); }
+    }
     HorizontalLayout {
-        padding-left: 12px;
-        padding-right: 12px;
-        spacing: 10px;
-        Text { text: "MASTER"; color: Theme.text-dim; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; vertical-alignment: center; }
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 8px;
         VerticalLayout {
             alignment: center;
-            spacing: 2px;
-            VuMeter { group: "[Master]"; key: "VuMeterL"; width: 120px; height: 4px; vertical: false; segments: 24; }
-            VuMeter { group: "[Master]"; key: "VuMeterR"; width: 120px; height: 4px; vertical: false; segments: 24; }
+            ControlKnob {
+                group: "[Master]";
+                key: "gain";
+                label: "";
+                size: 34px;
+                look: 4;
+                arc-color: Theme.accent;
+                right-clicked => { open(); }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            HorizontalLayout {
+                spacing: 2px;
+                VuMeter { group: "[Master]"; key: "VuMeterL"; width: 4px; height: 34px; segments: 14; }
+                VuMeter { group: "[Master]"; key: "VuMeterR"; width: 4px; height: 34px; segments: 14; }
+            }
         }
         if link: Text { text: "LINK"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
         if midi-clock: Text { text: "CLOCK"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-        Text { text: clock; color: Theme.text; font-size: 14px; font-weight: 500; vertical-alignment: center; }
-        Path {
-            width: 8px;
-            height: 5px;
-            y: (parent.height - self.height) / 2;
-            commands: "M 0 0 L 4 4 L 8 0";
-            stroke: ta.has-hover ? Theme.text : Theme.text-dim;
-            stroke-width: 1.4px;
-            fill: transparent;
-        }
-    }
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => {
-            AudioSettings.refresh();
-            panel.show();
+        VerticalLayout {
+            alignment: center;
+            spacing: 0px;
+            Text { text: clock; color: ta.has-hover ? Theme.n-ffffff : Theme.text; font-size: 14px; font-weight: 500; font-family: "Inter Tabular"; }
         }
     }
     panel := MasterPanel {
         x: root.width - 300px;
-        y: root.height + 6px;
+        y: root.height + 4px;
     }
 }
 

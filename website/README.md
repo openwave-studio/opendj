@@ -81,8 +81,8 @@ set, the sign-in pages say it isn't set up yet.
 ## Controller pages
 
 `tools/controllers.py` writes a docs page for every mapping in
-`res/controllers` when the docs build (`npm run build` and `npm run dev` run
-it first), plus the controllers' index page and `docs/src/controllers.json`,
+`res/controllers` whenever Astro loads `docs/astro.config.mjs`, so every
+`astro build` and `astro dev` has them, plus the controllers' index page and `docs/src/controllers.json`,
 their sidebar entries. Hand-written guides in `docs/controller-guides/` go at
 the top of their controller's page, and the controllers in
 `crates/controllers/support.json` get a Beta or Supported badge. Lines that

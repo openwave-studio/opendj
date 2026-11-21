@@ -968,9 +968,9 @@ impl Browser {
                     format!("{fits}, {tempo_text}")
                 };
                 let info = if tr.key.is_empty() {
-                    format!("{:.0} BPM", tr.bpm)
+                    format!("{:.1} BPM", tr.bpm)
                 } else {
-                    format!("{:.0} BPM · {}", tr.bpm, tr.key)
+                    format!("{:.1} BPM · {}", tr.bpm, tr.key)
                 };
                 SetSwapRow {
                     title: tr.title.as_str().into(),

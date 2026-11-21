@@ -12,22 +12,23 @@ doesn't pass file drops to openDJ yet.)
 
 In 2-Deck each deck runs, from the outer edge in:
 
-- **The tempo column**, as in djay Pro: **SYNC** on top, the BPM, the
-  tempo % (click it for the [tempo panel](#tempo-panel-and-range)), the
-  tempo fader, and **−** and **+** under it for small steps. The triangle
-  beside the fader puts the tempo back to the track's own. A lilac line
+- **The tempo column**: the tempo % on top (click it for the
+  [tempo panel](#tempo-panel-and-range), with fine steps), the tempo
+  fader, and **SYNC** at the bottom, in line with **PLAY** and **CUE**. The
+  0 notch beside the fader glides the tempo back to the track's own. A lilac line
   down the fader means [key lock](#keys) is on; right-click the fader to
   switch it.
 - **The pads**, with their tabs on top (see [Pads](pads.md)).
 - **The LOOP column** (see [Looping](looping.md)).
 - **The jog wheel**, with **CUE** and **PLAY** under it, next to the mixer.
-  Drag round its black rim to bend the tempo, scroll over it to nudge, and
-  hold **«** or **»** in its lower corners to bend slower or faster.
-  **SLIP** sits in its top right corner (see
-  [Slip, bend and censor](#slip-bend-and-censor)).
+  Drag round its rim to bend the tempo, and scroll over it to nudge. It
+  shows the tempo %, the BPM, and the time played and left.
+  Right-click it for **Vinyl** and **Slip** (see
+  [Slip, bend and censor](#slip-bend-and-censor)); while Slip is on, its
+  word shows in the jog's top right corner.
 
 Above them, the deck's header shows the cover, title and artist, the time
-left and the track's tempo and key, with the overview waveform of the whole
+left and the key, with the overview waveform of the whole
 track. Click the overview to jump; dragging it moves without playing what it
 passes.
 
@@ -142,7 +143,7 @@ Next to the squares, the count reads **phrase.bar.beat** (for example
 next phrase, a drop, starts in 6 bars. The phrases come from the track's
 [phrase analysis](music.md#phrases); a track without phrases is counted in phrases of
 eight bars from its first bar. If beat 1 doesn't land on the downbeat, the
-beat grid is off: click the tempo on the jog and choose **Bar 1 here** on a
+beat grid is off: click the pencil on the waveform and choose **Set Downbeat** on a
 downbeat (see [Beat grids](music.md)).
 
 Choose **Off**, **Beats** (squares only) or **Beats and phrases** under
@@ -244,9 +245,9 @@ to a track deck, drop a track on it.
 
 ## Slip, bend and censor
 
-**SLIP** keeps the track in time while you play with it. Click the word
-SLIP in the jog's top right corner (2-Deck only): it turns lilac
-when on and light grey when off. While it's on,
+**SLIP** keeps the track in time while you play with it. Right-click the
+jog and switch **Slip** on (2-Deck only): the word Slip then shows in lilac
+in the jog's top right corner; click it to switch Slip off. While it's on,
 scratching, a loop, a hot cue held down, reverse or a pause takes the sound
 away, but a silent playhead carries on, drawn as a dashed lilac line on the
 waveforms. When the trick ends (you let go of the jog or the pad, end the
@@ -275,8 +276,7 @@ button still switches it for its deck.
 
 **Pitch bend** nudges a deck's beat into line by ear: it plays a little
 faster or slower while you bend and springs back when you stop. Turn a
-controller's jog rim, drag round the on-screen jog's rim, or hold **«** or
-**»** beside the jog (2%, or 4% with Shift). On the keyboard, hold
+controller's jog rim, or drag round the on-screen jog's rim. On the keyboard, hold
 <kbd>W</kbd> or <kbd>E</kbd> to bend deck 1 slower or faster, and <kbd>U</kbd>
 or <kbd>I</kbd> for deck 2. <kbd>←</kbd> and <kbd>→</kbd> bend the deck you
 started last, the one you're mixing in, while the browser doesn't have the
@@ -315,16 +315,26 @@ raw range control.
 
 ## Sync and quantize
 
-**SYNC** sits over the tempo fader. It stays on while it's lit: the deck
+**SYNC** sits under the tempo fader. It stays on while it's lit: the deck
 follows the **master** deck's tempo and keeps its beats in step, at half or
 double tempo when that's closer. Press it again to let go. **Shift-click**
 SYNC to match the tempo and beat once, without staying synced, as SYNC does
 in VirtualDJ.
 
-The deck that synced decks follow shows a small **MASTER** under its key.
+The deck that synced decks follow shows a lit **M** under its key.
 openDJ picks it by itself, the deck that has been playing longest, and hands
-over when it stops. Click **MASTER** on a deck to keep that deck the master
+over when it stops. Click **M** on a deck to keep that deck the master
 (it fills in), and click it again to let openDJ pick.
+
+Beside **M** sit four letters that light while their setting is on. Click
+one to switch it for every deck:
+
+- **B** matches a new track's tempo to the playing deck when it loads.
+- **K** matches its key on load (**Settings › Decks › Match key on load**).
+- **S** syncs a deck once when you press play, if it isn't synced already.
+- **P** turns key lock on for each track you load.
+
+The same switches live under **Settings › Decks**.
 
 **Right-click SYNC** for **quantize**. While it's on, cues and loops are set
 on the beat, and play, CUE, hot cues and jumps land in step with the other
@@ -380,12 +390,16 @@ the headphone **CUE** buttons and the crossfader.
 The menu over the meters picks what the four knobs do:
 
 - **EQ**: high, mid and low, and the [Color FX](fx.md#color-fx) filter knob,
-  with a small **▾** beside it to pick the Color FX.
+  which you right-click to pick the Color FX.
 - **STEMS**: the level of each [stem](stems.md).
 - **SCULPT**: a low-pass, a sculpt band with its frequency and cut or boost,
   and a high-pass, after PlayDifferently's Model 1.
 
 A controller's EQ knobs follow the same choice.
+
+Hold the pointer over an EQ, gain or stem knob and its label shows the level
+in dB, in the band's color. Over the filter knob it shows the side and how
+far it is turned, such as **LP 38%** (low-pass) or **HP 20%** (high-pass).
 
 **Crossfader curve** (Settings › Mixer): **Smooth** for blends, **Linear**,
 or **Scratch**, where both sides play at full level until the very end. With
@@ -398,14 +412,16 @@ right-click it, or use **Settings › Mixer**.
 
 ## Master, phones and mic
 
-The **MASTER** button in the top bar opens the output levels: **Master**,
-**Phones**, **Booth**, and **Cue / Mix**, which blends cue and main in the
-headphones. Its **Ableton Link** switch is described in
-[Ableton Link](link.md). **Audio Settings…** opens the
+The large knob at the right of the top bar is the master level, with the
+left and right meters beside it and the clock. Right-click the knob, or
+click the clock, to open the output levels: **Master**, **Phones**,
+**Booth**, and **Cue / Mix**, which blends cue and main in the headphones.
+**Room EQ** shows its preset while one is on, and **Setup** opens it. The
+**Link** switch is described in [Ableton Link](link.md). **Audio Settings…** opens the
 outputs in Settings. Levels are kept between runs.
 
-The arrow on the **MIC** button opens the microphone, with **ON**, a level
-and one **MIC FX** slot of its own, which the decks' effects never touch.
+Click **Mic** to turn the microphone on. Right-click it to open the
+microphone panel, with **ON**, a level and one **MIC FX** slot of its own, which the decks' effects never touch.
 Auxiliary inputs play on a deck from the **Jam** source. Choose
 the inputs in **Settings › Audio**: **+** under the inputs adds a second
 and third auxiliary input, and each auxiliary input takes a pair of

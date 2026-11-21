@@ -396,9 +396,13 @@ fn natives<'js>(ctx: &Ctx<'js>, host: &Rc<RefCell<Host>>) -> rquickjs::Result<Ob
         .scratch_enable(deck, ipr, rpm, alpha, beta, ramp));
     native!("scratchTick", |h, deck: f64, n: f64| h
         .scratch_tick(deck, n));
-    native!("scratchDisable", |h, deck: f64, ramp: bool| h
-        .scratch_disable(deck, ramp));
+    native!(
+        "scratchDisable",
+        |h, deck: f64, ramp: bool, follow_wheel: bool| h.scratch_disable(deck, ramp, follow_wheel)
+    );
     native!("isScratching", |h, deck: f64| h.is_scratching(deck));
+    native!("isScratchCoasting", |h, deck: f64| h
+        .is_scratch_coasting(deck));
     native!("ramp", |h,
                      deck: f64,
                      kind: String,

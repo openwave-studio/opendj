@@ -353,30 +353,53 @@ fn tokens(name: &str) -> Vec<String> {
     joined
         .split(|c: char| !c.is_alphanumeric())
         .filter(|t| !t.is_empty())
-        .filter(|t| !matches!(*t, "midi" | "port" | "in" | "out" | "usb" | "and"))
+        .filter(|t| {
+            !matches!(
+                *t,
+                "midi" | "port" | "in" | "out" | "usb" | "bluetooth" | "and"
+            )
+        })
         .filter(|t| !t.chars().all(|c| c.is_ascii_digit()))
+        .map(str::to_string)
+        .collect()
+}
+
+/// Model numbers standing on their own in a name ("DJControl Inpulse 300" →
+/// "300"). [`tokens`] drops bare numbers as port numbers, so these only
+/// break ties: three digits or more, which port numbers on macOS and Windows
+/// never are.
+fn model_numbers(name: &str) -> Vec<String> {
+    name.split(|c: char| !c.is_alphanumeric())
+        .filter(|t| t.len() >= 3 && t.chars().all(|c| c.is_ascii_digit()))
         .map(str::to_string)
         .collect()
 }
 
 /// The mapping for a MIDI port: every word of the port's name must appear in
 /// the mapping's name ("DDJ-FLX4" → "Pioneer DDJ-FLX4", "XONE:K2" →
-/// "Allen&Heath Xone K1/K2/K3"); among those, the most specific name wins.
+/// "Allen&Heath Xone K1/K2/K3"); among those, one whose model numbers are
+/// all in the port's name comes first ("DJControl Inpulse 300" → "Hercules
+/// DJControl Inpulse 300", not "… 200"), then the most specific name.
 pub fn match_mapping<'a>(port: &str, mappings: &'a [(String, PathBuf)]) -> Option<&'a Path> {
     let port_tokens = tokens(port);
     if port_tokens.is_empty() {
         return None;
     }
+    let port_numbers = model_numbers(port);
     mappings
         .iter()
         .filter_map(|(name, path)| {
             let m = tokens(name);
+            let missing = model_numbers(name)
+                .iter()
+                .filter(|n| !port_numbers.contains(n))
+                .count();
             port_tokens
                 .iter()
                 .all(|t| m.contains(t))
-                .then_some((m.len(), path))
+                .then_some(((missing, m.len()), path))
         })
-        .min_by_key(|(extra, _)| *extra)
+        .min_by_key(|(rank, _)| *rank)
         .map(|(_, p)| p.as_path())
 }
 
@@ -1333,6 +1356,37 @@ mod tests {
             (
                 "Midi Fighter Twister:Midi Fighter Twister MIDI 1 32:0",
                 "DJ TechTools MIDI Fighter Twister.midi.xml",
+            ),
+            // Hercules names its ports by model number alone.
+            (
+                "DJControl Inpulse 200",
+                "Hercules_DJControl_Inpulse_200.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 300",
+                "Hercules_DJControl_Inpulse_300.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 300:DJControl Inpulse 300 MIDI 1 20:0",
+                "Hercules_DJControl_Inpulse_300.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 500",
+                "Hercules_DJControl_Inpulse_500.midi.xml",
+            ),
+            ("DJCONTROL MIX", "Hercules DJControl MIX.midi.xml"),
+            (
+                "DJControl Mix Ultra",
+                "Hercules DJControl Mix Ultra.midi.xml",
+            ),
+            // Its Bluetooth MIDI port.
+            (
+                "DJControl Mix Ultra Bluetooth",
+                "Hercules DJControl Mix Ultra.midi.xml",
+            ),
+            (
+                "DJControl Inpulse 200 Mk2",
+                "Hercules_DJControl_Inpulse_200_MK2.midi.xml",
             ),
         ] {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");

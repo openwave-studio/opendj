@@ -210,7 +210,7 @@ component LeaderRow inherits VerticalLayout {
     }
     if source == 2: Text {
         text: in-bpm <= 0 ? "No clock coming in: pick an input in Settings › Controllers"
-            : (round(in-bpm * 100) / 100) + " BPM in" + (in-running ? "" : ", stopped");
+            : (round(in-bpm * 10) / 10) + " BPM in" + (in-running ? "" : ", stopped");
         color: in-bpm > 0 ? Theme.lilac-text : Theme.text-dim;
         font-size: 11px;
         overflow: elide;
@@ -252,9 +252,10 @@ component LinkRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         alignment: center;
         spacing: 2px;
-        Text { text: "Ableton Link"; color: Theme.text; font-size: 12px; font-weight: 600; }
-        Text {
-            text: !on ? "Off" : (bpm > 0 ? (round(bpm * 10) / 10) + " BPM  ·  " : "")
+        Text { text: "Link"; color: Theme.text; font-size: 12px; font-weight: 600; }
+        // Its state only while it is on.
+        if on: Text {
+            text: (bpm > 0 ? (round(bpm * 10) / 10) + " BPM  ·  " : "")
                 + (master == 1 ? "Deck A  ·  " : master == 2 ? "Deck B  ·  " : "")
                 + (peers == 1 ? "1 peer" : peers + " peers");
             color: on ? Theme.lilac-text : Theme.text-dim;
@@ -281,8 +282,9 @@ component ClockRow inherits HorizontalLayout {
         alignment: center;
         spacing: 2px;
         Text { text: "MIDI Clock"; color: Theme.text; font-size: 12px; font-weight: 600; }
-        Text {
-            text: !on ? "Off" : outputs == 0 ? "No outputs: see Settings › Controllers"
+        // Its state only while it is on.
+        if on: Text {
+            text: outputs == 0 ? "No outputs: see Settings › Controllers"
                 : (bpm > 0 ? (round(bpm * 10) / 10) + " BPM" + (running ? "" : ", stopped") : "Starts with a deck")
                 + "  ·  " + (outputs == 1 ? "1 output" : outputs + " outputs");
             color: on ? Theme.lilac-text : Theme.text-dim;
@@ -466,13 +468,14 @@ export component MasterPanel inherits PopupWindow {
                 Caption { text: "MIX"; vertical-alignment: center; width: 22px; }
             }
         }
-        // The main output's Room EQ: its preset, or Off.
+        // The main output's Room EQ: its preset while one is on, and Setup.
         HorizontalLayout {
             spacing: 8px;
             Text { text: "Room EQ"; color: Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
-            Text { text: RoomEqUi.master-text; color: RoomEqUi.master-text == "Off" ? Theme.text-dim : Theme.lilac-text; font-size: 12px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+            // Its preset only while one is on.
+            Text { text: RoomEqUi.master-text == "Off" ? "" : RoomEqUi.master-text; color: Theme.lilac-text; font-size: 12px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
             PanelLink {
-                text: "Edit…";
+                text: "Setup";
                 vertical-alignment: center;
                 clicked => {
                     root.close();
@@ -533,10 +536,10 @@ component InputSection inherits VerticalLayout {
         }
         HorizontalLayout {
             alignment: space-around;
-            Knob { group: group; key: "pregain"; label: "GAIN"; size: 22px; }
-            Knob { group: eq; key: "parameter3"; label: "HIGH"; size: 22px; }
-            Knob { group: eq; key: "parameter2"; label: "MID"; size: 22px; }
-            Knob { group: eq; key: "parameter1"; label: "LOW"; size: 22px; }
+            Knob { group: group; key: "pregain"; label: "Gain"; size: 22px; look: 4; readout: 1; arc-color: Theme.accent; }
+            Knob { group: eq; key: "parameter3"; label: "High"; size: 22px; look: 4; readout: 1; arc-color: Theme.band-high; }
+            Knob { group: eq; key: "parameter2"; label: "Mid"; size: 22px; look: 4; readout: 1; arc-color: Theme.band-mid; }
+            Knob { group: eq; key: "parameter1"; label: "Low"; size: 22px; look: 4; readout: 1; arc-color: Theme.band-low; }
         }
     }
 }
