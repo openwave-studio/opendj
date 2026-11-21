@@ -109,7 +109,6 @@ Add your music folders in Settings › Collection, or let the guided tour do it 
 - Broadcasting: Icecast and Shoutcast only for now. Twitch, YouTube and Mixcloud Live streaming come later.
 - USB export for Pioneer and Engine DJ players is experimental.
 - Room EQ has no Isolator or booth EQ knobs yet.
-- At the smallest window widths (around 1280 px), 2-Deck's right deck and a Remix deck's right column are cut off. 1440 px and wider show everything.
 - One Remix deck at a time. Its Release, the MIDI Fighter Twister mapping and the Remix page on the phone remote come later.
 - The Mixed Set Editor changes a transition's length and curve and swaps tracks. Moving transitions and drawing curves come later.
 - One instrument plugin plays at a time.
