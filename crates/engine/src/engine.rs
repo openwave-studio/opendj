@@ -3527,15 +3527,23 @@ impl Engine {
             d.was_playing = playing;
             // Key lock and key shifts go through the time-stretcher while
             // playing forwards, nudges and pitch bends included; scratching,
-            // searching and reverse play as a record does.
+            // searching and reverse play as a record does. At normal speed,
+            // key lock alone has no work to do, so do not switch audio paths.
+            // Once the stretcher is running, keep it running until playback
+            // stops or leaves its supported range: disabling key lock can then
+            // change its transpose without tearing it down and re-seeding it.
             let keylock = d.c.keylock.get_bool();
             let semitones = d.c.pitch.get();
-            let shifting = from > 0.0
+            let can_shift = from > 0.0
                 && target > 0.0
                 && from.max(target) <= MAX_RATE
                 && !held
-                && d.c.rate_search.get() == 0.0
-                && (keylock || semitones.abs() > 1e-3);
+                && d.c.rate_search.get() == 0.0;
+            let at_normal_speed = (from - 1.0).abs() < 1e-6 && (target - 1.0).abs() < 1e-6;
+            let shifting = can_shift
+                && (semitones.abs() > 1e-3
+                    || (keylock && !at_normal_speed)
+                    || d.shifter.is_active());
             // The deck was heard moving last buffer (not starting from a stop).
             let was_moving = d.velocity != 0.0 && from != 0.0;
             let was_shifting = d.shifter.is_active();
@@ -8649,6 +8657,95 @@ mod tests {
             }));
             assert!(looped < 4.0 * steady, "key lock {keylock}: {looped}");
         }
+    }
+
+    #[test]
+    fn loop_controls_do_not_interrupt_audio_before_the_loop_boundary() {
+        let ctl = |reg: &ControlRegistry, k: &str| reg.get("[Channel1]", k).unwrap();
+        let plain = play_tone(true, 80, |reg, n| {
+            if n == 0 {
+                ctl(reg, "rate").set(0.5);
+            }
+        });
+        let looped = play_tone(true, 80, |reg, n| match n {
+            0 => ctl(reg, "rate").set(0.5),
+            10 => ctl(reg, "beatloop_32_toggle").set_bool(true),
+            11 => ctl(reg, "beatloop_32_toggle").set_bool(false),
+            20 => ctl(reg, "beatloop_16_toggle").set_bool(true),
+            21 => ctl(reg, "beatloop_16_toggle").set_bool(false),
+            30 => ctl(reg, "loop_double").set_bool(true),
+            31 => ctl(reg, "loop_double").set_bool(false),
+            40 => ctl(reg, "loop_halve").set_bool(true),
+            41 => ctl(reg, "loop_halve").set_bool(false),
+            50 => ctl(reg, "beatloop_16_toggle").set_bool(true),
+            51 => ctl(reg, "beatloop_16_toggle").set_bool(false),
+            60 => ctl(reg, "loop_in").set_bool(true),
+            61 => ctl(reg, "loop_in").set_bool(false),
+            _ => {}
+        });
+        let difference = plain
+            .iter()
+            .zip(&looped)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(
+            difference < 1e-4,
+            "loop controls changed the audio by {difference}"
+        );
+    }
+
+    #[test]
+    fn rapid_key_lock_toggles_do_not_interrupt_audio() {
+        // At normal speed with no key shift, key lock has no audible work to
+        // do: toggling it must leave the direct signal completely unchanged.
+        let plain = play_tone(false, 80, |_, _| {});
+        let ctl = |reg: &ControlRegistry, k: &str| reg.get("[Channel1]", k).unwrap();
+        let toggled = play_tone(false, 80, |reg, n| {
+            if (10..50).contains(&n) {
+                ctl(reg, "keylock").set_bool(n % 2 == 0);
+            }
+        });
+        let difference = plain
+            .iter()
+            .zip(&toggled)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(
+            difference < 1e-4,
+            "key lock toggles changed the audio by {difference}"
+        );
+
+        // At +4%, turning key lock off raises the pitch by the speed factor.
+        // Compare that with the equivalent live key shift while key lock stays
+        // on: both exercise the same transpose changes, but only the former
+        // used to tear down and re-seed the stretcher on every toggle.
+        let speed = 1.04f64;
+        let speed_semitones = speed.log2() * 12.0;
+        let reference = play_tone(true, 80, |reg, n| {
+            if n == 0 {
+                ctl(reg, "rate").set(0.5);
+            }
+            if (30..60).contains(&n) {
+                ctl(reg, "pitch").set(if n % 2 == 0 { 0.0 } else { speed_semitones });
+            }
+        });
+        let toggled = play_tone(true, 80, |reg, n| {
+            if n == 0 {
+                ctl(reg, "rate").set(0.5);
+            }
+            if (30..60).contains(&n) {
+                ctl(reg, "keylock").set_bool(n % 2 == 0);
+            }
+        });
+        let difference = reference
+            .iter()
+            .zip(&toggled)
+            .map(|(a, b)| (a - b).abs())
+            .fold(0.0f32, f32::max);
+        assert!(
+            difference < 1e-4,
+            "key lock toggles re-seeded the stretcher: {difference}"
+        );
     }
 
     #[test]
