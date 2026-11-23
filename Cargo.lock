@@ -6105,7 +6105,7 @@ dependencies = [
  "image-webp",
  "moxcms",
  "num-traits",
- "png",
+ "png 0.18.1",
  "ravif",
  "rayon",
  "tiff",
@@ -7172,7 +7172,7 @@ dependencies = [
  "objc2-core-foundation",
  "objc2-foundation 0.3.2",
  "once_cell",
- "png",
+ "png 0.18.1",
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
 ]
@@ -8194,6 +8194,7 @@ dependencies = [
 name = "opendj-plugin-host"
 version = "1.0.0-dev"
 dependencies = [
+ "ab_glyph",
  "block2 0.6.2",
  "clack-extensions",
  "clack-host",
@@ -8205,6 +8206,8 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "opendj-pd-libs",
  "serde_json",
+ "softbuffer",
+ "tiny-skia 0.11.4",
  "vst3",
  "winit",
 ]
@@ -8722,6 +8725,19 @@ dependencies = [
  "indexmap",
  "quick-xml 0.42.0",
  "time",
+]
+
+[[package]]
+name = "png"
+version = "0.17.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
+dependencies = [
+ "bitflags 1.3.2",
+ "crc32fast",
+ "fdeflate",
+ "flate2",
+ "miniz_oxide 0.8.9",
 ]
 
 [[package]]
@@ -11483,6 +11499,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "log",
+ "png 0.17.16",
  "tiny-skia-path 0.11.4",
 ]
 
@@ -11497,7 +11514,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "log",
- "png",
+ "png 0.18.1",
  "tiny-skia-path 0.12.0",
 ]
 

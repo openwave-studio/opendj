@@ -119,3 +119,9 @@ BSD 3-Clause licence; and ELSE, Copyright (c) 2017-2024 Alexandre Torres
 Porres and others, mostly under the WTFPL version 2, with some objects
 under BSD, MIT and GPL licences as their files say. See
 third_party/pd-libs/OPENDJ.md.
+
+It also builds in pd-lua 0.12.23 (third_party/pd-libs/pdlua), Copyright (c)
+2007-2024 Claude Heiland-Allen, Martin Peach, Albert Gräf, Timothy Schoen
+and others, under the GNU GPL version 2 or later; and Lua 5.4.7
+(third_party/pd-libs/lua), Copyright (c) 1994-2024 Lua.org, PUC-Rio, under
+the MIT licence.
