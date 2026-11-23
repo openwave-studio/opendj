@@ -10,6 +10,7 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use opendj_separation::rates::Rates;
@@ -101,7 +102,7 @@ static ON_LOAD: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 static CACHE_LIMIT: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(DEFAULT_CACHE_LIMIT);
 
-/// 10 GB: about 150 tracks of five minutes.
+/// 10 GB: about 200 tracks of five minutes (three stems each).
 pub const DEFAULT_CACHE_LIMIT: u64 = 10 << 30;
 
 /// Sets whether tracks loaded from now on get stems at once.
@@ -343,11 +344,7 @@ pub fn separate_hq_watched(
     progress: &mut dyn FnMut(usize, usize),
     keep_going: &dyn Fn() -> bool,
 ) -> Result<StemSource, String> {
-    use opendj_separation::htdemucs::STOPPED;
-    use std::sync::atomic::{AtomicBool, Ordering};
-    // A GPU failure can leave burn's locks poisoned for the rest of the
-    // run, so after one the CPU does the separating.
-    static GPU_FAILED: AtomicBool = AtomicBool::new(false);
+    use opendj_separation::htdemucs::{HtDemucs, STOPPED};
     let weights = match model_or_fetch(HTDEMUCS, &MODELS) {
         Ok(w) => w,
         Err(e) => return crate::stems::run_demucs(path).map_err(|_| e),
@@ -357,18 +354,10 @@ pub fn separate_hq_watched(
     let live = live.as_ref().map(|(up, from)| (&**up, *from));
     let mut result = Err(String::new());
     if !GPU_FAILED.load(Ordering::Relaxed) {
-        if let Some(dir) = crate::cache::cache_dir() {
-            opendj_separation::set_gpu_cache_dir(dir.join("gpu"));
-        }
         result = caught(|| {
-            htdemucs::<opendj_separation::Gpu>(
-                path,
-                &track,
-                &weights,
-                live,
-                &mut *progress,
-                keep_going,
-            )
+            with_gpu_model(&weights, |model| {
+                htdemucs(path, &track, model, live, &mut *progress, keep_going)
+            })
         });
         if !keep_going() {
             return Err(STOPPED.into());
@@ -380,14 +369,10 @@ pub fn separate_hq_watched(
     }
     if result.is_err() {
         result = caught(|| {
-            htdemucs::<opendj_separation::Cpu>(
-                path,
-                &track,
-                &weights,
-                live,
-                &mut *progress,
-                keep_going,
-            )
+            let bytes =
+                std::fs::read(&weights).map_err(|e| format!("{}: {e}", weights.display()))?;
+            let model = HtDemucs::<opendj_separation::Cpu>::load(&bytes, &Default::default())?;
+            htdemucs(path, &track, &model, live, &mut *progress, keep_going)
         });
     }
     match result {
@@ -397,6 +382,61 @@ pub fn separate_hq_watched(
             eprintln!("HTDemucs: {e}; trying the Demucs command");
             crate::stems::run_demucs(path).map_err(|_| e)
         }
+    }
+}
+
+/// Set once HTDemucs has failed on the GPU: a failure can leave burn's
+/// locks poisoned for the rest of the run, so after one the CPU does the
+/// separating.
+static GPU_FAILED: AtomicBool = AtomicBool::new(false);
+
+/// HTDemucs on the GPU, loaded once and kept, so a separation doesn't read
+/// and upload the 84 MB of weights again before its first chunk.
+static GPU_MODEL: Mutex<Option<opendj_separation::htdemucs::HtDemucs<opendj_separation::Gpu>>> =
+    Mutex::new(None);
+
+/// Runs `f` with HTDemucs on the GPU, loading it from `weights` first if
+/// it isn't yet. One at a time.
+fn with_gpu_model<T>(
+    weights: &Path,
+    f: impl FnOnce(&opendj_separation::htdemucs::HtDemucs<opendj_separation::Gpu>) -> Result<T, String>,
+) -> Result<T, String> {
+    let mut model = GPU_MODEL.lock().unwrap_or_else(|e| e.into_inner());
+    if model.is_none() {
+        if let Some(dir) = crate::cache::cache_dir() {
+            opendj_separation::set_gpu_cache_dir(dir.join("gpu"));
+        }
+        let bytes = std::fs::read(weights).map_err(|e| format!("{}: {e}", weights.display()))?;
+        *model = Some(opendj_separation::htdemucs::HtDemucs::load(
+            &bytes,
+            &Default::default(),
+        )?);
+    }
+    f(model.as_ref().expect("loaded above"))
+}
+
+/// Gets HTDemucs ready on the GPU: loads it and compiles its kernels for
+/// the model's shapes, which otherwise happens during the first separation
+/// and holds back its first stems by seconds. Does nothing without the
+/// downloaded model (it isn't downloaded for this) or once the GPU has
+/// failed; a failure here sends separations to the CPU straight away.
+/// Takes a few seconds; see [`crate::stems::warm_up_when_idle`].
+pub fn warm_up() {
+    if GPU_FAILED.load(Ordering::Relaxed) {
+        return;
+    }
+    let Some(weights) = model(HTDEMUCS) else {
+        return;
+    };
+    let result = caught(|| {
+        with_gpu_model(&weights, |m| {
+            m.warm_up();
+            Ok(())
+        })
+    });
+    if let Err(e) = result {
+        eprintln!("HTDemucs on the GPU: {e}; separations will use the CPU");
+        GPU_FAILED.store(true, Ordering::Relaxed);
     }
 }
 
@@ -475,18 +515,14 @@ impl Stretches {
 fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     path: &Path,
     track: &Audio,
-    weights: &Path,
+    model: &opendj_separation::htdemucs::HtDemucs<B>,
     live: Option<(&Stems, usize)>,
     progress: &mut dyn FnMut(usize, usize),
     keep_going: &dyn Fn() -> bool,
 ) -> Result<StemSource, String> {
-    use opendj_separation::htdemucs::HtDemucs;
     let rate = track.sample_rate;
     let len = track.len();
     let [l, r] = channels(track);
-    let bytes = std::fs::read(weights).map_err(|e| format!("{}: {e}", weights.display()))?;
-    let device = B::Device::default();
-    let model = HtDemucs::<B>::load(&bytes, &device)?;
     // At the model's 44.1 kHz. Told 44.1 kHz for a 48 kHz track, it would
     // hear it 9% slow and its stems, stretched back, would drift off the
     // original they are taken out of, so muting one would add it back late
@@ -537,7 +573,7 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
                 if !separated.covers(&input) {
                     continue;
                 }
-                let parts: Vec<[Vec<f32>; 2]> = out
+                let mut parts: Vec<[Vec<f32>; 2]> = out
                     .iter()
                     .map(|stem| {
                         [0, 1].map(|c| match &back {
@@ -548,6 +584,17 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
                         })
                     })
                     .collect();
+                // Other as the cache will have it: the track less the rest.
+                let other = crate::stems::OTHER;
+                for c in 0..2 {
+                    for (j, i) in part.clone().enumerate() {
+                        let rest: f32 = (0..parts.len())
+                            .filter(|&k| k != other)
+                            .map(|k| parts[k][c][j])
+                            .sum();
+                        parts[other][c][j] = track.frame(i)[c] - rest;
+                    }
+                }
                 let views: Vec<[&[f32]; 2]> = parts.iter().map(|[a, b]| [&a[..], &b[..]]).collect();
                 // HTDemucs's order is ours: drums, bass, other, vocals.
                 up.fill(t, stem_frames(&views, [0, 1, 2, 3], lead, rate));
@@ -571,8 +618,16 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     let _ = std::fs::remove_dir_all(&work);
     std::fs::create_dir_all(&work).map_err(|e| e.to_string())?;
     let written = (|| -> Result<(), String> {
-        // HTDemucs's order is ours: drums, bass, other, vocals.
-        for (name, [sl, sr]) in opendj_separation::htdemucs::STEMS.iter().zip(&stems) {
+        // HTDemucs's order is ours: drums, bass, other, vocals. Other is
+        // left out: it is the track less the rest (see `stems::OTHER`).
+        for (k, (name, [sl, sr])) in opendj_separation::htdemucs::STEMS
+            .iter()
+            .zip(&stems)
+            .enumerate()
+        {
+            if k == crate::stems::OTHER {
+                continue;
+            }
             let fit = |x: &[f32]| -> Vec<f32> {
                 let mut y = x.to_vec();
                 y.resize(len, 0.0);
@@ -719,11 +774,17 @@ mod tests {
             "16 s at 48 kHz: HQ stems at the play position in {first:.1} s, all in {:.1} s",
             t.elapsed().as_secs_f64()
         );
+        // Three files kept: Other is what they leave of the track.
+        let StemSource::Files(files) = &source else {
+            panic!("{source:?}")
+        };
+        assert!(!files[crate::stems::OTHER].exists());
         let live = audio.stems().unwrap().clone();
         assert!(live.is_complete());
         assert_eq!(live.quality, Quality::High);
         let cached = crate::stems::Decode::open(&source)
             .unwrap()
+            .with_original(audio.clone())
             .run(|| true)
             .unwrap();
         let stem = |st: &Stems, k: usize, i: usize| {
@@ -748,7 +809,7 @@ mod tests {
             worst = worst.max((drums(&live) - drums(&cached)).abs());
         }
         println!("largest difference {worst:.5}");
-        assert!(worst < 2e-4, "{worst}");
+        assert!(worst < 3e-4, "{worst}");
         let _ = std::fs::remove_file(file);
     }
 

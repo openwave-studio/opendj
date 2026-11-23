@@ -9,6 +9,10 @@
 //! tracks on decks over a wait-free queue as soon as their files are open,
 //! then decode and analyse them while they play.
 
+// Checking that HTDemucs on the GPU (burn over wgpu) can be kept in a static
+// (`separation::GPU_MODEL`) goes deeper than the default 128.
+#![recursion_limit = "256"]
+
 pub mod analysis;
 pub mod arp;
 mod auto_trim;

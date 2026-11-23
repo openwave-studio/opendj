@@ -528,7 +528,7 @@ fn separate_on_load(
 /// all decoded, so a deck switches to them with nothing missing (taking
 /// over from stems separated on load). Stops if `keep_going` turns false.
 pub(crate) fn load_stems(
-    audio: &Audio,
+    audio: &Arc<Audio>,
     source: &StemSource,
     keep_going: impl Fn() -> bool,
 ) -> Result<(), String> {
@@ -545,7 +545,9 @@ pub(crate) fn load_stems(
     if filling.as_ref().is_some_and(|s| s.is_complete()) {
         return Ok(());
     }
-    let stems = stems::Decode::open(source)?.run(&keep_going)?;
+    let stems = stems::Decode::open(source)?
+        .with_original(audio.clone())
+        .run(&keep_going)?;
     // Better stems take over from the ones Spleeter made on load.
     let given = match (filling, audio.stems()) {
         (Some(f), _) => {

@@ -1486,6 +1486,14 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
 
     // A newer release: checked once per start, offered while nothing plays.
     update::install_model_fetch();
+    // High-quality stems' GPU kernels, compiled once the app has settled,
+    // so the first track prepared starts playing them seconds sooner.
+    let _ = std::thread::Builder::new()
+        .name("stems-warm-up".into())
+        .spawn(|| {
+            std::thread::sleep(std::time::Duration::from_secs(20));
+            opendj_engine::stems::warm_up_when_idle();
+        });
     let update_check = update::check();
     let update: Rc<RefCell<Option<update::Release>>> = Default::default();
     let installing: Rc<RefCell<Option<std::sync::mpsc::Receiver<update::Progress>>>> =

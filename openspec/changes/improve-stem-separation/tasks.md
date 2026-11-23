@@ -20,8 +20,9 @@
   - v0.4: HQ stems replace the fast ones as a whole once decoded (`Stems::set_upgrade`).
   - v0.5: the swap is a 20 ms crossfade of the stems themselves under one read of the original (`Stems::mix_blend`, `STEM_UPGRADE_SECONDS`); test `high_quality_stems_take_over_without_a_click`. HTDemucs separates the whole track before writing it, so there is nothing to swap per chunk; revisit if HQ ever streams chunks (v1.0: it does, see 2.2; each stretch of HQ stems plays once it is there, with the 20 ms crossfade to it, and back to the fast stems ahead of a stretch not there yet, `Stems::has_around`, test `high_quality_stems_play_a_stretch_at_a_time`). Separated stems at full gain skip reading stem frames at all (the original plays), so a deck with stems costs no more than one without until a stem is turned down
 - [x] 3.2 (v0.4) Original-preserving mix for separated tracks (`original − Σ(1 − g)·stem`); NI files keep the sum; tests that unity gains play the original exactly
-- [ ] 3.3 Cache only high-quality stems (three files, Other derived), keep reading old Demucs caches, size limit with least-recently-loaded eviction
+- [x] 3.3 Cache only high-quality stems (three files, Other derived), keep reading old Demucs caches, size limit with least-recently-loaded eviction
   - v0.5: size limit (default 10 GB, Settings) with least-recently-loaded eviction (`cache::trim_stems`, a `last-used` file touched on load), never the decks' tracks; usage and Clear. Still four files (Other not derived yet)
+  - v1.0: HTDemucs separations keep drums, bass and vocals; Other is the track less those three, made as the stems decode (`Decode::with_original`) and as they are separated, so all stems add up to the track. Four-file caches (older ones, the Demucs command) still load. HTDemucs stays loaded on the GPU between separations, and its kernels are compiled while the app is idle (`stems::warm_up_when_idle`)
 - [x] 3.4 (v0.4) Keep the Demucs command as a fallback for one release (when the HTDemucs model can't be downloaded or the GPU run fails)
 
 ## 4. App

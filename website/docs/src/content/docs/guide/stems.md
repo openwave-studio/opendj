@@ -86,7 +86,7 @@ the whole track has them.
 - **Stems on load**: turn it off to save CPU on an older computer. Tracks then
   only get stems you prepare with Prepare High Quality Stems (or from an NI
   stem file).
-- **High quality stems kept**: high quality stems take about 4 times the
+- **High quality stems kept**: high quality stems take about 3 times the
   space of the track. Once they pass this size (10 GB at first), the stems
   played longest ago are deleted to make room. Shows how many tracks have
   them and how much space they take.
