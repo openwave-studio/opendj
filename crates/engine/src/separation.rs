@@ -8,9 +8,11 @@
 //! simply has no stems on load, and high-quality stems fall back to the
 //! Demucs command if it is installed.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 
+use opendj_separation::rates::Rates;
 use opendj_separation::spleeter;
 
 use crate::dsp::Lr4;
@@ -225,40 +227,85 @@ pub fn separate_fast(
         }
         return Ok(());
     }
-    // Another rate: separate at the model's and bring the stems back, all
-    // at once.
-    let resample =
-        |x: &[f32], from_rate, to_rate| opendj_separation::resample(x, from_rate, to_rate);
-    let (l, r) = (
-        resample(&l, rate, model_rate)?,
-        resample(&r, rate, model_rate)?,
+    // Another rate: separate at the model's, from the cue as at 44.1 kHz,
+    // and bring each of our chunks back once the model's chunks it is made
+    // from are separated, so the stems still play within about a second.
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let there = Rates::new(rate, model_rate);
+    let back = Rates::new(model_rate, rate);
+    let (ml, mr) = (
+        there.resample_all(&l, threads),
+        there.resample_all(&r, threads),
     );
-    let from = (from as f64 * model_rate as f64 / rate as f64) as usize;
-    let separated = spleeter::separate(&*net, [&l, &r], from, |_, _| {});
-    if !keep_going() {
-        return Ok(());
-    }
-    let back: Vec<[Vec<f32>; 2]> = separated
-        .iter()
-        .map(|[sl, sr]| {
-            let fit = |x: &[f32]| -> Result<Vec<f32>, String> {
-                let mut y = resample(x, model_rate, rate)?;
-                y.resize(audio.len(), 0.0);
-                Ok(y)
-            };
-            Ok([fit(sl)?, fit(sr)?])
-        })
-        .collect::<Result<_, String>>()?;
-    for (k, start) in (0..audio.len()).step_by(CHUNK).enumerate() {
-        let end = (start + CHUNK).min(audio.len());
+    drop((l, r));
+    let (len, mlen) = (audio.len(), ml.len());
+    let ours = len.div_ceil(CHUNK);
+    // Our chunk `t` with its lead, and the model's samples it needs.
+    let need = |t: usize| {
+        let start = t * CHUNK;
         let lead = start.min(SPLIT_LEAD);
-        let parts: Vec<[&[f32]; 2]> = back
-            .iter()
-            .map(|[sl, sr]| [&sl[start - lead..end], &sr[start - lead..end]])
-            .collect();
-        stems.fill(k, frames(&parts, lead));
+        let out = start - lead..(start + CHUNK).min(len);
+        let input = back.input_for(out.clone(), mlen);
+        (out, lead, input)
+    };
+    // Our chunks that may need the model's chunk `m`.
+    let users = |m: usize| {
+        let at = |x: usize| x * rate as usize / model_rate as usize;
+        let lo = at(m * CHUNK).saturating_sub(SPLIT_LEAD + CHUNK / 2) / CHUNK;
+        let hi = (at((m + 1) * CHUNK) + CHUNK / 2) / CHUNK;
+        lo..(hi + 1).min(ours)
+    };
+    let mut got: HashMap<usize, Vec<[Vec<f32>; 2]>> = HashMap::new();
+    let mut filled = vec![false; ours];
+    let complete = spleeter::separate_in_chunks(
+        &*net,
+        [&ml, &mr],
+        (from as f64 * model_rate as f64 / rate as f64) as usize,
+        CHUNK,
+        0,
+        |m, parts| {
+            got.insert(
+                m,
+                parts
+                    .iter()
+                    .map(|[a, b]| [a.to_vec(), b.to_vec()])
+                    .collect(),
+            );
+            for t in users(m) {
+                if filled[t] {
+                    continue;
+                }
+                let (out, lead, input) = need(t);
+                let first = input.start / CHUNK;
+                let last = (input.end.max(1) - 1) / CHUNK;
+                if !(first..=last).all(|k| got.contains_key(&k)) {
+                    continue;
+                }
+                let resampled: Vec<[Vec<f32>; 2]> = (0..parts.len())
+                    .map(|stem| {
+                        [0, 1].map(|c| {
+                            let joined: Vec<f32> = (first..=last)
+                                .flat_map(|k| got[&k][stem][c].iter().copied())
+                                .collect();
+                            let at = input.start - first * CHUNK;
+                            let slice = &joined[at..at + input.len()];
+                            back.resample_part(slice, input.start, out.clone())
+                        })
+                    })
+                    .collect();
+                let views: Vec<[&[f32]; 2]> =
+                    resampled.iter().map(|[a, b]| [&a[..], &b[..]]).collect();
+                stems.fill(t, frames(&views, lead));
+                filled[t] = true;
+            }
+            // Let go of the model's chunks all their users have.
+            got.retain(|&k, _| users(k).any(|t| !filled[t]));
+            keep_going()
+        },
+    );
+    if complete && filled.iter().all(|f| *f) {
+        stems.finish();
     }
-    stems.finish();
     Ok(())
 }
 
@@ -297,6 +344,19 @@ pub fn separate_hq(path: &Path) -> Result<StemSource, String> {
             crate::stems::run_demucs(path).map_err(|_| e)
         }
     }
+}
+
+/// Rewrites the FLAC file at `path` at `rate`.
+pub(crate) fn resample_flac(path: &Path, rate: u32) -> Result<(), String> {
+    let audio = crate::decode::decode(path)?;
+    let [l, r] = channels(&audio);
+    let rates = Rates::new(audio.sample_rate, rate);
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let (l, r) = (
+        rates.resample_all(&l, threads),
+        rates.resample_all(&r, threads),
+    );
+    crate::recorder::write_flac(path, rate, [&l, &r]).map_err(|e| e.to_string())
 }
 
 /// Runs `f`, turning a panic into an error with its message.
@@ -361,6 +421,59 @@ mod tests {
 
     /// Needs the Spleeter weights: `OPENDJ_MODELS=<folder with
     /// spleeter-4stems.safetensors> cargo test -p opendj-engine -- --ignored spleeter_on`.
+    /// As above, for a 48 kHz track: separated at the model's rate a chunk
+    /// at a time and brought back, the stems match separating it all at
+    /// once and resampling the lot.
+    #[test]
+    #[ignore]
+    fn spleeter_on_load_works_a_chunk_at_a_time_at_48_khz() {
+        let model_rate = opendj_separation::SAMPLE_RATE;
+        let synth = crate::synth::render_with(124.0, 0.25, 40.0, 5);
+        let [l, r] = channels(&synth);
+        let up = |x: &[f32]| opendj_separation::resample(x, model_rate, 48_000).unwrap();
+        let (l, r) = (up(&l), up(&r));
+        let audio = Audio::from_frames(48_000, l.iter().zip(&r).map(|(a, b)| [*a, *b]).collect());
+        let t = std::time::Instant::now();
+        // When the first stems around the cue are there to play.
+        let first = std::thread::scope(|s| {
+            let watch = s.spawn(|| loop {
+                if audio.stems().is_some_and(|st| st.decoded() > 0) {
+                    return t.elapsed().as_secs_f64();
+                }
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            });
+            separate_fast(&audio, 20 * 48_000, || true).unwrap();
+            watch.join().unwrap()
+        });
+        println!(
+            "40 s at 48 kHz: first stems in {first:.2} s, all in {:.2} s",
+            t.elapsed().as_secs_f64()
+        );
+        let stems = audio.stems().unwrap();
+        assert!(stems.is_complete());
+        // All at once, as before.
+        let net = spleeter_net().unwrap();
+        let down = |x: &[f32]| opendj_separation::resample(x, 48_000, model_rate).unwrap();
+        let whole = spleeter::separate(&*net, [&down(&l), &down(&r)], 0, |_, _| {});
+        let back: Vec<Vec<f32>> = whole
+            .iter()
+            .map(|[sl, _]| opendj_separation::resample(sl, model_rate, 48_000).unwrap())
+            .collect();
+        // Bass, Instru and Vocal (ours 1 to 3) against Spleeter's.
+        let mut worst = 0.0f32;
+        for ours in 1..4 {
+            let mut g = [1.0; MAX_STEMS];
+            g[ours] = 0.0;
+            for i in (0..audio.len()).step_by(997) {
+                let got = -stems.mix(i, &g, || [0.0; 2])[0];
+                let want = back[FROM_SPLEETER[ours]][i];
+                worst = worst.max((got - want).abs());
+            }
+        }
+        println!("largest difference {worst:.5}");
+        assert!(worst < 2e-3, "{worst}");
+    }
+
     #[test]
     #[ignore]
     fn spleeter_on_load_fills_the_stems_from_the_cue() {
@@ -391,6 +504,19 @@ mod tests {
         let no_drums = rms([0.0, 1.0, 1.0, 1.0, 0.0]);
         println!("full {full:.1}, without kick and hats {no_drums:.1}");
         assert!(no_drums < full);
+    }
+
+    #[test]
+    fn stems_from_the_demucs_command_come_back_at_the_track_rate() {
+        let file =
+            std::env::temp_dir().join(format!("opendj-resample-{}.flac", std::process::id()));
+        let tone: Vec<f32> = (0..44_100).map(|i| (i as f32 * 0.03).sin() * 0.5).collect();
+        crate::recorder::write_flac(&file, 44_100, [&tone, &tone]).unwrap();
+        resample_flac(&file, 48_000).unwrap();
+        let audio = crate::decode::decode(&file).unwrap();
+        assert_eq!(audio.sample_rate, 48_000);
+        assert_eq!(audio.len(), 48_000);
+        let _ = std::fs::remove_file(file);
     }
 
     #[test]

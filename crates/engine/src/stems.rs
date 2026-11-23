@@ -1047,6 +1047,22 @@ pub(crate) fn run_demucs(path: &Path) -> Result<StemSource, String> {
         let _ = std::fs::remove_dir_all(&work);
         return Err("Demucs finished but left no stems".into());
     }
+    // Demucs writes at its own 44.1 kHz; a deck only takes stems at the
+    // track's rate.
+    let conformed = (|| -> Result<(), String> {
+        let rate = crate::decode::Decoder::open(path)?.audio().sample_rate;
+        for f in &files {
+            if flac_rate(f) != Some(rate) {
+                crate::separation::resample_flac(f, rate)?;
+            }
+        }
+        Ok(())
+    })();
+    if let Err(e) = conformed {
+        let _ = std::fs::remove_dir_all(&work);
+        return Err(e);
+    }
+    mark_aligned(&made);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::rename(&made, &dir).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_dir_all(&work);
