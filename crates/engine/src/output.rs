@@ -621,6 +621,9 @@ pub(crate) struct Outputs {
     setup: AudioSetup,
     /// When to look for a lost device next.
     retry_at: Option<Instant>,
+    /// The look for a lost device, while it runs on its own thread: says
+    /// whether the device is there.
+    looking: Option<std::sync::mpsc::Receiver<bool>>,
     /// An input stream stopped (its device reset or went away): set from
     /// its error callback, so the inputs are reopened.
     input_lost: Arc<AtomicBool>,
@@ -650,6 +653,7 @@ impl Outputs {
             health,
             setup: setup.clone(),
             retry_at: None,
+            looking: None,
             input_lost: Arc::new(AtomicBool::new(false)),
             input_retry_at: None,
             lost_reported: false,
@@ -908,18 +912,14 @@ impl Outputs {
         if !self.health.lost.load(Ordering::Acquire) {
             return self.recover_inputs();
         }
-        let now = Instant::now();
-        if self.retry_at.is_some_and(|t| now < t) {
-            return None;
-        }
-        self.retry_at = Some(now + RETRY);
         let name = clock_device(&self.setup).to_string();
+        let present = self.look_for(&name)?;
         let label = if name.is_empty() {
             "The system's audio output".to_string()
         } else {
             name.clone()
         };
-        if find(&name).is_none() {
+        if !present {
             if std::mem::replace(&mut self.lost_reported, true) {
                 return None;
             }
@@ -952,6 +952,58 @@ impl Outputs {
         } else {
             format!("{label} stopped; openDJ reopened it.")
         })
+    }
+
+    /// Whether the output device called `name` is there, or `None` while
+    /// the look is under way or not due yet. Every [`RETRY`] it looks on its
+    /// own thread, so the caller (the UI) never waits: finding an ASIO
+    /// device loads every installed ASIO driver in turn, which can take
+    /// seconds when their hardware is unplugged.
+    fn look_for(&mut self, name: &str) -> Option<bool> {
+        use std::sync::mpsc::TryRecvError;
+        if let Some(rx) = &self.looking {
+            let present = match rx.try_recv() {
+                Ok(present) => present,
+                Err(TryRecvError::Empty) => return None,
+                // The look panicked: count the device as missing.
+                Err(TryRecvError::Disconnected) => false,
+            };
+            self.looking = None;
+            self.retry_at = Some(Instant::now() + RETRY);
+            return Some(present);
+        }
+        let now = Instant::now();
+        if self.retry_at.is_some_and(|t| now < t) {
+            return None;
+        }
+        let (tx, rx) = std::sync::mpsc::channel();
+        let wanted = name.to_string();
+        // Logged the first time and when found, not every few seconds while
+        // the device stays away.
+        let first = !self.lost_reported;
+        let spawned = std::thread::Builder::new()
+            .name("opendj-output-look".into())
+            .spawn(move || {
+                let started = Instant::now();
+                let present = find(&wanted).is_some();
+                if first || present {
+                    eprintln!(
+                        "audio output: looked for {wanted:?} in {} ms: {}",
+                        started.elapsed().as_millis(),
+                        if present { "there" } else { "missing" }
+                    );
+                }
+                // Dropped by now if the outputs were opened again meanwhile.
+                let _ = tx.send(present);
+            });
+        match spawned {
+            Ok(_) => self.looking = Some(rx),
+            Err(e) => {
+                eprintln!("audio output: can't look for {name:?}: {e}");
+                self.retry_at = Some(now + RETRY);
+            }
+        }
+        None
     }
 
     /// Reopens the inputs after one of their streams stopped, every so often
@@ -993,6 +1045,8 @@ impl Outputs {
         self.health.lost.store(false, Ordering::Release);
         self.lost_reported = false;
         self.retry_at = None;
+        // A look still running is for the old setup.
+        self.looking = None;
         self.route_status = vec![String::new(); setup.routes.len()];
         if let Err(e) = self.open(setup) {
             eprintln!("audio output unavailable ({e}); running without sound");
