@@ -12,12 +12,13 @@
 - [ ] 2.2 Worker: one queue for all decks, fast-tier priority, playhead-first ordering, pause on underruns/dropped frames
   - v0.4: Spleeter on load runs one track at a time on half the cores, from the cue point outwards, a chunk at a time (`spleeter::separate_in_chunks`); HQ jobs run one at a time. No playhead-first HQ or pausing yet
   - v1.0: tracks not at 44.1 kHz also get Spleeter stems a chunk at a time from the cue (resampled per chunk, `opendj_separation::rates`), instead of after the whole track
+  - v1.0: HQ for a track on a deck runs playhead-first: HTDemucs takes its chunks from the deck's play position outwards, three ahead for each behind (`HtDemucs::separate_from`), with the same result as the whole track at once. Pausing is the background tasks panel's (#1008); no automatic pause on underruns yet
 
 ## 3. Engine
 
 - [x] 3.1 Two-layer stems store
   - v0.4: HQ stems replace the fast ones as a whole once decoded (`Stems::set_upgrade`).
-  - v0.5: the swap is a 20 ms crossfade of the stems themselves under one read of the original (`Stems::mix_blend`, `STEM_UPGRADE_SECONDS`); test `high_quality_stems_take_over_without_a_click`. HTDemucs separates the whole track before writing it, so there is nothing to swap per chunk; revisit if HQ ever streams chunks. Separated stems at full gain skip reading stem frames at all (the original plays), so a deck with stems costs no more than one without until a stem is turned down
+  - v0.5: the swap is a 20 ms crossfade of the stems themselves under one read of the original (`Stems::mix_blend`, `STEM_UPGRADE_SECONDS`); test `high_quality_stems_take_over_without_a_click`. HTDemucs separates the whole track before writing it, so there is nothing to swap per chunk; revisit if HQ ever streams chunks (v1.0: it does, see 2.2; each stretch of HQ stems plays once it is there, with the 20 ms crossfade to it, and back to the fast stems ahead of a stretch not there yet, `Stems::has_around`, test `high_quality_stems_play_a_stretch_at_a_time`). Separated stems at full gain skip reading stem frames at all (the original plays), so a deck with stems costs no more than one without until a stem is turned down
 - [x] 3.2 (v0.4) Original-preserving mix for separated tracks (`original − Σ(1 − g)·stem`); NI files keep the sum; tests that unity gains play the original exactly
 - [ ] 3.3 Cache only high-quality stems (three files, Other derived), keep reading old Demucs caches, size limit with least-recently-loaded eviction
   - v0.5: size limit (default 10 GB, Settings) with least-recently-loaded eviction (`cache::trim_stems`, a `last-used` file touched on load), never the decks' tracks; usage and Clear. Still four files (Other not derived yet)
@@ -28,7 +29,8 @@
 - [x] 4.1 Settings > Stems (under Analysis): Stems on load, Stems cache limit and usage, Clear, model download state. Background quality waits for a "Best" tier
 - [x] 4.2 (v0.4) STEMS pad page: VirtualDJ's 8 pads (Vocal, Instru, Bass, Acapella / Kick, HiHat, Stems FX, Instrumental), no level bars (levels on the stems knobs), right-click Prepare High Quality Stems; SEPARATE STEMS removed (2026-10-28)
 - [x] 4.2b Quality badge on the STEMS page: INSTANT, HQ… while preparing, HQ (top-right pad's corner)
-- [ ] 4.3 Browser: stems mark for tracks with cached high-quality stems; Separate stems on a list, crate or set (v0.4 has Prepare High Quality Stems in the track menu, for one or several picked tracks)
+- [x] 4.3 Browser: stems mark for tracks with cached high-quality stems; Separate stems on a list, crate or set (v0.4 has Prepare High Quality Stems in the track menu, for one or several picked tracks)
+  - v1.0: Stems column on track rows (#1008); Prepare HQ Stems for All on a crate, playlist, set or folder in the sidebar, queued in the background tasks panel; the STEMS pad badge shows the percent
 - [x] 4.4 Update the user guide page website/book/src/guide/stems.md (v0.4, and v0.5 for the badge and Settings › Analysis › Stems)
 
 ## Workflow follow-up

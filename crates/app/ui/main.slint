@@ -2468,14 +2468,18 @@ export component AppWindow inherits Window {
                         lit-icon: "M 2 4 L 18 4 L 18 16 L 2 16 Z M 10 7 L 10 13 M 7 10 L 10 13 L 13 10";
                         clicked => { library-expanded = !library-expanded; }
                     }
-                    // Background work: a ring that opens the Background panel.
-                    if TasksUi.shown: TasksRing { y: 5px; }
-                    FooterButton {
-                        y: 5px;
-                        lit: side-panel-visible;
-                        // A list.
-                        icon: "M 6 5 L 18 5 M 6 10 L 18 10 M 6 15 L 18 15 M 2 5 L 3 5 M 2 10 L 3 10 M 2 15 L 3 15";
-                        clicked => { side-panel-visible = !side-panel-visible; }
+                    // On the right: background work (a ring that opens the
+                    // Background panel), then the side panel's button.
+                    HorizontalLayout {
+                        spacing: 6px;
+                        if TasksUi.shown: TasksRing { y: 5px; }
+                        FooterButton {
+                            y: 5px;
+                            lit: side-panel-visible;
+                            // A list.
+                            icon: "M 6 5 L 18 5 M 6 10 L 18 10 M 6 15 L 18 15 M 2 5 L 3 5 M 2 10 L 3 10 M 2 15 L 3 15";
+                            clicked => { side-panel-visible = !side-panel-visible; }
+                        }
                     }
                 }
             }

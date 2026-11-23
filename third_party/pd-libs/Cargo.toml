@@ -1,12 +1,13 @@
 [package]
 name = "opendj-pd-libs"
-description = "The cyclone and ELSE Pure Data libraries, built for openDJ's plugin helper"
+description = "The cyclone, ELSE and pd-lua Pure Data libraries, built for openDJ's plugin helper"
 version = "0.1.0"
 edition = "2021"
 publish = false
 build = "build.rs"
 # Built as one program with openDJ's GPL-3.0 copies: cyclone is BSD-3-Clause,
-# ELSE is WTFPL with some objects under BSD, MIT and GPL (see OPENDJ.md).
+# ELSE is WTFPL with some objects under BSD, MIT and GPL, pd-lua is
+# GPL-2.0-or-later, Lua is MIT (see OPENDJ.md).
 license = "GPL-3.0-only"
 
 [dependencies]

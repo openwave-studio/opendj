@@ -169,6 +169,36 @@ pub(crate) fn channels(audio: &Audio) -> [Vec<f32>; 2] {
     [l, r]
 }
 
+/// Our stems (drums split into kick and hi-hat), from the model's `parts`
+/// (`[stem][channel][sample]`, ours `s` being its `from[s]`) at `rate`,
+/// leaving out the first `lead` frames, which only settle the split.
+#[allow(clippy::needless_range_loop)] // frame by frame across the stems
+fn stem_frames(
+    parts: &[[&[f32]; 2]],
+    from: [usize; 4],
+    lead: usize,
+    rate: u32,
+) -> Box<[StemFrame]> {
+    let mut low = Lr4::lowpass(rate as f64, KICK_SPLIT_HZ);
+    let n = parts[0][0].len();
+    let mut out = Vec::with_capacity(n.saturating_sub(lead));
+    for i in 0..n {
+        let at = |s: usize| [parts[from[s]][0][i], parts[from[s]][1][i]];
+        let (k, h) = split(&mut low, at(0));
+        if i < lead {
+            continue;
+        }
+        let mut f: StemFrame = [[0; 2]; MAX_STEMS];
+        f[0] = k.map(to_i16);
+        for s in 1..4 {
+            f[s] = at(s).map(to_i16);
+        }
+        f[4] = h.map(to_i16);
+        out.push(f);
+    }
+    out.into_boxed_slice()
+}
+
 /// Separates the decoded `audio` with Spleeter and gives it the stems,
 /// which play at once: the stretch around frame `from` is separated first,
 /// in about a second, and the original plays wherever the stems aren't
@@ -192,29 +222,7 @@ pub fn separate_fast(
     }
     let [l, r] = channels(audio);
     let model_rate = opendj_separation::SAMPLE_RATE;
-    // Our stems, with the drums split, for `n` frames from `lead` on.
-    #[allow(clippy::needless_range_loop)] // frame by frame across the stems
-    let frames = |parts: &[[&[f32]; 2]], lead: usize| -> Box<[StemFrame]> {
-        let mut low = Lr4::lowpass(rate as f64, KICK_SPLIT_HZ);
-        let n = parts[0][0].len();
-        let mut out = Vec::with_capacity(n - lead);
-        for i in 0..n {
-            let at = |s: usize| [parts[FROM_SPLEETER[s]][0][i], parts[FROM_SPLEETER[s]][1][i]];
-            let drums = at(0);
-            let (k, h) = split(&mut low, drums);
-            if i < lead {
-                continue;
-            }
-            let mut f: StemFrame = [[0; 2]; MAX_STEMS];
-            f[0] = k.map(to_i16);
-            for s in 1..4 {
-                f[s] = at(s).map(to_i16);
-            }
-            f[4] = h.map(to_i16);
-            out.push(f);
-        }
-        out.into_boxed_slice()
-    };
+    let frames = |parts: &[[&[f32]; 2]], lead: usize| stem_frames(parts, FROM_SPLEETER, lead, rate);
     if rate == model_rate {
         let complete =
             spleeter::separate_in_chunks(&*net, [&l, &r], from, CHUNK, SPLIT_LEAD, |k, parts| {
@@ -315,15 +323,23 @@ pub fn separate_fast(
 /// Linux), or the CPU once the GPU has failed. Without the model, or when
 /// both fail, the Demucs command does it if it is installed.
 pub fn separate_hq(path: &Path) -> Result<StemSource, String> {
-    separate_hq_watched(path, &mut |_, _| {}, &|| true)
+    separate_hq_watched(path, &[], &mut |_, _| {}, &|| true)
 }
 
 /// As [`separate_hq`], telling `progress` as each of the model's chunks is
 /// done (it may wait, pausing between chunks), and giving up with
 /// [`opendj_separation::htdemucs::STOPPED`] once `keep_going` says no,
 /// without trying the CPU or the Demucs command after.
+///
+/// `live` is the track's audio on the decks that have it, each with its
+/// play position (a frame), the first deck's first: HTDemucs then starts
+/// there and works outwards, and each stretch of the stems plays as soon
+/// as it is separated (see [`Stems::set_upgrade`]), so a deck has
+/// high-quality stems seconds after asking rather than once the whole
+/// track is done.
 pub fn separate_hq_watched(
     path: &Path,
+    live: &[(Arc<Audio>, usize)],
     progress: &mut dyn FnMut(usize, usize),
     keep_going: &dyn Fn() -> bool,
 ) -> Result<StemSource, String> {
@@ -336,13 +352,23 @@ pub fn separate_hq_watched(
         Ok(w) => w,
         Err(e) => return crate::stems::run_demucs(path).map_err(|_| e),
     };
+    let track = crate::decode::decode(path)?;
+    let live = attach(live, &track);
+    let live = live.as_ref().map(|(up, from)| (&**up, *from));
     let mut result = Err(String::new());
     if !GPU_FAILED.load(Ordering::Relaxed) {
         if let Some(dir) = crate::cache::cache_dir() {
             opendj_separation::set_gpu_cache_dir(dir.join("gpu"));
         }
         result = caught(|| {
-            htdemucs::<opendj_separation::Gpu>(path, &weights, &mut *progress, keep_going)
+            htdemucs::<opendj_separation::Gpu>(
+                path,
+                &track,
+                &weights,
+                live,
+                &mut *progress,
+                keep_going,
+            )
         });
         if !keep_going() {
             return Err(STOPPED.into());
@@ -354,7 +380,14 @@ pub fn separate_hq_watched(
     }
     if result.is_err() {
         result = caught(|| {
-            htdemucs::<opendj_separation::Cpu>(path, &weights, &mut *progress, keep_going)
+            htdemucs::<opendj_separation::Cpu>(
+                path,
+                &track,
+                &weights,
+                live,
+                &mut *progress,
+                keep_going,
+            )
         });
     }
     match result {
@@ -392,24 +425,147 @@ fn caught<T>(f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
     })
 }
 
+/// High-quality stems for the decks in `live` that fit `track`: set as
+/// the upgrade of the stems they have (or as their stems, if none), to be
+/// filled as HTDemucs goes. With the first deck's play position.
+fn attach(live: &[(Arc<Audio>, usize)], track: &Audio) -> Option<(Arc<Stems>, usize)> {
+    let mut info = default_info();
+    split_drums(&mut info);
+    let rate = track.sample_rate;
+    let up = Arc::new(Stems::separated(info, rate, track.len(), Quality::High));
+    let mut from = None;
+    for (audio, at) in live {
+        if audio.sample_rate != rate {
+            continue;
+        }
+        let given = match audio.stems() {
+            Some(s) => s.set_upgrade(up.clone()),
+            None => audio.set_stems(up.clone()),
+        };
+        if given && from.is_none() {
+            from = Some((*at).min(track.len()));
+        }
+    }
+    from.map(|f| (up, f))
+}
+
+/// Merged stretches of samples.
+#[derive(Default)]
+struct Stretches(Vec<std::ops::Range<usize>>);
+
+impl Stretches {
+    fn add(&mut self, r: std::ops::Range<usize>) {
+        self.0.push(r);
+        self.0.sort_unstable_by_key(|r| r.start);
+        let mut merged: Vec<std::ops::Range<usize>> = Vec::with_capacity(self.0.len());
+        for r in self.0.drain(..) {
+            match merged.last_mut() {
+                Some(m) if r.start <= m.end => m.end = m.end.max(r.end),
+                _ => merged.push(r),
+            }
+        }
+        self.0 = merged;
+    }
+
+    fn covers(&self, r: &std::ops::Range<usize>) -> bool {
+        r.is_empty() || self.0.iter().any(|m| m.start <= r.start && m.end >= r.end)
+    }
+}
+
 fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     path: &Path,
+    track: &Audio,
     weights: &Path,
+    live: Option<(&Stems, usize)>,
     progress: &mut dyn FnMut(usize, usize),
     keep_going: &dyn Fn() -> bool,
 ) -> Result<StemSource, String> {
     use opendj_separation::htdemucs::HtDemucs;
-    let audio = crate::decode::decode(path)?;
-    let rate = audio.sample_rate;
-    let [l, r] = channels(&audio);
+    let rate = track.sample_rate;
+    let len = track.len();
+    let [l, r] = channels(track);
     let bytes = std::fs::read(weights).map_err(|e| format!("{}: {e}", weights.display()))?;
     let device = B::Device::default();
     let model = HtDemucs::<B>::load(&bytes, &device)?;
-    // At the track's own rate: HTDemucs resamples to its 44.1 kHz and back
-    // itself. Told 44.1 kHz for a 48 kHz track, it would hear it 9% slow and
-    // its stems, stretched back, would drift off the original they are taken
-    // out of, so muting one would add it back late instead of removing it.
-    let stems = model.separate_watched([&l, &r], rate, progress, keep_going)?;
+    // At the model's 44.1 kHz. Told 44.1 kHz for a 48 kHz track, it would
+    // hear it 9% slow and its stems, stretched back, would drift off the
+    // original they are taken out of, so muting one would add it back late
+    // instead of removing it.
+    let model_rate = opendj_separation::SAMPLE_RATE;
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let back = (rate != model_rate).then(|| Rates::new(model_rate, rate));
+    let (ml, mr) = match back {
+        Some(_) => {
+            let there = Rates::new(rate, model_rate);
+            (
+                there.resample_all(&l, threads),
+                there.resample_all(&r, threads),
+            )
+        }
+        None => (l, r),
+    };
+    let mlen = ml.len();
+    // Each of our chunks with its lead for the drum split, and the model's
+    // samples it is made from.
+    let need = |t: usize| {
+        let start = t * CHUNK;
+        let lead = start.min(SPLIT_LEAD);
+        let out = start - lead..(start + CHUNK).min(len);
+        let input = match &back {
+            Some(b) => b.input_for(out.clone(), mlen),
+            None => out.clone(),
+        };
+        (out, lead, input)
+    };
+    let ours = len.div_ceil(CHUNK);
+    let mut filled = vec![false; ours];
+    let mut separated = Stretches::default();
+    let from = live.map_or(0, |(_, f)| {
+        (f as f64 * model_rate as f64 / rate as f64) as usize
+    });
+    let stems =
+        model.separate_from([&ml, &mr], from, progress, keep_going, &mut |range, out| {
+            let Some((up, _)) = live else {
+                return;
+            };
+            separated.add(range);
+            for (t, done) in filled.iter_mut().enumerate() {
+                if *done {
+                    continue;
+                }
+                let (part, lead, input) = need(t);
+                if !separated.covers(&input) {
+                    continue;
+                }
+                let parts: Vec<[Vec<f32>; 2]> = out
+                    .iter()
+                    .map(|stem| {
+                        [0, 1].map(|c| match &back {
+                            Some(b) => {
+                                b.resample_part(&stem[c][input.clone()], input.start, part.clone())
+                            }
+                            None => stem[c][part.clone()].to_vec(),
+                        })
+                    })
+                    .collect();
+                let views: Vec<[&[f32]; 2]> = parts.iter().map(|[a, b]| [&a[..], &b[..]]).collect();
+                // HTDemucs's order is ours: drums, bass, other, vocals.
+                up.fill(t, stem_frames(&views, [0, 1, 2, 3], lead, rate));
+                *done = true;
+            }
+        })?;
+    if let Some((up, _)) = live {
+        if filled.iter().all(|f| *f) {
+            up.finish();
+        }
+    }
+    let stems: Vec<[Vec<f32>; 2]> = match &back {
+        Some(b) => stems
+            .into_iter()
+            .map(|[sl, sr]| [b.resample_all(&sl, threads), b.resample_all(&sr, threads)])
+            .collect(),
+        None => stems,
+    };
     let dir = crate::cache::stems_dir(path).ok_or("no cache folder")?;
     let work = dir.with_extension(format!("work{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&work);
@@ -419,7 +575,7 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
         for (name, [sl, sr]) in opendj_separation::htdemucs::STEMS.iter().zip(&stems) {
             let fit = |x: &[f32]| -> Vec<f32> {
                 let mut y = x.to_vec();
-                y.resize(audio.len(), 0.0);
+                y.resize(len, 0.0);
                 y
             };
             let (sl, sr) = (fit(sl), fit(sr));
@@ -527,6 +683,73 @@ mod tests {
         let no_drums = rms([0.0, 1.0, 1.0, 1.0, 0.0]);
         println!("full {full:.1}, without kick and hats {no_drums:.1}");
         assert!(no_drums < full);
+    }
+
+    /// Needs the HTDemucs weights and takes a few minutes on the CPU:
+    /// `OPENDJ_MODELS=<folder with htdemucs.safetensors> cargo test -p
+    /// opendj-engine --release -- --ignored hq_stems_from`.
+    /// A deck playing a 48 kHz track 10 s in gets high-quality stems there
+    /// first, and the stems it is given a stretch at a time are those kept
+    /// in the cache.
+    #[test]
+    #[ignore]
+    fn hq_stems_from_the_play_position_match_the_cache() {
+        let model_rate = opendj_separation::SAMPLE_RATE;
+        let synth = crate::synth::render_with(124.0, 0.25, 16.0, 5);
+        let [l, r] = channels(&synth);
+        let up = |x: &[f32]| opendj_separation::resample(x, model_rate, 48_000).unwrap();
+        let file = std::env::temp_dir().join(format!("opendj-hq-{}.flac", std::process::id()));
+        crate::recorder::write_flac(&file, 48_000, [&up(&l), &up(&r)]).unwrap();
+        let audio = Arc::new(crate::decode::decode(&file).unwrap());
+        let from = 10 * 48_000;
+        let t = std::time::Instant::now();
+        let (first, source) = std::thread::scope(|s| {
+            let watch = s.spawn(|| loop {
+                if audio.stems().is_some_and(|st| st.has(from)) {
+                    return t.elapsed().as_secs_f64();
+                }
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            });
+            let source =
+                separate_hq_watched(&file, &[(audio.clone(), from)], &mut |_, _| {}, &|| true)
+                    .unwrap();
+            (watch.join().unwrap(), source)
+        });
+        println!(
+            "16 s at 48 kHz: HQ stems at the play position in {first:.1} s, all in {:.1} s",
+            t.elapsed().as_secs_f64()
+        );
+        let live = audio.stems().unwrap().clone();
+        assert!(live.is_complete());
+        assert_eq!(live.quality, Quality::High);
+        let cached = crate::stems::Decode::open(&source)
+            .unwrap()
+            .run(|| true)
+            .unwrap();
+        let stem = |st: &Stems, k: usize, i: usize| {
+            let mut g = [1.0; MAX_STEMS];
+            g[k] = 0.0;
+            -st.mix(i, &g, || [0.0; 2])[0]
+        };
+        let mut worst = 0.0f32;
+        for i in (0..audio.len()).step_by(331) {
+            // The cache's 16-bit files clip at full scale where a stem goes
+            // past it; the stems kept in memory clip each part of the drums.
+            let loud = (0..MAX_STEMS).any(|k| stem(&cached, k, i).abs() > 0.97);
+            if loud {
+                continue;
+            }
+            // Bass, Instru and Vocal, and the drums whole (kick and hats
+            // split with a little less run-up here than from the file).
+            for k in 1..4 {
+                worst = worst.max((stem(&live, k, i) - stem(&cached, k, i)).abs());
+            }
+            let drums = |st: &Stems| stem(st, 0, i) + stem(st, 4, i);
+            worst = worst.max((drums(&live) - drums(&cached)).abs());
+        }
+        println!("largest difference {worst:.5}");
+        assert!(worst < 2e-4, "{worst}");
+        let _ = std::fs::remove_file(file);
     }
 
     #[test]

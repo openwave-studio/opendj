@@ -5,6 +5,7 @@ Example patches for openDJ's experimental Pure Data support (OpenSpec change `ad
 - `gain.pd`: one knob, `gain` (0 to 2).
 - `beat-echo.pd`: an echo locked to the mix's tempo, with `beats`, `feedback` and `mix` knobs.
 - `libs-check.pd`: uses cyclone and ELSE objects, for the tests.
+- `lua-level.pd`: a level fader drawn in Lua (`lua-fader.pd_lua`); the test in `tests/pd_lua.rs` clicks it.
 
 ## How a patch talks to openDJ
 
@@ -16,6 +17,12 @@ Example patches for openDJ's experimental Pure Data support (OpenSpec change `ad
 ## Built-in libraries
 
 cyclone (Max-style objects) and ELSE are built in, as in plugdata: write `[lores~]` or `[cyclone/lores~]`, `[knob]` or `[else/knob]`. Where both libraries have an object of the same name, the plain name is ELSE's. What's left out is listed in `third_party/pd-libs/OPENDJ.md`.
+
+## Lua displays
+
+pd-lua is built in, as in plugdata: put `name.pd_lua` next to the patch and use `[name]` in it. A Lua object with a `paint(g)` method is a display: press OPEN on the slot and openDJ shows the patch's displays in a window, drawn by openDJ itself, with `mouse_down`, `mouse_drag`, `mouse_up` and `mouse_move` going back to the object. Everything in pd-lua's graphics API draws (colours, rectangles, rounded rectangles, ellipses, lines, paths, text, translate and scale).
+
+For now only displays on the patch's main canvas show (not inside subpatches or abstractions), laid out where they sit in the patch.
 
 ## Trying it
 

@@ -2623,6 +2623,12 @@ impl Decks {
                 }
                 _ => false,
             },
+            stem_progress: match &t.source {
+                Source::File(path) => stems::separating()
+                    .filter(|(p, _)| p == path)
+                    .map_or(-1.0, |(_, done)| done),
+                _ => -1.0,
+            },
             can_prepare_hq: match &t.source {
                 Source::File(path) => {
                     !stems.is_some_and(|s| s.playing_quality() == stems::Quality::High)
