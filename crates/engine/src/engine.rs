@@ -320,6 +320,9 @@ struct Deck {
     file_key: Option<Key>,
     /// Plays the deck through the time-stretcher with key lock or a key shift.
     shifter: KeyShifter,
+    /// Seconds the running stretcher has had no work to do (see
+    /// [`SHIFT_LINGER_SECONDS`]).
+    shift_idle: f64,
     /// This buffer's audio from the shifter, when it is in use.
     shifted: Vec<[f32; 2]>,
     /// Low-pass state that softens fast waveform scrubbing.
@@ -1473,6 +1476,10 @@ impl Frames for StemMix<'_> {
 /// How long a jump in the play position fades over: long enough to hide the
 /// step in the waveform, short enough not to be heard as a fade.
 pub(crate) const DECLICK_SECONDS: f64 = 0.006;
+/// How long a playing deck stays in the time-stretcher after key lock and
+/// key shifts stop needing it, so quick key lock toggles carry on through
+/// it instead of crossfading in and out on every press.
+const SHIFT_LINGER_SECONDS: f64 = 1.0;
 
 /// How long the stems made on load crossfade into high-quality ones once
 /// those are ready, so a muted stem doesn't click at the switch.
@@ -1979,6 +1986,7 @@ impl Engine {
             peak_hold: 0.0,
             file_key: None,
             shifter: KeyShifter::new(sample_rate),
+            shift_idle: 0.0,
             shifted: vec![[0.0; 2]; 4096],
             scrub_tone: [0.0; 2],
             expected_pos: None,
@@ -3529,9 +3537,9 @@ impl Engine {
             // playing forwards, nudges and pitch bends included; scratching,
             // searching and reverse play as a record does. At normal speed,
             // key lock alone has no work to do, so do not switch audio paths.
-            // Once the stretcher is running, keep it running until playback
-            // stops or leaves its supported range: disabling key lock can then
-            // change its transpose without tearing it down and re-seeding it.
+            // Once the stretcher is running it lingers a moment after it
+            // has no work left: turning key lock off and on again then only
+            // changes its transpose instead of leaving it and re-seeding it.
             let keylock = d.c.keylock.get_bool();
             let semitones = d.c.pitch.get();
             let can_shift = from > 0.0
@@ -3540,10 +3548,14 @@ impl Engine {
                 && !held
                 && d.c.rate_search.get() == 0.0;
             let at_normal_speed = (from - 1.0).abs() < 1e-6 && (target - 1.0).abs() < 1e-6;
+            let needed = semitones.abs() > 1e-3 || (keylock && !at_normal_speed);
+            d.shift_idle = if needed || !d.shifter.is_active() {
+                0.0
+            } else {
+                d.shift_idle + dt
+            };
             let shifting = can_shift
-                && (semitones.abs() > 1e-3
-                    || (keylock && !at_normal_speed)
-                    || d.shifter.is_active());
+                && (needed || (d.shifter.is_active() && d.shift_idle < SHIFT_LINGER_SECONDS));
             // The deck was heard moving last buffer (not starting from a stop).
             let was_moving = d.velocity != 0.0 && from != 0.0;
             let was_shifting = d.shifter.is_active();
@@ -8746,6 +8758,28 @@ mod tests {
             difference < 1e-4,
             "key lock toggles re-seeded the stretcher: {difference}"
         );
+    }
+
+    #[test]
+    fn stretcher_lets_go_once_key_lock_is_off() {
+        // Key lock off at +4% leaves nothing for the stretcher to do: after
+        // lingering through possible quick toggles, the deck plays as a
+        // record again.
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, long_tone_track(150.0, "", 30.0));
+        run(&mut engine, 0.01);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        ctl("rate").set(0.5);
+        ctl("keylock").set_bool(true);
+        ctl("playposition").set(0.3);
+        ctl("play").set_bool(true);
+        run(&mut engine, 0.3);
+        assert!(engine.decks[0].shifter.is_active());
+        ctl("keylock").set_bool(false);
+        run(&mut engine, SHIFT_LINGER_SECONDS / 2.0);
+        assert!(engine.decks[0].shifter.is_active());
+        run(&mut engine, SHIFT_LINGER_SECONDS);
+        assert!(!engine.decks[0].shifter.is_active());
     }
 
     #[test]
