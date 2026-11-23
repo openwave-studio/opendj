@@ -84,6 +84,13 @@ fn main() {
             for inc in includes {
                 b.include(root.join(inc));
             }
+            if msvc {
+                // MSVC's C has no complex numbers (ELSE's bl.* oscillators)
+                // or variable-length arrays: clang-cl, which links the
+                // same, has both. Limited-range complex maths needs no
+                // compiler-rt helpers (__muldc3) at link time.
+                b.compiler("clang-cl").flag("/clang:-fcx-limited-range");
+            }
             force(&mut b, &root.join(format!("generated/names_{lib}.h")));
             force(&mut b, &root.join("gui_compat.h"));
             b
