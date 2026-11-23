@@ -3,7 +3,7 @@
     <info>
         <name>Pioneer DDJ-FLX10 jog screens</name>
         <author>openDJ, from the FLX10 screen protocol worked out by Veezuhz and Loui1979</author>
-        <description>Draws each deck's waveform, time, BPM, key and tempo on the DDJ-FLX10's jog screens over USB HID. Runs beside the Pioneer DDJ-FLX10 MIDI mapping, which switches the screens over. Beta: not yet tried on the hardware.</description>
+        <description>Draws each deck's waveform, cover art, time, BPM, key and tempo on the DDJ-FLX10's jog screens over USB HID. Runs beside the Pioneer DDJ-FLX10 MIDI mapping, which switches the screens over. Beta: the waveform shows on the hardware; the rest is not yet confirmed there.</description>
         <manual>pioneer_ddj_flx10</manual>
         <devices>
             <product protocol="hid" vendor_id="0x2b73" product_id="0x0041" interface_number="0x5" />

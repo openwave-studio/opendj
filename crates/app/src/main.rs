@@ -511,6 +511,37 @@ fn move_to_device(s: &mut AudioSetup, row: usize, device: &str, channels: u16) {
     }
 }
 
+/// `cover` cropped to a square in the middle and scaled to `size` pixels,
+/// as a JPEG for a controller's screen; empty if it can't be made.
+fn cover_jpeg(cover: &opendj_engine::cover::Cover, size: u32) -> Vec<u8> {
+    use image::{imageops, ImageBuffer, Rgba};
+    let Some(img) =
+        ImageBuffer::<Rgba<u8>, _>::from_raw(cover.width, cover.height, cover.rgba.clone())
+    else {
+        return Vec::new();
+    };
+    let side = cover.width.min(cover.height);
+    if side == 0 || size == 0 {
+        return Vec::new();
+    }
+    let square = imageops::crop_imm(
+        &img,
+        (cover.width - side) / 2,
+        (cover.height - side) / 2,
+        side,
+        side,
+    )
+    .to_image();
+    let scaled = imageops::resize(&square, size, size, imageops::FilterType::Triangle);
+    let rgb = image::DynamicImage::ImageRgba8(scaled).to_rgb8();
+    let mut out = Vec::new();
+    let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 75);
+    match rgb.write_with_encoder(encoder) {
+        Ok(()) => out,
+        Err(_) => Vec::new(),
+    }
+}
+
 /// The rows Settings › Audio shows with an external mixer, in order.
 const EXTERNAL_ROLES: [(Role, &str); 6] = [
     (Role::Deck1, "Deck 1"),
@@ -1117,6 +1148,19 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         opendj_controllers::waves::resample(finest, w.bins_per_second, per_second)
                     })
                 })
+            },
+        )));
+        // And their cover art, as a small JPEG.
+        let loaded = engine.loaded_tracks();
+        opendj_controllers::waves::set_cover_source(Some(std::sync::Arc::new(
+            move |deck, size| {
+                let track = loaded
+                    .read()
+                    .ok()
+                    .and_then(|l| l.get(deck).cloned().flatten());
+                track
+                    .and_then(|t| t.cover.clone())
+                    .map_or_else(Vec::new, |c| cover_jpeg(&c, size))
             },
         )));
     }
@@ -3525,6 +3569,19 @@ fn scope_path(bins: &[(f32, f32)]) -> String {
 #[cfg(test)]
 mod output_device_tests {
     use super::{move_to_device, AudioSetup, Role, Route};
+
+    #[test]
+    fn covers_become_square_jpegs() {
+        let cover = opendj_engine::cover::Cover {
+            width: 40,
+            height: 20,
+            rgba: vec![200; 40 * 20 * 4],
+        };
+        let jpeg = super::cover_jpeg(&cover, 32);
+        assert_eq!(&jpeg[..3], &[0xFF, 0xD8, 0xFF]);
+        let back = image::load_from_memory(&jpeg).unwrap();
+        assert_eq!((back.width(), back.height()), (32, 32));
+    }
 
     fn route(role: Role, device: &str, pair: u16) -> Route {
         Route {

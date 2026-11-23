@@ -55,7 +55,8 @@ so it works the same way where they share controls.
   for that, "Pioneer DDJ-FLX10 jog screens". It shows in Settings ›
   Controllers beside the FLX10 and starts on its own. While it runs, the
   screens show each deck's waveform, scrolling as it plays, with the time,
-  BPM, tempo and key. Turn it off there to go back to the plain displays.
+  BPM, tempo and key. Press SHIFT+PAGE to switch a screen to the track's
+  cover art. Turn it off there to go back to the plain displays.
   On Linux, install openDJ's udev rule first (the .deb and .rpm do it).
 
 Not mapped yet: MIX POINT, CUE/LOOP MEMORY, MASTER CUE, INPUT SELECT, the
@@ -77,7 +78,9 @@ buttons and the fader start messages.
   Controllers, load a track on each deck, and tell us whether each jog
   screen shows the waveform, whether it scrolls in time with the track
   (also after a seek, a scratch and a tempo change), whether the time, BPM
-  and key are right, and whether it stays up for a whole track. If it
+  and key are right, whether the screen stays still with no flicker, and
+  whether it stays up for a whole track. Press SHIFT+PAGE until the
+  artwork view shows and check the cover is there. If it
   doesn't show, say which system you're on and what Settings › Controllers
   says about the jog screens. Your sound and controls should keep working
   through it all.
