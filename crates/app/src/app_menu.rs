@@ -827,7 +827,7 @@ mod tests {
             .iter()
             .filter(|l| l.parent == export as i32 && l.kind == 0)
             .collect();
-        assert_eq!(inside.len(), 5);
+        assert_eq!(inside.len(), 6);
         // Settings… and Quit sit in the ☰ list itself, under the menus.
         for a in [Action::Settings, Action::Quit] {
             let line = lines.iter().find(|l| l.action == a.id()).unwrap();
