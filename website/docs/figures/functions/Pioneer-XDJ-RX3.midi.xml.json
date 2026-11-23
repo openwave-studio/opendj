@@ -1,0 +1,2475 @@
+{
+  "file": "Pioneer-XDJ-RX3.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "beat-l": {
+      "normal": [
+        "FX 5 Effect 1 beats halve"
+      ]
+    },
+    "beat-r": {
+      "normal": [
+        "FX 5 Effect 1 beats double"
+      ]
+    },
+    "booth": {
+      "normal": [
+        "Booth level"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "zoom the waveforms (openDJ)"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cfx-crush": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-dub": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-filter": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-noise": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-space": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-sweep": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "ch1-color": {
+      "Deck 3": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch1-cue": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch1-fader": {
+      "Deck 3": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1-hi": {
+      "Deck 3": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch1-low": {
+      "Deck 3": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch1-mid": {
+      "Deck 3": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch1-trim": {
+      "Deck 3": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2-color": {
+      "Deck 4": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch2-cue": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch2-fader": {
+      "Deck 4": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-hi": {
+      "Deck 4": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch2-low": {
+      "Deck 4": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch2-mid": {
+      "Deck 4": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch2-trim": {
+      "Deck 4": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "fx-ch": {
+      "AUX": [
+        "FX 5 Assign to Deck 1",
+        "FX 5 Assign to Deck 2",
+        "FX 5 Assign to Deck 3",
+        "FX 5 Assign to Deck 4",
+        "FX 5 Assign to Master"
+      ],
+      "CF.A": [
+        "FX 5 Assign to Deck 1",
+        "FX 5 Assign to Deck 2",
+        "FX 5 Assign to Deck 3",
+        "FX 5 Assign to Deck 4",
+        "FX 5 Assign to Master"
+      ],
+      "CF.B": [
+        "FX 5 Assign to Deck 1",
+        "FX 5 Assign to Deck 2",
+        "FX 5 Assign to Deck 3",
+        "FX 5 Assign to Deck 4",
+        "FX 5 Assign to Master"
+      ],
+      "CH1": [
+        "FX 5 Assign to Deck 1",
+        "FX 5 Assign to Deck 2",
+        "FX 5 Assign to Deck 3",
+        "FX 5 Assign to Deck 4",
+        "FX 5 Assign to Master"
+      ],
+      "CH2": [
+        "FX 5 Assign to Deck 1",
+        "FX 5 Assign to Deck 2",
+        "FX 5 Assign to Deck 3",
+        "FX 5 Assign to Deck 4",
+        "FX 5 Assign to Master"
+      ],
+      "MASTER": [
+        "FX 5 Route"
+      ],
+      "MIC": [
+        "FX 5 Assign to Deck 1",
+        "FX 5 Assign to Deck 2",
+        "FX 5 Assign to Deck 3",
+        "FX 5 Assign to Deck 4",
+        "FX 5 Assign to Master"
+      ]
+    },
+    "fx-level": {
+      "normal": [
+        "FX 5 Effect 1 knob"
+      ]
+    },
+    "fx-on": {
+      "SHIFT": [
+        "FX 5 Release"
+      ],
+      "normal": [
+        "FX 5 Effect 1 on"
+      ]
+    },
+    "fx-select": {
+      "Delay": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Echo": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Filter": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Flanger": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Helix": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Phaser": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Ping pong": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Pitch": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Reverb": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Roll": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Slip roll": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Spiral": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Trans": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Vinyl brake": [
+        "FX 5 Effect 1 loaded effect"
+      ]
+    },
+    "l-call-l": {
+      "Deck 3": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-call-r": {
+      "Deck 3": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-exit": {
+      "Deck 3": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-in": {
+      "Deck 3": [
+        "Loop in"
+      ],
+      "Deck 3 long press": [
+        "adjust the loop start with the jog"
+      ],
+      "Long press": [
+        "adjust the loop start with the jog"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-jog": {
+      "Deck 3, SHIFT side": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT touch": [
+        "touch"
+      ],
+      "Deck 3, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Touch": [
+        "scratch in VINYL mode"
+      ],
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "scratch in VINYL mode"
+      ]
+    },
+    "l-jog-mode": {
+      "Deck 3": [
+        "VINYL (scratch) or CDJ (bend)"
+      ],
+      "normal": [
+        "VINYL (scratch) or CDJ (bend)"
+      ]
+    },
+    "l-m-beat-jump": {
+      "Deck 3": [
+        "Pad tab"
+      ],
+      "Deck 3 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad tab"
+      ]
+    },
+    "l-m-beat-loop": {
+      "Deck 3": [
+        "Pad tab"
+      ],
+      "Deck 3 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad tab"
+      ]
+    },
+    "l-m-hot-cue": {
+      "Deck 3": [
+        "Pad tab"
+      ],
+      "Deck 3 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad tab"
+      ]
+    },
+    "l-m-slip-loop": {
+      "Deck 3": [
+        "Pad mode"
+      ],
+      "Deck 3 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad mode"
+      ]
+    },
+    "l-master": {
+      "Deck 3": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-master-tempo": {
+      "Deck 3": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-out": {
+      "Deck 3": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-pad1": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 4 beats back"
+      ],
+      "Beat loop": [
+        "Loop 1/4 beat"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 4 beats back"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 1"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 1/16 beat"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 1 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 1"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Slip loop": [
+        "Loop roll 1/16 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/16 beat"
+      ]
+    },
+    "l-pad2": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 4 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 1/2 beat"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 2"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 1/8 beat"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 2 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 2"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Slip loop": [
+        "Loop roll 1/8 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/8 beat"
+      ]
+    },
+    "l-pad3": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 8 beats back"
+      ],
+      "Beat loop": [
+        "Loop 1 beat"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 1 beat"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 8 beats back"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 1 beat"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 1 beat"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 3"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 1/4 beat"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 3 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 3"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Slip loop": [
+        "Loop roll 1/4 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/4 beat"
+      ]
+    },
+    "l-pad4": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 8 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 2 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 2 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 2 beats"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 2 beats"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 4"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 1/2 beat"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 4 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 4"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Slip loop": [
+        "Loop roll 1/2 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/2 beat"
+      ]
+    },
+    "l-pad5": {
+      "Beat jump": [
+        "Jump 16 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 16 beats back"
+      ],
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 4 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 16 beats back"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 16 beats back"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 4 beats"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 5"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 1 beat"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 5 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 5"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Slip loop": [
+        "Loop roll 1 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1 beat"
+      ]
+    },
+    "l-pad6": {
+      "Beat jump": [
+        "Jump 16 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 16 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 8 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 16 beats forward"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 16 beats forward"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 8 beats"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 6"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 2 beats"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 6 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 6"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Slip loop": [
+        "Loop roll 2 beats"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 2 beats"
+      ]
+    },
+    "l-pad7": {
+      "Beat jump": [
+        "Jump 32 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 32 beats back"
+      ],
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 32 beats back"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 32 beats back"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 7"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 4 beats"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 7 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 7"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Slip loop": [
+        "Loop roll 4 beats"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 4 beats"
+      ]
+    },
+    "l-pad8": {
+      "Beat jump": [
+        "Jump 32 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 32 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 32 beats forward"
+      ],
+      "Deck 3, Beat jump + SHIFT": [
+        "Jump 32 beats forward"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 3, Beat loop + SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Deck 3, Extension 1": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 1 + SHIFT": [
+        "FX 8 Assign to Deck 3",
+        "FX 8 Effect 1 knob",
+        "FX 8 Effect 1 loaded effect",
+        "FX 8 Effect 1 on",
+        "FX 8 Unit on",
+        "FX 8 Wet / dry"
+      ],
+      "Deck 3, Extension 2": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 3, Extension 3": [
+        "Keyboard pad 8"
+      ],
+      "Deck 3, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 3, Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 3, Slip loop": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 3, Slip loop + SHIFT": [
+        "Loop roll 8 beats"
+      ],
+      "Extension 1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 8 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 8"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Slip loop": [
+        "Loop roll 8 beats"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 8 beats"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-quantize": {
+      "Deck 3": [
+        "Quantize"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "l-reverse": {
+      "Deck 3": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "l-search-fwd": {
+      "Deck 3": [
+        "Fast forward"
+      ],
+      "normal": [
+        "Fast forward"
+      ]
+    },
+    "l-search-rev": {
+      "Deck 3": [
+        "Rewind"
+      ],
+      "normal": [
+        "Rewind"
+      ]
+    },
+    "l-slip": {
+      "Deck 3": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo",
+        "slide (MSB)"
+      ],
+      "normal": [
+        "Tempo",
+        "slide (MSB)"
+      ]
+    },
+    "l-tempo-range": {
+      "Deck 3": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-track-fwd": {
+      "Deck 3": [
+        "Jump 32 beats forward"
+      ],
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "l-track-rev": {
+      "Deck 3": [
+        "Jump 32 beats back"
+      ],
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "load-1": {
+      "Deck 3": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load-2": {
+      "Deck 4": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "master-level": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "phones": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "phones-mix": {
+      "normal": [
+        "Head mix"
+      ]
+    },
+    "r-call-l": {
+      "Deck 4": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-call-r": {
+      "Deck 4": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-exit": {
+      "Deck 4": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-in": {
+      "Deck 4": [
+        "Loop in"
+      ],
+      "Deck 4 long press": [
+        "adjust the loop start with the jog"
+      ],
+      "Long press": [
+        "adjust the loop start with the jog"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-jog": {
+      "Deck 4, SHIFT side": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT touch": [
+        "touch"
+      ],
+      "Deck 4, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Touch": [
+        "scratch in VINYL mode"
+      ],
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "scratch in VINYL mode"
+      ]
+    },
+    "r-jog-mode": {
+      "Deck 4": [
+        "VINYL (scratch) or CDJ (bend)"
+      ],
+      "normal": [
+        "VINYL (scratch) or CDJ (bend)"
+      ]
+    },
+    "r-m-beat-jump": {
+      "Deck 4": [
+        "Pad tab"
+      ],
+      "Deck 4 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad tab"
+      ]
+    },
+    "r-m-beat-loop": {
+      "Deck 4": [
+        "Pad tab"
+      ],
+      "Deck 4 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad tab"
+      ]
+    },
+    "r-m-hot-cue": {
+      "Deck 4": [
+        "Pad tab"
+      ],
+      "Deck 4 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad tab"
+      ]
+    },
+    "r-m-slip-loop": {
+      "Deck 4": [
+        "Pad mode"
+      ],
+      "Deck 4 shift": [
+        "Pad tab"
+      ],
+      "SHIFT": [
+        "Pad tab"
+      ],
+      "normal": [
+        "Pad mode"
+      ]
+    },
+    "r-master": {
+      "Deck 4": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-master-tempo": {
+      "Deck 4": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-out": {
+      "Deck 4": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-pad1": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 4 beats back"
+      ],
+      "Beat loop": [
+        "Loop 1/4 beat"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 4 beats back"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 1"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 1/16 beat"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 1 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 1"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Slip loop": [
+        "Loop roll 1/16 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/16 beat"
+      ]
+    },
+    "r-pad2": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 4 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 1/2 beat"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 2"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 1/8 beat"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 2 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 2"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Slip loop": [
+        "Loop roll 1/8 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/8 beat"
+      ]
+    },
+    "r-pad3": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 8 beats back"
+      ],
+      "Beat loop": [
+        "Loop 1 beat"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 1 beat"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 8 beats back"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 1 beat"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 1 beat"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 3"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 1/4 beat"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 3 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 3"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Slip loop": [
+        "Loop roll 1/4 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/4 beat"
+      ]
+    },
+    "r-pad4": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 8 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 2 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 2 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 2 beats"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 2 beats"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 4"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 1/2 beat"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 4 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 4"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Slip loop": [
+        "Loop roll 1/2 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1/2 beat"
+      ]
+    },
+    "r-pad5": {
+      "Beat jump": [
+        "Jump 16 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 16 beats back"
+      ],
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 4 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 16 beats back"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 16 beats back"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 4 beats"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 5"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 1 beat"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 5 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 5"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Slip loop": [
+        "Loop roll 1 beat"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 1 beat"
+      ]
+    },
+    "r-pad6": {
+      "Beat jump": [
+        "Jump 16 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 16 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 8 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 16 beats forward"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 16 beats forward"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 8 beats"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 6"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 2 beats"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 6 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 6"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Slip loop": [
+        "Loop roll 2 beats"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 2 beats"
+      ]
+    },
+    "r-pad7": {
+      "Beat jump": [
+        "Jump 32 beats back"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 32 beats back"
+      ],
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 32 beats back"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 32 beats back"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 7"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 4 beats"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 7 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 7"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Slip loop": [
+        "Loop roll 4 beats"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 4 beats"
+      ]
+    },
+    "r-pad8": {
+      "Beat jump": [
+        "Jump 32 beats forward"
+      ],
+      "Beat jump + SHIFT": [
+        "Jump 32 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Beat loop + SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 32 beats forward"
+      ],
+      "Deck 4, Beat jump + SHIFT": [
+        "Jump 32 beats forward"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 4, Beat loop + SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Deck 4, Extension 1": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 1 + SHIFT": [
+        "FX 9 Assign to Deck 4",
+        "FX 9 Effect 1 knob",
+        "FX 9 Effect 1 loaded effect",
+        "FX 9 Effect 1 on",
+        "FX 9 Unit on",
+        "FX 9 Wet / dry"
+      ],
+      "Deck 4, Extension 2": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 4, Extension 3": [
+        "Keyboard pad 8"
+      ],
+      "Deck 4, Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 4, Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 4, Slip loop": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 4, Slip loop + SHIFT": [
+        "Loop roll 8 beats"
+      ],
+      "Extension 1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 1 + SHIFT": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Extension 2": [
+        "Sampler 8 Play from start"
+      ],
+      "Extension 3": [
+        "Keyboard pad 8"
+      ],
+      "Extension 3 + SHIFT": [
+        "shift the key further"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Slip loop": [
+        "Loop roll 8 beats"
+      ],
+      "Slip loop + SHIFT": [
+        "Loop roll 8 beats"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-quantize": {
+      "Deck 4": [
+        "Quantize"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "r-reverse": {
+      "Deck 4": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "r-search-fwd": {
+      "Deck 4": [
+        "Fast forward"
+      ],
+      "normal": [
+        "Fast forward"
+      ]
+    },
+    "r-search-rev": {
+      "Deck 4": [
+        "Rewind"
+      ],
+      "normal": [
+        "Rewind"
+      ]
+    },
+    "r-slip": {
+      "Deck 4": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo",
+        "slide (MSB)"
+      ],
+      "normal": [
+        "Tempo",
+        "slide (MSB)"
+      ]
+    },
+    "r-tempo-range": {
+      "Deck 4": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-track-fwd": {
+      "Deck 4": [
+        "Jump 32 beats forward"
+      ],
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "r-track-rev": {
+      "Deck 4": [
+        "Jump 32 beats back"
+      ],
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "screen": {
+      "Deck 1 needle": [
+        "Position"
+      ],
+      "Deck 2 needle": [
+        "Position"
+      ],
+      "Deck 3 needle": [
+        "Position"
+      ],
+      "Deck 4 needle": [
+        "Position"
+      ]
+    },
+    "tag": {
+      "SHIFT": [
+        "Add to top of Automix"
+      ],
+      "normal": [
+        "Add to Automix"
+      ]
+    },
+    "tap": {
+      "SHIFT": [
+        "FX 5 Bpm auto"
+      ],
+      "normal": [
+        "FX 5 Tap effect tempo"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

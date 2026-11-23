@@ -1,0 +1,448 @@
+{
+  "file": "Traktor Kontrol D2.hid.xml",
+  "parts": {
+    "browse": {
+      "Push": [
+        "Load the selected track"
+      ],
+      "SHIFT": [
+        "Scroll the sidebar"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "deck": {
+      "normal": [
+        "Hold, then A, B, C or D: control that deck",
+        "Switch between the two decks (A and C, or B and D)"
+      ]
+    },
+    "deck-a": {
+      "DECK held": [
+        "Control deck A"
+      ],
+      "SHIFT": [
+        "Send deck A to FX 3 (A, C) or 4 (B, D)"
+      ],
+      "normal": [
+        "Send deck A to FX 1 (A, C) or 2 (B, D)"
+      ]
+    },
+    "deck-b": {
+      "DECK held": [
+        "Control deck B"
+      ],
+      "SHIFT": [
+        "Send deck B to FX 3 (A, C) or 4 (B, D)"
+      ],
+      "normal": [
+        "Send deck B to FX 1 (A, C) or 2 (B, D)"
+      ]
+    },
+    "deck-c": {
+      "DECK held": [
+        "Control deck C"
+      ],
+      "SHIFT": [
+        "Send deck C to FX 3 (A, C) or 4 (B, D)"
+      ],
+      "normal": [
+        "Send deck C to FX 1 (A, C) or 2 (B, D)"
+      ]
+    },
+    "deck-d": {
+      "DECK held": [
+        "Control deck D"
+      ],
+      "SHIFT": [
+        "Send deck D to FX 3 (A, C) or 4 (B, D)"
+      ],
+      "normal": [
+        "Send deck D to FX 1 (A, C) or 2 (B, D)"
+      ]
+    },
+    "fader1": {
+      "normal": [
+        "Stem 1 volume (track with stems)"
+      ]
+    },
+    "fader2": {
+      "normal": [
+        "Stem 2 volume (track with stems)"
+      ]
+    },
+    "fader3": {
+      "normal": [
+        "Stem 3 volume (track with stems)"
+      ]
+    },
+    "fader4": {
+      "normal": [
+        "Stem 4 volume (track with stems)"
+      ]
+    },
+    "flux": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "freeze": {
+      "normal": [
+        "Pads play the slicer"
+      ]
+    },
+    "fxbtn1": {
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect unit on or off"
+      ]
+    },
+    "fxbtn2": {
+      "SHIFT": [
+        "FX 1 (A, C) or 2 (B, D) Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect 1 on or off"
+      ]
+    },
+    "fxbtn3": {
+      "SHIFT": [
+        "FX 1 (A, C) or 2 (B, D) Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect 2 on or off"
+      ]
+    },
+    "fxbtn4": {
+      "SHIFT": [
+        "FX 1 (A, C) or 2 (B, D) Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect 3 on or off"
+      ]
+    },
+    "fxknob1": {
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Dry / wet"
+      ]
+    },
+    "fxknob2": {
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect 1 amount"
+      ]
+    },
+    "fxknob3": {
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect 2 amount"
+      ]
+    },
+    "fxknob4": {
+      "normal": [
+        "FX 1 (A, C) or 2 (B, D) Effect 3 amount"
+      ]
+    },
+    "hotcue": {
+      "normal": [
+        "Pads play hot cues"
+      ]
+    },
+    "knob1": {
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Dry / wet"
+      ]
+    },
+    "knob2": {
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect 1 amount"
+      ]
+    },
+    "knob3": {
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect 2 amount"
+      ]
+    },
+    "knob4": {
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect 3 amount"
+      ]
+    },
+    "loop": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Jump by the loop length (moves an active loop)"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "loop-mode": {
+      "normal": [
+        "Pads play loops and beat jumps"
+      ]
+    },
+    "on1": {
+      "SHIFT": [
+        "Stem 1 on or off (track with stems)"
+      ],
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect unit on or off",
+        "Stem 1 effect send on or off (track with stems)"
+      ]
+    },
+    "on2": {
+      "SHIFT": [
+        "Stem 2 on or off (track with stems)"
+      ],
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect 1 on or off",
+        "Stem 2 effect send on or off (track with stems)"
+      ]
+    },
+    "on3": {
+      "SHIFT": [
+        "Stem 3 on or off (track with stems)"
+      ],
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect 2 on or off",
+        "Stem 3 effect send on or off (track with stems)"
+      ]
+    },
+    "on4": {
+      "SHIFT": [
+        "Stem 4 on or off (track with stems)"
+      ],
+      "normal": [
+        "FX 3 (A, C) or 4 (B, D) Effect 3 on or off",
+        "Stem 4 effect send on or off (track with stems)"
+      ]
+    },
+    "pad1": {
+      "FREEZE": [
+        "Slice 1 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 1"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "LOOP": [
+        "Loop 1/8 beat"
+      ],
+      "REMIX": [
+        "Sampler 1 Play sample 1"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 1 Stop sample 1"
+      ]
+    },
+    "pad2": {
+      "FREEZE": [
+        "Slice 2 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 2"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "LOOP": [
+        "Loop 1/4 beat"
+      ],
+      "REMIX": [
+        "Sampler 2 Play sample 2"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 2 Stop sample 2"
+      ]
+    },
+    "pad3": {
+      "FREEZE": [
+        "Slice 3 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 3"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "LOOP": [
+        "Loop 1/2 beat"
+      ],
+      "REMIX": [
+        "Sampler 3 Play sample 3"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 3 Stop sample 3"
+      ]
+    },
+    "pad4": {
+      "FREEZE": [
+        "Slice 4 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 4"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "LOOP": [
+        "Loop 1 beat"
+      ],
+      "REMIX": [
+        "Sampler 4 Play sample 4"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 4 Stop sample 4"
+      ]
+    },
+    "pad5": {
+      "FREEZE": [
+        "Slice 5 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 5"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "LOOP": [
+        "Jump back by the loop"
+      ],
+      "REMIX": [
+        "Sampler 5 Play sample 5"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 5 Stop sample 5"
+      ]
+    },
+    "pad6": {
+      "FREEZE": [
+        "Slice 6 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 6"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "LOOP": [
+        "Beat jump back"
+      ],
+      "REMIX": [
+        "Sampler 6 Play sample 6"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 6 Stop sample 6"
+      ]
+    },
+    "pad7": {
+      "FREEZE": [
+        "Slice 7 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 7"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "LOOP": [
+        "Beat jump forward"
+      ],
+      "REMIX": [
+        "Sampler 7 Play sample 7"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 7 Stop sample 7"
+      ]
+    },
+    "pad8": {
+      "FREEZE": [
+        "Slice 8 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 8"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "LOOP": [
+        "Jump forward by the loop"
+      ],
+      "REMIX": [
+        "Sampler 8 Play sample 8"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 8 Stop sample 8"
+      ]
+    },
+    "play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "remix": {
+      "normal": [
+        "Pads play samples"
+      ]
+    },
+    "shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "strip": {
+      "SHIFT": [
+        "Jump to that place in the track"
+      ],
+      "normal": [
+        "Bend, or scrub while paused"
+      ]
+    },
+    "sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync on or off"
+      ]
+    }
+  }
+}

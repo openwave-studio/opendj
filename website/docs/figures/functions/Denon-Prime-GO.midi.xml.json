@@ -1,0 +1,320 @@
+{
+  "file": "Denon-Prime-GO.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "Turn": [
+        "Scroll list"
+      ]
+    },
+    "ch1cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch1fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch1level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch1low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch1mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch1sweep": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch1sweepa": {
+      "normal": [
+        "Filter on"
+      ]
+    },
+    "ch2cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch2fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch2level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch2mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch2sweep": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch2sweepa": {
+      "normal": [
+        "Filter on"
+      ]
+    },
+    "fwd": {
+      "normal": [
+        "Next panel"
+      ]
+    },
+    "lbend+": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "lbend-": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "lcue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "lhotcue": {
+      "normal": [
+        "Hot Cue Pad On"
+      ]
+    },
+    "ljog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog Wheel MSB"
+      ],
+      "Turn (fine)": [
+        "Jog nudge"
+      ]
+    },
+    "lloop": {
+      "normal": [
+        "Loop Pad On"
+      ]
+    },
+    "load1": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load2": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "lpad1": {
+      "Bank 2": [
+        "Pad 5 On"
+      ],
+      "normal": [
+        "Pad 1 On"
+      ]
+    },
+    "lpad2": {
+      "Bank 2": [
+        "Pad 6 On"
+      ],
+      "normal": [
+        "Pad 2 On"
+      ]
+    },
+    "lpad3": {
+      "Bank 2": [
+        "Pad 7 On"
+      ],
+      "normal": [
+        "Pad 3 On"
+      ]
+    },
+    "lpad4": {
+      "Bank 2": [
+        "Pad 8 On"
+      ],
+      "normal": [
+        "Pad 4 On"
+      ]
+    },
+    "lpitch": {
+      "Fine": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "lplay": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "lroll": {
+      "normal": [
+        "Roll Pad On"
+      ]
+    },
+    "lsync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "lvinyl": {
+      "normal": [
+        "Vinyl button"
+      ]
+    },
+    "rbend+": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "rbend-": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "rcue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "rhotcue": {
+      "normal": [
+        "Hot Cue Pad On"
+      ]
+    },
+    "rjog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog Wheel MSB"
+      ],
+      "Turn (fine)": [
+        "Jog nudge"
+      ]
+    },
+    "rloop": {
+      "normal": [
+        "Loop Pad On"
+      ]
+    },
+    "rpad1": {
+      "Bank 2": [
+        "Pad 5 On"
+      ],
+      "normal": [
+        "Pad 1 On"
+      ]
+    },
+    "rpad2": {
+      "Bank 2": [
+        "Pad 6 On"
+      ],
+      "normal": [
+        "Pad 2 On"
+      ]
+    },
+    "rpad3": {
+      "Bank 2": [
+        "Pad 7 On"
+      ],
+      "normal": [
+        "Pad 3 On"
+      ]
+    },
+    "rpad4": {
+      "Bank 2": [
+        "Pad 8 On"
+      ],
+      "normal": [
+        "Pad 4 On"
+      ]
+    },
+    "rpitch": {
+      "Fine": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "rplay": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "rroll": {
+      "normal": [
+        "Roll Pad On"
+      ]
+    },
+    "rsync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "rvinyl": {
+      "normal": [
+        "Vinyl button"
+      ]
+    },
+    "shift": {
+      "normal": [
+        "Shift state"
+      ]
+    },
+    "view": {
+      "normal": [
+        "Big browser"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

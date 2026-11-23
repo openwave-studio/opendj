@@ -1,0 +1,681 @@
+{
+  "file": "Pioneer-PLX-CRSS12.midi.xml",
+  "parts": {
+    "mode-beat-jump": {
+      "Deck 2": [
+        "pad mode"
+      ],
+      "Deck 3": [
+        "pad mode"
+      ],
+      "Deck 4": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "mode-hot-cue": {
+      "Deck 2": [
+        "pad mode"
+      ],
+      "Deck 3": [
+        "pad mode"
+      ],
+      "Deck 4": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "mode-pad-fx": {
+      "Deck 2": [
+        "pad mode"
+      ],
+      "Deck 3": [
+        "pad mode"
+      ],
+      "Deck 4": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "mode-sample-scratch": {
+      "Deck 2": [
+        "pad mode"
+      ],
+      "Deck 3": [
+        "pad mode"
+      ],
+      "Deck 4": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "mode-sampler": {
+      "Deck 2": [
+        "pad mode"
+      ],
+      "Deck 3": [
+        "pad mode"
+      ],
+      "Deck 4": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "mode-stems": {
+      "Deck 2": [
+        "pad mode"
+      ],
+      "Deck 3": [
+        "pad mode"
+      ],
+      "Deck 4": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "pad1": {
+      "BEAT JUMP": [
+        "Jump 1 beat back"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 1 beat back"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 1"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 1 beat back"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 1"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 1 beat back"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 1"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 1 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 1"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "ROLL": [
+        "Loop roll 1/16 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "pad2": {
+      "BEAT JUMP": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 2"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 2"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 2"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 2 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 2"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "ROLL": [
+        "Loop roll 1/8 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "pad3": {
+      "BEAT JUMP": [
+        "Jump 2 beats back"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 2 beats back"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 3"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 2 beats back"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 3"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 2 beats back"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 3"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 3 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 3"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "ROLL": [
+        "Loop roll 1/4 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "pad4": {
+      "BEAT JUMP": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 4"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 4"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 4"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 4 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 4"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "ROLL": [
+        "Loop roll 1/2 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "pad5": {
+      "BEAT JUMP": [
+        "Jump 4 beats back"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 4 beats back"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 5"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 4 beats back"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 5"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 4 beats back"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 5"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 5 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 5"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "ROLL": [
+        "Loop roll 1 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "pad6": {
+      "BEAT JUMP": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 6"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 6"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 6"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 6 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 6"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "ROLL": [
+        "Loop roll 2 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "pad7": {
+      "BEAT JUMP": [
+        "Jump 8 beats back"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 8 beats back"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 7"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 8 beats back"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 7"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 8 beats back"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 7"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 7 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 7"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "ROLL": [
+        "Loop roll 4 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "pad8": {
+      "BEAT JUMP": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 2, BEAT JUMP": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 2, HOT CUE": [
+        "Hot cue 8"
+      ],
+      "Deck 2, HOT CUE, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 2, ROLL": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 2, SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 2, SAMPLER, SHIFT": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Deck 3, BEAT JUMP": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 3, HOT CUE": [
+        "Hot cue 8"
+      ],
+      "Deck 3, HOT CUE, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 3, ROLL": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 3, SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 3, SAMPLER, SHIFT": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Deck 4, BEAT JUMP": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 4, HOT CUE": [
+        "Hot cue 8"
+      ],
+      "Deck 4, HOT CUE, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 4, ROLL": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 4, SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 4, SAMPLER, SHIFT": [
+        "Sampler 8 Stop at cue"
+      ],
+      "HOT CUE": [
+        "Hot cue 8"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "ROLL": [
+        "Loop roll 8 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    }
+  }
+}

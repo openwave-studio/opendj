@@ -1,0 +1,643 @@
+{
+  "file": "Denon MC3000.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous playlist"
+      ]
+    },
+    "browse": {
+      "Bass kill, deck A": [
+        "Kill bass"
+      ]
+    },
+    "cfmode": {
+      "normal": [
+        "Cf mode"
+      ]
+    },
+    "efx": {
+      "Mid kill, deck B": [
+        "Kill mid"
+      ]
+    },
+    "fwd": {
+      "normal": [
+        "Next playlist"
+      ]
+    },
+    "fxon-l1": {
+      "normal": [
+        "Flanger"
+      ]
+    },
+    "fxon-l2": {
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "fxon-r1": {
+      "normal": [
+        "Flanger"
+      ]
+    },
+    "fxon-r2": {
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "l-autoloop": {
+      "SHIFT": [
+        "Loop end",
+        "Loop start",
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Auto loop"
+      ]
+    },
+    "l-bend+": {
+      "SHIFT": [
+        "Jump to end"
+      ],
+      "normal": [
+        "Bend up"
+      ]
+    },
+    "l-bend-": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Bend down"
+      ]
+    },
+    "l-cue": {
+      "Deck C": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-cue1": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-cue2": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-cue3": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-cue4": {
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-cue5": {
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "l-cue6": {
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "l-cue7": {
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "l-cue8": {
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "l-cut+": {
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-cut-": {
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-efx1": {
+      "Beat loop": [
+        "Loop 2 beats"
+      ],
+      "Sampler 1": [
+        "Sampler 1 Play / pause"
+      ]
+    },
+    "l-efx1-knob": {
+      "Flanger period": [
+        "Lfo period"
+      ],
+      "SAMP: sampler 1 gain": [
+        "Sampler 1 Gain"
+      ]
+    },
+    "l-efx2": {
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Sampler 2": [
+        "Sampler 2 Play / pause"
+      ]
+    },
+    "l-efx2-knob": {
+      "Flanger depth": [
+        "Lfo depth"
+      ],
+      "SAMP: sampler 2 gain": [
+        "Sampler 2 Gain"
+      ]
+    },
+    "l-efx3": {
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Sampler 3": [
+        "Sampler 3 Play / pause"
+      ]
+    },
+    "l-efx3-knob": {
+      "Flanger delay": [
+        "Lfo delay"
+      ],
+      "SAMP: sampler 3 gain": [
+        "Sampler 3 Gain"
+      ]
+    },
+    "l-efx4": {
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Sampler 4": [
+        "Sampler 4 Play / pause"
+      ]
+    },
+    "l-efx4-knob": {
+      "Microphone volume": [
+        "Mic 1 Level"
+      ],
+      "SAMP: sampler 4 gain": [
+        "Sampler 4 Gain"
+      ]
+    },
+    "l-jog": {
+      "Deck C + Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck C + Turn": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "l-keylock": {
+      "Deck C": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-loopin": {
+      "normal": [
+        "Loop end",
+        "Loop in"
+      ]
+    },
+    "l-loopout": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-pitch": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-play": {
+      "Deck C": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "l-sync": {
+      "Deck C": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-vinyl": {
+      "Deck C": [
+        "Vinylmode"
+      ],
+      "normal": [
+        "Vinylmode"
+      ]
+    },
+    "load-ac": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load-bd": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "mix-l-cue": {
+      "Deck C": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "mix-l-fader": {
+      "Deck C": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "mix-l-hi": {
+      "Deck C": [
+        "Filter high"
+      ],
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "mix-l-level": {
+      "Deck C": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "mix-l-low": {
+      "Deck C": [
+        "Filter low"
+      ],
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "mix-l-mid": {
+      "Deck C": [
+        "Filter mid"
+      ],
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "mix-r-cue": {
+      "Deck D": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "mix-r-fader": {
+      "Deck D": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "mix-r-hi": {
+      "Deck D": [
+        "Filter high"
+      ],
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "mix-r-level": {
+      "Deck D": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "mix-r-low": {
+      "Deck D": [
+        "Filter low"
+      ],
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "mix-r-mid": {
+      "Deck D": [
+        "Filter mid"
+      ],
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "r-autoloop": {
+      "SHIFT": [
+        "Loop end",
+        "Loop start",
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Auto loop"
+      ]
+    },
+    "r-bend+": {
+      "SHIFT": [
+        "Jump to end"
+      ],
+      "normal": [
+        "Bend up"
+      ]
+    },
+    "r-bend-": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Bend down"
+      ]
+    },
+    "r-cue": {
+      "Deck D": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-cue1": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-cue2": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-cue3": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-cue4": {
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-cue5": {
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "r-cue6": {
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "r-cue7": {
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "r-cue8": {
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "r-cut+": {
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-cut-": {
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-efx1": {
+      "Beat loop": [
+        "Loop 2 beats"
+      ]
+    },
+    "r-efx1-knob": {
+      "Headphone mix": [
+        "Headphone mix"
+      ]
+    },
+    "r-efx2": {
+      "Beat loop": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-efx2-knob": {
+      "Headphone volume": [
+        "Head volume"
+      ]
+    },
+    "r-efx3": {
+      "Beat loop": [
+        "Loop 8 beats"
+      ]
+    },
+    "r-efx3-knob": {
+      "Main balance": [
+        "Balance"
+      ]
+    },
+    "r-efx4": {
+      "Beat loop": [
+        "Loop 16 beats"
+      ]
+    },
+    "r-efx4-knob": {
+      "Main volume": [
+        "Master volume"
+      ]
+    },
+    "r-jog": {
+      "Deck D + Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck D + Turn": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "r-keylock": {
+      "Deck D": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-loopin": {
+      "normal": [
+        "Loop end",
+        "Loop in"
+      ]
+    },
+    "r-loopout": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-pitch": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-play": {
+      "Deck D": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "r-sync": {
+      "Deck D": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-vinyl": {
+      "Deck D": [
+        "Vinylmode"
+      ],
+      "normal": [
+        "Vinylmode"
+      ]
+    },
+    "record": {
+      "Bass kill, deck B": [
+        "Kill bass"
+      ]
+    },
+    "sample": {
+      "Mid kill, deck A": [
+        "Kill mid"
+      ]
+    },
+    "sel": {
+      "Press": [
+        "Load into a stopped deck"
+      ],
+      "Turn": [
+        "Down",
+        "Up"
+      ],
+      "Turn + SHIFT": [
+        "Cue point"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

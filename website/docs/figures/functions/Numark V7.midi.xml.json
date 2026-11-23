@@ -1,0 +1,358 @@
+{
+  "file": "Numark V7.midi.xml",
+  "parts": {
+    "auto-load": {
+      "normal": [
+        "Load into a stopped deck"
+      ]
+    },
+    "bend-down": {
+      "Deck B": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "bend-up": {
+      "Deck B": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "browse": {
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cue": {
+      "Deck B": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "deck-l": {
+      "normal": [
+        "Deck select l"
+      ]
+    },
+    "deck-r": {
+      "normal": [
+        "Deck select r"
+      ]
+    },
+    "double": {
+      "Deck B": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "exit": {
+      "Deck B": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "fx-amount": {
+      "Deck B": [
+        "Fx slider bcoarse",
+        "Lfo depth"
+      ],
+      "normal": [
+        "Fx slider acoarse",
+        "Lfo depth"
+      ]
+    },
+    "fx-on": {
+      "Deck B": [
+        "Flanger"
+      ],
+      "normal": [
+        "Flanger"
+      ]
+    },
+    "fx-param": {
+      "Deck B": [
+        "Lfo period"
+      ],
+      "normal": [
+        "Lfo period"
+      ]
+    },
+    "fx-select": {
+      "Deck B": [
+        "Lfo delay"
+      ],
+      "Deck B push": [
+        "Lfo delay"
+      ],
+      "Push": [
+        "Lfo delay"
+      ],
+      "normal": [
+        "Lfo delay"
+      ]
+    },
+    "halve": {
+      "Deck B": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "hot1": {
+      "Deck B": [
+        "Clear hot cue 1",
+        "Hot cue 1"
+      ],
+      "normal": [
+        "Clear hot cue 1",
+        "Hot cue 1"
+      ]
+    },
+    "hot2": {
+      "Deck B": [
+        "Hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "hot3": {
+      "Deck B": [
+        "Hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "hot4": {
+      "Deck B": [
+        "Hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "hot5": {
+      "Deck B": [
+        "Hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "keylock": {
+      "Deck B": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "load": {
+      "normal": [
+        "Load into a stopped deck"
+      ]
+    },
+    "load-a": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load-b": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "loop-in": {
+      "Deck B": [
+        "Loop 1 beat"
+      ],
+      "normal": [
+        "Loop 1 beat"
+      ]
+    },
+    "loop-mode": {
+      "Deck B": [
+        "Loop mode b"
+      ],
+      "normal": [
+        "Loop mode a"
+      ]
+    },
+    "loop-out": {
+      "Deck B": [
+        "Loop 2 beats"
+      ],
+      "normal": [
+        "Loop 2 beats"
+      ]
+    },
+    "master-l": {
+      "normal": [
+        "Master l"
+      ]
+    },
+    "master-r": {
+      "normal": [
+        "Master r"
+      ]
+    },
+    "motor-off": {
+      "Deck B": [
+        "Motor off button b"
+      ],
+      "normal": [
+        "Motor off button a"
+      ]
+    },
+    "next-list": {
+      "normal": [
+        "Next playlist"
+      ]
+    },
+    "pitch": {
+      "Deck B": [
+        "Tempo",
+        "Pitch bcoarse"
+      ],
+      "normal": [
+        "Tempo",
+        "Pitch acoarse"
+      ]
+    },
+    "platter": {
+      "Deck B turn": [
+        "Scratch b"
+      ],
+      "Turn": [
+        "Scratch a"
+      ]
+    },
+    "play": {
+      "Deck B": [
+        "Play / pause",
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Play / pause",
+        "Scratch (platter touch)"
+      ]
+    },
+    "prev-list": {
+      "normal": [
+        "Previous playlist"
+      ]
+    },
+    "range": {
+      "Deck B": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "reloop": {
+      "Deck B": [
+        "Loop 8 beats"
+      ],
+      "normal": [
+        "Loop 8 beats"
+      ]
+    },
+    "reverse": {
+      "Deck B": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "select": {
+      "Deck B": [
+        "Loop 4 beats"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "shift": {
+      "Deck B": [
+        "Shift b"
+      ],
+      "normal": [
+        "Shift a"
+      ]
+    },
+    "shift-down": {
+      "Deck B": [
+        "Loop end",
+        "Loop start"
+      ],
+      "normal": [
+        "Loop end",
+        "Loop start"
+      ]
+    },
+    "shift-up": {
+      "Deck B": [
+        "Loop end",
+        "Loop start"
+      ],
+      "normal": [
+        "Loop end",
+        "Loop start"
+      ]
+    },
+    "start": {
+      "Deck B": [
+        "Motor start knob b"
+      ],
+      "normal": [
+        "Motor start knob a"
+      ]
+    },
+    "stop": {
+      "Deck B": [
+        "Motor stop knob b"
+      ],
+      "normal": [
+        "Motor stop knob a"
+      ]
+    },
+    "strip": {
+      "Deck B": [
+        "Position"
+      ],
+      "normal": [
+        "Position"
+      ]
+    },
+    "sync": {
+      "Deck B": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "tap": {
+      "Deck B": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Tap tempo"
+      ]
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "file": "Pioneer-DJM-V5.midi.xml",
+  "parts": {
+    "ch1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1-input": {
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "ch2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-input": {
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "ch3-fader": {
+      "Deck 3": [
+        "Channel fader"
+      ]
+    },
+    "ch3-input": {
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "usb": {
+      "USB A": [
+        "this computer is on the mixer's USB A port"
+      ]
+    }
+  }
+}

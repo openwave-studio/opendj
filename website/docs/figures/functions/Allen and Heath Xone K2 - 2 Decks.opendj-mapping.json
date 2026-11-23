@@ -1,0 +1,383 @@
+{
+  "file": "Allen and Heath Xone K2 - 2 Decks.opendj-mapping",
+  "parts": {
+    "btn1-1": {
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "btn1-2": {
+      "normal": [
+        "Kill high"
+      ]
+    },
+    "btn1-3": {
+      "normal": [
+        "Kill high"
+      ]
+    },
+    "btn1-4": {
+      "SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "btn2-1": {
+      "SHIFT": [
+        "FX 1 Effect 2 next"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "btn2-2": {
+      "normal": [
+        "Kill mid"
+      ]
+    },
+    "btn2-3": {
+      "normal": [
+        "Kill mid"
+      ]
+    },
+    "btn2-4": {
+      "SHIFT": [
+        "FX 2 Effect 2 next"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "btn3-1": {
+      "SHIFT": [
+        "FX 1 Effect 3 next"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "btn3-2": {
+      "normal": [
+        "Kill low"
+      ]
+    },
+    "btn3-3": {
+      "normal": [
+        "Kill low"
+      ]
+    },
+    "btn3-4": {
+      "SHIFT": [
+        "FX 2 Effect 3 next"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "enc-bl": {
+      "Press + SHIFT": [
+        "Next panel"
+      ],
+      "Press + SHIFT 0 + Long press": [
+        "Open or close folder"
+      ],
+      "Press + SHIFT 0 + Tap": [
+        "Open or load item / Load selected track"
+      ],
+      "SHIFT": [
+        "Song pos"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "enc-br": {
+      "Press + SHIFT": [
+        "Expand browser"
+      ],
+      "Press + SHIFT 0 + Long press": [
+        "Open or close folder"
+      ],
+      "Press + SHIFT 0 + Tap": [
+        "Open or load item / Load selected track"
+      ],
+      "SHIFT": [
+        "Song pos"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "enc1": {
+      "Press": [
+        "Filter 50%"
+      ],
+      "SHIFT": [
+        "Headphone level"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "enc2": {
+      "Press": [
+        "Reloop / exit / Loop 4 beats"
+      ],
+      "Press + SHIFT": [
+        "Reloop"
+      ],
+      "SHIFT": [
+        "Move loop by its length"
+      ],
+      "normal": [
+        "Gain 1 / loop size"
+      ]
+    },
+    "enc3": {
+      "Press": [
+        "Reloop / exit / Loop 4 beats"
+      ],
+      "Press + SHIFT": [
+        "Reloop"
+      ],
+      "SHIFT": [
+        "Move loop by its length"
+      ],
+      "normal": [
+        "Gain 2 / loop size"
+      ]
+    },
+    "enc4": {
+      "Press": [
+        "Filter 50%"
+      ],
+      "SHIFT": [
+        "Main level"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "exit": {
+      "Release": [
+        "Set var shift 0"
+      ],
+      "normal": [
+        "Set var shift 1"
+      ]
+    },
+    "fader1": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "fader2": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "fader3": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "fader4": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "knob1-1": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "knob1-2": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "knob1-3": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "knob1-4": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "knob2-1": {
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "knob2-2": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "knob2-3": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "knob2-4": {
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "knob3-1": {
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "knob3-2": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "knob3-3": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "knob3-4": {
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "pad-A": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "pad-B": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "pad-C": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "pad-D": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "pad-E": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "pad-F": {
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "pad-G": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "pad-H": {
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "pad-I": {
+      "SHIFT": [
+        "Beat jump"
+      ],
+      "normal": [
+        "Beat jump"
+      ]
+    },
+    "pad-J": {
+      "SHIFT": [
+        "Beat jump"
+      ],
+      "normal": [
+        "Beat jump"
+      ]
+    },
+    "pad-K": {
+      "SHIFT": [
+        "Beat jump"
+      ],
+      "normal": [
+        "Beat jump"
+      ]
+    },
+    "pad-L": {
+      "SHIFT": [
+        "Beat jump"
+      ],
+      "normal": [
+        "Beat jump"
+      ]
+    },
+    "pad-M": {
+      "SHIFT": [
+        "Pitch zero"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "pad-N": {
+      "SHIFT": [
+        "Goto start"
+      ],
+      "normal": [
+        "Play pause"
+      ]
+    },
+    "pad-O": {
+      "SHIFT": [
+        "Goto start"
+      ],
+      "normal": [
+        "Play pause"
+      ]
+    },
+    "pad-P": {
+      "SHIFT": [
+        "Pitch zero"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    }
+  }
+}

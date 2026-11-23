@@ -1,0 +1,408 @@
+{
+  "file": "Numark-Mixstream-Pro.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Next panel"
+      ]
+    },
+    "browse": {
+      "Aux level": [
+        "Aux 1 Gain"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "control-center": {
+      "Aux play": [
+        "Aux 1 Gain",
+        "Aux 1 To main mix"
+      ]
+    },
+    "fx1": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "fx2": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "fx3": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "fx4": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "hp-vol": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "l-bend-down": {
+      "SHIFT": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-bend-up": {
+      "SHIFT": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fx": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-jog": {
+      "Touch": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog lsb",
+        "Jog msb"
+      ]
+    },
+    "l-load": {
+      "SHIFT": [
+        "Eject"
+      ],
+      "normal": [
+        "Load track"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-m1": {
+      "normal": [
+        "Toggle hot cue or stems"
+      ]
+    },
+    "l-m2": {
+      "normal": [
+        "Toggle saved loop"
+      ]
+    },
+    "l-m3": {
+      "normal": [
+        "Show samplers",
+        "Show stem controls"
+      ]
+    },
+    "l-m4": {
+      "normal": [
+        "Show samplers",
+        "Show stem controls"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "l-pad2": {
+      "normal": [
+        "Loop 8 beats"
+      ]
+    },
+    "l-pad3": {
+      "normal": [
+        "Loop 16 beats"
+      ]
+    },
+    "l-pad4": {
+      "normal": [
+        "Loop 32 beats"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Play from cue"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-scratch": {
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "l-sync": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "main": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-bend-down": {
+      "SHIFT": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-bend-up": {
+      "SHIFT": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fx": {
+      "normal": [
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-jog": {
+      "Touch": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog lsb",
+        "Jog msb"
+      ],
+      "Turn + SHIFT": [
+        "Jog nudge"
+      ]
+    },
+    "r-load": {
+      "SHIFT": [
+        "Eject"
+      ],
+      "normal": [
+        "Load track"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-m1": {
+      "normal": [
+        "Toggle hot cue or stems"
+      ]
+    },
+    "r-m2": {
+      "normal": [
+        "Toggle saved loop"
+      ]
+    },
+    "r-m3": {
+      "normal": [
+        "Show samplers",
+        "Show stem controls"
+      ]
+    },
+    "r-m4": {
+      "normal": [
+        "Show samplers",
+        "Show stem controls"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-pad2": {
+      "normal": [
+        "Loop 8 beats"
+      ]
+    },
+    "r-pad3": {
+      "normal": [
+        "Loop 16 beats"
+      ]
+    },
+    "r-pad4": {
+      "normal": [
+        "Loop 32 beats"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Play from cue"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-scratch": {
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "r-sync": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "speaker": {
+      "normal": [
+        "Booth level"
+      ]
+    },
+    "view": {
+      "normal": [
+        "Big browser"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

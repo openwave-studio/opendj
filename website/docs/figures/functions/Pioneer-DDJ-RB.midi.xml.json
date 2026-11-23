@@ -1,0 +1,1015 @@
+{
+  "file": "Pioneer-DDJ-RB.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Next panel"
+      ],
+      "Press + SHIFT": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "l-beat-l": {
+      "normal": [
+        "FX 5 Effect 1 beats halve"
+      ]
+    },
+    "l-beat-r": {
+      "normal": [
+        "FX 5 Effect 1 beats double"
+      ]
+    },
+    "l-cfx": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Play from start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fx-level": {
+      "normal": [
+        "FX 5 Effect 1 knob"
+      ]
+    },
+    "l-fx-on": {
+      "SHIFT": [
+        "FX 5 Effect 1 next"
+      ],
+      "normal": [
+        "FX 5 Effect 1 on"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-in": {
+      "Long press": [
+        "Loop 4 beats"
+      ],
+      "SHIFT": [
+        "Loop in adjust (using jog wheel)"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Top, vinyl off": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-out": {
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-pad1": {
+      "Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 1 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 1/16 beat"
+      ],
+      "Slicer loop": [
+        "Loop 1/4 beat"
+      ]
+    },
+    "l-pad2": {
+      "Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 2 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 1/8 beat"
+      ],
+      "Slicer loop": [
+        "Loop 1/2 beat"
+      ]
+    },
+    "l-pad3": {
+      "Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 3 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 1/4 beat"
+      ],
+      "Slicer loop": [
+        "Loop 1 beat"
+      ]
+    },
+    "l-pad4": {
+      "Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 4 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 1/2 beat"
+      ],
+      "Slicer loop": [
+        "Loop 2 beats"
+      ]
+    },
+    "l-pad5": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 5 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 1 beat"
+      ],
+      "Slicer loop": [
+        "Loop 4 beats"
+      ]
+    },
+    "l-pad6": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 6 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 2 beats"
+      ],
+      "Slicer loop": [
+        "Loop 8 beats"
+      ]
+    },
+    "l-pad7": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 7 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 4 beats"
+      ],
+      "Slicer loop": [
+        "Loop 16 beats"
+      ]
+    },
+    "l-pad8": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX1": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 6 Assign to Deck 1",
+        "FX 6 Effect 1 knob",
+        "FX 6 Effect 1 loaded effect",
+        "FX 6 Effect 1 on",
+        "FX 6 Unit on",
+        "FX 6 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 8 Eject"
+      ],
+      "Slicer": [
+        "Loop roll 8 beats"
+      ],
+      "Slicer loop": [
+        "Loop 32 beats"
+      ]
+    },
+    "l-pfl": {
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo",
+        "Tempo control MSB"
+      ]
+    },
+    "l-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "phones": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "r-beat-l": {
+      "normal": [
+        "FX 2 Effect 1 beats halve"
+      ]
+    },
+    "r-beat-r": {
+      "normal": [
+        "FX 2 Effect 1 beats double"
+      ]
+    },
+    "r-cfx": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Play from start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fx-level": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-fx-on": {
+      "SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-in": {
+      "Long press": [
+        "Loop 4 beats"
+      ],
+      "SHIFT": [
+        "Loop in adjust (using jog wheel)"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Top, vinyl off": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-out": {
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-pad1": {
+      "Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 9 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 1/16 beat"
+      ],
+      "Slicer loop": [
+        "Loop 1/4 beat"
+      ]
+    },
+    "r-pad2": {
+      "Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 10 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 1/8 beat"
+      ],
+      "Slicer loop": [
+        "Loop 1/2 beat"
+      ]
+    },
+    "r-pad3": {
+      "Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 11 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 1/4 beat"
+      ],
+      "Slicer loop": [
+        "Loop 1 beat"
+      ]
+    },
+    "r-pad4": {
+      "Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 12 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 1/2 beat"
+      ],
+      "Slicer loop": [
+        "Loop 2 beats"
+      ]
+    },
+    "r-pad5": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 13 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 1 beat"
+      ],
+      "Slicer loop": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-pad6": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 14 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 2 beats"
+      ],
+      "Slicer loop": [
+        "Loop 8 beats"
+      ]
+    },
+    "r-pad7": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 15 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 4 beats"
+      ],
+      "Slicer loop": [
+        "Loop 16 beats"
+      ]
+    },
+    "r-pad8": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX1": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX1 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Pad FX2": [
+        "FX 7 Assign to Deck 2",
+        "FX 7 Effect 1 knob",
+        "FX 7 Effect 1 loaded effect",
+        "FX 7 Effect 1 on",
+        "FX 7 Unit on",
+        "FX 7 Wet / dry"
+      ],
+      "Pad FX2 + SHIFT": [
+        "Pad fx pressed"
+      ],
+      "Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 16 Stop Playback or Eject Track"
+      ],
+      "Slicer": [
+        "Loop roll 8 beats"
+      ],
+      "Slicer loop": [
+        "Loop 32 beats"
+      ]
+    },
+    "r-pfl": {
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo",
+        "Tempo control MSB"
+      ]
+    },
+    "r-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

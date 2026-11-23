@@ -1,0 +1,811 @@
+{
+  "file": "Traktor Kontrol S5.hid.xml",
+  "parts": {
+    "a-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "a-filter": {
+      "normal": [
+        "Mixer FX (filter or the chosen one)"
+      ]
+    },
+    "a-filter-on": {
+      "normal": [
+        "Mixer FX on or off"
+      ]
+    },
+    "a-fx1": {
+      "SHIFT": [
+        "Send to FX 3"
+      ],
+      "normal": [
+        "Send to FX 1"
+      ]
+    },
+    "a-fx2": {
+      "SHIFT": [
+        "Send to FX 4"
+      ],
+      "normal": [
+        "Send to FX 2"
+      ]
+    },
+    "a-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "a-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "a-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "a-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "a-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "b-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "b-filter": {
+      "normal": [
+        "Mixer FX (filter or the chosen one)"
+      ]
+    },
+    "b-filter-on": {
+      "normal": [
+        "Mixer FX on or off"
+      ]
+    },
+    "b-fx1": {
+      "SHIFT": [
+        "Send to FX 3"
+      ],
+      "normal": [
+        "Send to FX 1"
+      ]
+    },
+    "b-fx2": {
+      "SHIFT": [
+        "Send to FX 4"
+      ],
+      "normal": [
+        "Send to FX 2"
+      ]
+    },
+    "b-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "b-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "b-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "b-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "b-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "booth": {
+      "normal": [
+        "Booth level (on the device)"
+      ]
+    },
+    "c-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c-filter": {
+      "normal": [
+        "Mixer FX (filter or the chosen one)"
+      ]
+    },
+    "c-filter-on": {
+      "normal": [
+        "Mixer FX on or off"
+      ]
+    },
+    "c-fx1": {
+      "SHIFT": [
+        "Send to FX 3"
+      ],
+      "normal": [
+        "Send to FX 1"
+      ]
+    },
+    "c-fx2": {
+      "SHIFT": [
+        "Send to FX 4"
+      ],
+      "normal": [
+        "Send to FX 2"
+      ]
+    },
+    "c-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "c-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "c-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "c-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "c-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "cue-mix": {
+      "normal": [
+        "Headphone cue / main mix (on the device)"
+      ]
+    },
+    "cue-vol": {
+      "normal": [
+        "Headphone level (on the device)"
+      ]
+    },
+    "d-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "d-filter-on": {
+      "normal": [
+        "Mixer FX on or off"
+      ]
+    },
+    "d-fx1": {
+      "SHIFT": [
+        "Send to FX 3"
+      ],
+      "normal": [
+        "Send to FX 1"
+      ]
+    },
+    "d-fx2": {
+      "SHIFT": [
+        "Send to FX 4"
+      ],
+      "normal": [
+        "Send to FX 2"
+      ]
+    },
+    "d-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "d-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "d-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "d-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "l-browse": {
+      "Push": [
+        "Load the selected track (not checked on the device)"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-deck": {
+      "normal": [
+        "Switch between decks 1 and 3"
+      ]
+    },
+    "l-flux": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "l-freeze": {
+      "normal": [
+        "Pads play the slicer"
+      ]
+    },
+    "l-fxbtn1": {
+      "normal": [
+        "FX 1 Effect unit on or off"
+      ]
+    },
+    "l-fxbtn2": {
+      "SHIFT": [
+        "FX 1 Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on or off"
+      ]
+    },
+    "l-fxbtn3": {
+      "SHIFT": [
+        "FX 1 Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on or off"
+      ]
+    },
+    "l-fxbtn4": {
+      "SHIFT": [
+        "FX 1 Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on or off"
+      ]
+    },
+    "l-fxknob1": {
+      "normal": [
+        "FX 1 Dry / wet"
+      ]
+    },
+    "l-fxknob2": {
+      "normal": [
+        "FX 1 Effect 1 amount"
+      ]
+    },
+    "l-fxknob3": {
+      "normal": [
+        "FX 1 Effect 2 amount"
+      ]
+    },
+    "l-fxknob4": {
+      "normal": [
+        "FX 1 Effect 3 amount"
+      ]
+    },
+    "l-hotcue": {
+      "normal": [
+        "Pads play hot cues"
+      ]
+    },
+    "l-loop": {
+      "Push": [
+        "Loop on or off (not checked on the device)"
+      ]
+    },
+    "l-pad1": {
+      "FREEZE": [
+        "Slice 1 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 1"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "REMIX": [
+        "Sampler 1 Play sample 1"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 1 Stop sample 1"
+      ]
+    },
+    "l-pad2": {
+      "FREEZE": [
+        "Slice 2 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 2"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "REMIX": [
+        "Sampler 2 Play sample 2"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 2 Stop sample 2"
+      ]
+    },
+    "l-pad3": {
+      "FREEZE": [
+        "Slice 3 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 3"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "REMIX": [
+        "Sampler 3 Play sample 3"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 3 Stop sample 3"
+      ]
+    },
+    "l-pad4": {
+      "FREEZE": [
+        "Slice 4 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 4"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "REMIX": [
+        "Sampler 4 Play sample 4"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 4 Stop sample 4"
+      ]
+    },
+    "l-pad5": {
+      "FREEZE": [
+        "Slice 5 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 5"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "REMIX": [
+        "Sampler 5 Play sample 5"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 5 Stop sample 5"
+      ]
+    },
+    "l-pad6": {
+      "FREEZE": [
+        "Slice 6 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 6"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "REMIX": [
+        "Sampler 6 Play sample 6"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 6 Stop sample 6"
+      ]
+    },
+    "l-pad7": {
+      "FREEZE": [
+        "Slice 7 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 7"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "REMIX": [
+        "Sampler 7 Play sample 7"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 7 Stop sample 7"
+      ]
+    },
+    "l-pad8": {
+      "FREEZE": [
+        "Slice 8 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 8"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "REMIX": [
+        "Sampler 8 Play sample 8"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 8 Stop sample 8"
+      ]
+    },
+    "l-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-remix": {
+      "normal": [
+        "Pads play samples"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "l-strip": {
+      "SHIFT": [
+        "Jump to that place in the track"
+      ],
+      "normal": [
+        "Bend, or scrub while paused"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync on or off"
+      ]
+    },
+    "main": {
+      "normal": [
+        "Main level (on the device)"
+      ]
+    },
+    "quant": {
+      "normal": [
+        "Quantize on or off"
+      ]
+    },
+    "r-browse": {
+      "Push": [
+        "Load the selected track (not checked on the device)"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-deck": {
+      "normal": [
+        "Switch between decks 2 and 4"
+      ]
+    },
+    "r-flux": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "r-freeze": {
+      "normal": [
+        "Pads play the slicer"
+      ]
+    },
+    "r-fxbtn1": {
+      "normal": [
+        "FX 2 Effect unit on or off"
+      ]
+    },
+    "r-fxbtn2": {
+      "SHIFT": [
+        "FX 2 Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on or off"
+      ]
+    },
+    "r-fxbtn3": {
+      "SHIFT": [
+        "FX 2 Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on or off"
+      ]
+    },
+    "r-fxbtn4": {
+      "SHIFT": [
+        "FX 2 Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on or off"
+      ]
+    },
+    "r-fxknob1": {
+      "normal": [
+        "FX 2 Dry / wet"
+      ]
+    },
+    "r-fxknob2": {
+      "normal": [
+        "FX 2 Effect 1 amount"
+      ]
+    },
+    "r-fxknob3": {
+      "normal": [
+        "FX 2 Effect 2 amount"
+      ]
+    },
+    "r-fxknob4": {
+      "normal": [
+        "FX 2 Effect 3 amount"
+      ]
+    },
+    "r-hotcue": {
+      "normal": [
+        "Pads play hot cues"
+      ]
+    },
+    "r-loop": {
+      "Push": [
+        "Loop on or off (not checked on the device)"
+      ]
+    },
+    "r-pad1": {
+      "FREEZE": [
+        "Slice 1 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 1"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "REMIX": [
+        "Sampler 1 Play sample 1"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 1 Stop sample 1"
+      ]
+    },
+    "r-pad2": {
+      "FREEZE": [
+        "Slice 2 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 2"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "REMIX": [
+        "Sampler 2 Play sample 2"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 2 Stop sample 2"
+      ]
+    },
+    "r-pad3": {
+      "FREEZE": [
+        "Slice 3 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 3"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "REMIX": [
+        "Sampler 3 Play sample 3"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 3 Stop sample 3"
+      ]
+    },
+    "r-pad4": {
+      "FREEZE": [
+        "Slice 4 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 4"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "REMIX": [
+        "Sampler 4 Play sample 4"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 4 Stop sample 4"
+      ]
+    },
+    "r-pad5": {
+      "FREEZE": [
+        "Slice 5 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 5"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "REMIX": [
+        "Sampler 5 Play sample 5"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 5 Stop sample 5"
+      ]
+    },
+    "r-pad6": {
+      "FREEZE": [
+        "Slice 6 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 6"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "REMIX": [
+        "Sampler 6 Play sample 6"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 6 Stop sample 6"
+      ]
+    },
+    "r-pad7": {
+      "FREEZE": [
+        "Slice 7 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 7"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "REMIX": [
+        "Sampler 7 Play sample 7"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 7 Stop sample 7"
+      ]
+    },
+    "r-pad8": {
+      "FREEZE": [
+        "Slice 8 (slicer)"
+      ],
+      "FREEZE + SHIFT": [
+        "Slicer off"
+      ],
+      "HOTCUE": [
+        "Hot cue 8"
+      ],
+      "HOTCUE + SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "REMIX": [
+        "Sampler 8 Play sample 8"
+      ],
+      "REMIX + SHIFT": [
+        "Sampler 8 Stop sample 8"
+      ]
+    },
+    "r-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-remix": {
+      "normal": [
+        "Pads play samples"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "r-strip": {
+      "SHIFT": [
+        "Jump to that place in the track"
+      ],
+      "normal": [
+        "Bend, or scrub while paused"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync on or off"
+      ]
+    }
+  }
+}

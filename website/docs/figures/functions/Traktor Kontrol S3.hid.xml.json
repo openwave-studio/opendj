@@ -1,0 +1,847 @@
+{
+  "file": "Traktor Kontrol S3.hid.xml",
+  "parts": {
+    "booth": {
+      "normal": [
+        "Booth level (on the device)"
+      ]
+    },
+    "ch1-fx": {
+      "FX 1-4 selected": [
+        "Effect 2 amount"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch1-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch1-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "ch1-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "ch1-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "ch1-on": {
+      "FX select held": [
+        "Send to that effect unit"
+      ],
+      "normal": [
+        "Filter on or off"
+      ]
+    },
+    "ch1-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch1-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "ch2-fx": {
+      "FX 1-4 selected": [
+        "Effect 3 amount"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch2-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "ch2-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "ch2-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "ch2-on": {
+      "FX select held": [
+        "Send to that effect unit"
+      ],
+      "normal": [
+        "Filter on or off"
+      ]
+    },
+    "ch2-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch2-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "ch3-fx": {
+      "FX 1-4 selected": [
+        "Effect 1 amount"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch3-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch3-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "ch3-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "ch3-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "ch3-on": {
+      "FX select held": [
+        "Send to that effect unit"
+      ],
+      "normal": [
+        "Filter on or off"
+      ]
+    },
+    "ch3-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch3-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "ch4-fx": {
+      "FX 1-4 selected": [
+        "Effect unit dry / wet"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch4-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch4-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "ch4-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "ch4-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "ch4-on": {
+      "FX select held": [
+        "Send to that effect unit"
+      ],
+      "normal": [
+        "Filter on or off"
+      ]
+    },
+    "ch4-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch4-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "ext": {
+      "SHIFT": [
+        "Mic or line level"
+      ],
+      "normal": [
+        "Channel D plays the mic / line input"
+      ]
+    },
+    "fx-filter": {
+      "normal": [
+        "Filters on the mixer knobs"
+      ]
+    },
+    "fx1": {
+      "normal": [
+        "Effect unit 1 on the mixer knobs"
+      ]
+    },
+    "fx2": {
+      "normal": [
+        "Effect unit 2 on the mixer knobs"
+      ]
+    },
+    "fx3": {
+      "normal": [
+        "Effect unit 3 on the mixer knobs"
+      ]
+    },
+    "fx4": {
+      "normal": [
+        "Effect unit 4 on the mixer knobs"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Headphone cue / main mix"
+      ]
+    },
+    "hp-vol": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "l-browse": {
+      "Preview held": [
+        "Move through the preview"
+      ],
+      "Push": [
+        "Load the selected track (sidebar: open)"
+      ],
+      "SHIFT": [
+        "Move between panes"
+      ],
+      "SHIFT + push": [
+        "Eject"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-decka": {
+      "normal": [
+        "Control deck 1"
+      ]
+    },
+    "l-deckc": {
+      "normal": [
+        "Control deck 3"
+      ]
+    },
+    "l-flx": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "l-grid": {
+      "SHIFT": [
+        "Set a beat here"
+      ],
+      "normal": [
+        "Quantize (hold and turn the wheel: move the grid)"
+      ]
+    },
+    "l-hotcues": {
+      "normal": [
+        "Hot cue pads"
+      ]
+    },
+    "l-jog": {
+      "GRID held": [
+        "Move the beat grid"
+      ],
+      "normal": [
+        "Bend (JOG on: scratch on top)"
+      ]
+    },
+    "l-jogmode": {
+      "normal": [
+        "Scratch on the wheel top on or off"
+      ]
+    },
+    "l-keylock": {
+      "SHIFT": [
+        "Reset the tempo"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-list": {
+      "normal": [
+        "Move between the sidebar and the list"
+      ]
+    },
+    "l-loop": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Move the loop"
+      ],
+      "SHIFT + push": [
+        "Reloop"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "l-move": {
+      "Push": [
+        "Loop roll while held"
+      ],
+      "SHIFT": [
+        "Beat jump size"
+      ],
+      "SHIFT + push": [
+        "Jump to the loop and stop"
+      ],
+      "Stem held": [
+        "Focused stem volume"
+      ],
+      "normal": [
+        "Beat jump back / forward"
+      ]
+    },
+    "l-pad1": {
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "Samples": [
+        "Play sampler 1 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 1 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 1 on or off"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "Samples": [
+        "Play sampler 2 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 2 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 2 on or off"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "Samples": [
+        "Play sampler 3 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 3 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 3 on or off"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "Samples": [
+        "Play sampler 4 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 4 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 4 on or off"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad5": {
+      "SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "Samples": [
+        "Play sampler 5 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 5 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 1 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "l-pad6": {
+      "SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "Samples": [
+        "Play sampler 6 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 6 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 2 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "l-pad7": {
+      "SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "Samples": [
+        "Play sampler 7 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 7 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 3 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "l-pad8": {
+      "SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "Samples": [
+        "Play sampler 8 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 8 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 4 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Stop and go back to the start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-preview": {
+      "normal": [
+        "Preview the selected track while held"
+      ]
+    },
+    "l-rev": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Flux reverse while held"
+      ]
+    },
+    "l-samples": {
+      "normal": [
+        "Stem pads (track with stems) or sampler pads"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "l-star": {
+      "normal": [
+        "Sort by the selected column"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync (hold: sync lock)"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-view": {
+      "normal": [
+        "Show the library big"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-browse": {
+      "Preview held": [
+        "Move through the preview"
+      ],
+      "Push": [
+        "Load the selected track (sidebar: open)"
+      ],
+      "SHIFT": [
+        "Move between panes"
+      ],
+      "SHIFT + push": [
+        "Eject"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-deckb": {
+      "normal": [
+        "Control deck 2"
+      ]
+    },
+    "r-deckd": {
+      "normal": [
+        "Control deck 4"
+      ]
+    },
+    "r-flx": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "r-grid": {
+      "SHIFT": [
+        "Set a beat here"
+      ],
+      "normal": [
+        "Quantize (hold and turn the wheel: move the grid)"
+      ]
+    },
+    "r-hotcues": {
+      "normal": [
+        "Hot cue pads"
+      ]
+    },
+    "r-jog": {
+      "GRID held": [
+        "Move the beat grid"
+      ],
+      "normal": [
+        "Bend (JOG on: scratch on top)"
+      ]
+    },
+    "r-jogmode": {
+      "normal": [
+        "Scratch on the wheel top on or off"
+      ]
+    },
+    "r-keylock": {
+      "SHIFT": [
+        "Reset the tempo"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-list": {
+      "normal": [
+        "Move between the sidebar and the list"
+      ]
+    },
+    "r-loop": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Move the loop"
+      ],
+      "SHIFT + push": [
+        "Reloop"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "r-move": {
+      "Push": [
+        "Loop roll while held"
+      ],
+      "SHIFT": [
+        "Beat jump size"
+      ],
+      "SHIFT + push": [
+        "Jump to the loop and stop"
+      ],
+      "Stem held": [
+        "Focused stem volume"
+      ],
+      "normal": [
+        "Beat jump back / forward"
+      ]
+    },
+    "r-pad1": {
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "Samples": [
+        "Play sampler 1 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 1 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 1 on or off"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "Samples": [
+        "Play sampler 2 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 2 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 2 on or off"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "Samples": [
+        "Play sampler 3 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 3 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 3 on or off"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "Samples": [
+        "Play sampler 4 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 4 (stopped: eject)"
+      ],
+      "Stems": [
+        "Stem 4 on or off"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad5": {
+      "SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "Samples": [
+        "Play sampler 5 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 5 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 1 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "r-pad6": {
+      "SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "Samples": [
+        "Play sampler 6 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 6 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 2 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "r-pad7": {
+      "SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "Samples": [
+        "Play sampler 7 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 7 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 3 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "r-pad8": {
+      "SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "Samples": [
+        "Play sampler 8 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 8 (stopped: eject)"
+      ],
+      "Stems": [
+        "Hold: focus stem 4 (MOVE sets its volume)"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Stop and go back to the start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-preview": {
+      "normal": [
+        "Preview the selected track while held"
+      ]
+    },
+    "r-rev": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Flux reverse while held"
+      ]
+    },
+    "r-samples": {
+      "normal": [
+        "Stem pads (track with stems) or sampler pads"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "r-star": {
+      "normal": [
+        "Sort by the selected column"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync (hold: sync lock)"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-view": {
+      "normal": [
+        "Show the library big"
+      ]
+    }
+  }
+}

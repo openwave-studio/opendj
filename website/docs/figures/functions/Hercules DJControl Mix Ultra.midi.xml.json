@@ -1,0 +1,642 @@
+{
+  "file": "Hercules DJControl Mix Ultra.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Scroll list"
+      ],
+      "SHIFT press": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Play from start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-high": {
+      "SHIFT": [
+        "Gain"
+      ],
+      "normal": [
+        "Stem 4 volume"
+      ]
+    },
+    "l-jog": {
+      "Ring": [
+        "Jog nudge"
+      ],
+      "SHIFT ring": [
+        "Jog nudge"
+      ],
+      "SHIFT top": [
+        "Jog nudge"
+      ],
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Top": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Stem 1 volume"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Stem 3 volume"
+      ]
+    },
+    "l-pad1": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/32 beat"
+      ],
+      "FX": [
+        "FX 1 Effect 1 on"
+      ],
+      "HOT CUE": [
+        "Hot cue 1"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "LOOP": [
+        "Loop 1/4 beat"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "l-pad2": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/16 beat"
+      ],
+      "FX": [
+        "FX 1 Effect 2 on"
+      ],
+      "HOT CUE": [
+        "Hot cue 2"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "LOOP": [
+        "Loop 1/2 beat"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "l-pad3": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/8 beat"
+      ],
+      "FX": [
+        "FX 1 Effect 3 on"
+      ],
+      "HOT CUE": [
+        "Hot cue 3"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "LOOP": [
+        "Loop 1 beat"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "l-pad4": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/4 beat"
+      ],
+      "FX": [
+        "FX 1 Assign to Deck 1"
+      ],
+      "HOT CUE": [
+        "Hot cue 4"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "LOOP": [
+        "Loop 2 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "l-pad5": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/2 beat"
+      ],
+      "FX": [
+        "FX 1 Effect 1 next"
+      ],
+      "HOT CUE": [
+        "Hot cue 5"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "LOOP": [
+        "Loop 4 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "l-pad6": {
+      "BOUNCE LOOP": [
+        "Loop roll 1 beat"
+      ],
+      "FX": [
+        "FX 1 Effect 2 next"
+      ],
+      "HOT CUE": [
+        "Hot cue 6"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "LOOP": [
+        "Loop 8 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 2 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "l-pad7": {
+      "BOUNCE LOOP": [
+        "Loop roll 2 beats"
+      ],
+      "FX": [
+        "FX 1 Effect 3 next"
+      ],
+      "HOT CUE": [
+        "Hot cue 7"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "LOOP": [
+        "Loop 16 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 3 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "l-pad8": {
+      "BOUNCE LOOP": [
+        "Loop roll 4 beats"
+      ],
+      "HOT CUE": [
+        "Hot cue 8"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "LOOP": [
+        "Loop 32 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "neural": {
+      "normal": [
+        "Neural mix"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Play from start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-high": {
+      "SHIFT": [
+        "Gain"
+      ],
+      "normal": [
+        "Stem 4 volume"
+      ]
+    },
+    "r-jog": {
+      "Ring": [
+        "Jog nudge"
+      ],
+      "SHIFT ring": [
+        "Jog nudge"
+      ],
+      "SHIFT top": [
+        "Jog nudge"
+      ],
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Top": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Stem 1 volume"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Stem 3 volume"
+      ]
+    },
+    "r-pad1": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/32 beat"
+      ],
+      "FX": [
+        "FX 2 Effect 1 on"
+      ],
+      "HOT CUE": [
+        "Hot cue 1"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "LOOP": [
+        "Loop 1/4 beat"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "r-pad2": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/16 beat"
+      ],
+      "FX": [
+        "FX 2 Effect 2 on"
+      ],
+      "HOT CUE": [
+        "Hot cue 2"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "LOOP": [
+        "Loop 1/2 beat"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "r-pad3": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/8 beat"
+      ],
+      "FX": [
+        "FX 2 Effect 3 on"
+      ],
+      "HOT CUE": [
+        "Hot cue 3"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "LOOP": [
+        "Loop 1 beat"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "r-pad4": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/4 beat"
+      ],
+      "FX": [
+        "FX 2 Assign to Deck 2"
+      ],
+      "HOT CUE": [
+        "Hot cue 4"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "LOOP": [
+        "Loop 2 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "r-pad5": {
+      "BOUNCE LOOP": [
+        "Loop roll 1/2 beat"
+      ],
+      "FX": [
+        "FX 2 Effect 1 next"
+      ],
+      "HOT CUE": [
+        "Hot cue 5"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "LOOP": [
+        "Loop 4 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 1 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "r-pad6": {
+      "BOUNCE LOOP": [
+        "Loop roll 1 beat"
+      ],
+      "FX": [
+        "FX 2 Effect 2 next"
+      ],
+      "HOT CUE": [
+        "Hot cue 6"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "LOOP": [
+        "Loop 8 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 2 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "r-pad7": {
+      "BOUNCE LOOP": [
+        "Loop roll 2 beats"
+      ],
+      "FX": [
+        "FX 2 Effect 3 next"
+      ],
+      "HOT CUE": [
+        "Hot cue 7"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "LOOP": [
+        "Loop 16 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 3 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "r-pad8": {
+      "BOUNCE LOOP": [
+        "Loop roll 4 beats"
+      ],
+      "HOT CUE": [
+        "Hot cue 8"
+      ],
+      "HOT CUE SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "LOOP": [
+        "Loop 32 beats"
+      ],
+      "NEURAL MIX": [
+        "Stem 4 mute"
+      ],
+      "SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "SAMPLER SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

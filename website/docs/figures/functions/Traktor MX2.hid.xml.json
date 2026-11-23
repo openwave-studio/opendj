@@ -1,0 +1,833 @@
+{
+  "file": "Traktor MX2.hid.xml",
+  "parts": {
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Headphone cue / main mix"
+      ]
+    },
+    "hp-vol": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "l-browse": {
+      "Push": [
+        "Load the selected track"
+      ],
+      "SHIFT": [
+        "Scroll the sidebar"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter (or the chosen mixer effect)"
+      ]
+    },
+    "l-filter-on": {
+      "normal": [
+        "Filter on or off"
+      ]
+    },
+    "l-flx": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "l-fx1": {
+      "normal": [
+        "Send to FX 1"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "Send to FX 2"
+      ]
+    },
+    "l-fxbtn2": {
+      "SHIFT": [
+        "FX 1 Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on or off"
+      ]
+    },
+    "l-fxbtn3": {
+      "SHIFT": [
+        "FX 1 Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on or off"
+      ]
+    },
+    "l-fxbtn4": {
+      "SHIFT": [
+        "FX 1 Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on or off"
+      ]
+    },
+    "l-fxknob1": {
+      "normal": [
+        "FX 1 Dry / wet"
+      ]
+    },
+    "l-fxknob2": {
+      "normal": [
+        "FX 1 Effect 1 amount"
+      ]
+    },
+    "l-fxknob3": {
+      "normal": [
+        "FX 1 Effect 2 amount"
+      ]
+    },
+    "l-fxknob4": {
+      "normal": [
+        "FX 1 Effect 3 amount"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "l-hotcues": {
+      "normal": [
+        "Hot cue pads"
+      ]
+    },
+    "l-jog": {
+      "normal": [
+        "Scratch (TT) / bend"
+      ]
+    },
+    "l-jogmode": {
+      "normal": [
+        "Jog mode: bend only"
+      ]
+    },
+    "l-keylock": {
+      "normal": [
+        "Key lock (hold and turn LOOP: change the key)"
+      ]
+    },
+    "l-loop": {
+      "Key held": [
+        "Key up / down"
+      ],
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT + push": [
+        "Reloop"
+      ],
+      "Stem held": [
+        "Stem filter"
+      ],
+      "Stem held + SHIFT": [
+        "Stem effect"
+      ],
+      "Stem held + push": [
+        "Stem filter on or off"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "l-loops": {
+      "normal": [
+        "Loop roll pads"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "l-master": {
+      "normal": [
+        "Tempo leader"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "l-move": {
+      "Push": [
+        "Loop roll while held"
+      ],
+      "SHIFT": [
+        "Beat jump size"
+      ],
+      "SHIFT + push": [
+        "Jump to the loop and stop"
+      ],
+      "Stem held": [
+        "Stem volume"
+      ],
+      "normal": [
+        "Beat jump back / forward"
+      ]
+    },
+    "l-pad1": {
+      "Loops": [
+        "Loop roll 1/16 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/16 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "Stems": [
+        "Stem 1 on or off"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "Loops": [
+        "Loop roll 1/8 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/8 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "Stems": [
+        "Stem 2 on or off"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "Loops": [
+        "Loop roll 1/4 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/4 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "Stems": [
+        "Stem 3 on or off"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "Loops": [
+        "Loop roll 1/2 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/2 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "Stems": [
+        "Stem 4 on or off"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad5": {
+      "Loops": [
+        "Loop roll 1 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "Stems": [
+        "Hold: stem 1 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "l-pad6": {
+      "Loops": [
+        "Loop roll 2 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 2 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "Stems": [
+        "Hold: stem 2 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "l-pad7": {
+      "Loops": [
+        "Loop roll 4 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 4 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "Stems": [
+        "Hold: stem 3 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "l-pad8": {
+      "Loops": [
+        "Loop roll 8 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 8 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "Stems": [
+        "Hold: stem 4 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Stop and go back to the start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-preview": {
+      "normal": [
+        "Preview the selected track"
+      ]
+    },
+    "l-rev": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Flux reverse while held"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "l-star": {
+      "SHIFT": [
+        "Add to the top of Automix"
+      ],
+      "normal": [
+        "Add to the end of Automix"
+      ]
+    },
+    "l-stems": {
+      "normal": [
+        "Stem pads"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Match the beat phase"
+      ],
+      "normal": [
+        "Sync (hold: sync lock)"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-tt": {
+      "normal": [
+        "Turntable mode: scratch on top"
+      ]
+    },
+    "l-view": {
+      "normal": [
+        "Show the library big"
+      ]
+    },
+    "l-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "mic": {
+      "normal": [
+        "Mic Mic on (hold: only while held)"
+      ]
+    },
+    "mixfx-filter": {
+      "normal": [
+        "Filter on the mixer knobs"
+      ]
+    },
+    "mixfx1": {
+      "normal": [
+        "Mixer effect 1 (press again: 5)"
+      ]
+    },
+    "mixfx2": {
+      "normal": [
+        "Mixer effect 2 (press again: 6)"
+      ]
+    },
+    "mixfx3": {
+      "normal": [
+        "Mixer effect 3 (press again: 7)"
+      ]
+    },
+    "mixfx4": {
+      "normal": [
+        "Mixer effect 4 (press again: 8)"
+      ]
+    },
+    "r-browse": {
+      "Push": [
+        "Load the selected track"
+      ],
+      "SHIFT": [
+        "Scroll the sidebar"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter (or the chosen mixer effect)"
+      ]
+    },
+    "r-filter-on": {
+      "normal": [
+        "Filter on or off"
+      ]
+    },
+    "r-flx": {
+      "normal": [
+        "Flux (slip) on or off"
+      ]
+    },
+    "r-fx1": {
+      "normal": [
+        "Send to FX 1"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "Send to FX 2"
+      ]
+    },
+    "r-fxbtn2": {
+      "SHIFT": [
+        "FX 2 Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on or off"
+      ]
+    },
+    "r-fxbtn3": {
+      "SHIFT": [
+        "FX 2 Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on or off"
+      ]
+    },
+    "r-fxbtn4": {
+      "SHIFT": [
+        "FX 2 Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on or off"
+      ]
+    },
+    "r-fxknob1": {
+      "normal": [
+        "FX 2 Dry / wet"
+      ]
+    },
+    "r-fxknob2": {
+      "normal": [
+        "FX 2 Effect 1 amount"
+      ]
+    },
+    "r-fxknob3": {
+      "normal": [
+        "FX 2 Effect 2 amount"
+      ]
+    },
+    "r-fxknob4": {
+      "normal": [
+        "FX 2 Effect 3 amount"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "r-hotcues": {
+      "normal": [
+        "Hot cue pads"
+      ]
+    },
+    "r-jog": {
+      "normal": [
+        "Scratch (TT) / bend"
+      ]
+    },
+    "r-jogmode": {
+      "normal": [
+        "Jog mode: bend only"
+      ]
+    },
+    "r-keylock": {
+      "normal": [
+        "Key lock (hold and turn LOOP: change the key)"
+      ]
+    },
+    "r-loop": {
+      "Key held": [
+        "Key up / down"
+      ],
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT + push": [
+        "Reloop"
+      ],
+      "Stem held": [
+        "Stem filter"
+      ],
+      "Stem held + SHIFT": [
+        "Stem effect"
+      ],
+      "Stem held + push": [
+        "Stem filter on or off"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "r-loops": {
+      "normal": [
+        "Loop roll pads"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "r-master": {
+      "normal": [
+        "Tempo leader"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "r-move": {
+      "Push": [
+        "Loop roll while held"
+      ],
+      "SHIFT": [
+        "Beat jump size"
+      ],
+      "SHIFT + push": [
+        "Jump to the loop and stop"
+      ],
+      "Stem held": [
+        "Stem volume"
+      ],
+      "normal": [
+        "Beat jump back / forward"
+      ]
+    },
+    "r-pad1": {
+      "Loops": [
+        "Loop roll 1/16 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/16 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "Stems": [
+        "Stem 1 on or off"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "Loops": [
+        "Loop roll 1/8 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/8 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "Stems": [
+        "Stem 2 on or off"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "Loops": [
+        "Loop roll 1/4 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/4 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "Stems": [
+        "Stem 3 on or off"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "Loops": [
+        "Loop roll 1/2 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1/2 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "Stems": [
+        "Stem 4 on or off"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad5": {
+      "Loops": [
+        "Loop roll 1 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 1 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 5"
+      ],
+      "Stems": [
+        "Hold: stem 1 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "r-pad6": {
+      "Loops": [
+        "Loop roll 2 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 2 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 6"
+      ],
+      "Stems": [
+        "Hold: stem 2 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "r-pad7": {
+      "Loops": [
+        "Loop roll 4 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 4 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 7"
+      ],
+      "Stems": [
+        "Hold: stem 3 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "r-pad8": {
+      "Loops": [
+        "Loop roll 8 beat while held"
+      ],
+      "Loops + SHIFT": [
+        "Loop 8 beat on or off"
+      ],
+      "SHIFT": [
+        "Delete hot cue 8"
+      ],
+      "Stems": [
+        "Hold: stem 4 on the encoders"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Stop and go back to the start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-preview": {
+      "normal": [
+        "Preview the selected track"
+      ]
+    },
+    "r-rev": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Flux reverse while held"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "r-star": {
+      "SHIFT": [
+        "Add to the top of Automix"
+      ],
+      "normal": [
+        "Add to the end of Automix"
+      ]
+    },
+    "r-stems": {
+      "normal": [
+        "Stem pads"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Match the beat phase"
+      ],
+      "normal": [
+        "Sync (hold: sync lock)"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-tt": {
+      "normal": [
+        "Turntable mode: scratch on top"
+      ]
+    },
+    "r-view": {
+      "normal": [
+        "Show the library big"
+      ]
+    },
+    "r-volume": {
+      "normal": [
+        "Volume"
+      ]
+    }
+  }
+}

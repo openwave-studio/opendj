@@ -1,0 +1,170 @@
+{
+  "file": "Allen and Heath Xone K2 - Mixer.opendj-mapping",
+  "parts": {
+    "btn1-1": {
+      "normal": [
+        "Aux 1 Fx"
+      ]
+    },
+    "btn1-2": {
+      "normal": [
+        "Aux 2 Fx"
+      ]
+    },
+    "btn1-3": {
+      "normal": [
+        "Aux 3 Fx"
+      ]
+    },
+    "btn1-4": {
+      "normal": [
+        "Aux 4 Fx"
+      ]
+    },
+    "btn2-1": {
+      "normal": [
+        "Aux 1 Solo"
+      ]
+    },
+    "btn2-2": {
+      "normal": [
+        "Aux 2 Solo"
+      ]
+    },
+    "btn2-3": {
+      "normal": [
+        "Aux 3 Solo"
+      ]
+    },
+    "btn2-4": {
+      "normal": [
+        "Aux 4 Solo"
+      ]
+    },
+    "btn3-1": {
+      "normal": [
+        "Aux 1 Headphone cue"
+      ]
+    },
+    "btn3-2": {
+      "normal": [
+        "Aux 2 Headphone cue"
+      ]
+    },
+    "btn3-3": {
+      "normal": [
+        "Aux 3 Headphone cue"
+      ]
+    },
+    "btn3-4": {
+      "normal": [
+        "Aux 4 Headphone cue"
+      ]
+    },
+    "enc-bl": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "enc-br": {
+      "Press": [
+        "Headphone mix"
+      ],
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "enc1": {
+      "Press": [
+        "Aux 1 Gain"
+      ],
+      "normal": [
+        "Aux 1 Gain"
+      ]
+    },
+    "enc2": {
+      "Press": [
+        "Aux 2 Gain"
+      ],
+      "normal": [
+        "Aux 2 Gain"
+      ]
+    },
+    "enc3": {
+      "Press": [
+        "Aux 3 Gain"
+      ],
+      "normal": [
+        "Aux 3 Gain"
+      ]
+    },
+    "enc4": {
+      "Press": [
+        "Aux 4 Gain"
+      ],
+      "normal": [
+        "Aux 4 Gain"
+      ]
+    },
+    "fader1": {
+      "normal": [
+        "Aux 1 Level"
+      ]
+    },
+    "fader2": {
+      "normal": [
+        "Aux 2 Level"
+      ]
+    },
+    "fader3": {
+      "normal": [
+        "Aux 3 Level"
+      ]
+    },
+    "fader4": {
+      "normal": [
+        "Aux 4 Level"
+      ]
+    },
+    "knob1-1": {
+      "normal": [
+        "Aux 1 Pan"
+      ]
+    },
+    "knob1-2": {
+      "normal": [
+        "Aux 2 Pan"
+      ]
+    },
+    "knob1-3": {
+      "normal": [
+        "Aux 3 Pan"
+      ]
+    },
+    "knob1-4": {
+      "normal": [
+        "Aux 4 Pan"
+      ]
+    },
+    "pad-A": {
+      "normal": [
+        "Aux 1 To main mix"
+      ]
+    },
+    "pad-B": {
+      "normal": [
+        "Aux 2 To main mix"
+      ]
+    },
+    "pad-C": {
+      "normal": [
+        "Aux 3 To main mix"
+      ]
+    },
+    "pad-D": {
+      "normal": [
+        "Aux 4 To main mix"
+      ]
+    }
+  }
+}

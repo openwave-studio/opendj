@@ -1,0 +1,481 @@
+{
+  "file": "Pioneer-XDJ-R1.midi.xml",
+  "parts": {
+    "back": {
+      "Deck 2": [
+        "Previous panel"
+      ],
+      "Deck 3": [
+        "Previous panel"
+      ],
+      "Deck 4": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "Deck 2": [
+        "Scroll list"
+      ],
+      "Deck 2, SHIFT": [
+        "Waveform zoom"
+      ],
+      "Deck 2, SHIFT press": [
+        "Next panel"
+      ],
+      "Deck 3": [
+        "Scroll list"
+      ],
+      "Deck 3, SHIFT": [
+        "Waveform zoom"
+      ],
+      "Deck 3, SHIFT press": [
+        "Next panel"
+      ],
+      "Deck 4": [
+        "Scroll list"
+      ],
+      "Deck 4, SHIFT": [
+        "Waveform zoom"
+      ],
+      "Deck 4, SHIFT press": [
+        "Next panel"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Waveform zoom"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c1-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "c1-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c1-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "c1-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "c1-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "c1-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "c2-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "c2-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c2-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "c2-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "c2-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "c2-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "cfx-crush": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-filter": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-noise": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "hp-level": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Head mix"
+      ]
+    },
+    "l-beat-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop size 2"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fx-echo": {
+      "Set 2": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ],
+      "normal": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-fx-flanger": {
+      "Set 2": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ],
+      "normal": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-fx-level": {
+      "Set 2": [
+        "FX 1 Effect 1 knob"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-fx-roll": {
+      "Set 2": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ],
+      "normal": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-fx-tap": {
+      "Set 2": [
+        "FX 1 Tap effect tempo"
+      ],
+      "normal": [
+        "FX 1 Tap effect tempo"
+      ]
+    },
+    "l-fx-trans": {
+      "Set 2": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ],
+      "normal": [
+        "FX 1 Effect 1 loaded effect",
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-jog": {
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "l-master": {
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-master-tempo": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-tempo-range-10": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-tempo-range-16": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-tempo-range-6": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-tempo-range-wide": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-track-fwd": {
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "l-track-rev": {
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "l-vinyl": {
+      "normal": [
+        "Jog mode"
+      ]
+    },
+    "master-level": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-beat-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop size 2"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fx-echo": {
+      "Set 2": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ],
+      "normal": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-fx-flanger": {
+      "Set 2": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ],
+      "normal": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-fx-level": {
+      "Set 2": [
+        "FX 2 Effect 1 knob"
+      ],
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-fx-roll": {
+      "Set 2": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ],
+      "normal": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-fx-tap": {
+      "Set 2": [
+        "FX 2 Tap effect tempo"
+      ],
+      "normal": [
+        "FX 2 Tap effect tempo"
+      ]
+    },
+    "r-fx-trans": {
+      "Set 2": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ],
+      "normal": [
+        "FX 2 Effect 1 loaded effect",
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-jog": {
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "r-master": {
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-master-tempo": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-tempo-range-10": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-tempo-range-16": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-tempo-range-6": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-tempo-range-wide": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-track-fwd": {
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "r-track-rev": {
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "r-vinyl": {
+      "normal": [
+        "Jog mode"
+      ]
+    }
+  }
+}
