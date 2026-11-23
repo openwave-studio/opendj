@@ -12,7 +12,8 @@
 
 ## 2. Patches that last
 
-- [ ] 2.1 Save the patch's knob values with the slot; reload a patch when its file is saved
+- [x] 2.1 Save the patch's knob values with the slot, and the arguments its Lua objects keep with `self:set_args` (the patch reopens with them)
+- [ ] 2.4 Reload a patch when its file is saved
 - [ ] 2.2 "Open in plugdata" (or Pd) from the slot
 - [ ] 2.3 Sample-exact MIDI within a block
 

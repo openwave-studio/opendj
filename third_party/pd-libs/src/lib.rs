@@ -36,6 +36,36 @@ extern "C" {
     fn opendj_pdlua_displays(canvas: *mut c_void, ctx: *mut c_void, found: FoundFn);
     fn opendj_pdlua_repaint(obj: *mut c_void);
     fn opendj_pdlua_mouse(obj: *mut c_void, x: c_int, y: c_int, kind: c_int);
+    fn opendj_pd_object_texts(
+        canvas: *mut c_void,
+        ctx: *mut c_void,
+        each: unsafe extern "C" fn(*mut c_void, c_int, *const c_char, c_int),
+    );
+}
+
+/// Each object box on `canvas` (a patch libpd opened): its index among
+/// everything on the canvas, in patch-file order, and its text as Pd would
+/// save it ("class args"), which a Lua object's `self:set_args` changes.
+///
+/// # Safety
+///
+/// `canvas` is a patch libpd opened and hasn't closed, and Pd is used by no
+/// other thread meanwhile.
+pub unsafe fn object_texts(canvas: *mut c_void) -> Vec<(usize, String)> {
+    unsafe extern "C" fn each(ctx: *mut c_void, index: c_int, text: *const c_char, len: c_int) {
+        // SAFETY: `ctx` is the Vec below; `text` holds `len` bytes.
+        let out = unsafe { &mut *(ctx as *mut Vec<(usize, String)>) };
+        let bytes = unsafe { std::slice::from_raw_parts(text as *const u8, len.max(0) as usize) };
+        let text = String::from_utf8_lossy(bytes)
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ");
+        out.push((index.max(0) as usize, text));
+    }
+    let mut out: Vec<(usize, String)> = Vec::new();
+    // SAFETY: as the caller promised; `each` only runs during the call.
+    unsafe { opendj_pd_object_texts(canvas, &mut out as *mut _ as *mut c_void, each) };
+    out
 }
 
 /// pd-lua's own Lua code, which it reads from `<datadir>/pdlua/pd.lua`.

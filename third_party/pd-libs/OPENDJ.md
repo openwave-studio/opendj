@@ -50,7 +50,9 @@ has no complex numbers or variable-length arrays). What openDJ adds:
 - `pdlua_glue.c`: starts pd-lua, finds a patch's Lua objects that draw,
   and passes their drawing calls (`lua_fill_rect`, `lua_draw_text` ...) to
   the helper, which draws them itself (`crates/plugin-host/src/pd_display.rs`);
-  mouse events go back through pd-lua's own handlers.
+  mouse events go back through pd-lua's own handlers. It also lists the
+  text of a canvas's objects (`opendj_pd_object_texts`), so the helper can
+  save the arguments Lua objects set with `self:set_args` in a slot's sound.
 
 To update a library: replace its folder, run `python3 scripts/pd_libs.py`,
 then `cargo test -p opendj-plugin-host --features pd`.

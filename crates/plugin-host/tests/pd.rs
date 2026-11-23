@@ -77,6 +77,34 @@ fn the_gain_knob_changes_the_sound() {
 }
 
 #[test]
+fn a_patch_keeps_its_knobs_with_its_sound() {
+    let (mut conn, helper) = start("gain.pd");
+    conn.set_param(0, 0.5);
+    run(&mut conn, 256);
+    // The helper reads openDJ's knobs every so often.
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let sound = loop {
+        let sound = String::from_utf8(helper.save_state().unwrap()).unwrap();
+        if sound.contains(" 0.5\n") || Instant::now() > deadline {
+            break sound;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    };
+    assert!(sound.starts_with("opendj-pd 1\n"), "{sound}");
+    assert!(sound.contains(" 0.5\n"), "{sound}");
+
+    // Another copy takes the value, and openDJ's knob follows it.
+    let (_conn2, other) = start("gain.pd");
+    other.load_state(sound.as_bytes()).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while other.param_values().1.first() != Some(&0.5) {
+        assert!(Instant::now() < deadline, "{:?}", other.param_values());
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(other.load_state(b"something else").is_err());
+}
+
+#[test]
 fn blocks_that_arent_whole_ticks_come_out_one_tick_late() {
     let (mut conn, _helper) = start("gain.pd");
     // 100 frames isn't a multiple of Pd's 64: the first 64 are silence.
@@ -213,4 +241,17 @@ fn a_lua_display_shows_on_the_deck_and_takes_clicks() {
     assert_eq!(at(&px, 300, 40), [0x16, 0x18, 0x19], "half fader");
     let (_, l, _) = run(&mut conn, 256);
     assert!((l[255] - 0.25).abs() < 1e-6, "{}", l[255]);
+
+    // The fader keeps its level as its argument (set_args), so the sound
+    // has it, and another copy starts from it.
+    let sound = String::from_utf8(helper.save_state().unwrap()).unwrap();
+    assert!(sound.contains("args 0 lua-fader 0.5"), "{sound}");
+    let (mut conn2, other) = start("lua-level.pd");
+    let (_, l, _) = run(&mut conn2, 256);
+    assert!((l[255] - 0.5).abs() < 1e-6, "full level first: {}", l[255]);
+    other.load_state(sound.as_bytes()).unwrap();
+    let (_, l, _) = run(&mut conn2, 256);
+    assert!((l[255] - 0.25).abs() < 1e-6, "half level again: {}", l[255]);
+    let again = String::from_utf8(other.save_state().unwrap()).unwrap();
+    assert!(again.contains("args 0 lua-fader 0.5"), "{again}");
 }

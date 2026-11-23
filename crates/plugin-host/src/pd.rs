@@ -11,6 +11,7 @@
 
 use std::ffi::{c_char, c_int, c_void, CStr, CString};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard, Once};
 use std::time::Duration;
 
@@ -101,6 +102,10 @@ unsafe extern "C" fn found_display(
     ));
 }
 
+/// Set when the patch was opened again (with a sound's arguments): the
+/// audio thread then sends every knob and the transport again.
+static REOPENED: AtomicBool = AtomicBool::new(false);
+
 fn c(text: &str) -> Result<CString, String> {
     CString::new(text).map_err(|_| format!("{text:?} has a NUL in it"))
 }
@@ -151,12 +156,9 @@ pub fn load(
         }
         objs
     };
+    // SAFETY: as above.
+    let originals = unsafe { opendj_pd_libs::object_texts(canvas) };
     drop(_pd);
-    let main: Option<Box<dyn MainThread>> = if objs.is_empty() {
-        None
-    } else {
-        Some(Box::new(PdMain::default()))
-    };
     let mut params: Vec<(CString, Param)> = Vec::new();
     for p in &patch.params {
         params.push((
@@ -173,13 +175,28 @@ pub fn load(
     }
     let all = arrange(&mut params, &[], picks);
     let (receives, params): (Vec<CString>, Vec<Param>) = params.into_iter().unzip();
+    let main = PdMain {
+        displays: !objs.is_empty(),
+        patch: Some(Patch {
+            file: file.to_path_buf(),
+            text: text.clone(),
+            canvas: canvas as usize,
+            originals,
+        }),
+        knobs: receives
+            .iter()
+            .zip(&params)
+            .map(|(r, k)| (r.to_string_lossy().into_owned(), k.value))
+            .collect(),
+        ..PdMain::default()
+    };
     let name = file
         .file_stem()
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_else(|| "Pd patch".into());
     Ok(Loaded {
         effect: Box::new(PdEffect::new(receives, max_frames)?),
-        main,
+        main: Some(Box::new(main)),
         info: Info {
             name,
             params,
@@ -311,6 +328,11 @@ impl Effect for PdEffect {
             unsafe { pd::libpd_set_instance(pd::libpd_main_instance()) };
             self.on_this_thread = true;
         }
+        if REOPENED.swap(false, Ordering::Acquire) {
+            self.sent.fill(f32::NAN);
+            self.last_bpm = f64::NAN;
+            self.last_playing = None;
+        }
         // The tempo first: a patch may divide by it when a knob moves.
         self.send_transport(transport);
         self.send_params(params);
@@ -365,9 +387,28 @@ impl Effect for PdEffect {
     }
 }
 
-/// The patch's main-thread side: its Lua displays, as the editor window.
+/// The patch as opened, for its sound.
+struct Patch {
+    file: PathBuf,
+    /// The file's text as it was opened.
+    text: String,
+    /// The open canvas (a `t_canvas *`).
+    canvas: usize,
+    /// Each object box's text as the file had it (see
+    /// [`opendj_pd_libs::object_texts`]).
+    originals: Vec<(usize, String)>,
+}
+
+/// The patch's main-thread side: its knobs' values and its objects' changed
+/// arguments (a Lua object's `self:set_args`), kept with its sound, and its
+/// Lua displays, as the editor window.
 #[derive(Default)]
 struct PdMain {
+    /// Whether the patch has Lua displays.
+    displays: bool,
+    patch: Option<Patch>,
+    /// Each knob's receive name and value, in [`Info::params`] order.
+    knobs: Vec<(String, f64)>,
     /// The [`pd_display::Displays::version`] last painted.
     painted: Option<u64>,
     /// The display a press started on, which gets the drag and the release.
@@ -382,6 +423,74 @@ struct PdMain {
 }
 
 impl PdMain {
+    /// The object boxes whose text differs from the file's now.
+    fn changed_args(&self) -> Vec<(usize, String)> {
+        let Some(p) = &self.patch else {
+            return Vec::new();
+        };
+        let _pd = pd_lock();
+        // SAFETY: the canvas is open (only `reopen` closes it, and replaces
+        // it), with Pd locked to this thread.
+        let now = unsafe {
+            pd::libpd_set_instance(pd::libpd_main_instance());
+            opendj_pd_libs::object_texts(p.canvas as *mut c_void)
+        };
+        now.into_iter()
+            .filter(|(i, t)| {
+                // Text that would end a message in a file can't be kept.
+                !t.contains([';', ',']) && p.originals.iter().any(|(oi, ot)| oi == i && ot != t)
+            })
+            .collect()
+    }
+
+    /// Opens the patch again with object boxes `args` changed, as Pd would
+    /// open a patch saved with them: its Lua objects start from them.
+    fn reopen(&mut self, args: &[(usize, String)]) -> Result<(), String> {
+        let Some(p) = &mut self.patch else {
+            return Ok(());
+        };
+        let text = with_args(&p.text, args);
+        let dir = std::env::temp_dir().join(format!("opendj-pd-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        let name = p
+            .file
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or("the patch's file name isn't text")?
+            .to_string();
+        std::fs::write(dir.join(&name), text).map_err(|e| e.to_string())?;
+        let (dir_c, base_c) = (c(&dir.to_string_lossy())?, c(&name)?);
+        let _pd = pd_lock();
+        // SAFETY: the canvas is open, Pd is locked to this thread, and the
+        // displays found in it are dropped before it closes.
+        let canvas = unsafe {
+            pd::libpd_set_instance(pd::libpd_main_instance());
+            {
+                let mut all = displays();
+                all.list.clear();
+                all.version += 1;
+            }
+            pd::libpd_closefile(p.canvas as *mut c_void);
+            pd::libpd_openfile(base_c.as_ptr(), dir_c.as_ptr())
+        };
+        self.pressed = None;
+        if canvas.is_null() {
+            self.patch = None;
+            return Err("Pd couldn't open the patch again".into());
+        }
+        p.canvas = canvas as usize;
+        // SAFETY: the patch just opened, with Pd locked to this thread.
+        unsafe {
+            opendj_pd_libs::lua_displays(canvas, std::ptr::null_mut(), found_display);
+            let objs: Vec<usize> = displays().list.iter().map(|d| d.obj).collect();
+            for o in objs {
+                opendj_pd_libs::lua_repaint(o as *mut c_void);
+            }
+        }
+        REOPENED.store(true, Ordering::Release);
+        Ok(())
+    }
+
     /// Sends a mouse event to a Lua object. `kind`: 0 down, 1 up, 2 move,
     /// 3 drag.
     fn send(obj: usize, x: f32, y: f32, kind: i32) {
@@ -395,18 +504,88 @@ impl PdMain {
     }
 }
 
+/// The first line of a patch's saved sound.
+const STATE_HEADER: &str = "opendj-pd 1";
+
 impl MainThread for PdMain {
     fn idle(&mut self) {
-        self.serve_deck();
+        if self.displays {
+            self.serve_deck();
+        }
     }
 
     fn next_idle(&self) -> Option<Duration> {
         // A display may repaint from the audio thread at any time.
-        Some(Duration::from_millis(16))
+        self.displays.then_some(Duration::from_millis(16))
     }
 
     fn drawn_editor(&mut self) -> Option<&mut dyn DrawnEditor> {
-        Some(self)
+        if self.displays {
+            Some(self)
+        } else {
+            None
+        }
+    }
+
+    /// The knobs' values, by receive name, and the object boxes whose
+    /// arguments changed since the patch opened, by place, as text.
+    fn save_state(&mut self) -> Result<Vec<u8>, String> {
+        let mut text = format!("{STATE_HEADER}\n");
+        for (name, value) in &self.knobs {
+            text.push_str(&format!("knob {name} {value}\n"));
+        }
+        for (index, args) in self.changed_args() {
+            text.push_str(&format!("args {index} {args}\n"));
+        }
+        Ok(text.into_bytes())
+    }
+
+    /// Takes the values of the knobs the patch still has; openDJ's knobs
+    /// follow them (see `param_values`) and send them to the patch.
+    fn load_state(&mut self, data: &[u8]) -> Result<(), String> {
+        let text = std::str::from_utf8(data).map_err(|_| "not a Pd patch's sound")?;
+        let mut lines = text.lines();
+        if lines.next() != Some(STATE_HEADER) {
+            return Err("not a Pd patch's sound".into());
+        }
+        let mut args = Vec::new();
+        for line in lines {
+            if let Some(rest) = line.strip_prefix("args ") {
+                if let Some((index, text)) = rest.split_once(' ') {
+                    if let Ok(index) = index.parse::<usize>() {
+                        args.push((index, text.to_string()));
+                    }
+                }
+                continue;
+            }
+            let mut words = line.split(' ');
+            if words.next() != Some("knob") {
+                continue;
+            }
+            let (Some(name), Some(Ok(value))) = (words.next(), words.next().map(str::parse)) else {
+                continue;
+            };
+            if let Some(k) = self.knobs.iter_mut().find(|(n, _)| n == name) {
+                k.1 = value;
+            }
+        }
+        if args != self.changed_args() {
+            self.reopen(&args)?;
+        }
+        Ok(())
+    }
+
+    fn param_values(&mut self, out: &mut [f64]) -> bool {
+        for (o, (_, v)) in out.iter_mut().zip(&self.knobs) {
+            *o = *v;
+        }
+        true
+    }
+
+    fn param_set(&mut self, index: usize, value: f64) {
+        if let Some(k) = self.knobs.get_mut(index) {
+            k.1 = value;
+        }
     }
 }
 
@@ -514,5 +693,138 @@ impl DrawnEditor for PdMain {
         if let Some((obj, x, y, kind)) = target {
             Self::send(obj, x, y, kind);
         }
+    }
+}
+
+/// `text` (a patch file) with the object boxes at `args` (their index among
+/// everything on the main canvas, and their new "class args" text)
+/// changed. A box whose class differs from the file's is left as it is.
+fn with_args(text: &str, args: &[(usize, String)]) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut depth = 0usize;
+    let mut index = 0usize;
+    for message in messages(text) {
+        let body = message.trim_start();
+        let lead = &message[..message.len() - body.len()];
+        let words: Vec<&str> = body.trim_end_matches(';').split_whitespace().collect();
+        let mut new = None;
+        match words.as_slice() {
+            ["#N", "canvas", ..] => depth += 1,
+            ["#X", "restore", ..] => {
+                depth = depth.saturating_sub(1);
+                if depth == 1 {
+                    index += 1;
+                }
+            }
+            ["#X", kind, rest @ ..] if depth == 1 => {
+                let boxes = [
+                    "obj",
+                    "msg",
+                    "floatatom",
+                    "symbolatom",
+                    "listbox",
+                    "text",
+                    "scalar",
+                ];
+                if boxes.contains(kind) {
+                    if *kind == "obj" && rest.len() >= 3 {
+                        if let Some((_, t)) = args.iter().find(|(i, _)| *i == index) {
+                            new = rewrite(rest, t);
+                        }
+                    }
+                    index += 1;
+                }
+            }
+            _ => {}
+        }
+        match new {
+            Some(new) => {
+                out.push_str(lead);
+                out.push_str(&new);
+            }
+            None => out.push_str(message),
+        }
+    }
+    out
+}
+
+/// An `#X obj x y class args[, f width];` message with `text` ("class
+/// args") in place of its class and arguments, if the class is the same.
+fn rewrite(rest: &[&str], text: &str) -> Option<String> {
+    let (x, y, old) = (rest[0], rest[1], &rest[2..]);
+    // A width setting ends the message: ", f 20".
+    let (old, width) = match old {
+        [head @ .., f, w] if *f == "f" && head.last().is_some_and(|l| l.ends_with(',')) => {
+            (head, Some(*w))
+        }
+        _ => (old, None),
+    };
+    let class = |s: &str| s.trim_end_matches(',').to_string();
+    if old.first().map(|c| class(c)) != text.split_whitespace().next().map(class) {
+        return None;
+    }
+    let mut new = format!("#X obj {x} {y} {text}");
+    if let Some(w) = width {
+        new.push_str(&format!(", f {w}"));
+    }
+    new.push(';');
+    Some(new)
+}
+
+/// A patch file's messages, each with what comes before it and its `;`
+/// (one escaped as `\;` doesn't end a message).
+fn messages(text: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut start = 0;
+    let mut escaped = false;
+    for (i, ch) in text.char_indices() {
+        match ch {
+            '\\' if !escaped => {
+                escaped = true;
+                continue;
+            }
+            ';' if !escaped => {
+                out.push(&text[start..=i]);
+                start = i + 1;
+            }
+            _ => {}
+        }
+        escaped = false;
+    }
+    if start < text.len() {
+        out.push(&text[start..]);
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_patch_takes_new_arguments_by_place() {
+        let patch = "#N canvas 0 50 450 300 12;\n\
+#X obj 30 30 lua-fader 0.2, f 12;\n\
+#N canvas 0 0 100 100 sub 0;\n\
+#X obj 10 10 inlet;\n\
+#X restore 30 90 pd sub;\n\
+#X msg 30 120 hello \\; there;\n\
+#X obj 30 150 lua-fader 0.5;\n\
+#X obj 30 180 osc~ 440;\n\
+#X connect 0 0 1 0;\n";
+        let out = with_args(
+            patch,
+            &[
+                (0, "lua-fader 0.9".into()),
+                (3, "lua-fader 0.1".into()),
+                (4, "phasor~ 1".into()),
+            ],
+        );
+        assert!(out.contains("#X obj 30 30 lua-fader 0.9, f 12;"), "{out}");
+        assert!(out.contains("#X obj 30 150 lua-fader 0.1;"), "{out}");
+        // Another class at that place: left as it is.
+        assert!(out.contains("#X obj 30 180 osc~ 440;"), "{out}");
+        assert!(out.contains("#X obj 10 10 inlet;"), "{out}");
+        assert!(out.contains("hello \\; there;"), "{out}");
     }
 }
