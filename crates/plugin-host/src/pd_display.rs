@@ -497,10 +497,10 @@ fn rounded(x: f32, y: f32, w: f32, h: f32, r: f32) -> Option<tiny_skia::Path> {
 
 fn polyline(pts: &[f32], close: bool) -> Option<tiny_skia::Path> {
     let mut pb = PathBuilder::new();
-    let mut it = pts.chunks_exact(2);
-    let first = it.next()?;
+    let (points, _) = pts.as_chunks::<2>();
+    let (first, rest) = points.split_first()?;
     pb.move_to(first[0], first[1]);
-    for p in it {
+    for p in rest {
         pb.line_to(p[0], p[1]);
     }
     if close {
@@ -511,7 +511,7 @@ fn polyline(pts: &[f32], close: bool) -> Option<tiny_skia::Path> {
 
 /// Copies `pixmap` (opaque) into a window buffer of 0RGB pixels.
 pub fn to_window(pixmap: &Pixmap, out: &mut [u32]) {
-    for (o, p) in out.iter_mut().zip(pixmap.data().chunks_exact(4)) {
+    for (o, p) in out.iter_mut().zip(pixmap.data().as_chunks::<4>().0) {
         *o = (p[0] as u32) << 16 | (p[1] as u32) << 8 | p[2] as u32;
     }
 }
