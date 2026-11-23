@@ -3,6 +3,7 @@
 // the loop controls, and the jog with play and CUE under it beside the
 // mixer. Deck B is mirrored.
 // Large artwork, flat dark controls, white pointers.
+import { DisplayView } from "plugin_display.slint";
 import { LibraryEdit, TrackDrag } from "library.slint";
 import { SamplerPanel } from "sampler.slint";
 import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint";
@@ -6825,29 +6826,13 @@ component DisplayTab inherits Rectangle {
 // The instrument's own display (a Pd patch's Lua displays), filling the
 // instrument panel while its DISPLAY tab is on: the picture its helper
 // draws at this size, clicks and drags going back to it.
-component InstrumentDisplay inherits Rectangle {
-    changed width => { InstrumentsUi.display-area-width = self.width; }
-    changed height => { InstrumentsUi.display-area-height = self.height; }
-    init => {
-        InstrumentsUi.display-area-width = self.width;
-        InstrumentsUi.display-area-height = self.height;
+component InstrumentDisplay inherits DisplayView {
+    source: InstrumentsUi.display;
+    resized(w, h) => {
+        InstrumentsUi.display-area-width = w;
+        InstrumentsUi.display-area-height = h;
     }
-    Image {
-        width: parent.width;
-        height: parent.height;
-        source: InstrumentsUi.display;
-        image-fit: contain;
-    }
-    TouchArea {
-        pointer-event(e) => {
-            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
-                InstrumentsUi.display-mouse(self.mouse-x, self.mouse-y, 0);
-            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
-                InstrumentsUi.display-mouse(self.mouse-x, self.mouse-y, 1);
-            }
-        }
-        moved => { InstrumentsUi.display-mouse(self.mouse-x, self.mouse-y, 2); }
-    }
+    mouse(x, y, kind) => { InstrumentsUi.display-mouse(x, y, kind); }
 }
 
 // The instrument deck under its title (2-Deck): what comes in and out

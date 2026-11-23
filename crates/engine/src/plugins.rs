@@ -134,7 +134,8 @@ struct List {
     instrument_display: Option<PathBuf>,
     /// The same for each effect slot, `[unit][slot]`, from the first deck
     /// (or the master) it plays on.
-    slot_displays: Vec<Vec<Option<PathBuf>>>,
+    /// Each FX slot's: its display file and the plugin's name.
+    slot_displays: Vec<Vec<Option<(PathBuf, String)>>>,
 }
 
 /// What the app asks of the instrument's sound (see
@@ -323,9 +324,9 @@ impl PluginHost {
         self.list.lock().unwrap().instrument_display.clone()
     }
 
-    /// Effect slot `slot` of unit `unit`'s display file, as for
+    /// Effect slot `slot` of unit `unit`'s display file and plugin name, as for
     /// [`PluginHost::instrument_display`].
-    pub fn slot_display(&self, unit: usize, slot: usize) -> Option<PathBuf> {
+    pub fn slot_display(&self, unit: usize, slot: usize) -> Option<(PathBuf, String)> {
         let list = self.list.lock().unwrap();
         list.slot_displays.get(unit)?.get(slot)?.clone()
     }
@@ -848,7 +849,13 @@ impl Supervisor {
                 *slot = (0..TARGETS)
                     .filter_map(|t| self.index[u][s][t])
                     .find_map(|i| self.running[i as usize].as_ref())
-                    .map(|r| r.helper.display_path());
+                    .map(|r| {
+                        let name = self
+                            .entries
+                            .get(r.plugin as usize)
+                            .map_or_else(String::new, |e| e.name.clone());
+                        (r.helper.display_path(), name)
+                    });
             }
         }
         let instrument = self

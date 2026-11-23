@@ -12,6 +12,7 @@ import { TourMark } from "tourmark.slint";
 import { ControlButton, Controls, PickupDot, PickupGhost } from "controls.slint";
 import { EffectList, EffectMenu } from "deck.slint";
 import { MapMark } from "mapmark.slint";
+import { FxDisplay } from "plugin_display.slint";
 import { ArcKnob, BandIcon, ListRow, PillCaret, PowerButton, StepperPill, TitledList, ValuePill } from "pills.slint";
 
 // ‹ 1/8 › in a stepper pill: an effect's length, halved and doubled from
@@ -401,6 +402,29 @@ component NamePill inherits StepperPill {
     EffectPicker { fx: root.fx; title: root.title; tint: root.tint; strip: root.strip; caret: false; }
 }
 
+// VIEW: opens (and closes) the slot plugin's display panel.
+component ViewButton inherits Rectangle {
+    in property <string> fx;
+    in property <color> tint;
+    property <bool> lit: FxDisplay.shown == fx;
+    width: 38px;
+    height: 23px;
+    border-radius: Theme.radius;
+    background: vtouch.pressed ? Theme.control-pressed : vtouch.has-hover ? Theme.n-1d1d20 : Theme.control;
+    border-width: lit ? 2px : 1px;
+    border-color: lit ? root.tint : Theme.border;
+    Text {
+        text: "VIEW";
+        font-size: 10px;
+        font-weight: 700;
+        color: root.lit ? root.tint : Theme.text;
+    }
+    vtouch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { FxDisplay.shown = root.lit ? "" : root.fx; }
+    }
+}
+
 // An effect's second row: its beats or slider, named, then D/W. With
 // `with-name` (4-Deck's one-line rows) the power button, name and bands
 // come first, and the labels go.
@@ -435,6 +459,13 @@ component FxControls inherits HorizontalLayout {
         tint: tint;
         font-size: 10px;
         outline-when-lit: true;
+    }
+    // A plugin's own display (a Pd patch's Lua displays), in a panel over
+    // the window: lit while it is open.
+    if plugin && FxDisplay.has(fx, FxDisplay.version): ViewButton {
+        y: (parent.height - self.height) / 2;
+        fx: fx;
+        tint: tint;
     }
     if !with-name && (beats > 0 || param >= 0): Text {
         text: beats > 0 ? "Beats" : root.param-name != "" ? root.param-name : "Amount";

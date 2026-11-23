@@ -381,8 +381,8 @@ impl AudioEngine {
         self.plugins.as_ref()?.instrument_display()
     }
 
-    /// Effect slot `slot` of unit `unit`'s display file for the deck.
-    pub fn slot_display(&self, unit: usize, slot: usize) -> Option<std::path::PathBuf> {
+    /// Effect slot `slot` of unit `unit`'s display file and plugin name.
+    pub fn slot_display(&self, unit: usize, slot: usize) -> Option<(std::path::PathBuf, String)> {
         self.plugins.as_ref()?.slot_display(unit, slot)
     }
 

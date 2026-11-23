@@ -1,0 +1,108 @@
+// A plugin's own display (a Pd patch's Lua displays) for an FX slot: a
+// panel over the window, opened from the slot's VIEW button, showing the
+// picture the plugin's helper draws at the panel's size, with clicks and
+// drags going back to it. The instrument deck shows its instrument's
+// display in its own panel (deck.slint).
+
+import { Theme, CloseIcon } from "theme.slint";
+
+export global FxDisplay {
+    // Whether the effect in slot `fx` (its control group) draws a display;
+    // `version` changes whenever that changes for any slot.
+    pure callback has(fx: string, version: int) -> bool;
+    in property <int> version;
+    // The slot whose display is open ("" while none is), and its name.
+    in-out property <string> shown;
+    in property <string> title;
+    // The picture, and its shape (width / height).
+    in property <image> display;
+    in property <float> aspect: 2;
+    // The size of the picture's area, which the helper draws at.
+    in-out property <length> area-width;
+    in-out property <length> area-height;
+    // 0 down, 1 up, 2 move, at a point of the area.
+    callback mouse(x: length, y: length, kind: int);
+}
+
+// A plugin's picture, filling its area at its own shape; reports the
+// area's size and passes clicks and drags on.
+export component DisplayView inherits Rectangle {
+    in property <image> source;
+    callback resized(width: length, height: length);
+    callback mouse(x: length, y: length, kind: int);
+    changed width => { root.resized(self.width, self.height); }
+    changed height => { root.resized(self.width, self.height); }
+    init => { root.resized(self.width, self.height); }
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: contain;
+    }
+    TouchArea {
+        pointer-event(e) => {
+            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                root.mouse(self.mouse-x, self.mouse-y, 0);
+            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                root.mouse(self.mouse-x, self.mouse-y, 1);
+            }
+        }
+        moved => { root.mouse(self.mouse-x, self.mouse-y, 2); }
+    }
+}
+
+// The FX slot's display panel, centred over the window.
+export component FxDisplayPanel inherits Rectangle {
+    in property <length> window-width;
+    in property <length> window-height;
+    property <length> bar: 30px;
+    property <length> pad: 8px;
+    // As wide as fits, at the picture's shape.
+    property <length> fit-width: min(860px, window-width - 80px, (window-height - 160px - bar - pad) * max(FxDisplay.aspect, 0.2));
+    width: fit-width + 2 * pad;
+    height: fit-width / max(FxDisplay.aspect, 0.2) + bar + pad;
+    x: (window-width - self.width) / 2;
+    y: (window-height - self.height) / 2;
+    background: Theme.panel-raised;
+    border-radius: Theme.radius;
+    border-width: 1px;
+    border-color: Theme.n-3a3a3d;
+    drop-shadow-blur: 16px;
+    drop-shadow-color: Theme.s-000000a0;
+    // Clicks on the panel stay on it.
+    TouchArea { }
+    Text {
+        x: root.pad + 4px;
+        y: 0;
+        height: root.bar;
+        width: root.width - 2 * root.pad - 34px;
+        text: FxDisplay.title;
+        color: Theme.text;
+        font-size: 12px;
+        font-weight: 600;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    Rectangle {
+        x: root.width - self.width - 4px;
+        y: 3px;
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
+        background: close.has-hover ? Theme.control : transparent;
+        CloseIcon { size: 9px; color: close.has-hover ? Theme.text : Theme.text-dim; }
+        close := TouchArea { mouse-cursor: pointer; clicked => { FxDisplay.shown = ""; } }
+    }
+    DisplayView {
+        x: root.pad;
+        y: root.bar;
+        width: root.width - 2 * root.pad;
+        height: root.height - root.bar - root.pad;
+        source: FxDisplay.display;
+        resized(w, h) => {
+            FxDisplay.area-width = w;
+            FxDisplay.area-height = h;
+        }
+        mouse(x, y, kind) => { FxDisplay.mouse(x, y, kind); }
+    }
+}
