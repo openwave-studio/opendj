@@ -2491,6 +2491,9 @@ component RailButton inherits Rectangle {
     in property <string> tip;
     in property <string> tip-body;
     property <bool> tip-mine;
+    // Clicked: no tip until the pointer leaves, so it doesn't come back
+    // over the panel that just opened.
+    property <bool> tip-done;
     callback clicked();
     height: 42px;
     border-radius: 8px;
@@ -2502,18 +2505,22 @@ component RailButton inherits Rectangle {
                 tip-mine = false;
                 HoverTip.shown = false;
             }
+            tip-done = true;
             root.clicked();
         }
         changed has-hover => {
-            if !self.has-hover && tip-mine {
-                tip-mine = false;
-                HoverTip.shown = false;
+            if !self.has-hover {
+                tip-done = false;
+                if tip-mine {
+                    tip-mine = false;
+                    HoverTip.shown = false;
+                }
             }
         }
     }
     Timer {
         interval: 600ms;
-        running: tip != "" && ta.has-hover && !tip-mine;
+        running: tip != "" && ta.has-hover && !tip-mine && !tip-done;
         triggered => {
             tip-mine = true;
             HoverTip.title = tip;
@@ -7757,6 +7764,18 @@ export component Browser inherits HorizontalLayout {
     property <int> lists-for: source;
     // A click in the track list while the side panel is over it.
     callback side-dismissed();
+    // On a narrow window the lists panel and the side panel both lie over
+    // the track list: only one is out at a time.
+    changed lists-out => {
+        if lists-out && narrow && side-visible {
+            side-dismissed();
+        }
+    }
+    changed side-visible => {
+        if side-visible && narrow {
+            lists-out = false;
+        }
+    }
     // A track dragged to the right edge while the side panel is closed:
     // open it, so the drop lands on Automix or the Sidelist.
     callback side-wanted();
