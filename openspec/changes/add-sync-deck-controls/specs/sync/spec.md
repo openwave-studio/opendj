@@ -18,6 +18,10 @@ The same menu SHALL choose the quantize step: 1/16, 1/8, 1/4, 1/2 or 1 beat, or 
 - **WHEN** the step is 1/4 and a hot cue is set a little after a quarter beat
 - **THEN** the cue is saved on that quarter beat
 
+#### Scenario: Upcoming quantized hot cue or saved loop
+- **WHEN** a synced deck's hot cue or saved-loop pad is pressed in the second half of the master's quantize step
+- **THEN** the current audio continues, or a stopped deck stays stopped, until the cue or loop launches on the upcoming step rather than before it
+
 ### Requirement: Leader shown and pinned
 The deck synced decks follow SHALL show a lit MASTER badge in its header (`sync_leader` 1); clicking a deck's badge SHALL pin it as leader (`sync_leader` 2, badge filled) until it is clicked again.
 
