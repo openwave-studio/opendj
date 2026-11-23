@@ -1522,6 +1522,12 @@ const SHIFT_LINGER_SECONDS: f64 = 1.0;
 /// those are ready, so a muted stem doesn't click at the switch.
 pub(crate) const STEM_UPGRADE_SECONDS: f64 = 0.02;
 
+/// How far around the play position high-quality stems must be there
+/// before a deck crossfades to them: more than a buffer, the
+/// time-stretcher's reach ahead and a fast scratch, so the crossfade is
+/// over before the deck reads past them.
+pub(crate) const STEM_UPGRADE_MARGIN_SECONDS: f64 = 0.5;
+
 /// Below this speed, in multiples of normal, a deck fades out with its
 /// speed: there the music is too low to hear anyway, and what is left is the
 /// held sample's level stepping as the deck starts and stops, which clicks.
@@ -3610,19 +3616,31 @@ impl Engine {
                 d.stem_gains = [1.0; MAX_STEMS];
                 // Stems that are already high quality when they turn up
                 // start there.
-                d.stem_upgrade = if stems.and_then(Stems::ready_upgrade).is_some() {
+                d.stem_upgrade = if stems
+                    .and_then(Stems::ready_upgrade)
+                    .is_some_and(Stems::is_complete)
+                {
                     1.0
                 } else {
                     0.0
                 };
             }
+            // High-quality stems separated from the play position outwards
+            // take over a stretch at a time: crossfade to them where they
+            // are there around the deck, and back ahead of a stretch they
+            // haven't reached yet.
             let upgrade = match stems.and_then(Stems::ready_upgrade) {
-                Some(_) => (
-                    d.stem_upgrade,
-                    (d.stem_upgrade
-                        + frames as f32 / (STEM_UPGRADE_SECONDS * self.sample_rate) as f32)
-                        .min(1.0),
-                ),
+                Some(up) => {
+                    let margin = (STEM_UPGRADE_MARGIN_SECONDS * d.source_rate()) as usize;
+                    let there = up.has_around(d.pos.max(0.0) as usize, margin);
+                    let step = frames as f32 / (STEM_UPGRADE_SECONDS * self.sample_rate) as f32;
+                    let to = if there {
+                        (d.stem_upgrade + step).min(1.0)
+                    } else {
+                        (d.stem_upgrade - step).max(0.0)
+                    };
+                    (d.stem_upgrade, to)
+                }
                 None => (0.0, 0.0),
             };
             d.stem_upgrade = upgrade.1;
@@ -5095,6 +5113,65 @@ mod tests {
             .windows(2)
             .fold(0f32, |m, w| m.max((w[1] - w[0]).abs()));
         assert!(step < 0.02, "a click at the switch: {step}");
+    }
+
+    #[test]
+    fn high_quality_stems_play_a_stretch_at_a_time() {
+        // As above, but the better stems only have their first chunk, as
+        // when they are separated from the play position outwards: the deck
+        // fades to them there, and back to the stems made on load before
+        // it reaches the chunk they don't have yet.
+        let mut t = (*short_track(120.0, 4.0)).clone();
+        let n = (SR * 4.0) as usize;
+        let tone = |i: usize| (std::f64::consts::TAU * 220.0 * i as f64 / SR).sin() as f32 * 0.3;
+        let audio = Audio::from_frames(SR as u32, (0..n).map(|i| [tone(i); 2]).collect());
+        let info = crate::stems::default_info();
+        let layer = |stem: bool, quality, chunks: usize| {
+            let s = Arc::new(crate::stems::Stems::separated(
+                info.clone(),
+                SR as u32,
+                n,
+                quality,
+            ));
+            for (k, start) in (0..n).step_by(crate::stems::CHUNK).enumerate().take(chunks) {
+                let end = (start + crate::stems::CHUNK).min(n);
+                let frames = (start..end)
+                    .map(|i| {
+                        let mut f = [[0i16; 2]; MAX_STEMS];
+                        if stem {
+                            f[0] = [crate::stems::to_i16(tone(i)); 2];
+                        }
+                        f
+                    })
+                    .collect();
+                s.fill(k, frames);
+            }
+            s
+        };
+        let fast = layer(true, crate::stems::Quality::Fast, usize::MAX);
+        fast.finish();
+        assert!(audio.set_stems(fast.clone()));
+        assert!(fast.set_upgrade(layer(false, crate::stems::Quality::High, 1)));
+        t.audio = Some(Arc::new(audio));
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, Arc::new(t));
+        run(&mut engine, 0.01);
+        reg.get("[Channel1_Stem1]", "mute").unwrap().set_bool(true);
+        run(&mut engine, 0.01);
+        reg.get("[Channel1]", "play").unwrap().set_bool(true);
+        let peak = |v: &[f32]| v.iter().fold(0f32, |m, x| m.max(x.abs()));
+        // The first chunk is high quality: the tone plays.
+        let first = record(&mut engine, 0.6);
+        assert!(peak(&first[first.len() / 2..]) > 0.2, "{}", peak(&first));
+        // Half a second before the second chunk, which isn't there yet, the
+        // muted stem is cut again.
+        let later = record(&mut engine, 0.8);
+        assert!(peak(&later[later.len() / 2..]) < 1e-3, "{}", peak(&later));
+        let left: Vec<f32> = first.iter().chain(&later).step_by(2).copied().collect();
+        let step = left
+            .windows(2)
+            .fold(0f32, |m, w| m.max((w[1] - w[0]).abs()));
+        assert!(step < 0.02, "a click: {step}");
     }
 
     #[test]

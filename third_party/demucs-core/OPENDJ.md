@@ -6,6 +6,11 @@ Rust port of Meta's HTDemucs v4 on [burn](https://burn.dev), which runs on Metal
 Vulkan or the CPU. openDJ's `crates/separation` uses it for high-quality stems.
 
 It is not published on crates.io, and the workspace's cargo-deny rules allow no
-git dependencies, so it lives here. Only `Cargo.toml` changed: a licence and
+git dependencies, so it lives here. In `Cargo.toml`, a licence and
 description field were added and the dev-dependencies (for its tests, which
 are left out) were removed.
+
+In `src/lib.rs`, openDJ also added `Demucs::separate_segment` and the
+`CHUNK_STRIDE` constant, and made `triangular_window` public, so the app can
+separate a long track's chunks in its own order (from the play position
+outwards) and blend them exactly as `separate` does.

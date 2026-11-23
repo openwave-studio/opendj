@@ -532,11 +532,28 @@ pub(crate) fn load_stems(
     source: &StemSource,
     keep_going: impl Fn() -> bool,
 ) -> Result<(), String> {
+    // High-quality stems this deck already has, or has had filled as
+    // they were separated: what is missing (if anything, after a separation
+    // that fell back to the Demucs command) comes from the cache.
+    let filling = audio.stems().and_then(|s| {
+        if s.quality == stems::Quality::High {
+            Some(s.clone())
+        } else {
+            s.upgrade().cloned()
+        }
+    });
+    if filling.as_ref().is_some_and(|s| s.is_complete()) {
+        return Ok(());
+    }
     let stems = stems::Decode::open(source)?.run(&keep_going)?;
     // Better stems take over from the ones Spleeter made on load.
-    let given = match audio.stems() {
-        Some(s) => s.set_upgrade(stems),
-        None => audio.set_stems(stems),
+    let given = match (filling, audio.stems()) {
+        (Some(f), _) => {
+            f.fill_missing(&stems);
+            true
+        }
+        (None, Some(s)) => s.set_upgrade(stems),
+        (None, None) => audio.set_stems(stems),
     };
     if keep_going() && !given {
         return Err("the stems don't match the track".into());

@@ -51,6 +51,18 @@ impl<B: Backend> Demucs<B> {
             .await;
     }
 
+    /// Separates one segment of at most [`TRAINING_LENGTH`] samples at
+    /// 44.1 kHz, as [`Self::separate`] does each of its chunks: the stems
+    /// in [`ModelInfo::stems`] order. Long audio taken a chunk at a time
+    /// (from [`CHUNK_STRIDE`] apart, blended with [`triangular_window`])
+    /// adds up to what [`Self::separate`] gives, in any order.
+    pub async fn separate_segment(&self, left: &[f32], right: &[f32]) -> Result<Vec<Stem>> {
+        let info = self.opts.model_info();
+        let n = left.len().min(right.len()).min(TRAINING_LENGTH);
+        self.separate_single_segment(&left[..n], &right[..n], n, info, &mut NoOpListener)
+            .await
+    }
+
     pub async fn separate(
         &self,
         left_channel: &[f32],
@@ -92,7 +104,7 @@ impl<B: Backend> Demucs<B> {
         } else {
             // ── 2. Chunked inference for long audio ─────────────────────────
             let segment = TRAINING_LENGTH;
-            let stride = segment * 3 / 4; // 75% of segment = 25% overlap
+            let stride = CHUNK_STRIDE; // 75% of segment = 25% overlap
             let num_chunks = n_samples.saturating_sub(segment).div_ceil(stride) + 1;
             let n_stems = info.stems.len();
 
@@ -281,7 +293,7 @@ pub struct Stem {
 
 /// Build a triangular (Bartlett) window of the given length.
 /// Ramps linearly from 0 at the edges to 1 at the center.
-fn triangular_window(length: usize) -> Vec<f32> {
+pub fn triangular_window(length: usize) -> Vec<f32> {
     if length <= 1 {
         return vec![1.0; length];
     }
@@ -501,3 +513,7 @@ pub(crate) const SAMPLE_RATE: usize = 44100;
 /// segment = 39/5 seconds → int(39/5 * 44100) = 343980. The model always pads
 /// its input to this length during inference (via `use_train_segment`).
 pub const TRAINING_LENGTH: usize = 343980;
+
+/// How far apart the chunks of long audio start: 75% of a segment, so
+/// neighbours overlap by 25%.
+pub const CHUNK_STRIDE: usize = TRAINING_LENGTH * 3 / 4;

@@ -67,13 +67,17 @@ one track at a time; the footer's [Background panel](music.md#background-work)
 shows how far along it is and lets you pause or stop it. To get a whole crate,
 playlist or set ready before a gig, right-click it in the sidebar and choose
 **Prepare HQ Stems for All**: its tracks join the same queue, skipping any that
-have them already. When it's done the deck crossfades to the new stems in a
-fiftieth of a second, so nothing clicks even with a stem muted, and the track
-loads with them from then on.
+have them already. For a track on a deck, the separation starts where the deck
+is playing and works outwards, mostly ahead, so the high quality stems play
+there within seconds instead of once the whole track is done. The deck
+crossfades to them in a fiftieth of a second, so nothing clicks even with a
+stem muted; if you jump somewhere they haven't reached yet, the quick stems play
+there until they do. Once it's done, the track loads with them from then on.
 
 The top-right stems pad shows which stems are playing: **INSTANT** for the
 quick ones made on load, **HQ…** while they wait their turn, **HQ 42%** while
-they are being prepared, and **HQ** once they play.
+they are being prepared (the part already done plays them), and **HQ** once
+the whole track has them.
 
 ## Settings
 

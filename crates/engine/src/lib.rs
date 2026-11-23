@@ -793,7 +793,34 @@ impl AudioEngine {
         }
         let loaded = self.loaded.clone();
         let file = path.clone();
-        stems::separate(path, move |result| {
+        let live = {
+            let (loaded, registry, file) =
+                (self.loaded.clone(), self.registry.clone(), path.clone());
+            // The decks with the track, a playing one first, and where
+            // each plays.
+            move || {
+                let decks = loaded.read().unwrap();
+                let mut live: Vec<(bool, Arc<Audio>, usize)> = decks
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(d, t)| {
+                        let t = t.as_ref()?;
+                        if !matches!(&t.source, Source::File(p) if *p == file) {
+                            return None;
+                        }
+                        let audio = t.audio.clone()?;
+                        let group = controls::deck_group(d);
+                        let get = |key: &str| registry.get(&group, key).map_or(0.0, |c| c.get());
+                        let at =
+                            (get("playposition").clamp(0.0, 1.0) * audio.len() as f64) as usize;
+                        Some((get("play") > 0.0, audio, at))
+                    })
+                    .collect();
+                live.sort_by_key(|(playing, _, _)| !playing);
+                live.into_iter().map(|(_, a, at)| (a, at)).collect()
+            }
+        };
+        stems::separate(path, live, move |result| {
             let source = match result {
                 Ok(s) => s,
                 Err(e) => {
