@@ -1017,10 +1017,19 @@ impl Outputs {
         }
         let khz = self.rate / 1000.0;
         let buffer = setup.buffer_frames;
-        let clock = find(clock_device(setup))
-            .or_else(|| find(""))
-            .ok_or("no output device")?;
-        let clock_name = device_name(&clock);
+        // The clock goes by the name the routes use, so the routes to it are
+        // grouped with it: an ASIO driver's listed name carries the "ASIO: "
+        // prefix that its own name lacks. Under two names the device would be
+        // opened twice, and an ASIO driver plays only its latest stream.
+        let wanted = clock_device(setup);
+        let (clock, clock_name) = match find(wanted).filter(|_| !wanted.is_empty()) {
+            Some(clock) => (clock, wanted.to_string()),
+            None => {
+                let clock = find("").ok_or("no output device")?;
+                let name = device_name(&clock);
+                (clock, name)
+            }
+        };
 
         // Group the routes by device, the clock device first. A route to
         // channels another route already uses is left out.
