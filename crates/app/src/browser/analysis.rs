@@ -79,6 +79,24 @@ impl Browser {
             })
         });
         let w = with.clone();
+        edit.on_prepare_hq_stems_all(move |row| {
+            w(&|b| {
+                let Some(&node) = b.visible_nodes.get(row as usize) else {
+                    return;
+                };
+                // One queue, in list order; the background tasks panel shows
+                // it and can pause, stop or reorder it. Tracks with stems
+                // already are skipped, and mixed sets too (hours long, as
+                // for Analyze All).
+                for t in b.node_tracks(node) {
+                    let track = &b.library[t];
+                    if matches!(track.source, Source::File(_)) && !b.is_mixed_set(track) {
+                        b.engine.prepare_hq_stems(track);
+                    }
+                }
+            })
+        });
+        let w = with.clone();
         edit.on_set_grid_mode(move |first, last, mode| {
             w(&|b| {
                 let Some(mode) = GridMode::from_id(mode as u8) else {

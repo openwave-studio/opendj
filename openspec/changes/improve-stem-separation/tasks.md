@@ -28,7 +28,8 @@
 - [x] 4.1 Settings > Stems (under Analysis): Stems on load, Stems cache limit and usage, Clear, model download state. Background quality waits for a "Best" tier
 - [x] 4.2 (v0.4) STEMS pad page: VirtualDJ's 8 pads (Vocal, Instru, Bass, Acapella / Kick, HiHat, Stems FX, Instrumental), no level bars (levels on the stems knobs), right-click Prepare High Quality Stems; SEPARATE STEMS removed (2026-10-28)
 - [x] 4.2b Quality badge on the STEMS page: INSTANT, HQ… while preparing, HQ (top-right pad's corner)
-- [ ] 4.3 Browser: stems mark for tracks with cached high-quality stems; Separate stems on a list, crate or set (v0.4 has Prepare High Quality Stems in the track menu, for one or several picked tracks)
+- [x] 4.3 Browser: stems mark for tracks with cached high-quality stems; Separate stems on a list, crate or set (v0.4 has Prepare High Quality Stems in the track menu, for one or several picked tracks)
+  - v1.0: Stems column on track rows (#1008); Prepare HQ Stems for All on a crate, playlist, set or folder in the sidebar, queued in the background tasks panel; the STEMS pad badge shows the percent
 - [x] 4.4 Update the user guide page website/book/src/guide/stems.md (v0.4, and v0.5 for the badge and Settings › Analysis › Stems)
 
 ## Workflow follow-up
