@@ -3741,6 +3741,7 @@ impl PitchShifter {
         self.phase += (1.0 - self.ratio) / self.window;
         self.phase -= self.phase.floor();
         let phases = [self.phase, (self.phase + 0.5).fract()];
+        #[allow(clippy::needless_range_loop)] // both heads are read by index
         for k in 0..2 {
             // A head wraps where its gain is nil: start it in step with the other.
             if (phases[k] - self.last[k]).abs() > 0.5 {
@@ -3751,9 +3752,9 @@ impl PitchShifter {
             self.last[k] = phases[k];
         }
         let mut out = [0.0; 2];
-        for k in 0..2 {
-            let gain = (PI * phases[k]).sin().powi(2);
-            let y = self.tap(self.delay(phases[k], self.offset[k]));
+        for (&phase, &offset) in phases.iter().zip(&self.offset) {
+            let gain = (PI * phase).sin().powi(2);
+            let y = self.tap(self.delay(phase, offset));
             out[0] += gain * y[0];
             out[1] += gain * y[1];
         }
