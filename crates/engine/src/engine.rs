@@ -4711,7 +4711,7 @@ mod tests {
         run(&mut engine, 0.01);
         assert_eq!(presets(), vec![1.0, 1.0, 3.0, 1.0]);
         // Stepping on deck 3 wraps round past the last.
-        for want in [4.0, 5.0, 1.0] {
+        for want in [4.0, 5.0, 6.0, 1.0] {
             c(2, "next_chain_preset").set(1.0);
             c(2, "next_chain_preset").set(0.0);
             run(&mut engine, 0.01);
@@ -4720,7 +4720,7 @@ mod tests {
         c(1, "prev_chain_preset").set(1.0);
         c(1, "prev_chain_preset").set(0.0);
         run(&mut engine, 0.01);
-        assert_eq!(presets(), vec![1.0, 5.0, 1.0, 1.0]);
+        assert_eq!(presets(), vec![1.0, 6.0, 1.0, 1.0]);
     }
 
     #[test]

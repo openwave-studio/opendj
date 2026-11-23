@@ -26,8 +26,9 @@ so it works the same way where they share controls.
   four, **LEVEL/DEPTH** sets the amount, **ON/OFF** turns it on (SHIFT:
   lets the tail ring out) and **BEAT ◀ ▶** halve and double its length
   (SHIFT: AUTO and TAP tempo).
-- **SOUND COLOR FX**: SPACE, D.ECHO, CRUSH, NOISE and FILTER pick what the
-  COLOR knobs play. openDJ has no PITCH Color FX yet.
+- **SOUND COLOR FX**: SPACE, D.ECHO, CRUSH, PITCH, NOISE and FILTER pick
+  what the COLOR knobs play. PITCH shifts the deck down to the left and up
+  to the right, up to an octave.
 - **ACTIVE PART** DRUMS, VOCAL and INST mute and unmute those stems of the
   deck: lit while they play, dimmed when muted.
 - The **pads** light in colour: hot cues in the colours they have on
@@ -59,8 +60,8 @@ so it works the same way where they share controls.
   On Linux, install openDJ's udev rule first (the .deb and .rpm do it).
 
 Not mapped yet: MIX POINT, CUE/LOOP MEMORY, MASTER CUE, INPUT SELECT, the
-mic, SAMPLER CUE and VOL, FX PART SELECT, the PITCH colour FX, the pad PAGE
-buttons and the fader start messages.
+mic, SAMPLER CUE and VOL, FX PART SELECT, the pad PAGE buttons and the
+fader start messages.
 
 ## When you try it
 

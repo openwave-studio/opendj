@@ -3461,7 +3461,14 @@ impl Spiral {
 /// `[QuickEffectRack1_[ChannelN]],loaded_chain_preset` values 1 and up (0 is
 /// none: the knob does nothing). Each deck picks its own from the menu
 /// beside its filter knob; the DDJ-FLX4's SHIFT + SMART CFX steps both decks.
-pub const COLOR_FX: [&str; 5] = ["Filter", "Space", "Dub Echo", "Noise", "Crush"];
+pub const COLOR_FX: [&str; 6] = ["Filter", "Space", "Dub Echo", "Noise", "Crush", "Pitch"];
+
+/// The `loaded_chain_preset` value of the Pitch Color FX.
+const COLOR_PITCH: usize = 6;
+
+/// How far the Pitch Color FX shifts with the knob all the way round, in
+/// semitones either way: an octave, as on Pioneer mixers.
+const PITCH_CFX_SEMITONES: f64 = 12.0;
 
 /// The Color FX of a `loaded_chain_preset` value ("" for none).
 pub fn color_fx_name(preset: f64) -> &'static str {
@@ -3481,11 +3488,14 @@ const COLOR_TAIL_SECONDS: f32 = 6.0;
 /// low-pass to the left and a high-pass to the right; Space and Dub Echo send
 /// the sound, filtered the same way but more gently, into a reverb or a
 /// tempo-synced echo, more the further the knob turns; Noise adds filtered
-/// white noise; Crush lowers the bit depth and sample rate.
+/// white noise; Crush lowers the bit depth and sample rate; Pitch shifts
+/// the sound down to the left and up to the right, up to an octave, keeping
+/// its tempo.
 pub(crate) struct ColorFx {
     preset: usize,
     sweep: crate::dsp::SweepFilter,
     inst: Instance,
+    pitch: PitchShifter,
     /// How far the knob is from the middle, 0..1, and how much of the effect
     /// (as opposed to plain filtering) is heard, gliding.
     amount: f32,
@@ -3501,6 +3511,7 @@ impl ColorFx {
             preset: 1,
             sweep: crate::dsp::SweepFilter::new(sample_rate),
             inst: Instance::with_memory(sample_rate as f32),
+            pitch: PitchShifter::new(sample_rate as f32),
             amount: 0.0,
             wet: 0.0,
             tail: 0.0,
@@ -3512,6 +3523,7 @@ impl ColorFx {
 
     fn load(&mut self, preset: usize) {
         self.preset = preset;
+        self.pitch.reset();
         self.inst.kind = match preset {
             2 => Some(Kind::Reverb),
             3 => Some(Kind::Echo),
@@ -3544,7 +3556,17 @@ impl ColorFx {
         };
         self.sweep.set(filter_knob);
         if a > 0.005 {
-            self.tail = COLOR_TAIL_SECONDS * self.sample_rate;
+            // Pitch has nothing to ring on: long enough to fade out.
+            let seconds = if preset == COLOR_PITCH {
+                0.25
+            } else {
+                COLOR_TAIL_SECONDS
+            };
+            self.tail = seconds * self.sample_rate;
+        }
+        if preset == COLOR_PITCH {
+            self.pitch
+                .set_semitones((side * 2.0 * PITCH_CFX_SEMITONES) as f32);
         }
         let ctx = Ctx {
             sample_rate: self.sample_rate,
@@ -3570,6 +3592,9 @@ impl ColorFx {
     #[inline]
     pub(crate) fn process(&mut self, x: [f32; 2]) -> [f32; 2] {
         let y = self.sweep.process(x);
+        if self.preset == COLOR_PITCH {
+            return self.process_pitch(y);
+        }
         let Some(kind) = self.inst.kind else {
             return y;
         };
@@ -3593,6 +3618,195 @@ impl ColorFx {
             y[0] + (z[0] - y[0]) * self.wet,
             y[1] + (z[1] - y[1]) * self.wet,
         ]
+    }
+}
+
+impl ColorFx {
+    /// Pitch: the shifted sound in place of the dry one, faded in over the
+    /// first stretch of the knob so the middle is exactly dry. The shifter
+    /// always hears the deck, so turning the knob starts on what is playing.
+    #[inline]
+    fn process_pitch(&mut self, y: [f32; 2]) -> [f32; 2] {
+        self.pitch.write(y);
+        if self.tail <= 0.0 && self.amount == 0.0 {
+            self.wet = 0.0;
+            return y;
+        }
+        self.tail -= 1.0;
+        let goal = (self.amount / 0.05).min(1.0);
+        self.wet += (goal - self.wet) * 0.002;
+        if (goal - self.wet).abs() < 1e-5 {
+            self.wet = goal;
+        }
+        if self.wet == 0.0 {
+            return y;
+        }
+        let z = self.pitch.read();
+        [
+            y[0] + (z[0] - y[0]) * self.wet,
+            y[1] + (z[1] - y[1]) * self.wet,
+        ]
+    }
+}
+
+/// Samples in the pitch shifter's delay line (a power of two), enough for
+/// its window and search at 192 kHz.
+const PITCH_BUFFER: usize = 16_384;
+
+/// The pitch shifter's window in seconds: long enough for low notes to keep
+/// their body, short enough that the sound stays on the beat.
+const PITCH_WINDOW_SECONDS: f32 = 0.05;
+
+/// How far a pitch shifter head may start further back to line up with the
+/// other, and how much sound it compares to find where, in seconds.
+const PITCH_SEARCH_SECONDS: f32 = 0.015;
+const PITCH_MATCH_SECONDS: f32 = 0.0027;
+
+/// A low-latency pitch shifter for the Pitch Color FX: two read heads move
+/// through a delay line at the new speed, each faded in and out with a
+/// raised cosine half a window apart, so one jumps back while the other is
+/// heard (the classic rotating-head shifter). Each head starts where the
+/// sound best lines up with what the other head is playing, so the two
+/// don't cancel where they cross. The sound keeps its tempo and lags by
+/// less than a window.
+pub(crate) struct PitchShifter {
+    buf: Vec<[f32; 2]>,
+    pos: usize,
+    /// Where the first head is in its window, 0..1; the second is half a
+    /// window on.
+    phase: f32,
+    /// Each head's last phase (to see it wrap) and how much further back it
+    /// started, in samples.
+    last: [f32; 2],
+    offset: [f32; 2],
+    /// Playback speed (2 an octave up), gliding to `target`.
+    ratio: f32,
+    target: f32,
+    window: f32,
+    search: usize,
+    matched: usize,
+    glide: f32,
+}
+
+impl PitchShifter {
+    pub(crate) fn new(sample_rate: f32) -> Self {
+        let window = PITCH_WINDOW_SECONDS * sample_rate;
+        let search = (PITCH_SEARCH_SECONDS * sample_rate) as usize;
+        let matched = (PITCH_MATCH_SECONDS * sample_rate) as usize;
+        assert!(window as usize + search + matched + 8 < PITCH_BUFFER);
+        Self {
+            buf: vec![[0.0; 2]; PITCH_BUFFER],
+            pos: 0,
+            phase: 0.0,
+            last: [0.0, 0.5],
+            offset: [0.0; 2],
+            ratio: 1.0,
+            target: 1.0,
+            window,
+            search,
+            matched,
+            // About 10 ms to glide to a new pitch.
+            glide: 1.0 - (-1.0 / (0.01 * sample_rate)).exp(),
+        }
+    }
+
+    /// Silences the delay line and goes back to no shift.
+    pub(crate) fn reset(&mut self) {
+        self.buf.fill([0.0; 2]);
+        self.phase = 0.0;
+        self.last = [0.0, 0.5];
+        self.offset = [0.0; 2];
+        self.ratio = 1.0;
+        self.target = 1.0;
+    }
+
+    /// The shift to glide to, in semitones.
+    pub(crate) fn set_semitones(&mut self, semitones: f32) {
+        self.target = (semitones / 12.0).exp2();
+    }
+
+    /// Feeds the next frame.
+    #[inline]
+    pub(crate) fn write(&mut self, x: [f32; 2]) {
+        self.pos = (self.pos + 1) & (PITCH_BUFFER - 1);
+        self.buf[self.pos] = x;
+    }
+
+    /// The shifted frame for the last frame written; moves the heads on.
+    #[inline]
+    pub(crate) fn read(&mut self) -> [f32; 2] {
+        self.ratio += (self.target - self.ratio) * self.glide;
+        // A head reading at speed r falls behind (or gains on) the writer
+        // by 1 - r samples a frame.
+        self.phase += (1.0 - self.ratio) / self.window;
+        self.phase -= self.phase.floor();
+        let phases = [self.phase, (self.phase + 0.5).fract()];
+        for k in 0..2 {
+            // A head wraps where its gain is nil: start it in step with the other.
+            if (phases[k] - self.last[k]).abs() > 0.5 {
+                let other = 1 - k;
+                let lead = self.delay(phases[other], self.offset[other]);
+                self.offset[k] = self.best_offset(lead, self.delay(phases[k], 0.0));
+            }
+            self.last[k] = phases[k];
+        }
+        let mut out = [0.0; 2];
+        for k in 0..2 {
+            let gain = (PI * phases[k]).sin().powi(2);
+            let y = self.tap(self.delay(phases[k], self.offset[k]));
+            out[0] += gain * y[0];
+            out[1] += gain * y[1];
+        }
+        out
+    }
+
+    /// A head's delay in samples at `phase` in its window.
+    #[inline]
+    fn delay(&self, phase: f32, offset: f32) -> f32 {
+        2.0 + offset + phase * self.window
+    }
+
+    /// How much further back than `start` a head should begin so the sound
+    /// there lines up best with the sound at `lead`: the best match of the
+    /// stretch just before each, in steps of two samples.
+    fn best_offset(&self, lead: f32, start: f32) -> f32 {
+        let mask = PITCH_BUFFER - 1;
+        let mono = |delay: usize| {
+            let x = self.buf[self.pos.wrapping_sub(delay) & mask];
+            x[0] + x[1]
+        };
+        let (lead, start) = (lead as usize, start as usize);
+        let mut best = (0, f32::MIN);
+        for c in (0..self.search).step_by(2) {
+            let score: f32 = (0..self.matched)
+                .map(|j| mono(lead + j) * mono(start + c + j))
+                .sum();
+            if score > best.1 {
+                best = (c, score);
+            }
+        }
+        best.0 as f32
+    }
+
+    /// The delay line `delay` samples back, cubic-interpolated.
+    #[inline]
+    fn tap(&self, delay: f32) -> [f32; 2] {
+        let back = delay.floor();
+        let t = delay - back;
+        let mask = PITCH_BUFFER - 1;
+        let i = self.pos.wrapping_sub(back as usize) & mask;
+        // Newer to older: x(-1) is one sample later than x(0).
+        let s = |k: usize| self.buf[k & mask];
+        let (xm1, x0, x1, x2) = (s(i + 1), s(i), s(i.wrapping_sub(1)), s(i.wrapping_sub(2)));
+        let mut out = [0.0; 2];
+        for c in 0..2 {
+            // Catmull-Rom between x0 (t = 0) and x1 (t = 1, one sample older).
+            let c1 = 0.5 * (x1[c] - xm1[c]);
+            let c2 = xm1[c] - 2.5 * x0[c] + 2.0 * x1[c] - 0.5 * x2[c];
+            let c3 = 0.5 * (x2[c] - xm1[c]) + 1.5 * (x0[c] - x1[c]);
+            out[c] = ((c3 * t + c2) * t + c1) * t + x0[c];
+        }
+        out
     }
 }
 
@@ -4104,10 +4318,77 @@ mod tests {
         }
     }
 
+    /// The strongest frequency in `x` between 50 and 1000 Hz, to 0.5 Hz.
+    fn frequency(x: &[f32]) -> f32 {
+        let power = |f: f32| {
+            let (mut re, mut im) = (0.0f64, 0.0f64);
+            for (i, v) in x.iter().enumerate() {
+                let w = (TAU * f * i as f32 / SR) as f64;
+                re += *v as f64 * w.cos();
+                im += *v as f64 * w.sin();
+            }
+            re * re + im * im
+        };
+        (100..2000)
+            .map(|k| k as f32 * 0.5)
+            .max_by(|a, b| power(*a).total_cmp(&power(*b)))
+            .unwrap()
+    }
+
+    #[test]
+    fn pitch_shifts_down_to_the_left_and_up_to_the_right() {
+        for (knob, semitones) in [(0.0, -12.0), (0.25, -6.0), (0.75, 6.0), (1.0, 12.0)] {
+            let mut fx = ColorFx::new(SR as f64);
+            fx.prepare(6.0, knob, 0.5);
+            let out: Vec<f32> = (0..SR as usize)
+                .map(|i| fx.process([tone(i); 2])[0])
+                .collect();
+            let got = frequency(&out[SR as usize / 2..]);
+            let want = 220.0 * (semitones as f32 / 12.0).exp2();
+            assert!(
+                (got / want - 1.0).abs() < 0.02,
+                "knob {knob}: {got} Hz, wanted {want}"
+            );
+            // Level stays about the same (no dips where the heads cross).
+            let level = rms(&out[SR as usize / 2..])
+                / rms(&(0..SR as usize / 2).map(tone).collect::<Vec<_>>());
+            assert!((0.9..1.1).contains(&level), "knob {knob}: level {level}");
+        }
+    }
+
+    #[test]
+    fn pitch_glides_back_to_dry_in_the_middle() {
+        let mut fx = ColorFx::new(SR as f64);
+        fx.prepare(6.0, 1.0, 0.5);
+        for i in 0..SR as usize / 4 {
+            fx.process([tone(i); 2]);
+        }
+        fx.prepare(6.0, 0.5, 0.5);
+        let start = SR as usize / 4;
+        let out: Vec<f32> = (start..start + SR as usize / 2)
+            .map(|i| fx.process([tone(i); 2])[0])
+            .collect();
+        // A quarter of a second later it is the dry tone again.
+        let late = &out[SR as usize / 4..];
+        let err = late
+            .iter()
+            .enumerate()
+            .map(|(k, y)| (y - tone(start + SR as usize / 4 + k)).abs())
+            .fold(0.0, f32::max);
+        assert!(err < 1e-4, "still shifted by {err}");
+        // And it got there without a jump.
+        let jump = out
+            .windows(2)
+            .map(|w| (w[1] - w[0]).abs())
+            .fold(0.0, f32::max);
+        assert!(jump < 0.1, "a jump of {jump}");
+    }
+
     #[test]
     fn color_fx_names() {
         assert_eq!(color_fx_name(1.0), "Filter");
         assert_eq!(color_fx_name(3.0), "Dub Echo");
+        assert_eq!(color_fx_name(6.0), "Pitch");
         assert_eq!(color_fx_name(0.0), "");
     }
 

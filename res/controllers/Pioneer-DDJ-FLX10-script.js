@@ -41,8 +41,7 @@
 //  The jogs count 5760 ticks a turn (jogTicksPerTurn), not the FLX4's 720.
 //
 //  Not mapped yet: MIX POINT, CUE/LOOP MEMORY, MASTER CUE, INPUT SELECT, the
-//  mic, SAMPLER CUE and VOL, FX PART SELECT, the PITCH colour FX, the pad
-//  PAGE buttons, the fader start messages and the jog's playing speed.
+//  mic, SAMPLER CUE and VOL, FX PART SELECT, the pad PAGE buttons, the fader start messages and the jog's playing speed.
 
 var PioneerDDJFLX10 = {};
 
@@ -569,10 +568,9 @@ PioneerDDJFLX10.browsePressed = function(_channel, _control, value, _status, gro
 
 // SOUND COLOR FX: each picks the Color FX the COLOR knobs play; pressing
 // the lit one goes back to the filter. Numbers as in the engine's COLOR_FX
-// (1 Filter, 2 Space, 3 Dub Echo, 4 Noise, 5 Crush). openDJ has no PITCH
-// Color FX yet (0x03): its button is left unmapped. With SHIFT the buttons
-// send 8 higher and do the same.
-PioneerDDJFLX10.colorFxButtons = {0x00: 2, 0x01: 3, 0x02: 5, 0x04: 4, 0x05: 1};
+// (1 Filter, 2 Space, 3 Dub Echo, 4 Noise, 5 Crush, 6 Pitch). With SHIFT
+// the buttons send 8 higher and do the same.
+PioneerDDJFLX10.colorFxButtons = {0x00: 2, 0x01: 3, 0x02: 5, 0x03: 6, 0x04: 4, 0x05: 1};
 
 PioneerDDJFLX10.colorFxPressed = function(_channel, control, value) {
     if (!value) { return; }

@@ -24,12 +24,12 @@ sketch from the unit's size, not measured.
 - **Pads**: HOT CUE plays hot cues A to H (SHIFT clears them), BEAT JUMP jumps 1, 2, 4 and 8 beats each way, PAD FX plays loop rolls.
 - The **mixer** (TRIM, EQ, COLOR, CUE, channel faders, crossfader) runs openDJ's mixer.
 - **BEAT FX**: ECHO, REVERB and FLANGER load openDJ's echo, reverb and flanger into its Beat FX, **BEAT ◀ ▶** halve and double the length, **LEVEL/DEPTH** sets the amount and **ON/OFF** turns it on.
-- **SOUND COLOR FX**: DUB ECHO, NOISE, CRUSH and FILTER pick what the COLOR knobs play.
+- **SOUND COLOR FX**: DUB ECHO, PITCH, NOISE and FILTER pick what the COLOR knobs play.
 - The **ROTARY SELECTOR** moves through the list (SHIFT: zooms the
   waveforms), press opens or loads. **BACK** moves to the sidebar and **TAG
   TRACK** adds the track to Automix. **LOAD** loads the selected track.
 
-Not mapped yet: BEAT LOOP pads, the SHIFT pad pages, PITCH, MEMORY, DELETE, TIME MODE and AUX.
+Not mapped yet: BEAT LOOP pads, the SHIFT pad pages, MEMORY, DELETE, TIME MODE and AUX.
 
 ## When you try it
 

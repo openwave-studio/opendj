@@ -7310,6 +7310,16 @@
                 </options>
             </control>
             <control>
+                <description>SOUND COLOR FX PITCH - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
                 <description>SOUND COLOR FX NOISE - press - what the COLOR knobs play (openDJ)</description>
                 <group>[Master]</group>
                 <key>PioneerDDJFLX10.colorFxPressed</key>
@@ -7515,6 +7525,16 @@
                 <key>PioneerDDJFLX10.colorFxPressed</key>
                 <status>0x96</status>
                 <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0B</midino>
                 <options>
                     <Script-Binding />
                 </options>

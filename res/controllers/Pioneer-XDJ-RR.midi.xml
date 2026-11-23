@@ -943,6 +943,16 @@
                 </options>
             </control>
             <control>
+                <description>SOUND COLOR FX PITCH</description>
+                <group>[Master]</group>
+                <key>PioneerXDJRR.colorFxPressed</key>
+                <status>0xB4</status>
+                <midino>0x56</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
                 <description>SOUND COLOR FX FILTER</description>
                 <group>[Master]</group>
                 <key>PioneerXDJRR.colorFxPressed</key>
