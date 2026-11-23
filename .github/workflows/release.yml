@@ -177,6 +177,17 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y libfontconfig-dev libxkbcommon-dev libasound2-dev libudev-dev cmake libclang-dev imagemagick rpm
+      - name: Add swap
+        # The runner was shut down mid-build without it: compiling the app
+        # (its Slint UI is one generated module of over 800,000 lines) needs
+        # more than the runner's memory. As in ci.yml.
+        run: |
+          sudo swapoff -a
+          sudo rm -f /mnt/swapfile
+          sudo fallocate -l 16G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd
