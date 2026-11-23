@@ -383,6 +383,11 @@ online, if it is at least 600 pixels, and saves it in the file's tags. When
 the first one is smaller the track is left without, so you can pick one
 yourself from the cover dialog in **Info**.
 
+A track with no lyrics gets the closest ones on
+[LRCLIB](https://lrclib.net), saved as an `.lrc` file beside it (see
+[Lyrics](lyrics.md#when-tracks-are-analyzed)). Pick others with **Find…** in the
+Lyrics tab.
+
 ## Phrases
 
 Once a track has a beat grid, openDJ splits it into phrases of whole

@@ -15,6 +15,8 @@
 - [x] 3.1 Settings › Collection › Health › Find lyrics online: LRCLIB switch, on at first (changed from off by a user request, 2026-11-07)
 - [x] 3.2 Find lyrics in the tab: LRCLIB `/api/get` then `/api/search`, matches ranked by length and timing, saved as `.lrc` beside the track (openDJ's own lyrics folder when that folder can't be written)
 - [ ] 3.3 Collection Health › Info: find lyrics for many tracks, one request at a time, honouring `Retry-After`
+- [x] 3.4 Analyze Track and Analyze All save the closest LRCLIB lyrics for tracks with none (switch Find lyrics when analyzing, on at first), one track at a time, honouring `Retry-After`; a user request, issue #991
+- [ ] 3.5 Find lyrics in the selected tracks' menu, with matched, skipped and failed counts and replacing lyrics when asked (issue #991)
 
 ## 4. Fix lyrics
 

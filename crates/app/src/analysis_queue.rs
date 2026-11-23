@@ -4,7 +4,9 @@
 //! loaded on a deck. Results are cached as a deck load would cache them,
 //! and handed back to the browser to save. Tracks the DJ asks to analyse
 //! that have no cover also get the first one found online, on a thread of
-//! its own so the next track's analysis doesn't wait for it. With Show
+//! its own so the next track's analysis doesn't wait for it, and the
+//! closest lyrics on LRCLIB when they have none (see
+//! [`crate::lrclib::fetch_closest`]), on a third thread. With Show
 //! vocals on, each track also gets its vocal pass (see
 //! [`opendj_engine::vocals`]), so the decks have it at once.
 //!
@@ -21,7 +23,7 @@ use std::time::{Duration, Instant};
 use opendj_engine::loader::analyse_file;
 use opendj_engine::{background, cover, vocals, Source, Track};
 
-use crate::coverart;
+use crate::{coverart, lrclib};
 
 /// What `running` holds while nothing is being analysed.
 const IDLE: usize = usize::MAX;
@@ -30,7 +32,8 @@ struct Request {
     track: Arc<Track>,
     /// Analyse again even when the cache has the track.
     fresh: bool,
-    /// Look for a cover online if the track has none.
+    /// Look for a cover online if the track has none, and lyrics if it
+    /// has none: the tracks the DJ asked to analyse.
     cover: bool,
     /// The queue's generation when sent; a cancel moves it on, and the
     /// thread skips requests from before.
@@ -42,6 +45,8 @@ pub struct AnalysisQueue {
     done: Receiver<Track>,
     /// Covers found online: the track's id and the image file's bytes.
     covers: Receiver<(usize, Vec<u8>)>,
+    /// Tracks whose lyrics were found online and saved, by id.
+    lyrics: Receiver<usize>,
     /// Ids sent and not yet back, so a track isn't queued twice.
     queued: HashSet<usize>,
     /// The id of the track being analysed now, or [`IDLE`].
@@ -79,6 +84,35 @@ impl AnalysisQueue {
                 }
             })
             .expect("spawn cover lookup thread");
+        let (lyric_lookups, lyrics_wanted) =
+            channel::<(usize, std::path::PathBuf, lrclib::Query)>();
+        let (lyrics_saved, lyrics) = channel();
+        std::thread::Builder::new()
+            .name("lyrics-lookup".into())
+            .spawn(move || {
+                background::lower_priority();
+                let mut last: Option<Instant> = None;
+                for (id, path, q) in lyrics_wanted {
+                    // Asked when the queue reached the track, and again now:
+                    // the DJ may have turned it off since.
+                    if !lrclib::on_analyze() {
+                        continue;
+                    }
+                    // One track at a time, a little apart, well inside
+                    // LRCLIB's limits.
+                    if let Some(at) = last {
+                        std::thread::sleep(LYRICS_APART.saturating_sub(at.elapsed()));
+                    }
+                    let result = lrclib::fetch_closest(&path, &q);
+                    if result != lrclib::Fetched::Skipped {
+                        last = Some(Instant::now());
+                    }
+                    if result == lrclib::Fetched::Saved && lyrics_saved.send(id).is_err() {
+                        break;
+                    }
+                }
+            })
+            .expect("spawn lyrics lookup thread");
         std::thread::Builder::new()
             .name("background-analysis".into())
             .spawn(move || {
@@ -110,6 +144,11 @@ impl AnalysisQueue {
                                 if let Some(w) = wanted_cover(&t) {
                                     let _ = lookups.send((t.id, w));
                                 }
+                                if lrclib::on_analyze() {
+                                    if let Some((path, q)) = wanted_lyrics(&t) {
+                                        let _ = lyric_lookups.send((t.id, path, q));
+                                    }
+                                }
                             }
                             t
                         }
@@ -129,6 +168,7 @@ impl AnalysisQueue {
             requests,
             done,
             covers,
+            lyrics,
             queued: HashSet::new(),
             running,
             generation,
@@ -211,6 +251,11 @@ impl AnalysisQueue {
         self.covers.try_iter().collect()
     }
 
+    /// Tracks given lyrics found online since the last call, by id.
+    pub fn take_lyrics(&mut self) -> Vec<usize> {
+        self.lyrics.try_iter().collect()
+    }
+
     /// Whether a track is waiting (1) or being analysed (2); 0 if neither.
     pub fn state(&self, id: usize) -> i32 {
         if !self.queued.contains(&id) {
@@ -253,6 +298,28 @@ fn rest(worked: Duration, generation: &AtomicU64, sent: u64) {
     {
         std::thread::sleep(Duration::from_millis(100));
     }
+}
+
+/// The least time between two lyrics look-ups (each is up to two requests).
+const LYRICS_APART: Duration = Duration::from_secs(2);
+
+/// The file and what to look its lyrics up by, if `t` is a file with a title.
+fn wanted_lyrics(t: &Track) -> Option<(std::path::PathBuf, lrclib::Query)> {
+    let Source::File(path) = &t.source else {
+        return None;
+    };
+    if t.title.trim().is_empty() {
+        return None;
+    }
+    Some((
+        path.clone(),
+        lrclib::Query {
+            title: t.title.clone(),
+            artist: t.artist.clone(),
+            album: t.album.clone(),
+            duration: t.duration,
+        },
+    ))
 }
 
 /// What to look for a cover of `t` by, if it is a file with something to

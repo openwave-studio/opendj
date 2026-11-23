@@ -22,8 +22,8 @@ use opendj_engine::{deck_group, Source, Track, NUM_DECKS};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use super::Browser;
-use crate::lrclib::{self, Found, Miss, Query};
-use crate::{settings, AppWindow, LyricLine, LyricMatch, LyricsUi};
+use crate::lrclib::{self, store, Found, Miss, Query};
+use crate::{AppWindow, LyricLine, LyricMatch, LyricsUi};
 
 /// The side panel's Lyrics tab. Past Prep's Cues (4) and Checklist (5),
 /// which come and go with the layout.
@@ -128,11 +128,6 @@ fn describe(l: &Lyrics) -> String {
     } else {
         format!("{timing} · {from}")
     }
-}
-
-/// Where openDJ keeps lyrics for tracks whose folder can't be written.
-fn store() -> Option<std::path::PathBuf> {
-    settings::config_dir().map(|d| d.join("lyrics"))
 }
 
 /// A row of the Find list.
@@ -409,6 +404,18 @@ impl Browser {
             Err(Miss::None) => ui.set_find_note("LRCLIB has no lyrics for this track.".into()),
             Err(Miss::Offline) => ui
                 .set_find_note("Couldn't reach LRCLIB. Check the connection and try again.".into()),
+        }
+    }
+
+    /// Shows lyrics just found for track `id` while it was analysed, where
+    /// it is on show: in the tab and on the decks' waveforms.
+    pub(super) fn lyrics_saved(&mut self, id: usize) {
+        if self.loaded.contains(&Some(id)) {
+            self.lyrics.wave.reload();
+        }
+        if self.lyrics.shown.as_ref().is_some_and(|(_, t)| t.id == id) {
+            // Read again, from the file just written.
+            self.lyrics.shown = None;
         }
     }
 
