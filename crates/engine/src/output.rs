@@ -290,6 +290,10 @@ const HEALTH_WARMUP: f64 = 1.0;
 const LATE_CALLBACK: f64 = 3.0;
 /// How often a lost device is looked for.
 const RETRY: Duration = Duration::from_secs(2);
+/// How soon after the outputs open the stand-in default device can stop
+/// and be reopened without a word: opening the outputs, or the device scan
+/// that follows start-up, can disturb its first stream.
+const SETTLE: Duration = Duration::from_secs(10);
 
 impl Health {
     pub(crate) fn new(reg: &ControlRegistry) -> Arc<Self> {
@@ -628,6 +632,11 @@ pub(crate) struct Outputs {
     input_retry_at: Option<Instant>,
     /// The person was told the device went away.
     lost_reported: bool,
+    /// The system default device's name while it plays the master because
+    /// the chosen device was missing when the outputs opened.
+    fell_back: Option<String>,
+    /// When the outputs were last opened.
+    opened_at: Instant,
 }
 
 impl Outputs {
@@ -653,6 +662,8 @@ impl Outputs {
             input_lost: Arc::new(AtomicBool::new(false)),
             input_retry_at: None,
             lost_reported: false,
+            fell_back: None,
+            opened_at: Instant::now(),
         };
         o.configure(setup);
         o
@@ -914,12 +925,19 @@ impl Outputs {
         }
         self.retry_at = Some(now + RETRY);
         let name = clock_device(&self.setup).to_string();
-        let label = if name.is_empty() {
-            "The system's audio output".to_string()
-        } else {
-            name.clone()
+        let present = find(&name).is_some();
+        // The default device stands in for a missing chosen one: while that
+        // is still missing, open the default again rather than stop.
+        let fallback = self
+            .fell_back
+            .clone()
+            .filter(|_| !present && find("").is_some());
+        let label = match &self.fell_back {
+            Some(default) if !present => default.clone(),
+            _ if name.is_empty() => "The system's audio output".to_string(),
+            _ => name.clone(),
         };
-        if find(&name).is_none() {
+        if !present && fallback.is_none() {
             if std::mem::replace(&mut self.lost_reported, true) {
                 return None;
             }
@@ -941,17 +959,23 @@ impl Outputs {
             ));
         }
         self.health.lost.store(false, Ordering::Release);
+        // Opening the outputs clears these.
+        let reported = self.lost_reported;
+        let was_fallback = self.fell_back.is_some();
+        let settling = self.opened_at.elapsed() < SETTLE;
         let setup = self.setup.clone();
         self.configure_outputs(&setup);
         // The device's inputs went with it (an interface that resets takes
         // both): open them again too, or nothing comes in until the input
         // is picked again.
         self.configure_inputs(&setup);
-        Some(if std::mem::take(&mut self.lost_reported) {
-            format!("{label} is back.")
+        if reported || (was_fallback && present) {
+            Some(format!("{label} is back."))
+        } else if fallback.is_some() && settling {
+            None
         } else {
-            format!("{label} stopped; openDJ reopened it.")
-        })
+            Some(format!("{label} stopped; openDJ reopened it."))
+        }
     }
 
     /// Reopens the inputs after one of their streams stopped, every so often
@@ -993,6 +1017,8 @@ impl Outputs {
         self.health.lost.store(false, Ordering::Release);
         self.lost_reported = false;
         self.retry_at = None;
+        self.fell_back = None;
+        self.opened_at = Instant::now();
         self.route_status = vec![String::new(); setup.routes.len()];
         if let Err(e) = self.open(setup) {
             eprintln!("audio output unavailable ({e}); running without sound");
@@ -1022,7 +1048,11 @@ impl Outputs {
         // prefix that its own name lacks. Under two names the device would be
         // opened twice, and an ASIO driver plays only its latest stream.
         let wanted = clock_device(setup);
-        let (clock, clock_name) = match find(wanted).filter(|_| !wanted.is_empty()) {
+        let found = find(wanted).filter(|_| !wanted.is_empty());
+        // The chosen master device is missing (unplugged, say): the system's
+        // default plays instead.
+        let fell_back = !wanted.is_empty() && found.is_none();
+        let (clock, clock_name) = match found {
             Some(clock) => (clock, wanted.to_string()),
             None => {
                 let clock = find("").ok_or("no output device")?;
@@ -1030,6 +1060,7 @@ impl Outputs {
                 (clock, name)
             }
         };
+        let mut moved = Vec::new();
 
         // Group the routes by device, the clock device first. A route to
         // channels another route already uses is left out.
@@ -1048,6 +1079,8 @@ impl Outputs {
             } else {
                 r.device.clone()
             };
+            let mut pair = r.pair as usize;
+            let mut note = None;
             let at = match devices.iter().position(|d| d.name == name) {
                 Some(at) => at,
                 None => match find(&name) {
@@ -1059,19 +1092,28 @@ impl Outputs {
                         });
                         devices.len() - 1
                     }
+                    // The master plays on the default device's first pair
+                    // rather than nowhere. Headphones, booth and deck outputs
+                    // stay silent: the cue on the main speakers would be
+                    // worse than none.
+                    None if fell_back && r.role == Role::Master => {
+                        note = Some(format!("{name} unavailable · playing on {clock_name}"));
+                        pair = 0;
+                        0
+                    }
                     None => {
                         self.route_status[i] = format!("{name} unavailable");
                         continue;
                     }
                 },
             };
-            let pair = r.pair as usize;
             if let Some(&(_, _, other)) = devices[at].routes.iter().find(|x| x.1 == pair) {
                 self.route_status[i] =
                     format!("same channels as {}", setup.routes[other].role.name());
                 continue;
             }
             devices[at].routes.push((r.role.source(), pair, i));
+            moved.extend(note.map(|n| (i, n)));
         }
 
         // Open the other devices first, so the clock knows where to feed.
@@ -1209,6 +1251,13 @@ impl Outputs {
             ),
             BufferSize::Default => format!("{clock_name} · {khz} kHz"),
         };
+        for (i, note) in moved {
+            self.route_status[i] = note;
+        }
+        if fell_back {
+            eprintln!("audio output: {wanted} missing; playing the master on {clock_name}");
+            self.fell_back = Some(clock_name);
+        }
         Ok(())
     }
 
