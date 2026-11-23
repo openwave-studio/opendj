@@ -1,0 +1,369 @@
+// Background tasks: a small progress ring in the footer while analysis,
+// HQ stems, word timing or Collection Health's scans run or are paused,
+// and the panel it pops up over the browser, a row per kind of task with
+// its progress, time left, the track it is on, Pause or Resume and Stop,
+// the next tracks with Do next, Pause all, and what happens while a deck
+// plays.
+import { Theme } from "theme.slint";
+import { KnobArc, HoverTip } from "controls.slint";
+import { SwitchPill, SectionTitle } from "pills.slint";
+
+// A track waiting its turn: its id, for Do next, and what to call it.
+export struct TaskWaiting {
+    id: int,
+    title: string,
+}
+
+// One kind of task, as the panel shows it.
+export struct TaskRow {
+    // `opendj_engine::background::Task` as a number.
+    kind: int,
+    name: string,
+    // "38 of 120"; empty when there is no count.
+    count: string,
+    // How far, 0 to 1.
+    progress: float,
+    // "6 min left"; empty until there is a guess.
+    left: string,
+    // The track it is on now, "Title · Artist".
+    now: string,
+    paused: bool,
+    can-stop: bool,
+    // The next tracks, for Do next, and how many more wait after them.
+    next: [TaskWaiting],
+    more: int,
+}
+
+export global TasksUi {
+    in property <[TaskRow]> tasks;
+    // Every task's progress together, 0 to 1.
+    in property <float> overall;
+    // Every task is paused (or waiting for the decks to stop).
+    in property <bool> all-paused;
+    // The last task just finished: a check for a few seconds.
+    in property <bool> just-done;
+    // While a deck plays: 0 Slow down, 1 Pause, 2 Keep going.
+    in property <int> while-playing;
+    out property <bool> shown: tasks.length > 0 || just-done;
+    callback pause(kind: int, on: bool);
+    callback stop(kind: int);
+    callback do-next(kind: int, id: int);
+    callback pause-all(on: bool);
+    callback set-while-playing(choice: int);
+}
+
+// A small round icon button in a task's row: pause, resume or stop.
+component TaskButton inherits Rectangle {
+    // 0 pause, 1 resume, 2 stop.
+    in property <int> glyph;
+    in property <string> tip;
+    callback clicked();
+    property <color> ink: ta.has-hover ? Theme.text : Theme.text-dim;
+    width: 24px;
+    height: 22px;
+    border-radius: 5px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-38373d : transparent;
+    if glyph == 0: Path {
+        width: 10px;
+        height: 10px;
+        viewbox-width: 10;
+        viewbox-height: 10;
+        commands: "M 1.5 1 L 3.8 1 L 3.8 9 L 1.5 9 Z M 6.2 1 L 8.5 1 L 8.5 9 L 6.2 9 Z";
+        fill: ink;
+    }
+    if glyph == 1: Path {
+        width: 10px;
+        height: 10px;
+        viewbox-width: 10;
+        viewbox-height: 10;
+        commands: "M 2 1 L 9 5 L 2 9 Z";
+        fill: ink;
+    }
+    if glyph == 2: Path {
+        width: 9px;
+        height: 9px;
+        viewbox-width: 10;
+        viewbox-height: 10;
+        commands: "M 1.5 1.5 L 8.5 8.5 M 8.5 1.5 L 1.5 8.5";
+        stroke: ink;
+        stroke-width: 1.6px;
+        stroke-line-cap: round;
+        fill: transparent;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// A thin progress bar: lilac, amber while paused.
+component TaskBar inherits Rectangle {
+    in property <float> progress;
+    in property <bool> paused;
+    height: 4px;
+    border-radius: 2px;
+    background: Theme.n-38373d;
+    Rectangle {
+        x: 0;
+        width: parent.width * max(0, min(1, root.progress));
+        height: parent.height;
+        border-radius: 2px;
+        background: root.paused ? Theme.task-paused : Theme.accent;
+        animate width { duration: 400ms; }
+    }
+}
+
+// What the panel shows. `close` is asked for on Esc.
+export component TasksPanelBody inherits Rectangle {
+    callback close();
+    width: 380px;
+    height: col.preferred-height;
+    background: Theme.panel-raised;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 18px;
+    drop-shadow-color: Theme.s-000000a0;
+    FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Escape {
+                root.close();
+                return accept;
+            }
+            reject
+        }
+    }
+    col := VerticalLayout {
+        // Pause all.
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 10px;
+            padding-top: 10px;
+            padding-bottom: 8px;
+            spacing: 8px;
+            SectionTitle { title: "Background"; horizontal-stretch: 1; }
+            SwitchPill {
+                text: TasksUi.all-paused ? "Resume all" : "Pause all";
+                on: TasksUi.all-paused;
+                font-size: 11px;
+                clicked => { TasksUi.pause-all(!TasksUi.all-paused); }
+            }
+        }
+        if TasksUi.tasks.length == 0: Text {
+            text: "All done";
+            color: Theme.text-dim;
+            font-size: 12px;
+            x: 14px;
+            height: 34px;
+            vertical-alignment: center;
+        }
+        for task in TasksUi.tasks: VerticalLayout {
+            Rectangle { height: 1px; background: Theme.n-2a2a2e; }
+            VerticalLayout {
+                padding-left: 14px;
+                padding-right: 10px;
+                padding-top: 8px;
+                padding-bottom: 10px;
+                spacing: 4px;
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: task.name;
+                        color: Theme.text;
+                        font-size: 12.5px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: task.paused ? "Paused" : task.count;
+                        color: task.paused ? Theme.task-paused : Theme.text-dim;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        horizontal-stretch: 1;
+                    }
+                    TaskButton {
+                        glyph: task.paused ? 1 : 0;
+                        clicked => { TasksUi.pause(task.kind, !task.paused); }
+                    }
+                    if task.can-stop: TaskButton {
+                        glyph: 2;
+                        clicked => { TasksUi.stop(task.kind); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    TaskBar {
+                        y: (parent.height - self.height) / 2;
+                        progress: task.progress;
+                        paused: task.paused;
+                        horizontal-stretch: 1;
+                    }
+                    Text {
+                        text: task.paused && task.count != "" ? task.count : task.left;
+                        color: Theme.text-dim;
+                        font-size: 11px;
+                        horizontal-alignment: right;
+                        min-width: 64px;
+                    }
+                }
+                if task.now != "": Text {
+                    text: task.now;
+                    color: Theme.text-dim;
+                    font-size: 11.5px;
+                    overflow: elide;
+                }
+                for w in task.next: Rectangle {
+                    height: 22px;
+                    border-radius: 4px;
+                    background: Theme.pill;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        spacing: 8px;
+                        Text {
+                            text: w.title;
+                            color: Theme.text-dim;
+                            font-size: 11.5px;
+                            overflow: elide;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: "Do next";
+                            color: next-ta.has-hover ? Theme.text : Theme.lilac-text;
+                            font-size: 11px;
+                            vertical-alignment: center;
+                            next-ta := TouchArea {
+                                mouse-cursor: pointer;
+                                clicked => { TasksUi.do-next(task.kind, w.id); }
+                            }
+                        }
+                    }
+                }
+                if task.more > 0: Text {
+                    text: "and " + task.more + " more";
+                    color: Theme.n-6e6e73;
+                    font-size: 11px;
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.n-2a2a2e; }
+        // While a deck plays: one switch pill stepping the three choices.
+        HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 10px;
+            padding-top: 8px;
+            padding-bottom: 10px;
+            spacing: 8px;
+            Text {
+                text: "While a deck plays";
+                color: Theme.text-dim;
+                font-size: 11.5px;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+                wp-tip := TouchArea {
+                    changed has-hover => {
+                        if self.has-hover {
+                            HoverTip.title = "While a deck plays";
+                            HoverTip.body = "Slow down: one core, resting between tracks. Pause: waits until the decks stop. Keep going: full speed.";
+                            HoverTip.right-aligned = false;
+                            HoverTip.x = self.absolute-position.x;
+                            HoverTip.y = self.absolute-position.y - 64px;
+                            HoverTip.shown = true;
+                        } else {
+                            HoverTip.shown = false;
+                        }
+                    }
+                }
+            }
+            SwitchPill {
+                text: TasksUi.while-playing == 1 ? "Pause" : TasksUi.while-playing == 2 ? "Keep going" : "Slow down";
+                font-size: 11px;
+                clicked => { TasksUi.set-while-playing(mod(TasksUi.while-playing + 1, 3)); }
+            }
+        }
+    }
+}
+
+// The panel the footer ring opens, over the browser.
+export component TasksPanel inherits PopupWindow {
+    close-policy: close-on-click-outside;
+    width: 380px;
+    TasksPanelBody {
+        close => { root.close(); }
+    }
+}
+
+// The footer's ring: overall progress, amber when everything is paused, a
+// green check when done. A click opens the panel above it.
+export component TasksRing inherits Rectangle {
+    property <bool> lit: ta.has-hover;
+    property <string> label: TasksUi.tasks.length == 0 ? "Done"
+        : TasksUi.all-paused ? "Paused"
+        : TasksUi.tasks.length == 1 ? TasksUi.tasks[0].name + " " + TasksUi.tasks[0].count
+        : TasksUi.tasks.length + " tasks";
+    height: 26px;
+    width: row.preferred-width;
+    border-radius: 6px;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : transparent;
+    row := HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 9px;
+        spacing: 7px;
+        Rectangle {
+            width: 18px;
+            KnobArc {
+                width: 18px;
+                height: 18px;
+                r: 40;
+                from: 0deg;
+                to: 359.9deg;
+                stroke: Theme.n-48484c;
+                stroke-width: 2px;
+            }
+            if TasksUi.tasks.length > 0 && TasksUi.overall > 0.01: KnobArc {
+                width: 18px;
+                height: 18px;
+                r: 40;
+                from: 0deg;
+                to: max(0.02, min(1, TasksUi.overall)) * 359.9deg;
+                stroke: TasksUi.all-paused ? Theme.task-paused : Theme.accent;
+                stroke-width: 2px;
+            }
+            // Paused: two bars in the ring; done: a check.
+            if TasksUi.tasks.length > 0 && TasksUi.all-paused: Path {
+                width: 8px;
+                height: 8px;
+                viewbox-width: 10;
+                viewbox-height: 10;
+                commands: "M 2 1 L 4 1 L 4 9 L 2 9 Z M 6 1 L 8 1 L 8 9 L 6 9 Z";
+                fill: Theme.task-paused;
+            }
+            if TasksUi.tasks.length == 0: Path {
+                width: 10px;
+                height: 10px;
+                viewbox-width: 10;
+                viewbox-height: 10;
+                commands: "M 1.5 5.2 L 4 7.6 L 8.6 2.4";
+                stroke: Theme.task-done;
+                stroke-width: 1.8px;
+                stroke-line-cap: round;
+                fill: transparent;
+            }
+        }
+        Text {
+            text: root.label;
+            color: TasksUi.tasks.length == 0 ? Theme.task-done : root.lit ? Theme.text : Theme.text-dim;
+            font-size: 12px;
+            vertical-alignment: center;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { panel.show(); }
+    }
+    panel := TasksPanel {
+        x: (root.width - self.width) / 2;
+        y: -self.preferred-height - 8px;
+    }
+}

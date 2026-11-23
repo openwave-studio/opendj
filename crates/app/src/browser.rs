@@ -69,6 +69,7 @@ mod stream_play;
 mod streamed;
 mod tag_chips;
 mod tag_health;
+mod tasks;
 mod track_menu;
 mod up_next;
 mod usb;
@@ -742,6 +743,8 @@ pub struct Browser {
     info: info::InfoState,
     /// The side panel's Lyrics tab.
     lyrics: lyrics::LyricsState,
+    /// What the Background panel showed last (see `browser/tasks.rs`).
+    tasks_shown: tasks::Shown,
     /// The filter bar.
     filter: filters::FilterState,
     /// The track list's columns.
@@ -1474,6 +1477,7 @@ impl Browser {
             review: Default::default(),
             info: info::InfoState::new(registry),
             lyrics: lyrics::LyricsState::new(registry),
+            tasks_shown: Default::default(),
             filter: filters::FilterState::new(),
             columns: columns::ColumnState::new(&crate::settings::field_names()),
             folders: crate::settings::stage_folders(),
@@ -2248,6 +2252,7 @@ impl Browser {
         Self::install_lists(&app.global::<crate::ListsUi>(), &with);
         Self::install_fix_names(app, &with);
         Self::install_analysis(&edit, &with);
+        Self::install_tasks(app, &with);
         Self::install_albums(&edit, &with);
         Self::install_album_covers(&app.global::<crate::AlbumsUi>(), &with);
         Self::install_usb_export(app, &edit, &with);

@@ -63,7 +63,8 @@ Spleeter is quick but lets a little of each stem bleed into the others. For a
 cleaner split, right-click a track in the browser, or a stems pad, and choose
 **Prepare HQ Stems**. openDJ separates it with HTDemucs in the
 background (on the graphics card; the first time it downloads the 84 MB model),
-one track at a time. When it's done the deck crossfades to the new stems in a
+one track at a time; the footer's [Background panel](music.md#background-work)
+shows how far along it is and lets you pause or stop it. When it's done the deck crossfades to the new stems in a
 fiftieth of a second, so nothing clicks even with a stem muted, and the track
 loads with them from then on.
 

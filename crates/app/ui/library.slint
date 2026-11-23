@@ -545,9 +545,6 @@ export global LibraryEdit {
     // Prepares high-quality stems for the rows `first` to `last`, one
     // track after another in the background.
     callback prepare-hq-stems(first: int, last: int);
-    // "Analyzing 3 of 12" while tracks are queued, for the footer; empty otherwise.
-    in property <string> analysis-status;
-    callback cancel-analysis();
     // The sidebar switched between the library and the history.
     callback show-history(history: bool);
     // A search can be saved as a smart list (the collection is the saved library).

@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 use std::sync::Arc;
 
+use opendj_engine::background::{self, Task};
 use opendj_engine::lyrics::{self, Line, Timing};
 use opendj_engine::word_timing::{self, Stage};
 use opendj_engine::Source;
@@ -64,6 +65,8 @@ impl Browser {
         std::thread::spawn(move || {
             let report: word_timing::Report = Arc::new(move |s| {
                 let _ = progress.send(Message::Stage(s));
+                // Paused from the Background panel: Whisper waits here.
+                background::wait_while_held(Task::Lyrics, || true);
             });
             let done = match lines {
                 Some(lines) => word_timing::time_words(&file, &lines, report)
@@ -83,6 +86,25 @@ impl Browser {
         if let Some(app) = self.app.upgrade() {
             self.show_timing(&app.global::<LyricsUi>());
         }
+    }
+
+    /// The words being timed, for the Background panel: the track's id,
+    /// what is happening, and how far (0 to 1).
+    pub(in crate::browser) fn lyrics_task(&self) -> Option<(usize, &'static str, f32)> {
+        let job = self.lyrics.timing.as_ref()?;
+        Some(match job.stage {
+            Stage::Downloading => (job.id, "Getting Whisper", 0.0),
+            Stage::Separating => (job.id, "Vocals", 0.0),
+            Stage::Listening(p) => (
+                job.id,
+                if job.transcribing {
+                    "Transcribing"
+                } else {
+                    "Timing words"
+                },
+                p.clamp(0, 100) as f32 / 100.0,
+            ),
+        })
     }
 
     /// Whether the tab offers Time words: lyrics for a file, not yet timed

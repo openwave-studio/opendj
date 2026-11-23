@@ -150,6 +150,10 @@ export global Theme {
     out property <color> deck4: root.light ? #b88a00 : #ffd60a;
     // The microphone while it is on: amber, apart from the red of REC.
     out property <color> mic: root.light ? #c05600 : #ff9f0a;
+    // Background tasks (the footer ring and its panel): amber while paused,
+    // green once done.
+    out property <color> task-paused: root.mic;
+    out property <color> task-done: root.stage-ready;
     out property <color> play: root.light ? #16151b : #f2f2f7;
     out property <color> cue: root.light ? #c05600 : #ff9f0a;
     out property <color> sync: root.light ? #5d5b69 : #8e8e93;

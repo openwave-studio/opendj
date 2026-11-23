@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::UNIX_EPOCH;
 
+use opendj_engine::background::{self, Task};
 use opendj_engine::{cover, tags};
 use opendj_library::health::FileLook;
 
@@ -21,6 +22,9 @@ pub struct CoverScan {
     done: Receiver<(usize, FileLook)>,
     /// Ids sent and not yet back.
     queued: HashSet<usize>,
+    /// Files sent, and those back, since the queue was last empty.
+    total: usize,
+    finished: usize,
 }
 
 /// A file's modification time as a Unix time, 0 if it can't be read.
@@ -55,6 +59,7 @@ impl CoverScan {
             .name("cover-scan".into())
             .spawn(move || {
                 for (id, path, album) in rx {
+                    background::wait_while_held(Task::Covers, || true);
                     let look = FileLook {
                         mtime: mtime(&path),
                         cover: cover::has_cover(&path, &album),
@@ -71,23 +76,37 @@ impl CoverScan {
             requests,
             done,
             queued: HashSet::new(),
+            total: 0,
+            finished: 0,
         }
     }
 
     /// Queues a file to look at, unless it is queued already.
     pub fn add(&mut self, id: usize, path: &Path, album: &str) {
         if self.queued.insert(id) {
+            self.total += 1;
             let _ = self
                 .requests
                 .send((id, path.to_path_buf(), album.to_string()));
         }
     }
 
+    /// Files done and how many in all, while some are waiting.
+    pub fn progress(&self) -> Option<(usize, usize)> {
+        (!self.queued.is_empty()).then_some((self.finished, self.total))
+    }
+
     /// Files looked at since the last call.
     pub fn take(&mut self) -> Vec<(usize, FileLook)> {
         let done: Vec<_> = self.done.try_iter().collect();
         for (id, ..) in &done {
-            self.queued.remove(id);
+            if self.queued.remove(id) {
+                self.finished += 1;
+            }
+        }
+        if self.queued.is_empty() {
+            self.total = 0;
+            self.finished = 0;
         }
         done
     }
