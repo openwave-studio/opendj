@@ -36,6 +36,54 @@ impl<B: Backend> HtDemucs<B> {
             .map_err(|e| e.to_string())?;
         Ok(stems.into_iter().map(|s| [s.left, s.right]).collect())
     }
+
+    /// As [`Self::separate`], telling `progress` each time one of the
+    /// model's chunks is done (chunks done, of how many) and giving up with
+    /// [`STOPPED`] once `keep_going` says no. `progress` may wait, which
+    /// pauses the separation between chunks.
+    pub fn separate_watched(
+        &self,
+        channels: [&[f32]; 2],
+        rate: u32,
+        progress: &mut dyn FnMut(usize, usize),
+        keep_going: &dyn Fn() -> bool,
+    ) -> Result<Vec<[Vec<f32>; 2]>, String> {
+        let mut watch = Watch {
+            progress,
+            keep_going,
+        };
+        let stems = pollster::block_on(self.model.separate_with_listener(
+            channels[0],
+            channels[1],
+            rate,
+            &mut watch,
+        ))
+        .map_err(|e| match e {
+            demucs_core::DemucsError::Cancelled => STOPPED.to_string(),
+            e => e.to_string(),
+        })?;
+        Ok(stems.into_iter().map(|s| [s.left, s.right]).collect())
+    }
+}
+
+/// The error a separation stopped by the DJ ends with.
+pub const STOPPED: &str = "stopped";
+
+struct Watch<'a> {
+    progress: &'a mut dyn FnMut(usize, usize),
+    keep_going: &'a dyn Fn() -> bool,
+}
+
+impl demucs_core::listener::ForwardListener for Watch<'_> {
+    fn on_event(&mut self, event: demucs_core::listener::ForwardEvent) {
+        if let demucs_core::listener::ForwardEvent::ChunkDone { index, total } = event {
+            (self.progress)(index + 1, total);
+        }
+    }
+
+    fn is_cancelled(&self) -> bool {
+        !(self.keep_going)()
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 //! Analysing tracks on request: the track menu's Analyze Track and the
 //! tree's Analyze All, how the queue is going (a dot on each queued row,
-//! "Analyzing 3 of 12" in the footer), and keeping the phrases analysis
+//! with the Background panel for the rest), and keeping the phrases analysis
 //! finds in the library.
 
 use std::collections::HashMap;
@@ -8,17 +8,16 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use opendj_engine::{phrases, GridMode, Source, Track, NUM_DECKS};
-use slint::{ComponentHandle, Model};
+use slint::Model;
 
 use super::{is_browsed, Browser, Contents};
 use crate::LibraryEdit;
 
 /// Where the queue's progress was last shown: rows with a dot and their
-/// state (1 waiting, 2 being analysed), and the footer's text.
+/// state (1 waiting, 2 being analysed).
 #[derive(Default)]
 pub(super) struct Shown {
     pub(super) marks: HashMap<usize, i32>,
-    footer: String,
     /// The queue as it was then (see [`crate::analysis_queue::AnalysisQueue::signature`]).
     signature: (usize, usize, usize),
     /// Tracks analysed and not yet saved and shown.
@@ -80,6 +79,24 @@ impl Browser {
             })
         });
         let w = with.clone();
+        edit.on_prepare_hq_stems_all(move |row| {
+            w(&|b| {
+                let Some(&node) = b.visible_nodes.get(row as usize) else {
+                    return;
+                };
+                // One queue, in list order; the background tasks panel shows
+                // it and can pause, stop or reorder it. Tracks with stems
+                // already are skipped, and mixed sets too (hours long, as
+                // for Analyze All).
+                for t in b.node_tracks(node) {
+                    let track = &b.library[t];
+                    if matches!(track.source, Source::File(_)) && !b.is_mixed_set(track) {
+                        b.engine.prepare_hq_stems(track);
+                    }
+                }
+            })
+        });
+        let w = with.clone();
         edit.on_set_grid_mode(move |first, last, mode| {
             w(&|b| {
                 let Some(mode) = GridMode::from_id(mode as u8) else {
@@ -101,13 +118,6 @@ impl Browser {
                         b.engine.prepare_hq_stems(t);
                     }
                 }
-            })
-        });
-        let w = with.clone();
-        edit.on_cancel_analysis(move || {
-            w(&|b| {
-                b.analysis.cancel();
-                b.show_analysis();
             })
         });
     }
@@ -241,8 +251,8 @@ impl Browser {
         self.library[i] = Arc::new(e);
     }
 
-    /// Puts the queue's progress on the rows and in the footer, when it
-    /// has changed.
+    /// Puts the queue's progress on the rows, when it has changed (the
+    /// Background panel shows the rest; see `browser/tasks.rs`).
     pub(super) fn show_analysis(&mut self) {
         let signature = self.analysis.signature();
         if signature == self.analysis_shown.signature {
@@ -250,17 +260,6 @@ impl Browser {
         }
         self.analysis_shown.signature = signature;
         self.mark_analysis_rows();
-        let footer = match self.analysis.progress() {
-            Some((n, total)) => format!("Analyzing {n} of {total}"),
-            None => String::new(),
-        };
-        if footer != self.analysis_shown.footer {
-            if let Some(app) = self.app.upgrade() {
-                app.global::<LibraryEdit>()
-                    .set_analysis_status(footer.as_str().into());
-            }
-            self.analysis_shown.footer = footer;
-        }
     }
 
     /// Sets each row's dot from the queue, touching only rows that change.

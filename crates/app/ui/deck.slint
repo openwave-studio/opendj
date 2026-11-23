@@ -76,6 +76,8 @@ export struct DeckInfo {
     stem-hq: bool,
     // High-quality stems are being prepared.
     stem-preparing: bool,
+    // How far preparing them is, 0 to 1; below 0 while waiting in line.
+    stem-progress: float,
     // Whether high-quality stems can be prepared (a file without them,
     // nothing preparing).
     can-prepare-hq: bool,
@@ -2334,7 +2336,7 @@ component StemPad inherits Rectangle {
     if show-quality && count > 0: Text {
         x: parent.width - self.width - 4px;
         y: 2px;
-        text: info.stem-hq ? "HQ" : info.stem-preparing ? "HQ…" : "INSTANT";
+        text: info.stem-hq ? "HQ" : info.stem-preparing ? (info.stem-progress >= 0 ? "HQ " + Math.round(info.stem-progress * 100) + "%" : "HQ…") : "INSTANT";
         font-size: 8px;
         font-weight: 700;
         letter-spacing: 0.5px;
@@ -2402,7 +2404,7 @@ component StemPad inherits Rectangle {
             }
             PanelMenuItem {
                 text: info.stem-hq ? "High Quality Stems ✓"
-                    : info.stem-preparing ? "Preparing HQ Stems…"
+                    : info.stem-preparing ? (info.stem-progress >= 0 ? "Preparing HQ Stems… " + Math.round(info.stem-progress * 100) + "%" : "Waiting to Prepare HQ Stems…")
                     : "Prepare HQ Stems";
                 current: info.stem-hq;
                 picked => {

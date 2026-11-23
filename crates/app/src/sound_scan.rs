@@ -8,6 +8,8 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::time::Duration;
 
+use opendj_engine::background::{self, Task};
+
 use crate::cover_scan::mtime;
 use crate::lookup;
 
@@ -20,6 +22,9 @@ pub struct SoundScan {
     done: Receiver<Sound>,
     /// Ids sent and not yet back.
     queued: HashSet<usize>,
+    /// Files sent, and those back, since the queue was last empty.
+    total: usize,
+    finished: usize,
 }
 
 impl SoundScan {
@@ -30,6 +35,7 @@ impl SoundScan {
             .name("sound-scan".into())
             .spawn(move || {
                 for (id, path) in rx {
+                    background::wait_while_held(Task::SoundCheck, || true);
                     let print = lookup::raw_fingerprint(&path)
                         .map(|(p, _)| p)
                         .unwrap_or_default();
@@ -45,12 +51,15 @@ impl SoundScan {
             requests,
             done,
             queued: HashSet::new(),
+            total: 0,
+            finished: 0,
         }
     }
 
     /// Queues a file to fingerprint, unless it is queued already.
     pub fn add(&mut self, id: usize, path: &Path) {
         if self.queued.insert(id) {
+            self.total += 1;
             let _ = self.requests.send((id, path.to_path_buf()));
         }
     }
@@ -60,11 +69,22 @@ impl SoundScan {
         !self.queued.is_empty()
     }
 
+    /// Files done and how many in all, while some are waiting.
+    pub fn progress(&self) -> Option<(usize, usize)> {
+        (!self.queued.is_empty()).then_some((self.finished, self.total))
+    }
+
     /// Fingerprints made since the last call.
     pub fn take(&mut self) -> Vec<Sound> {
         let done: Vec<_> = self.done.try_iter().collect();
         for (id, ..) in &done {
-            self.queued.remove(id);
+            if self.queued.remove(id) {
+                self.finished += 1;
+            }
+        }
+        if self.queued.is_empty() {
+            self.total = 0;
+            self.finished = 0;
         }
         done
     }

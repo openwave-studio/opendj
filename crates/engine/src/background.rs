@@ -1,12 +1,126 @@
 //! Work done behind the DJ's back, such as analysing a batch of tracks, runs
 //! at low priority and on few cores, so the audio and the UI always come
-//! first. While a deck plays it goes gentler still: see [`playing`].
+//! first. While a deck plays it goes gentler still: see [`playing`] and
+//! [`WhilePlaying`]. Each kind of [`Task`] can be paused by the DJ; work
+//! waits at its pause points with [`wait_while_held`].
 
 use std::cell::Cell;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Once;
+use std::time::Duration;
 
 static PLAYING: AtomicBool = AtomicBool::new(false);
+/// One bit per [`Task`], set while the DJ has it paused.
+static PAUSED: AtomicU8 = AtomicU8::new(0);
+static WHILE_PLAYING: AtomicU8 = AtomicU8::new(WhilePlaying::SlowDown as u8);
+
+/// The kinds of background work the Background panel shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Task {
+    /// Tempo, grid, key and phrases.
+    Analyze = 0,
+    /// High-quality stem separation.
+    Stems = 1,
+    /// Whisper word timing and transcribing.
+    Lyrics = 2,
+    /// Collection Health's audio fingerprints.
+    SoundCheck = 3,
+    /// Collection Health's cover and bitrate scan.
+    Covers = 4,
+}
+
+impl Task {
+    pub const ALL: [Task; 5] = [
+        Task::Analyze,
+        Task::Stems,
+        Task::Lyrics,
+        Task::SoundCheck,
+        Task::Covers,
+    ];
+
+    pub fn from_index(i: usize) -> Option<Task> {
+        Self::ALL.get(i).copied()
+    }
+
+    fn bit(self) -> u8 {
+        1 << self as u8
+    }
+}
+
+/// What background work does while a deck plays.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WhilePlaying {
+    /// One core, resting between tracks (the default).
+    SlowDown = 0,
+    /// Waits until the decks stop.
+    Pause = 1,
+    /// Carries on as when nothing plays.
+    KeepGoing = 2,
+}
+
+impl WhilePlaying {
+    pub fn from_index(i: u8) -> WhilePlaying {
+        match i {
+            1 => WhilePlaying::Pause,
+            2 => WhilePlaying::KeepGoing,
+            _ => WhilePlaying::SlowDown,
+        }
+    }
+}
+
+/// Pauses or resumes one kind of task.
+pub fn set_paused(task: Task, on: bool) {
+    if on {
+        PAUSED.fetch_or(task.bit(), Ordering::Relaxed);
+    } else {
+        PAUSED.fetch_and(!task.bit(), Ordering::Relaxed);
+    }
+}
+
+/// Whether the DJ has paused this kind of task.
+pub fn paused(task: Task) -> bool {
+    PAUSED.load(Ordering::Relaxed) & task.bit() != 0
+}
+
+/// The paused tasks as bits, for keeping in settings.
+pub fn paused_bits() -> u8 {
+    PAUSED.load(Ordering::Relaxed)
+}
+
+pub fn set_paused_bits(bits: u8) {
+    PAUSED.store(bits, Ordering::Relaxed);
+}
+
+pub fn set_while_playing(w: WhilePlaying) {
+    WHILE_PLAYING.store(w as u8, Ordering::Relaxed);
+}
+
+pub fn while_playing() -> WhilePlaying {
+    WhilePlaying::from_index(WHILE_PLAYING.load(Ordering::Relaxed))
+}
+
+/// Whether background work should go gently now: a deck plays and the DJ
+/// hasn't chosen Keep going.
+pub fn slow_down() -> bool {
+    playing() && while_playing() != WhilePlaying::KeepGoing
+}
+
+/// Whether a task should wait at its next pause point: paused by the DJ,
+/// or a deck plays with While a deck plays set to Pause.
+pub fn held(task: Task) -> bool {
+    paused(task) || (playing() && while_playing() == WhilePlaying::Pause)
+}
+
+/// Waits at a pause point while `task` is [`held`], or until `keep_going`
+/// says to give up (a stop). Returns whether it waited.
+pub fn wait_while_held(task: Task, keep_going: impl Fn() -> bool) -> bool {
+    let mut waited = false;
+    while held(task) && keep_going() {
+        waited = true;
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    waited
+}
 
 thread_local! {
     /// Whether this thread runs at low priority (see [`lower_priority`]).
@@ -89,9 +203,9 @@ pub fn playing() -> bool {
 }
 
 /// How many threads background work may share a step out to, from `most`:
-/// one while a deck plays.
+/// one while a deck plays (unless the DJ chose Keep going).
 pub fn threads(most: usize) -> usize {
-    if is_low() && playing() {
+    if is_low() && slow_down() {
         1
     } else {
         most.max(1)
@@ -112,6 +226,20 @@ mod tests {
         .join()
         .unwrap();
         assert!(!is_low());
+    }
+
+    #[test]
+    fn tasks_pause_on_their_own() {
+        set_paused(Task::Stems, true);
+        assert!(paused(Task::Stems));
+        assert!(!paused(Task::Analyze));
+        assert!(held(Task::Stems));
+        // A stop ends the wait at once.
+        assert!(!wait_while_held(Task::Stems, || false));
+        set_paused(Task::Stems, false);
+        assert!(!held(Task::Stems));
+        assert_eq!(WhilePlaying::from_index(2), WhilePlaying::KeepGoing);
+        assert_eq!(WhilePlaying::from_index(9), WhilePlaying::SlowDown);
     }
 
     #[test]

@@ -526,6 +526,8 @@ export global LibraryEdit {
     callback set-grid-mode(first: int, last: int, mode: int);
     // Analyses every track of the tree's row `row`.
     callback analyze-all(row: int);
+    // Prepares high-quality stems for every track under sidebar row `row`.
+    callback prepare-hq-stems-all(row: int);
     // Opens Export to USB for the tree's row `row` (a list or folder).
     callback export-usb(row: int);
     // Sends the tree's row `row` (a list or history session) to Spotify as
@@ -545,9 +547,6 @@ export global LibraryEdit {
     // Prepares high-quality stems for the rows `first` to `last`, one
     // track after another in the background.
     callback prepare-hq-stems(first: int, last: int);
-    // "Analyzing 3 of 12" while tracks are queued, for the footer; empty otherwise.
-    in property <string> analysis-status;
-    callback cancel-analysis();
     // The sidebar switched between the library and the history.
     callback show-history(history: bool);
     // A search can be saved as a smart list (the collection is the saved library).
@@ -3479,6 +3478,13 @@ component FolderTree inherits Rectangle {
                 text: "Analyze All";
                 clicked => {
                     LibraryEdit.analyze-all(menu-index);
+                    folder-menu.close();
+                }
+            }
+            if menu-analysable: MenuLine {
+                text: "Prepare HQ Stems for All";
+                clicked => {
+                    LibraryEdit.prepare-hq-stems-all(menu-index);
                     folder-menu.close();
                 }
             }

@@ -12,6 +12,7 @@
 //!   it sends the value to that receive name.
 //! - MIDI in: `[notein]`, `[ctlin]`, `[bendin]`. A patch with `[notein]` is
 //!   an instrument.
+//! - cyclone and ELSE objects, built in (`[lores~]`, `[else/knob]`).
 //! - The mix's transport: `[r opendj-bpm]`, `[r opendj-beat]` (beats since
 //!   the grid's start) and `[r opendj-playing]` (1 or 0).
 

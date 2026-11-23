@@ -12,16 +12,18 @@
 //!
 //! Both threads run at low priority, so the UI and the audio come first,
 //! and while a deck plays the analysis takes one core and rests between
-//! tracks (see [`opendj_engine::background`]).
+//! tracks (see [`opendj_engine::background`]). The DJ can pause it between
+//! tracks and move a waiting track to the front, from the Background panel.
 
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Arc;
+use std::sync::mpsc::{channel, Receiver};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
+use opendj_engine::background::{self, Task};
 use opendj_engine::loader::analyse_file;
-use opendj_engine::{background, cover, vocals, Source, Track};
+use opendj_engine::{cover, vocals, Source, Track};
 
 use crate::{coverart, lrclib};
 
@@ -40,8 +42,33 @@ struct Request {
     generation: u64,
 }
 
+/// The tracks waiting, shared with the analysis thread.
+#[derive(Default)]
+struct Waiting {
+    requests: Mutex<VecDeque<Request>>,
+    added: Condvar,
+}
+
+impl Waiting {
+    fn push(&self, r: Request) {
+        self.requests.lock().unwrap().push_back(r);
+        self.added.notify_one();
+    }
+
+    /// The next request, waiting for one.
+    fn next(&self) -> Request {
+        let mut q = self.requests.lock().unwrap();
+        loop {
+            if let Some(r) = q.pop_front() {
+                return r;
+            }
+            q = self.added.wait(q).unwrap();
+        }
+    }
+}
+
 pub struct AnalysisQueue {
-    requests: Sender<Request>,
+    waiting: Arc<Waiting>,
     done: Receiver<Track>,
     /// Covers found online: the track's id and the image file's bytes.
     covers: Receiver<(usize, Vec<u8>)>,
@@ -52,6 +79,9 @@ pub struct AnalysisQueue {
     /// The id of the track being analysed now, or [`IDLE`].
     running: Arc<AtomicUsize>,
     generation: Arc<AtomicU64>,
+    /// How long the last tracks took on average, in milliseconds (0 until
+    /// one is done), for the time left.
+    took: Arc<AtomicU64>,
     /// Tracks queued, and those back, since the queue was last empty: the
     /// footer's "Analyzing 3 of 12".
     total: usize,
@@ -60,11 +90,13 @@ pub struct AnalysisQueue {
 
 impl AnalysisQueue {
     pub fn start() -> Self {
-        let (requests, rx) = channel::<Request>();
+        let waiting = Arc::new(Waiting::default());
+        let rx = waiting.clone();
         let (tx, done) = channel();
         let running = Arc::new(AtomicUsize::new(IDLE));
         let generation = Arc::new(AtomicU64::new(0));
-        let (now, current) = (running.clone(), generation.clone());
+        let took = Arc::new(AtomicU64::new(0));
+        let (now, current, average) = (running.clone(), generation.clone(), took.clone());
         let (lookups, wanted) = channel::<(usize, coverart::Wanted)>();
         let (found, covers) = channel();
         std::thread::Builder::new()
@@ -117,7 +149,12 @@ impl AnalysisQueue {
             .name("background-analysis".into())
             .spawn(move || {
                 background::lower_priority();
-                for r in rx {
+                loop {
+                    let r = rx.next();
+                    // Paused: the track waits its turn here.
+                    background::wait_while_held(Task::Analyze, || {
+                        r.generation == current.load(Ordering::Relaxed)
+                    });
                     if r.generation != current.load(Ordering::Relaxed) {
                         continue;
                     }
@@ -136,7 +173,18 @@ impl AnalysisQueue {
                             }
                         }
                     }
-                    rest(started.elapsed(), &current, r.generation);
+                    let worked = started.elapsed();
+                    let ms = worked.as_millis() as u64;
+                    let before = average.load(Ordering::Relaxed);
+                    average.store(
+                        if before == 0 {
+                            ms
+                        } else {
+                            (before * 3 + ms) / 4
+                        },
+                        Ordering::Relaxed,
+                    );
+                    rest(worked, &current, r.generation);
                     now.store(IDLE, Ordering::Relaxed);
                     let t = match result {
                         Ok(t) => {
@@ -165,13 +213,14 @@ impl AnalysisQueue {
             })
             .expect("spawn background analysis thread");
         Self {
-            requests,
+            waiting,
             done,
             covers,
             lyrics,
             queued: HashSet::new(),
             running,
             generation,
+            took,
             total: 0,
             finished: 0,
         }
@@ -213,7 +262,7 @@ impl AnalysisQueue {
         if !self.queued.insert(t.id) {
             return false;
         }
-        let _ = self.requests.send(Request {
+        self.waiting.push(Request {
             track: t.clone(),
             fresh,
             cover,
@@ -226,6 +275,7 @@ impl AnalysisQueue {
     /// Drops the tracks still waiting; the one being analysed finishes.
     pub fn cancel(&mut self) {
         self.generation.fetch_add(1, Ordering::Relaxed);
+        self.waiting.requests.lock().unwrap().clear();
         self.queued.clear();
         self.total = 0;
         self.finished = 0;
@@ -276,6 +326,48 @@ impl AnalysisQueue {
         )
     }
 
+    /// How many tracks are queued, the one being analysed included.
+    pub fn len(&self) -> usize {
+        self.queued.len()
+    }
+
+    /// The track being analysed now, if one is.
+    pub fn current(&self) -> Option<usize> {
+        let id = self.running.load(Ordering::Relaxed);
+        (id != IDLE && self.queued.contains(&id)).then_some(id)
+    }
+
+    /// The first `n` tracks waiting, in the order they will be analysed.
+    pub fn next_up(&self, n: usize) -> Vec<Arc<Track>> {
+        let generation = self.generation.load(Ordering::Relaxed);
+        self.waiting
+            .requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|r| r.generation == generation)
+            .take(n)
+            .map(|r| r.track.clone())
+            .collect()
+    }
+
+    /// Moves a waiting track to the front of the queue.
+    pub fn do_next(&self, id: usize) {
+        let mut q = self.waiting.requests.lock().unwrap();
+        if let Some(at) = q.iter().position(|r| r.track.id == id) {
+            if let Some(r) = q.remove(at) {
+                q.push_front(r);
+            }
+        }
+    }
+
+    /// About how long the tracks left will take, once one has been timed.
+    pub fn time_left(&self) -> Option<Duration> {
+        let ms = self.took.load(Ordering::Relaxed);
+        (ms > 0 && !self.queued.is_empty())
+            .then(|| Duration::from_millis(ms * self.queued.len() as u64))
+    }
+
     /// The track being analysed, counting from 1, and how many there are
     /// in all; None when the queue is empty.
     pub fn progress(&self) -> Option<(usize, usize)> {
@@ -292,7 +384,7 @@ const MOST_REST: Duration = Duration::from_secs(10);
 /// queue is cancelled.
 fn rest(worked: Duration, generation: &AtomicU64, sent: u64) {
     let until = Instant::now() + worked.min(MOST_REST);
-    while background::playing()
+    while background::slow_down()
         && generation.load(Ordering::Relaxed) == sent
         && Instant::now() < until
     {

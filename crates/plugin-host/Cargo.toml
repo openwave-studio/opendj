@@ -18,6 +18,8 @@ winit = { version = "0.30", optional = true, default-features = false, features 
 # Pure Data patches (experimental, feature `pd`): libpd, Pd's engine as a
 # library (BSD-3-Clause), built from source with CMake.
 libpd-sys = { version = "0.3.4", optional = true }
+# The cyclone and ELSE object libraries, built in (third_party/pd-libs).
+opendj-pd-libs = { path = "../../third_party/pd-libs", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"
@@ -35,7 +37,7 @@ default = ["formats"]
 formats = ["dep:clack-host", "dep:clack-extensions", "dep:vst3", "dep:libloading", "dep:winit"]
 # Pure Data patches as effects and instruments, in the helper. Off by default
 # while experimental: `cargo build -p opendj-plugin-host --features pd`.
-pd = ["formats", "dep:libpd-sys"]
+pd = ["formats", "dep:libpd-sys", "dep:opendj-pd-libs"]
 
 [[bin]]
 name = "opendj-plugin-host"

@@ -1751,6 +1751,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 browser.borrow_mut().poll_art();
                 browser.borrow_mut().poll_waves();
                 browser.borrow_mut().poll_analysis();
+                browser.borrow_mut().poll_tasks();
                 browser.borrow_mut().poll_usb_export();
                 browser.borrow_mut().poll_playlist_files();
                 browser.borrow_mut().poll_inbox_albums();
@@ -2613,17 +2614,31 @@ impl Decks {
                 Source::File(path) => {
                     matches!(
                         stems::separation(path),
-                        Some(stems::Separation::Running | stems::Separation::Done)
+                        Some(
+                            stems::Separation::Waiting
+                                | stems::Separation::Running
+                                | stems::Separation::Done
+                        )
                     ) && !stems.is_some_and(|s| s.playing_quality() == stems::Quality::High)
                 }
                 _ => false,
+            },
+            stem_progress: match &t.source {
+                Source::File(path) => stems::separating()
+                    .filter(|(p, _)| p == path)
+                    .map_or(-1.0, |(_, done)| done),
+                _ => -1.0,
             },
             can_prepare_hq: match &t.source {
                 Source::File(path) => {
                     !stems.is_some_and(|s| s.playing_quality() == stems::Quality::High)
                         && !matches!(
                             stems::separation(path),
-                            Some(stems::Separation::Running | stems::Separation::Done)
+                            Some(
+                                stems::Separation::Waiting
+                                    | stems::Separation::Running
+                                    | stems::Separation::Done
+                            )
                         )
                 }
                 _ => false,

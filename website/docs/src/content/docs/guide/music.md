@@ -376,7 +376,8 @@ from scratch in the background, one at a time: tempo, beat grid, key,
 loudness, mini waveform and phrases. A grid you edited and a key you typed
 in or got from the tags stay as they are. While it runs, each waiting
 track has a gray dot by its title (lilac and pulsing while it is being
-analysed), and the footer shows how far along it is, with a ✕ to stop.
+analysed), and the footer's ring shows how far along it is (see
+[Background work](#background-work)).
 
 A track with no cover also gets one: openDJ takes the first cover it finds
 online, if it is at least 600 pixels, and saves it in the file's tags. When
@@ -926,3 +927,24 @@ and open it again. How things were before is saved first, as a
 "Before restore" backup in the backup folder, and you stay signed in to
 your services. **Cancel** drops a restore that hasn't happened yet.
 Music and sample files are not part of a backup.
+
+## Background work
+
+While openDJ works in the background (analysing tracks, preparing high
+quality stems, timing lyrics, or Collection Health listening to and looking
+at your files) a small ring shows in the footer, filling as the work goes.
+Click it for the **Background** panel: each kind of work with how many of
+how many, a bar, the time left and the track it is on. **Pause** stops it at
+the next track (high quality stems and lyrics within seconds), **✕** stops
+it, and **Do next** moves a waiting track to the front, for the request you
+need ready now. **Pause all** pauses everything, and stays paused after a
+restart until you resume it. The ring turns amber while everything is
+paused and shows a green check once it is all done.
+
+**While a deck plays** at the panel's foot says what background work does
+during a set: **Slow down** (one core, resting between tracks), **Pause**
+(it waits until the decks stop) or **Keep going**.
+
+The track list's **Stems** column (right-click the header to show it) says
+where each track's high quality stems are: **Waiting**, the percent done,
+**Paused**, **Ready** or **Failed**.

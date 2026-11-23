@@ -315,6 +315,19 @@ pub fn separate_fast(
 /// Linux), or the CPU once the GPU has failed. Without the model, or when
 /// both fail, the Demucs command does it if it is installed.
 pub fn separate_hq(path: &Path) -> Result<StemSource, String> {
+    separate_hq_watched(path, &mut |_, _| {}, &|| true)
+}
+
+/// As [`separate_hq`], telling `progress` as each of the model's chunks is
+/// done (it may wait, pausing between chunks), and giving up with
+/// [`opendj_separation::htdemucs::STOPPED`] once `keep_going` says no,
+/// without trying the CPU or the Demucs command after.
+pub fn separate_hq_watched(
+    path: &Path,
+    progress: &mut dyn FnMut(usize, usize),
+    keep_going: &dyn Fn() -> bool,
+) -> Result<StemSource, String> {
+    use opendj_separation::htdemucs::STOPPED;
     use std::sync::atomic::{AtomicBool, Ordering};
     // A GPU failure can leave burn's locks poisoned for the rest of the
     // run, so after one the CPU does the separating.
@@ -328,17 +341,25 @@ pub fn separate_hq(path: &Path) -> Result<StemSource, String> {
         if let Some(dir) = crate::cache::cache_dir() {
             opendj_separation::set_gpu_cache_dir(dir.join("gpu"));
         }
-        result = caught(|| htdemucs::<opendj_separation::Gpu>(path, &weights));
+        result = caught(|| {
+            htdemucs::<opendj_separation::Gpu>(path, &weights, &mut *progress, keep_going)
+        });
+        if !keep_going() {
+            return Err(STOPPED.into());
+        }
         if let Err(e) = &result {
             eprintln!("HTDemucs on the GPU: {e}; using the CPU");
             GPU_FAILED.store(true, Ordering::Relaxed);
         }
     }
     if result.is_err() {
-        result = caught(|| htdemucs::<opendj_separation::Cpu>(path, &weights));
+        result = caught(|| {
+            htdemucs::<opendj_separation::Cpu>(path, &weights, &mut *progress, keep_going)
+        });
     }
     match result {
         Ok(s) => Ok(s),
+        Err(_) if !keep_going() => Err(STOPPED.into()),
         Err(e) => {
             eprintln!("HTDemucs: {e}; trying the Demucs command");
             crate::stems::run_demucs(path).map_err(|_| e)
@@ -374,6 +395,8 @@ fn caught<T>(f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
 fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     path: &Path,
     weights: &Path,
+    progress: &mut dyn FnMut(usize, usize),
+    keep_going: &dyn Fn() -> bool,
 ) -> Result<StemSource, String> {
     use opendj_separation::htdemucs::HtDemucs;
     let audio = crate::decode::decode(path)?;
@@ -386,7 +409,7 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     // itself. Told 44.1 kHz for a 48 kHz track, it would hear it 9% slow and
     // its stems, stretched back, would drift off the original they are taken
     // out of, so muting one would add it back late instead of removing it.
-    let stems = model.separate([&l, &r], rate)?;
+    let stems = model.separate_watched([&l, &r], rate, progress, keep_going)?;
     let dir = crate::cache::stems_dir(path).ok_or("no cache folder")?;
     let work = dir.with_extension(format!("work{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&work);
