@@ -18,7 +18,7 @@
 
 ## 3. Libraries
 
-- [ ] 3.1 Build cyclone and ELSE into the helper
+- [x] 3.1 Build cyclone and ELSE into the helper (their abstractions and a few objects needing ffmpeg, aubio, networking or Pd 0.56 left out)
 - [ ] 3.2 Understand plugdata's `[param]` objects
 
 ## 4. Displays

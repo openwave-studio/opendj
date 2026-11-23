@@ -8183,6 +8183,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "opendj-pd-libs"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "libpd-sys",
+]
+
+[[package]]
 name = "opendj-plugin-host"
 version = "1.0.0-dev"
 dependencies = [
@@ -8195,6 +8203,7 @@ dependencies = [
  "memmap2",
  "objc2 0.6.5",
  "objc2-foundation 0.3.2",
+ "opendj-pd-libs",
  "serde_json",
  "vst3",
  "winit",

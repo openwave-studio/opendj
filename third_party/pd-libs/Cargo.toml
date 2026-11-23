@@ -1,0 +1,17 @@
+[package]
+name = "opendj-pd-libs"
+description = "The cyclone and ELSE Pure Data libraries, built for openDJ's plugin helper"
+version = "0.1.0"
+edition = "2021"
+publish = false
+build = "build.rs"
+# Built as one program with openDJ's GPL-3.0 copies: cyclone is BSD-3-Clause,
+# ELSE is WTFPL with some objects under BSD, MIT and GPL (see OPENDJ.md).
+license = "GPL-3.0-only"
+
+[dependencies]
+# For libpd's own symbols, which these objects call.
+libpd-sys = "0.3.4"
+
+[build-dependencies]
+cc = "1"

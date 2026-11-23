@@ -116,6 +116,29 @@ fn the_echo_repeats_on_the_beat() {
     );
 }
 
+#[test]
+fn cyclone_and_else_objects_are_built_in() {
+    // Left: [cyclone/clip~ -1 1.25]. Right: [lores~] (cyclone, plain name)
+    // into [else/trunc~] into [*~ 0.5]. A missing object breaks its chain
+    // and leaves silence.
+    let (mut conn, helper) = start("libs-check.pd");
+    assert_eq!(helper.info().params[0].name, "level");
+    let frames = 256;
+    let l = vec![1.75; frames];
+    let r = vec![1.75; frames];
+    let (mut ol, mut or) = (vec![0.0; frames], vec![0.0; frames]);
+    // lores~ settles over a few blocks.
+    for _ in 0..40 {
+        conn.process([&l, &r], [&mut ol, &mut or], transport(), DEADLINE);
+    }
+    assert!((ol[255] - 1.25).abs() < 1e-6, "clip~: {}", ol[255]);
+    assert!(
+        (or[255] - 0.5).abs() < 1e-6,
+        "lores~ and trunc~: {}",
+        or[255]
+    );
+}
+
 /// Not a pass/fail test: what a Pd patch costs through the helper.
 /// `cargo test --release -p opendj-plugin-host --features pd --test pd -- --ignored --nocapture`
 #[test]

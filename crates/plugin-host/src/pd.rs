@@ -38,6 +38,8 @@ fn init() {
             // Hooks belong to the instance, so they come after it exists.
             pd::libpd_set_concatenated_printhook(Some(print_line));
             pd::libpd_set_printhook(Some(pd::libpd_print_concatenator));
+            // cyclone and ELSE, built in.
+            opendj_pd_libs::setup();
         }
     });
 }
