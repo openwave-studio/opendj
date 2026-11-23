@@ -78,7 +78,7 @@ export global MacroLanes {
     // Set by the app.
     in property <[bool]> moved: [false, false, false, false, false, false, false, false];
     // Each knob's line colour, as the waveform draws it (LEVEL_COLORS).
-    out property <[color]> colors: [#FF6B6B, #FFB347, #FFE066, #7BE495, #4FD1C5, #63B3ED, #B69CFF, #F78FB3];
+    out property <[color]> colors: [Theme.f-ff6b6b, Theme.f-ffb347, Theme.f-ffe066, Theme.f-7be495, Theme.f-4fd1c5, Theme.f-63b3ed, Theme.f-b69cff, Theme.f-f78fb3];
     callback toggle(deck: int);
 }
 
@@ -486,7 +486,7 @@ component Waveform inherits Rectangle {
             }
             HorizontalLayout {
                 spacing: 6px;
-                if !locked && info.grid-source != "Detected": EditGridButton { group: group; key: "beats_reset"; text: "Reset"; ink: #ff6b6b; }
+                if !locked && info.grid-source != "Detected": EditGridButton { group: group; key: "beats_reset"; text: "Reset"; ink: Theme.f-ff6b6b; }
                 if !locked: EditGridButton {
                     text: "Lock";
                     clicked => { Controls.set-value(Controls.resolve(group, "bpmlock"), 1); }
@@ -684,7 +684,7 @@ component MapBarButton inherits Rectangle {
     tl := HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
-        Text { text: root.text; color: primary ? #1a1426 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
+        Text { text: root.text; color: primary ? Theme.f-1a1426 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -700,7 +700,7 @@ component MapBar inherits Rectangle {
     height: 40px;
     width: bl.preferred-width;
     border-radius: 10px;
-    background: #2a2236;
+    background: Theme.f-2a2236;
     border-width: 1px;
     border-color: Theme.lilac;
     drop-shadow-blur: 16px;
@@ -783,8 +783,8 @@ component OnAirButton inherits Rectangle {
     // 0 off, 1 connecting, 2 every station on air, 3 failed, 4 some.
     property <int> status: Controls.value(Controls.resolve("[Shoutcast]", "status"), Controls.tick);
     property <float> seconds: Controls.value(Controls.resolve("[Broadcast]", "on_air_seconds"), Controls.tick);
-    property <color> light: status == 2 ? #e5484d : status == 3 ? Theme.n-7a7a80 : #f5a524;
-    background: ta.pressed ? Theme.control-pressed : on ? #e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
+    property <color> light: status == 2 ? Theme.f-e5484d : status == 3 ? Theme.n-7a7a80 : Theme.f-f5a524;
+    background: ta.pressed ? Theme.control-pressed : on ? Theme.f-e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;
     border-color: on ? light : transparent;
@@ -1005,7 +1005,7 @@ component LayoutSwitch inherits Rectangle {
         height: 16px;
         border-radius: 8px;
         // The knob stays white in Light too, as macOS draws it.
-        background: #ffffff;
+        background: Theme.f-ffffff;
     }
     TouchArea { mouse-cursor: pointer; clicked => { toggled(); } }
 }
@@ -2572,7 +2572,7 @@ export component AppWindow inherits Window {
                         border-radius: 13px;
                         action-text := Text {
                             text: update-action;
-                            color: #000000;
+                            color: Theme.f-000000;
                             font-size: 12px;
                             font-weight: 600;
                         }

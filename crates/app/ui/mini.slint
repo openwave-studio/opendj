@@ -20,14 +20,14 @@ component MiniButton inherits Rectangle {
     width: 34px;
     height: 34px;
     border-radius: self.width / 2;
-    background: enabled && ta.has-hover ? #ffffff26 : rest;
+    background: enabled && ta.has-hover ? Theme.f-ffffff26 : rest;
     Path {
         width: glyph;
         height: glyph;
         viewbox-width: 18;
         viewbox-height: 18;
-        fill: filled ? (enabled ? #ffffffe6 : #ffffff55) : transparent;
-        stroke: filled ? transparent : (enabled ? #ffffffe6 : #ffffff55);
+        fill: filled ? (enabled ? Theme.f-ffffffe6 : Theme.f-ffffff55) : transparent;
+        stroke: filled ? transparent : (enabled ? Theme.f-ffffffe6 : Theme.f-ffffff55);
         stroke-width: filled ? 0px : 1.8px;
         commands: icon;
     }
@@ -48,13 +48,13 @@ component MiniPlay inherits Rectangle {
     width: size;
     height: size;
     border-radius: size / 2;
-    background: ta.pressed ? #d0d0d4 : #ffffff;
+    background: ta.pressed ? Theme.f-d0d0d4 : Theme.f-ffffff;
     if playing: Path {
         width: size * 0.4;
         height: size * 0.4;
         viewbox-width: 16;
         viewbox-height: 16;
-        fill: #111113;
+        fill: Theme.f-111113;
         commands: "M 3 2 L 6 2 L 6 14 L 3 14 Z M 10 2 L 13 2 L 13 14 L 10 14 Z";
     }
     if !playing: Path {
@@ -63,7 +63,7 @@ component MiniPlay inherits Rectangle {
         height: size * 0.4;
         viewbox-width: 16;
         viewbox-height: 16;
-        fill: #111113;
+        fill: Theme.f-111113;
         commands: "M 2 1 L 15 8 L 2 15 Z";
     }
     ta := TouchArea {
@@ -78,7 +78,7 @@ export component MiniPlayer inherits Window {
     in property <image> art-image;
     in property <bool> has-cover;
     in property <string> initials;
-    in property <color> tint: #1d7bff;
+    in property <color> tint: Theme.f-1d7bff;
     in property <bool> loaded;
     in property <bool> playing;
     // How far through the track, 0 to 1, and Automix's next mix (both 0
@@ -102,7 +102,7 @@ export component MiniPlayer inherits Window {
     title: "openDJ";
     no-frame: true;
     always-on-top: true;
-    background: #161819;
+    background: Theme.f-161819;
     min-width: 200px;
     min-height: 200px;
     preferred-width: 300px;
@@ -115,10 +115,10 @@ export component MiniPlayer inherits Window {
     // The art fills the window.
     Rectangle {
         clip: true;
-        background: loaded ? @linear-gradient(135deg, tint 0%, tint.darker(0.6) 55%, #101012 100%) : #232428;
+        background: loaded ? @linear-gradient(135deg, tint 0%, tint.darker(0.6) 55%, Theme.f-101012 100%) : Theme.f-232428;
         if !has-cover: Text {
             text: loaded ? initials : "♪";
-            color: #ffffffd0;
+            color: Theme.f-ffffffd0;
             font-size: side / 3;
             font-weight: 700;
         }
@@ -138,7 +138,7 @@ export component MiniPlayer inherits Window {
         Rectangle {
             opacity: hover.has-hover ? 1 : 0;
             animate opacity { duration: 120ms; }
-            background: #0000008c;
+            background: Theme.f-0000008c;
 
             // ✕: back to the main window.
             MiniButton {
@@ -149,7 +149,7 @@ export component MiniPlayer inherits Window {
                 icon: close-icon;
                 filled: false;
                 glyph: 15px;
-                rest: #ffffff1a;
+                rest: Theme.f-ffffff1a;
                 clicked => { expand(); }
             }
 
@@ -159,8 +159,8 @@ export component MiniPlayer inherits Window {
                 padding-left: 18px;
                 padding-right: 18px;
                 spacing: 2px;
-                Text { text: root.track-title; color: #ffffff; font-size: clamp(side / 16, 15px, 26px); font-weight: 700; overflow: elide; }
-                Text { text: root.artist; color: #e2e0ea; font-size: clamp(side / 22, 12px, 19px); overflow: elide; }
+                Text { text: root.track-title; color: Theme.f-ffffff; font-size: clamp(side / 16, 15px, 26px); font-weight: 700; overflow: elide; }
+                Text { text: root.artist; color: Theme.f-e2e0ea; font-size: clamp(side / 22, 12px, 19px); overflow: elide; }
                 if next-in != "": Text { text: next-in; color: Theme.accent; font-size: 11px; font-weight: 600; }
                 // The progress line: white, lilac under the pointer; a
                 // click jumps there.
@@ -170,10 +170,10 @@ export component MiniPlayer inherits Window {
                         y: (parent.height - self.height) / 2;
                         height: line-ta.has-hover ? 5px : 4px;
                         border-radius: self.height / 2;
-                        background: #ffffff40;
+                        background: Theme.f-ffffff40;
                         clip: true;
-                        if mix-to > mix-from: Rectangle { x: parent.width * mix-from; width: parent.width * (mix-to - mix-from); background: #8a78c8; }
-                        Rectangle { x: 0; width: parent.width * clamp(progress, 0, 1); background: line-ta.has-hover ? Theme.accent : #ffffff; }
+                        if mix-to > mix-from: Rectangle { x: parent.width * mix-from; width: parent.width * (mix-to - mix-from); background: Theme.f-8a78c8; }
+                        Rectangle { x: 0; width: parent.width * clamp(progress, 0, 1); background: line-ta.has-hover ? Theme.accent : Theme.f-ffffff; }
                     }
                     line-ta := TouchArea {
                         enabled: loaded;
@@ -201,7 +201,7 @@ export component MiniPlayer inherits Window {
                     height: 10px;
                     viewbox-width: 10;
                     viewbox-height: 10;
-                    stroke: #ffffff80;
+                    stroke: Theme.f-ffffff80;
                     stroke-width: 1.2px;
                     commands: "M 9 3 L 3 9 M 9 6 L 6 9";
                 }

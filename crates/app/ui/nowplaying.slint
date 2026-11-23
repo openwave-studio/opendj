@@ -19,7 +19,7 @@ export global NowPlayingUi {
     in property <image> cover;
     in property <bool> has-cover;
     in property <string> initials;
-    in property <color> tint: #5b3fd1;
+    in property <color> tint: Theme.f-5b3fd1;
     // The lyrics follow the track playing while it shows.
     public function show() {
         open = true;
@@ -79,7 +79,7 @@ export component NowPlayingView inherits Rectangle {
                 clip: true;
                 drop-shadow-blur: 30px;
                 drop-shadow-color: Theme.s-000000a0;
-                background: NowPlayingUi.loaded ? @linear-gradient(135deg, NowPlayingUi.tint 0%, NowPlayingUi.tint.darker(0.6) 55%, #101012 100%) : Theme.control;
+                background: NowPlayingUi.loaded ? @linear-gradient(135deg, NowPlayingUi.tint 0%, NowPlayingUi.tint.darker(0.6) 55%, Theme.f-101012 100%) : Theme.control;
                 if NowPlayingUi.has-cover: Image {
                     width: parent.width;
                     height: parent.height;

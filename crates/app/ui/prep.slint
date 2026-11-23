@@ -192,8 +192,8 @@ component PrepPad inherits Rectangle {
         padding: 7px;
         HorizontalLayout {
             spacing: 6px;
-            Text { text: number; color: set ? #ffffff : Theme.text-dim; font-size: 13px; font-weight: 700; }
-            if set: Text { text: name; color: #ffffff; font-size: 12px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
+            Text { text: number; color: set ? Theme.f-ffffff : Theme.text-dim; font-size: 13px; font-weight: 700; }
+            if set: Text { text: name; color: Theme.f-ffffff; font-size: 12px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
         }
         Rectangle { vertical-stretch: 1; }
         Text { text: set ? time : "Click to set"; color: set ? Theme.n-ffffffd0 : Theme.text-dim; font-family: "Inter Tabular"; font-size: 11px; overflow: elide; }

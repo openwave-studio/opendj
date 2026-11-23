@@ -545,11 +545,11 @@ export component Cover inherits Rectangle {
     height: size;
     border-radius: radius;
     clip: true;
-    background: info.loaded || live > 0 ? @linear-gradient(135deg, tint 0%, tint.darker(0.6) 55%, #101012 100%) : Theme.control;
+    background: info.loaded || live > 0 ? @linear-gradient(135deg, tint 0%, tint.darker(0.6) 55%, Theme.f-101012 100%) : Theme.control;
     border-width: info.loaded || live > 0 ? 0px : 1px;
     border-color: Theme.border;
-    if !info.has-cover && live == 0: Text { text: info.loaded ? info.initials : "♪"; color: info.loaded ? #ffffffe0 : Theme.text-dim; font-size: size / 3; font-weight: 700; }
-    if live > 0 && !live-art: LiveIcon { kind: InstrumentsUi.live-icon(live); tint: #ffffffe0; size: size * 0.5; }
+    if !info.has-cover && live == 0: Text { text: info.loaded ? info.initials : "♪"; color: info.loaded ? Theme.f-ffffffe0 : Theme.text-dim; font-size: size / 3; font-weight: 700; }
+    if live > 0 && !live-art: LiveIcon { kind: InstrumentsUi.live-icon(live); tint: Theme.f-ffffffe0; size: size * 0.5; }
     if live-art: Image {
         width: parent.width;
         height: parent.height;
@@ -1005,7 +1005,7 @@ component PresetNamer inherits PopupWindow {
                 width: 60px;
                 border-radius: 4px;
                 background: ota.pressed ? Theme.control-pressed : Theme.accent;
-                Text { text: "Save"; color: #000000; font-size: 12px; font-weight: 600; }
+                Text { text: "Save"; color: Theme.f-000000; font-size: 12px; font-weight: 600; }
                 ota := TouchArea { mouse-cursor: pointer; clicked => { done(); } }
             }
         }
@@ -1455,7 +1455,7 @@ export component Header inherits Rectangle {
                 background: number-lit ? tint : nta.pressed ? Theme.control-pressed : Theme.control;
                 border-width: 1px;
                 border-color: tint;
-                Text { text: deck + 1; color: number-lit ? #000000 : Theme.text; font-size: 15px; font-weight: 700; }
+                Text { text: deck + 1; color: number-lit ? Theme.f-000000 : Theme.text; font-size: 15px; font-weight: 700; }
                 nta := TouchArea { mouse-cursor: pointer; clicked => { number-clicked(); } }
             }
         }
@@ -1485,7 +1485,7 @@ export component Header inherits Rectangle {
                                 width: note-text.preferred-width + 14px;
                                 border-radius: self.height / 2;
                                 background: Theme.lilac;
-                                note-text := Text { text: played-note; color: #1a1424; font-size: compact ? 10px : 11px; font-weight: 700; }
+                                note-text := Text { text: played-note; color: Theme.f-1a1424; font-size: compact ? 10px : 11px; font-weight: 700; }
                             }
                         }
                         if played-note != "": Rectangle { horizontal-stretch: 1; }
@@ -2005,7 +2005,7 @@ export component FxSlot inherits HorizontalLayout {
         border-radius: Theme.radius;
         border-width: 1px;
         border-color: on ? tint : Theme.border;
-        Text { x: 10px; width: parent.width - 34px; text: name == "" ? "No effect" : name; color: on ? #ffffff : name == "" ? Theme.text-dim : Theme.text; font-size: 12px; font-weight: on ? 700 : 500; overflow: elide; }
+        Text { x: 10px; width: parent.width - 34px; text: name == "" ? "No effect" : name; color: on ? Theme.f-ffffff : name == "" ? Theme.text-dim : Theme.text; font-size: 12px; font-weight: on ? 700 : 500; overflow: elide; }
         nta := TouchArea {
             x: 0px;
             width: parent.width - 24px;
@@ -2022,7 +2022,7 @@ export component FxSlot inherits HorizontalLayout {
             height: 10px;
             viewbox-width: 10;
             viewbox-height: 10;
-            stroke: on ? #ffffff : ata.has-hover ? Theme.text : Theme.text-dim;
+            stroke: on ? Theme.f-ffffff : ata.has-hover ? Theme.text : Theme.text-dim;
             stroke-width: 1.5px;
             fill: transparent;
             commands: "M 1.5 3.5 L 5 7 L 8.5 3.5";
@@ -2809,12 +2809,12 @@ export component Pads inherits HorizontalLayout {
     // VirtualDJ's STEMS pads: stems 1 to 5 are kick, bass, instruments,
     // vocals and hi-hats (see opendj_engine::stems::default_info).
     property <[StemPadSpec]> stem-pads: [
-        { stem: 4, text: "Vocal", tint: #09AD18 },
-        { stem: 3, text: "Instru", tint: #A26018 },
-        { stem: 2, text: "Bass", tint: #A21418 },
+        { stem: 4, text: "Vocal", tint: Theme.f-09ad18 },
+        { stem: 3, text: "Instru", tint: Theme.f-a26018 },
+        { stem: 2, text: "Bass", tint: Theme.f-a21418 },
         { stem: 0, text: "Acapella", tint: Theme.n-a9aaab },
-        { stem: 1, text: "Kick", tint: #2E4E75 },
-        { stem: 5, text: "HiHat", tint: #0960B1 },
+        { stem: 1, text: "Kick", tint: Theme.f-2e4e75 },
+        { stem: 5, text: "HiHat", tint: Theme.f-0960b1 },
         { stem: -2, text: "Stems FX", tint: Theme.n-5d5d5e },
         { stem: -1, text: "Instrumental", tint: Theme.n-a9aaab },
     ];
@@ -3619,7 +3619,7 @@ component JogColumn inherits VerticalLayout {
 
 // The Groove Box's nine track colors, a rainbow from the kick down.
 global GrooveColors {
-    out property <[color]> track: [#ef3e6e, #f5824a, #f2cf45, #33d17a, #1fd6c1, #5cb3f7, #8d7ff5, #d16be0];
+    out property <[color]> track: [Theme.f-ef3e6e, Theme.f-f5824a, Theme.f-f2cf45, Theme.f-33d17a, Theme.f-1fd6c1, Theme.f-5cb3f7, Theme.f-8d7ff5, Theme.f-d16be0];
 }
 
 // A drum sound's icon, picked by its name in the kit (Kick, Snare, Closed hat,
@@ -3703,7 +3703,7 @@ component GrooveToggle inherits Rectangle {
     property <bool> on: Controls.value(index, Controls.tick) > 0;
     border-radius: 3px;
     background: on ? tint : gtta.has-hover ? Theme.n-ffffff1c : Theme.s-00000040;
-    Text { text: root.text; color: on ? #000000 : Theme.text-dim; font-size: 9px; font-weight: 700; }
+    Text { text: root.text; color: on ? Theme.f-000000 : Theme.text-dim; font-size: 9px; font-weight: 700; }
     gtta := TouchArea { mouse-cursor: pointer; clicked => { Controls.toggle(index); } }
 }
 
@@ -3866,7 +3866,7 @@ component GrooveTrack inherits HorizontalLayout {
                 HorizontalLayout {
                     spacing: 3px;
                     height: 15px;
-                    GrooveToggle { group: groove-group; key: rk + "_mute"; text: "M"; tint: #ff9f0a; width: 15px; }
+                    GrooveToggle { group: groove-group; key: rk + "_mute"; text: "M"; tint: Theme.f-ff9f0a; width: 15px; }
                     GrooveToggle { group: groove-group; key: rk + "_solo"; text: "S"; tint: Theme.accent; width: 15px; }
                 }
             }
@@ -4209,7 +4209,7 @@ component GrooveStrip inherits VerticalLayout {
         alignment: center;
         spacing: 3px;
         height: 16px;
-        GrooveToggle { group: groove-group; key: rk + "_mute"; text: "M"; tint: #ff9f0a; width: 20px; }
+        GrooveToggle { group: groove-group; key: rk + "_mute"; text: "M"; tint: Theme.f-ff9f0a; width: 20px; }
         GrooveToggle { group: groove-group; key: rk + "_solo"; text: "S"; tint: Theme.accent; width: 20px; }
     }
 }
@@ -4925,7 +4925,7 @@ component NoteSeg inherits Rectangle {
             background: i == root.picked ? Theme.accent : sta.has-hover ? Theme.n-2a2a2d : transparent;
             Text {
                 text: o;
-                color: i == root.picked ? #1b1230 : Theme.text-dim;
+                color: i == root.picked ? Theme.f-1b1230 : Theme.text-dim;
                 font-size: 10px;
                 font-weight: 600;
             }
@@ -5034,7 +5034,7 @@ component ScaleMenu inherits PopupWindow {
                     height: 20px;
                     border-radius: 3px;
                     background: on ? Theme.accent : nta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
-                    Text { text: n; color: on ? #1b1230 : Theme.text-dim; font-size: 8px; font-weight: 600; }
+                    Text { text: n; color: on ? Theme.f-1b1230 : Theme.text-dim; font-size: 8px; font-weight: 600; }
                     nta := TouchArea {
                         mouse-cursor: pointer;
                         clicked => {
@@ -5555,7 +5555,7 @@ component StripMeter inherits Rectangle {
         y: top + (1 - at(peak-db)) * scale-height;
         width: stereo ? 2 * bar + 1px : bar;
         height: 1px;
-        background: peak-db > 0 ? #ff453a : Theme.text;
+        background: peak-db > 0 ? Theme.f-ff453a : Theme.text;
     }
     // The fader: an arrow pointing at the bars, at its level.
     property <length> arrow-x: bars-x + (stereo ? 2 * bar + 1px : bar) + 2px;
@@ -5679,7 +5679,7 @@ component InputPicker inherits PopupWindow {
                                 width: parent.width * clamp(level, 0, 1);
                                 height: parent.height;
                                 border-radius: 1px;
-                                background: level > 0.97 ? #ff453a : level > 0.8 ? #ffd60a : #30d158;
+                                background: level > 0.97 ? Theme.f-ff453a : level > 0.8 ? Theme.f-ffd60a : Theme.f-30d158;
                             }
                         }
                     }
@@ -5764,8 +5764,8 @@ global StripColors {
     // The 16 a channel can take from its menu: 8 by hue, then 8 softer
     // ones (lilac among them).
     pure public function palette(index: int) -> color {
-        [#ff6b5e, #ff9f0a, #ffd60a, #30d158, #64d2ff, #5e5ce6, #bf5af2, #ff375f,
-         #ff8fab, #c9a27e, #b4e05a, #63e6be, #7cc4ff, #b69cff, #ff7ae1, #98989d][Math.mod(index, 16)]
+        [Theme.f-ff6b5e, Theme.f-ff9f0a, Theme.f-ffd60a, Theme.f-30d158, Theme.f-64d2ff, Theme.f-5e5ce6, Theme.f-bf5af2, Theme.f-ff375f,
+         Theme.f-ff8fab, Theme.f-c9a27e, Theme.f-b4e05a, Theme.f-63e6be, Theme.f-7cc4ff, Theme.f-b69cff, Theme.f-ff7ae1, Theme.f-98989d][Math.mod(index, 16)]
     }
     // A strip's color: the one picked for it, else its own by number.
     pure public function of-strip(number: int, picked: int) -> color {
@@ -5808,12 +5808,12 @@ component StripSolo inherits Rectangle {
     property <int> solo-index: Controls.resolve(group, "solo");
     property <bool> solo: Controls.value(solo-index, Controls.tick) > 0;
     border-radius: 4px;
-    background: solo ? #ffd60a : Theme.control;
+    background: solo ? Theme.f-ffd60a : Theme.control;
     border-width: 1px;
-    border-color: solo ? #ffd60a : Theme.border;
+    border-color: solo ? Theme.f-ffd60a : Theme.border;
     Text {
         text: "S";
-        color: solo ? #1c1c1e : Theme.text;
+        color: solo ? Theme.f-1c1c1e : Theme.text;
         font-size: 10px;
         font-weight: 700;
         horizontal-alignment: center;
@@ -5856,7 +5856,7 @@ component MixerStrip inherits Rectangle {
     clip: true;
     property <bool> renaming;
     // The name and its buttons on the color bar: white on every color.
-    property <color> name-color: #ffffff;
+    property <color> name-color: Theme.f-ffffff;
     // Buttons at the end of the color bar: the panel's, and × off the Mixer.
     property <int> side-buttons: (info.view > 0 ? 1 : 0) + (info.aux ? 0 : 1);
     VerticalLayout {
@@ -5924,14 +5924,14 @@ component MixerStrip inherits Rectangle {
                 width: parent.width - 6px;
                 height: parent.height - 4px;
                 border-radius: 3px;
-                background: #ffffff;
+                background: Theme.f-ffffff;
                 border-width: 1px;
-                border-color: #101112;
+                border-color: Theme.f-101112;
                 name-input := TextInput {
                     x: 3px;
                     width: parent.width - 6px;
                     text: info.name;
-                    color: #101112;
+                    color: Theme.f-101112;
                     font-size: 11px;
                     font-weight: 700;
                     vertical-alignment: center;
@@ -6013,7 +6013,7 @@ component MixerStrip inherits Rectangle {
                 Rectangle {
                     height: 14px;
                     border-radius: 7px;
-                    background: peak-db > 0 ? #ff453a : Theme.control;
+                    background: peak-db > 0 ? Theme.f-ff453a : Theme.control;
                     border-width: peak-db > 0 ? 0px : 1px;
                     border-color: Theme.border;
                     Text {
@@ -6724,7 +6724,7 @@ component WheelStrip inherits Rectangle {
     property <float> start;
     width: 16px;
     border-radius: 4px;
-    background: @linear-gradient(90deg, #141416 0%, #26272b 50%, #141416 100%);
+    background: @linear-gradient(90deg, Theme.f-141416 0%, Theme.f-26272b 50%, Theme.f-141416 100%);
     border-width: 1px;
     border-color: Theme.n-2c2c2f;
     clip: true;
@@ -6776,7 +6776,7 @@ component Keybed inherits Rectangle {
     property <int> mask: Controls.value(Controls.resolve("[Instrument1]", "scale_mask"), Controls.tick);
     border-radius: 3px;
     clip: true;
-    background: #0c0c0e;
+    background: Theme.f-0c0c0e;
     for w in 28: Rectangle {
         property <int> note: 12 * floor(w / 7) + [0, 2, 4, 5, 7, 9, 11][Math.mod(w, 7)];
         property <bool> out: mask != 0 && Math.mod(floor(mask / Math.pow(2, Math.mod(note, 12))), 2) == 0;
@@ -6784,14 +6784,14 @@ component Keybed inherits Rectangle {
         width: root.key-width - 1px;
         height: root.height;
         border-radius: 2px;
-        background: InstrumentsUi.held[note] ? @linear-gradient(180deg, #cdb9ff 0%, #a78bfa 100%)
-            : out ? @linear-gradient(180deg, #b5b5ba 0%, #9d9da3 100%)
-            : @linear-gradient(180deg, #d4d4d8 0%, #f2f2f4 70%, #e2e2e6 100%);
+        background: InstrumentsUi.held[note] ? @linear-gradient(180deg, Theme.f-cdb9ff 0%, Theme.f-a78bfa 100%)
+            : out ? @linear-gradient(180deg, Theme.f-b5b5ba 0%, Theme.f-9d9da3 100%)
+            : @linear-gradient(180deg, Theme.f-d4d4d8 0%, Theme.f-f2f2f4 70%, Theme.f-e2e2e6 100%);
         if Math.mod(w, 7) == 0: Text {
             y: parent.height - 14px;
             width: parent.width;
             text: "C" + (floor(w / 7) + 2);
-            color: #8e8e94;
+            color: Theme.f-8e8e94;
             font-size: 8px;
             horizontal-alignment: center;
         }
@@ -6807,11 +6807,11 @@ component Keybed inherits Rectangle {
         width: root.key-width * 0.6;
         height: root.height * 0.6;
         border-radius: 2px;
-        background: InstrumentsUi.held[note] ? @linear-gradient(180deg, #b69cff 0%, #8c72d9 100%)
-            : out ? @linear-gradient(180deg, #4a4a4f 0%, #36363a 100%)
-            : @linear-gradient(180deg, #2c2c30 0%, #121214 85%, #2a2a2e 100%);
+        background: InstrumentsUi.held[note] ? @linear-gradient(180deg, Theme.f-b69cff 0%, Theme.f-8c72d9 100%)
+            : out ? @linear-gradient(180deg, Theme.f-4a4a4f 0%, Theme.f-36363a 100%)
+            : @linear-gradient(180deg, Theme.f-2c2c30 0%, Theme.f-121214 85%, Theme.f-2a2a2e 100%);
         drop-shadow-blur: 2px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.f-00000080;
     }
 }
 
@@ -6892,12 +6892,12 @@ component SeqPitchStep inherits Rectangle {
         return clamp(round(7 - (y - 4px) / max(1px, root.height - 8px) * 14), -7, 7);
     }
     border-radius: 3px;
-    background: Math.mod(index, 4) == 0 ? #ffffff10 : #ffffff08;
+    background: Math.mod(index, 4) == 0 ? Theme.f-ffffff10 : Theme.f-ffffff08;
     border-width: current ? 1px : 0px;
     border-color: hue;
     opacity: in-pattern && in-lane ? 1 : 0.35;
     // The root.
-    Rectangle { y: root.height / 2 - 0.5px; height: 1px; background: #ffffff12; }
+    Rectangle { y: root.height / 2 - 0.5px; height: 1px; background: Theme.f-ffffff12; }
     if on: Rectangle {
         x: 3px;
         width: parent.width - 6px;
@@ -6960,7 +6960,7 @@ component SeqLaneStep inherits Rectangle {
         return root.low + clamp(1 - (y - 2px) / max(1px, root.height - 4px), 0, 1) * (1 - root.low);
     }
     border-radius: 3px;
-    background: Math.mod(index, 4) == 0 ? #ffffff10 : #ffffff08;
+    background: Math.mod(index, 4) == 0 ? Theme.f-ffffff10 : Theme.f-ffffff08;
     border-width: current ? 1px : 0px;
     border-color: hue;
     opacity: in-pattern && in-lane ? 1 : 0.35;
@@ -6993,7 +6993,7 @@ component SeqLaneStep inherits Rectangle {
         height: parent.height - 6px;
         border-radius: 2px;
         background: root.hue.with-alpha(0.75);
-        Text { text: "↗"; color: #1b1230; font-size: 10px; font-weight: 700; }
+        Text { text: "↗"; color: Theme.f-1b1230; font-size: 10px; font-weight: 700; }
     }
     TouchArea {
         mouse-cursor: pointer;
@@ -7129,7 +7129,7 @@ component SeqPanel inherits HorizontalLayout {
                 border-color: root.hue;
                 Text {
                     text: root.playing ? "■" : "▶";
-                    color: root.playing && !root.waiting ? #1b1230 : root.waiting ? root.hue : Theme.text;
+                    color: root.playing && !root.waiting ? Theme.f-1b1230 : root.waiting ? root.hue : Theme.text;
                     font-size: 11px;
                 }
                 pta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.play-index, root.playing ? 0 : 1); } }
@@ -7141,8 +7141,8 @@ component SeqPanel inherits HorizontalLayout {
                 border-radius: 5px;
                 background: rta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
                 border-width: root.rec ? 1px : 0px;
-                border-color: #ff5e57;
-                Text { text: "●"; color: root.rec ? #ff5e57 : Theme.text-dim; font-size: 11px; }
+                border-color: Theme.f-ff5e57;
+                Text { text: "●"; color: root.rec ? Theme.f-ff5e57 : Theme.text-dim; font-size: 11px; }
                 rta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.rec-index, root.rec ? 0 : 1); } }
             }
             NoteSeg {
@@ -7354,7 +7354,7 @@ component InstrumentRack inherits Rectangle {
                             width: 86px;
                             height: min(62px, root.height);
                             border-radius: 5px;
-                            background: #08080a;
+                            background: Theme.f-08080a;
                             border-width: 1px;
                             border-color: Theme.n-1c1c1e;
                             clip: true;
@@ -7372,7 +7372,7 @@ component InstrumentRack inherits Rectangle {
                             Rectangle {
                                 y: parent.height * (1 - clamp(level, 0, 1));
                                 height: parent.height * clamp(level, 0, 1);
-                                background: @linear-gradient(0deg, #30d158 0%, #30d158 70%, #ffd60a 88%, #ff5e57 100%);
+                                background: @linear-gradient(0deg, Theme.f-30d158 0%, Theme.f-30d158 70%, Theme.f-ffd60a 88%, Theme.f-ff5e57 100%);
                             }
                         }
                     }
@@ -7745,7 +7745,7 @@ component SeqMini inherits HorizontalLayout {
         border-color: root.tint;
         Text {
             text: root.playing ? "■" : "▶";
-            color: root.playing && !root.waiting ? #1b1230 : root.waiting ? root.tint : Theme.text;
+            color: root.playing && !root.waiting ? Theme.f-1b1230 : root.waiting ? root.tint : Theme.text;
             font-size: 10px;
         }
         pta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.play-index, root.playing ? 0 : 1); } }

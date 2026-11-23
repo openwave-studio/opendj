@@ -107,7 +107,7 @@ export component ChecklistPanel inherits Rectangle {
                 background: on ? Theme.accent.with-alpha(stta.has-hover ? 1.0 : 0.85) : stta.has-hover ? Theme.n-2a2a2e : Theme.control;
                 border-width: 1px;
                 border-color: on ? transparent : Theme.border;
-                Text { text: n + 1; color: on ? #151329 : Theme.text-dim; font-size: 11px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                Text { text: n + 1; color: on ? Theme.f-151329 : Theme.text-dim; font-size: 11px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
                 stta := TouchArea {
                     mouse-cursor: pointer;
                     // The score given again takes it off.

@@ -29,7 +29,7 @@ component ArtworkLine inherits Rectangle {
     property <float> edge: root.active ? 0 : clamp(1 - min(viewport-y, viewport-height - viewport-y - self.height) / max(1px, viewport-height * 0.18), 0, 1);
     property <float> fade: (1 - edge) * (1 - edge);
     property <length> blur-radius: edge * 4px;
-    property <color> word-color: root.accent.mix(#ffffff80, clamp(root.part, 0, 1));
+    property <color> word-color: root.accent.mix(Theme.f-ffffff80, clamp(root.part, 0, 1));
     callback positioned(length);
     changed active => { if self.active { self.positioned(self.y); } }
     changed y => { if self.active { self.positioned(self.y); } }
@@ -45,7 +45,7 @@ component ArtworkLine inherits Rectangle {
             ? @markdown("**<font color='\{root.accent}'>\{root.sung}</font><font color='\{root.word-color}'>\{root.word}</font>\{root.rest}**")
             : @markdown("**\{root.text}**");
         default-font-size: root.font-size;
-        default-color: root.active ? #ffffff80 : #ffffff59;
+        default-color: root.active ? Theme.f-ffffff80 : Theme.f-ffffff59;
         opacity: root.fade * (1 - root.edge);
     }
     if root.edge > 0 && root.edge < 1: Rectangle {
@@ -60,7 +60,7 @@ component ArtworkLine inherits Rectangle {
             vertical-alignment: top;
             text: @markdown("**\{root.text}**");
             default-font-size: root.font-size;
-            default-color: #ffffff59;
+            default-color: Theme.f-ffffff59;
             opacity: root.fade * root.edge * (mod(sample, 3) == 1 ? 2 : 1) * (floor(sample / 3) == 1 ? 2 : 1) / 16;
         }
     }
@@ -78,7 +78,7 @@ export component KaraokeColumn inherits Rectangle {
     in property <float> part;
     in property <string> rest;
     in property <int> count-in;
-    in property <color> accent: #b69cff;
+    in property <color> accent: Theme.f-b69cff;
     private property <length> scroll-y;
     clip: true;
     lyric-column := VerticalLayout {
@@ -127,7 +127,7 @@ export global PlayerKaraoke {
     in property <float> part;
     in property <string> rest;
     in property <int> count-in;
-    in property <color> accent: #b69cff;
+    in property <color> accent: Theme.f-b69cff;
 }
 
 // A round button on the karaoke screen, with its key in a tip under it.
@@ -140,14 +140,14 @@ component ScreenButton inherits Rectangle {
     width: 44px;
     height: 44px;
     border-radius: 22px;
-    background: touch.has-hover ? #ffffff33 : root.on ? #ffffff24 : #ffffff10;
+    background: touch.has-hover ? Theme.f-ffffff33 : root.on ? Theme.f-ffffff24 : Theme.f-ffffff10;
     Path {
         width: 20px;
         height: 20px;
         viewbox-width: 24;
         viewbox-height: 24;
         commands: root.icon;
-        stroke: root.on || touch.has-hover ? #ffffff : #ffffffb0;
+        stroke: root.on || touch.has-hover ? Theme.f-ffffff : Theme.f-ffffffb0;
         stroke-width: 2px;
         fill: transparent;
     }
@@ -157,7 +157,7 @@ component ScreenButton inherits Rectangle {
         width: 4px;
         height: 4px;
         border-radius: 2px;
-        background: #ffffff;
+        background: Theme.f-ffffff;
     }
     if touch.has-hover: Rectangle {
         y: parent.height + 8px;
@@ -165,8 +165,8 @@ component ScreenButton inherits Rectangle {
         x: parent.width - self.width;
         height: 26px;
         border-radius: 5px;
-        background: #000000d9;
-        tip-text := Text { text: root.tip; color: #ffffffe0; font-size: 13px; }
+        background: Theme.f-000000d9;
+        tip-text := Text { text: root.tip; color: Theme.f-ffffffe0; font-size: 13px; }
     }
     touch := TouchArea { clicked => { root.clicked(); } }
 }
@@ -178,7 +178,7 @@ export component KaraokeWindow inherits Window {
     preferred-height: 720px;
     min-width: 480px;
     min-height: 270px;
-    background: #08080a;
+    background: Theme.f-08080a;
     default-font-family: Theme.font-family;
 
     // 0 nothing playing, 1 no lyrics, 2 lyrics not timed, 3 lyrics.
@@ -219,22 +219,22 @@ export component KaraokeWindow inherits Window {
     callback toggle-cover();
     // The mouse moved over the screen: show the buttons for a while.
     callback poked();
-    in property <color> highlight: #b69cff;
+    in property <color> highlight: Theme.f-b69cff;
     in property <image> cover;
     in property <bool> has-cover;
     property <color> lilac: highlight;
     // Audience screens stay dark even when the main app uses Light appearance.
-    property <color> text-color: #f2f2f7;
-    property <color> dim-color: #8e8e93;
+    property <color> text-color: Theme.f-f2f2f7;
+    property <color> dim-color: Theme.f-8e8e93;
 
     in property <[string]> artwork-lines;
     in property <int> active-line: -1;
     // One flat color from the cover, dark enough for white text.
-    in property <color> base-color: #08080a;
+    in property <color> base-color: Theme.f-08080a;
     if view == 1 && has-cover && state > 0: Rectangle { background: root.base-color; }
 
     Rectangle {
-        background: @radial-gradient(circle, lilac.with-alpha(0.10) 0%, #08080a00 70%);
+        background: @radial-gradient(circle, lilac.with-alpha(0.10) 0%, Theme.f-08080a00 70%);
     }
 
     keys := FocusScope {
@@ -334,7 +334,7 @@ export component KaraokeWindow inherits Window {
                 width: parent.line-width;
                 height: parent.height;
                 text: root.current-line;
-                color: root.highlight == #ffffff ? #ffffff66 : root.text-color;
+                color: root.highlight == Theme.f-ffffff ? Theme.f-ffffff66 : root.text-color;
                 font-size: root.big;
             }
             prefix := Part { text: root.sung; font-size: root.big; visible: false; }
@@ -381,7 +381,7 @@ export component KaraokeWindow inherits Window {
             height: parent.art-size;
             border-radius: 10px;
             clip: true;
-            background: #ffffff08;
+            background: Theme.f-ffffff08;
             if root.has-cover: Image {
                 x: 0; y: 0;
                 source: root.cover;
@@ -398,7 +398,7 @@ export component KaraokeWindow inherits Window {
             spacing: root.height * 0.009;
             Text {
                 text: root.song;
-                color: #ffffff;
+                color: Theme.f-ffffff;
                 font-size: max(20px, root.height * 0.036);
                 font-weight: 700;
                 horizontal-alignment: center;
@@ -408,7 +408,7 @@ export component KaraokeWindow inherits Window {
             }
             Text {
                 text: root.artist;
-                color: #ffffffaa;
+                color: Theme.f-ffffffaa;
                 font-size: max(18px, root.height * 0.028);
                 horizontal-alignment: center;
                 wrap: word-wrap;

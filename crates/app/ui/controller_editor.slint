@@ -238,7 +238,7 @@ component EditBox inherits Rectangle {
     background: Theme.well;
     border-radius: Theme.radius;
     border-width: 1px;
-    border-color: wrong ? #ff9f0a : ti.has-focus ? Theme.lilac : Theme.border;
+    border-color: wrong ? Theme.f-ff9f0a : ti.has-focus ? Theme.lilac : Theme.border;
     if root.text == "": Text { x: 8px; text: root.placeholder; color: Theme.n-5f5f65; font-size: 12px; vertical-alignment: center; height: parent.height; }
     ti := TextInput {
         x: 8px;
@@ -573,7 +573,7 @@ component DialogButton inherits Rectangle {
     bl := HorizontalLayout {
         padding-left: 14px;
         padding-right: 14px;
-        Text { text: root.text; color: primary ? #000000 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+        Text { text: root.text; color: primary ? Theme.f-000000 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;

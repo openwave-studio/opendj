@@ -68,7 +68,7 @@ component CueNumber inherits Rectangle {
     border-color: cue.color;
     Text {
         text: cue.pad >= 0 ? cue.pad + 1 : "M";
-        color: cue.pad >= 0 ? #ffffff : cue.color;
+        color: cue.pad >= 0 ? Theme.f-ffffff : cue.color;
         font-size: 12px;
         font-weight: 700;
         horizontal-alignment: center;
@@ -210,7 +210,7 @@ export component CuesPanel inherits Rectangle {
                                 border-radius: 8px;
                                 background: cue.color;
                                 border-width: dot-ta.has-hover ? 2px : 0px;
-                                border-color: #ffffff;
+                                border-color: Theme.f-ffffff;
                                 dot-ta := TouchArea { mouse-cursor: pointer; clicked => { CueList.recolor(i); } }
                             }
                         }
@@ -257,8 +257,8 @@ export component CuesPanel inherits Rectangle {
                     border-radius: Theme.radius;
                     background: Theme.hotcues[p].with-alpha(pta.has-hover ? 1.0 : 0.7);
                     border-width: CueList.rows[menu-row].pad == p ? 2px : 0px;
-                    border-color: #ffffff;
-                    Text { text: p + 1; color: #ffffff; font-size: 12px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                    border-color: Theme.f-ffffff;
+                    Text { text: p + 1; color: Theme.f-ffffff; font-size: 12px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
                     pta := TouchArea {
                         mouse-cursor: pointer;
                         clicked => {
