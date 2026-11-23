@@ -32,7 +32,9 @@ fn main() {
             .flag_if_supported("-w")
             .flag_if_supported("-Wno-everything");
         if msvc {
-            b.define("PD_LONGINTTYPE", "long long")
+            // The pthreads4w that libpd-sys links (see pthreads-win/).
+            b.include(root.join("pthreads-win"))
+                .define("PD_LONGINTTYPE", "long long")
                 .define("HAVE_STRUCT_TIMESPEC", None)
                 .define("_CRT_SECURE_NO_WARNINGS", None);
         } else {
@@ -57,6 +59,10 @@ fn main() {
             .define("PDLUA_VERSION", "0.12.23")
             .define(lua_os, None)
             .include(root.join("lua"));
+        if target_os == "windows" {
+            // pdlua.c tests WIN32, which MSVC doesn't define (only _WIN32).
+            b.define("WIN32", None);
+        }
         b
     };
     pdlua()
@@ -83,6 +89,13 @@ fn main() {
             let mut b = base();
             for inc in includes {
                 b.include(root.join(inc));
+            }
+            if msvc {
+                // MSVC's C has no complex numbers (ELSE's bl.* oscillators)
+                // or variable-length arrays: clang-cl, which links the
+                // same, has both. Limited-range complex maths needs no
+                // compiler-rt helpers (__muldc3) at link time.
+                b.compiler("clang-cl").flag("/clang:-fcx-limited-range");
             }
             force(&mut b, &root.join(format!("generated/names_{lib}.h")));
             force(&mut b, &root.join("gui_compat.h"));

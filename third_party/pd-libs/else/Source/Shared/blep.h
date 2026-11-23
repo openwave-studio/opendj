@@ -5,7 +5,16 @@
 //  Created by Timothy Schoen on 13/11/2024.
 //
 
+/* openDJ: on Windows this builds with clang-cl, whose C compiler has
+   complex numbers but whose MSVC <complex.h> doesn't: the two functions
+   used here, and I, from the compiler itself. */
+#ifdef _MSC_VER
+#define I (1.0i)
+#define creal(z) (__real__ (z))
+#define cexp opendj_blep_cexp
+#else
 #include <complex.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -14,6 +23,14 @@
 
 /* openDJ: was "#define t_float float", which breaks a double-precision Pd. */
 #define t_complex _Complex double
+
+#ifdef _MSC_VER
+static inline t_complex opendj_blep_cexp(t_complex z)
+{
+    double r = exp(__real__ z);
+    return r * cos(__imag__ z) + r * sin(__imag__ z) * I;
+}
+#endif
 
 #define partial_step_count 127
 #define max_integrals 3

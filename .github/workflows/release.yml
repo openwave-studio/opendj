@@ -10,6 +10,9 @@ name: Release
 # nightly right away. Pre-releases never become "Latest", so the README's
 # download link and the app's update check keep pointing at the last version.
 #
+# Every build includes Pure Data patches in the plugin helper (the `pd`
+# features, experimental): libpd, cyclone, ELSE and pd-lua build from source.
+#
 # Versions: between releases, main's Cargo.toml says the next version with
 # -dev (0.9.0-dev after 0.8.0), so builds from main read as newer than every
 # release so far and the nightly is named 0.9.0-nightly.<date>.<commit>. The
@@ -115,8 +118,8 @@ jobs:
           # doesn't compile everything again.
           cache-on-failure: true
       - run: |
-          cargo build --release -p opendj -p opendj-plugin-host --target aarch64-apple-darwin
-          cargo build --release -p opendj -p opendj-plugin-host --target x86_64-apple-darwin
+          cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd --target aarch64-apple-darwin
+          cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd --target x86_64-apple-darwin
           mkdir -p dist
           lipo -create -output dist/opendj \
             target/aarch64-apple-darwin/release/opendj \
@@ -174,9 +177,20 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y libfontconfig-dev libxkbcommon-dev libasound2-dev libudev-dev cmake libclang-dev imagemagick rpm
+      - name: Add swap
+        # The runner was shut down mid-build without it: compiling the app
+        # (its Slint UI is one generated module of over 800,000 lines) needs
+        # more than the runner's memory. As in ci.yml.
+        run: |
+          sudo swapoff -a
+          sudo rm -f /mnt/swapfile
+          sudo fallocate -l 16G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --release -p opendj -p opendj-plugin-host
+      - run: cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd
       - run: scripts/bundle-linux.sh target/release/opendj "${{ needs.version.outputs.version }}"
       - uses: actions/upload-artifact@v7
         with:
@@ -223,7 +237,7 @@ jobs:
           # A new runner image can move Visual Studio, and CMake caches in
           # target/ (whisper.cpp) would still point at the old compiler.
           key: ${{ env.IMAGE_VERSION }}
-      - run: cargo build --release -p opendj -p opendj-plugin-host
+      - run: cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd
       - run: scripts/bundle-windows.ps1 target/release/opendj.exe "${{ needs.version.outputs.version }}"
         shell: pwsh
       - uses: actions/upload-artifact@v7
