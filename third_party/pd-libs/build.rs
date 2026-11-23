@@ -57,6 +57,10 @@ fn main() {
             .define("PDLUA_VERSION", "0.12.23")
             .define(lua_os, None)
             .include(root.join("lua"));
+        if target_os == "windows" {
+            // pdlua.c tests WIN32, which MSVC doesn't define (only _WIN32).
+            b.define("WIN32", None);
+        }
         b
     };
     pdlua()
