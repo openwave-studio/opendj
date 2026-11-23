@@ -18,10 +18,18 @@ use super::dates;
 use super::{HISTORY, PLAYLISTS, SMART};
 use crate::ImportedLibrary;
 
+/// A track's analysis files: the beat grid's, and the phrases' if any.
+struct AnlzFiles {
+    dat: rbox_anlz::Anlz,
+    ext: Option<rbox_anlz::Anlz>,
+}
+
 /// An open library: rekordbox's own file, or a private copy with its dates
-/// fixed when rbox can't read some of them (see [`dates`]).
+/// fixed when rbox can't read some of them (see [`dates`]), and the folder
+/// its analysis files (beat grids, phrases) are in, if one was found.
 struct Db {
     db: MasterDb,
+    share: Option<PathBuf>,
     _copy: Option<dates::FixedCopy>,
 }
 
@@ -38,22 +46,49 @@ impl std::ops::DerefMut for Db {
     }
 }
 
+/// Where the analysis files for the database at `path` are: rekordbox's
+/// `share` folder next to it, or, for a copy kept somewhere else (a backup,
+/// another drive), the one rekordbox itself uses on this computer.
+fn share_dir(path: &Path) -> Option<PathBuf> {
+    let own = || {
+        rbox_core::locate::locate_library()
+            .ok()
+            .map(|l| l.analysis_root)
+    };
+    share_dir_with(path, own)
+}
+
+fn share_dir_with(path: &Path, own: impl FnOnce() -> Option<PathBuf>) -> Option<PathBuf> {
+    let next = path.parent().unwrap_or(Path::new(".")).join("share");
+    if next.is_dir() {
+        return Some(next);
+    }
+    own().filter(|p| p.is_dir())
+}
+
 fn open(path: &Path) -> Result<Db, String> {
     let cant = |e: &dyn std::fmt::Display| format!("can't open rekordbox's database: {e}");
+    let share = share_dir(path);
     // A check that fails (an unexpected layout) leaves it to rbox.
-    if !dates::needs_fixing(path).unwrap_or(false) {
-        let db = MasterDb::new(path).map_err(|e| cant(&e))?;
-        return Ok(Db { db, _copy: None });
-    }
-    let copy = dates::FixedCopy::of(path).map_err(|e| cant(&e))?;
-    // Analysis files stay next to rekordbox's own database.
-    let share = path.parent().unwrap_or(Path::new(".")).join("share");
-    let options = rbox_core::RekordboxOptions::new(copy.db.clone(), share, PathBuf::new())
-        .map_err(|e| cant(&e))?;
-    let db = MasterDb::from_options(&options).map_err(|e| cant(&e))?;
+    let copy = if dates::needs_fixing(path).unwrap_or(false) {
+        Some(dates::FixedCopy::of(path).map_err(|e| cant(&e))?)
+    } else {
+        None
+    };
+    let file = copy.as_ref().map_or(path, |c| c.db.as_path());
+    let db = match &share {
+        Some(share) => {
+            let options =
+                rbox_core::RekordboxOptions::new(file.to_path_buf(), share.clone(), PathBuf::new())
+                    .map_err(|e| cant(&e))?;
+            MasterDb::from_options(&options).map_err(|e| cant(&e))?
+        }
+        None => MasterDb::new(file).map_err(|e| cant(&e))?,
+    };
     Ok(Db {
         db,
-        _copy: Some(copy),
+        share,
+        _copy: copy,
     })
 }
 
@@ -61,23 +96,52 @@ fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
-/// What `master.db` holds, as a line for the wizard.
+/// What `master.db` holds, as a line for the wizard, with how many of its
+/// tracks have a beat grid to bring in.
 pub fn preview(path: &Path) -> Result<String, String> {
     let mut db = open(path)?;
-    let tracks = db
+    let contents: Vec<DjmdContent> = db
         .get_contents()
         .map_err(err)?
-        .iter()
+        .into_iter()
         .filter(|c| c.rb_local_deleted == 0)
-        .count();
+        .collect();
     let lists = read_lists(&mut db, &[PLAYLISTS, SMART, HISTORY], &HashMap::new())?;
     let count = |f: fn(&ImportedListKind) -> bool| lists.iter().filter(|l| f(&l.kind)).count();
-    Ok(super::summary(
-        tracks,
+    let summary = super::summary(
+        contents.len(),
         count(|k| matches!(k, ImportedListKind::List)),
         count(|k| matches!(k, ImportedListKind::Smart { .. })),
         count(|k| matches!(k, ImportedListKind::History { .. })),
-    ))
+    );
+    let grids = db.share.as_deref().map(|share| {
+        contents
+            .iter()
+            .filter(|c| anlz_file(share, c.analysis_data_path.as_deref()).is_some())
+            .count()
+    });
+    Ok(format!("{summary} {}", grids_line(grids, contents.len())))
+}
+
+/// rekordbox's analysis file (`ANLZ0000.DAT`) for a track, from where
+/// master.db says it is (`data`, under `share`), when it's there.
+fn anlz_file(share: &Path, data: Option<&str>) -> Option<PathBuf> {
+    let data = data?.trim_start_matches(['/', '\\']);
+    if data.is_empty() {
+        return None;
+    }
+    Some(share.join(data)).filter(|p| p.is_file())
+}
+
+/// How many of `tracks` have a beat grid to bring in, or why none will.
+fn grids_line(grids: Option<usize>, tracks: usize) -> String {
+    match grids {
+        None => "No beat grids: rekordbox's analysis folder (share) isn't next to this file. \
+                 Choose the master.db in rekordbox's own folder."
+            .to_string(),
+        Some(n) if n == tracks && n > 0 => "Beat grids for every track.".to_string(),
+        Some(n) => format!("Beat grids for {n} of the tracks."),
+    }
 }
 
 /// The tracks in `master.db` whose files `exists` says are here, and the
@@ -135,9 +199,21 @@ pub fn read(
         }
         let mut t = track(c, file, cues.remove(&c.id).unwrap_or_default());
         t.info.imported_tags = labels.remove(&c.id).unwrap_or_default();
-        analysis(&mut db, &c.id, &mut t);
+        analysis(
+            db.share.as_deref(),
+            c.content.analysis_data_path.as_deref(),
+            &mut t,
+        );
         tracks.push(t);
     }
+    let grids = tracks.iter().filter(|t| t.info.fixed_grid).count();
+    eprintln!(
+        "rekordbox: beat grids for {grids} of {} tracks (analysis files in {})",
+        tracks.len(),
+        db.share
+            .as_deref()
+            .map_or("no folder found".into(), |p| p.display().to_string())
+    );
     let paths: HashMap<String, ImportedEntry> = contents
         .iter()
         .filter_map(|c| {
@@ -332,10 +408,26 @@ fn track(c: &DjmdContentView, file: PathBuf, mut cues: Vec<rbox_masterdb::DjmdCu
 }
 
 /// The beat grid and phrases from the track's analysis files, when
-/// rekordbox has analysed it.
-fn analysis(db: &mut MasterDb, id: &str, t: &mut Track) {
-    let Ok(Some(mut files)) = db.get_content_anlz_files(id) else {
+/// rekordbox has analysed it. Each file is read on its own (rbox's
+/// `get_content_anlz_files` panics on an analysis path that doesn't start
+/// with `/`, and gives up on the grid when a waveform file is unreadable).
+fn analysis(share: Option<&Path>, data: Option<&str>, t: &mut Track) {
+    let Some(dat) = share.and_then(|s| anlz_file(s, data)) else {
         return;
+    };
+    let ext = dat.with_extension("EXT");
+    let mut files = match rbox_anlz::Anlz::load(&dat) {
+        Ok(dat) => AnlzFiles {
+            dat,
+            ext: ext
+                .is_file()
+                .then(|| rbox_anlz::Anlz::load(&ext).ok())
+                .flatten(),
+        },
+        Err(e) => {
+            eprintln!("rekordbox: can't read {}: {e}", dat.display());
+            return;
+        }
     };
     let beats: Vec<(f64, f64)> = match files.dat.get_beat_grid() {
         Ok(Some(g)) => g
@@ -532,6 +624,120 @@ mod tests {
     fn demo(version: u8) -> Option<PathBuf> {
         let root = PathBuf::from(std::env::var_os("RBOX_TESTDATA")?);
         Some(root.join(format!("RBv{version}/demo/rekordbox/master.db")))
+    }
+
+    #[test]
+    fn finds_analysis_files_for_a_copy_kept_elsewhere() {
+        let dir = std::env::temp_dir().join(format!("opendj-rb-share-{}", std::process::id()));
+        let rekordbox = dir.join("rekordbox");
+        let backup = dir.join("backup");
+        std::fs::create_dir_all(rekordbox.join("share/PIONEER/USBANLZ/abc")).unwrap();
+        std::fs::create_dir_all(&backup).unwrap();
+        let share = rekordbox.join("share");
+        // Next to the database, rekordbox's own folder isn't needed.
+        let own = rekordbox.join("master.db");
+        assert_eq!(
+            share_dir_with(&own, || panic!("not asked")),
+            Some(share.clone())
+        );
+        // A copy elsewhere uses the folder rekordbox itself uses...
+        let copy = backup.join("master.db");
+        assert_eq!(
+            share_dir_with(&copy, || Some(share.clone())),
+            Some(share.clone())
+        );
+        // ...when there is one.
+        assert_eq!(share_dir_with(&copy, || None), None);
+        assert_eq!(share_dir_with(&copy, || Some(dir.join("gone"))), None);
+
+        let file = "PIONEER/USBANLZ/abc/ANLZ0000.DAT";
+        std::fs::write(share.join(file), b"PMAI").unwrap();
+        assert_eq!(
+            anlz_file(&share, Some(&format!("/{file}"))),
+            Some(share.join(file))
+        );
+        // rbox panics on a path without its leading `/`.
+        assert_eq!(anlz_file(&share, Some(file)), Some(share.join(file)));
+        assert_eq!(
+            anlz_file(&share, Some("/PIONEER/USBANLZ/def/ANLZ0000.DAT")),
+            None
+        );
+        assert_eq!(anlz_file(&share, Some("")), None);
+        assert_eq!(anlz_file(&share, None), None);
+        // An unreadable file leaves the track without a grid, not the import.
+        let mut t = opendj_engine::scan::read_track(0, &share.join(file));
+        analysis(Some(&share), Some(file), &mut t);
+        assert!(!t.info.fixed_grid);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn says_how_many_tracks_bring_a_beat_grid() {
+        assert_eq!(grids_line(Some(12), 12), "Beat grids for every track.");
+        assert_eq!(grids_line(Some(9), 12), "Beat grids for 9 of the tracks.");
+        assert_eq!(grids_line(Some(0), 0), "Beat grids for 0 of the tracks.");
+        assert!(grids_line(None, 12).starts_with("No beat grids"));
+    }
+
+    /// A real library, when `OPENDJ_RB_REAL` points at a master.db: every
+    /// track here that rekordbox found beats in comes in with its grid,
+    /// starting on rekordbox's first beat, with a marker per tempo change.
+    #[test]
+    fn reads_beat_grids_from_a_real_library() {
+        let Some(path) = std::env::var_os("OPENDJ_RB_REAL").map(PathBuf::from) else {
+            return;
+        };
+        eprintln!("{}", preview(&path).unwrap());
+        let lib = read(&path, &[], |_| true).unwrap();
+        let db = open(&path).unwrap();
+        let share = db.share.clone();
+        let mut beats: HashMap<PathBuf, Vec<(f64, f64)>> = HashMap::new();
+        for c in db.get_contents_with_relations().unwrap() {
+            let (Some(file), Some(dat)) = (
+                file_path(&c),
+                share
+                    .as_deref()
+                    .and_then(|s| anlz_file(s, c.content.analysis_data_path.as_deref())),
+            ) else {
+                continue;
+            };
+            let mut dat = rbox_anlz::Anlz::load(dat).unwrap();
+            if let Ok(Some(g)) = dat.get_beat_grid() {
+                let b = g
+                    .beats
+                    .iter()
+                    .map(|b| (b.time as f64 / 1000.0, b.tempo as f64 / 100.0));
+                beats.insert(file, b.collect());
+            }
+        }
+        let mut grids = 0;
+        for t in &lib.tracks {
+            let Source::File(file) = &t.source else {
+                continue;
+            };
+            let want = beats.get(file).filter(|b| !b.is_empty());
+            assert_eq!(t.info.fixed_grid, want.is_some(), "{}", t.title);
+            let Some(want) = want else { continue };
+            let changes = 1 + want
+                .windows(2)
+                .filter(|w| (w[1].1 - w[0].1).abs() > 0.005)
+                .count();
+            assert_eq!(t.grid.markers().len(), changes, "{}", t.title);
+            assert!(
+                (t.grid.first_beat() - want[0].0).abs() < 1e-6,
+                "{}",
+                t.title
+            );
+            eprintln!(
+                "{:45} {:>3} markers, from {:.3} s at {:.2} BPM",
+                t.title, changes, want[0].0, want[0].1
+            );
+            grids += 1;
+        }
+        eprintln!(
+            "{grids} of {} tracks here have rekordbox's grid",
+            lib.tracks.len()
+        );
     }
 
     #[test]

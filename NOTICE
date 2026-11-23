@@ -106,3 +106,8 @@ follows EngineX-OS's djay reader (https://github.com/Cd1s/EngineX-OS),
 Copyright (c) 2026 EngineX OS Contributors, under the MIT licence. "djay" is
 Algoriddim's trademark; openDJ is not affiliated with or endorsed by
 Algoriddim.
+
+The plugin helper's experimental Pure Data support (feature `pd`) links
+libpd and Pure Data (https://puredata.info), Copyright (c) Miller Puckette
+and others, under the Standard Improved BSD License, built through the
+libpd-sys crate (BSD-3-Clause).

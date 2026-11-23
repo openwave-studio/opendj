@@ -15,6 +15,9 @@ vst3 = { version = "0.3", optional = true }
 libloading = { version = "0.8", optional = true }
 # The window a plugin's editor opens in (helper only).
 winit = { version = "0.30", optional = true, default-features = false, features = ["rwh_06", "x11"] }
+# Pure Data patches (experimental, feature `pd`): libpd, Pd's engine as a
+# library (BSD-3-Clause), built from source with CMake.
+libpd-sys = { version = "0.3.4", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"
@@ -30,6 +33,9 @@ libc = "0.2"
 # client side (shared memory and process control), without them.
 default = ["formats"]
 formats = ["dep:clack-host", "dep:clack-extensions", "dep:vst3", "dep:libloading", "dep:winit"]
+# Pure Data patches as effects and instruments, in the helper. Off by default
+# while experimental: `cargo build -p opendj-plugin-host --features pd`.
+pd = ["formats", "dep:libpd-sys"]
 
 [[bin]]
 name = "opendj-plugin-host"

@@ -84,3 +84,9 @@ winresource = { version = "0.1", default-features = false }
 
 [dev-dependencies]
 hound = "3"
+
+[features]
+# Experimental: list Pure Data patches from the Pd folder as effects and
+# instruments. Needs the plugin helper built with its `pd` feature:
+# `cargo build -p opendj-plugin-host --features pd`.
+pd = []

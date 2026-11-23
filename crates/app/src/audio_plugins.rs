@@ -41,7 +41,7 @@ pub struct Found {
     pub key: String,
     pub name: String,
     pub vendor: String,
-    /// "CLAP", "VST3" or "AU".
+    /// "CLAP", "VST3", "AU" or "Pd".
     pub format: &'static str,
     pub plugin: Plugin,
     /// What the plugin says it is (CLAP features, VST3 sub-categories).
@@ -175,6 +175,9 @@ impl AudioPlugins {
                 plugin: Plugin::Au { id: d.id.clone() },
                 features: d.features.clone(),
             });
+        }
+        if cfg!(feature = "pd") {
+            out.extend(pd_patches(&pd_folder(), keep));
         }
         out.sort_by(|a, b| {
             (a.name.to_lowercase(), a.format).cmp(&(b.name.to_lowercase(), b.format))
@@ -659,6 +662,69 @@ fn plugin_groups(chosen: &[Found], names: &[String]) -> (Vec<FxGroup>, Vec<FxRow
     (groups, rows)
 }
 
+/// Where Pure Data patches are looked for (experimental, app feature `pd`):
+/// `OPENDJ_PD_DIR`, else "Pd" in openDJ's music folder.
+pub fn pd_folder() -> PathBuf {
+    std::env::var_os("OPENDJ_PD_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            opendj_engine::scan::default_music_dir()
+                .unwrap_or_else(std::env::temp_dir)
+                .join("openDJ")
+                .join("Pd")
+        })
+}
+
+/// The `.pd` files in `folder` (one level of sub-folders, which hold
+/// abstractions as often as patches, is skipped) that `keep` accepts: an
+/// instrument when the patch reads notes, else an effect when it takes
+/// audio in. Reading a patch runs none of it.
+fn pd_patches(folder: &Path, keep: fn(&Descriptor) -> bool) -> Vec<Found> {
+    use opendj_engine::plugins::pd_patch::read_patch;
+    let Ok(dir) = std::fs::read_dir(folder) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for path in dir.flatten().map(|e| e.path()) {
+        if path.extension().and_then(|e| e.to_str()) != Some("pd") {
+            continue;
+        }
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let patch = read_patch(&text);
+        let kind = if patch.plays_notes {
+            "instrument"
+        } else if patch.takes_audio {
+            "audio-effect"
+        } else {
+            continue;
+        };
+        let name = path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let d = Descriptor {
+            id: path.display().to_string(),
+            name: name.clone(),
+            vendor: "Pure Data".into(),
+            version: String::new(),
+            features: vec![kind.into()],
+        };
+        if keep(&d) {
+            out.push(Found {
+                key: format!("pd:{}", path.display()),
+                name,
+                vendor: d.vendor,
+                format: "Pd",
+                plugin: Plugin::Pd { file: path },
+                features: d.features,
+            });
+        }
+    }
+    out
+}
+
 /// The names to show in a chooser: a plugin ticked in more than one format
 /// says which, as in "Pro-Q 3 · VST3".
 fn list_names(list: &[Found]) -> Vec<String> {
@@ -1043,6 +1109,38 @@ mod tests {
             found,
             vec![dir.join("Delay.clap"), dir.join("Vendor/Reverb.vst3")]
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pd_patches_are_effects_or_instruments() {
+        let dir = std::env::temp_dir().join(format!("opendj-pd-list-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("Echo.pd"),
+            "#X obj 0 0 adc~ 1 2;\n#X obj 0 0 dac~;\n",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.join("Synth.pd"),
+            "#X obj 0 0 notein;\n#X obj 0 0 dac~;\n",
+        )
+        .unwrap();
+        std::fs::write(dir.join("helper.pd"), "#X obj 0 0 inlet~;\n").unwrap();
+        std::fs::write(dir.join("notes.txt"), "adc~").unwrap();
+        let effects = pd_patches(&dir, Descriptor::is_audio_effect);
+        assert_eq!(effects.len(), 1);
+        assert_eq!(effects[0].name, "Echo");
+        assert_eq!(effects[0].format, "Pd");
+        assert_eq!(
+            effects[0].plugin,
+            Plugin::Pd {
+                file: dir.join("Echo.pd")
+            }
+        );
+        let instruments = pd_patches(&dir, Descriptor::is_instrument);
+        assert_eq!(instruments.len(), 1);
+        assert_eq!(instruments[0].name, "Synth");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

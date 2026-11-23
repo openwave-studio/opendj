@@ -171,6 +171,8 @@ pub enum Plugin {
     },
     /// The Audio Unit `type:subtype:manufacturer` (macOS only).
     Au { id: String },
+    /// A Pure Data patch (`.pd` file), run in libpd (helper feature `pd`).
+    Pd { file: std::path::PathBuf },
 }
 
 /// The test gain's "editor": an empty window of a set size, so the editor
@@ -331,6 +333,10 @@ pub fn load(
         Plugin::Au { id } => crate::au::load(id, sample_rate, max_frames, picks),
         #[cfg(all(feature = "formats", not(target_os = "macos")))]
         Plugin::Au { .. } => Err("Audio Units only run on macOS".into()),
+        #[cfg(feature = "pd")]
+        Plugin::Pd { file } => crate::pd::load(file, sample_rate, max_frames, picks),
+        #[cfg(all(feature = "formats", not(feature = "pd")))]
+        Plugin::Pd { .. } => Err("this build of openDJ runs no Pure Data patches".into()),
         #[cfg(not(feature = "formats"))]
         _ => {
             let _ = (sample_rate, max_frames);

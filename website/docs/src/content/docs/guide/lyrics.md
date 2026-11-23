@@ -20,8 +20,8 @@ openDJ reads lyrics you already have. It looks for them in this order:
    in `USLT` (MP3), `LYRICS` (FLAC and Ogg) and `©lyr` (M4A). Lyrics in
    these that are written as LRC are read as timed.
 
-openDJ never fetches or sends lyrics on its own. To look them up online,
-see [Find lyrics online](#find-lyrics-online).
+openDJ never sends lyrics anywhere. It fetches them only when you press
+Find or analyze tracks; see [Find lyrics online](#find-lyrics-online).
 
 ## What the tab follows
 
@@ -176,6 +176,17 @@ keeps them in its own settings folder instead.
 
 ![Find lyrics](../images/find-lyrics.png)
 
+### When tracks are analyzed
+
+**Analyze Track** and **Analyze All** also look up each track that has no
+lyrics yet and save the closest match LRCLIB has, the first in the list
+Find would show. Lyrics of another length are saved as plain words only,
+since their timing wouldn't fit, and a track LRCLIB marks instrumental is
+left without. Tracks are looked up one at a time, a little apart, and
+openDJ waits whenever LRCLIB asks it to. To pick other lyrics, press
+**Find…** in the Lyrics tab and choose **Use** on the ones you want.
+
 Only the track's names and length are sent to LRCLIB, and only when you
-press Find. To stop openDJ asking LRCLIB at all, turn off **Find lyrics
-online** in Settings › Collection › Health.
+press Find or analyze tracks. To keep Analyze from looking lyrics up, turn
+off **Find lyrics when analyzing**; to stop openDJ asking LRCLIB at all,
+turn off **Find lyrics online**. Both are in Settings › Collection › Health.

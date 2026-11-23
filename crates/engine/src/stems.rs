@@ -542,11 +542,40 @@ pub fn find(path: &Path) -> Option<StemSource> {
     if is_ni_stem(path) {
         return Some(StemSource::NiStem(path.to_owned()));
     }
-    let files = separated_files(&crate::cache::stems_dir(path)?);
-    files
-        .iter()
-        .all(|f| f.is_file())
+    let dir = crate::cache::stems_dir(path)?;
+    let files = separated_files(&dir);
+    (files.iter().all(|f| f.is_file()) && !is_stale(&dir, &files[0]))
         .then_some(StemSource::Files(files))
+}
+
+/// The file that marks a separation as lined up with its track at any
+/// sample rate (see [`mark_aligned`]).
+const ALIGNED: &str = "aligned";
+
+/// Marks the stems in `dir` as made at the track's own rate, sample for
+/// sample with it.
+pub(crate) fn mark_aligned(dir: &Path) {
+    let _ = std::fs::write(dir.join(ALIGNED), b"");
+}
+
+/// Whether the stems in `dir` came from a separation that stretched tracks
+/// not at 44.1 kHz: before [`ALIGNED`] marks, HTDemucs was told every track
+/// was at 44.1 kHz, so its stems drifted off any other track and played
+/// over it. 44.1 kHz stems from then are fine; others are made again.
+fn is_stale(dir: &Path, first: &Path) -> bool {
+    !dir.join(ALIGNED).is_file() && flac_rate(first).is_some_and(|r| r != 44_100)
+}
+
+/// A FLAC file's sample rate, from its STREAMINFO block (always first).
+fn flac_rate(path: &Path) -> Option<u32> {
+    let mut head = [0u8; 21];
+    File::open(path).ok()?.read_exact(&mut head).ok()?;
+    if &head[..4] != b"fLaC" || head[4] & 0x7F != 0 {
+        return None;
+    }
+    // Marker, block header, min/max block size and min/max frame size,
+    // then the rate in 20 bits.
+    Some(u32::from(head[18]) << 12 | u32::from(head[19]) << 4 | u32::from(head[20]) >> 4)
 }
 
 /// Whether `path` is named like an NI STEM file.
@@ -1124,6 +1153,22 @@ pub(crate) fn run_demucs(path: &Path) -> Result<StemSource, String> {
         let _ = std::fs::remove_dir_all(&work);
         return Err("Demucs finished but left no stems".into());
     }
+    // Demucs writes at its own 44.1 kHz; a deck only takes stems at the
+    // track's rate.
+    let conformed = (|| -> Result<(), String> {
+        let rate = crate::decode::Decoder::open(path)?.audio().sample_rate;
+        for f in &files {
+            if flac_rate(f) != Some(rate) {
+                crate::separation::resample_flac(f, rate)?;
+            }
+        }
+        Ok(())
+    })();
+    if let Err(e) = conformed {
+        let _ = std::fs::remove_dir_all(&work);
+        return Err(e);
+    }
+    mark_aligned(&made);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::rename(&made, &dir).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_dir_all(&work);
@@ -1265,6 +1310,23 @@ mod tests {
         // Where there are no stems yet, the original plays.
         assert_eq!(stems.mix(500_000, &[0.0; 5], || [0.7, 0.7]), [0.7, 0.7]);
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn stretched_stems_from_before_the_rate_fix_are_made_again() {
+        let dir = std::env::temp_dir().join(format!("opendj-stale-stems-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("drums.flac");
+        let silence = vec![0.0f32; 4096];
+        for (rate, stale) in [(48_000, true), (44_100, false), (96_000, true)] {
+            crate::recorder::write_flac(&file, rate, [&silence, &silence]).unwrap();
+            assert_eq!(flac_rate(&file), Some(rate));
+            assert_eq!(is_stale(&dir, &file), stale, "{rate} Hz");
+        }
+        mark_aligned(&dir);
+        assert!(!is_stale(&dir, &file));
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
