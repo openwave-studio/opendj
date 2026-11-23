@@ -69,15 +69,48 @@ EFFECT = [(r"^FX \d+ ", ""), (r"^Effect \d+ on$", "Effect on"), (r"^Effect \d+ n
           (r"^Release$", "Effect release"), (r"^Bpm auto$", "Effect beats from the track")]
 
 
+# Names from mapping scripts, said the way the app says them.
+RENAME = [(r"^Sampler (\d+) Channel fader$", r"Sampler \1 volume"),
+          (r"^(Jog|Wheel) touch$", "Scratch (platter touch)"), (r"^Jog platter tick.*$", "Jog nudge"),
+          (r"^Lfo (\w+)$", r"LFO \1"), (r"^Effect loaded effect$", "Choose effect"),
+          (r"^Rate set zero$", "Reset tempo"), (r"^Head mix$", "Headphone mix"),
+          (r"^(Vinylmode|Vinyl mode toggle|Wheel toggle|Vinyl button)$", "Vinyl mode"),
+          (r"^Scratch toggle$", "Vinyl mode"), (r"^Toggle beatloop roll mode$", "Loop roll pad mode"),
+          (r"^Toggle beatloop mode$", "Beat loop pad mode"), (r"^Toggle (.+) mode$", r"\1 pad mode"),
+          (r"^(Pad mode pressed|Pad mode button pressed|Change mode)$", "Pad mode"),
+          (r"^(Toggle deck|Deck switch)$", "Switch deck"), (r"^Four deck mode$", "Four-deck mode"),
+          (r"^(Position|Needle search strip position)$", "Needle search"),
+          (r"^Auto ?djtoggle sync (\w+)$", r"Automix sync \1"), (r"^Autodj skip next$", "Automix skip"),
+          (r"^enable \(on touch\).*Pitch bend$", "Fast search"), (r"^Hotcue", "Hot cue"),
+          (r"^Trans mode$", "Transform pad mode"), (r"\s*\(openDJ\)$", "")]
+NOISE_EXACT = re.compile(r"^(shift( toggle| state)?|route|rotary selector click|needle search touch|"
+                         r"browse encoder|.* encoder)$", re.I)
+
+
 def clean(names):
     out = []
     for n in names:
         n = BUTTON.sub("", n or "")
-        for a, b in EFFECT:
+        for a, b in EFFECT + RENAME:
             n = re.sub(a, b, n)
-        if n and not NOISE.search(n) and n not in out:
+        n = n[:1].upper() + n[1:]
+        if n and not NOISE.search(n) and not NOISE_EXACT.match(n) and n not in out:
             out.append(n)
-    return out
+    # "Sampler 1 volume · Sampler 2 volume · …" as "Sampler 1-4 volume".
+    groups = {}
+    for n in out:
+        groups.setdefault(re.sub(r"\d+", "#", n, count=1), []).append(n)
+    merged = []
+    for n in out:
+        key = re.sub(r"\d+", "#", n, count=1)
+        same = groups[key]
+        if len(same) > 2 and "#" in key:
+            if same[0] == n:
+                nums = [int(re.search(r"\d+", x).group()) for x in same]
+                merged.append(key.replace("#", f"{min(nums)}-{max(nums)}"))
+        else:
+            merged.append(n)
+    return merged
 
 
 def short(names, most=3):
@@ -99,7 +132,7 @@ def does(layers, label="", kind=""):
             return ""
         def bare(l):
             l = re.sub(r"deck [\da-d]\b\s*\+?\s*", "", l, flags=re.I)
-            return l.replace("SHIFT", "").replace(":", "").strip(" +").lower()
+            return l.replace("SHIFT", "").replace(":", "").strip(" +,").lower()
         gesture = all(not bare(l) or any(g in bare(l) for g in GESTURES) for l in group)
         named = [l for l in group if bare(l) not in ("", "normal") and not gesture]
         # A mode button: its layers are the modes it picks.
@@ -162,7 +195,7 @@ def numbered(layout, functions):
                 text = "What the pad mode picks: " + ", ".join(m.lower() for m in modes[:8])
                 # With SHIFT, say what hot cue pads do: the one every pad mode set has.
                 hot = [n for l, n in layers.items() if "shift" in l.lower() and "hot" in l.lower()]
-                shift = (re.sub(r"\s*\d+$", "", clean(hot[0])[0]) + " (hot cue mode)"
+                shift = (re.sub(r"\s*[\d-]+$", "", clean(hot[0])[0]) + " (hot cue mode)"
                          if hot and clean(hot[0]) else "")
             else:
                 text, shift = does(layers)
@@ -218,8 +251,11 @@ def numbered(layout, functions):
             cx, cy = x + w / 2, y + h / 2
         main = first[n] == cid
         fill, ink = (LILAC, "#0e0d17") if main else ("#5b5770", "#ecebf5")
-        out.append(f'<circle cx="{cx}" cy="{cy}" r="18" fill="{fill}" stroke="#0e0d17" stroke-width="2"/>'
-                   f'<text x="{cx}" y="{cy + 7}" text-anchor="middle" font-size="{19 if n < 100 else 15}" '
+        # Small, packed controls get smaller numbers so they don't overlap.
+        r = max(11, min(18, min(w, h) * 0.5 + 2)) if c["kind"] != "jog" else 18
+        size = r * (1.05 if n < 10 else 0.95 if n < 100 else 0.8)
+        out.append(f'<circle cx="{cx}" cy="{cy}" r="{r:g}" fill="{fill}" stroke="#0e0d17" stroke-width="2"/>'
+                   f'<text x="{cx}" y="{cy + size * 0.36:g}" text-anchor="middle" font-size="{size:.1f}" '
                    f'font-weight="700" fill="{ink}">{n}</text>')
     out.append("</svg>")
     return "\n".join(out) + "\n", rows
