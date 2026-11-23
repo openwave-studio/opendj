@@ -131,7 +131,8 @@ mod waveform_zoom;
 mod waves;
 
 /// Fills the master and headphone output menus and switches devices when
-/// one is picked. The menus list the devices present when they open.
+/// one is picked. The menus list the devices as last scanned (see
+/// [`opendj_engine::scan_devices`]): opening one loads no driver.
 /// The settings page's output table: shows the routes in use and applies
 /// changes to them.
 fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
@@ -673,6 +674,14 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     unsafe {
         windows_sys::Win32::Media::timeBeginPeriod(1);
     }
+    // The audio devices, found while the window gets ready and before any
+    // output opens: listing ASIO devices loads each installed driver in
+    // turn, which takes a while and can cut off a Windows Audio stream
+    // already playing through the same interface. Settings and the menus
+    // read what this finds.
+    let device_scan = std::thread::Builder::new()
+        .name("opendj-device-scan".into())
+        .spawn(|| opendj_engine::scan_devices(opendj_engine::DeviceScan::All));
     // A restore picked in Settings goes in before anything reads the
     // settings or opens the library.
     let restored =
@@ -699,6 +708,11 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let ui_family = ui_font::install();
 
     let registry = ControlRegistry::new();
+    // Not found yet (or the thread didn't start), the device lists are
+    // scanned the first time they are read instead.
+    if let Ok(scan) = device_scan {
+        let _ = scan.join();
+    }
     let engine = Rc::new(AudioEngine::start(
         registry.clone(),
         &settings::audio_setup(),
