@@ -371,6 +371,17 @@ impl AudioEngine {
         }
     }
 
+    /// The playing instrument's display file for the deck (see
+    /// `opendj_plugin_host::display`); none while no instrument plays.
+    pub fn instrument_display(&self) -> Option<std::path::PathBuf> {
+        self.plugins.as_ref()?.instrument_display()
+    }
+
+    /// Effect slot `slot` of unit `unit`'s display file for the deck.
+    pub fn slot_display(&self, unit: usize, slot: usize) -> Option<std::path::PathBuf> {
+        self.plugins.as_ref()?.slot_display(unit, slot)
+    }
+
     /// The playing instrument's parameter names, for its knobs
     /// (`[Instrument1],parameterN` is the N-th); empty while none plays.
     pub fn instrument_parameters(&self) -> Vec<String> {

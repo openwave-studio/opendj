@@ -372,6 +372,13 @@ struct PdMain {
     painted: Option<u64>,
     /// The display a press started on, which gets the drag and the release.
     pressed: Option<usize>,
+    /// The picture for the deck (made the first time `idle` runs).
+    deck: Option<crate::display::Display>,
+    /// What the deck's picture shows: the version and the size it was
+    /// drawn at.
+    deck_drawn: Option<(u64, u32, u32)>,
+    /// The file couldn't be made: don't try again every idle.
+    deck_failed: bool,
 }
 
 impl PdMain {
@@ -389,7 +396,9 @@ impl PdMain {
 }
 
 impl MainThread for PdMain {
-    fn idle(&mut self) {}
+    fn idle(&mut self) {
+        self.serve_deck();
+    }
 
     fn next_idle(&self) -> Option<Duration> {
         // A display may repaint from the audio thread at any time.
@@ -398,6 +407,61 @@ impl MainThread for PdMain {
 
     fn drawn_editor(&mut self) -> Option<&mut dyn DrawnEditor> {
         Some(self)
+    }
+}
+
+impl PdMain {
+    /// Keeps the deck's picture of the displays current, and passes on the
+    /// mouse events openDJ sent from it.
+    fn serve_deck(&mut self) {
+        if self.deck.is_none() {
+            if self.deck_failed {
+                return;
+            }
+            let Some(path) = crate::display::helper_path() else {
+                return;
+            };
+            let (w, h) = self.size();
+            match crate::display::Display::create(path, w, h) {
+                Ok(d) => self.deck = Some(d),
+                Err(e) => {
+                    eprintln!("pd: no display for the deck: {e}");
+                    self.deck_failed = true;
+                    return;
+                }
+            }
+        }
+        let mut events = Vec::new();
+        if let Some(deck) = &self.deck {
+            deck.take_mouse(|x, y, what| events.push((x, y, what)));
+        }
+        for (x, y, what) in events {
+            self.mouse(x, y, what);
+        }
+        let (cw, ch) = self.size();
+        let Some(deck) = &self.deck else { return };
+        deck.set_content(cw, ch);
+        let (vw, vh) = deck.view();
+        if vw == 0 || vh == 0 {
+            return;
+        }
+        // Fit the displays into the view, keeping their shape.
+        let scale = (vw as f32 / cw).min(vh as f32 / ch).max(0.05);
+        let (w, h) = (
+            ((cw * scale).round() as u32).clamp(1, vw),
+            ((ch * scale).round() as u32).clamp(1, vh),
+        );
+        let version = displays().version;
+        if self.deck_drawn == Some((version, w, h)) {
+            return;
+        }
+        let Some(mut pixmap) = tiny_skia::Pixmap::new(w, h) else {
+            return;
+        };
+        let list = displays().list.clone();
+        pd_display::paint(&list, &mut pixmap, scale);
+        deck.write_frame(w, h, pixmap.data());
+        self.deck_drawn = Some((version, w, h));
     }
 }
 

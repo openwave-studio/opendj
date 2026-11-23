@@ -128,6 +128,7 @@ fn main() {
     let Some(shm_path) = shm_path else {
         fail("--shm <path> is needed");
     };
+    opendj_plugin_host::display::set_helper_path(opendj_plugin_host::display::path_for(&shm_path));
     let shm =
         Arc::new(Shm::open(&shm_path).unwrap_or_else(|e| fail(&format!("shared memory: {e}"))));
     let h = shm.header();

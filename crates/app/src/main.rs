@@ -88,6 +88,7 @@ mod now_playing;
 mod now_playing_view;
 mod osc;
 mod osc_events;
+mod plugin_display;
 mod prefs;
 mod prep_click;
 mod presets;
@@ -1230,6 +1231,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
             },
         );
     }
+    // The instrument's own display on its deck (a Pd patch's Lua displays).
+    let _display_timer = plugin_display::install(&app, engine.clone());
     // Automatic backups: at start, then checked every hour.
     backup::run_if_due();
     let backup_timer = slint::Timer::default();

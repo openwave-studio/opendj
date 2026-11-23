@@ -6807,6 +6807,49 @@ component KnobTabs inherits HorizontalLayout {
     }
 }
 
+// The DISPLAY tab and its way back: a pill like a knob page's tab.
+component DisplayTab inherits Rectangle {
+    in property <string> text;
+    in property <bool> on;
+    callback clicked();
+    width: dlabel.preferred-width + 18px;
+    height: 20px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: on ? Theme.n-3a3a3d : transparent;
+    background: on ? Theme.n-141416 : dta.has-hover ? Theme.control : transparent;
+    dlabel := Text { text: root.text; color: root.on ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; }
+    dta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// The instrument's own display (a Pd patch's Lua displays), filling the
+// instrument panel while its DISPLAY tab is on: the picture its helper
+// draws at this size, clicks and drags going back to it.
+component InstrumentDisplay inherits Rectangle {
+    changed width => { InstrumentsUi.display-area-width = self.width; }
+    changed height => { InstrumentsUi.display-area-height = self.height; }
+    init => {
+        InstrumentsUi.display-area-width = self.width;
+        InstrumentsUi.display-area-height = self.height;
+    }
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: InstrumentsUi.display;
+        image-fit: contain;
+    }
+    TouchArea {
+        pointer-event(e) => {
+            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                InstrumentsUi.display-mouse(self.mouse-x, self.mouse-y, 0);
+            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                InstrumentsUi.display-mouse(self.mouse-x, self.mouse-y, 1);
+            }
+        }
+        moved => { InstrumentsUi.display-mouse(self.mouse-x, self.mouse-y, 2); }
+    }
+}
+
 // The instrument deck under its title (2-Deck): what comes in and out
 // (scope, level, TRIM, PAN), the plugin's knobs under their page tabs on
 // a soft backdrop in the instrument's color, the octave and Note FX, then
@@ -7263,7 +7306,19 @@ component InstrumentRack inherits Rectangle {
     Rectangle {
         background: @radial-gradient(circle, root.hue.with-alpha(0.24) 0%, root.hue.with-alpha(0.11) 45%, root.hue.with-alpha(0.04) 100%);
     }
-    VerticalLayout {
+    // The instrument's own display fills the panel while its tab is on.
+    if InstrumentsUi.has-display && InstrumentsUi.display-on: VerticalLayout {
+        padding: 6px;
+        spacing: 4px;
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            DisplayTab { text: "KNOBS"; on: false; clicked => { InstrumentsUi.display-on = false; } }
+            DisplayTab { text: "DISPLAY"; on: true; }
+        }
+        InstrumentDisplay { vertical-stretch: 1; }
+    }
+    if !(InstrumentsUi.has-display && InstrumentsUi.display-on): VerticalLayout {
         padding: 6px;
         spacing: 6px;
         HorizontalLayout {
@@ -7321,11 +7376,16 @@ component InstrumentRack inherits Rectangle {
                 VerticalLayout {
                     padding: 6px;
                     spacing: 2px;
-                    if root.pages > 1 || InstrumentsUi.page-names[0] != "": KnobTabs {
-                        pages: root.pages;
-                        shown: root.shown;
-                        page: root.page;
-                        picked(p) => { InstrumentsUi.knob-page = p; }
+                    if root.pages > 1 || InstrumentsUi.page-names[0] != "" || InstrumentsUi.has-display: HorizontalLayout {
+                        spacing: 4px;
+                        alignment: start;
+                        KnobTabs {
+                            pages: root.count > 0 ? root.pages : 0;
+                            shown: root.shown;
+                            page: root.page;
+                            picked(p) => { InstrumentsUi.knob-page = p; }
+                        }
+                        if InstrumentsUi.has-display: DisplayTab { text: "DISPLAY"; on: false; clicked => { InstrumentsUi.display-on = true; } }
                     }
                     for r in root.shown: HorizontalLayout {
                         vertical-stretch: 1;

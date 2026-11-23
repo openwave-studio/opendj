@@ -165,3 +165,52 @@ fn pd_bench() {
         );
     }
 }
+
+#[test]
+fn a_lua_display_shows_on_the_deck_and_takes_clicks() {
+    use opendj_plugin_host::display::{Display, Mouse};
+    let (mut conn, helper) = start("lua-level.pd");
+    let path = helper.display_path();
+    let wait_for = |what: &str, mut ok: Box<dyn FnMut() -> bool + '_>| {
+        let t = Instant::now();
+        while !ok() {
+            assert!(t.elapsed() < Duration::from_secs(5), "no {what}");
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    };
+    let mut deck = None;
+    wait_for(
+        "display file",
+        Box::new(|| {
+            deck = Display::open(&path);
+            deck.is_some()
+        }),
+    );
+    let deck = deck.unwrap();
+    assert_eq!(deck.content(), (200, 40));
+    // Shown at twice its size.
+    deck.set_view(400, 80);
+    let mut px = Vec::new();
+    let mut frame = (0, 0, 0);
+    wait_for(
+        "first picture",
+        Box::new(|| deck.read_frame(&mut px).map(|f| frame = f).is_some()),
+    );
+    assert_eq!((frame.0, frame.1), (400, 80));
+    let at = |px: &[u8], x: usize, y: usize| {
+        let i = (y * 400 + x) * 4;
+        [px[i], px[i + 1], px[i + 2]]
+    };
+    assert_eq!(at(&px, 300, 40), [0xb6, 0x9c, 0xff], "full fader");
+    // Click half way, in the display's own points.
+    deck.send_mouse(100.0, 20.0, Mouse::Down);
+    deck.send_mouse(100.0, 20.0, Mouse::Up);
+    let first = frame.2;
+    wait_for(
+        "new picture",
+        Box::new(|| deck.read_frame(&mut px).is_some_and(|f| f.2 != first)),
+    );
+    assert_eq!(at(&px, 300, 40), [0x16, 0x18, 0x19], "half fader");
+    let (_, l, _) = run(&mut conn, 256);
+    assert!((l[255] - 0.25).abs() < 1e-6, "{}", l[255]);
+}
