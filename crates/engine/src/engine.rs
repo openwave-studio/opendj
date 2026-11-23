@@ -399,6 +399,22 @@ impl Deck {
         }
     }
 
+    /// Whether the loop from `start` to `end` is the one playing.
+    fn is_playing_loop(&self, start: f64, end: f64) -> bool {
+        self.c.loop_enabled.get_bool()
+            && (self.loop_start - start).abs() < 1e-3
+            && (self.loop_end - end).abs() < 1e-3
+    }
+
+    /// Whether a hot cue pad holds the loop that is playing.
+    fn loop_on_a_pad(&self) -> bool {
+        self.c.hotcues.iter().any(|hc| {
+            hc.enabled.get_bool()
+                && hc.kind.get() == HOTCUE_LOOP
+                && self.is_playing_loop(hc.position.get(), hc.end_position.get())
+        })
+    }
+
     fn speed(&self) -> f64 {
         self.sync_speed
             .unwrap_or_else(|| 1.0 + self.c.rate.get() * self.c.rate_range.get() * self.rate_dir())
@@ -697,11 +713,7 @@ impl Deck {
             if activate {
                 match saved_loop {
                     // Pressing the loop that is playing turns it off, as in Mixxx.
-                    Some(end)
-                        if self.c.loop_enabled.get_bool()
-                            && (self.loop_start - position).abs() < 1e-3
-                            && (self.loop_end - end).abs() < 1e-3 =>
-                    {
+                    Some(end) if self.is_playing_loop(position, end) => {
                         self.c.loop_enabled.set_bool(false)
                     }
                     Some(end) => {
@@ -726,9 +738,15 @@ impl Deck {
                         self.c.play.set_bool(true);
                     }
                     None => {
+                        // An empty pad pressed while a loop plays saves the
+                        // loop, unless another pad holds it already: then
+                        // it sets a cue, so one loop doesn't fill the pads.
+                        let saved = self.loop_on_a_pad();
                         let hc = &self.c.hotcues[h];
-                        // An empty pad pressed while a loop plays saves the loop.
-                        if self.c.loop_enabled.get_bool() && self.loop_end > self.loop_start {
+                        if self.c.loop_enabled.get_bool()
+                            && self.loop_end > self.loop_start
+                            && !saved
+                        {
                             hc.position.set(self.loop_start.max(0.0));
                             hc.end_position.set(self.loop_end);
                             hc.kind.set(HOTCUE_LOOP);
@@ -753,6 +771,12 @@ impl Deck {
             }
             let hc = &self.c.hotcues[h];
             if clear {
+                // Deleting the pad of the loop that is playing ends the
+                // loop too, so the pad then sets a cue rather than saving
+                // the same loop again.
+                if saved_loop.is_some_and(|end| self.is_playing_loop(position, end)) {
+                    self.c.loop_enabled.set_bool(false);
+                }
                 hc.enabled.set_bool(false);
                 hc.kind.set(0.0);
                 hc.end_position.set(-1.0);
@@ -6509,6 +6533,47 @@ mod tests {
         c("hotcue_2_enabled").set_bool(true);
         c("hotcue_2_type").set(HOTCUE_CUE);
         press("hotcue_2_activate");
+        run(&mut engine, 0.02);
+        assert!(c("loop_enabled").get_bool());
+    }
+
+    #[test]
+    fn deleting_the_playing_loops_pad_ends_the_loop() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 10.0));
+        run(&mut engine, 0.02);
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        let press = |k: &str| {
+            c(k).set_bool(true);
+            c(k).set_bool(false);
+        };
+        c("play").set_bool(true);
+        run(&mut engine, 0.5);
+        press("beatloop_4_activate");
+        run(&mut engine, 0.02);
+        press("hotcue_1_activate");
+        run(&mut engine, 0.02);
+        assert_eq!(c("hotcue_1_type").get(), HOTCUE_LOOP);
+
+        // A second empty pad sets a cue: the loop is on pad 1 already.
+        press("hotcue_2_activate");
+        run(&mut engine, 0.02);
+        assert_eq!(c("hotcue_2_type").get(), HOTCUE_CUE);
+        assert!(c("loop_enabled").get_bool());
+
+        // Deleting pad 1 ends its loop; pressing it again sets a cue.
+        press("hotcue_1_clear");
+        run(&mut engine, 0.02);
+        assert!(!c("hotcue_1_enabled").get_bool());
+        assert!(!c("loop_enabled").get_bool());
+        press("hotcue_1_activate");
+        run(&mut engine, 0.02);
+        assert_eq!(c("hotcue_1_type").get(), HOTCUE_CUE);
+
+        // Deleting a cue pad leaves a playing loop alone.
+        press("beatloop_4_activate");
+        run(&mut engine, 0.02);
+        press("hotcue_2_clear");
         run(&mut engine, 0.02);
         assert!(c("loop_enabled").get_bool());
     }
