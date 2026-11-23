@@ -295,7 +295,8 @@ export component TasksPanel inherits PopupWindow {
 }
 
 // The footer's ring: overall progress, amber when everything is paused, a
-// green check when done. A click opens the panel above it.
+// green check when done, at the footer's right. A click opens the panel
+// above it.
 export component TasksRing inherits Rectangle {
     property <bool> lit: ta.has-hover;
     property <string> label: TasksUi.tasks.length == 0 ? "Done"
@@ -362,8 +363,9 @@ export component TasksRing inherits Rectangle {
         mouse-cursor: pointer;
         clicked => { panel.show(); }
     }
+    // Above the ring, its right edge at the ring's, at the footer's right.
     panel := TasksPanel {
-        x: (root.width - self.width) / 2;
+        x: root.width - self.width;
         y: -self.preferred-height - 8px;
     }
 }
