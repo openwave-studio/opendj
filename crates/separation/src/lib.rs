@@ -4,6 +4,7 @@
 //! or on the CPU. See openspec/changes/improve-stem-separation.
 
 pub mod htdemucs;
+pub mod rates;
 pub mod spleeter;
 pub mod stft;
 

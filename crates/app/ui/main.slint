@@ -26,6 +26,8 @@ export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
 import { ChecklistUi } from "checklist.slint";
 import { LyricsUi, WaveLyrics, LyricsLane, WaveLine } from "lyrics.slint";
+import { TasksUi, TasksRing } from "tasks.slint";
+export { TasksUi, TaskRow, TaskWaiting } from "tasks.slint";
 import { NowPlayingUi } from "nowplaying.slint";
 import { DeckStrip, FourDeckBar } from "fourdeck.slint";
 import { LiteDeck, LiteMixer, LiteUi, PadBarHalf } from "lite.slint";
@@ -2446,11 +2448,11 @@ export component AppWindow inherits Window {
 
             // Footer: on the left, expand the library, leaving just the
             // Player row above it; on the right, show or hide the side panel.
-            // Player has its bar instead, so only while analysis runs.
-            Rectangle { height: !player || LibraryEdit.analysis-status != "" ? 1px : 0px; }
+            // Player has its bar instead, so only while background work runs.
+            Rectangle { height: !player || TasksUi.shown ? 1px : 0px; }
             Rectangle {
-                height: !player || LibraryEdit.analysis-status != "" ? 36px : 0px;
-                visible: !player || LibraryEdit.analysis-status != "";
+                height: !player || TasksUi.shown ? 36px : 0px;
+                visible: !player || TasksUi.shown;
                 background: Theme.panel;
                 HorizontalLayout {
                     padding-left: 8px;
@@ -2466,21 +2468,8 @@ export component AppWindow inherits Window {
                         lit-icon: "M 2 4 L 18 4 L 18 16 L 2 16 Z M 10 7 L 10 13 M 7 10 L 10 13 L 13 10";
                         clicked => { library-expanded = !library-expanded; }
                     }
-                    // How background analysis is going, with a ✕ that stops it.
-                    if LibraryEdit.analysis-status != "": HorizontalLayout {
-                        spacing: 6px;
-                        Text {
-                            text: LibraryEdit.analysis-status;
-                            color: Theme.text-dim;
-                            font-size: 12px;
-                            vertical-alignment: center;
-                        }
-                        Rectangle {
-                            width: 20px;
-                            CloseIcon { size: 8px; color: stop-touch.has-hover ? Theme.text : Theme.text-dim; }
-                            stop-touch := TouchArea { clicked => { LibraryEdit.cancel-analysis(); } }
-                        }
-                    }
+                    // Background work: a ring that opens the Background panel.
+                    if TasksUi.shown: TasksRing { y: 5px; }
                     FooterButton {
                         y: 5px;
                         lit: side-panel-visible;

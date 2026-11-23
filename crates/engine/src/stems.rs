@@ -15,8 +15,10 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex, Once, OnceLock};
+
+use crate::background::{self, Task};
 
 use symphonia::core::codecs::audio::{AudioDecoder, AudioDecoderOptions};
 use symphonia::core::codecs::CodecParameters;
@@ -540,11 +542,40 @@ pub fn find(path: &Path) -> Option<StemSource> {
     if is_ni_stem(path) {
         return Some(StemSource::NiStem(path.to_owned()));
     }
-    let files = separated_files(&crate::cache::stems_dir(path)?);
-    files
-        .iter()
-        .all(|f| f.is_file())
+    let dir = crate::cache::stems_dir(path)?;
+    let files = separated_files(&dir);
+    (files.iter().all(|f| f.is_file()) && !is_stale(&dir, &files[0]))
         .then_some(StemSource::Files(files))
+}
+
+/// The file that marks a separation as lined up with its track at any
+/// sample rate (see [`mark_aligned`]).
+const ALIGNED: &str = "aligned";
+
+/// Marks the stems in `dir` as made at the track's own rate, sample for
+/// sample with it.
+pub(crate) fn mark_aligned(dir: &Path) {
+    let _ = std::fs::write(dir.join(ALIGNED), b"");
+}
+
+/// Whether the stems in `dir` came from a separation that stretched tracks
+/// not at 44.1 kHz: before [`ALIGNED`] marks, HTDemucs was told every track
+/// was at 44.1 kHz, so its stems drifted off any other track and played
+/// over it. 44.1 kHz stems from then are fine; others are made again.
+fn is_stale(dir: &Path, first: &Path) -> bool {
+    !dir.join(ALIGNED).is_file() && flac_rate(first).is_some_and(|r| r != 44_100)
+}
+
+/// A FLAC file's sample rate, from its STREAMINFO block (always first).
+fn flac_rate(path: &Path) -> Option<u32> {
+    let mut head = [0u8; 21];
+    File::open(path).ok()?.read_exact(&mut head).ok()?;
+    if &head[..4] != b"fLaC" || head[4] & 0x7F != 0 {
+        return None;
+    }
+    // Marker, block header, min/max block size and min/max frame size,
+    // then the rate in 20 bits.
+    Some(u32::from(head[18]) << 12 | u32::from(head[19]) << 4 | u32::from(head[20]) >> 4)
 }
 
 /// Whether `path` is named like an NI STEM file.
@@ -782,17 +813,28 @@ fn parse_manifest(data: &[u8]) -> Option<Vec<StemInfo>> {
 /// How a separation is going.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Separation {
+    /// In the queue, after the one running.
+    Waiting,
     Running,
     Done,
     Failed(String),
 }
 
-/// Separations started this session, by file.
+/// Separations asked for this session, by file.
 static JOBS: Mutex<Option<HashMap<PathBuf, Separation>>> = Mutex::new(None);
 
-/// How the separation of `path` is going, if one was started.
+/// How the separation of `path` is going, if one was asked for.
 pub fn separation(path: &Path) -> Option<Separation> {
     JOBS.lock().unwrap().as_ref()?.get(path).cloned()
+}
+
+/// Every separation asked for this session and how it is going.
+pub fn separations() -> Vec<(PathBuf, Separation)> {
+    JOBS.lock()
+        .unwrap()
+        .as_ref()
+        .map(|j| j.iter().map(|(p, s)| (p.clone(), s.clone())).collect())
+        .unwrap_or_default()
 }
 
 fn set_job(path: &Path, state: Separation) {
@@ -800,6 +842,133 @@ fn set_job(path: &Path, state: Separation) {
         .unwrap()
         .get_or_insert_with(HashMap::new)
         .insert(path.to_owned(), state);
+}
+
+fn forget_job(path: &Path) {
+    if let Some(j) = JOBS.lock().unwrap().as_mut() {
+        j.remove(path);
+    }
+}
+
+type Done = Box<dyn FnOnce(Result<StemSource, String>) + Send>;
+
+/// Separations waiting, in the order they will run.
+static QUEUE: Mutex<VecDeque<(PathBuf, Done)>> = Mutex::new(VecDeque::new());
+static ADDED: Condvar = Condvar::new();
+/// The separation running and how far it is (0 to 1).
+static RUNNING: Mutex<Option<(PathBuf, f32)>> = Mutex::new(None);
+/// Moves on with each [`stop_separations`]; a separation started before
+/// gives up.
+static STOPS: AtomicU64 = AtomicU64::new(0);
+
+/// Separates the file at `path` into high-quality stems in the background
+/// (see [`crate::separation::separate_hq`]), leaving FLAC files in the
+/// cache where [`find`] looks. One runs at a time (each takes the GPU or
+/// every core); the rest wait their turn. `done` is called with the result
+/// when it finishes, unless it was stopped.
+pub fn separate(path: &Path, done: impl FnOnce(Result<StemSource, String>) + Send + 'static) {
+    if matches!(
+        separation(path),
+        Some(Separation::Running | Separation::Waiting)
+    ) {
+        return;
+    }
+    static WORKER: Once = Once::new();
+    let mut started = Ok(());
+    WORKER.call_once(|| {
+        started = std::thread::Builder::new()
+            .name("stem-separation".into())
+            .spawn(separate_queued)
+            .map(|_| ());
+    });
+    if let Err(e) = started {
+        set_job(path, Separation::Failed(e.to_string()));
+        return;
+    }
+    set_job(path, Separation::Waiting);
+    QUEUE
+        .lock()
+        .unwrap()
+        .push_back((path.to_owned(), Box::new(done)));
+    ADDED.notify_one();
+}
+
+/// The separation thread: one file after another, pausing between the
+/// model's chunks while the DJ has HQ stems paused.
+fn separate_queued() {
+    loop {
+        let (path, done) = {
+            let mut q = QUEUE.lock().unwrap_or_else(|e| e.into_inner());
+            loop {
+                if let Some(next) = q.pop_front() {
+                    break next;
+                }
+                q = ADDED.wait(q).unwrap_or_else(|e| e.into_inner());
+            }
+        };
+        let stop = STOPS.load(Ordering::Relaxed);
+        let keep_going = || STOPS.load(Ordering::Relaxed) == stop;
+        background::wait_while_held(Task::Stems, keep_going);
+        if !keep_going() {
+            continue;
+        }
+        set_job(&path, Separation::Running);
+        *RUNNING.lock().unwrap() = Some((path.clone(), 0.0));
+        let mut progress = |done: usize, total: usize| {
+            if let Some((_, p)) = RUNNING.lock().unwrap().as_mut() {
+                *p = done as f32 / total.max(1) as f32;
+            }
+            background::wait_while_held(Task::Stems, keep_going);
+        };
+        let result = crate::separation::separate_hq_watched(&path, &mut progress, &keep_going);
+        *RUNNING.lock().unwrap() = None;
+        if !keep_going() {
+            forget_job(&path);
+            continue;
+        }
+        set_job(
+            &path,
+            match &result {
+                Ok(_) => Separation::Done,
+                Err(e) => Separation::Failed(e.clone()),
+            },
+        );
+        done(result);
+    }
+}
+
+/// The separation running and how far it is (0 to 1).
+pub fn separating() -> Option<(PathBuf, f32)> {
+    RUNNING.lock().unwrap().clone()
+}
+
+/// The files waiting to be separated, in the order they will run.
+pub fn separations_waiting() -> Vec<PathBuf> {
+    QUEUE
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|(p, _)| p.clone())
+        .collect()
+}
+
+/// Moves a waiting file to the front of the queue.
+pub fn separate_next(path: &Path) {
+    let mut q = QUEUE.lock().unwrap();
+    if let Some(at) = q.iter().position(|(p, _)| p == path) {
+        if let Some(job) = q.remove(at) {
+            q.push_front(job);
+        }
+    }
+}
+
+/// Stops the separation running and drops those waiting.
+pub fn stop_separations() {
+    STOPS.fetch_add(1, Ordering::Relaxed);
+    let dropped: Vec<PathBuf> = QUEUE.lock().unwrap().drain(..).map(|(p, _)| p).collect();
+    for p in dropped {
+        forget_job(&p);
+    }
 }
 
 /// The command that runs Demucs. `OPENDJ_DEMUCS` overrides it; otherwise
@@ -952,40 +1121,6 @@ fn has_demucs_module(python: &Path) -> bool {
         .is_ok_and(|s| s.success())
 }
 
-/// Separates the file at `path` into high-quality stems in the background
-/// (see [`crate::separation::separate_hq`]), leaving FLAC files in the
-/// cache where [`find`] looks. `done` is called with the result when it
-/// finishes.
-pub fn separate(path: &Path, done: impl FnOnce(Result<StemSource, String>) + Send + 'static) {
-    if matches!(separation(path), Some(Separation::Running)) {
-        return;
-    }
-    set_job(path, Separation::Running);
-    let path = path.to_owned();
-    let spawned = std::thread::Builder::new()
-        .name("stem-separation".into())
-        .spawn({
-            let path = path.clone();
-            move || {
-                // One at a time: each takes the GPU (or every core).
-                static ONE_AT_A_TIME: Mutex<()> = Mutex::new(());
-                let _turn = ONE_AT_A_TIME.lock().unwrap_or_else(|e| e.into_inner());
-                let result = crate::separation::separate_hq(&path);
-                set_job(
-                    &path,
-                    match &result {
-                        Ok(_) => Separation::Done,
-                        Err(e) => Separation::Failed(e.clone()),
-                    },
-                );
-                done(result);
-            }
-        });
-    if let Err(e) = spawned {
-        set_job(&path, Separation::Failed(e.to_string()));
-    }
-}
-
 /// Separates the file at `path` with the Demucs command, into the cache.
 pub(crate) fn run_demucs(path: &Path) -> Result<StemSource, String> {
     let dir = crate::cache::stems_dir(path).ok_or("no cache folder")?;
@@ -1018,6 +1153,22 @@ pub(crate) fn run_demucs(path: &Path) -> Result<StemSource, String> {
         let _ = std::fs::remove_dir_all(&work);
         return Err("Demucs finished but left no stems".into());
     }
+    // Demucs writes at its own 44.1 kHz; a deck only takes stems at the
+    // track's rate.
+    let conformed = (|| -> Result<(), String> {
+        let rate = crate::decode::Decoder::open(path)?.audio().sample_rate;
+        for f in &files {
+            if flac_rate(f) != Some(rate) {
+                crate::separation::resample_flac(f, rate)?;
+            }
+        }
+        Ok(())
+    })();
+    if let Err(e) = conformed {
+        let _ = std::fs::remove_dir_all(&work);
+        return Err(e);
+    }
+    mark_aligned(&made);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::rename(&made, &dir).map_err(|e| e.to_string())?;
     let _ = std::fs::remove_dir_all(&work);
@@ -1159,6 +1310,23 @@ mod tests {
         // Where there are no stems yet, the original plays.
         assert_eq!(stems.mix(500_000, &[0.0; 5], || [0.7, 0.7]), [0.7, 0.7]);
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn stretched_stems_from_before_the_rate_fix_are_made_again() {
+        let dir = std::env::temp_dir().join(format!("opendj-stale-stems-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("drums.flac");
+        let silence = vec![0.0f32; 4096];
+        for (rate, stale) in [(48_000, true), (44_100, false), (96_000, true)] {
+            crate::recorder::write_flac(&file, rate, [&silence, &silence]).unwrap();
+            assert_eq!(flac_rate(&file), Some(rate));
+            assert_eq!(is_stale(&dir, &file), stale, "{rate} Hz");
+        }
+        mark_aligned(&dir);
+        assert!(!is_stale(&dir, &file));
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

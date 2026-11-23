@@ -19,6 +19,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
+pub use opendj_plugin_host::pd_patch;
 pub use opendj_plugin_host::presets as plugin_presets;
 pub use opendj_plugin_host::{
     presets as own_presets, scan, scan_audio_units, Descriptor, Limits, Plugin, ScanError,

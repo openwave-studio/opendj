@@ -11,6 +11,7 @@
 - [x] 2.1 (v0.4) `crates/separation`: model download (GitHub release asset, SHA-256), STFT, Spleeter and HTDemucs on the chosen runtime, CPU fallback; unit tests on short generated signals
 - [ ] 2.2 Worker: one queue for all decks, fast-tier priority, playhead-first ordering, pause on underruns/dropped frames
   - v0.4: Spleeter on load runs one track at a time on half the cores, from the cue point outwards, a chunk at a time (`spleeter::separate_in_chunks`); HQ jobs run one at a time. No playhead-first HQ or pausing yet
+  - v1.0: tracks not at 44.1 kHz also get Spleeter stems a chunk at a time from the cue (resampled per chunk, `opendj_separation::rates`), instead of after the whole track
 
 ## 3. Engine
 

@@ -186,7 +186,7 @@ fn htdemucs_run<B: opendj_separation::burn::prelude::Backend>(
     println!("  {label}: warmed up in {:.2} s", t.elapsed().as_secs_f64());
     let length = audio[0].len() as f64 / SAMPLE_RATE as f64;
     let t = Instant::now();
-    let stems = model.separate(audio)?;
+    let stems = model.separate(audio, SAMPLE_RATE)?;
     let total = t.elapsed().as_secs_f64();
     println!(
         "  {label}: whole track {total:.1} s ({:.1}x real time)",

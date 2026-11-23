@@ -2353,10 +2353,20 @@ impl Prefs {
                 crate::lrclib::ENABLED,
                 "Find lyrics online",
                 "Find in the Lyrics tab looks the track up on LRCLIB, a free lyrics \
-                 database, and saves what you pick as an .lrc file beside it.",
+                 database, and saves what you pick as an .lrc file beside it. Sends only \
+                 the track's names and length.",
                 crate::lrclib::enabled(),
             ),
         ];
+        if crate::lrclib::enabled() {
+            items.push(switch(
+                crate::lrclib::ON_ANALYZE,
+                "Find lyrics when analyzing",
+                "Analyze also saves the closest lyrics LRCLIB has for each track that has \
+                 none. Pick others with Find in the Lyrics tab.",
+                crate::lrclib::on_analyze(),
+            ));
+        }
         items.push(PrefItem {
             action: if self.cleanup_open { "open" } else { "closed" }.into(),
             ..item(CLEANUP_FOLD, HEADING, "CLEAN-UP", "")

@@ -34,8 +34,23 @@ The side panel SHALL have a Lyrics tab that follows the track playing (or, as pi
 - **THEN** the tab says it has no lyrics and how to add them
 
 ### Requirement: Online lookup only when asked
-openDJ SHALL fetch lyrics from the internet only when the DJ presses Find, SHALL let the DJ turn the lookup off (it is on at first), and SHALL never send lyrics anywhere.
+openDJ SHALL fetch lyrics from the internet only when the DJ presses Find or asks for tracks to be analysed, SHALL let the DJ turn the lookup off (it is on at first), and SHALL never send lyrics anywhere.
 
 #### Scenario: First launch
 - **WHEN** a track with no lyrics is shown in the Lyrics tab on a new install
-- **THEN** no request is made to any lyrics service until the DJ presses Find
+- **THEN** no request is made to any lyrics service until the DJ presses Find or analyses the track
+
+### Requirement: Lyrics found when tracks are analysed
+When the DJ asks for tracks to be analysed (Analyze Track, Analyze All) and both Find lyrics online and Find lyrics when analyzing are on, openDJ SHALL look up each analysed file that has no lyrics on LRCLIB, one track at a time, honouring `Retry-After`, and SHALL save the closest match as it would save a pick from Find. Lyrics of another length SHALL be saved only as plain words, and instrumental records SHALL be skipped. The DJ SHALL be able to replace them with Find in the Lyrics tab.
+
+#### Scenario: Closest match saved
+- **WHEN** the DJ analyses a track with no `.lrc` file and no lyrics in its tags, and LRCLIB has synced lyrics of the same length
+- **THEN** those lyrics are saved as an `.lrc` beside the track and the Lyrics tab shows them
+
+#### Scenario: Lyrics kept
+- **WHEN** the DJ analyses a track that already has lyrics
+- **THEN** no request is made to LRCLIB for it and its lyrics stay as they are
+
+#### Scenario: Switched off
+- **WHEN** Find lyrics when analyzing is off
+- **THEN** analysing tracks makes no request to LRCLIB

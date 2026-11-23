@@ -80,6 +80,9 @@ pub const SCORE: i32 = 30;
 /// would do.
 pub const PROBLEM: i32 = 31;
 pub const FIX: i32 = 32;
+/// The track's high-quality stems: Ready, the percent separated, Waiting,
+/// Paused or Failed.
+pub const STEMS: i32 = 33;
 /// Tag field `i` (from 0) is column `TAGS + i`.
 pub const TAGS: i32 = 100;
 
@@ -129,6 +132,7 @@ pub fn all(names: &FieldNames) -> Vec<Def> {
         d(CUES, "Cues", 44.0, true, TEXT),
         d(TAGGED, "Tags", 44.0, false, TEXT),
         d(COVER, "Cover", 48.0, false, TEXT),
+        d(STEMS, "Stems", 60.0, false, DIM),
         d(PLAYED, "Plays", 48.0, true, DIM),
         d(ADDED, "Added", 86.0, false, DIM),
         d(LAST_PLAYED, "Last Played", 86.0, false, DIM),
@@ -481,6 +485,8 @@ pub struct PrepFacts {
     /// In a Collection Health area: what's wrong, and the fix.
     pub problem: String,
     pub fix: String,
+    /// The Stems column's cell (see `Browser::stems_cell`).
+    pub stems: SharedString,
 }
 
 pub fn row_cells(
@@ -519,6 +525,7 @@ pub fn row_cells(
             SCORE => prep.score.map(|s| s.to_string()).unwrap_or_default().into(),
             PROBLEM => prep.problem.as_str().into(),
             FIX => prep.fix.as_str().into(),
+            STEMS => prep.stems.clone(),
             COVER => match prep.cover {
                 Some(true) => "✓".into(),
                 Some(false) => "—".into(),

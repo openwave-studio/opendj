@@ -1,7 +1,7 @@
 //! The helper process. Two modes:
 //!
 //! - `opendj-plugin-host --shm <path> (--test <id> | --clap <file> --id <id> |
-//!   --vst3 <bundle> --id <cid>)`
+//!   --vst3 <bundle> --id <cid> | --au <id> | --pd <patch>)`
 //!   maps the block openDJ shares, loads one effect, describes it on stdout
 //!   (`name`, `latency`, `param` lines, then `ready`) and runs a block each
 //!   time openDJ writes a byte to stdin. It exits when stdin closes, so a
@@ -63,6 +63,7 @@ fn main() {
     let mut clap = None;
     let mut vst3 = None;
     let mut au = None;
+    let mut pd = None;
     let mut scan_au = false;
     let mut list_presets = false;
     let mut id = None;
@@ -78,6 +79,7 @@ fn main() {
             Some("--clap") => clap = args.next().map(PathBuf::from),
             Some("--vst3") => vst3 = args.next().map(PathBuf::from),
             Some("--au") => au = args.next().and_then(|s| s.into_string().ok()),
+            Some("--pd") => pd = args.next().map(PathBuf::from),
             Some("--scan-au") => scan_au = true,
             Some("--presets") => list_presets = true,
             Some("--id") => id = args.next().and_then(|s| s.into_string().ok()),
@@ -113,13 +115,14 @@ fn main() {
         };
         return run_presets(found);
     }
-    let plugin = match (test, clap, vst3, au, id) {
-        (Some(t), None, None, None, _) => Plugin::Test(t),
-        (None, Some(file), None, None, Some(id)) => Plugin::Clap { file, id },
-        (None, None, Some(file), None, Some(id)) => Plugin::Vst3 { file, id },
-        (None, None, None, Some(id), _) => Plugin::Au { id },
+    let plugin = match (test, clap, vst3, au, pd, id) {
+        (Some(t), None, None, None, None, _) => Plugin::Test(t),
+        (None, Some(file), None, None, None, Some(id)) => Plugin::Clap { file, id },
+        (None, None, Some(file), None, None, Some(id)) => Plugin::Vst3 { file, id },
+        (None, None, None, Some(id), None, _) => Plugin::Au { id },
+        (None, None, None, None, Some(file), _) => Plugin::Pd { file },
         _ => fail(
-            "usage: opendj-plugin-host --shm <path> (--test <id> | --clap <file> --id <id> | --vst3 <bundle> --id <cid> | --au <type:subtype:maker>)",
+            "usage: opendj-plugin-host --shm <path> (--test <id> | --clap <file> --id <id> | --vst3 <bundle> --id <cid> | --au <type:subtype:maker> | --pd <patch>)",
         ),
     };
     let Some(shm_path) = shm_path else {

@@ -1751,6 +1751,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 browser.borrow_mut().poll_art();
                 browser.borrow_mut().poll_waves();
                 browser.borrow_mut().poll_analysis();
+                browser.borrow_mut().poll_tasks();
                 browser.borrow_mut().poll_usb_export();
                 browser.borrow_mut().poll_playlist_files();
                 browser.borrow_mut().poll_inbox_albums();
@@ -2613,7 +2614,11 @@ impl Decks {
                 Source::File(path) => {
                     matches!(
                         stems::separation(path),
-                        Some(stems::Separation::Running | stems::Separation::Done)
+                        Some(
+                            stems::Separation::Waiting
+                                | stems::Separation::Running
+                                | stems::Separation::Done
+                        )
                     ) && !stems.is_some_and(|s| s.playing_quality() == stems::Quality::High)
                 }
                 _ => false,
@@ -2623,7 +2628,11 @@ impl Decks {
                     !stems.is_some_and(|s| s.playing_quality() == stems::Quality::High)
                         && !matches!(
                             stems::separation(path),
-                            Some(stems::Separation::Running | stems::Separation::Done)
+                            Some(
+                                stems::Separation::Waiting
+                                    | stems::Separation::Running
+                                    | stems::Separation::Done
+                            )
                         )
                 }
                 _ => false,

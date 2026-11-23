@@ -1,17 +1,26 @@
 //! Finding lyrics on LRCLIB (lrclib.net), a free community database of
 //! synced lyrics with no key. On by default, and switched off in Settings ›
-//! Collection › Health; asked only when the DJ presses Find in the Lyrics
-//! tab, one request at a time, with openDJ's User-Agent as LRCLIB asks.
-//! Nothing is ever sent to LRCLIB but the track's names and length.
+//! Collection › Health; asked when the DJ presses Find in the Lyrics tab,
+//! and for each track the DJ asks to analyse that has no lyrics yet (see
+//! [`closest`]), one request at a time, waiting as long as LRCLIB's
+//! `Retry-After` asks, with openDJ's User-Agent as LRCLIB asks. Nothing is
+//! ever sent to LRCLIB but the track's names and length.
 
-use opendj_plugins::encode;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use opendj_engine::lyrics;
+use opendj_plugins::{encode, USER_AGENT};
 use serde_json::Value;
 
-use crate::coverart::{try_json, Failed};
 use crate::settings;
 
 /// The switch in Settings › Collection › Health: on at first.
 pub const ENABLED: &str = "lyrics_lookup";
+
+/// The switch for finding lyrics when tracks are analysed: on at first,
+/// and only asked when [`ENABLED`] is on too.
+pub const ON_ANALYZE: &str = "lyrics_on_analyze";
 
 /// Lengths within this many seconds match; LRCLIB matches the same way.
 const SAME_LENGTH: f64 = 2.0;
@@ -20,6 +29,16 @@ const API: &str = "https://lrclib.net/api";
 
 pub fn enabled() -> bool {
     settings::flag(ENABLED, true)
+}
+
+/// Whether analysing a track also finds its lyrics.
+pub fn on_analyze() -> bool {
+    enabled() && settings::flag(ON_ANALYZE, true)
+}
+
+/// Where openDJ keeps lyrics for tracks whose folder can't be written.
+pub fn store() -> Option<PathBuf> {
+    settings::config_dir().map(|d| d.join("lyrics"))
 }
 
 /// One record LRCLIB has.
@@ -103,6 +122,112 @@ fn rank(mut found: Vec<Found>, duration: f64) -> Vec<Found> {
     found
 }
 
+/// The lyrics to save for a track `duration` seconds long without asking:
+/// the best of what [`find`] ranked. Lyrics of another length are taken
+/// only as plain words, as their timing wouldn't fit; instrumental records
+/// give nothing.
+pub fn closest(found: &[Found], duration: f64) -> Option<String> {
+    let best = found
+        .iter()
+        .find(|f| !f.instrumental && !f.text().trim().is_empty())?;
+    if best.fits(duration) {
+        return Some(best.text().to_string());
+    }
+    let plain = found
+        .iter()
+        .filter(|f| !f.instrumental && !f.plain.trim().is_empty())
+        .min_by(|a, b| {
+            (a.duration - duration)
+                .abs()
+                .total_cmp(&(b.duration - duration).abs())
+        })?;
+    Some(plain.plain.clone())
+}
+
+/// What became of looking up lyrics for a track being analysed.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Fetched {
+    /// The closest lyrics were saved for it.
+    Saved,
+    /// It has lyrics already, or nothing to look it up by.
+    Skipped,
+    /// LRCLIB had nothing to use.
+    Missed,
+    /// LRCLIB couldn't be reached, or the lyrics couldn't be saved.
+    Failed,
+}
+
+/// Finds and saves the closest lyrics for the file at `path`, unless it has
+/// lyrics already (beside it, in its tags or in openDJ's own folder). Runs
+/// on the caller's thread.
+pub fn fetch_closest(path: &Path, q: &Query) -> Fetched {
+    let store = store();
+    if q.title.trim().is_empty() || lyrics::find_with(path, store.as_deref()).is_some() {
+        return Fetched::Skipped;
+    }
+    let found = match find(q) {
+        Ok(found) => found,
+        Err(Miss::None) => return Fetched::Missed,
+        Err(Miss::Offline) => return Fetched::Failed,
+    };
+    let Some(text) = closest(&found, q.duration) else {
+        return Fetched::Missed;
+    };
+    match lyrics::save(path, store.as_deref(), &text) {
+        Ok(_) => Fetched::Saved,
+        Err(e) => {
+            eprintln!("can't save the lyrics found for {}: {e}", q.title);
+            Fetched::Failed
+        }
+    }
+}
+
+/// Why a request gave nothing back.
+enum Failed {
+    /// LRCLIB answered that it has no such thing.
+    NotThere,
+    /// LRCLIB couldn't be reached, or kept saying it was busy.
+    Unreachable,
+}
+
+/// How many times a request asked to wait is tried again.
+const RETRIES: u32 = 2;
+/// The longest a `Retry-After` is waited for.
+const MOST_WAIT: u64 = 60;
+
+/// Asks LRCLIB for JSON, waiting and asking again when it answers 429 with
+/// a `Retry-After`.
+fn get_json(url: &str) -> Result<Value, Failed> {
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_global(Some(Duration::from_secs(12)))
+        .user_agent(USER_AGENT)
+        .http_status_as_error(false)
+        .build()
+        .into();
+    for _ in 0..=RETRIES {
+        let mut r = agent
+            .get(url)
+            .header("Accept", "application/json")
+            .call()
+            .map_err(|_| Failed::Unreachable)?;
+        match r.status().as_u16() {
+            200 => return r.body_mut().read_json().map_err(|_| Failed::Unreachable),
+            404 => return Err(Failed::NotThere),
+            429 | 503 => {
+                let wait = r
+                    .headers()
+                    .get("retry-after")
+                    .and_then(|v| v.to_str().ok())
+                    .and_then(|v| v.trim().parse::<u64>().ok())
+                    .unwrap_or(5);
+                std::thread::sleep(Duration::from_secs(wait.min(MOST_WAIT)));
+            }
+            _ => return Err(Failed::Unreachable),
+        }
+    }
+    Err(Failed::Unreachable)
+}
+
 /// Why nothing came back.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Miss {
@@ -127,7 +252,7 @@ pub fn find(q: &Query) -> Result<Vec<Found>, Miss> {
         if !q.album.trim().is_empty() {
             url.push_str(&format!("&album_name={}", encode(&q.album)));
         }
-        match try_json(&url, None) {
+        match get_json(&url) {
             Ok(v) => {
                 reached = true;
                 found.extend(record(&v));
@@ -140,7 +265,7 @@ pub fn find(q: &Query) -> Result<Vec<Found>, Miss> {
     if !q.artist.trim().is_empty() {
         url.push_str(&format!("&artist_name={}", encode(&q.artist)));
     }
-    match try_json(&url, None) {
+    match get_json(&url) {
         Ok(Value::Array(list)) => {
             reached = true;
             found.extend(list.iter().filter_map(record));
@@ -204,5 +329,40 @@ mod tests {
         assert_eq!(ranked[1].plain, "plain right length");
         assert_eq!(ranked[2].synced, "[00:01.00]radio edit");
         assert!(!ranked[2].fits(200.0));
+    }
+
+    #[test]
+    fn closest_takes_the_best_that_fits() {
+        let ranked = rank(
+            vec![
+                found(200.0, "", "plain right length"),
+                found(201.0, "[00:01.00]album", "album words"),
+            ],
+            200.0,
+        );
+        assert_eq!(closest(&ranked, 200.0).as_deref(), Some("[00:01.00]album"));
+    }
+
+    #[test]
+    fn closest_takes_only_the_words_of_another_length() {
+        let ranked = rank(
+            vec![
+                found(180.0, "[00:01.00]radio edit", "radio words"),
+                found(240.0, "[00:01.00]extended", "extended words"),
+            ],
+            200.0,
+        );
+        assert_eq!(closest(&ranked, 200.0).as_deref(), Some("radio words"));
+        let ranked = rank(vec![found(180.0, "[00:01.00]radio edit", "")], 200.0);
+        assert_eq!(closest(&ranked, 200.0), None);
+    }
+
+    #[test]
+    fn closest_skips_instrumentals() {
+        let mut quiet = found(200.0, "", "");
+        quiet.instrumental = true;
+        assert_eq!(closest(&[quiet.clone()], 200.0), None);
+        let ranked = rank(vec![quiet, found(200.0, "", "words")], 200.0);
+        assert_eq!(closest(&ranked, 200.0).as_deref(), Some("words"));
     }
 }

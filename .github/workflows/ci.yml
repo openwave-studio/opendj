@@ -109,6 +109,10 @@ jobs:
           echo $$ | sudo tee /sys/fs/cgroup/app-build/cgroup.procs
           cargo clippy -p opendj --all-targets -j1 -- -D warnings
       - run: cargo test --workspace --exclude opendj
+      # Pure Data patches in the plugin helper (experimental, off by default):
+      # libpd builds from source with CMake.
+      - run: cargo clippy -p opendj-plugin-host --features pd --all-targets -- -D warnings
+      - run: cargo test -p opendj-plugin-host --features pd
       # Compiling the app's tests takes about 16.5 GB on its own (rust-cache
       # turns incremental builds off), so it runs alone and inside the
       # memory fence. The app's test binary is the last thing this step

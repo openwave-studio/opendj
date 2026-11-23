@@ -458,6 +458,9 @@ impl Browser {
                 }
             }
         }
+        for id in self.analysis.take_lyrics() {
+            self.lyrics_saved(id);
+        }
         self.show_analysis();
     }
 }
