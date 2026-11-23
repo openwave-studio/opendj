@@ -486,6 +486,21 @@ impl Deck {
         self.quantize_beats().min(1.0)
     }
 
+    /// Where CUE on a paused deck sets the cue point: here, or with quantize
+    /// on the nearest quantize step (a beat at most), as for hot cues. The
+    /// deck moves there too, so the cue plays from where it now is.
+    fn cue_spot(&mut self, track: &Track) -> f64 {
+        let at = self.seconds();
+        if !self.c.quantize.get_bool() || track.bpm <= 0.0 {
+            return at;
+        }
+        let snapped = track.snap_to(at, self.point_step(), false).max(0.0);
+        if (snapped - at).abs() > 1e-9 {
+            self.seek(snapped);
+        }
+        snapped
+    }
+
     /// The deck's quantize size in beats, 1/16 to 4.
     fn quantize_beats(&self) -> f64 {
         let b = self.c.quantize_beats.get();
@@ -666,7 +681,8 @@ impl Deck {
                 let cue = self.c.cue_point.get();
                 self.seek(cue);
             } else {
-                self.c.cue_point.set(self.seconds());
+                let at = self.cue_spot(&track);
+                self.c.cue_point.set(at);
                 if self.c.cue_mode.get() != 3.0 {
                     self.c.play.set_bool(true);
                     self.previewing = Some(self.c.play.version());
@@ -690,7 +706,8 @@ impl Deck {
                 let cue = self.c.cue_point.get();
                 self.seek(cue);
             } else {
-                self.c.cue_point.set(self.seconds());
+                let at = self.cue_spot(&track);
+                self.c.cue_point.set(at);
             }
             self.cup_held = true;
         }
@@ -6200,6 +6217,40 @@ mod tests {
     }
 
     #[test]
+    fn cue_on_a_paused_deck_is_set_on_the_beat() {
+        let (reg, mut engine, mut input) = setup();
+        let track = short_track(120.0, 30.0);
+        load(&mut input, 0, track.clone());
+        run(&mut engine, 0.02);
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        // Paused just past beat 6 with quantize on (as by default): the cue
+        // point and the deck go to beat 6.
+        c("playposition").set(track.seconds_at(6.3) / track.duration);
+        run(&mut engine, 0.02);
+        press(&reg, "[Channel1]", "cue_default");
+        run(&mut engine, 0.02);
+        assert!((track.beat_at(c("cue_point").get()) - 6.0).abs() < 1e-3);
+        assert!((track.beat_at(engine.decks[0].seconds()) - 6.0).abs() < 1e-3);
+        // CUE PLAY too, from just before beat 9.
+        c("playposition").set(track.seconds_at(8.8) / track.duration);
+        run(&mut engine, 0.02);
+        c("cue_play").set_bool(true);
+        run(&mut engine, 0.01);
+        assert!((track.beat_at(c("cue_point").get()) - 9.0).abs() < 1e-3);
+        c("cue_play").set_bool(false);
+        run(&mut engine, 0.02);
+        c("play").set_bool(false);
+        run(&mut engine, 0.02);
+        // Quantize off: where the deck is.
+        c("quantize").set_bool(false);
+        c("playposition").set(track.seconds_at(4.3) / track.duration);
+        run(&mut engine, 0.02);
+        press(&reg, "[Channel1]", "cue_default");
+        run(&mut engine, 0.02);
+        assert!((track.beat_at(c("cue_point").get()) - 4.3).abs() < 0.02);
+    }
+
+    #[test]
     fn a_hot_cue_is_set_on_the_quantize_step() {
         let (reg, mut engine, mut input) = setup();
         let track = short_track(120.0, 30.0);
@@ -7623,6 +7674,9 @@ mod tests {
         run(&mut engine, 0.01);
         let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
         let seconds = || ctl("playposition").get() * 10.0;
+        // Off the grid on purpose: cue_on_a_paused_deck_is_set_on_the_beat
+        // covers quantize.
+        ctl("quantize").set_bool(false);
         ctl("playposition").set(0.2);
         run(&mut engine, 0.01);
         // Held on a stopped deck: sets the cue point there and plays.
