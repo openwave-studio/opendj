@@ -5,7 +5,7 @@ use super::*;
 /// How the plugin list is narrowed; kept while Settings is open.
 #[derive(Default)]
 pub(super) struct PluginView {
-    /// The format chips that are on ("CLAP", "VST3", "AU"); none is all.
+    /// The format chips that are on ("CLAP", "VST3", "AU", "Pd"); none is all.
     pub(super) formats: Vec<String>,
     pub(super) search: String,
     /// Makers opened in the list.
@@ -14,7 +14,7 @@ pub(super) struct PluginView {
 
 /// The formats in `list`, in the chips' order.
 pub(super) fn plugin_formats(list: &[Found]) -> Vec<String> {
-    ["CLAP", "VST3", "AU"]
+    ["CLAP", "VST3", "AU", "Pd"]
         .into_iter()
         .filter(|f| list.iter().any(|p| p.format == *f))
         .map(String::from)

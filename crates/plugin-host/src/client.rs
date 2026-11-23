@@ -154,6 +154,7 @@ fn plugin_args(plugin: &Plugin) -> Vec<std::ffi::OsString> {
             id.into(),
         ],
         Plugin::Au { id } => vec!["--au".into(), id.into()],
+        Plugin::Pd { file } => vec!["--pd".into(), file.clone().into_os_string()],
     }
 }
 

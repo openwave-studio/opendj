@@ -11,6 +11,8 @@
 //! - [`effects`]: what a helper can run. For now only test effects (gain,
 //!   crash, hang, slow) that prove the isolation; CLAP, VST3 and AU plugins
 //!   follow, as planned in the `add-audio-plugin-hosting` change.
+//! - [`pd_patch`]: what a Pure Data patch offers, read from its text;
+//!   `pd` (feature `pd`, experimental) runs it in libpd.
 //! - [`window`] (in the helper): the window a plugin's own editor opens in.
 
 #[cfg(all(feature = "formats", target_os = "macos"))]
@@ -20,6 +22,9 @@ pub mod clap;
 pub mod client;
 pub mod descriptor;
 pub mod effects;
+#[cfg(feature = "pd")]
+pub mod pd;
+pub mod pd_patch;
 pub mod policy;
 pub mod presets;
 pub mod shm;
