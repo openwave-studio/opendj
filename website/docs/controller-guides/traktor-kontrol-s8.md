@@ -2,8 +2,7 @@
 
 The S8 is a USB HID controller, not a MIDI one. openDJ has its own mapping
 for it, but a partial one: the only published layout of the S8's USB
-reports leaves gaps, and nobody has tried this mapping on a real S8 yet.
-Please tell us how it goes. Plug it in and it shows up in
+reports leaves gaps. Plug it in and it shows up in
 **Settings › Controllers** within a second or so. It's also a sound card:
 choose it in **Settings › Audio**.
 

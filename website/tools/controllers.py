@@ -20,10 +20,8 @@ from pathlib import Path
 MIXXX_MANUAL = "https://manual.mixxx.org/2.4/en/hardware/controllers/{}"
 ISSUE_URL = "https://github.com/openwave-studio/opendj/issues/new?template=controller.yml"
 STATUS = {
-    "supported": "**Supported.** Tried on the hardware, and the mapping is settled.",
-    "beta": ("**Beta.** This mapping works on paper and has a picture in the Controller "
-             "Editor, but nobody has tried it in openDJ on the real controller yet. If you "
-             "have one, [tell us how it goes]({}): what works, and what doesn't."),
+    "supported": "**Supported.** Tried on the hardware.",
+    "beta": "**Beta.** [Let us know]({}) if you run into any issues.",
     "planned": "**Coming soon.** openDJ doesn't have a mapping for this controller yet.",
 }
 
@@ -298,8 +296,6 @@ class Mapping:
             meta.append(f"[Mixxx manual page]({MIXXX_MANUAL.format(self.manual.lower())})")
         if self.forums.startswith("http"):
             meta.append(f"[Forum thread]({self.forums})")
-        if meta:
-            out += [" · ".join(meta), ""]
         if self.description and self.description != self.name:
             out += [md(self.description), ""]
         if self.mapped:
@@ -315,13 +311,13 @@ class Mapping:
             out += ["This is a USB HID mapping: it runs as a script, with no list of controls "
                     "to show here."]
             if self.manual:
-                out[-1] += " The Mixxx manual page above shows what each control does."
+                out[-1] += " The Mixxx manual page linked below shows what each control does."
             out += [""]
         elif not self.documented:
             out += ["This mapping doesn't describe its controls one by one, so there's no "
                     "list here yet."]
             if self.manual:
-                out[-1] += " The Mixxx manual page above shows the layout."
+                out[-1] += " The Mixxx manual page linked below shows the layout."
             out += [""]
         else:
             rows = self.table_rows()
@@ -345,8 +341,10 @@ class Mapping:
             if self.undescribed:
                 out += ["", f"{self.undescribed} more controls in this mapping have no "
                         "description, so they aren't listed."]
-        out += ["", "---", "",
-                f"Generated from `res/controllers/{self.path.name}`. If something here is "
+        out += ["", "---", ""]
+        if meta:
+            out += [" · ".join(meta), ""]
+        out += [f"Generated from `res/controllers/{self.path.name}`. If something here is "
                 f"wrong on your controller, [tell us]({ISSUE_URL}).", ""]
         return "\n".join(out)
 
@@ -407,9 +405,8 @@ def main():
              "load their mapping as soon as they're plugged in.", "",
              "## Popular controllers", "",
              "openDJ looks after these itself: each has a picture in the Controller Editor and "
-             "a guide. **Beta** means nobody has tried it in openDJ on the real controller yet; "
-             f"if you have one, [tell us how it goes]({ISSUE_URL}). It becomes **Supported** "
-             "once it has been tried and its mapping is settled.", ""]
+             f"a guide. **Beta** ones are new: [let us know]({ISSUE_URL}) if you run into any "
+             "issues.", ""]
     by_file = {m.path.name: m for m in mappings}
     labels = {"supported": "Supported", "beta": "Beta", "planned": "Coming soon"}
     by_maker = {}
