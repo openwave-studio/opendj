@@ -322,8 +322,11 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     let bytes = std::fs::read(weights).map_err(|e| format!("{}: {e}", weights.display()))?;
     let device = B::Device::default();
     let model = HtDemucs::<B>::load(&bytes, &device)?;
-    let stems = model.separate([&l, &r])?;
-    let model_rate = opendj_separation::SAMPLE_RATE;
+    // At the track's own rate: HTDemucs resamples to its 44.1 kHz and back
+    // itself. Told 44.1 kHz for a 48 kHz track, it would hear it 9% slow and
+    // its stems, stretched back, would drift off the original they are taken
+    // out of, so muting one would add it back late instead of removing it.
+    let stems = model.separate([&l, &r], rate)?;
     let dir = crate::cache::stems_dir(path).ok_or("no cache folder")?;
     let work = dir.with_extension(format!("work{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&work);
@@ -331,12 +334,12 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     let written = (|| -> Result<(), String> {
         // HTDemucs's order is ours: drums, bass, other, vocals.
         for (name, [sl, sr]) in opendj_separation::htdemucs::STEMS.iter().zip(&stems) {
-            let fit = |x: &[f32]| -> Result<Vec<f32>, String> {
-                let mut y = opendj_separation::resample(x, model_rate, rate)?;
+            let fit = |x: &[f32]| -> Vec<f32> {
+                let mut y = x.to_vec();
                 y.resize(audio.len(), 0.0);
-                Ok(y)
+                y
             };
-            let (sl, sr) = (fit(sl)?, fit(sr)?);
+            let (sl, sr) = (fit(sl), fit(sr));
             crate::recorder::write_flac(&work.join(format!("{name}.flac")), rate, [&sl, &sr])
                 .map_err(|e| e.to_string())?;
         }
@@ -346,6 +349,7 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
         let _ = std::fs::remove_dir_all(&work);
         return Err(e);
     }
+    crate::stems::mark_aligned(&work);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::rename(&work, &dir).map_err(|e| e.to_string())?;
     crate::stems::find(path).ok_or_else(|| "the stems weren't written".into())
