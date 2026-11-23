@@ -20,6 +20,7 @@
 //          by the time played.
 //    xx30  a track is loaded: its length.
 //    xx39  the HOT CUE labels.
+//    xx33  the track's cover art, a JPEG over as many reports as it takes.
 //    xx35  how many waveform entries the track has (three reports).
 //    xx36  waveform entries, 19 a report: 150 a second of the track, each
 //          16 bits, little-endian: height (5 bits) and the low, mid and
@@ -42,6 +43,7 @@ PioneerDDJFLX10Screens.stateMs = 5;            // xx27 every 5 ms (200 a second)
 PioneerDDJFLX10Screens.trickleMs = 125;        // an xx36 at the playhead this often
 PioneerDDJFLX10Screens.uploadPerTick = 8;      // waveform reports sent each tick while loading
 PioneerDDJFLX10Screens.analysisWaitMs = 30000; // how long to wait for a track's analysis
+PioneerDDJFLX10Screens.artSize = 240;          // cover art, pixels square (the screen's size)
 PioneerDDJFLX10Screens.entriesPerSecond = 150;
 PioneerDDJFLX10Screens.entriesPerReport = 19;
 // A paused or scratched deck may step back a little as the audio catches
@@ -96,11 +98,13 @@ PioneerDDJFLX10Screens.rateRatio = function(group) {
     return 1 + engine.getValue(group, "rate") * engine.getValue(group, "rateRange") * dir;
 };
 
-// xx27: the deck's state.
+// xx27: the deck's state. A track without a beat grid (no BPM) is sent
+// the way DJ apps send one: bytes 3, 19 and the last two differ.
 PioneerDDJFLX10Screens.state = function(deck, playedMs, durationS, bpm, ratio, key) {
     const r = PioneerDDJFLX10Screens.report(deck, 0x27);
+    const grid = bpm > 0;
     r[2] = 0xB4;
-    r[3] = 0x88;
+    r[3] = grid ? 0x88 : 0x80;
     r[4] = 0x01;
     // Time played (wall time, at the deck's tempo).
     PioneerDDJFLX10Screens.putTime(r, 5, playedMs / 1000);
@@ -116,25 +120,28 @@ PioneerDDJFLX10Screens.state = function(deck, playedMs, durationS, bpm, ratio, k
     r[15] = 0x01;
     r[16] = tempo & 0xFF;
     r[17] = tempo >> 8;
-    r[19] = 0x07;
+    r[19] = grid ? 0x07 : 0x00;
     r[20] = 0x0E;
-    // Two counters that follow the time played: one turns over 2048 times
-    // a second, the other (decks 1 and 2 only) steps every 123.2/1024 s.
+    // Two counters that follow the time played: one steps 1991/1024 times
+    // a 1024th of a second, the other (decks 1 and 2 only) every 123.2/1024
+    // s. The screen redraws whenever the first comes round to 0: at exactly
+    // twice a 1024th it did so on the same beat of every second, and the
+    // playhead flickered; DJ apps' rate lands it somewhere else each time.
     const ticks = Math.floor(playedMs / 1000) * 1024 + Math.floor((playedMs % 1000) * 1024 / 1000);
-    r[21] = (ticks * 2) & 0xFF;
+    r[21] = Math.floor(ticks * 1991 / 1024) & 0xFF;
     r[22] = deck < 2 ? Math.floor(ticks / 123.2) % 15 : 0;
     r[25] = 0x80;
     r[29] = PioneerDDJFLX10Screens.keyByte(key);
     r[30] = 0x0D;
     r[31] = PioneerDDJFLX10Screens.deckRole[deck];
-    r[32] = 0xAD;
-    r[33] = 0x05;
+    r[32] = grid ? 0xAD : 0xE0;
+    r[33] = grid ? 0x05 : 0x01;
     return r;
 };
 
-// The reports a newly loaded track needs, waveform `entries` (Uint16Array)
-// and all.
-PioneerDDJFLX10Screens.loadReports = function(deck, durationS, entries) {
+// The reports a newly loaded track needs, waveform `entries` (Uint16Array),
+// cover art `art` (a JPEG, empty for none) and all.
+PioneerDDJFLX10Screens.loadReports = function(deck, durationS, entries, art) {
     const S = PioneerDDJFLX10Screens;
     const out = [];
     const length = S.report(deck, 0x30);
@@ -143,6 +150,7 @@ PioneerDDJFLX10Screens.loadReports = function(deck, durationS, entries) {
     S.putTime(length, 6, durationS);
     out.push(length);
     out.push.apply(out, S.hotCueLabels(deck));
+    out.push.apply(out, S.artReports(deck, art || new Uint8Array(0)));
     const count = Math.min(0xFFFF, Math.round(durationS * S.entriesPerSecond));
     for (let i = 0; i < 3; ++i) {
         const r = S.report(deck, 0x35);
@@ -200,6 +208,39 @@ PioneerDDJFLX10Screens.hotCueLabels = function(deck) {
         r[2] = part + 1;
         r[4] = 3;
         r.set(body.subarray(part * 122, (part + 1) * 122), 6);
+        out.push(r);
+    }
+    return out;
+};
+
+// xx33: a JPEG, 119 bytes in the first report after its size (bytes 6
+// and 7, little-endian) and 122 in each after, with the report's number
+// (from 1) in byte 2 and how many there are in byte 4. None for no art, or
+// art too big to number in a byte.
+PioneerDDJFLX10Screens.artReports = function(deck, jpeg) {
+    const S = PioneerDDJFLX10Screens;
+    const first = 119;
+    const rest = 122;
+    const size = jpeg.length;
+    const total = size <= first ? 1 : 1 + Math.ceil((size - first) / rest);
+    if (size === 0 || total > 255 || size > 0xFFFF) {
+        return [];
+    }
+    const out = [];
+    let at = 0;
+    for (let n = 1; n <= total; ++n) {
+        const r = S.report(deck, 0x33);
+        r[2] = n;
+        r[4] = total;
+        let to = 6;
+        if (n === 1) {
+            r[6] = size & 0xFF;
+            r[7] = size >> 8;
+            to = 9;
+        }
+        const take = Math.min(n === 1 ? first : rest, size - at);
+        r.set(jpeg.subarray(at, at + take), to);
+        at += take;
         out.push(r);
     }
     return out;
@@ -313,7 +354,7 @@ PioneerDDJFLX10Screens.tick = function() {
             const whole = wave.length / 4 >= Math.floor(durationS * S.entriesPerSecond) - S.entriesPerSecond;
             if (whole || (wave.length > 0 && now - d.loadedAt > S.analysisWaitMs)) {
                 d.entries = S.entries(wave);
-                d.queue = S.loadReports(i, durationS, d.entries);
+                d.queue = S.loadReports(i, durationS, d.entries, engine.getCoverArt(group, S.artSize));
             }
         }
         if (d.queue.length > 0) {

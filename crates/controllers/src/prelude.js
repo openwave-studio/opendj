@@ -129,6 +129,12 @@
         getWaveform(group, perSecond) {
             return new Uint8Array(native.waveform(String(group), Number(perSecond) || 150));
         },
+        // openDJ: the cover art of the track on `group`'s deck as a JPEG
+        // about `size` pixels square (16 to 480), as a Uint8Array; empty with
+        // no track or no art.
+        getCoverArt(group, size) {
+            return new Uint8Array(native.cover(String(group), Number(size) || 240));
+        },
         stopTimer(id) {
             if (timers.delete(id)) {
                 native.timerStop(id);
