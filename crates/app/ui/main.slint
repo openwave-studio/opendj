@@ -2134,14 +2134,14 @@ export component AppWindow inherits Window {
                 }
                 // The logo and name, centred on the window whatever the pills'
                 // widths; in Player, the search box takes their place.
-                if !player: HorizontalLayout {
-                    alignment: center;
-                    spacing: 8px;
-                    VerticalLayout {
-                        alignment: center;
-                        Image { source: @image-url("icons/opendj-mark.svg"); width: 32px; height: 20px; }
-                    }
-                    Text { text: "openDJ"; color: Theme.text; font-family: Theme.brand-font; font-size: 21px; vertical-alignment: center; }
+                // The full logo (mark and wordmark); Light gets the
+                // darker inks.
+                if !player: Image {
+                    source: Theme.light ? @image-url("icons/opendj-logo-light.svg") : @image-url("icons/opendj-logo.svg");
+                    height: 24px;
+                    width: self.height * 1704 / 312;
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
                 }
                 HorizontalLayout {
                     padding-left: 4px + traffic-light-inset;
