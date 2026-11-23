@@ -65,6 +65,7 @@ mod side_tabs;
 mod sidelist;
 mod spotify_export;
 mod staging;
+mod stem_files;
 mod stream_play;
 mod streamed;
 mod tag_chips;
@@ -776,6 +777,7 @@ pub struct Browser {
     /// Export to USB's dialog and export.
     usb: usb::State,
     playlist_files: playlist_files::State,
+    stem_files: stem_files::State,
     inbox_albums: inbox_albums::InboxAlbums,
     rekordbox_xml: rekordbox_xml::State,
     phrases_seen: analysis::SeenDecks,
@@ -1496,6 +1498,7 @@ impl Browser {
             analysis_shown: Default::default(),
             usb: Default::default(),
             playlist_files: Default::default(),
+            stem_files: Default::default(),
             inbox_albums: inbox_albums::InboxAlbums::new(),
             rekordbox_xml: Default::default(),
             phrases_seen: Default::default(),
@@ -2258,6 +2261,7 @@ impl Browser {
         Self::install_usb_export(app, &edit, &with);
         Self::install_spotify_export(&edit, &with);
         Self::install_playlist_files(&edit, &with);
+        Self::install_stem_files(&edit, &with);
         Self::install_rekordbox_xml(&edit, &with);
     }
 
@@ -5579,6 +5583,7 @@ impl Browser {
                     && matches!(kind, KIND_LIST | KIND_HISTORY | KIND_CRATE),
                 mixcloud: self.tree == MIXED_SETS,
                 rekordbox: node.is_some() && self.rekordbox_exportable(self.current_node),
+                stems: analysable,
             });
             let name = match self.nodes.get(self.current_node) {
                 Some(n) => n.title.clone().unwrap_or_else(|| n.name.clone()),

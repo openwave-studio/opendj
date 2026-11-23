@@ -67,6 +67,7 @@ pub mod set_checks;
 pub mod set_fixes;
 pub mod set_render;
 pub mod set_timeline;
+pub mod stem_file;
 pub mod stems;
 pub mod synth;
 pub mod tags;

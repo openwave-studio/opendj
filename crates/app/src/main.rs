@@ -1765,6 +1765,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 browser.borrow_mut().poll_tasks();
                 browser.borrow_mut().poll_usb_export();
                 browser.borrow_mut().poll_playlist_files();
+                browser.borrow_mut().poll_stem_files();
                 browser.borrow_mut().poll_inbox_albums();
                 browser.borrow_mut().poll_rekordbox_xml();
                 browser.borrow_mut().poll_covers();

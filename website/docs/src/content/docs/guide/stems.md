@@ -95,3 +95,15 @@ the whole track has them.
 - Whether each stems model is downloaded yet.
 
 NI stem files (`.stem.mp4`) play their own stems.
+
+## Stem files
+
+To take high quality stems to another computer, or to other DJ software that
+plays NI stem files, pick a list, crate, set or folder in the sidebar and
+choose **File › Export › Stem Files…**, then a folder. openDJ saves a
+`.stem.mp4` there for each track that has high quality
+stems, named after the track, holding the track itself and its drums, bass,
+other and vocals in Apple Lossless, with the track's title, artist and album.
+Players that don't know stems play just the track. Tracks without high quality
+stems yet are skipped (the message at the end says how many); prepare them
+first with **Prepare HQ Stems for All**.
