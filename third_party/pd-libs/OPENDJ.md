@@ -25,11 +25,16 @@ plugin helper when it has the `pd` feature (OpenSpec change `add-pd-rack`):
   `onelua.c`. MIT, see the end of `lua/lua.h`.
 - **Pd 0.55.2 headers** (`pd-src/`, BSD, from libpd-sys 0.3.4) to build
   against.
+- **pthreads4w headers** (`pthreads-win/`, Apache-2.0, from libpd-sys 0.3.4's
+  Windows build of pthreads-win32 v3): Windows only, for the objects that
+  use threads, against the library libpd-sys links.
 
 One vendored line is changed: ELSE's `Source/Shared/blep.h` did
 `#define t_float float`, which breaks the `bl.*~` oscillators in a
 double-precision Pd like this one (they read and wrote the wrong width and
-gave silence). What openDJ adds:
+gave silence). The same file also takes `I`, `creal` and `cexp` from the
+compiler on Windows, where cyclone and ELSE build with clang-cl (MSVC's C
+has no complex numbers or variable-length arrays). What openDJ adds:
 
 - `gui_compat.h`: stands in for the Pd 0.56 theme colours a few GUI objects
   (`knob`, `button`, `note`, `pad`, ELSE; cyclone's `file`) read when they

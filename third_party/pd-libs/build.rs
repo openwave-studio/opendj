@@ -32,7 +32,9 @@ fn main() {
             .flag_if_supported("-w")
             .flag_if_supported("-Wno-everything");
         if msvc {
-            b.define("PD_LONGINTTYPE", "long long")
+            // The pthreads4w that libpd-sys links (see pthreads-win/).
+            b.include(root.join("pthreads-win"))
+                .define("PD_LONGINTTYPE", "long long")
                 .define("HAVE_STRUCT_TIMESPEC", None)
                 .define("_CRT_SECURE_NO_WARNINGS", None);
         } else {
