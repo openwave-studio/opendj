@@ -12,8 +12,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#define t_float float
-#define t_complex _Complex t_float
+/* openDJ: was "#define t_float float", which breaks a double-precision Pd. */
+#define t_complex _Complex double
 
 #define partial_step_count 127
 #define max_integrals 3

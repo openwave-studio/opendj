@@ -24,7 +24,8 @@
 ## 4. Displays
 
 - [ ] 4.1 `.opendj.json` hints next to a patch: pages, knob, slider, XY pad or switch, units, macro for the FX bar
-- [ ] 4.2 pd-lua in the helper; its `paint(g)` drawing forwarded and drawn natively in the deck, with mouse input
+- [x] 4.2 pd-lua in the helper; its `paint(g)` drawing caught and drawn by the helper in the plugin's editor window (OPEN), with mouse input
+- [ ] 4.3 The same drawing forwarded to openDJ and drawn in the deck itself
 
 ## 5. Max for Live devices
 

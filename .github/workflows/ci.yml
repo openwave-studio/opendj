@@ -205,7 +205,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo build --release -p opendj -p opendj-plugin-host
+      # With the experimental Pure Data support, so patches can be tried
+      # from this build (task 1.7 of the add-pd-rack change).
+      - run: cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd
       # The version in Cargo.toml (what the app reports in Settings), with
       # the commit as the build, so About openDJ says which build this is.
       - run: scripts/bundle-macos.sh target/release/opendj "" "test build $(git rev-parse --short HEAD)"

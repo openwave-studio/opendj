@@ -9,18 +9,19 @@
 //! plugin and where it plays, and closing it only hides the editor: the
 //! plugin keeps playing.
 
+use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize, Size};
-use winit::event::WindowEvent;
+use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::platform::pump_events::EventLoopExtPumpEvents;
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use winit::window::{Window, WindowAttributes, WindowId, WindowLevel};
 
-use crate::effects::{EditorSize, MainThread, ParentWindow};
+use crate::effects::{EditorSize, MainThread, Mouse, ParentWindow};
 
 /// `editor_shown` values.
 pub const CLOSED: u32 = 0;
@@ -34,8 +35,13 @@ const LOGICAL: bool = cfg!(target_os = "macos");
 struct Events {
     /// Make a window at the next chance (only possible inside a callback).
     create: Option<String>,
-    window: Option<Window>,
+    window: Option<Rc<Window>>,
     close_asked: bool,
+    /// For an editor the helper draws: the pointer, what the mouse did
+    /// (in pixels), and whether the window needs painting again.
+    cursor: (f64, f64),
+    mouse: Vec<(f64, f64, Mouse)>,
+    redraw: bool,
     resized: Option<PhysicalSize<u32>>,
     scale: Option<f64>,
 }
@@ -54,6 +60,22 @@ impl ApplicationHandler for Events {
             WindowEvent::CloseRequested => self.close_asked = true,
             WindowEvent::Resized(size) => self.resized = Some(size),
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => self.scale = Some(scale_factor),
+            WindowEvent::CursorMoved { position, .. } => {
+                self.cursor = (position.x, position.y);
+                self.mouse.push((position.x, position.y, Mouse::Move));
+            }
+            WindowEvent::MouseInput {
+                state,
+                button: MouseButton::Left,
+                ..
+            } => {
+                let what = match state {
+                    ElementState::Pressed => Mouse::Down,
+                    ElementState::Released => Mouse::Up,
+                };
+                self.mouse.push((self.cursor.0, self.cursor.1, what));
+            }
+            WindowEvent::RedrawRequested => self.redraw = true,
             _ => {}
         }
     }
@@ -70,7 +92,7 @@ impl Events {
             .with_resizable(false)
             .with_window_level(WindowLevel::AlwaysOnTop)
             .with_inner_size(LogicalSize::new(400.0, 300.0));
-        self.window = el.create_window(attrs).ok();
+        self.window = el.create_window(attrs).ok().map(Rc::new);
     }
 }
 
@@ -83,6 +105,9 @@ pub struct EditorWindow {
     open: bool,
     /// The last ask failed: don't try again until openDJ asks anew.
     refused: bool,
+    /// What a drawn editor paints into.
+    #[cfg(feature = "pd")]
+    canvas: Option<Canvas>,
 }
 
 impl EditorWindow {
@@ -93,6 +118,8 @@ impl EditorWindow {
             events: Events::default(),
             open: false,
             refused: false,
+            #[cfg(feature = "pd")]
+            canvas: None,
         }
     }
 
@@ -205,6 +232,19 @@ impl EditorWindow {
         let Some(window) = self.events.window.as_ref() else {
             return;
         };
+        #[cfg(feature = "pd")]
+        if let (Some(canvas), Some(drawn)) = (self.canvas.as_mut(), main.drawn_editor()) {
+            let scale = window.scale_factor();
+            for (x, y, what) in self.events.mouse.drain(..) {
+                drawn.mouse((x / scale) as f32, (y / scale) as f32, what);
+            }
+            let resized = self.events.resized.take().is_some() | self.events.scale.take().is_some();
+            if std::mem::take(&mut self.events.redraw) | resized | drawn.changed() {
+                canvas.paint(drawn, window.inner_size(), scale);
+            }
+            return;
+        }
+        self.events.mouse.clear();
         let scale = self
             .events
             .scale
@@ -253,6 +293,22 @@ impl EditorWindow {
             .window
             .as_ref()
             .ok_or("the window could not be made")?;
+        #[cfg(feature = "pd")]
+        if let Some(drawn) = main.drawn_editor() {
+            let (w, h) = drawn.size();
+            window.set_resizable(false);
+            let _ = window.request_inner_size(LogicalSize::new(w as f64, h as f64));
+            self.canvas = Some(Canvas::new(window.clone())?);
+            window.set_visible(true);
+            window.focus_window();
+            self.events.resized = None;
+            self.events.close_asked = false;
+            self.events.mouse.clear();
+            self.events.redraw = true;
+            self.open = true;
+            keep_awake(true);
+            return Ok(());
+        }
         let parent = parent_of(window)?;
         let size = main.open_editor(parent, window.scale_factor())?;
         window.set_resizable(main.editor_can_resize());
@@ -270,6 +326,10 @@ impl EditorWindow {
 
     fn close(&mut self, main: &mut dyn MainThread, shown: &AtomicU32) {
         main.close_editor();
+        #[cfg(feature = "pd")]
+        {
+            self.canvas = None;
+        }
         // A new window next time: some plugins can't be put back into a
         // window they were taken out of.
         self.events.window = None;
@@ -280,6 +340,41 @@ impl EditorWindow {
         self.open = false;
         keep_awake(false);
         shown.store(CLOSED, Ordering::Release);
+    }
+}
+
+/// The pixels of a window whose editor the helper draws.
+#[cfg(feature = "pd")]
+struct Canvas {
+    surface: softbuffer::Surface<Rc<Window>, Rc<Window>>,
+}
+
+#[cfg(feature = "pd")]
+impl Canvas {
+    fn new(window: Rc<Window>) -> Result<Self, String> {
+        let context = softbuffer::Context::new(window.clone()).map_err(|e| e.to_string())?;
+        let surface = softbuffer::Surface::new(&context, window).map_err(|e| e.to_string())?;
+        Ok(Self { surface })
+    }
+
+    fn paint(
+        &mut self,
+        drawn: &mut dyn crate::effects::DrawnEditor,
+        size: PhysicalSize<u32>,
+        scale: f64,
+    ) {
+        use std::num::NonZeroU32;
+        let (Some(w), Some(h)) = (NonZeroU32::new(size.width), NonZeroU32::new(size.height)) else {
+            return;
+        };
+        if self.surface.resize(w, h).is_err() {
+            return;
+        }
+        let Ok(mut buffer) = self.surface.buffer_mut() else {
+            return;
+        };
+        drawn.paint(&mut buffer, size.width, size.height, scale as f32);
+        let _ = buffer.present();
     }
 }
 

@@ -92,11 +92,42 @@ pub trait MainThread {
         false
     }
 
+    /// An editor the helper draws itself into its window (a Pd patch's Lua
+    /// displays), instead of one the plugin puts there.
+    fn drawn_editor(&mut self) -> Option<&mut dyn DrawnEditor> {
+        None
+    }
+
     /// When `idle` next needs calling, at the latest (timers a plugin asked
     /// for, its file descriptors on Linux).
     fn next_idle(&self) -> Option<std::time::Duration> {
         None
     }
+}
+
+/// An editor the helper draws: it paints into the window's pixels and takes
+/// the mouse, in logical units (points).
+pub trait DrawnEditor {
+    /// Its size, in points.
+    fn size(&mut self) -> (f32, f32);
+
+    /// Whether it changed since the last [`DrawnEditor::paint`].
+    fn changed(&mut self) -> bool;
+
+    /// Paints into `pixels` (0RGB, `width` by `height`), `scale` pixels per
+    /// point.
+    fn paint(&mut self, pixels: &mut [u32], width: u32, height: u32, scale: f32);
+
+    /// The mouse at (x, y) points: [`Mouse`] says what it did.
+    fn mouse(&mut self, x: f32, y: f32, what: Mouse);
+}
+
+/// What the mouse did, for a [`DrawnEditor`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Mouse {
+    Down,
+    Up,
+    Move,
 }
 
 /// The window an editor is put in, as each platform names it.
