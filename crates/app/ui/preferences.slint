@@ -922,6 +922,7 @@ export component PrefRow inherits Rectangle {
             if item.title != "": VerticalLayout {
                 alignment: start;
                 MenuField {
+                    title: item.title;
                     width: 96px;
                     text: "Actions";
                     choices: item.choices;
@@ -1129,6 +1130,7 @@ export component PrefRow inherits Rectangle {
             if item.kind == 1: VerticalLayout {
                 alignment: center;
                 MenuField {
+                    title: item.title;
                     width: 260px;
                     text: item.value != "" ? item.value : item.choices[item.chosen];
                     choices: item.choices;
@@ -1163,6 +1165,7 @@ export component PrefRow inherits Rectangle {
                 if item.choices2.length > 0: VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: "Deck";
                         width: 128px;
                         opacity: item.on ? 1 : 0.4;
                         text: item.choices2[item.chosen2];
@@ -1175,6 +1178,7 @@ export component PrefRow inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: "Mapping";
                         width: 240px;
                         opacity: item.on ? 1 : 0.4;
                         text: item.choices[item.chosen];
@@ -1249,6 +1253,7 @@ export component PrefRow inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: item.title;
                         width: 110px;
                         text: item.choices[item.chosen];
                         choices: item.choices;
@@ -1268,6 +1273,7 @@ export component PrefRow inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: item.title;
                         width: 260px;
                         text: item.choices[item.chosen];
                         choices: item.choices;

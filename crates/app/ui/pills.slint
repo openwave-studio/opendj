@@ -61,6 +61,8 @@ export component PillCaret inherits Path {
 export component ListRow inherits Rectangle {
     in property <bool> selected;
     out property <bool> hovered: ta.has-hover;
+    // The row's text colour: lilac under the pointer, else white.
+    out property <color> ink: ta.has-hover ? Theme.menu-hover-text : Theme.menu-current-text;
     callback clicked();
     height: 28px;
     border-radius: 6px;
@@ -95,6 +97,23 @@ export component TitledList inherits Rectangle {
             x: 8px;
         }
         @children
+    }
+}
+
+// A menu's bold title naming what is chosen, as at the top of a titled
+// list, for menus that draw their own panel.
+export component MenuTitle inherits Rectangle {
+    in property <string> text;
+    height: 26px;
+    Text {
+        x: 8px;
+        y: 4px;
+        width: parent.width - 16px;
+        text: root.text;
+        color: Theme.text;
+        font-size: 13px;
+        font-weight: 700;
+        overflow: elide;
     }
 }
 

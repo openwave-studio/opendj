@@ -1063,7 +1063,7 @@ component CatalogChoice inherits Rectangle {
     background: cta.has-hover ? Theme.n-ffffff14 : transparent;
     HorizontalLayout {
         padding-left: 12px;
-        Text { text: root.text; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+        Text { text: root.text; color: cta.has-hover ? Theme.menu-hover-text : Theme.text; font-size: 13px; vertical-alignment: center; }
     }
     cta := TouchArea {
         mouse-cursor: pointer;
@@ -1352,7 +1352,7 @@ export component MenuLine inherits Rectangle {
         x: text-x;
         width: parent.width - text-x - (submenu ? 26px : 10px) - (hint != "" ? hint-text.width + 8px : 0px);
         text: root.text;
-        color: root.text-color;
+        color: ta.has-hover && root.enabled && root.text-color == Theme.text ? Theme.menu-hover-text : root.text-color;
         font-size: 13px;
         vertical-alignment: center;
         overflow: elide;
@@ -7368,7 +7368,7 @@ component SidePanel inherits Rectangle {
                                         KeepGoingUi.pick-pool(i);
                                         pool-menu.close();
                                     }
-                                    Text { x: 10px; text: name; color: name == KeepGoingUi.pool ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                                    Text { x: 10px; text: name; color: parent.ink; font-size: 12px; vertical-alignment: center; overflow: elide; }
                                 }
                             }
                         }
@@ -7443,7 +7443,7 @@ component SidePanel inherits Rectangle {
                             automix-order(i);
                             order-menu.close();
                         }
-                        Text { x: 10px; text: name; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+                        Text { x: 10px; text: name; color: parent.ink; font-size: 12px; vertical-alignment: center; }
                     }
                     Rectangle { height: 4px; }
                     Text {
@@ -7470,7 +7470,7 @@ component SidePanel inherits Rectangle {
                             automix-set-style(i);
                             style-menu.close();
                         }
-                        Text { x: 10px; text: name; color: i == automix-style ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
+                        Text { x: 10px; text: name; color: parent.ink; font-size: 12px; vertical-alignment: center; }
                     }
                 }
             }
@@ -7491,7 +7491,7 @@ component SidePanel inherits Rectangle {
                                 automix-set-length(c.value);
                                 length-menu.close();
                             }
-                            Text { x: 10px; text: c.text; color: c.value == automix-length ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
+                            Text { x: 10px; text: c.text; color: parent.ink; font-size: 12px; vertical-alignment: center; }
                         }
                     }
                 }

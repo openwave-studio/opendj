@@ -186,7 +186,7 @@ component BandPill inherits HorizontalLayout {
         close-policy: close-on-click-outside;
         TitledList {
             title: "Band";
-            for b[i] in [0, 1, 2, 4]: ListRow {
+            for b[i] in [0, 1, 2, 4]: ink-row := ListRow {
                 selected: (mask == 7 ? 0 : mask) == b;
                 clicked => {
                     Controls.set-value(band-index, b);
@@ -199,7 +199,7 @@ component BandPill inherits HorizontalLayout {
                     Text {
                         property <bool> chosen: (mask == 7 ? 0 : mask) == b;
                         text: b == 0 ? "Whole signal" : b == 1 ? "Low" : b == 2 ? "Mid" : "High";
-                        color: chosen ? (b == 1 ? Theme.band-low : b == 2 ? Theme.band-mid : b == 4 ? Theme.band-high : Theme.lilac-text) : Theme.text;
+                        color: chosen ? (b == 1 ? Theme.band-low : b == 2 ? Theme.band-mid : b == 4 ? Theme.band-high : ink-row.ink) : ink-row.ink;
                         font-size: 13px;
                         vertical-alignment: center;
                     }
@@ -590,7 +590,7 @@ component RoutePill inherits VerticalLayout {
         close-policy: close-on-click-outside;
         TitledList {
             title: "Send to";
-            for v in root.values: ListRow {
+            for v in root.values: ink-row := ListRow {
                 selected: root.route == v;
                 clicked => {
                     Controls.set-value(root.route-index, v);
@@ -600,7 +600,7 @@ component RoutePill inherits VerticalLayout {
                     padding-left: 8px;
                     Text {
                         text: v == 5 ? "Decks 1 and 2" : v == 6 ? "Main mix" : "Deck " + v;
-                        color: root.route == v ? Theme.lilac-text : Theme.text;
+                        color: ink-row.ink;
                         font-size: 13px;
                         vertical-alignment: center;
                     }
@@ -683,7 +683,7 @@ component ReleaseControls inherits HorizontalLayout {
         close-policy: close-on-click-outside;
         TitledList {
             title: "Release";
-            for m[i] in ["Echo", "Brake", "Spin", "Cut"]: ListRow {
+            for m[i] in ["Echo", "Brake", "Spin", "Cut"]: ink-row := ListRow {
                 selected: mode == i;
                 clicked => {
                     Controls.set-value(mode-index, i);
@@ -693,7 +693,7 @@ component ReleaseControls inherits HorizontalLayout {
                     padding-left: 8px;
                     Text {
                         text: m;
-                        color: mode == i ? Theme.lilac-text : Theme.text;
+                        color: ink-row.ink;
                         font-size: 13px;
                         vertical-alignment: center;
                     }

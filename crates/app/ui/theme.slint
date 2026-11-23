@@ -163,6 +163,10 @@ export global Theme {
     out property <color> well: root.light ? #eceaf1 : #0d0d0e;
     out property <length> radius: 6px;
     // Pads and their page tabs: crisp, only slightly rounded.
+    // Menu rows: the current choice in white on its tint, the row under
+    // the pointer in lilac.
+    out property <color> menu-current-text: root.text;
+    out property <color> menu-hover-text: root.lilac-text;
     out property <length> pad-radius: 4px;
     out property <length> font-small: 10px;
     out property <length> font-normal: 13px;

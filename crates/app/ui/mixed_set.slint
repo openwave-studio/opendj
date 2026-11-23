@@ -6,6 +6,7 @@
 // `view-start` to `view-start + view-len` of it.
 import { Theme } from "theme.slint";
 import { Switch } from "controls.slint";
+import { ListRow, TitledList } from "pills.slint";
 import { SearchField } from "preferences.slint";
 
 // A track on the timeline: on its deck's row with Show decks on, above
@@ -1253,31 +1254,11 @@ component FixesTab inherits VerticalLayout {
 }
 
 component ExportMenu inherits PopupWindow {
-    Rectangle {
-        background: Theme.panel-raised;
-        border-radius: 8px;
-        border-width: 1px;
-        border-color: Theme.border;
-        drop-shadow-blur: 16px;
-        drop-shadow-color: Theme.s-000000c0;
-        VerticalLayout {
-            padding: 4px;
-            for item[i] in ["Mixcloud tracklist", "YouTube chapters", "Cue sheet (.cue)", "Export for Mixcloud…"]: Rectangle {
-                height: 28px;
-                border-radius: 4px;
-                background: ta.has-hover ? Theme.selection : transparent;
-                Text {
-                    x: 10px;
-                    text: item;
-                    color: ta.has-hover ? #ffffff : Theme.text;
-                    font-size: 12px;
-                    vertical-alignment: center;
-                    height: parent.height;
-                }
-                ta := TouchArea {
-                    clicked => { MixedSetUi.export(i); }
-                }
-            }
+    TitledList {
+        title: "Export";
+        for item[i] in ["Mixcloud tracklist", "YouTube chapters", "Cue sheet (.cue)", "Export for Mixcloud…"]: ListRow {
+            clicked => { MixedSetUi.export(i); }
+            Text { x: 10px; text: item; color: parent.ink; font-size: 12px; vertical-alignment: center; height: parent.height; }
         }
     }
 }

@@ -4,6 +4,7 @@
 // and a click on a line plays from there. Find looks the track up on
 // LRCLIB. PlayerLyrics shows the same lyrics large in Player mode.
 import { Theme } from "theme.slint";
+import { MenuTitle } from "pills.slint";
 import { WaveLook } from "wave_look.slint";
 import { ListView } from "scroll.slint";
 
@@ -347,14 +348,15 @@ export component LyricsPanel inherits Rectangle {
                     }
                     VerticalLayout {
                         padding: 6px;
+                        MenuTitle { text: "Show"; }
                         for s[i] in ["Playing track", "Selected track", "Deck A", "Deck B"]: Rectangle {
                             height: 26px;
-                            border-radius: 4px;
-                            background: sta.has-hover ? Theme.n-38373d : transparent;
+                            background: sta.has-hover ? Theme.n-38373d : i == LyricsUi.subject ? Theme.n-313036 : transparent;
+                            border-radius: 6px;
                             Text {
                                 x: 10px;
                                 text: s;
-                                color: i == LyricsUi.subject ? Theme.lilac-text : Theme.text;
+                                color: sta.has-hover ? Theme.menu-hover-text : Theme.menu-current-text;
                                 font-size: 13px;
                                 vertical-alignment: center;
                             }

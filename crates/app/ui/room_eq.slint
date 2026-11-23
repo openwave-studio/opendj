@@ -134,6 +134,7 @@ export component RoomEqEditor inherits VerticalLayout {
             picked(i) => { RoomEqUi.pick-target(i); }
         }
         if !RoomEqUi.naming: MenuField {
+            title: "Preset";
             width: 200px;
             text: RoomEqUi.preset;
             choices: RoomEqUi.preset-menu;

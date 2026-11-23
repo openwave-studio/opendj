@@ -921,7 +921,7 @@ component LayoutItem inherits Rectangle {
     height: 32px;
     border-radius: 6px;
     background: enabled && ta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
-    property <color> tint: !enabled ? Theme.text-dim.with-alpha(0.5) : current ? Theme.accent : Theme.text;
+    property <color> tint: !enabled ? Theme.text-dim.with-alpha(0.5) : ta.has-hover ? Theme.menu-hover-text : Theme.menu-current-text;
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;
@@ -929,7 +929,7 @@ component LayoutItem inherits Rectangle {
         VerticalLayout { alignment: center; LayoutIcon { kind: kind; tint: tint; } }
         Text { text: root.text; color: tint; font-size: 13px; font-weight: 500; vertical-alignment: center; horizontal-stretch: 1; }
         if !enabled: Text { text: "Soon"; color: Theme.text-dim.with-alpha(0.5); font-size: 10px; vertical-alignment: center; }
-        if current: Text { text: "✓"; color: Theme.lilac-text; font-size: 13px; vertical-alignment: center; }
+        if current: Text { text: "✓"; color: Theme.menu-current-text; font-size: 13px; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: enabled ? pointer : default;

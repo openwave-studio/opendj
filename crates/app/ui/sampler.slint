@@ -83,11 +83,11 @@ component MenuItem inherits Rectangle {
     Text {
         x: 22px;
         text: root.text;
-        color: enabled ? Theme.text : Theme.text-dim;
+        color: !enabled ? Theme.text-dim : ta.has-hover ? Theme.menu-hover-text : Theme.text;
         font-size: 12px;
         vertical-alignment: center;
     }
-    if checked: Text { x: 7px; text: "✓"; color: Theme.lilac-text; font-size: 12px; vertical-alignment: center; }
+    if checked: Text { x: 7px; text: "✓"; color: Theme.menu-current-text; font-size: 12px; vertical-alignment: center; }
     ta := TouchArea {
         enabled: root.enabled;
         clicked => { root.clicked(); }
