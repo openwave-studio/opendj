@@ -84,7 +84,7 @@ component PluginControls inherits Rectangle {
     property <int> count: InstrumentsUi.param-names.length;
     property <int> pages: ceil(count / 8);
     if count == 0: Text {
-        text: "This plugin shows no parameters. The expand button opens its own window.";
+        text: InstrumentsUi.instrument() > 0 ? "This plugin shows no parameters. The expand button opens its own window." : "No instrument plugin plays on this deck.";
         color: Theme.text-dim;
         font-size: 13px;
     }
