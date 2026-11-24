@@ -208,6 +208,8 @@ const REPORT_EVERY: Duration = Duration::from_secs(10);
 
 impl FrameStats {
     /// A frame started drawing at `start` and took `took`, while `moving`.
+    /// `more` adds to the log line (where the UI thread's time went).
+    #[allow(clippy::too_many_arguments)]
     pub fn frame(
         &mut self,
         start: Instant,
