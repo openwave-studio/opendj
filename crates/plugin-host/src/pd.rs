@@ -217,6 +217,9 @@ pub struct PdEffect {
     receives: Vec<CString>,
     /// The values last sent, so only changes go to Pd.
     sent: Vec<f32>,
+    /// What the patch holds as it opens, before any knob moves (NaN:
+    /// nothing), which isn't sent: a widget's own value.
+    held: Vec<f32>,
     transport: [CString; 3],
     last_bpm: f64,
     last_playing: Option<bool>,
@@ -259,10 +262,10 @@ impl PdEffect {
     /// `held`: each knob's value the patch already has (NaN: none), which
     /// isn't sent again.
     fn new(receives: Vec<CString>, held: Vec<f32>, max_frames: usize) -> Result<Self, String> {
-        let sent = held;
         Ok(Self {
             receives,
-            sent,
+            sent: held.clone(),
+            held,
             transport: [c(BPM)?, c(BEAT)?, c(PLAYING)?],
             last_bpm: f64::NAN,
             last_playing: None,
@@ -336,7 +339,7 @@ impl Effect for PdEffect {
             self.on_this_thread = true;
         }
         if REOPENED.swap(false, Ordering::Acquire) {
-            self.sent.fill(f32::NAN);
+            self.sent.clone_from(&self.held);
             self.last_bpm = f64::NAN;
             self.last_playing = None;
         }
