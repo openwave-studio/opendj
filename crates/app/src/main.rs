@@ -132,7 +132,8 @@ mod waves;
 
 /// Fills the master and headphone output menus and switches devices when
 /// one is picked. The menus list the devices as last scanned (see
-/// [`opendj_engine::scan_devices`]): opening one loads no driver.
+/// [`opendj_engine::scan_devices`]): opening one loads no driver, and
+/// looks at the system's own devices again in the background.
 /// The settings page's output table: shows the routes in use and applies
 /// changes to them.
 fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
@@ -306,6 +307,11 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
             *devices.borrow_mut() = output_devices();
             *default_device.borrow_mut() = default_output_device();
             show();
+            // A device menu opening (or Settings › Audio): the system's
+            // devices are looked at again in the background, so one plugged
+            // in since start-up shows up moments later. No ASIO driver is
+            // loaded, and a scan moments ago isn't repeated.
+            opendj_engine::rescan_devices(opendj_engine::DeviceScan::System);
         }
     });
     let change = {
