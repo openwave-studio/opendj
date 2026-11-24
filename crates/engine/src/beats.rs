@@ -554,9 +554,18 @@ mod tests {
         // 120 BPM from 0 s, 128 BPM from 16 s (32 beats in), 32 beats more.
         let end = 16.0 + 32.0 * 60.0 / 128.0;
         let grid = BeatGrid::new(vec![
-            GridMarker { seconds: 0.0, bpm: 120.0 },
-            GridMarker { seconds: 16.0, bpm: 128.0 },
-            GridMarker { seconds: end, bpm: 128.0 },
+            GridMarker {
+                seconds: 0.0,
+                bpm: 120.0,
+            },
+            GridMarker {
+                seconds: 16.0,
+                bpm: 128.0,
+            },
+            GridMarker {
+                seconds: end,
+                bpm: 128.0,
+            },
         ]);
         let moved = grid.edited(GridEdit::MoveAnchor(0.1), 15.9);
         let m = moved.markers();
@@ -569,7 +578,10 @@ mod tests {
         assert!(m[0].bpm < 120.0 && m[1].bpm > 128.0);
         // One tempo: the whole grid moves.
         let one = BeatGrid::constant(120.0, 1.0);
-        assert_eq!(one.edited(GridEdit::MoveAnchor(-0.01), 3.0), one.shifted(-0.01));
+        assert_eq!(
+            one.edited(GridEdit::MoveAnchor(-0.01), 3.0),
+            one.shifted(-0.01)
+        );
     }
 
     #[test]
