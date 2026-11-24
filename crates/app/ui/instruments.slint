@@ -721,7 +721,7 @@ component JamRow inherits Rectangle {
 
 // The Jam column on the left: search, star, Instruments | Presets, the
 // filter menus as chips and the rows they leave.
-component JamColumn inherits Rectangle {
+export component JamColumn inherits Rectangle {
     // How many decks are shown, for double-click.
     in property <int> decks;
     property <int> navigation-request: BrowserFocus.request;
@@ -996,31 +996,33 @@ export component TagChip inherits Rectangle {
     tcta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
+// Right of the column while no plugin panel shows: a hint.
+export component JamHint inherits Rectangle {
+    background: Theme.browser;
+    VerticalLayout {
+        alignment: center;
+        spacing: 6px;
+        Text {
+            text: "Pick a preset or instrument";
+            color: Theme.text-dim;
+            font-size: 14px;
+            font-weight: 600;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: "Drag it onto a deck, or double-click to load it on a free deck.";
+            color: Theme.text-dim;
+            font-size: 12px;
+            horizontal-alignment: center;
+        }
+    }
+}
+
 // The source's page: the column, and beside it the loaded plugin's
 // panel; until one is open, a hint.
 export component InstrumentsPanel inherits HorizontalLayout {
     in property <int> decks: 2;
     JamColumn { decks: decks; }
     Rectangle { width: 1px; background: Theme.separator; }
-    Rectangle {
-        horizontal-stretch: 1;
-        background: Theme.browser;
-        VerticalLayout {
-            alignment: center;
-            spacing: 6px;
-            Text {
-                text: "Pick a preset or instrument";
-                color: Theme.text-dim;
-                font-size: 14px;
-                font-weight: 600;
-                horizontal-alignment: center;
-            }
-            Text {
-                text: "Drag it onto a deck, or double-click to load it on a free deck.";
-                color: Theme.text-dim;
-                font-size: 12px;
-                horizontal-alignment: center;
-            }
-        }
-    }
+    JamHint { horizontal-stretch: 1; }
 }
