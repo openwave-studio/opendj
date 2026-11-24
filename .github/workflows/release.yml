@@ -148,8 +148,35 @@ jobs:
       - name: Notarize
         if: env.MACOS_SIGN_IDENTITY != '' && env.APPLE_APP_PASSWORD != ''
         run: |
-          xcrun notarytool submit dist/opendj-macos.zip --wait \
-            --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID"
+          auth=(--apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID")
+          # The runner can lose its network for a moment, and failing here
+          # throws away a three-hour build. So upload (retrying), then wait
+          # on the submission by its id, retrying a dropped connection.
+          id=
+          for attempt in 1 2 3; do
+            if out=$(xcrun notarytool submit dist/opendj-macos.zip "${auth[@]}" --output-format json); then
+              id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$out") && break
+            fi
+            echo "::warning::Upload to the notary service failed (attempt $attempt)"
+            sleep 30
+          done
+          [ -n "$id" ] || { echo "::error::Couldn't upload to the notary service"; exit 1; }
+          echo "Submission $id"
+          status=
+          for attempt in 1 2 3 4 5 6; do
+            xcrun notarytool wait "$id" "${auth[@]}" --timeout 45m || true
+            if out=$(xcrun notarytool info "$id" "${auth[@]}" --output-format json); then
+              status=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])' <<<"$out" || true)
+              [ "$status" != "In Progress" ] && break
+            fi
+            echo "::warning::Lost track of notarization $id (attempt $attempt), checking again"
+            sleep 30
+          done
+          if [ "$status" != Accepted ]; then
+            echo "::error::Notarization $id: ${status:-no answer}"
+            xcrun notarytool log "$id" "${auth[@]}" || true
+            exit 1
+          fi
           # Staple the ticket so the app opens offline too, then zip it again.
           # Apple's ticket server can lag or drop the connection, so retry.
           for attempt in 1 2 3 4 5; do
