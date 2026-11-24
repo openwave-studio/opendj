@@ -1502,6 +1502,12 @@ impl Studio {
         self.input = Some(ring);
     }
 
+    /// Takes no input (until [`Studio::set_input`]).
+    pub fn clear_input(&mut self) {
+        self.input = None;
+        self.engine.in_channels = 0;
+    }
+
     /// Moves a block of input from the ring to the engine. Short of input,
     /// the rest is silence; with more than a few blocks waiting, the oldest
     /// go, so the input never lags behind.

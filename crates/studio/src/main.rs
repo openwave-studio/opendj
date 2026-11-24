@@ -21,10 +21,11 @@ mod midi;
 mod plugins;
 mod push;
 mod scale;
+mod settings;
 mod sound;
 mod steps;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -178,95 +179,91 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
         returns,
         note,
     } = opened;
-    let device = if std::env::var_os("OPENDJ_NO_AUDIO").is_some() {
-        None
-    } else {
-        audio::probe()
-    };
-    let rate = device
-        .as_ref()
-        .map_or(48_000.0, |(_, c)| c.sample_rate() as f64);
+    let chosen = settings::audio();
+    let rate = audio::rate(&chosen);
     let (mut studio, remote) = Studio::new(&set, rate, tempo);
-    // The sound card input, for audio tracks (and only for a set that has
-    // them, so the demo never asks for the microphone).
-    let wants_input = set.iter().any(|t| t.sound == clip::Sound::Audio)
-        && device.is_some()
-        && std::env::var_os("OPENDJ_NO_INPUT").is_none();
-    let input = if wants_input {
-        match audio::start_input(rate as u32) {
-            Ok((input, ring)) => {
-                studio.set_input(ring, input.channels);
-                Some(input)
-            }
-            Err(e) => {
-                eprintln!("audio input: {e}");
-                None
-            }
-        }
-    } else {
-        None
-    };
-    let out_channels = device.as_ref().map_or(2, |(_, c)| c.channels() as usize);
-    let channels = Channels {
-        inputs: input.as_ref().map_or(0, |i| i.channels),
-        outputs: out_channels,
-    };
-    let input_note = match &input {
-        Some(i) => format!(" · in: {} ({} ch)", i.name, i.channels),
-        None => String::new(),
-    };
     let mut link_clock = link::LinkClock::new(tempo, rate);
-    link_clock.set_latency(audio::BUFFER_FRAMES as f64 / rate);
     let link = link_clock.handle();
+    link_clock.set_latency(chosen.buffer as f64 / rate);
     studio.link = Some(link_clock);
+    // The sound card input is for audio tracks: a set without them (the
+    // demo) never asks for the microphone.
+    let wants_input = set.iter().any(|t| t.sound == clip::Sound::Audio);
+    let audio = audio::Audio::start(studio, &chosen, wants_input);
+    ui(set, &returns, audio, chosen, remote, link, note)
+}
 
-    let (output, status) = match &device {
-        Some((dev, config)) => {
-            let name = audio::name(dev);
-            match audio::start(dev, config, studio) {
-                Ok(out) => (
-                    out,
-                    format!(
-                        "{name} · {} Hz · {} frames{input_note}",
-                        config.sample_rate(),
-                        audio::BUFFER_FRAMES
-                    ),
-                ),
-                Err(e) => {
-                    eprintln!("audio output: {e}");
-                    // The studio moved into the failed stream; start again
-                    // without sound.
-                    let (studio, remote2) = Studio::new(&set, rate, tempo);
-                    return ui(
-                        set,
-                        &returns,
-                        (audio::start_silent(studio), None),
-                        remote2,
-                        link,
-                        format!("No sound: {e}"),
-                        note,
-                        rate,
-                        Channels::default(),
-                    );
-                }
-            }
+/// The I/O pickers' channel lists for the sound card's channels.
+fn show_channels(w: &AppWindow, ch: Channels) {
+    w.set_in_channels(strings(
+        in_channel_options(ch.inputs)
+            .into_iter()
+            .map(|(name, _)| name),
+    ));
+    w.set_out_channels(strings(out_pair_options(ch.outputs)));
+}
+
+const SAMPLE_RATES: [u32; 4] = opendj_engine::SAMPLE_RATES;
+const BUFFER_SIZES: [u32; 6] = opendj_engine::BUFFER_SIZES;
+
+/// The Audio settings page: the lists, the choices and what is running.
+fn show_audio(w: &AppWindow, audio: &audio::Audio, c: &settings::AudioSettings) {
+    let (outs, ins) = audio::devices();
+    let default = "System default".to_string();
+    w.set_out_devices(strings(std::iter::once(default.clone()).chain(outs)));
+    w.set_in_devices(strings(
+        ["None".to_string(), default.clone()].into_iter().chain(ins),
+    ));
+    w.set_rates(strings(
+        std::iter::once("Device default".to_string())
+            .chain(SAMPLE_RATES.iter().map(|r| format!("{r} Hz"))),
+    ));
+    w.set_buffers(strings(BUFFER_SIZES.iter().map(|b| {
+        format!("{b} frames ({:.1} ms)", *b as f64 / audio.rate * 1000.0)
+    })));
+    let or_default = |s: &str| {
+        if s.is_empty() {
+            default.clone()
+        } else {
+            s.to_string()
         }
-        None => (
-            audio::start_silent(studio),
-            "No audio output found: playing silently".to_string(),
-        ),
     };
-    ui(
-        set,
-        &returns,
-        (output, input),
-        remote,
-        link,
-        status,
-        note,
-        rate,
-        channels,
-    )
+    w.set_out_choice(or_default(&c.output).into());
+    w.set_in_choice(c.input.as_deref().map_or("None".into(), or_default).into());
+    w.set_rate_choice(
+        c.sample_rate
+            .map_or("Device default".into(), |r| format!("{r} Hz"))
+            .into(),
+    );
+    w.set_buffer_choice(
+        format!(
+            "{} frames ({:.1} ms)",
+            c.buffer,
+            c.buffer as f64 / audio.rate * 1000.0
+        )
+        .into(),
+    );
+    let mut lines = vec![if audio.out_name.is_empty() {
+        audio.status.clone()
+    } else {
+        format!(
+            "Playing on {}: {} outputs at {} Hz.",
+            audio.out_name, audio.out_channels, audio.rate as u32
+        )
+    }];
+    if !audio.in_name.is_empty() {
+        lines.push(format!(
+            "Listening to {}: {} inputs.",
+            audio.in_name, audio.in_channels
+        ));
+    }
+    w.set_audio_info(lines.join("\n").into());
+    let wanted = c.sample_rate.unwrap_or(audio.rate as u32);
+    w.set_rate_note(if wanted != audio.rate as u32 && c.sample_rate.is_some() {
+        "The new rate takes effect when the studio opens again.".into()
+    } else {
+        SharedString::new()
+    });
 }
 
 /// The sound card's channel counts, for the I/O pickers.
@@ -366,19 +363,19 @@ fn pick_io(io: &mut Io, which: i32, k: usize, ch: Channels, ports: &midi::Ports)
 fn ui(
     set: Vec<clip::Track>,
     returns: &[(String, u32)],
-    (output, input): (audio::Output, Option<audio::Input>),
+    audio: audio::Audio,
+    chosen: settings::AudioSettings,
     remote: engine::Remote,
     link: Arc<rusty_link::AblLink>,
-    status: String,
     note: String,
-    rate: f64,
-    channels: Channels,
 ) -> Result<(), slint::PlatformError> {
-    let status = if note.is_empty() {
-        status
-    } else {
-        format!("{note} · {status}")
-    };
+    let rate = audio.rate;
+    let channels = Rc::new(Cell::new(Channels {
+        inputs: audio.in_channels,
+        outputs: audio.out_channels,
+    }));
+    let audio = Rc::new(RefCell::new(audio));
+    let chosen = Rc::new(RefCell::new(chosen));
     let n = set.len();
     let window = AppWindow::new()?;
     let monitor = remote.monitor.clone();
@@ -391,12 +388,7 @@ fn ui(
     // Keyboards to tracks, tracks' notes to external synths.
     let router = Rc::new(midi::start(controls.clone(), remote.midi_out));
     let mut ports = router.ports();
-    window.set_in_channels(strings(
-        in_channel_options(channels.inputs)
-            .into_iter()
-            .map(|(name, _)| name),
-    ));
-    window.set_out_channels(strings(out_pair_options(channels.outputs)));
+    show_channels(&window, channels.get());
     window.set_midi_froms(strings(midi_froms(&ports)));
     window.set_midi_tos(strings(midi_tos(&ports)));
     // Plug-ins start in their helpers and join the tracks as they come up.
@@ -433,7 +425,6 @@ fn ui(
     window.set_tracks(ModelRc::from(tracks.clone()));
     window.set_slots(ModelRc::from(slots.clone()));
     window.set_scenes(SCENES as i32);
-    window.set_status(status.clone().into());
     window.set_quantize(Quantize::Bar.label().into());
     window.set_main_volume(controls.main_volume());
     for (i, (name, rgb)) in returns.iter().take(2).enumerate() {
@@ -522,11 +513,11 @@ fn ui(
         window.on_toggle_device(move |t, d, on| c.set_device_on(t as usize, d as usize, on));
     }
     {
-        let (c, r) = (controls.clone(), router.clone());
+        let (c, r, ch) = (controls.clone(), router.clone(), channels.clone());
         window.on_io_pick(move |t, which, k| {
             let ports = r.ports();
             c.edit_io(t as usize, |io| {
-                pick_io(io, which, k.max(0) as usize, channels, &ports)
+                pick_io(io, which, k.max(0) as usize, ch.get(), &ports)
             });
         });
     }
@@ -546,6 +537,78 @@ fn ui(
         let p = plugins.clone();
         window.on_open_device(move |t, d| {
             p.toggle_window(t as usize, d as usize);
+        });
+    }
+
+    // Settings: the Audio page.
+    let audio_status = Rc::new(RefCell::new(audio.borrow().status.clone()));
+    show_audio(&window, &audio.borrow(), &chosen.borrow());
+    {
+        let w = window.as_weak();
+        let (a, ch) = (audio.clone(), chosen.clone());
+        window.on_settings_opened(move || {
+            if let Some(w) = w.upgrade() {
+                show_audio(&w, &a.borrow(), &ch.borrow());
+            }
+        });
+    }
+    {
+        let w = window.as_weak();
+        let (a, chosen, ch, st) = (
+            audio.clone(),
+            chosen.clone(),
+            channels.clone(),
+            audio_status.clone(),
+        );
+        window.on_settings_pick(move |field, k| {
+            let Some(w) = w.upgrade() else { return };
+            let k = k.max(0) as usize;
+            let (outs, ins) = audio::devices();
+            let mut c = chosen.borrow_mut();
+            let before = c.clone();
+            match field {
+                // System default, then the devices.
+                0 => {
+                    c.output = k
+                        .checked_sub(1)
+                        .and_then(|k| outs.get(k))
+                        .cloned()
+                        .unwrap_or_default()
+                }
+                // None, System default, then the devices.
+                1 => {
+                    c.input = match k {
+                        0 => None,
+                        1 => Some(String::new()),
+                        k => ins.get(k - 2).cloned().or(Some(String::new())),
+                    }
+                }
+                // Device default, then the rates.
+                2 => c.sample_rate = k.checked_sub(1).and_then(|k| SAMPLE_RATES.get(k)).copied(),
+                3 => {
+                    c.buffer = BUFFER_SIZES
+                        .get(k)
+                        .copied()
+                        .unwrap_or(settings::DEFAULT_BUFFER)
+                }
+                _ => {}
+            }
+            if *c == before {
+                return;
+            }
+            settings::save_audio(&c);
+            // A new rate waits for the next opening; the rest moves now.
+            if field != 2 {
+                let mut audio = a.borrow_mut();
+                audio.open(&c);
+                ch.set(Channels {
+                    inputs: audio.in_channels,
+                    outputs: audio.out_channels,
+                });
+                *st.borrow_mut() = audio.status.clone();
+                show_channels(&w, ch.get());
+            }
+            show_audio(&w, &a.borrow(), &c);
         });
     }
 
@@ -645,11 +708,11 @@ fn ui(
             w.set_peers(link.num_peers() as i32);
             w.set_load(format!("{:.0}%", monitor.load() * 100.0).into());
             let push = push_status.lock().map(|s| s.clone()).unwrap_or_default();
-            let line = if push.is_empty() {
-                status.clone()
-            } else {
-                format!("{status} · {push}")
-            };
+            let line = [note.as_str(), audio_status.borrow().as_str(), push.as_str()]
+                .into_iter()
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+                .join(" · ");
             if w.get_status().as_str() != line {
                 w.set_status(line.into());
             }
@@ -659,8 +722,7 @@ fn ui(
     let result = window.run();
     // Push back to Live before the sound stops.
     drop(push);
-    drop(output);
-    drop(input);
+    drop(audio);
     result
 }
 

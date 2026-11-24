@@ -8299,6 +8299,7 @@ dependencies = [
  "rtrb",
  "rusb",
  "rusty_link",
+ "serde_json",
  "slint",
  "slint-build",
 ]

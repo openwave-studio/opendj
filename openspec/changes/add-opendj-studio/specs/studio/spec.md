@@ -85,3 +85,10 @@ Each track SHALL have an I/O section as Live's. An audio track SHALL take one so
 #### Scenario: A keyboard on its own track
 - **WHEN** a MIDI track's MIDI From names a keyboard and Monitor is In
 - **THEN** that keyboard plays the track, and other tracks set to other inputs don't hear it
+
+### Requirement: Audio settings
+The studio SHALL have a Settings panel with an Audio page choosing the output device, the input device (or none), the sample rate and the buffer size. A new device or buffer SHALL take effect at once without closing the set; a new sample rate SHALL take effect when the studio next opens. The choices SHALL be kept between runs, and until the studio has saved any it SHALL start from openDJ's audio settings.
+
+#### Scenario: Moving to an audio interface
+- **WHEN** the output device is changed to an audio interface while a set plays
+- **THEN** the set keeps playing, now on the interface, and the tracks' Ext. Out pairs list the interface's outputs

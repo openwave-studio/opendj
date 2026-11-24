@@ -53,6 +53,8 @@ Shift with them jumps by eight.
 - `als.rs`: reading Live sets (gzipped XML) into tracks and clips.
 - `plugins.rs`: finding and starting a set's plug-ins; the audio thread
   runs them as slots in each track's chain (`engine.rs`).
+- `settings.rs`: the studio's settings (`studio.json`), starting from
+  openDJ's audio choices.
 - `midi.rs`: MIDI From and To: every input but Push routed to the tracks
   that listen, and tracks' notes out to external synths.
 - `check.rs`: the offline checks, with a counting allocator.
@@ -72,10 +74,14 @@ Live set opens with its routings. Monitor In plays the input always (an
 audio track's clips are then quiet); Auto plays it while the track is
 armed (a MIDI track also while it is selected and no track is armed).
 
-The studio uses the computer's default sound card for both. To pick
-others, set `OPENDJ_STUDIO_OUTPUT` and `OPENDJ_STUDIO_INPUT` to part of a
-device's name. The input opens only for a set with audio tracks, and must
-run at the output's sample rate. `OPENDJ_NO_INPUT=1` leaves it closed.
+The sound card is chosen in Settings (the gear in the top bar), on its
+Audio page: the output and input devices, the sample rate and the buffer.
+Devices change at once, without closing the set; a new sample rate takes
+effect when the studio opens again. The choices are kept in `studio.json`
+beside openDJ's `settings.json`; until there is one, the studio starts
+from openDJ's own audio settings (its main output, first input, rate and
+buffer). The input opens only for a set with audio tracks, at the
+output's rate. `OPENDJ_NO_INPUT=1` leaves it closed.
 
 ## Ableton Push 2
 

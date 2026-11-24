@@ -1,19 +1,126 @@
 //! Running the studio on the sound card, or on a timer when there is none.
+//!
+//! The studio sits in a shared slot that the output callback borrows each
+//! block (a lock only the Audio settings ever wait on), so the devices can
+//! change while a set plays: the streams stop, the studio is set up for the
+//! new devices, and new streams start on the same slot.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{FromSample, SampleFormat, SizedSample};
 
-use crate::engine::{Studio, MAX_BLOCK};
+use crate::engine::{Studio, MAX_BLOCK, MAX_CHANNELS};
+use crate::settings::AudioSettings;
 
-/// Frames per callback we ask for: 5.3 ms at 48 kHz.
-pub const BUFFER_FRAMES: u32 = 256;
+/// The studio, shared between the audio callback and the settings.
+type Shared = Arc<Mutex<Option<Studio>>>;
 
-/// Keeps the audio running; stops it when dropped.
-pub enum Output {
+/// A device's name, as the settings list it.
+pub fn name(device: &cpal::Device) -> String {
+    device
+        .description()
+        .map(|d| d.name().to_string())
+        .unwrap_or_else(|_| "audio device".into())
+}
+
+fn no_audio() -> bool {
+    std::env::var_os("OPENDJ_NO_AUDIO").is_some()
+}
+
+/// The output called `name`, or the system default for an empty name (or
+/// one no longer there).
+fn find_output(want: &str) -> Option<cpal::Device> {
+    let host = cpal::default_host();
+    if !want.is_empty() {
+        if let Some(d) = host
+            .output_devices()
+            .ok()
+            .and_then(|mut d| d.find(|d| name(d) == want))
+        {
+            return Some(d);
+        }
+        eprintln!("audio output {want} not found; using the default");
+    }
+    host.default_output_device()
+}
+
+fn find_input(want: &str) -> Option<cpal::Device> {
+    let host = cpal::default_host();
+    if !want.is_empty() {
+        if let Some(d) = host
+            .input_devices()
+            .ok()
+            .and_then(|mut d| d.find(|d| name(d) == want))
+        {
+            return Some(d);
+        }
+        eprintln!("audio input {want} not found; using the default");
+    }
+    host.default_input_device()
+}
+
+/// Output and input devices, as the settings list them (the system's own;
+/// openDJ's ASIO drivers are left out for now).
+pub fn devices() -> (Vec<String>, Vec<String>) {
+    if no_audio() {
+        return (Vec::new(), Vec::new());
+    }
+    let names = |list: Vec<opendj_engine::OutputDevice>| {
+        list.into_iter()
+            .map(|d| d.name)
+            .filter(|n| !n.starts_with("ASIO: "))
+            .collect()
+    };
+    (
+        names(opendj_engine::output_devices()),
+        names(opendj_engine::input_devices()),
+    )
+}
+
+/// The rate the studio runs at: the settings' if the output can, else the
+/// output's own; 48 kHz without an output.
+pub fn rate(settings: &AudioSettings) -> f64 {
+    if no_audio() {
+        return 48_000.0;
+    }
+    let Some(device) = find_output(&settings.output) else {
+        return 48_000.0;
+    };
+    let own = device
+        .default_output_config()
+        .map_or(48_000, |c| c.sample_rate());
+    let wanted = settings.sample_rate.filter(|&r| {
+        device
+            .supported_output_configs()
+            .is_ok_and(|mut c| c.any(|c| c.min_sample_rate() <= r && r <= c.max_sample_rate()))
+    });
+    wanted.unwrap_or(own) as f64
+}
+
+/// A config of `device` at `rate`: its default if that runs at `rate`,
+/// else the one with the most channels that can.
+fn config_at(
+    default: Result<cpal::SupportedStreamConfig, String>,
+    configs: Result<Vec<cpal::SupportedStreamConfigRange>, String>,
+    rate: u32,
+    device: &str,
+) -> Result<cpal::SupportedStreamConfig, String> {
+    let default = default?;
+    if default.sample_rate() == rate {
+        return Ok(default);
+    }
+    configs?
+        .into_iter()
+        .filter(|c| c.min_sample_rate() <= rate && rate <= c.max_sample_rate())
+        .max_by_key(|c| c.channels())
+        .map(|c| c.with_sample_rate(rate))
+        .ok_or_else(|| format!("{device} can't run at {rate} Hz"))
+}
+
+enum Output {
     /// Held only to keep the stream playing.
     Device(#[allow(dead_code)] cpal::Stream),
     /// No sound card: the engine runs on a timer so the UI still moves.
@@ -28,79 +135,164 @@ impl Drop for Output {
     }
 }
 
-/// A device's name, for the status line.
-pub fn name(device: &cpal::Device) -> String {
-    device
-        .description()
-        .map(|d| d.name().to_string())
-        .unwrap_or_else(|_| "audio device".into())
-}
-
-/// The device whose name has `env`'s value in it (any case), if that is
-/// set and one does.
-fn named(devices: impl Iterator<Item = cpal::Device>, env: &str) -> Option<cpal::Device> {
-    let want = std::env::var(env).ok()?.to_lowercase();
-    let found = devices
-        .into_iter()
-        .find(|d| name(d).to_lowercase().contains(&want));
-    if found.is_none() {
-        eprintln!("{env}: no device named like {want}; using the default");
-    }
-    found
-}
-
-/// The output (the default, or `OPENDJ_STUDIO_OUTPUT`) and its settings,
-/// or None when there is no output.
-pub fn probe() -> Option<(cpal::Device, cpal::SupportedStreamConfig)> {
-    let host = cpal::default_host();
-    let device = host
-        .output_devices()
-        .ok()
-        .and_then(|d| named(d, "OPENDJ_STUDIO_OUTPUT"))
-        .or_else(|| host.default_output_device())?;
-    let config = device.default_output_config().ok()?;
-    Some((device, config))
-}
-
-/// The sound card input, filling the studio's input ring.
-pub struct Input {
+/// The studio's sound: its output and input streams.
+pub struct Audio {
+    shared: Shared,
+    output: Option<Output>,
     /// Held only to keep the stream running.
-    _stream: cpal::Stream,
-    pub name: String,
-    pub channels: usize,
+    input: Option<cpal::Stream>,
+    /// The studio's sample rate, fixed while a set is open.
+    pub rate: f64,
+    /// Whether the set wants the input (it has audio tracks).
+    wants_input: bool,
+    /// For the status line and the settings.
+    pub status: String,
+    pub out_name: String,
+    pub out_channels: usize,
+    pub in_name: String,
+    pub in_channels: usize,
+    pub buffer: u32,
 }
 
-/// Opens the input (the default, or `OPENDJ_STUDIO_INPUT`) at `rate`, all
-/// its channels, writing into a ring the studio reads; returns the input
-/// and the ring's reading end.
-pub fn start_input(rate: u32) -> Result<(Input, rtrb::Consumer<f32>), String> {
-    let host = cpal::default_host();
-    let device = host
-        .input_devices()
-        .ok()
-        .and_then(|d| named(d, "OPENDJ_STUDIO_INPUT"))
-        .or_else(|| host.default_input_device())
-        .ok_or("no audio input")?;
-    let default = device.default_input_config().map_err(|e| e.to_string())?;
-    let config = if default.sample_rate() == rate {
-        default
-    } else {
-        // The same channels at the output's rate, if it can.
+impl Audio {
+    /// Starts `studio` on the devices `settings` name.
+    pub fn start(studio: Studio, settings: &AudioSettings, wants_input: bool) -> Audio {
+        let mut audio = Audio {
+            rate: studio.rate(),
+            shared: Arc::new(Mutex::new(Some(studio))),
+            output: None,
+            input: None,
+            wants_input,
+            status: String::new(),
+            out_name: String::new(),
+            out_channels: 0,
+            in_name: String::new(),
+            in_channels: 0,
+            buffer: settings.buffer,
+        };
+        audio.open(settings);
+        audio
+    }
+
+    /// Moves the studio to the devices `settings` name. The sample rate
+    /// stays as the set opened with.
+    pub fn open(&mut self, settings: &AudioSettings) {
+        // Stop the streams first: the callbacks then let go of the studio.
+        self.output = None;
+        self.input = None;
+        self.buffer = settings.buffer;
+        let shared = self.shared.clone();
+        let Ok(mut guard) = shared.lock() else {
+            return;
+        };
+        let Some(studio) = guard.as_mut() else {
+            return;
+        };
+        let rate = self.rate as u32;
+        // The input.
+        studio.clear_input();
+        self.in_name.clear();
+        self.in_channels = 0;
+        let mut notes = Vec::new();
+        match &settings.input {
+            Some(want)
+                if self.wants_input
+                    && !no_audio()
+                    && std::env::var_os("OPENDJ_NO_INPUT").is_none() =>
+            {
+                match start_input(want, rate) {
+                    Ok((stream, ring, device, channels)) => {
+                        studio.set_input(ring, channels);
+                        self.input = Some(stream);
+                        self.in_name = device;
+                        self.in_channels = channels;
+                    }
+                    Err(e) => {
+                        eprintln!("audio input: {e}");
+                        notes.push(format!("no input: {e}"));
+                    }
+                }
+            }
+            _ => {}
+        }
+        // The output.
+        let out = if no_audio() {
+            Err("no audio".to_string())
+        } else {
+            find_output(&settings.output)
+                .ok_or_else(|| "no audio output found".to_string())
+                .and_then(|d| {
+                    let n = name(&d);
+                    let config = config_at(
+                        d.default_output_config().map_err(|e| e.to_string()),
+                        d.supported_output_configs()
+                            .map(|c| c.collect())
+                            .map_err(|e| e.to_string()),
+                        rate,
+                        &n,
+                    )?;
+                    Ok((d, config, n))
+                })
+        };
+        let channels = out.as_ref().map_or(2, |(_, c, _)| c.channels() as usize);
+        studio.engine.set_outputs(channels);
+        if let Some(link) = studio.link.as_mut() {
+            link.set_latency(settings.buffer as f64 / self.rate);
+        }
+        drop(guard);
+        self.out_channels = channels;
+        let started = out.and_then(|(device, config, n)| {
+            start_output(&device, &config, settings.buffer, self.shared.clone()).map(|s| (s, n))
+        });
+        match started {
+            Ok((stream, n)) => {
+                self.output = Some(Output::Device(stream));
+                self.status = format!("{n} · {rate} Hz · {} frames", settings.buffer);
+                self.out_name = n;
+            }
+            Err(e) => {
+                eprintln!("audio output: {e}");
+                self.output = Some(start_silent(self.shared.clone(), self.rate));
+                self.status = format!("No sound ({e}): playing silently");
+                self.out_name.clear();
+                self.out_channels = 2;
+            }
+        }
+        if !self.in_name.is_empty() {
+            self.status += &format!(" · in: {} ({} ch)", self.in_name, self.in_channels);
+        }
+        for n in notes {
+            self.status += &format!(" · {n}");
+        }
+    }
+}
+
+impl Drop for Audio {
+    fn drop(&mut self) {
+        self.output = None;
+        self.input = None;
+    }
+}
+
+/// Opens an input at `rate`, all its channels, writing into a ring the
+/// studio reads; returns the stream, the ring's reading end, the device's
+/// name and the channels.
+fn start_input(
+    want: &str,
+    rate: u32,
+) -> Result<(cpal::Stream, rtrb::Consumer<f32>, String, usize), String> {
+    let device = find_input(want).ok_or("no audio input")?;
+    let n = name(&device);
+    let config = config_at(
+        device.default_input_config().map_err(|e| e.to_string()),
         device
             .supported_input_configs()
-            .map_err(|e| e.to_string())?
-            .filter(|c| c.min_sample_rate() <= rate && rate <= c.max_sample_rate())
-            .max_by_key(|c| c.channels())
-            .map(|c| c.with_sample_rate(rate))
-            .ok_or_else(|| {
-                format!(
-                    "{} runs at {} Hz, the output at {rate} Hz",
-                    name(&device),
-                    default.sample_rate()
-                )
-            })?
-    };
-    let channels = (config.channels() as usize).min(crate::engine::MAX_CHANNELS);
+            .map(|c| c.collect())
+            .map_err(|e| e.to_string()),
+        rate,
+        &n,
+    )?;
+    let channels = (config.channels() as usize).min(MAX_CHANNELS);
     // A quarter second of room; the studio keeps only a few blocks of it.
     let (tx, rx) = rtrb::RingBuffer::new(rate as usize / 4 * channels.max(1));
     let stream = match config.sample_format() {
@@ -110,14 +302,7 @@ pub fn start_input(rate: u32) -> Result<(Input, rtrb::Consumer<f32>), String> {
         other => Err(format!("unsupported input format {other:?}")),
     }?;
     stream.play().map_err(|e| e.to_string())?;
-    Ok((
-        Input {
-            _stream: stream,
-            name: name(&device),
-            channels,
-        },
-        rx,
-    ))
+    Ok((stream, rx, n, channels))
 }
 
 fn build_input<T>(
@@ -130,7 +315,7 @@ where
     f32: FromSample<T>,
 {
     let all = config.channels() as usize;
-    let channels = all.min(crate::engine::MAX_CHANNELS);
+    let channels = all.min(MAX_CHANNELS);
     device
         .build_input_stream::<T, _, _>(
             config.config(),
@@ -151,45 +336,41 @@ where
         .map_err(|e| e.to_string())
 }
 
-/// Starts `studio` on `device`.
-pub fn start(
+fn start_output(
     device: &cpal::Device,
     config: &cpal::SupportedStreamConfig,
-    studio: Studio,
-) -> Result<Output, String> {
-    let open = |studio: Studio, size| match config.sample_format() {
-        SampleFormat::F32 => build::<f32>(device, config, size, studio),
-        SampleFormat::I16 => build::<i16>(device, config, size, studio),
-        SampleFormat::I32 => build::<i32>(device, config, size, studio),
-        other => Err(format!("unsupported sample format {other:?}")),
-    };
+    buffer: u32,
+    shared: Shared,
+) -> Result<cpal::Stream, String> {
     let size = match config.buffer_size() {
         cpal::SupportedBufferSize::Range { min, max } => {
-            cpal::BufferSize::Fixed(BUFFER_FRAMES.clamp(*min, *max))
+            cpal::BufferSize::Fixed(buffer.clamp(*min, *max))
         }
         cpal::SupportedBufferSize::Unknown => cpal::BufferSize::Default,
     };
-    let stream = open(studio, size)?;
+    let stream = match config.sample_format() {
+        SampleFormat::F32 => build::<f32>(device, config, size, shared),
+        SampleFormat::I16 => build::<i16>(device, config, size, shared),
+        SampleFormat::I32 => build::<i32>(device, config, size, shared),
+        other => Err(format!("unsupported sample format {other:?}")),
+    }?;
     stream.play().map_err(|e| e.to_string())?;
-    Ok(Output::Device(stream))
+    Ok(stream)
 }
 
 fn build<T>(
     device: &cpal::Device,
     config: &cpal::SupportedStreamConfig,
     buffer_size: cpal::BufferSize,
-    mut studio: Studio,
+    shared: Shared,
 ) -> Result<cpal::Stream, String>
 where
     T: SizedSample + FromSample<f32>,
 {
     let channels = config.channels() as usize;
     let rate = config.sample_rate() as f64;
-    // Tracks sent to Ext. Out reach every output channel.
-    studio.engine.set_outputs(channels);
     // Allocated here, never in the callback.
     let mut stereo = vec![[0.0f32; 2]; MAX_BLOCK];
-    let monitor = studio.monitor.clone();
     let mut load = 0.0f32;
     device
         .build_output_stream::<T, _, _>(
@@ -199,6 +380,15 @@ where
             },
             move |data: &mut [T], _| {
                 let began = Instant::now();
+                // Only the settings ever hold it, while they change devices.
+                let Ok(mut guard) = shared.try_lock() else {
+                    data.fill(T::EQUILIBRIUM);
+                    return;
+                };
+                let Some(studio) = guard.as_mut() else {
+                    data.fill(T::EQUILIBRIUM);
+                    return;
+                };
                 for chunk in data.chunks_mut(MAX_BLOCK * channels) {
                     let frames = chunk.len() / channels;
                     let buf = &mut stereo[..frames];
@@ -216,7 +406,7 @@ where
                 let budget = frames as f32 / rate as f32;
                 let used = began.elapsed().as_secs_f32() / budget.max(1e-6);
                 load += (used - load) * 0.05;
-                monitor.set_load(load);
+                studio.monitor.set_load(load);
             },
             |e| eprintln!("audio output: {e}"),
             None,
@@ -224,22 +414,26 @@ where
         .map_err(|e| e.to_string())
 }
 
-/// Runs `studio` in real time on a thread, sending the sound nowhere.
-pub fn start_silent(mut studio: Studio) -> Output {
+/// Runs the studio in real time on a thread, sending the sound nowhere.
+fn start_silent(shared: Shared, rate: f64) -> Output {
     let stop = Arc::new(AtomicBool::new(false));
     let flag = stop.clone();
-    let rate = studio.rate();
+    let frames = crate::settings::DEFAULT_BUFFER as usize;
     std::thread::Builder::new()
         .name("studio-silent-audio".into())
         .spawn(move || {
-            let mut buf = vec![[0.0f32; 2]; BUFFER_FRAMES as usize];
-            let block = Duration::from_secs_f64(BUFFER_FRAMES as f64 / rate);
+            let mut buf = vec![[0.0f32; 2]; frames];
+            let block = Duration::from_secs_f64(frames as f64 / rate);
             let mut next = Instant::now();
             while !flag.load(Ordering::Relaxed) {
                 let began = Instant::now();
-                studio.process(&mut buf);
-                let used = began.elapsed().as_secs_f32() / block.as_secs_f32();
-                studio.monitor.set_load(used);
+                if let Ok(mut guard) = shared.try_lock() {
+                    if let Some(studio) = guard.as_mut() {
+                        studio.process(&mut buf);
+                        let used = began.elapsed().as_secs_f32() / block.as_secs_f32();
+                        studio.monitor.set_load(used);
+                    }
+                }
                 next += block;
                 if let Some(wait) = next.checked_duration_since(Instant::now()) {
                     std::thread::sleep(wait);

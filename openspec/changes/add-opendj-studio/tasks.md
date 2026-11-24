@@ -34,6 +34,7 @@
 - [x] 2.20 Audio inputs per track: Audio From with channel, Monitor In/Auto/Off, Audio To
 - [x] 2.21 MIDI From and To per MIDI track, with channel
 - [ ] 2.22 Play the set's live inputs and keyboards through their tracks on macOS
+- [x] 2.23 Settings with an Audio page: output and input devices, sample rate and buffer, starting from openDJ's audio settings; devices change without closing the set
 
 ## 3. Clip editing
 
