@@ -636,6 +636,7 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 let lowpass = flag(&format!("Stage{i}_Filter_On")) && n("Filter_Type") == Some(0.0);
                 fx::RoarStage {
                     on: flag(&format!("Stage{i}_On")),
+                    shape: n("Shaper_Type").unwrap_or(0.0) as u8,
                     amount: if shaped {
                         n("Shaper_Amount").unwrap_or(0.0)
                     } else {

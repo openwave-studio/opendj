@@ -1013,6 +1013,16 @@ pub struct RoarStage {
     pub bias: f32,
     /// Low-pass, Hz; at [`ROAR_OPEN`] or over it's open.
     pub lowpass: f32,
+    /// Live's shaper type; [`ROAR_TRI_FOLD`] folds, the rest saturate.
+    pub shape: u8,
+}
+
+/// Roar's Tri Fold shaper type.
+pub const ROAR_TRI_FOLD: u8 = 9;
+
+/// Folds back into -1..1 like a triangle wave.
+fn tri_fold(x: f32) -> f32 {
+    1.0 - 4.0 * (((x + 1.0) / 4.0).rem_euclid(1.0) - 0.5).abs()
 }
 
 /// A Roar stage's low-pass this high is left out.
@@ -1025,6 +1035,7 @@ impl Default for RoarStage {
             amount: 0.0,
             bias: 0.0,
             lowpass: 20_000.0,
+            shape: 0,
         }
     }
 }
@@ -1212,8 +1223,13 @@ impl Roar {
             return x;
         }
         let (drive, bias, lp) = &mut self.stages[i];
-        let off = bias.tanh();
-        let y = x.map(|v| (v * *drive + *bias).tanh() - off);
+        let y = if st.shape == ROAR_TRI_FOLD {
+            let off = tri_fold(*bias);
+            x.map(|v| tri_fold(v * *drive + *bias) - off)
+        } else {
+            let off = bias.tanh();
+            x.map(|v| (v * *drive + *bias).tanh() - off)
+        };
         if st.lowpass < ROAR_OPEN {
             lp.process(y)
         } else {
@@ -1436,6 +1452,7 @@ mod tests {
                         amount: 0.5,
                         bias: -0.3,
                         lowpass: 8_000.0,
+                        shape: ROAR_TRI_FOLD,
                     },
                     RoarStage::default(),
                     RoarStage::default(),
