@@ -3181,3 +3181,121 @@ fn hercules_mix_ultra_neural_mix_and_pads() {
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
+
+/// Reloop Mixtour and Mixtour Pro (notes from djay Pro's built-in mappings):
+/// every message runs cleanly.
+#[test]
+fn reloop_mappings_take_every_message_cleanly() {
+    for c in opendj_controllers::support::all() {
+        let Some(file) = c.file.filter(|_| c.name.starts_with("Reloop")) else {
+            continue;
+        };
+        let (_reg, mut ctl) = load(&file);
+        settle(&mut ctl, 50);
+        every_message_runs_cleanly(&file, &mut ctl);
+        ctl.shutdown();
+    }
+}
+
+/// Mixtour: the C-mode notes play hot cues, FX makes FILTER drive the
+/// deck's effect unit too, and the VU meters reach the controller.
+#[test]
+fn reloop_mixtour_hot_cues_fx_and_meters() {
+    let (reg, mut c) = load("Reloop Mixtour.midi.xml");
+    settle(&mut c, 50);
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    // With no track loaded, check the pads reach their controls.
+    let fires = |c: &mut Controller, group: &str, key: &str, s: u8, n: u8| {
+        let ctl = reg.get(group, key).unwrap();
+        let before = ctl.version();
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+        assert_ne!(ctl.version(), before, "{group} {key}");
+    };
+    fires(&mut c, "[Channel2]", "hotcue_2_activate", 0x91, 0x0E);
+    fires(&mut c, "[Channel2]", "hotcue_2_clear", 0x91, 0x4D);
+    // FILTER alone moves the filter, not the effects.
+    c.receive(&[0xB0, 0x04, 0x7F]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit1]", "super1"), 0.0);
+    press(&mut c, 0x90, 0x01);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1]", "group_[Channel1]_enable"),
+        1.0
+    );
+    c.receive(&[0xB0, 0x04, 0x00]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit1]", "super1"), 1.0);
+    assert_eq!(get(&reg, "[QuickEffectRack1_[Channel1]]", "super1"), 0.0);
+    c.take_output();
+    reg.get("[Channel1]", "vu_meter").unwrap().set(1.0);
+    settle(&mut c, 20);
+    assert!(c.take_output().contains(&vec![0x90, 0x11, 77]));
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// Mixtour Pro: MODE + a pad picks the pad mode per deck, the pads follow
+/// it (hot cues, auto loops, stems), STEMS EQ turns the EQ knobs into stem
+/// volumes, and the pads start in hot cue mode's colour.
+#[test]
+fn reloop_mixtour_pro_pad_modes_and_stems_eq() {
+    let (reg, mut c) = load("Reloop Mixtour Pro.midi.xml");
+    // Hot cue mode's dimmed colour on every pad at start.
+    let out = c.take_output();
+    assert!(out.contains(&vec![0x94, 0x14, 48]), "{out:?}");
+    settle(&mut c, 50);
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    let fires = |c: &mut Controller, group: &str, key: &str, s: u8, n: u8| {
+        let ctl = reg.get(group, key).unwrap();
+        let before = ctl.version();
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+        ctl.version() != before
+    };
+    // Hot cue mode by default.
+    assert!(fires(&mut c, "[Channel3]", "hotcue_3_activate", 0x96, 0x16));
+    assert!(fires(&mut c, "[Channel3]", "hotcue_3_clear", 0x96, 0x1E));
+    // MODE + pad 5: auto loop, on deck 3 only.
+    press(&mut c, 0x96, 0x04);
+    assert!(fires(&mut c, "[Channel3]", "beatloop_1_toggle", 0x96, 0x16));
+    assert!(!fires(
+        &mut c,
+        "[Channel3]",
+        "hotcue_3_activate",
+        0x96,
+        0x16
+    ));
+    assert!(fires(&mut c, "[Channel1]", "hotcue_3_activate", 0x94, 0x16));
+    // MODE + pad 8: stems; pad 2 mutes the bass, pad 8 plays the vocals alone.
+    press(&mut c, 0x95, 0x07);
+    press(&mut c, 0x95, 0x15);
+    assert_eq!(get(&reg, "[Channel2_Stem2]", "mute"), 1.0);
+    press(&mut c, 0x95, 0x1B);
+    let mutes = [1, 2, 3, 4].map(|s| get(&reg, &format!("[Channel2_Stem{s}]"), "mute"));
+    assert_eq!(mutes, [1.0, 1.0, 1.0, 0.0]);
+    // STEMS EQ: LOW sets the drums instead of the EQ.
+    c.receive(&[0xB1, 0x19, 0x00]);
+    let low = get(&reg, "[EqualizerRack1_[Channel2]_Effect1]", "parameter1");
+    c.receive(&[0xB1, 0x19, 0x7F]);
+    assert_ne!(
+        get(&reg, "[EqualizerRack1_[Channel2]_Effect1]", "parameter1"),
+        low
+    );
+    c.receive(&[0xB1, 0x19, 0x00]);
+    press(&mut c, 0x95, 0x24);
+    c.receive(&[0xB1, 0x19, 0x00]);
+    assert_eq!(get(&reg, "[Channel2_Stem1]", "volume"), 0.0);
+    c.receive(&[0xB1, 0x19, 0x7F]);
+    assert!(get(&reg, "[Channel2_Stem1]", "volume") > 0.0);
+    assert_eq!(
+        get(&reg, "[EqualizerRack1_[Channel2]_Effect1]", "parameter1"),
+        low
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}

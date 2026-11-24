@@ -1388,6 +1388,9 @@ mod tests {
                 "DJControl Inpulse 200 Mk2",
                 "Hercules_DJControl_Inpulse_200_MK2.midi.xml",
             ),
+            // Port names from djay Pro's built-in Reloop mappings.
+            ("MIXTOUR", "Reloop Mixtour.midi.xml"),
+            ("Reloop Mixtour Pro", "Reloop Mixtour Pro.midi.xml"),
         ] {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");
         }
