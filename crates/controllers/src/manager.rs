@@ -1391,6 +1391,13 @@ mod tests {
             // Port names from djay Pro's built-in Reloop mappings.
             ("MIXTOUR", "Reloop Mixtour.midi.xml"),
             ("Reloop Mixtour Pro", "Reloop Mixtour Pro.midi.xml"),
+            ("Reloop Ready", "Reloop Ready.midi.xml"),
+            ("Reloop Buddy", "Reloop Buddy.midi.xml"),
+            ("Mixon 4", "Reloop Mixon 4.midi.xml"),
+            ("Reloop Mixon 8 Pro", "Reloop Mixon 8 Pro.midi.xml"),
+            ("Reloop Beatpad", "Reloop Beatpad.midi.xml"),
+            ("Terminal Mix 2", "Reloop Terminal Mix 2-4.midi.xml"),
+            ("Terminal Mix 4", "Reloop Terminal Mix 2-4.midi.xml"),
         ] {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");
         }

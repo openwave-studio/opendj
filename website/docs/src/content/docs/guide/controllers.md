@@ -200,7 +200,7 @@ in the Controller Editor and a guide page:
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,
   DJ2GO2 Touch, Party Mix (and MKII), Scratch and V7.
 - **Hercules:** DJControl Inpulse 200, 200 MK2, 300, 300 MK2 and 500, Jogvision, Mix and Mix Ultra.
-- **Reloop:** Mixtour and Mixtour Pro.
+- **Reloop:** Mixtour, Mixtour Pro, Ready, Buddy, Mixon 4 and Mixon 8 Pro.
 - **Others:** Allen & Heath Xone:K2 and DJ TechTools Midi Fighter Twister.
 
 The DDJ-REV1, DDJ-1000 and DDJ-REV7 are coming.

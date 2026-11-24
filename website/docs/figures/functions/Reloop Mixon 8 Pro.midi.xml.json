@@ -1,0 +1,1017 @@
+{
+  "file": "Reloop Mixon 8 Pro.midi.xml",
+  "parts": {
+    "browse": {
+      "Back": [
+        "Previous panel"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Scroll playlists"
+      ],
+      "SHIFT press": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "ch1-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch1-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch1-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch1-load": {
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "ch1-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch1-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch1-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch1-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch2-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch2-load": {
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "ch2-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch2-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch2-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch2-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch3-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch3-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch3-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch3-load": {
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "ch3-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch3-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch3-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch3-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch4-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch4-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch4-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch4-load": {
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "ch4-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch4-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch4-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch4-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "Deck 3 SHIFT": [
+        "Jump to start"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-double": {
+      "Deck 3": [
+        "Double loop"
+      ],
+      "Deck 3 SHIFT": [
+        "Beat jump forward"
+      ],
+      "SHIFT": [
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-fx1": {
+      "normal": [
+        "FX 3 Wet / dry"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "FX 3 Wet / dry"
+      ]
+    },
+    "l-fx3": {
+      "normal": [
+        "FX 3 Wet / dry"
+      ]
+    },
+    "l-fxbeats": {
+      "normal": [
+        "FX 3 Effect 1 knob",
+        "FX 3 Effect 2 knob",
+        "FX 3 Effect 3 knob"
+      ]
+    },
+    "l-fxtap": {
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "l-halve": {
+      "Deck 3": [
+        "Halve loop"
+      ],
+      "Deck 3 SHIFT": [
+        "Beat jump back"
+      ],
+      "SHIFT": [
+        "Beat jump back"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-jog": {
+      "Deck 3": [
+        "Jog nudge"
+      ],
+      "Deck 3 Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "l-keylock": {
+      "Deck 3": [
+        "Key lock"
+      ],
+      "Deck 3 SHIFT": [
+        "Match key"
+      ],
+      "SHIFT": [
+        "Match key"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-loop": {
+      "Deck 3": [
+        "Loop (current size)"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop / exit"
+      ],
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-loopin": {
+      "Deck 3": [
+        "Loop in"
+      ],
+      "Deck 3 SHIFT": [
+        "Beat jump size 2"
+      ],
+      "SHIFT": [
+        "Beat jump size 2"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-loopout": {
+      "Deck 3": [
+        "Loop out"
+      ],
+      "Deck 3 SHIFT": [
+        "Beat jump size 8"
+      ],
+      "SHIFT": [
+        "Beat jump size 8"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-mode1": {
+      "Deck 3": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "l-mode2": {
+      "Deck 3": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "l-mode3": {
+      "Deck 3": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "l-mode4": {
+      "Deck 3": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3": [
+        "Keyboard pad 1"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 1"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3": [
+        "Keyboard pad 2"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 2"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3": [
+        "Keyboard pad 3"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 3"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3": [
+        "Keyboard pad 4"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 4"
+      ]
+    },
+    "l-pad5": {
+      "Deck 3": [
+        "Keyboard pad 5"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 5"
+      ]
+    },
+    "l-pad6": {
+      "Deck 3": [
+        "Keyboard pad 6"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 6"
+      ]
+    },
+    "l-pad7": {
+      "Deck 3": [
+        "Keyboard pad 7"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 7"
+      ]
+    },
+    "l-pad8": {
+      "Deck 3": [
+        "Keyboard pad 8"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 8"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "Deck 3 SHIFT": [
+        "Play from start"
+      ],
+      "Deck 3 Start": [
+        "Play from start"
+      ],
+      "Deck 3 Start 2": [
+        "Play from start"
+      ],
+      "SHIFT": [
+        "Play from start"
+      ],
+      "Start": [
+        "Play from start"
+      ],
+      "Start 2": [
+        "Play from start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-range": {
+      "Deck 3": [
+        "Tempo range"
+      ],
+      "Deck 3 SHIFT": [
+        "Reset key"
+      ],
+      "SHIFT": [
+        "Reset key"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-slip": {
+      "Deck 3": [
+        "Slip mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Reverse"
+      ],
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "Deck 3 SHIFT": [
+        "Tempo"
+      ],
+      "SHIFT": [
+        "Tempo"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tap": {
+      "Deck 3": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vinyl": {
+      "Deck 3": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 3 SHIFT": [
+        "Tap tempo"
+      ],
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "Deck 4 SHIFT": [
+        "Jump to start"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-double": {
+      "Deck 4": [
+        "Double loop"
+      ],
+      "Deck 4 SHIFT": [
+        "Beat jump forward"
+      ],
+      "SHIFT": [
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-fx1": {
+      "normal": [
+        "FX 4 Wet / dry"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "FX 4 Wet / dry"
+      ]
+    },
+    "r-fx3": {
+      "normal": [
+        "FX 4 Wet / dry"
+      ]
+    },
+    "r-fxbeats": {
+      "normal": [
+        "FX 4 Effect 1 knob",
+        "FX 4 Effect 2 knob",
+        "FX 4 Effect 3 knob"
+      ]
+    },
+    "r-fxtap": {
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "r-halve": {
+      "Deck 4": [
+        "Halve loop"
+      ],
+      "Deck 4 SHIFT": [
+        "Beat jump back"
+      ],
+      "SHIFT": [
+        "Beat jump back"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-jog": {
+      "Deck 4": [
+        "Jog nudge"
+      ],
+      "Deck 4 Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "r-keylock": {
+      "Deck 4": [
+        "Key lock"
+      ],
+      "Deck 4 SHIFT": [
+        "Match key"
+      ],
+      "SHIFT": [
+        "Match key"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-loop": {
+      "Deck 4": [
+        "Loop (current size)"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop / exit"
+      ],
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-loopin": {
+      "Deck 4": [
+        "Loop in"
+      ],
+      "Deck 4 SHIFT": [
+        "Beat jump size 2"
+      ],
+      "SHIFT": [
+        "Beat jump size 2"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-loopout": {
+      "Deck 4": [
+        "Loop out"
+      ],
+      "Deck 4 SHIFT": [
+        "Beat jump size 8"
+      ],
+      "SHIFT": [
+        "Beat jump size 8"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-mode1": {
+      "Deck 4": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "r-mode2": {
+      "Deck 4": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "r-mode3": {
+      "Deck 4": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "r-mode4": {
+      "Deck 4": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "SHIFT": [
+        "Reloop mixon8 pro input"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4": [
+        "Keyboard pad 1"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 1"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4": [
+        "Keyboard pad 2"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 2"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4": [
+        "Keyboard pad 3"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 3"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4": [
+        "Keyboard pad 4"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 4"
+      ]
+    },
+    "r-pad5": {
+      "Deck 4": [
+        "Keyboard pad 5"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 5"
+      ]
+    },
+    "r-pad6": {
+      "Deck 4": [
+        "Keyboard pad 6"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 6"
+      ]
+    },
+    "r-pad7": {
+      "Deck 4": [
+        "Keyboard pad 7"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 7"
+      ]
+    },
+    "r-pad8": {
+      "Deck 4": [
+        "Keyboard pad 8"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "normal": [
+        "Keyboard pad 8"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "Deck 4 SHIFT": [
+        "Play from start"
+      ],
+      "Deck 4 Start": [
+        "Play from start"
+      ],
+      "Deck 4 Start 2": [
+        "Play from start"
+      ],
+      "SHIFT": [
+        "Play from start"
+      ],
+      "Start": [
+        "Play from start"
+      ],
+      "Start 2": [
+        "Play from start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-range": {
+      "Deck 4": [
+        "Tempo range"
+      ],
+      "Deck 4 SHIFT": [
+        "Reset key"
+      ],
+      "SHIFT": [
+        "Reset key"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-slip": {
+      "Deck 4": [
+        "Slip mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Reverse"
+      ],
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "Deck 4 SHIFT": [
+        "Tempo"
+      ],
+      "SHIFT": [
+        "Tempo"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tap": {
+      "Deck 4": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vinyl": {
+      "Deck 4": [
+        "Reloop mixon8 pro input"
+      ],
+      "Deck 4 SHIFT": [
+        "Tap tempo"
+      ],
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Reloop mixon8 pro input"
+      ]
+    },
+    "sampler": {
+      "normal": [
+        "Sampler 1 Channel fader",
+        "Sampler 2 Channel fader",
+        "Sampler 3 Channel fader",
+        "Sampler 4 Channel fader",
+        "Sampler 5 Channel fader",
+        "Sampler 6 Channel fader",
+        "Sampler 7 Channel fader",
+        "Sampler 8 Channel fader"
+      ]
+    },
+    "view": {
+      "SHIFT": [
+        "Next panel"
+      ],
+      "normal": [
+        "Next panel"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

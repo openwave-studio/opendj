@@ -3299,3 +3299,138 @@ fn reloop_mixtour_pro_pad_modes_and_stems_eq() {
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
+
+/// The Reloop mappings built from djay Pro's control lists: a pad mode
+/// button changes what the pads do (Ready and Buddy number their modes in
+/// order, the Mixon 8 Pro by the button's note), the pads light in their
+/// mode's colour, STEMS turns the Buddy's knobs into stem levels and the
+/// Mixon FX sections follow the deck last used on their side.
+#[test]
+fn reloop_djay_mappings_pad_modes_stems_and_fx() {
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    let fires =
+        |reg: &ControlRegistry, c: &mut Controller, group: &str, key: &str, s: u8, n: u8| {
+            let ctl = reg.get(group, key).unwrap();
+            let before = ctl.version();
+            c.receive(&[s, n, 0x7F]);
+            c.receive(&[s, n, 0x00]);
+            ctl.version() != before
+        };
+
+    // Ready: hot cues first, in hot cue mode's dimmed colour.
+    let (reg, mut c) = load("Reloop Ready.midi.xml");
+    let out = c.take_output();
+    assert!(out.contains(&vec![0x94, 0x14, 48]), "{out:?}");
+    settle(&mut c, 50);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel1]",
+        "hotcue_1_activate",
+        0x94,
+        0x14
+    ));
+    // AUTO LOOP: pad 3 is a 1-beat loop, on deck 1 only.
+    press(&mut c, 0x94, 0x05);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel1]",
+        "beatloop_1_toggle",
+        0x94,
+        0x16
+    ));
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel2]",
+        "hotcue_3_activate",
+        0x95,
+        0x16
+    ));
+    // ROLL: pad 1 rolls 1/16 of a beat while held.
+    press(&mut c, 0x94, 0x08);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel1]",
+        "beatlooproll_0.0625_activate",
+        0x94,
+        0x14
+    ));
+    press(&mut c, 0x90, 0x00);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+
+    // Buddy: STEMS makes FILTER the drums' level.
+    let (reg, mut c) = load("Reloop Buddy.midi.xml");
+    settle(&mut c, 50);
+    press(&mut c, 0x90, 0x23);
+    c.receive(&[0xB0, 0x1A, 0x00]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "volume"), 0.0);
+    press(&mut c, 0x90, 0x23);
+    c.receive(&[0xB0, 0x1A, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "volume"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+
+    // Mixon 8 Pro: PITCH PLAY (note 0x0F) makes the pads play the hot cue
+    // at other keys; STEMS (note 0x24) mutes stems.
+    let (reg, mut c) = load("Reloop Mixon 8 Pro.midi.xml");
+    settle(&mut c, 50);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel3]",
+        "hotcue_2_activate",
+        0x96,
+        0x15
+    ));
+    press(&mut c, 0x96, 0x0F);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel3]",
+        "keyboard_2_activate",
+        0x96,
+        0x15
+    ));
+    press(&mut c, 0x96, 0x24);
+    press(&mut c, 0x96, 0x15);
+    assert_eq!(get(&reg, "[Channel3_Stem2]", "mute"), 1.0);
+    // The left FX section works on deck 1 or 3, whichever was used last.
+    c.receive(&[0xB0, 0x1C, 0x40]);
+    c.receive(&[0xB8, 0x00, 0x00]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit1]", "mix"), 0.0);
+    c.receive(&[0xB2, 0x1C, 0x40]);
+    c.receive(&[0xB8, 0x00, 0x00]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit3]", "mix"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+
+    // Mixon 4: each pad mode sends its own notes.
+    let (reg, mut c) = load("Reloop Mixon 4.midi.xml");
+    settle(&mut c, 50);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel2]",
+        "hotcue_1_activate",
+        0x91,
+        0x00
+    ));
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel2]",
+        "keyboard_1_activate",
+        0x91,
+        0x30
+    ));
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
