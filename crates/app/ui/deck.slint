@@ -6828,6 +6828,7 @@ component DisplayTab inherits Rectangle {
 // draws at this size, clicks and drags going back to it.
 component InstrumentDisplay inherits DisplayView {
     source: InstrumentsUi.display;
+    edge: InstrumentsUi.display-edge;
     resized(w, h) => {
         InstrumentsUi.display-area-width = w;
         InstrumentsUi.display-area-height = h;
