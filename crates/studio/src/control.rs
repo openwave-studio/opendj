@@ -3,7 +3,9 @@
 //! stores the new value for the other side to show and sends the matching
 //! command to the audio thread.
 
-use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering};
+use std::sync::atomic::{
+    AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering,
+};
 use std::sync::{Arc, Mutex};
 
 use crate::clip::{Clip, Note, Sound, Track, MAX_TRACKS, SCENES};
@@ -112,6 +114,8 @@ pub struct Controls {
     quantize: AtomicU8,
     /// The key the pads play in and stage clips are written in.
     key: Mutex<Key>,
+    /// Each track's devices switched on, by place in its chain.
+    devices_on: Vec<Vec<AtomicBool>>,
     /// Goes up on every change, so a screen can tell when to redraw.
     version: AtomicU64,
 }
@@ -158,18 +162,22 @@ impl Controls {
             selected_scene: AtomicI32::new(-1),
             quantize: AtomicU8::new(0),
             key: Mutex::new(Key::default()),
+            devices_on: set
+                .iter()
+                .map(|t| t.devices.iter().map(|d| AtomicBool::new(d.on)).collect())
+                .collect(),
             version: AtomicU64::new(1),
         }
     }
 
-    fn send(&self, cmd: Command) {
+    pub(crate) fn send(&self, cmd: Command) {
         let pushed = self.commands.lock().map(|mut q| q.push(cmd).is_ok());
         if !matches!(pushed, Ok(true)) {
             eprintln!("command queue full");
         }
     }
 
-    fn bump(&self) {
+    pub(crate) fn bump(&self) {
         self.version.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -280,6 +288,24 @@ impl Controls {
         drop(set);
         self.bump();
         true
+    }
+
+    // --------------------------------------------------------- devices
+
+    pub fn device_on(&self, track: usize, device: usize) -> bool {
+        self.devices_on
+            .get(track)
+            .and_then(|t| t.get(device))
+            .is_some_and(|d| d.load(Ordering::Relaxed))
+    }
+
+    /// Switches a device in a track's chain on or off.
+    pub fn set_device_on(&self, track: usize, device: usize, on: bool) {
+        if let Some(d) = self.devices_on.get(track).and_then(|t| t.get(device)) {
+            d.store(on, Ordering::Relaxed);
+            self.send(Command::Bypass { track, device, on });
+            self.bump();
+        }
     }
 
     // ------------------------------------------------------------- key

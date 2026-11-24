@@ -20,10 +20,15 @@
 //! launch point (bar, beat or none) and happen on the exact frame: a block
 //! is split there.
 //!
-//! The callback never allocates, locks or does I/O.
+//! The callback never allocates, locks or does I/O, except for the plug-in
+//! slots' hand-over to their helper processes (shared memory and one byte
+//! down a pipe per block, as openDJ does).
 
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicU8, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+use opendj_plugin_host::{Connection, Midi, Transport};
 
 #[cfg(test)]
 use crate::clip::TRACKS;
@@ -135,7 +140,44 @@ pub enum Command {
     /// A recompiled set, after an edit (clip editing comes in step 3).
     #[allow(dead_code)]
     Program(Box<Program>),
+    /// A plug-in came up: it joins the track's chain.
+    Attach {
+        track: usize,
+        slot: Box<PluginSlot>,
+    },
+    /// Switches a track's device (by its place in the chain) on or off.
+    Bypass {
+        track: usize,
+        device: usize,
+        on: bool,
+    },
 }
+
+/// A plug-in on a track, as the audio thread runs it.
+pub struct PluginSlot {
+    /// Its place in the track's device chain.
+    device: usize,
+    /// Plays the track's notes in place of the built-in sound.
+    instrument: bool,
+    on: bool,
+    conn: Connection,
+}
+
+impl PluginSlot {
+    pub fn new(device: usize, instrument: bool, on: bool, conn: Connection) -> PluginSlot {
+        PluginSlot {
+            device,
+            instrument,
+            on,
+            conn,
+        }
+    }
+}
+
+/// Plug-ins a track can hold.
+const MAX_SLOTS: usize = 16;
+/// Note events a plug-in instrument gets per block.
+const MAX_MIDI: usize = 256;
 
 /// A slot as the UI shows it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -339,6 +381,28 @@ struct Column {
     audio_scene: Option<usize>,
     /// The player's output before its gain.
     audio_buf: Vec<[f32; 2]>,
+    /// Plug-ins in chain order.
+    // Boxed as they arrive, so taking one in never frees on this thread.
+    #[allow(clippy::vec_box)]
+    slots: Vec<Box<PluginSlot>>,
+    /// Notes for a plug-in instrument in this block.
+    midi: Vec<Midi>,
+    /// Left and right in, left and right out, for the plug-ins.
+    planar: Vec<f32>,
+}
+
+impl Column {
+    /// Whether a plug-in plays the track's notes (the built-in sound is
+    /// then quiet).
+    fn plugin_instrument(&self) -> bool {
+        self.slots.iter().any(|s| s.instrument)
+    }
+
+    fn push_midi(&mut self, m: Midi) {
+        if self.midi.len() < MAX_MIDI {
+            self.midi.push(m);
+        }
+    }
 }
 
 impl Column {
@@ -465,6 +529,13 @@ impl Engine {
                 audio_scene: None,
                 audio_buf: if t.sound == Sound::Audio {
                     vec![[0.0; 2]; MAX_BLOCK]
+                } else {
+                    Vec::new()
+                },
+                slots: Vec::with_capacity(MAX_SLOTS),
+                midi: Vec::with_capacity(MAX_MIDI),
+                planar: if t.devices.iter().any(|d| d.plugin.is_some()) {
+                    vec![0.0; 4 * MAX_BLOCK]
                 } else {
                     Vec::new()
                 },
@@ -600,7 +671,14 @@ impl Engine {
                 velocity,
             } => {
                 if let Some(c) = self.columns.get_mut(track) {
-                    if velocity > 0.0 {
+                    if c.plugin_instrument() {
+                        let v = (velocity.min(1.0) * 127.0).round() as u8;
+                        c.push_midi(if v > 0 {
+                            Midi::note_on(0, 0, pitch, v.max(1))
+                        } else {
+                            Midi::note_off(0, 0, pitch)
+                        });
+                    } else if velocity > 0.0 {
                         c.instrument.note_on(pitch, velocity.min(1.0));
                     } else {
                         c.instrument.note_off(pitch);
@@ -624,6 +702,23 @@ impl Engine {
                 }
                 // Dropped on the UI thread; if its queue is full, here.
                 let _ = self.trash.push(old);
+                None
+            }
+            Command::Attach { track, slot } => {
+                if let Some(c) = self.columns.get_mut(track) {
+                    if c.slots.len() < MAX_SLOTS && !c.planar.is_empty() {
+                        let at = c.slots.partition_point(|s| s.device < slot.device);
+                        c.slots.insert(at, slot);
+                    }
+                }
+                None
+            }
+            Command::Bypass { track, device, on } => {
+                if let Some(c) = self.columns.get_mut(track) {
+                    for s in c.slots.iter_mut().filter(|s| s.device == device) {
+                        s.on = on;
+                    }
+                }
                 None
             }
         }
@@ -683,7 +778,16 @@ impl Engine {
         } else {
             span.tempo / 60.0 / 48_000.0
         };
+        // Plug-ins have until three quarters of the block's time is gone;
+        // one that is later plays its block dry.
+        let deadline = Instant::now() + Duration::from_secs_f64(frames as f64 / self.rate * 0.75);
+        let transport = Transport {
+            bpm: span.tempo,
+            beat: start,
+            playing: self.playing,
+        };
         for t in 0..self.columns.len() {
+            let plugin = self.columns[t].plugin_instrument();
             let mut switch = None;
             if self.playing {
                 self.events.clear();
@@ -703,10 +807,30 @@ impl Engine {
                 let e = self.events[i];
                 let at = (((e.beat - start) / beats_per_frame).round() as usize).min(frames);
                 if at > done {
-                    self.columns[t].instrument.render(&mut scratch[done..at]);
+                    if !plugin {
+                        self.columns[t].instrument.render(&mut scratch[done..at]);
+                    }
                     done = at;
                 }
                 let col = &mut self.columns[t];
+                if plugin {
+                    let f = at.min(frames.saturating_sub(1)) as u32;
+                    match e.kind {
+                        Kind::On(p, v) => col.push_midi(Midi::note_on(
+                            f,
+                            0,
+                            p,
+                            ((v * 127.0).round() as u8).max(1),
+                        )),
+                        Kind::Off(p) => col.push_midi(Midi::note_off(f, 0, p)),
+                        // All notes off.
+                        Kind::AllOff => col.push_midi(Midi {
+                            frame: f,
+                            data: [0xB0, 123, 0],
+                        }),
+                        _ => {}
+                    }
+                }
                 match e.kind {
                     Kind::On(p, v) => col.instrument.note_on(p, v),
                     Kind::Off(p) => col.instrument.note_off(p),
@@ -734,7 +858,7 @@ impl Engine {
                     }
                 }
             }
-            if done < frames {
+            if done < frames && !plugin {
                 self.columns[t].instrument.render(&mut scratch[done..]);
             }
             if self.columns[t].stretch.is_some() {
@@ -766,6 +890,7 @@ impl Engine {
                     }
                 }
             }
+            self.run_plugins(t, frames, transport, deadline);
             let gain = self.columns[t].gain;
             let [pl, pr] = self.columns[t].pan;
             let mut peak = 0.0f32;
@@ -790,6 +915,60 @@ impl Engine {
             .fetch_max(peak.to_bits(), Ordering::Relaxed);
         self.frames_done += frames as u64;
         self.publish(end, span.tempo);
+    }
+
+    /// Runs the track's sound through its plug-ins, in chain order: an
+    /// instrument replaces it with what it plays, an effect processes it.
+    fn run_plugins(&mut self, t: usize, frames: usize, transport: Transport, deadline: Instant) {
+        let Column {
+            slots,
+            midi,
+            planar,
+            ..
+        } = &mut self.columns[t];
+        if slots.is_empty() {
+            midi.clear();
+            return;
+        }
+        let scratch = &mut self.scratch[..frames];
+        let (inl, rest) = planar.split_at_mut(MAX_BLOCK);
+        let (inr, rest) = rest.split_at_mut(MAX_BLOCK);
+        let (outl, outr) = rest.split_at_mut(MAX_BLOCK);
+        for slot in slots.iter_mut() {
+            if slot.instrument {
+                inl[..frames].fill(0.0);
+                inr[..frames].fill(0.0);
+            } else if !slot.on {
+                continue;
+            } else {
+                for (i, s) in scratch.iter().enumerate() {
+                    inl[i] = s[0];
+                    inr[i] = s[1];
+                }
+            }
+            let left = deadline.saturating_duration_since(Instant::now());
+            let events: &[Midi] = if slot.instrument && slot.on {
+                midi
+            } else {
+                &[]
+            };
+            slot.conn.process_events(
+                [&inl[..frames], &inr[..frames]],
+                [&mut outl[..frames], &mut outr[..frames]],
+                transport,
+                events,
+                left.max(Duration::from_micros(300)),
+            );
+            if slot.instrument && !slot.on {
+                // Off: the track is quiet, as in Live.
+                scratch.fill([0.0; 2]);
+                continue;
+            }
+            for (i, s) in scratch.iter_mut().enumerate() {
+                *s = [outl[i], outr[i]];
+            }
+        }
+        midi.clear();
     }
 
     /// Collects `track`'s note events in [`lo`, `hi`) into `self.events`,
@@ -1418,5 +1597,118 @@ mod tests {
         assert!(loud > 0.2, "peak {loud}");
         // Two seconds at 100 BPM is 3.33 beats of the clip's 8.
         assert!((studio.monitor.progress(0) - 3.33 / 8.0).abs() < 0.02);
+    }
+
+    /// The plug-in helper, built once next to the test binary.
+    fn helper() -> std::path::PathBuf {
+        static PATH: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+        PATH.get_or_init(|| {
+            let exe = std::env::current_exe().unwrap();
+            let target = exe.parent().unwrap().parent().unwrap().parent().unwrap();
+            let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
+            let ok = std::process::Command::new(cargo)
+                .args([
+                    "build",
+                    "-q",
+                    "-p",
+                    "opendj-plugin-host",
+                    "--bin",
+                    "opendj-plugin-host",
+                ])
+                .arg("--target-dir")
+                .arg(target)
+                .status()
+                .expect("cargo runs")
+                .success();
+            assert!(ok, "the helper builds");
+            target.join("debug").join(format!(
+                "opendj-plugin-host{}",
+                std::env::consts::EXE_SUFFIX
+            ))
+        })
+        .clone()
+    }
+
+    fn slot(
+        name: &str,
+        device: usize,
+        instrument: bool,
+    ) -> (Box<PluginSlot>, opendj_plugin_host::Helper) {
+        let (conn, helper) = opendj_plugin_host::spawn(&opendj_plugin_host::Options {
+            helper: helper(),
+            plugin: opendj_plugin_host::Plugin::Test(name.into()),
+            sample_rate: 48_000,
+            max_frames: MAX_BLOCK,
+            title: None,
+            state: None,
+            picks: Vec::new(),
+        })
+        .expect("the test plug-in starts");
+        (
+            Box::new(PluginSlot::new(device, instrument, true, conn)),
+            helper,
+        )
+    }
+
+    #[test]
+    fn plugin_instruments_play_the_notes_and_effects_process_them() {
+        let mut set = one_note_set();
+        // A device list with plug-ins, so the track gets plug-in buffers.
+        set[0].devices = vec![
+            crate::clip::DeviceInfo {
+                name: "Synth".into(),
+                kind: "Test".into(),
+                on: true,
+                plugin: Some(crate::clip::PluginRef {
+                    name: "Synth".into(),
+                    vendor: String::new(),
+                    format: crate::clip::PluginFormat::Named,
+                    instrument: true,
+                    state: None,
+                }),
+            };
+            2
+        ];
+        let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        let (synth, _h1) = slot("test-synth", 0, true);
+        let (gain, _h2) = slot("test-gain", 1, false);
+        r.commands
+            .push(Command::Attach {
+                track: 0,
+                slot: gain,
+            })
+            .ok();
+        r.commands
+            .push(Command::Attach {
+                track: 0,
+                slot: synth,
+            })
+            .ok();
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        // The note (key 60) sounds for half a beat: the test synth plays
+        // key/127 as a constant, through the gain at 1.
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let want = soft_clip(60.0 / 127.0 * pan_gains(set[0].pan)[0] * MASTER);
+        // A busy machine can make a helper miss a block (it plays dry):
+        // allow a few.
+        let mut level = 0.0;
+        for _ in 0..20 {
+            studio.process(&mut out);
+            level = out[BLOCK / 2][0];
+            if (level - want).abs() < 0.01 {
+                break;
+            }
+        }
+        assert!((level - want).abs() < 0.01, "{level} vs {want}");
+        // The synth switched off: the track goes quiet.
+        r.commands
+            .push(Command::Bypass {
+                track: 0,
+                device: 0,
+                on: false,
+            })
+            .ok();
+        studio.process(&mut out);
+        assert!(out.iter().all(|f| f[0].abs() < 1e-6));
     }
 }

@@ -67,3 +67,10 @@ On a drum track, Push 2's Note view SHALL be a step sequencer for the selected s
 #### Scenario: A long note
 - **WHEN** step 1 is held and step 3 tapped in 1/16 steps
 - **THEN** the clip holds one note of the selected sound from beat 0 lasting three sixteenths
+
+### Requirement: Plug-ins on tracks
+Each track SHALL have a chain of plug-in slots run in `opendj-plugin-host` helper processes, in the set's device order: a plug-in instrument SHALL play the track's notes in place of the built-in sound, and plug-in effects SHALL process the track's sound in turn. A Live set's Audio Unit and VST3 devices SHALL start with the sound saved in the set, found by their id (or, failing that, by name) where plug-ins are installed; a device that is off in the set SHALL start off. A plug-in that isn't installed, doesn't start or stops SHALL leave its slot silent or dry and SHALL be named in the device row. Each plug-in device SHALL switch on and off and open its own window from the device row. Live's Wavetable SHALL be replaced by Vital, from Vital's first sound.
+
+#### Scenario: A set's synth with its sound
+- **WHEN** a set whose MIDI track holds Prophet-5 V is opened on a Mac with Prophet-5 V installed
+- **THEN** the track's clips play through Prophet-5 V with the patch the set saved, and its device box opens Prophet-5 V's window

@@ -12,7 +12,7 @@
 
 ## 2. Instruments and sets
 
-- [ ] 2.1 Plugin instruments on tracks through `opendj-plugin-host`
+- [x] 2.1 Plugin instruments on tracks through `opendj-plugin-host`
 - [ ] 2.2 Save and open a set
 - [x] 2.3 Ableton Push 2 without Live: User mode, pads launch clips (Session) or play the selected instrument (Note), scene, stop and track buttons, transport, lights in track colours kept in time by MIDI clock, encoders on the instrument knobs or the mixer, and the screen over USB (`opendj-studio --push-preview`)
 - [x] 2.4 Instrument knobs and pan work, shared by the window and Push
@@ -29,6 +29,10 @@
 - [ ] 2.15 Try Scales mode and peeking on hardware (macOS)
 - [x] 2.16 Drum sequencer on Push (Note view on drum tracks): 32 steps, sound pads, clip pages and length, step length on the scene buttons, long notes, note velocity, length and chance on the encoders while steps are held
 - [ ] 2.17 Try the drum sequencer on hardware (macOS)
+- [x] 2.18 A chain of plug-in slots per track: a Live set's Audio Units and VST3s start in helpers with the sound the set saved, found by id or name; Vital plays in place of Wavetable; devices switch on and off and open their windows
+- [ ] 2.19 Open the set with its plug-ins on macOS
+- [ ] 2.20 Audio inputs per track: Audio From with channel, Monitor In/Auto/Off, Audio To
+- [ ] 2.21 MIDI From and To per MIDI track, with channel
 
 ## 3. Clip editing
 

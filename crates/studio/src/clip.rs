@@ -113,6 +113,35 @@ pub struct DeviceInfo {
     pub name: String,
     /// "Live", "AU", "VST3", "VST" or "Built-in".
     pub kind: String,
+    /// Switched on in the set.
+    pub on: bool,
+    /// A plug-in the studio can run in its place.
+    pub plugin: Option<PluginRef>,
+}
+
+/// Which plug-in a device is, and the sound it was saved with.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PluginRef {
+    pub name: String,
+    pub vendor: String,
+    pub format: PluginFormat,
+    /// Plays notes (rather than processing sound).
+    pub instrument: bool,
+    /// The plug-in's own saved state, as the plug-in host loads it: an
+    /// Audio Unit's ClassInfo property list, or a VST3's component and
+    /// controller states packed together.
+    pub state: Option<Arc<Vec<u8>>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PluginFormat {
+    /// An Audio Unit by its `type:subtype:manufacturer` codes.
+    Au(String),
+    /// A VST3 class by its id (32 hex digits).
+    Vst3(String),
+    /// Whatever installed plug-in carries this name (VST3, then CLAP, then
+    /// AU): for a device swapped for another plug-in.
+    Named,
 }
 
 /// A track: a column of clip slots.

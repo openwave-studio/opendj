@@ -48,6 +48,9 @@ export struct DeviceData {
     name: string,
     kind: string,
     note: string,
+    on: bool,
+    // A plug-in, running: its window can open.
+    can-open: bool,
 }
 
 export struct TrackData {
@@ -67,6 +70,8 @@ export struct TrackData {
     input: string,
     // The devices a set lists for it.
     chain: [DeviceData],
+    // A plug-in plays its notes (the built-in sound isn't shown).
+    plugin-instrument: bool,
     // Meter, 0..1 on a dB scale.
     level: float,
     // Fader position 0..1 (0 dB at 60/66) and as text.
@@ -755,7 +760,11 @@ component Device inherits Rectangle {
     in property <string> title;
     in property <color> tint: Theme.accent;
     in property <bool> selected;
-    property <bool> on: true;
+    in-out property <bool> on: true;
+    // The on/off square was clicked; `on` already changed.
+    callback toggled(bool);
+    // The title was clicked.
+    callback opened();
     border-radius: 3px;
     background: Theme.panel-2;
     border-width: 1px;
@@ -776,7 +785,7 @@ component Device inherits Rectangle {
                     background: on ? tint : transparent;
                     border-width: 1px;
                     border-color: tint;
-                    TouchArea { clicked => { root.on = !root.on; } }
+                    TouchArea { clicked => { root.on = !root.on; root.toggled(root.on); } }
                 }
             }
             Text {
@@ -787,6 +796,7 @@ component Device inherits Rectangle {
                 vertical-alignment: center;
                 horizontal-stretch: 1;
                 overflow: elide;
+                TouchArea { clicked => { root.opened(); } }
             }
             Text { text: "×"; color: Theme.faint; font-size: 13px; vertical-alignment: center; }
         }
@@ -966,6 +976,9 @@ export component AppWindow inherits Window {
     callback param(int, int, float);
     // Track, pitch, velocity (0 ends the note).
     callback play-note(int, int, float);
+    // A device in the chain: switch it on or off, open its window.
+    callback toggle-device(int, int, bool);
+    callback open-device(int, int);
 
     property <TrackData> track: tracks[selected-track];
     property <bool> has-clip: selected-scene >= 0
@@ -1335,7 +1348,7 @@ export component AppWindow inherits Window {
                                 }
                             }
                         }
-                        if !track.drums && !track.audio: Device {
+                        if !track.drums && !track.audio && !track.plugin-instrument: Device {
                             width: 300px;
                             title: track.device;
                             tint: track.color;
@@ -1350,16 +1363,27 @@ export component AppWindow inherits Window {
                                 }
                             }
                         }
-                        // A set's own devices, until they can load.
-                        for d in track.chain: Device {
+                        // A set's own devices: plug-ins run, Live's own are
+                        // listed until they have built-in matches.
+                        for d[i] in track.chain: Device {
                             width: 150px;
                             title: d.name;
+                            on: d.on;
                             tint: d.kind == "Live" ? Theme.faint : Theme.effect;
+                            toggled(v) => { root.toggle-device(selected-track, i, v); }
+                            opened => { root.open-device(selected-track, i); }
                             VerticalLayout {
                                 padding: 10px;
                                 spacing: 6px;
                                 Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
                                 Text { text: d.note; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
+                                if d.can-open: Rectangle {
+                                    height: 22px;
+                                    border-radius: 3px;
+                                    background: open-area.has-hover ? Theme.line : Theme.bg;
+                                    Text { text: "Open window"; color: Theme.text; font-size: 11px; }
+                                    open-area := TouchArea { clicked => { root.open-device(selected-track, i); } }
+                                }
                             }
                         }
                         if track.chain.length == 0: Device {

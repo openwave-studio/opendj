@@ -8,10 +8,13 @@
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use roxmltree::{Document, Node};
 
-use crate::clip::{AudioClip, Clip, DeviceInfo, Note, Sound, Track, MAX_TRACKS, SCENES};
+use crate::clip::{
+    AudioClip, Clip, DeviceInfo, Note, PluginFormat, PluginRef, Sound, Track, MAX_TRACKS, SCENES,
+};
 
 /// What the studio takes from a Live set.
 pub struct LiveSet {
@@ -181,7 +184,12 @@ fn read_track(
     let chain = child(t, "DeviceChain");
     let devices: Vec<DeviceInfo> = chain
         .and_then(|c| at(c, "DeviceChain/Devices"))
-        .map(|d| d.children().filter(Node::is_element).map(device).collect())
+        .map(|d| {
+            d.children()
+                .filter(Node::is_element)
+                .flat_map(devices)
+                .collect()
+        })
         .unwrap_or_default();
     let sound = if audio {
         Sound::Audio
@@ -233,29 +241,170 @@ fn read_track(
 }
 
 /// A device's name and kind.
-fn device(d: Node) -> DeviceInfo {
-    let tag = d.tag_name().name();
-    let plugin = |kind: &str, info: Node| DeviceInfo {
-        name: value(info, "PlugName")
-            .or_else(|| value(info, "Name"))
-            .unwrap_or("Plugin")
-            .to_string(),
-        kind: kind.into(),
-    };
-    if tag == "AuPluginDevice" {
-        if let Some(info) = at(d, "PluginDesc/AuPluginInfo") {
-            return plugin("AU", info);
+/// The devices a chain's device node stands for: itself, or, for a rack
+/// with a single chain, the devices in that chain (a rack used only to
+/// group effects).
+fn devices(d: Node) -> Vec<DeviceInfo> {
+    let rack = matches!(
+        d.tag_name().name(),
+        "AudioEffectGroupDevice" | "InstrumentGroupDevice" | "MidiEffectGroupDevice"
+    );
+    if rack {
+        let branches: Vec<Node> = child(d, "Branches")
+            .map(|b| b.children().filter(Node::is_element).collect())
+            .unwrap_or_default();
+        if let [branch] = branches[..] {
+            let inner = [
+                "MidiToAudioDeviceChain",
+                "AudioToAudioDeviceChain",
+                "MidiToMidiDeviceChain",
+            ]
+            .iter()
+            .find_map(|c| at(branch, &format!("DeviceChain/{c}/Devices")));
+            if let Some(inner) = inner {
+                let on = on(d);
+                return inner
+                    .children()
+                    .filter(Node::is_element)
+                    .flat_map(devices)
+                    .map(|mut x| {
+                        x.on &= on;
+                        x
+                    })
+                    .collect();
+            }
         }
     }
-    if tag == "PluginDevice" {
-        if let Some(info) = at(d, "PluginDesc").and_then(|p| p.children().find(Node::is_element)) {
-            let kind = match info.tag_name().name() {
-                "Vst3PluginInfo" => "VST3",
-                "VstPluginInfo" => "VST",
-                _ => "Plugin",
-            };
-            return plugin(kind, info);
+    vec![device(d)]
+}
+
+fn on(d: Node) -> bool {
+    value(d, "On/Manual") != Some("false")
+}
+
+/// A four-character code from Live's number for it.
+fn four_cc(n: i64) -> String {
+    (n as u32)
+        .to_be_bytes()
+        .iter()
+        .map(|&b| b as char)
+        .collect()
+}
+
+/// Hex digits (with any whitespace) as bytes.
+fn unhex(text: &str) -> Option<Vec<u8>> {
+    let digits: Vec<u8> = text.bytes().filter(|b| !b.is_ascii_whitespace()).collect();
+    if !digits.len().is_multiple_of(2) {
+        return None;
+    }
+    digits
+        .chunks(2)
+        .map(|p| u8::from_str_radix(std::str::from_utf8(p).ok()?, 16).ok())
+        .collect()
+}
+
+fn hex_text(n: Option<Node>) -> Option<Vec<u8>> {
+    unhex(n?.text()?).filter(|b| !b.is_empty())
+}
+
+/// An Audio Unit or VST3 device's plug-in: which one, and its saved sound.
+fn plugin_ref(d: Node) -> Option<PluginRef> {
+    let desc = at(d, "PluginDesc")?;
+    let info = desc.children().find(Node::is_element)?;
+    let name = value(info, "PlugName")
+        .or_else(|| value(info, "Name"))
+        .unwrap_or("Plugin")
+        .to_string();
+    let vendor = value(info, "Manufacturer").unwrap_or("").to_string();
+    let find = |tag: &str| info.descendants().find(|n| n.has_tag_name(tag));
+    match info.tag_name().name() {
+        "AuPluginInfo" => {
+            let code = |p: &str| value(info, p)?.parse::<i64>().ok().map(four_cc);
+            let (t, s, m) = (
+                code("ComponentType")?,
+                code("ComponentSubType")?,
+                code("ComponentManufacturer")?,
+            );
+            Some(PluginRef {
+                name,
+                vendor,
+                instrument: t == "aumu",
+                format: PluginFormat::Au(format!("{t}:{s}:{m}")),
+                state: hex_text(find("Buffer")).map(Arc::new),
+            })
         }
+        "Vst3PluginInfo" => {
+            let uid = child(info, "Uid")?;
+            let id: String = (0..4)
+                .map(|i| {
+                    let v: i64 = value(uid, &format!("Fields.{i}"))
+                        .and_then(|v| v.parse().ok())
+                        .unwrap_or(0);
+                    format!("{:08X}", v as u32)
+                })
+                .collect();
+            let component = hex_text(find("ProcessorState"));
+            let controller = hex_text(find("ControllerState")).unwrap_or_default();
+            Some(PluginRef {
+                name,
+                vendor,
+                // Live's device type for a VST3: 1 an instrument, 2 an effect.
+                instrument: value(info, "DeviceType") == Some("1"),
+                format: PluginFormat::Vst3(id),
+                state: component
+                    .map(|c| Arc::new(opendj_plugin_host::presets::pack_states(&c, &controller))),
+            })
+        }
+        _ => None,
+    }
+}
+
+fn device(d: Node) -> DeviceInfo {
+    let tag = d.tag_name().name();
+    let on = on(d);
+    if tag == "AuPluginDevice" || tag == "PluginDevice" {
+        let kind = match at(d, "PluginDesc")
+            .and_then(|p| p.children().find(Node::is_element))
+            .map(|i| i.tag_name().name())
+        {
+            Some("AuPluginInfo") => "AU",
+            Some("Vst3PluginInfo") => "VST3",
+            Some("VstPluginInfo") => "VST",
+            _ => "Plugin",
+        };
+        let plugin = plugin_ref(d);
+        let name = plugin.as_ref().map_or_else(
+            || {
+                at(d, "PluginDesc")
+                    .and_then(|p| p.children().find(Node::is_element))
+                    .and_then(|i| value(i, "PlugName").or_else(|| value(i, "Name")))
+                    .unwrap_or("Plugin")
+                    .to_string()
+            },
+            |p| p.name.clone(),
+        );
+        return DeviceInfo {
+            name,
+            kind: kind.into(),
+            on,
+            plugin,
+        };
+    }
+    if tag == "InstrumentVector" {
+        // Wavetable has no open equivalent: Vital plays in its place, from
+        // its first sound.
+        return DeviceInfo {
+            name: "Vital".into(),
+            kind: "for Wavetable".into(),
+            on,
+            plugin: Some(PluginRef {
+                name: "Vital".into(),
+                vendor: "Vital Audio".into(),
+                format: PluginFormat::Named,
+                instrument: true,
+                state: None,
+            }),
+        };
     }
     let user = value(d, "UserName").filter(|n| !n.is_empty());
     let live = match tag {
@@ -265,7 +414,6 @@ fn device(d: Node) -> DeviceInfo {
         "InstrumentGroupDevice" => "Instrument Rack",
         "MidiEffectGroupDevice" => "MIDI Effect Rack",
         "DrumGroupDevice" => "Drum Rack",
-        "InstrumentVector" => "Wavetable",
         "Hybrid" => "Hybrid Reverb",
         "Compressor2" => "Compressor",
         "GlueCompressor" => "Glue Compressor",
@@ -285,6 +433,8 @@ fn device(d: Node) -> DeviceInfo {
             _ => live.to_string(),
         },
         kind: "Live".into(),
+        on,
+        plugin: None,
     }
 }
 
@@ -510,7 +660,16 @@ pub fn summary(set: &LiveSet) -> String {
             let d: Vec<String> = t
                 .devices
                 .iter()
-                .map(|d| format!("{} [{}]", d.name, d.kind))
+                .map(|d| {
+                    let saved = d.plugin.as_ref().is_some_and(|p| p.state.is_some());
+                    format!(
+                        "{} [{}{}]{}",
+                        d.name,
+                        d.kind,
+                        if saved { ", saved sound" } else { "" },
+                        if d.on { "" } else { " (off)" }
+                    )
+                })
                 .collect();
             out += &format!("     devices: {}\n", d.join(", "));
         }
@@ -596,8 +755,15 @@ mod tests {
         <ClipSlot Id="1"><ClipSlot><Value /></ClipSlot></ClipSlot>
       </ClipSlotList></MainSequencer>
       <DeviceChain><Devices>
-        <Eq8 Id="2"><UserName Value="" /></Eq8>
-        <AuPluginDevice Id="3"><PluginDesc><AuPluginInfo><Name Value="ValhallaVintageVerb" /></AuPluginInfo></PluginDesc></AuPluginDevice>
+        <AudioEffectGroupDevice Id="9"><Branches><AudioEffectBranch Id="0"><DeviceChain><AudioToAudioDeviceChain><Devices>
+          <Eq8 Id="2"><UserName Value="" /></Eq8>
+        </Devices></AudioToAudioDeviceChain></DeviceChain></AudioEffectBranch></Branches></AudioEffectGroupDevice>
+        <AuPluginDevice Id="3"><On><Manual Value="false" /></On><PluginDesc><AuPluginInfo>
+          <ComponentType Value="1635083896" /><ComponentSubType Value="926044743" /><ComponentManufacturer Value="1094798689" />
+          <Name Value="ValhallaVintageVerb" /><Manufacturer Value="Valhalla DSP, LLC" />
+          <Preset><AuPreset Id="1"><Buffer>3C3F786D
+            6C3E</Buffer></AuPreset></Preset>
+        </AuPluginInfo></PluginDesc></AuPluginDevice>
       </Devices></DeviceChain>
     </DeviceChain>
   </AudioTrack>
@@ -624,7 +790,12 @@ mod tests {
       </ClipSlotList></MainSequencer>
       <DeviceChain><Devices>
         <DrumGroupDevice Id="5"><UserName Value="808 Core Kit" /></DrumGroupDevice>
-        <PluginDevice Id="6"><PluginDesc><Vst3PluginInfo><Name Value="TONE3000" /></Vst3PluginInfo></PluginDesc></PluginDevice>
+        <PluginDevice Id="6"><PluginDesc><Vst3PluginInfo>
+          <Uid><Fields.0 Value="-1412567295" /><Fields.1 Value="1" /><Fields.2 Value="2" /><Fields.3 Value="3" /></Uid>
+          <DeviceType Value="2" /><Name Value="TONE3000" />
+          <Preset><Vst3Preset Id="2"><ProcessorState>0102</ProcessorState><ControllerState /></Vst3Preset></Preset>
+        </Vst3PluginInfo></PluginDesc></PluginDevice>
+        <InstrumentVector Id="8" />
       </Devices></DeviceChain>
     </DeviceChain>
   </MidiTrack>
@@ -656,10 +827,16 @@ mod tests {
             .iter()
             .map(|d| (d.name.as_str(), d.kind.as_str()))
             .collect();
+        // The one-chain rack opens up into its devices.
         assert_eq!(
             devices,
             [("EQ Eight", "Live"), ("ValhallaVintageVerb", "AU")]
         );
+        let verb = &mic.devices[1];
+        assert!(!verb.on && mic.devices[0].on);
+        let p = verb.plugin.as_ref().expect("a plug-in");
+        assert_eq!(p.format, PluginFormat::Au("aufx:72RG:AAMa".into()));
+        assert_eq!(p.state.as_deref().map(Vec::as_slice), Some(&b"<?xml>"[..]));
         let take = mic.slots[0].as_ref().expect("a recording");
         let audio = take.audio.as_ref().unwrap();
         assert_eq!((take.beats, audio.gain), (16.0, 0.5));
@@ -672,6 +849,23 @@ mod tests {
         assert_eq!(kit.input, "Arturia KeyLab Essential 61");
         assert_eq!(kit.devices[0].name, "808 Core Kit (Drum Rack)");
         assert_eq!(kit.devices[1].kind, "VST3");
+        let tone = kit.devices[1].plugin.as_ref().expect("a plug-in");
+        assert_eq!(
+            tone.format,
+            PluginFormat::Vst3("ABCDEF01000000010000000200000003".into())
+        );
+        assert!(!tone.instrument);
+        assert_eq!(
+            tone.state.as_deref().map(Vec::as_slice),
+            Some(&opendj_plugin_host::presets::pack_states(&[1, 2], &[])[..])
+        );
+        // Wavetable: Vital plays in its place.
+        let vital = kit.devices[2].plugin.as_ref().expect("Vital");
+        assert_eq!(
+            (vital.name.as_str(), &vital.format),
+            ("Vital", &PluginFormat::Named)
+        );
+        assert!(vital.instrument);
         let clip = kit.slots[0].as_ref().unwrap();
         assert_eq!(
             (clip.name.as_str(), clip.beats, clip.notes.len()),

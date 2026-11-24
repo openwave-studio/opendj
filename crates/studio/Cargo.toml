@@ -15,6 +15,8 @@ path = "src/main.rs"
 # doesn't need. openDJ never depends on this crate, so it can move to its
 # own repository.
 opendj-engine = { path = "../engine", default-features = false }
+# Runs plug-ins in helper processes (the client side only).
+opendj-plugin-host = { path = "../plugin-host", default-features = false }
 cpal = "0.18"
 rtrb = "0.4"
 rusty_link = "0.4"

@@ -17,6 +17,7 @@ mod clip;
 mod control;
 mod engine;
 mod link;
+mod plugins;
 mod push;
 mod scale;
 mod sound;
@@ -219,6 +220,7 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
                         link,
                         format!("No sound: {e}"),
                         note,
+                        rate,
                     );
                 }
             }
@@ -228,7 +230,7 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
             "No audio output found: playing silently".to_string(),
         ),
     };
-    ui(set, &returns, output, remote, link, status, note)
+    ui(set, &returns, output, remote, link, status, note, rate)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -240,6 +242,7 @@ fn ui(
     link: Arc<rusty_link::AblLink>,
     status: String,
     note: String,
+    rate: f64,
 ) -> Result<(), slint::PlatformError> {
     let status = if note.is_empty() {
         status
@@ -255,9 +258,11 @@ fn ui(
         remote.commands,
         monitor.clone(),
     ));
+    // Plug-ins start in their helpers and join the tracks as they come up.
+    let plugins = plugins::Plugins::start(&set, rate as u32, controls.clone());
     let tracks = Rc::new(VecModel::from(
         (0..set.len())
-            .map(|i| track_row(&controls, i))
+            .map(|i| track_row(&controls, &plugins, i))
             .collect::<Vec<_>>(),
     ));
     let slots = Rc::new(VecModel::from(
@@ -371,6 +376,16 @@ fn ui(
         let c = controls.clone();
         window.on_play_note(move |t, p, v| c.note(t as usize, p.clamp(0, 127) as u8, v));
     }
+    {
+        let c = controls.clone();
+        window.on_toggle_device(move |t, d, on| c.set_device_on(t as usize, d as usize, on));
+    }
+    {
+        let p = plugins.clone();
+        window.on_open_device(move |t, d| {
+            p.toggle_window(t as usize, d as usize);
+        });
+    }
 
     let timer = slint::Timer::default();
     let w = window.as_weak();
@@ -431,7 +446,9 @@ fn ui(
                     let stopping = monitor.stopping(t);
                     let level = meter(row.level, monitor.take_peak(t));
                     if changed {
-                        let fresh = track_row(&controls, t);
+                        let fresh = track_row(&controls, &plugins, t);
+                        row.chain = fresh.chain;
+                        row.plugin_instrument = fresh.plugin_instrument;
                         row.volume = fresh.volume;
                         row.pan = fresh.pan;
                         row.pan_text = fresh.pan_text;
@@ -483,7 +500,7 @@ fn ui(
 }
 
 /// A track's row for the window, from the shared controls.
-fn track_row(c: &Controls, t: usize) -> TrackData {
+fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
     let info = &c.tracks[t];
     let params: Vec<ParamData> = (0..sound::PARAMS)
         .map(|i| ParamData {
@@ -507,18 +524,36 @@ fn track_row(c: &Controls, t: usize) -> TrackData {
         chain: ModelRc::new(VecModel::from(
             info.devices
                 .iter()
-                .map(|d| DeviceData {
-                    name: d.name.as_str().into(),
-                    kind: d.kind.as_str().into(),
-                    note: if d.kind == "Live" {
-                        "Live device: not available"
-                    } else {
-                        "Plugin: hosting comes next"
+                .enumerate()
+                .map(|(i, d)| {
+                    let state = plugins.state(t, i);
+                    let running = state == Some(plugins::State::Running);
+                    let note = match &state {
+                        Some(plugins::State::Running) => {
+                            if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
+                                "Playing, with the set's sound".to_string()
+                            } else {
+                                "Playing".to_string()
+                            }
+                        }
+                        Some(s) => s.text(),
+                        None if d.plugin.is_some() => "Plug-in".to_string(),
+                        None => "Live device: no built-in match yet".to_string(),
+                    };
+                    DeviceData {
+                        name: d.name.as_str().into(),
+                        kind: d.kind.as_str().into(),
+                        note: note.into(),
+                        on: c.device_on(t, i),
+                        can_open: running,
                     }
-                    .into(),
                 })
                 .collect::<Vec<_>>(),
         )),
+        plugin_instrument: info
+            .devices
+            .iter()
+            .any(|d| d.plugin.as_ref().is_some_and(|p| p.instrument)),
         level: 0.0,
         volume,
         volume_text: control::fader_text(volume).into(),

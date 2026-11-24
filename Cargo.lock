@@ -8293,6 +8293,7 @@ dependencies = [
  "flate2",
  "midir",
  "opendj-engine",
+ "opendj-plugin-host",
  "png 0.18.1",
  "roxmltree",
  "rtrb",
