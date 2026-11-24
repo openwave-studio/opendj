@@ -15,15 +15,18 @@ export global GridEditorUi {
     in-out property <string> group: "[Channel1]";
 }
 
-// A small solid triangle pointing left (`dir` -1) or right (1), the same
-// size in every icon.
+// The icons are 14 px tall and drawn on whole pixels, so their edges stay
+// crisp: 1 px beat lines, 2 px bars and a 5 by 8 triangle centred on them.
+
+// A small solid triangle pointing left (`dir` -1) or right (1).
 component Tri inherits Path {
     in property <int> dir;
-    width: 6px;
-    height: 9px;
-    viewbox-width: 6;
-    viewbox-height: 9;
-    commands: dir < 0 ? "M 0 4.5 L 6 0 L 6 9 Z" : "M 6 4.5 L 0 0 L 0 9 Z";
+    width: 5px;
+    height: 8px;
+    y: 3px;
+    viewbox-width: 5;
+    viewbox-height: 8;
+    commands: dir < 0 ? "M 0 4 L 5 0 L 5 8 Z" : "M 5 4 L 0 0 L 0 8 Z";
     fill: Theme.text-dim;
     stroke-width: 0px;
 }
@@ -33,55 +36,55 @@ component Tri inherits Path {
 export component DownbeatIcon inherits Rectangle {
     in property <int> dir;
     in property <bool> lit: true;
-    width: dir == 0 ? 20px : 12px;
-    height: 13px;
-    if dir == 0: Rectangle { x: 0; y: 0; width: 3px; height: 13px; border-radius: 1px; background: lit ? Theme.accent : Theme.n-58585d; }
-    if dir == 0: Rectangle { x: 8px; y: 0; width: 1.5px; height: 13px; background: Theme.n-58585d; }
-    if dir == 0: Rectangle { x: 13px; y: 0; width: 1.5px; height: 13px; background: Theme.n-58585d; }
-    if dir == 0: Rectangle { x: 18px; y: 0; width: 1.5px; height: 13px; background: Theme.n-58585d; }
-    if dir != 0: Rectangle { x: dir < 0 ? 9px : 0px; y: 0; width: 3px; height: 13px; border-radius: 1px; background: lit ? Theme.accent : Theme.n-58585d; }
-    if dir != 0: Tri { dir: dir; x: dir < 0 ? 0px : 6px; y: 2px; }
+    width: dir == 0 ? 15px : 9px;
+    height: 14px;
+    if dir == 0: Rectangle { x: 0; width: 2px; background: lit ? Theme.accent : Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 6px; width: 1px; background: Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 10px; width: 1px; background: Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 14px; width: 1px; background: Theme.n-58585d; }
+    if dir != 0: Rectangle { x: dir < 0 ? 7px : 0px; width: 2px; background: lit ? Theme.accent : Theme.n-58585d; }
+    if dir != 0: Tri { dir: dir; x: dir < 0 ? 0px : 4px; }
 }
 
-// An anchor: a pin. `kind` 1 crossed out (remove), -1 or 1 with `move`
-// an arrow moving it.
+// An anchor: a pin, crossed out with `remove`; with `move` -1 or 1, its
+// line with an arrow moving it.
 component AnchorIcon inherits Rectangle {
     in property <bool> remove;
     in property <int> move;
-    width: move == 0 ? 12px : 11px;
+    width: move == 0 ? 10px : 9px;
     height: 14px;
-    if move == 0: Rectangle { x: 3.5px; y: 0; width: 5px; height: 5px; border-radius: 2.5px; background: Theme.text; }
-    if move == 0: Rectangle { x: 5px; y: 6px; width: 2px; height: 8px; border-radius: 1px; background: Theme.accent; }
+    if move == 0: Rectangle { x: 2px; y: 0; width: 6px; height: 6px; border-radius: 3px; background: Theme.text; }
+    if move == 0: Rectangle { x: 4px; y: 6px; width: 2px; height: 8px; background: Theme.accent; }
     if remove: Path {
-        width: 12px;
+        width: 10px;
         height: 14px;
-        viewbox-width: 12;
+        viewbox-width: 10;
         viewbox-height: 14;
-        commands: "M 1 13 L 11 1";
+        commands: "M 1 13 L 9 1";
         stroke: Theme.f-ff6b6b;
         stroke-width: 1.5px;
         fill: transparent;
     }
-    if move != 0: Rectangle { x: move < 0 ? 9px : 0px; y: 0; width: 2px; height: 14px; border-radius: 1px; background: Theme.text; }
-    if move != 0: Tri { dir: move; x: move < 0 ? 0px : 5px; y: 2.5px; }
+    if move != 0: Rectangle { x: move < 0 ? 7px : 0px; width: 2px; background: Theme.text; }
+    if move != 0: Tri { dir: move; x: move < 0 ? 0px : 4px; }
 }
 
 // |1|: the grid's first beat.
 component GridOneIcon inherits Rectangle {
-    width: 14px;
+    width: 13px;
     height: 14px;
-    Rectangle { x: 0; width: 1.5px; height: 14px; background: Theme.text-dim; }
+    Rectangle { x: 0; width: 1px; background: Theme.text-dim; }
     Text { text: "1"; color: Theme.text; font-size: 10px; horizontal-alignment: center; vertical-alignment: center; }
-    Rectangle { x: 12.5px; width: 1.5px; height: 14px; background: Theme.text-dim; }
+    Rectangle { x: 12px; width: 1px; background: Theme.text-dim; }
 }
 
 // A thin beat line with an arrow: the whole grid nudged that way.
 component NudgeIcon inherits Rectangle {
     in property <int> dir;
-    width: 10.5px;
+    width: 8px;
     height: 14px;
-    Rectangle { x: dir < 0 ? 9px : 0px; width: 1.5px; height: 14px; background: Theme.text; }
-    Tri { dir: dir; x: dir < 0 ? 0px : 4.5px; y: 2.5px; }
+    Rectangle { x: dir < 0 ? 7px : 0px; width: 1px; background: Theme.text; }
+    Tri { dir: dir; x: dir < 0 ? 0px : 3px; }
 }
 
 // One press of a grid control (`key` on `group`), or `clicked` without a
@@ -96,7 +99,10 @@ component GridCell inherits Rectangle {
     callback clicked();
     horizontal-stretch: 1;
     vertical-stretch: 1;
-    min-width: 34px;
+    // Cells in a row share it equally, whatever they hold, so the lines
+    // between them fall in the same place on both rows.
+    min-width: 0px;
+    preferred-width: 0px;
     // Every row the same height, whatever a cell holds, so the rows line
     // up across the bar.
     min-height: 26px;
@@ -219,7 +225,7 @@ component OuterColumn inherits VerticalLayout {
     horizontal-stretch: 0.45;
     min-width: 56px;
     preferred-width: 0px;
-    GroupHead { title: "Type"; }
+    GroupHead { title: "Grid type"; }
     HLine { }
     GridType { group: group; enabled: live; }
     HLine { }
@@ -256,7 +262,8 @@ export component GridEditorSide inherits HorizontalLayout {
             vertical-stretch: 1;
             Text {
                 horizontal-stretch: 1;
-                min-width: 34px;
+                min-width: 0px;
+                preferred-width: 0px;
                 min-height: 26px;
                 preferred-height: 0px;
                 text: info.loaded ? info.bpm : "--";
@@ -360,8 +367,6 @@ export component GridEditorBar inherits Rectangle {
     property <int> d: GridEditorUi.group == "[Channel2]" ? 1 : GridEditorUi.group == "[Channel3]" ? 2 : GridEditorUi.group == "[Channel4]" ? 3 : 0;
     background: Theme.pill;
     HorizontalLayout {
-        padding-top: 4px;
-        padding-bottom: 4px;
         if !one: GridEditorSide { group: "[Channel1]"; info: decks[0]; horizontal-stretch: 1; }
         if !one: VLine { }
         if !one: GridEditorName { }
