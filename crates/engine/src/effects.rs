@@ -1908,9 +1908,12 @@ impl EffectRack {
         let out = a
             .conn
             .collect([&mut out_l[..frames], &mut out_r[..frames]], deadline);
+        // The helper has this block's notes even when its sound comes too
+        // late to play: sending them again would start a note twice, and
+        // its one note off would leave the second voice sounding.
+        let held = held_after(self.view.held(), &self.notes_waiting);
+        self.notes_waiting.clear();
         if out.is_wet() {
-            let held = held_after(self.view.held(), &self.notes_waiting);
-            self.notes_waiting.clear();
             let mut peak = 0.0f32;
             for (f, s) in buf.iter_mut().enumerate() {
                 *s = [out_l[f], out_r[f]];
