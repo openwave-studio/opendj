@@ -139,14 +139,12 @@ const MIXER_ROUTE: usize = inputs::MIXER - 1;
 const INPUTS: [(i32, i32, usize, &str); 2] =
     [(MIC, 0, 0, "Microphone"), (MIXER, 0, MIXER_ROUTE, "Mixer")];
 
-/// ← and → in the column: back to the rail, or on to the list beside it.
+/// ← in the column goes back to the rail.
 /// ↑ and ↓ move through its rows (see `browser::navigation`).
 pub(crate) fn navigate_column(app: &AppWindow, code: i32) {
-    match Direction::from_code(code) {
-        Some(Direction::Left) => app
-            .global::<BrowserFocus>()
-            .invoke_focus(BrowserPane::Sources),
-        _ => {}
+    if let Some(Direction::Left) = Direction::from_code(code) {
+        app.global::<BrowserFocus>()
+            .invoke_focus(BrowserPane::Sources);
     }
 }
 

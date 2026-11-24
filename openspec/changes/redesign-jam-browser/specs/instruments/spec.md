@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Jam browser column
-The Jam source SHALL list instruments and presets in one narrow column with a Presets / Instruments switch, a search field, a starred-only button, filter menus and a list. Presets SHALL list every preset of every instrument; Instruments SHALL list one row per instrument.
+The Jam source SHALL list instruments and presets in one narrow column with, from the top, a search field and a starred-only button, Instruments and Presets buttons, filter menus and a list. Presets SHALL list every preset of every instrument; Instruments SHALL list one row per instrument.
 
 #### Scenario: Finding a warm pad
 - **WHEN** Presets is shown, Pad is picked under Sound type and Warm under Character

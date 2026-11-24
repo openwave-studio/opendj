@@ -9,7 +9,7 @@ The Jam source lists instruments in a 270 px tree of 34 px rows (Recently played
 ## What Changes
 
 - **One narrow column** (250 px) replaces the tree. From the top:
-  - a **Presets | Instruments** switch: Presets lists every preset of every instrument (the user's own and the plugins' factory ones), Instruments one row per instrument (Groove Box, Looper, Remix, plugins, Pd patches, inputs);
+  - search at the top, then **Instruments** and **Presets** buttons: Presets lists every preset of every instrument (the user's own and the plugins' factory ones), Instruments one row per instrument (Groove Box, Looper, Remix, plugins, Pd patches, inputs);
   - **search** over the side shown, and a **star** button that shows starred items only;
   - **filter menus** that fold open as chip groups, in this order: Sound type, Genre, Style, Character, Instrument, Maker. A closed menu shows the chips picked in it on its header and nothing when none is; chips narrow each other and show only values that still match; "Clear all" by the count;
   - the **list**: 24 px rows with a plain colour square for the instrument's kind (synth, drums, keys and samplers, tools, Pd, inputs), the name, the instrument's name dimmed, the deck badge and the star. No icons.
@@ -31,7 +31,7 @@ The wide table goes. The loaded plugin's panel shows right of the column; until 
 
 ### Modified Capabilities
 
-- `instruments`: the Jam source is one column with a Presets / Instruments switch, search, star and chip filters.
+- `instruments`: the Jam source is one column with search, star, Instruments and Presets buttons and chip filters.
 
 ## Impact
 
