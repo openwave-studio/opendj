@@ -105,6 +105,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 ## v1.0 · Ready for any DJ switching over
 
 - [add-layout-customization](changes/add-layout-customization/proposal.md)
+- [redesign-jam-browser](changes/redesign-jam-browser/proposal.md) (the Jam source as one 250 px column: Presets / Instruments switch, search, star, chip filter menus for sound type, genre, style, character, instrument and maker, rows with kind colours; scales to hundreds of plugins; a user request after mockups, issue #1060, 2026-11-24)
 - [add-color-schemes](changes/add-color-schemes/proposal.md) (color schemes from files that start from Dark or Light and override Theme colours and the shared controls' style values, picked in Settings › Layouts with a copy-to-start and a contrast check; the first level of custom skins; a user request, issue #921, 2026-11-20)
 - [add-mcp-server](changes/add-mcp-server/proposal.md)
 - [add-settings-layers](changes/add-settings-layers/proposal.md) (the rest of settings in three layers: Advanced with the layer-3 rows, remaining load choices, Reset layout; first steps split out into add-settings-table and add-settings-deck-choices for v0.6, 2026-11-05)
