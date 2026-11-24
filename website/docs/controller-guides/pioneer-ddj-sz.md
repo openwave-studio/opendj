@@ -11,9 +11,10 @@ with these changes:
 - The two **BROWSE** knobs both move through the library; pressing one loads
   the selected track to its side's deck.
 - **BACK** and **LOAD PREPARE** work as on the SX.
-- The **COLOR FX** knobs are filters. The Sound Color FX buttons
-  (**ECHO**, **PITCH**, **JET**, **FILTER**), the **OSCILLATOR** section,
-  **USB A/B** and the velocity sampler do nothing yet.
+- The Sound Color FX buttons **ECHO**, **PITCH** and **FILTER** pick what
+  the **COLOR FX** knobs play on every deck; press the lit one to go back to
+  the filter. **JET**, the **OSCILLATOR** section, **USB A/B** and the
+  velocity sampler do nothing yet.
 
 ## When you try it
 

@@ -1,12 +1,18 @@
 -- A fader drawn in Lua: openDJ shows it in the patch's editor window.
 -- Click or drag to set the level; the patch multiplies its input by it.
+-- The level is the object's argument ([lua-fader 0.5]): set_args keeps it
+-- with the patch, so openDJ keeps it with the slot's sound. A bang sends it.
 local Fader = pd.Class:new():register("lua-fader")
 
-function Fader:initialize()
-    self.inlets, self.outlets = 0, 1
-    self.value = 1
+function Fader:initialize(sel, atoms)
+    self.inlets, self.outlets = 1, 1
+    self.value = type(atoms[1]) == "number" and atoms[1] or 1
     self:set_size(200, 40)
     return true
+end
+
+function Fader:in_1_bang()
+    self:outlet(1, "float", {self.value})
 end
 
 function Fader:paint(g)
@@ -20,6 +26,7 @@ end
 
 function Fader:set(x)
     self.value = math.max(0, math.min(1, (x - 4) / 192))
+    self:set_args({self.value})
     self:outlet(1, "float", {self.value})
     self:repaint()
 end

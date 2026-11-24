@@ -25,12 +25,12 @@ sketch from the unit's size, not measured.
 - **TEMPO RANGE** buttons set ±6, ±10, ±16 % or WIDE.
 - The **mixer** (TRIM, EQ, COLOR, CUE, channel faders, crossfader) runs openDJ's mixer.
 - **FX** on each deck runs an openDJ effect unit on that deck: TRANS, FLANGER, ECHO and ROLL load openDJ's gate, flanger, echo and roll and turn it on (press again to turn it off), the knob sets the amount and **TAP** taps its tempo.
-- **SOUND COLOR FX**: NOISE, CRUSH and FILTER pick what the COLOR knobs play.
+- **SOUND COLOR FX**: NOISE, PITCH, CRUSH and FILTER pick what the COLOR knobs play.
 - The **ROTARY SELECTOR** moves through the list (SHIFT: zooms the
   waveforms), press opens or loads. **BACK** moves to the sidebar and **TAG
   TRACK** adds the track to Automix. **LOAD** loads the selected track.
 
-Not mapped yet: the FX BEAT knob, PITCH color FX, HOT CUE/SAMPLER, the input selectors and the crossfader curve switch.
+Not mapped yet: the FX BEAT knob, HOT CUE/SAMPLER, the input selectors and the crossfader curve switch.
 
 ## When you try it
 

@@ -7,11 +7,11 @@
 // ****************************************************************************
 //
 //  Added here: QUANTIZE (in the XML), MASTER TEMPO, KEY SYNC, SEARCH, the
-//  Beat FX CH SELECT and FX SELECT switches, and the jog displays (BPM,
-//  time and the playhead going round).
+//  Beat FX CH SELECT and FX SELECT switches, the SOUND COLOR FX choice and
+//  the jog displays (BPM, time and the playhead going round).
 //
-//  Not mapped yet: MEMORY, DELETE, the pad PAGE buttons, the COLOR FX
-//  buttons (the COLOR FX knobs are filters), TEMPO RANGE with SHIFT.
+//  Not mapped yet: MEMORY, DELETE, the pad PAGE buttons, TEMPO RANGE with
+//  SHIFT.
 
 var PioneerDDJ800 = {};
 
@@ -53,6 +53,30 @@ PioneerDDJ800.beatFxRoutes = {
 PioneerDDJ800.connections = [];
 PioneerDDJ800.searchTimers = {};
 
+// SOUND COLOR FX: D-ECHO, PITCH, NOISE and FILTER (notes 0x00 to 0x03, 8
+// higher with SHIFT) pick what both COLOR FX knobs play, as the engine's
+// COLOR_FX numbers (1 Filter, 3 Dub Echo, 4 Noise, 6 Pitch). The chosen
+// one lights.
+PioneerDDJ800.colorFxButtons = {0x00: 3, 0x01: 6, 0x02: 4, 0x03: 1};
+
+PioneerDDJ800.colorFxPressed = function(_channel, control, value) {
+    if (!value) {
+        return;
+    }
+    const preset = PioneerDDJ800.colorFxButtons[control & 0x07];
+    PioneerDDJ800.decks.forEach(function(group) {
+        engine.setValue("[QuickEffectRack1_" + group + "]", "loaded_chain_preset", preset);
+    });
+};
+
+PioneerDDJ800.colorFxLights = function() {
+    const current = engine.getValue("[QuickEffectRack1_[Channel1]]", "loaded_chain_preset");
+    Object.keys(PioneerDDJ800.colorFxButtons).forEach(function(control) {
+        const on = PioneerDDJ800.colorFxButtons[control] === current;
+        midi.sendShortMsg(0x96, parseInt(control), on ? 0x7F : 0x00);
+    });
+};
+
 PioneerDDJ800.deckIndex = function(group) {
     return parseInt(group.match(script.channelRegEx)[1]) - 1;
 };
@@ -74,6 +98,11 @@ PioneerDDJ800.init = function() {
         midi.sendShortMsg(status, 0x5D, 0x00);
         PioneerDDJ800.updateJogDisplay(group);
     });
+    PioneerDDJ800.decks.forEach(function(group) {
+        PioneerDDJ800.connections.push(engine.makeConnection(
+            "[QuickEffectRack1_" + group + "]", "loaded_chain_preset", PioneerDDJ800.colorFxLights));
+    });
+    PioneerDDJ800.colorFxLights();
     PioneerDDJ800.jogTimer = engine.beginTimer(50, function() {
         PioneerDDJ800.decks.forEach(PioneerDDJ800.updateJogDisplay);
     });

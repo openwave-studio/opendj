@@ -211,6 +211,18 @@ export global InstrumentsUi {
     // The page of eight knobs the instrument deck shows, from 0; the macro
     // lanes follow the same page.
     in-out property <int> knob-page;
+    // The instrument's own display (a Pd patch's Lua displays), drawn by
+    // its helper: whether it has one, the picture, its width over height,
+    // whether the deck's DISPLAY tab shows it, and the size of the area it
+    // shows in (the app draws it at that size). `display-mouse` passes a
+    // press (kind 0), release (1) or move (2) at a point in that area.
+    in property <bool> has-display;
+    in property <image> display;
+    in property <float> display-aspect: 2;
+    in-out property <bool> display-on;
+    in-out property <length> display-area-width;
+    in-out property <length> display-area-height;
+    callback display-mouse(x: length, y: length, kind: int);
     // What the instrument plays, set by the app while a deck shows it: the
     // notes held (`held[n]` is MIDI note 36 + n, C2 up) and its scope as
     // path commands in a 128 by 32 box.

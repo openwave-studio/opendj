@@ -65,6 +65,7 @@ mod side_tabs;
 mod sidelist;
 mod spotify_export;
 mod staging;
+mod stem_files;
 mod stream_play;
 mod streamed;
 mod tag_chips;
@@ -626,6 +627,9 @@ pub struct Browser {
     lib: LibraryControls,
     /// Moving the selection with a controller goes through folders instead of tracks.
     folders_focused: bool,
+    /// The rail entry the knob or ↑ ↓ moved to (-1 Collection Health), and
+    /// when: it opens once the moves stop (see `navigation::RAIL_SETTLE`).
+    rail_pending: Option<(i32, std::time::Instant)>,
     /// Tracks loaded with LoadSelectedTrackAndPlay, to start once they arrive.
     play_when_loaded: [Option<usize>; NUM_DECKS],
     /// The streaming services, in the order of [`STREAMS`].
@@ -776,6 +780,7 @@ pub struct Browser {
     /// Export to USB's dialog and export.
     usb: usb::State,
     playlist_files: playlist_files::State,
+    stem_files: stem_files::State,
     inbox_albums: inbox_albums::InboxAlbums,
     rekordbox_xml: rekordbox_xml::State,
     phrases_seen: analysis::SeenDecks,
@@ -1361,6 +1366,7 @@ impl Browser {
             key_rules: (key::Mixing::Harmonic, 1),
             lib: LibraryControls::create(registry),
             folders_focused: false,
+            rail_pending: None,
             play_when_loaded: [None; NUM_DECKS],
             streams: STREAMS
                 .iter()
@@ -1496,6 +1502,7 @@ impl Browser {
             analysis_shown: Default::default(),
             usb: Default::default(),
             playlist_files: Default::default(),
+            stem_files: Default::default(),
             inbox_albums: inbox_albums::InboxAlbums::new(),
             rekordbox_xml: Default::default(),
             phrases_seen: Default::default(),
@@ -2258,6 +2265,7 @@ impl Browser {
         Self::install_usb_export(app, &edit, &with);
         Self::install_spotify_export(&edit, &with);
         Self::install_playlist_files(&edit, &with);
+        Self::install_stem_files(&edit, &with);
         Self::install_rekordbox_xml(&edit, &with);
     }
 
@@ -4877,9 +4885,23 @@ impl Browser {
         }
     }
 
+    /// Whether the folder picked in the tree (or Jam's tree) is open.
+    fn picked_folder_open(&self, app: &AppWindow) -> bool {
+        if app.global::<StoreUi>().get_source() == INSTRUMENTS {
+            let ui = app.global::<crate::InstrumentsUi>();
+            return usize::try_from(ui.get_current_node())
+                .ok()
+                .and_then(|i| ui.get_nodes().row_data(i))
+                .is_some_and(|n| n.children == 2);
+        }
+        self.visible_nodes.contains(&self.current_node)
+            && self.navigation_row(self.current_node).children == 2
+    }
+
     /// Acts on library controls set by controller mappings: browsing,
     /// switching between folders and tracks, loading. Called every frame.
     pub fn poll_controllers(&mut self, app: &AppWindow) {
+        self.settle_rail(false);
         if take(&self.lib.show_linked) > 0.0 {
             app.set_side_panel_visible(true);
             app.set_side_tab(LINKED_TAB as i32);
@@ -4901,7 +4923,16 @@ impl Browser {
             }
         }
         for _ in 0..backward.max(0) {
-            self.navigate_browser(2, 1);
+            // A Shift+press steps left, as ← does, except in the folders:
+            // it closes an open folder, and otherwise goes straight to the
+            // rail instead of up one folder at a time, since turning the
+            // knob already reaches the parents.
+            let focus = app.global::<BrowserFocus>();
+            if focus.get_pane() == BrowserPane::Folders && !self.picked_folder_open(app) {
+                focus.invoke_focus(BrowserPane::Sources);
+            } else {
+                self.navigate_browser(2, 1);
+            }
         }
         for _ in 0..relative.saturating_abs() {
             self.navigate_browser(if relative > 0 { 3 } else { 2 }, 1);
@@ -5579,6 +5610,7 @@ impl Browser {
                     && matches!(kind, KIND_LIST | KIND_HISTORY | KIND_CRATE),
                 mixcloud: self.tree == MIXED_SETS,
                 rekordbox: node.is_some() && self.rekordbox_exportable(self.current_node),
+                stems: analysable,
             });
             let name = match self.nodes.get(self.current_node) {
                 Some(n) => n.title.clone().unwrap_or_else(|| n.name.clone()),

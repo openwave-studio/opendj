@@ -32,6 +32,8 @@ import { NowPlayingUi } from "nowplaying.slint";
 import { DeckStrip, FourDeckBar } from "fourdeck.slint";
 import { LiteDeck, LiteMixer, LiteUi, PadBarHalf } from "lite.slint";
 import { FxBar } from "fxbar.slint";
+import { FxDisplay, FxDisplayPanel } from "plugin_display.slint";
+export { FxDisplay }
 import { RemixUi } from "remix.slint";
 import { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi } from "instruments.slint";
 import { Browser, BrowserPanels, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, ListText, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow } from "library.slint";
@@ -2583,6 +2585,11 @@ export component AppWindow inherits Window {
                     dismiss-touch := TouchArea { clicked => { update-dismiss(); } }
                 }
             }
+        }
+
+        if FxDisplay.shown != "": FxDisplayPanel {
+            window-width: root.width;
+            window-height: root.height;
         }
 
         if alert != "": Rectangle {

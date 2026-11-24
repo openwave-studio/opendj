@@ -126,11 +126,21 @@ pub fn preview(path: &Path) -> Result<String, String> {
 /// rekordbox's analysis file (`ANLZ0000.DAT`) for a track, from where
 /// master.db says it is (`data`, under `share`), when it's there.
 fn anlz_file(share: &Path, data: Option<&str>) -> Option<PathBuf> {
-    let data = data?.trim_start_matches(['/', '\\']);
-    if data.is_empty() {
-        return None;
-    }
-    Some(share.join(data)).filter(|p| p.is_file())
+    Some(share.join(anlz_relative(data?)?)).filter(|p| p.is_file())
+}
+
+/// A track's analysis path as master.db gives it, relative to `share`:
+/// usually `/PIONEER/USBANLZ/…`, but a library brought over from Windows
+/// can hold backslashes or a whole path, which start at `PIONEER` here.
+fn anlz_relative(data: &str) -> Option<PathBuf> {
+    let data = data.replace('\\', "/");
+    let parts: Vec<&str> = data.split('/').filter(|p| !p.is_empty()).collect();
+    let from = parts
+        .iter()
+        .rposition(|p| p.eq_ignore_ascii_case("PIONEER"))
+        .unwrap_or(0);
+    let parts = &parts[from..];
+    (!parts.is_empty()).then(|| parts.iter().collect())
 }
 
 /// How many of `tracks` have a beat grid to bring in, or why none will.
@@ -205,6 +215,26 @@ pub fn read(
             &mut t,
         );
         tracks.push(t);
+    }
+    // Analysed tracks whose files aren't where master.db says, for the log.
+    let mut missing: Vec<&str> = contents
+        .iter()
+        .filter(|c| file_path(c).is_some_and(|f| exists(&f)))
+        .filter_map(|c| c.content.analysis_data_path.as_deref())
+        .filter(|d| !d.is_empty())
+        .filter(|d| {
+            db.share
+                .as_deref()
+                .is_none_or(|s| anlz_file(s, Some(d)).is_none())
+        })
+        .collect();
+    if !missing.is_empty() {
+        let shown = missing.len().min(3);
+        eprintln!(
+            "rekordbox: {} analysed tracks have no analysis file there, e.g. {:?}",
+            missing.len(),
+            missing.drain(..shown).collect::<Vec<_>>()
+        );
     }
     let grids = tracks.iter().filter(|t| t.info.fixed_grid).count();
     eprintln!(
@@ -663,6 +693,15 @@ mod tests {
             None
         );
         assert_eq!(anlz_file(&share, Some("")), None);
+        // From a library that was on Windows.
+        assert_eq!(
+            anlz_file(&share, Some("\\PIONEER\\USBANLZ\\abc\\ANLZ0000.DAT")),
+            Some(share.join(file))
+        );
+        assert_eq!(
+            anlz_file(&share, Some("C:/Users/dj/AppData/Roaming/Pioneer/rekordbox/share/PIONEER/USBANLZ/abc/ANLZ0000.DAT")),
+            Some(share.join(file))
+        );
         assert_eq!(anlz_file(&share, None), None);
         // An unreadable file leaves the track without a grid, not the import.
         let mut t = opendj_engine::scan::read_track(0, &share.join(file));

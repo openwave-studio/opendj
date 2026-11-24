@@ -14,6 +14,8 @@
 //! - [`pd_patch`]: what a Pure Data patch offers, read from its text;
 //!   `pd` (feature `pd`, experimental) runs it in libpd, and `pd_display`
 //!   draws its Lua displays.
+//! - [`display`]: the picture of a plugin display openDJ shows on the
+//!   deck, and the mouse going back.
 //! - [`window`] (in the helper): the window a plugin's own editor opens in.
 
 #[cfg(all(feature = "formats", target_os = "macos"))]
@@ -22,6 +24,7 @@ pub mod au;
 pub mod clap;
 pub mod client;
 pub mod descriptor;
+pub mod display;
 pub mod effects;
 #[cfg(feature = "pd")]
 pub mod pd;

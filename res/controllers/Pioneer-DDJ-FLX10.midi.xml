@@ -12,43 +12,43 @@
         </scriptfiles>
         <controls>
             <control>
-                <description>LOAD (DECK1) - press - Load a Track into Deck 1</description>
+                <description>BROWSE press (DECK1) - press - folders: open the picked folder or playlist; track list: load the track into deck 1</description>
                 <group>[Channel1]</group>
-                <key>LoadSelectedTrack</key>
+                <key>PioneerDDJFLX10.browsePressed</key>
                 <status>0x96</status>
                 <midino>0x46</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
-                <description>LOAD (DECK2) - press - Load a Track into Deck 2</description>
+                <description>BROWSE press (DECK2) - press - folders: open the picked folder or playlist; track list: load the track into deck 2</description>
                 <group>[Channel2]</group>
-                <key>LoadSelectedTrack</key>
+                <key>PioneerDDJFLX10.browsePressed</key>
                 <status>0x96</status>
                 <midino>0x47</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
-                <description>LOAD (DECK3) - press - Load a Track into Deck 3</description>
+                <description>BROWSE press (DECK3) - press - folders: open the picked folder or playlist; track list: load the track into deck 3</description>
                 <group>[Channel3]</group>
-                <key>LoadSelectedTrack</key>
+                <key>PioneerDDJFLX10.browsePressed</key>
                 <status>0x96</status>
                 <midino>0x48</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
-                <description>LOAD (DECK4) - press - Load a Track into Deck 4</description>
+                <description>BROWSE press (DECK4) - press - folders: open the picked folder or playlist; track list: load the track into deck 4</description>
                 <group>[Channel4]</group>
-                <key>LoadSelectedTrack</key>
+                <key>PioneerDDJFLX10.browsePressed</key>
                 <status>0x96</status>
                 <midino>0x49</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
@@ -294,21 +294,21 @@
             <control>
                 <description>LOOP IN/4 BEAT (DECK1) - press - Set loop in</description>
                 <group>[Channel1]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJFLX10.loopInPressed</key>
                 <status>0x90</status>
                 <midino>0x10</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
                 <description>LOOP OUT (DECK1) - press - Set loop out</description>
                 <group>[Channel1]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJFLX10.loopOutPressed</key>
                 <status>0x90</status>
                 <midino>0x11</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
@@ -776,21 +776,21 @@
             <control>
                 <description>LOOP IN/4 BEAT (DECK2) - press - Set loop in</description>
                 <group>[Channel2]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJFLX10.loopInPressed</key>
                 <status>0x91</status>
                 <midino>0x10</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
                 <description>LOOP OUT (DECK2) - press - Set loop out</description>
                 <group>[Channel2]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJFLX10.loopOutPressed</key>
                 <status>0x91</status>
                 <midino>0x11</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
@@ -1258,21 +1258,21 @@
             <control>
                 <description>LOOP IN/4 BEAT (DECK3) - press - Set loop in</description>
                 <group>[Channel3]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJFLX10.loopInPressed</key>
                 <status>0x92</status>
                 <midino>0x10</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
                 <description>LOOP OUT (DECK3) - press - Set loop out</description>
                 <group>[Channel3]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJFLX10.loopOutPressed</key>
                 <status>0x92</status>
                 <midino>0x11</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
@@ -1740,21 +1740,21 @@
             <control>
                 <description>LOOP IN/4 BEAT (DECK4) - press - Set loop in</description>
                 <group>[Channel4]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJFLX10.loopInPressed</key>
                 <status>0x93</status>
                 <midino>0x10</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
                 <description>LOOP OUT (DECK4) - press - Set loop out</description>
                 <group>[Channel4]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJFLX10.loopOutPressed</key>
                 <status>0x93</status>
                 <midino>0x11</midino>
                 <options>
-                    <Normal />
+                    <Script-Binding />
                 </options>
             </control>
             <control>
@@ -7310,6 +7310,16 @@
                 </options>
             </control>
             <control>
+                <description>SOUND COLOR FX PITCH - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
                 <description>SOUND COLOR FX NOISE - press - what the COLOR knobs play (openDJ)</description>
                 <group>[Master]</group>
                 <key>PioneerDDJFLX10.colorFxPressed</key>
@@ -7325,6 +7335,226 @@
                 <key>PioneerDDJFLX10.colorFxPressed</key>
                 <status>0x96</status>
                 <midino>0x05</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 1/2X (DECK1) - press - halve the loop (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX10.loopHalvePressed</key>
+                <status>0x90</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 2X (DECK1) - press - double the loop (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX10.loopDoublePressed</key>
+                <status>0x90</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &lt; (DECK1) - long press - search back while held (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX10.searchBack</key>
+                <status>0x90</status>
+                <midino>0x70</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &gt; (DECK1) - long press - search forward while held (openDJ)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJFLX10.searchForward</key>
+                <status>0x90</status>
+                <midino>0x71</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 1/2X (DECK2) - press - halve the loop (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX10.loopHalvePressed</key>
+                <status>0x91</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 2X (DECK2) - press - double the loop (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX10.loopDoublePressed</key>
+                <status>0x91</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &lt; (DECK2) - long press - search back while held (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX10.searchBack</key>
+                <status>0x91</status>
+                <midino>0x70</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &gt; (DECK2) - long press - search forward while held (openDJ)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJFLX10.searchForward</key>
+                <status>0x91</status>
+                <midino>0x71</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 1/2X (DECK3) - press - halve the loop (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJFLX10.loopHalvePressed</key>
+                <status>0x92</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 2X (DECK3) - press - double the loop (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJFLX10.loopDoublePressed</key>
+                <status>0x92</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &lt; (DECK3) - long press - search back while held (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJFLX10.searchBack</key>
+                <status>0x92</status>
+                <midino>0x70</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &gt; (DECK3) - long press - search forward while held (openDJ)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJFLX10.searchForward</key>
+                <status>0x92</status>
+                <midino>0x71</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 1/2X (DECK4) - press - halve the loop (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJFLX10.loopHalvePressed</key>
+                <status>0x93</status>
+                <midino>0x12</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>LOOP 2X (DECK4) - press - double the loop (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJFLX10.loopDoublePressed</key>
+                <status>0x93</status>
+                <midino>0x13</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &lt; (DECK4) - long press - search back while held (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJFLX10.searchBack</key>
+                <status>0x93</status>
+                <midino>0x70</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>4 BEAT JUMP &gt; (DECK4) - long press - search forward while held (openDJ)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJFLX10.searchForward</key>
+                <status>0x93</status>
+                <midino>0x71</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX SPACE +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX D.ECHO +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX CRUSH +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0C</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER +SHIFT - press - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJFLX10.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0D</midino>
                 <options>
                     <Script-Binding />
                 </options>

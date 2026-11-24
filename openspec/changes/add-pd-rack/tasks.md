@@ -12,7 +12,8 @@
 
 ## 2. Patches that last
 
-- [ ] 2.1 Save the patch's knob values with the slot; reload a patch when its file is saved
+- [x] 2.1 Save the patch's knob values with the slot, and the arguments its Lua objects keep with `self:set_args` (the patch reopens with them)
+- [ ] 2.4 Reload a patch when its file is saved
 - [ ] 2.2 "Open in plugdata" (or Pd) from the slot
 - [ ] 2.3 Sample-exact MIDI within a block
 
@@ -25,7 +26,8 @@
 
 - [ ] 4.1 `.opendj.json` hints next to a patch: pages, knob, slider, XY pad or switch, units, macro for the FX bar
 - [x] 4.2 pd-lua in the helper; its `paint(g)` drawing caught and drawn by the helper in the plugin's editor window (OPEN), with mouse input
-- [ ] 4.3 The same drawing forwarded to openDJ and drawn in the deck itself
+- [x] 4.3 The same drawing shared with openDJ and shown on the instrument deck (a DISPLAY tab that fills the panel), with mouse input
+- [x] 4.4 The same display for an FX slot's Pd patch, in a panel opened from the slot's VIEW button
 
 ## 5. Max for Live devices
 

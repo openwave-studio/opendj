@@ -1740,6 +1740,105 @@ fn ddj_rx_quantize() {
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
+/// The DDJ-RX, RZ, RZX and SZ Sound Color FX buttons pick what the COLOR knobs
+/// play on every deck; PITCH is the Pitch Color FX (6). Pressing the lit
+/// one goes back to the filter.
+#[test]
+fn ddj_rx_family_sound_color_fx() {
+    let cfx = |reg: &ControlRegistry, deck: usize| {
+        get(
+            reg,
+            &format!("[QuickEffectRack1_[Channel{deck}]]"),
+            "loaded_chain_preset",
+        )
+    };
+    for (file, pitch, other, preset) in [
+        ("Pioneer DDJ-RX.midi.xml", 0x02, 0x00, 4.0),
+        ("Pioneer DDJ-RZ.midi.xml", 0x02, 0x00, 2.0),
+        ("Pioneer DDJ-RZX.midi.xml", 0x24, 0x01, 3.0),
+        ("Pioneer DDJ-SZ.midi.xml", 0x01, 0x00, 3.0),
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        c.receive(&[0x96, pitch, 0x7F]);
+        c.receive(&[0x96, pitch, 0x00]);
+        for deck in 1..=4 {
+            assert_eq!(cfx(&reg, deck), 6.0, "{file} PITCH");
+        }
+        c.poll(Instant::now());
+        assert!(
+            c.take_output().iter().any(|m| m[..] == [0x96, pitch, 0x7F]),
+            "{file} PITCH lit"
+        );
+        c.receive(&[0x96, other, 0x7F]);
+        assert_eq!(cfx(&reg, 2), preset, "{file} {other:#x}");
+        // SHIFT + the lit one goes back to the filter.
+        let shifted = if other < 0x08 {
+            other + 0x08
+        } else {
+            other + 0x10
+        };
+        c.receive(&[0x96, shifted, 0x7F]);
+        assert_eq!(cfx(&reg, 2), 1.0, "{file} back to the filter");
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+/// The XDJ-R1's and XDJ-RR's SOUND COLOR FX PITCH plays the Pitch Color FX.
+#[test]
+fn xdj_r1_and_rr_pitch_color_fx() {
+    for (file, msg) in [
+        ("Pioneer-XDJ-R1.midi.xml", [0x94, 0x4F, 0x7F]),
+        ("Pioneer-XDJ-RR.midi.xml", [0xB4, 0x56, 0x7F]),
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        c.receive(&msg);
+        for deck in 1..=2 {
+            assert_eq!(
+                get(
+                    &reg,
+                    &format!("[QuickEffectRack1_[Channel{deck}]]"),
+                    "loaded_chain_preset"
+                ),
+                6.0,
+                "{file}"
+            );
+        }
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+/// The DDJ-800's COLOR FX buttons pick what both COLOR FX knobs play, and
+/// the chosen one lights.
+#[test]
+fn ddj_800_color_fx() {
+    let (reg, mut c) = load("Pioneer-DDJ-800.midi.xml");
+    settle(&mut c, 50);
+    let cfx = |reg: &ControlRegistry, deck: usize| {
+        get(
+            reg,
+            &format!("[QuickEffectRack1_[Channel{deck}]]"),
+            "loaded_chain_preset",
+        )
+    };
+    for (note, preset) in [(0x01, 6.0), (0x00, 3.0), (0x0A, 4.0), (0x03, 1.0)] {
+        c.receive(&[0x96, note, 0x7F]);
+        c.receive(&[0x96, note, 0x00]);
+        assert_eq!((cfx(&reg, 1), cfx(&reg, 2)), (preset, preset), "{note:#x}");
+    }
+    c.receive(&[0x96, 0x01, 0x7F]);
+    settle(&mut c, 5);
+    assert!(
+        c.take_output().iter().any(|m| m[..] == [0x96, 0x01, 0x7F]),
+        "PITCH lit"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
 /// openDJ's DDJ-800 mapping: the DDJ-FLX4's, moved to the DDJ-800's
 /// messages, plus its own buttons and Beat FX switches.
 #[test]
@@ -2101,6 +2200,18 @@ fn ddj_flx10_decks_mixer_fx_and_displays() {
             .any(|m| m[0] == 0x96 && m[1] == 0x04 && m[2] == 0x7F),
         "NOISE lit: {out:x?}"
     );
+
+    // SOUND COLOR FX PITCH: the Pitch Color FX; SHIFT + PITCH back to FILTER.
+    c.receive(&[0x96, 0x03, 0x7F]);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel3]]", "loaded_chain_preset"),
+        6.0
+    );
+    c.receive(&[0x96, 0x0B, 0x7F]);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel3]]", "loaded_chain_preset"),
+        1.0
+    );
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
@@ -2170,6 +2281,77 @@ fn ddj_flx10_pad_colours_lights_and_jog_scale() {
     assert!(
         (bend - 10.0 * 720.0 / 5760.0).abs() < 1e-6,
         "jog_bend {bend}"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
+fn ddj_flx10_browse_loops_deck_select_and_search() {
+    let (reg, mut c) = load("Pioneer-DDJ-FLX10.midi.xml");
+    settle(&mut c, 50);
+
+    // BROWSE press (sent as LOAD for the side's deck): in the folders it
+    // opens the picked item, in the track list it loads the track.
+    let focus = reg.free("[Library]", "focused_widget");
+    let go = reg.free("[Library]", "GoToItem");
+    let load3 = reg.free("[Channel3]", "LoadSelectedTrack");
+    focus.set(2.0);
+    c.receive(&[0x96, 0x48, 0x7F]);
+    c.receive(&[0x96, 0x48, 0x00]);
+    assert_eq!(go.get(), 1.0);
+    assert_eq!(load3.get(), 0.0);
+    go.set(0.0);
+    focus.set(3.0);
+    c.receive(&[0x96, 0x48, 0x7F]);
+    assert_eq!(go.get(), 0.0);
+    assert_eq!(load3.get(), 1.0);
+
+    // LOOP IN・1/2X and LOOP OUT・2X set the loop, and halve and double
+    // it while it plays; the release goes where the press went.
+    c.receive(&[0x90, 0x10, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_in"), 1.0);
+    c.receive(&[0x90, 0x10, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_in"), 0.0);
+    reg.get("[Channel1]", "loop_enabled").unwrap().set(1.0);
+    c.receive(&[0x90, 0x10, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_halve"), 1.0);
+    assert_eq!(get(&reg, "[Channel1]", "loop_in"), 0.0);
+    c.receive(&[0x90, 0x10, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_halve"), 0.0);
+    c.receive(&[0x90, 0x11, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_double"), 1.0);
+    c.receive(&[0x90, 0x11, 0x00]);
+    c.receive(&[0x91, 0x13, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "loop_double"), 1.0);
+    c.receive(&[0x91, 0x13, 0x00]);
+
+    // 4 BEAT JUMP held searches while held.
+    c.receive(&[0x92, 0x71, 0x7F]);
+    assert!(get(&reg, "[Channel3]", "rateSearch") > 0.0);
+    c.receive(&[0x92, 0x71, 0x00]);
+    assert_eq!(get(&reg, "[Channel3]", "rateSearch"), 0.0);
+    c.receive(&[0x90, 0x70, 0x7F]);
+    assert!(get(&reg, "[Channel1]", "rateSearch") < 0.0);
+    c.receive(&[0x90, 0x70, 0x00]);
+
+    // DECK 3 on the left: 4-Deck opens and lights deck 3; DECK 1 goes back.
+    let layout = reg.free("[Skin]", "layout");
+    let deck3 = reg.free("[Controller]", "deck3");
+    c.receive(&[0x92, 0x3C, 0x7F]);
+    c.receive(&[0x90, 0x3C, 0x00]);
+    assert_eq!(layout.get(), 2.0);
+    assert_eq!(deck3.get(), 1.0);
+    c.receive(&[0x90, 0x3C, 0x7F]);
+    c.receive(&[0x92, 0x3C, 0x00]);
+    assert_eq!(deck3.get(), 0.0);
+    assert_eq!(layout.get(), 2.0);
+
+    // SHIFT + a SOUND COLOR FX button picks it too.
+    c.receive(&[0x96, 0x09, 0x7F]);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel2]]", "loaded_chain_preset"),
+        3.0
     );
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();

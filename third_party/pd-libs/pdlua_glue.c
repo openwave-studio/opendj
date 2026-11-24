@@ -113,3 +113,25 @@ void opendj_pdlua_mouse(void *obj, int x, int y, int type)
 {
     pdlua_gfx_mouse_event((t_pdlua *)obj, x, y, type);
 }
+
+/* Each object box on `canvas` (not messages or comments) as Pd would save
+   it after its class name's position: its index among everything on the
+   canvas, in the order a patch file lists them, and its text ("class args"),
+   which a Lua object's self:set_args changes. */
+void opendj_pd_object_texts(void *canvas, void *ctx,
+    void (*each)(void *ctx, int index, const char *text, int len))
+{
+    t_gobj *y;
+    int index = 0;
+    for (y = ((t_canvas *)canvas)->gl_list; y; y = y->g_next, index++)
+    {
+        t_object *ob = pd_checkobject(&y->g_pd);
+        if (!ob || ob->te_type != T_OBJECT || !ob->te_binbuf)
+            continue;
+        char *buf;
+        int len;
+        binbuf_gettext(ob->te_binbuf, &buf, &len);
+        each(ctx, index, buf, len);
+        freebytes(buf, len);
+    }
+}

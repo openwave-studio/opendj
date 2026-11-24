@@ -86,7 +86,7 @@ the whole track has them.
 - **Stems on load**: turn it off to save CPU on an older computer. Tracks then
   only get stems you prepare with Prepare High Quality Stems (or from an NI
   stem file).
-- **High quality stems kept**: high quality stems take about 4 times the
+- **High quality stems kept**: high quality stems take about 3 times the
   space of the track. Once they pass this size (10 GB at first), the stems
   played longest ago are deleted to make room. Shows how many tracks have
   them and how much space they take.
@@ -95,3 +95,15 @@ the whole track has them.
 - Whether each stems model is downloaded yet.
 
 NI stem files (`.stem.mp4`) play their own stems.
+
+## Stem files
+
+To take high quality stems to another computer, or to other DJ software that
+plays NI stem files, pick a list, crate, set or folder in the sidebar and
+choose **File › Export › Stem Files…**, then a folder. openDJ saves a
+`.stem.mp4` there for each track that has high quality
+stems, named after the track, holding the track itself and its drums, bass,
+other and vocals in Apple Lossless, with the track's title, artist and album.
+Players that don't know stems play just the track. Tracks without high quality
+stems yet are skipped (the message at the end says how many); prepare them
+first with **Prepare HQ Stems for All**.

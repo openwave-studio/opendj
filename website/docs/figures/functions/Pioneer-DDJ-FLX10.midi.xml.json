@@ -36,26 +36,41 @@
       ]
     },
     "cfx-crush": {
+      "SHIFT": [
+        "Loaded chain preset"
+      ],
       "normal": [
         "Loaded chain preset"
       ]
     },
     "cfx-decho": {
+      "SHIFT": [
+        "Loaded chain preset"
+      ],
       "normal": [
         "Loaded chain preset"
       ]
     },
     "cfx-filter": {
+      "SHIFT": [
+        "Loaded chain preset"
+      ],
       "normal": [
         "Loaded chain preset"
       ]
     },
     "cfx-noise": {
+      "SHIFT": [
+        "Loaded chain preset"
+      ],
       "normal": [
         "Loaded chain preset"
       ]
     },
     "cfx-space": {
+      "SHIFT": [
+        "Loaded chain preset"
+      ],
       "normal": [
         "Loaded chain preset"
       ]
@@ -359,7 +374,7 @@
         "the side now plays deck 1 (openDJ)"
       ],
       "Deck 3": [
-        "the side now plays deck 3 (openDJ)"
+        "Switch layout"
       ]
     },
     "l-exit": {
@@ -383,6 +398,12 @@
       "Deck 3 + SHIFT": [
         "Loop in adjust (using jog wheel)"
       ],
+      "Deck 3 in a loop": [
+        "Halve loop"
+      ],
+      "In a loop": [
+        "Halve loop"
+      ],
       "SHIFT": [
         "Loop in adjust (using jog wheel)"
       ],
@@ -398,7 +419,7 @@
         "Jog search"
       ],
       "Deck 3, SHIFT touch": [
-        "enable (on touch) / disable (on release) highspeed Pitch bend"
+        "Scratch (platter touch)"
       ],
       "Deck 3, Side": [
         "Jog rim bend"
@@ -419,7 +440,7 @@
         "Jog search"
       ],
       "SHIFT touch": [
-        "enable (on touch) / disable (on release) highspeed Pitch bend"
+        "Scratch (platter touch)"
       ],
       "Side": [
         "Jog rim bend"
@@ -438,8 +459,14 @@
       "Deck 3": [
         "Jump 4 beats back"
       ],
+      "Deck 3 + Long press": [
+        "Rate search"
+      ],
       "Deck 3 + SHIFT": [
         "Jump 32 beats back"
+      ],
+      "Long press": [
+        "Rate search"
       ],
       "SHIFT": [
         "Jump 32 beats back"
@@ -452,8 +479,14 @@
       "Deck 3": [
         "Jump 4 beats forward"
       ],
+      "Deck 3 + Long press": [
+        "Rate search"
+      ],
       "Deck 3 + SHIFT": [
         "Jump 32 beats forward"
+      ],
+      "Long press": [
+        "Rate search"
       ],
       "SHIFT": [
         "Jump 32 beats forward"
@@ -538,6 +571,12 @@
       ],
       "Deck 3 + SHIFT": [
         "Loop out adjust (using jog wheel)"
+      ],
+      "Deck 3 in a loop": [
+        "Double loop"
+      ],
+      "In a loop": [
+        "Double loop"
       ],
       "SHIFT": [
         "Loop out adjust (using jog wheel)"
@@ -1478,22 +1517,22 @@
     },
     "load-1": {
       "normal": [
-        "Load selected track"
+        "Open or load item"
       ]
     },
     "load-2": {
       "normal": [
-        "Load selected track"
+        "Open or load item"
       ]
     },
     "load-3": {
       "normal": [
-        "Load selected track"
+        "Open or load item"
       ]
     },
     "load-4": {
       "normal": [
-        "Load selected track"
+        "Open or load item"
       ]
     },
     "master-level": {
@@ -1570,6 +1609,12 @@
       "Deck 4 + SHIFT": [
         "Loop in adjust (using jog wheel)"
       ],
+      "Deck 4 in a loop": [
+        "Halve loop"
+      ],
+      "In a loop": [
+        "Halve loop"
+      ],
       "SHIFT": [
         "Loop in adjust (using jog wheel)"
       ],
@@ -1585,7 +1630,7 @@
         "Jog search"
       ],
       "Deck 4, SHIFT touch": [
-        "enable (on touch) / disable (on release) highspeed Pitch bend"
+        "Scratch (platter touch)"
       ],
       "Deck 4, Side": [
         "Jog rim bend"
@@ -1606,7 +1651,7 @@
         "Jog search"
       ],
       "SHIFT touch": [
-        "enable (on touch) / disable (on release) highspeed Pitch bend"
+        "Scratch (platter touch)"
       ],
       "Side": [
         "Jog rim bend"
@@ -1625,8 +1670,14 @@
       "Deck 4": [
         "Jump 4 beats back"
       ],
+      "Deck 4 + Long press": [
+        "Rate search"
+      ],
       "Deck 4 + SHIFT": [
         "Jump 32 beats back"
+      ],
+      "Long press": [
+        "Rate search"
       ],
       "SHIFT": [
         "Jump 32 beats back"
@@ -1639,8 +1690,14 @@
       "Deck 4": [
         "Jump 4 beats forward"
       ],
+      "Deck 4 + Long press": [
+        "Rate search"
+      ],
       "Deck 4 + SHIFT": [
         "Jump 32 beats forward"
+      ],
+      "Long press": [
+        "Rate search"
       ],
       "SHIFT": [
         "Jump 32 beats forward"
@@ -1725,6 +1782,12 @@
       ],
       "Deck 4 + SHIFT": [
         "Loop out adjust (using jog wheel)"
+      ],
+      "Deck 4 in a loop": [
+        "Double loop"
+      ],
+      "In a loop": [
+        "Double loop"
       ],
       "SHIFT": [
         "Loop out adjust (using jog wheel)"

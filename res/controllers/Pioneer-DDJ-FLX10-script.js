@@ -41,8 +41,7 @@
 //  The jogs count 5760 ticks a turn (jogTicksPerTurn), not the FLX4's 720.
 //
 //  Not mapped yet: MIX POINT, CUE/LOOP MEMORY, MASTER CUE, INPUT SELECT, the
-//  mic, SAMPLER CUE and VOL, FX PART SELECT, the PITCH colour FX, the pad
-//  PAGE buttons, the fader start messages and the jog's playing speed.
+//  mic, SAMPLER CUE and VOL, FX PART SELECT, the pad PAGE buttons, the fader start messages and the jog's playing speed.
 
 var PioneerDDJFLX10 = {};
 
@@ -533,10 +532,33 @@ PioneerDDJFLX10.beatFxChannelSelect = function(_channel, control, value) {
 };
 
 // DECK 1/3 and 2/4: the FLX10 says which deck a side now plays with note 0x3C
-// on that deck's channel ("control on").
+// on that deck's channel ("control on"). The app follows: the side's deck
+// number lights in 4-Deck (`[Controller],deck3` and `deck4`), and choosing
+// deck 3 or 4 from another layout opens 4-Deck, where those decks show.
+PioneerDDJFLX10.fourDeckLayout = 2;
 PioneerDDJFLX10.deckSelected = function(channel, _control, value) {
-    if (value === 0x7F) {
-        PioneerDDJFLX10.noteSide(channel);
+    if (value !== 0x7F) {
+        return;
+    }
+    PioneerDDJFLX10.noteSide(channel);
+    const upper = channel >= 2;
+    if (upper && engine.getValue("[Skin]", "layout") !== PioneerDDJFLX10.fourDeckLayout) {
+        engine.setValue("[Skin]", "layout", PioneerDDJFLX10.fourDeckLayout);
+    }
+    engine.setValue("[Controller]", channel % 2 === 0 ? "deck3" : "deck4", upper ? 1 : 0);
+};
+
+// BROWSE press: the FLX10 sends it as LOAD for the deck the side plays
+// (notes 0x46 to 0x49). As in rekordbox, it opens the folder or playlist
+// picked in the folders pane, and loads the track picked in the list.
+PioneerDDJFLX10.browsePressed = function(_channel, _control, value, _status, group) {
+    if (!value) {
+        return;
+    }
+    if (engine.getValue("[Library]", "focused_widget") < 2.5) {
+        engine.setValue("[Library]", "GoToItem", 1);
+    } else {
+        engine.setValue(group, "LoadSelectedTrack", 1);
     }
 };
 
@@ -546,12 +568,13 @@ PioneerDDJFLX10.deckSelected = function(channel, _control, value) {
 
 // SOUND COLOR FX: each picks the Color FX the COLOR knobs play; pressing
 // the lit one goes back to the filter. Numbers as in the engine's COLOR_FX
-// (1 Filter, 2 Space, 3 Dub Echo, 4 Noise, 5 Crush).
-PioneerDDJFLX10.colorFxButtons = {0x00: 2, 0x01: 3, 0x02: 5, 0x04: 4, 0x05: 1};
+// (1 Filter, 2 Space, 3 Dub Echo, 4 Noise, 5 Crush, 6 Pitch). With SHIFT
+// the buttons send 8 higher and do the same.
+PioneerDDJFLX10.colorFxButtons = {0x00: 2, 0x01: 3, 0x02: 5, 0x03: 6, 0x04: 4, 0x05: 1};
 
 PioneerDDJFLX10.colorFxPressed = function(_channel, control, value) {
     if (!value) { return; }
-    const preset = PioneerDDJFLX10.colorFxButtons[control];
+    const preset = PioneerDDJFLX10.colorFxButtons[control >= 0x08 ? control - 0x08 : control];
     const current = engine.getValue("[QuickEffectRack1_[Channel1]]", "loaded_chain_preset");
     const next = current === preset ? 1 : preset;
     PioneerDDJFLX10.decks.forEach(function(group) {
@@ -620,6 +643,18 @@ PioneerDDJFLX10.beatJump = function(beats) {
 PioneerDDJFLX10.beatJumpBack = PioneerDDJFLX10.beatJump(-4);
 PioneerDDJFLX10.beatJumpForward = PioneerDDJFLX10.beatJump(4);
 
+// 4 BEAT JUMP < > held: the FLX10 sends notes of their own (0x70, 0x71)
+// once the press turns long, and their release; the deck searches back or
+// forward at this speed while they're held, as in rekordbox.
+PioneerDDJFLX10.searchSpeed = 4;
+PioneerDDJFLX10.search = function(direction) {
+    return function(_channel, _control, value, _status, group) {
+        engine.setValue(group, "rateSearch", value ? direction * PioneerDDJFLX10.searchSpeed : 0);
+    };
+};
+PioneerDDJFLX10.searchBack = PioneerDDJFLX10.search(-1);
+PioneerDDJFLX10.searchForward = PioneerDDJFLX10.search(1);
+
 // SLIP.
 PioneerDDJFLX10.toggleSlip = function(_channel, _control, value, _status, group) {
     if (value) {
@@ -631,8 +666,35 @@ PioneerDDJFLX10.toggleSlip = function(_channel, _control, value, _status, group)
 // Loop IN/OUT ADJUST
 //
 
+// LOOP IN・1/2X and LOOP OUT・2X: while a loop plays they halve and double
+// it, as their labels say; otherwise they set the loop's start and end.
+// The FLX10 may also send 1/2X and 2X as notes of their own (0x12, 0x13),
+// as rekordbox's mapping lists; those always halve and double.
+PioneerDDJFLX10.loopInPressed = function(channel, control, value, status, group) {
+    PioneerDDJFLX10.loopOrSize(group, value, "loop_in", "loop_halve");
+};
+PioneerDDJFLX10.loopOutPressed = function(channel, control, value, status, group) {
+    PioneerDDJFLX10.loopOrSize(group, value, "loop_out", "loop_double");
+};
+// Which of the two a press started, so its release goes to the same one.
+PioneerDDJFLX10.loopHeld = {};
+PioneerDDJFLX10.loopOrSize = function(group, value, point, size) {
+    const id = group + point;
+    if (value) {
+        PioneerDDJFLX10.loopHeld[id] = engine.getValue(group, "loop_enabled") > 0 ? size : point;
+    }
+    const key = PioneerDDJFLX10.loopHeld[id] || point;
+    engine.setValue(group, key, value ? 1 : 0);
+};
+PioneerDDJFLX10.loopHalvePressed = function(_channel, _control, value, _status, group) {
+    engine.setValue(group, "loop_halve", value ? 1 : 0);
+};
+PioneerDDJFLX10.loopDoublePressed = function(_channel, _control, value, _status, group) {
+    engine.setValue(group, "loop_double", value ? 1 : 0);
+};
+
 PioneerDDJFLX10.toggleLoopAdjustIn = function(channel, _control, value, _status, group) {
-    if (value === 0 || engine.getValue(group, "loop_enabled" === 0)) {
+    if (value === 0 || engine.getValue(group, "loop_enabled") === 0) {
         return;
     }
     PioneerDDJFLX10.loopAdjustIn[channel] = !PioneerDDJFLX10.loopAdjustIn[channel];
@@ -640,7 +702,7 @@ PioneerDDJFLX10.toggleLoopAdjustIn = function(channel, _control, value, _status,
 };
 
 PioneerDDJFLX10.toggleLoopAdjustOut = function(channel, _control, value, _status, group) {
-    if (value === 0 || engine.getValue(group, "loop_enabled" === 0)) {
+    if (value === 0 || engine.getValue(group, "loop_enabled") === 0) {
         return;
     }
     PioneerDDJFLX10.loopAdjustOut[channel] = !PioneerDDJFLX10.loopAdjustOut[channel];
