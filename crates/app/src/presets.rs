@@ -942,7 +942,7 @@ pub fn follow_controllers(app: &AppWindow) -> slint::Timer {
             }
             // The names, a few times a second.
             tick = tick.wrapping_add(1);
-            if !acted && tick % 5 != 0 {
+            if !acted && !tick.is_multiple_of(5) {
                 return;
             }
             let deck = instrument_deck(&ctx);
