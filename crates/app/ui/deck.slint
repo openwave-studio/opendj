@@ -123,60 +123,6 @@ component Arc inherits Path {
     ArcTo { radius-x: r; radius-y: r; sweep: true; x: 50 + r * sin(to); y: 50 - r * cos(to); }
 }
 
-// A line of the beat grid menu that presses one control.
-component GridMenuItem inherits Rectangle {
-    in property <string> group;
-    in property <string> key;
-    in property <string> text;
-    height: 26px;
-    border-radius: 4px;
-    background: ta.has-hover ? Theme.n-38373d : transparent;
-    Text { x: 10px; text: root.text; color: ta.has-hover ? Theme.menu-hover-text : Theme.text; font-size: 13px; vertical-alignment: center; }
-    ta := TouchArea {
-        clicked => {
-            Controls.set-value(Controls.resolve(group, key), 1);
-            Controls.set-value(Controls.resolve(group, key), 0);
-        }
-    }
-}
-
-// A pair of small buttons in the beat grid menu, e.g. earlier and later.
-component GridNudge inherits HorizontalLayout {
-    in property <string> group;
-    in property <string> label;
-    in property <string> less-key;
-    in property <string> more-key;
-    in property <string> less-text;
-    in property <string> more-text;
-    height: 26px;
-    spacing: 4px;
-    padding-left: 10px;
-    Text { text: label; color: Theme.text; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
-    ControlButton { group: group; key: less-key; text: less-text; momentary: true; font-size: 13px; width: 44px; }
-    ControlButton { group: group; key: more-key; text: more-text; momentary: true; font-size: 13px; width: 44px; }
-}
-
-// An on/off line in the beat grid menu, with the same switch as Settings.
-component GridSwitch inherits HorizontalLayout {
-    in property <string> group;
-    in property <string> key;
-    in property <string> label;
-    in property <bool> on;
-    height: 26px;
-    padding-left: 10px;
-    padding-right: 4px;
-    Text { text: label; color: Theme.text; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
-    Switch {
-        y: (parent.height - self.height) / 2;
-        on: root.on;
-        toggled(on) => { Controls.set-value(Controls.resolve(group, key), on ? 1 : 0); }
-    }
-}
-
-// Beat grid editing, opened from the tempo on the jog: move the grid,
-// adjust the tempo, and add or remove tempo sections for tracks whose
-// tempo drifts. Shows where the grid came from, clicks along with it,
-// locks it, and goes back to the detected grid.
 // Fixed · Auto · Flexible: how the loaded track's grid follows its tempo
 // (`beats_mode`, which fits the grid again from the analysed beats).
 export component GridModePicker inherits HorizontalLayout {
@@ -203,77 +149,6 @@ export component GridModePicker inherits HorizontalLayout {
             mouse-cursor: pointer;
             clicked => { Controls.set-value(mode-index, item.id); }
         }
-    }
-}
-
-export component GridMenu inherits PopupWindow {
-    in property <string> group;
-    in property <DeckInfo> info;
-    width: 240px;
-    close-policy: close-on-click-outside;
-    Rectangle {
-        background: Theme.pill-list;
-        border-radius: 9px;
-        border-width: 1px;
-        border-color: Theme.border;
-        drop-shadow-blur: 14px;
-        drop-shadow-color: Theme.s-000000a0;
-    }
-    property <bool> locked: Controls.value(Controls.resolve(group, "bpmlock"), Controls.tick) > 0;
-    property <bool> clicking: Controls.value(Controls.resolve(group, "metronome"), Controls.tick) > 0;
-    VerticalLayout {
-        padding: 6px;
-        spacing: 2px;
-        Text {
-            height: 20px;
-            x: 10px;
-            text: info.grid-sections > 1 ? "Beat grid: " + info.grid-sections + " tempo sections" : "Beat grid: steady tempo";
-            color: Theme.text-dim;
-            font-size: 12px;
-            vertical-alignment: center;
-        }
-        Text {
-            height: 18px;
-            x: 10px;
-            text: info.grid-unsure && info.grid-source == "Detected" ? "Detected · may be off, check by ear" : info.grid-source;
-            color: info.grid-unsure && info.grid-source == "Detected" ? Theme.c-e0b050 : Theme.text-dim;
-            font-size: 12px;
-            vertical-alignment: center;
-        }
-        if !locked: HorizontalLayout {
-            padding-left: 6px;
-            padding-right: 4px;
-            GridModePicker { group: group; }
-        }
-        GridSwitch { group: group; key: "metronome"; label: "Metronome"; on: clicking; }
-        GridSwitch { group: group; key: "bpmlock"; label: "Lock grid"; on: locked; }
-        Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
-        if locked: Text {
-            height: 26px;
-            x: 10px;
-            text: "Unlock the grid to edit it.";
-            color: Theme.text-dim;
-            font-size: 13px;
-            vertical-alignment: center;
-        }
-        if !locked: GridMenuItem { group: group; key: "beats_downbeat_here"; text: "Bar 1 here"; }
-        if !locked: GridMenuItem { group: group; key: "beats_translate_curpos"; text: "Put a beat here"; }
-        if !locked: GridNudge { group: group; label: "Move grid"; less-key: "beats_translate_earlier"; more-key: "beats_translate_later"; less-text: "‹"; more-text: "›"; }
-        if !locked: GridNudge { group: group; label: "Tempo here"; less-key: "beats_adjust_slower"; more-key: "beats_adjust_faster"; less-text: "−"; more-text: "+"; }
-        if !locked: GridNudge { group: group; label: "Tempo × ½ / × 2"; less-key: "beats_scale_half"; more-key: "beats_scale_double"; less-text: "½"; more-text: "2"; }
-        // Tap along to set the tempo by ear.
-        if !locked: HorizontalLayout {
-            height: 26px;
-            padding-left: 10px;
-            Text { text: "Tap tempo"; color: Theme.text; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
-            ControlButton { group: group; key: "bpm_tap"; text: "TAP"; momentary: true; font-size: 12px; width: 92px; }
-        }
-        if !locked: Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
-        if !locked: GridMenuItem { group: group; key: "beats_section_add"; text: "New tempo section from here"; }
-        if !locked && info.grid-sections > 1: GridMenuItem { group: group; key: "beats_section_remove"; text: "Remove this tempo section"; }
-        if !locked: Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
-        if !locked: GridMenuItem { group: group; key: "beats_undo_adjustment"; text: "Undo"; }
-        if !locked && info.grid-source != "Detected": GridMenuItem { group: group; key: "beats_reset"; text: "Back to the detected grid"; }
     }
 }
 
@@ -1707,6 +1582,9 @@ export global DeckActions {
     // played in this History session ("" otherwise).
     in property <[string]> played-notes;
     callback put-back(deck: int);
+    // Opens the track on `group`'s deck in Prep at the same place: the
+    // Edit Grid popover's last row.
+    callback open-in-prep(group: string);
     // Unloads `deck`, as its eject button: the engine leaves a playing deck
     // alone.
     public function eject(deck: int) {

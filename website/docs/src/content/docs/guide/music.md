@@ -326,23 +326,27 @@ each label with a small tick along its top. While you edit the grid, every
 tempo change is labelled, to a tenth of a BPM. Turn them off with **BPM
 labels** in the drop-down on the waveforms button.
 
-The grid menu (**More…** under the waveform's pencil) says where the grid came from:
+The Edit Grid popover (the waveform's pencil) says where the grid came from:
 **Detected**, **Edited** or the app it was imported from. A detected grid
-that fits the beats poorly says **may be off, check by ear**. **Lock grid**
+that fits the beats poorly says **Check by ear**. **Lock**
 keeps a grid as it is: a locked grid can't be edited, and analysing the
 track again leaves it alone. Grids imported from another app come in
-locked. **Back to the detected grid** throws away your edits or the
+locked. **Back to detected** throws away your edits or the
 imported grid and uses openDJ's own.
 
-To check a grid by ear, turn on **Metronome** in the same menu: the deck
+To check a grid by ear, turn on **Click on the beats** in the same popover: the deck
 clicks on every beat of the grid, higher on bar 1, through the deck's
 fader and cue like the music. If the clicks drift off the music, fix the
 grid while it plays: **Bar 1 here** on a downbeat puts bar 1 there,
 **Move grid** ‹ › nudges it, **Tempo here** − + changes the tempo,
-**Tempo × ½ / × 2** fixes a tempo read at half or double, **Tap tempo**
+**Half / double** fixes a tempo read at half or double, **Tap**
 sets it from your taps (it settles to a whole BPM over eight or more taps,
-skips a slipped tap, and starts over after a two second pause), and **New tempo section
-from here** starts a new tempo where a live track speeds up or slows down.
+skips a slipped tap, and starts over after a two second pause), and **Undo**
+takes back the last change. For a live track that speeds up or slows down,
+**Tempo sections and more in Prep** opens it in the [Prep layout](layouts.md)
+at the same place, where **+ Section here** starts a new tempo.
+From deck 2, 3 or 4 it loads the track on deck 1, so it waits until deck 1
+stops.
 
 ### Edit Grid
 
@@ -355,11 +359,13 @@ in lilac, and the pencil lights up. While you edit:
 - **Drag the waveform** to move the grid under the music; the audio slides
   and the beat lines stay put until you let go. Hold **Alt** (⌥) to scrub as
   usual instead.
-- **Set Downbeat** in the Edit Grid popover makes the beat at the play line
-  bar 1, and **◀ |** **| ▶** nudge the whole grid a little earlier or later.
-- **More…** opens the full grid menu: tempo, ½ and ×2, tempo sections,
-  undo and the metronome.
-- **Reset** goes back to the detected grid; **Lock** locks it.
+- **Bar 1 here** in the Edit Grid popover makes the beat at the play line
+  bar 1, **Put a beat here** moves the nearest beat to the play line, and
+  **Move grid** ‹ › nudges the whole grid a little earlier or later.
+- Under **Tempo**: **Tempo here** − +, **Half / double**, **Tap** and the
+  grid mode (**Fixed**, **Auto**, **Flexible**).
+- **Undo**, **Back to detected**, **Lock**, and the last row to open the
+  track in Prep for tempo sections.
 
 Click the pencil again, press **Done** or **Esc** to finish. Editing keeps
 whatever zoom the waveform is at, and loading another track finishes it.

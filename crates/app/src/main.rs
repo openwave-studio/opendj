@@ -1659,6 +1659,29 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 .put_back(deck.max(0) as usize, &engine);
         });
     }
+    // The Edit Grid popover's last row: the deck's track opens in Prep at
+    // the same place (on Deck 1, which takes it from another deck).
+    {
+        let browser = browser.clone();
+        let app_weak = app.as_weak();
+        app.global::<DeckActions>().on_open_in_prep(move |group| {
+            let Some(deck) = group
+                .strip_prefix("[Channel")
+                .and_then(|g| g.strip_suffix(']'))
+                .and_then(|n| n.parse::<usize>().ok())
+                .filter(|&n| n >= 1)
+            else {
+                return;
+            };
+            browser.borrow_mut().open_in_prep(deck - 1);
+            if let Some(app) = app_weak.upgrade() {
+                if app.get_layout() != PREP_LAYOUT && layout_offered(PREP_LAYOUT) {
+                    app.set_layout(PREP_LAYOUT);
+                    app.invoke_layout_changed(PREP_LAYOUT);
+                }
+            }
+        });
+    }
     // Switched off or on from the crossfader's menu, a controller or a
     // script: remembered for next time, as the Settings switch is.
     let xfader_enabled = registry.create(

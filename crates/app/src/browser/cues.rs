@@ -52,6 +52,22 @@ pub(super) struct CueState {
 }
 
 impl CueState {
+    /// Where deck `deck` is, 0 to 1 of the way through.
+    pub(super) fn position(&self, deck: usize) -> f64 {
+        self.decks[deck].playposition.get()
+    }
+
+    /// Moves deck `deck` to `at` (0 to 1) once it has a track; false
+    /// before.
+    pub(super) fn seek_loaded(&self, deck: usize, at: f64) -> bool {
+        let d = &self.decks[deck];
+        if d.duration.get() <= 0.0 {
+            return false;
+        }
+        d.playposition.set(at);
+        true
+    }
+
     pub(super) fn new(registry: &ControlRegistry) -> Self {
         let decks = (0..NUM_DECKS)
             .map(|d| {

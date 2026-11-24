@@ -595,6 +595,9 @@ pub struct Browser {
     /// finished track's grid: that track's id, the library index of the
     /// track to load next, and when it was asked for.
     prep_pending: Option<(usize, Option<usize>, std::time::Instant)>,
+    /// A track opened in Prep from another deck: its id and where it was
+    /// (0 to 1), for Deck 1 to go to once it has it.
+    prep_seek: Option<(usize, f64)>,
     /// The decks the layout shows: 4 in 4-Deck, else 2. "Load on a free
     /// deck" picks among these.
     decks_shown: usize,
@@ -1346,6 +1349,7 @@ impl Browser {
             match_candidates: Vec::new(),
             loaded: [None; NUM_DECKS],
             prep_pending: None,
+            prep_seek: None,
             decks_shown: 2,
             side: Default::default(),
             list_picks: Vec::new(),
