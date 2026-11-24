@@ -9,7 +9,8 @@
 ## 2. More keyboards
 
 - [ ] 2.1 Komplete Kontrol A-series and S-series MK2 (same HID family)
-- [ ] 2.2 Arturia KeyLab mk3 / Essential, Novation Launchkey over MIDI (relative knob CCs, their screens' SysEx)
+- [ ] 2.2 Arturia KeyLab Essential 61 next (a tester has one), then KeyLab mk3 and Novation Launchkey, over MIDI (relative knob CCs, their screens' SysEx)
+- [ ] 2.4 Pad controllers that play instruments as well as the Groove Box (Launchpad X, Circuit Tracks, Maschine Mikro MK3): a mode switch between the Groove Box pads (add-groove-pads) and playing the instrument deck, each with its own docs page
 - [ ] 2.3 Keyboard functions in the mapper's function list, so any MIDI keyboard can be mapped to them
 
 ## Workflow follow-up
