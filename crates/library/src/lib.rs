@@ -833,6 +833,11 @@ impl Library {
                 if !g.is_empty() {
                     t.set_grid(g);
                     t.info.fixed_grid = true;
+                } else if t.info.grid_from == "user" {
+                    // The DJ cleared the grid: no beats, and analysis
+                    // leaves it so.
+                    t.bpm = 0.0;
+                    t.info.fixed_grid = true;
                 }
             }
             out.push(t);

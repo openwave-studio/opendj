@@ -690,6 +690,8 @@ pub(crate) fn deck_pushes(reg: &ControlRegistry, g: &str) -> Vec<Push> {
             Action::Grid(GridEdit::BarHere),
         ),
         ("beats_reset".into(), Action::Grid(GridEdit::Reset)),
+        // Not in Mixxx: no grid at all, for a track with no steady beat.
+        ("beats_clear".into(), Action::Grid(GridEdit::Clear)),
         // Not in Mixxx: bar 1 a beat either way, and moving a tempo
         // change (anchor) a little either way.
         (

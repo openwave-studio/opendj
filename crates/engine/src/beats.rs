@@ -46,6 +46,9 @@ pub enum GridEdit {
     Lock(bool),
     /// Goes back to the grid analysis found (`beats_reset`).
     Reset,
+    /// Takes the grid away, for a track with no steady beat; the tempo is
+    /// then unknown (`beats_clear`, not in Mixxx).
+    Clear,
     /// Fits the grid again from the analysed beats in this mode, and keeps
     /// the mode for the track (`beats_mode`).
     Mode(crate::gridfit::GridMode),
@@ -53,7 +56,7 @@ pub enum GridEdit {
 
 impl BeatGrid {
     /// The grid after `edit` at `seconds` (`Undo`, `Lock`, `Reset` and `Mode`
-    /// are the caller's to handle).
+    /// are the caller's to handle; `Clear` gives an empty grid).
     pub fn edited(&self, edit: GridEdit, seconds: f64) -> Self {
         match edit {
             GridEdit::BeatHere => self.with_beat_at(seconds),
@@ -74,6 +77,7 @@ impl BeatGrid {
                     })
                     .collect(),
             ),
+            GridEdit::Clear => Self::default(),
             GridEdit::Undo | GridEdit::Lock(_) | GridEdit::Reset | GridEdit::Mode(_) => {
                 self.clone()
             }
@@ -525,6 +529,12 @@ mod tests {
         assert!((bar.bpm_at(20.0) - 125.0).abs() < 1e-9);
         assert!((bar.snap(16.0, false) - 16.0).abs() < 1e-9);
         assert_eq!(bar.markers().len(), 2);
+    }
+
+    #[test]
+    fn clearing_leaves_no_grid() {
+        let g = BeatGrid::constant(120.0, 0.5);
+        assert!(g.edited(GridEdit::Clear, 3.0).is_empty());
     }
 
     #[test]

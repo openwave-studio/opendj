@@ -370,8 +370,9 @@ pencil opened it, and Prep shows deck 1's. At each outer edge are the grid
   speeds up or slows down. **Add** puts one on the beat at the play line,
   the crossed pin removes the one there, and the arrows move the nearest
   one a little earlier or later: the beats either side stretch to meet it.
-- **Grid**: **Set** puts a beat at the play line, and the arrows nudge the
-  whole grid a little earlier or later.
+- **Grid**: **Set** puts a beat at the play line, **Clear** takes the grid
+  away (for a track with no steady beat; Undo or **Reset** brings it back),
+  and the arrows nudge the whole grid a little earlier or later.
 
 Point at a button to see what it does, and its key.
 
