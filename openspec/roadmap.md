@@ -107,6 +107,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-layout-customization](changes/add-layout-customization/proposal.md)
 - [add-color-schemes](changes/add-color-schemes/proposal.md) (color schemes from files that start from Dark or Light and override Theme colours and the shared controls' style values, picked in Settings › Layouts with a copy-to-start and a contrast check; the first level of custom skins; a user request, issue #921, 2026-11-20)
 - [add-mcp-server](changes/add-mcp-server/proposal.md)
+- [add-keyboard-controllers](changes/add-keyboard-controllers/proposal.md) (keyboards drive the instrument deck: knobs on its macros, transport on its sequencer, presets and instrument browsing, ARP and SCALE, screens; Komplete Kontrol M32 over HID first, then similar keyboards; a user request, issue #1063, 2026-11-24)
 - [add-settings-layers](changes/add-settings-layers/proposal.md) (the rest of settings in three layers: Advanced with the layer-3 rows, remaining load choices, Reset layout; first steps split out into add-settings-table and add-settings-deck-choices for v0.6, 2026-11-05)
 - [add-slip-everywhere](changes/add-slip-everywhere/proposal.md) (slip for scratch, loops, hot cues, reverse and pause and the ghost playhead came early in add-slip-vinyl-and-bend; beat jumps, pad FX and slicer remain)
 - [add-super-library](changes/add-super-library/proposal.md)

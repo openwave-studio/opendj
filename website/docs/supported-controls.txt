@@ -3711,7 +3711,9 @@
 [Instrument1],fx
 [Instrument1],input_configured
 [Instrument1],instrument
+[Instrument1],instrument_load
 [Instrument1],keyboard_pads
+[Instrument1],knob_page
 [Instrument1],main_mix
 [Instrument1],master
 [Instrument1],mixer
@@ -3772,6 +3774,9 @@
 [Instrument1],peak_indicator
 [Instrument1],pfl
 [Instrument1],pregain
+[Instrument1],preset_load
+[Instrument1],preset_next
+[Instrument1],preset_prev
 [Instrument1],scale_mask
 [Instrument1],scale_mode
 [Instrument1],scale_now

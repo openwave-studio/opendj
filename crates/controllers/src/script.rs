@@ -381,6 +381,10 @@ fn natives<'js>(ctx: &Ctx<'js>, host: &Rc<RefCell<Host>>) -> rquickjs::Result<Ob
     native!("cover", |h, g: String, size: f64| {
         crate::waves::cover_for_group(&h.layered(&g), size)
     });
+    native!("text", |h, g: String, k: String| {
+        let _ = &h;
+        crate::texts::text(&g, &k)
+    });
     native!("timerStop", |h, id: u32| h.timer_stop(id));
     native!("softTakeover", |h, g: String, k: String, on: bool| h
         .soft_takeover(&g, &k, on));

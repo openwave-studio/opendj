@@ -30,6 +30,7 @@ pub mod routing;
 mod rows;
 mod script;
 pub mod support;
+pub mod texts;
 pub mod view;
 pub mod waves;
 

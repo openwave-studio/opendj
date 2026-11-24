@@ -436,7 +436,11 @@ fn hid_ports<'a>(
         let midi_twin = midi_ports
             .iter()
             .any(|p| *p == d.product || device_key(p) == device_key(&d.product));
-        let base = if d.product.is_empty() || midi_twin {
+        // A keyboard whose keys play over its own MIDI port (`keys="midi"`)
+        // names its HID side after the mapping, so the two never share a
+        // name and the MIDI port stays free to play instruments.
+        let keys = m.2.iter().any(|p| p.keys);
+        let base = if d.product.is_empty() || midi_twin || keys {
             m.0.clone()
         } else {
             d.product.clone()
@@ -1395,6 +1399,37 @@ mod tests {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");
         }
         assert_eq!(name("Generic USB MIDI 1"), None);
+    }
+
+    #[test]
+    fn a_keyboards_hid_side_leaves_its_midi_port_to_play() {
+        let mappings = vec![(
+            "Native Instruments Komplete Kontrol M32".to_string(),
+            PathBuf::from("Native Instruments Komplete Kontrol M32.hid.xml"),
+            vec![hid::Product {
+                vendor_id: 0x17cc,
+                product_id: 0x1860,
+                keys: true,
+                ..Default::default()
+            }],
+        )];
+        let device = hid::DeviceInfo {
+            vendor_id: 0x17cc,
+            product_id: 0x1860,
+            interface: 3,
+            product: "KOMPLETE KONTROL M32".into(),
+            ..Default::default()
+        };
+        // The MIDI port has no mapping, so it isn't among the mapped ports;
+        // the HID side still takes the mapping's name.
+        let found = hid_ports(vec![device], &mappings, &[]);
+        assert_eq!(found[0].0, "Native Instruments Komplete Kontrol M32");
+        assert!(plays_instruments(
+            "KOMPLETE KONTROL M32",
+            false,
+            None,
+            false
+        ));
     }
 
     #[test]
