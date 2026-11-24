@@ -1582,9 +1582,6 @@ export global DeckActions {
     // played in this History session ("" otherwise).
     in property <[string]> played-notes;
     callback put-back(deck: int);
-    // Opens the track on `group`'s deck in Prep at the same place: the
-    // Edit Grid popover's last row.
-    callback open-in-prep(group: string);
     // Unloads `deck`, as its eject button: the engine leaves a playing deck
     // alone.
     public function eject(deck: int) {

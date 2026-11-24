@@ -681,6 +681,24 @@ pub(crate) fn deck_pushes(reg: &ControlRegistry, g: &str) -> Vec<Push> {
             Action::Grid(GridEdit::BarHere),
         ),
         ("beats_reset".into(), Action::Grid(GridEdit::Reset)),
+        // Not in Mixxx: bar 1 a beat either way, and moving a tempo
+        // change (anchor) a little either way.
+        (
+            "beats_downbeat_earlier".into(),
+            Action::Grid(GridEdit::ShiftBar(-1)),
+        ),
+        (
+            "beats_downbeat_later".into(),
+            Action::Grid(GridEdit::ShiftBar(1)),
+        ),
+        (
+            "beats_anchor_earlier".into(),
+            Action::Grid(GridEdit::MoveAnchor(-0.005)),
+        ),
+        (
+            "beats_anchor_later".into(),
+            Action::Grid(GridEdit::MoveAnchor(0.005)),
+        ),
         // Not in Mixxx: tempo sections and halving or doubling.
         (
             "beats_section_add".into(),

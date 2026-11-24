@@ -45,24 +45,6 @@ impl Browser {
         self.refresh_prep();
     }
 
-    /// Opens deck `deck`'s track in Prep at the place it is playing: Deck 1
-    /// takes it when it is another deck's, then goes there once loaded
-    /// (`poll_prep`). The layout switch is the caller's.
-    pub fn open_in_prep(&mut self, deck: usize) {
-        if deck == PREP_DECK {
-            return;
-        }
-        let Some(id) = self.loaded.get(deck).copied().flatten() else {
-            return;
-        };
-        let Some(&i) = self.index_of.get(&id) else {
-            return;
-        };
-        let at = self.cues.position(deck);
-        self.engine.load_track(PREP_DECK, self.library[i].clone());
-        self.prep_seek = Some((id, at));
-    }
-
     /// The library index of the track on the Prep deck.
     fn prep_track(&self) -> Option<usize> {
         self.index_of.get(&self.loaded[PREP_DECK]?).copied()
@@ -122,11 +104,6 @@ impl Browser {
     /// is in the library, or after a moment if it never comes (a track
     /// without a grid).
     pub fn poll_prep(&mut self) {
-        if let Some((id, at)) = self.prep_seek {
-            if self.loaded[PREP_DECK] == Some(id) && self.cues.seek_loaded(PREP_DECK, at) {
-                self.prep_seek = None;
-            }
-        }
         let Some((id, next, asked)) = self.prep_pending else {
             return;
         };

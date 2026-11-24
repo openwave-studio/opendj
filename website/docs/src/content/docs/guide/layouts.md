@@ -163,16 +163,14 @@ ticked) and **Score**. Pick other columns from the header's menu as
 in any list; In Prep keeps its own set. Load a track and work through it:
 
 - The large waveform shares the zoom of every other layout (see
-  [Waveform zoom](decks.md#waveform-zoom)); **−** and **+** above the hot cues
-  zoom out and in, with the step between them. While the grid is unlocked, dragging the waveform slides the
+  [Waveform zoom](decks.md#waveform-zoom)). While the grid is unlocked, dragging the waveform slides the
   audio under the grid, so you can line the beat lines up with the kicks by
   hand; one drag is one **Undo**. With the grid locked, dragging moves through
   the track as on the other layouts.
-- **Beat grid** has the grid tools from the deck's grid menu: **Bar 1 here**,
-  **Beat here**, **Tap**, **Click** (a metronome on every beat), move the grid
-  earlier or later, tempo **−** and **+**, **½** and **×2**, tempo sections,
-  **Undo** and **Detected** (back to the detected grid). **Lock** keeps the
-  grid from being changed.
+- **Grid Editor** is deck 1's side of the [grid editor](music.md#grid-editor)
+  (BPM, Downbeat, Anchor, Grid and Reset), with **Tap** and **Click** (a
+  metronome on every beat) above it. Point at a button to see what it does
+  and its key.
 - **CUE** and play, jumps of 1, 4 and 8 bars, a loop, and the deck's
   headphone cue and level.
 - Eight hot cue pads with their names and times: click an empty pad to set
@@ -197,15 +195,13 @@ in any list; In Prep keeps its own set. Load a track and work through it:
   It locks the grid, moves the track to Play Ready and loads
   the next track In Prep. Cmd-Z (Ctrl-Z) takes the stage change back.
 
-A strip under the waveform lists the quick review keys, with how long this
-track has taken and your average per track sent to Play Ready from Prep.
-
 Keys in Prep: **Enter** Play Ready, next; **Tab** and **Shift-Tab** next and
 previous phrase (8 bars at a time when the track has no phrases); **←** and
 **→** four bars; **Option+1**–**9** tick a checklist line; **1**–**8** set or jump to a hot cue
 (Shift clears it); **B** Bar 1 here; **T** tap; **M** the click; **[** and **]**
-move the grid; **−** and **=** tempo; **L** lock; **C** memory cue. Space plays and pauses, as
-everywhere.
+move the grid; **−** and **=** tempo; **L** lock; **C** or **Shift+T** memory cue. As in
+rekordbox, **Z** plays and pauses, **A** is CUE, and **D**, **F** and **G** set the
+loop in and out and turn it on and off. Space plays and pauses, as everywhere.
 
 ## Crossfader assignment
 

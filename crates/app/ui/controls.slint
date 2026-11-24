@@ -889,8 +889,8 @@ export component HoverTipView inherits Rectangle {
         tip := VerticalLayout {
             padding: 8px;
             spacing: 2px;
-            Text { text: HoverTip.title; color: Theme.text; font-size: 12px; font-weight: 700; }
-            if HoverTip.body != "": Text { text: HoverTip.body; color: Theme.text-dim; font-size: 12px; }
+            if HoverTip.title != "": Text { text: HoverTip.title; color: Theme.text; font-size: 12px; font-weight: 700; }
+            if HoverTip.body != "": Text { text: HoverTip.body; color: HoverTip.title != "" ? Theme.text-dim : Theme.text; font-size: 12px; }
         }
     }
 }

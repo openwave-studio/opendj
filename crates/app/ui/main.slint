@@ -1,7 +1,8 @@
 import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Palette } from "std-widgets.slint";
 import { Theme, KeyNotation, CloseIcon } from "theme.slint";
-import { SectionTitle, SwitchPill } from "pills.slint";
+import { SectionTitle } from "pills.slint";
+import { GridEditorBar, GridEditorUi } from "grid_editor.slint";
 import { TourMark } from "tourmark.slint";
 import { Controls, ControlButton, VuMeter, ControlKnob, HoverTipView, HoverTip } from "controls.slint";
 import { Deck, DeckInfo, GridModePicker, PadsUi, KeyItem, EffectList, FxRow, FxGroup, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName } from "deck.slint";
@@ -123,6 +124,7 @@ component EditGridButton inherits Rectangle {
     border-width: 1px;
     border-color: lit ? Theme.n-6e58a8 : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
     Text { text: root.text; color: lit ? Theme.lilac-text : ink; font-size: 12px; font-weight: 500; horizontal-alignment: center; vertical-alignment: center; }
+    @children
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
@@ -135,14 +137,39 @@ component EditGridButton inherits Rectangle {
     }
 }
 
-// A row of the Edit Grid popover: what it does on the left, its buttons
-// (children) on the right.
-component EditGridRow inherits HorizontalLayout {
-    in property <string> label;
+// A text button in the Edit Grid popover (Reset, Show Editor).
+component TextLink inherits Rectangle {
+    in property <string> text;
+    in property <color> ink: Theme.text;
+    callback clicked();
     height: 28px;
-    spacing: 6px;
-    Text { text: root.label; color: Theme.text; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1; }
-    @children
+    border-radius: Theme.pad-radius;
+    background: ta.has-hover ? Theme.pill-hover : transparent;
+    Text { text: root.text; color: root.ink; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Bar 1 as a lit bar and three plain beats, or (`dir` -1 or 1) the lit bar
+// with an arrow: bar 1 a beat that way.
+component DownbeatMark inherits Rectangle {
+    in property <int> dir;
+    width: dir == 0 ? 20px : 15px;
+    height: 14px;
+    if dir == 0: Rectangle { x: 0; width: 3px; height: 14px; border-radius: 1px; background: Theme.accent; }
+    if dir == 0: Rectangle { x: 8px; width: 1.5px; height: 14px; background: Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 13px; width: 1.5px; height: 14px; background: Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 18px; width: 1.5px; height: 14px; background: Theme.n-58585d; }
+    if dir != 0: Rectangle { x: dir < 0 ? 7px : 5px; width: 3px; height: 14px; border-radius: 1px; background: Theme.accent; }
+    if dir != 0: Path {
+        x: dir < 0 ? 0px : 10px;
+        width: 5px;
+        height: 14px;
+        viewbox-width: 5;
+        viewbox-height: 14;
+        commands: dir < 0 ? "M 0 7 L 5 3.5 L 5 10.5 Z" : "M 5 7 L 0 3.5 L 0 10.5 Z";
+        fill: Theme.text-dim;
+        stroke-width: 0px;
+    }
 }
 
 // Scrolling waveform, rendered on the GPU into `source`. Hold it to stop
@@ -447,16 +474,14 @@ component Waveform inherits Rectangle {
             }
         }
     }
-    // Edit Grid: the tools for mid-set: bar 1 or a beat at the play line,
-    // nudges, the tempo, the grid's mode, Undo, back to the detected grid,
-    // Lock and Done. Tempo sections and the rest are in Prep: the last row
-    // opens the track there, at the same place.
-    property <bool> clicking: Controls.value(Controls.resolve(group, "metronome"), Controls.tick) > 0;
-    property <bool> prep-busy: group != "[Channel1]" && Controls.value(Controls.resolve("[Channel1]", "play"), Controls.tick) > 0;
+    // Edit Grid, as the pencil opens it: bar 1 at the play line, bar 1 a
+    // beat either way, back to the detected grid, and the grid editor bar
+    // shown or hidden.
+    property <bool> detected: info.grid-source == "Detected";
     edit-popup := PopupWindow {
         x: root.width - self.width - 5px;
         y: root.height - 2px;
-        width: 252px;
+        width: 236px;
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.pill-list;
@@ -468,13 +493,13 @@ component Waveform inherits Rectangle {
         }
         VerticalLayout {
             padding: 12px;
-            spacing: 6px;
+            spacing: 8px;
             HorizontalLayout {
                 height: 22px;
                 SectionTitle { title: "Edit Grid"; horizontal-stretch: 1; }
-                Text {
-                    text: info.grid-unsure && info.grid-source == "Detected" ? "Check by ear" : info.grid-source;
-                    color: info.grid-unsure && info.grid-source == "Detected" ? Theme.stage-prep : Theme.text-dim;
+                if info.grid-unsure && detected: Text {
+                    text: "Check by ear";
+                    color: Theme.stage-prep;
                     font-size: 11px;
                     vertical-alignment: center;
                 }
@@ -488,76 +513,41 @@ component Waveform inherits Rectangle {
                 text: "Unlock";
                 clicked => { Controls.set-value(Controls.resolve(group, "bpmlock"), 0); }
             }
+            if !locked: EditGridButton {
+                group: group;
+                key: "beats_downbeat_here";
+                height: 36px;
+                lit: true;
+                text: "";
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+                    DownbeatMark { y: (parent.height - self.height) / 2; }
+                    Text { text: "Set Downbeat"; color: Theme.lilac-text; font-size: 13px; font-weight: 500; vertical-alignment: center; }
+                }
+            }
             if !locked: HorizontalLayout {
                 spacing: 6px;
-                EditGridButton { group: group; key: "beats_downbeat_here"; text: "Bar 1 here"; lit: true; }
-                EditGridButton { group: group; key: "beats_translate_curpos"; text: "Put a beat here"; }
+                EditGridButton { group: group; key: "beats_downbeat_earlier"; text: ""; DownbeatMark { dir: -1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
+                EditGridButton { group: group; key: "beats_downbeat_later"; text: ""; DownbeatMark { dir: 1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
             }
-            if !locked: EditGridRow {
-                label: "Move grid";
-                EditGridButton { width: 32px; group: group; key: "beats_translate_earlier"; text: "‹"; }
-                EditGridButton { width: 32px; group: group; key: "beats_translate_later"; text: "›"; }
-            }
-            if !locked: SectionTitle { title: "Tempo"; height: 22px; font-size: 11px; }
-            if !locked: EditGridRow {
-                label: "Tempo here";
-                EditGridButton { width: 32px; group: group; key: "beats_adjust_slower"; text: "−"; }
-                EditGridButton { width: 32px; group: group; key: "beats_adjust_faster"; text: "+"; }
-            }
-            if !locked: EditGridRow {
-                label: "Half / double";
-                EditGridButton { width: 32px; group: group; key: "beats_scale_half"; text: "×½"; }
-                EditGridButton { width: 32px; group: group; key: "beats_scale_double"; text: "×2"; }
-            }
-            if !locked: EditGridRow {
-                label: "Tap along";
-                EditGridButton { width: 70px; group: group; key: "bpm_tap"; text: "Tap"; }
-            }
-            if !locked: EditGridRow {
-                label: "Click on the beats";
-                SwitchPill {
-                    width: 70px;
-                    height: 28px;
-                    text: clicking ? "On" : "Off";
-                    on: clicking;
-                    clicked => { Controls.set-value(Controls.resolve(group, "metronome"), clicking ? 0 : 1); }
-                }
-            }
-            if !locked: GridModePicker { group: group; height: 28px; font-size: 12px; }
-            Rectangle { height: 1px; background: Theme.border; }
-            if !locked: HorizontalLayout {
-                spacing: 6px;
-                EditGridButton { group: group; key: "beats_undo_adjustment"; text: "Undo"; }
-                EditGridButton { group: group; key: "beats_reset"; text: "Back to detected"; ink: Theme.f-ff6b6b; }
-            }
-            HorizontalLayout {
-                spacing: 6px;
-                if !locked: EditGridButton {
-                    text: "Lock";
-                    clicked => { Controls.set-value(Controls.resolve(group, "bpmlock"), 1); }
-                }
-                EditGridButton {
-                    text: "Done";
-                    lit: true;
-                    clicked => {
-                        if !drag-grid {
-                            Controls.set-value(edit-index, 0);
-                        }
-                        edit-popup.close();
-                    }
-                }
-            }
-            // Not in Prep itself; from another deck only while Deck 1,
-            // which Prep uses, is stopped.
-            if !drag-grid: EditGridButton {
-                text: prep-busy ? "In Prep once Deck 1 stops" : "Tempo sections and more in Prep ›";
-                ink: Theme.text-dim;
+            if !locked: TextLink {
+                text: "Reset";
+                ink: detected ? Theme.n-48484c : Theme.f-ff6b6b;
                 clicked => {
-                    // Before close(), which frees this row.
-                    if !prep-busy {
-                        DeckActions.open-in-prep(group);
-                        edit-popup.close();
+                    if !detected {
+                        Controls.set-value(Controls.resolve(group, "beats_reset"), 1);
+                        Controls.set-value(Controls.resolve(group, "beats_reset"), 0);
                     }
+                }
+            }
+            TextLink {
+                text: GridEditorUi.shown ? "Hide Editor" : "Show Editor";
+                ink: Theme.lilac-text;
+                clicked => {
+                    GridEditorUi.group = group;
+                    GridEditorUi.shown = !GridEditorUi.shown;
+                    edit-popup.close();
                 }
             }
         }
@@ -1646,7 +1636,7 @@ export component AppWindow inherits Window {
     callback zoom-window();
     out property <length> waveform-width: waveforms.width;
     // Two waveforms, or four in 4-Deck, share the room between the lines.
-    out property <length> waveform-height: max(1px, (waveforms.height - (wave-rows + 1) * 1px - (prep ? 24px : 0px)) / wave-rows);
+    out property <length> waveform-height: max(1px, (waveforms.height - (wave-rows + 1) * 1px) / wave-rows);
     property <int> wave-rows: four ? 4 : prep ? 1 : 2;
     // The waveforms' strip at each of the ten height steps
     // (wave_height.slint), 1 first, 3 being the height it always had: each
@@ -1683,7 +1673,7 @@ export component AppWindow inherits Window {
     changed fx-short => { if !fx-short { fx-unfold = false; } }
     property <bool> fx-unfold;
     property <bool> fx-folded: fx-short && !fx-unfold;
-    property <bool> fx-bar-shown: fx-bar-visible && !prep && !fx-folded;
+    property <bool> fx-bar-shown: (fx-bar-visible || GridEditorUi.shown) && !prep && !fx-folded;
     // The library keeps room for about five tracks under its header: a
     // step with less shows the highest one that fits, but never below 3
     // unless the DJ chose less. The chosen one comes back
@@ -1909,8 +1899,34 @@ export component AppWindow inherits Window {
             press(text == Key.RightArrow ? "beatjump_16_forward" : "beatjump_16_backward");
             return true;
         }
+        // Shift+T: a memory cue, as rekordbox's key.
+        if shift && (text == "T" || text == "t") {
+            CueList.add-memory();
+            return true;
+        }
         if shift {
             return false;
+        }
+        // Play, CUE and the loop on rekordbox's keys for deck 1.
+        if text == "z" {
+            flip("play");
+            return true;
+        }
+        if text == "a" {
+            press("cue_default");
+            return true;
+        }
+        if text == "d" {
+            press("loop_in");
+            return true;
+        }
+        if text == "f" {
+            press("loop_out");
+            return true;
+        }
+        if text == "g" {
+            press("reloop_toggle");
+            return true;
         }
         let locked = Controls.value(Controls.resolve("[Channel1]", "bpmlock"), Controls.tick) > 0;
         if text == "l" {
@@ -2258,32 +2274,6 @@ export component AppWindow inherits Window {
                     spacing: 0px;
                     Rectangle { height: 1px; background: Theme.border; }
                     Waveform { source: waveform-1; group: "[Channel1]"; info: decks[0]; vertical-stretch: 1; lyrics-deck: 0; drag-grid: true; first: true; }
-                    // The quick review keys, and how long this track has taken.
-                    Rectangle {
-                        height: 24px;
-                        background: Theme.panel;
-                        HorizontalLayout {
-                            padding-left: 10px;
-                            padding-right: 10px;
-                            spacing: 14px;
-                            for hint in ["Tab", "next phrase", "← →", "4 bars", "1–8", "hot cues", "B", "bar 1", "[ ]", "move grid", "M", "click", "⌥1–9", "checklist", "⏎", "ready, next"]: Text {
-                                // Keys and what they do take turns.
-                                text: hint;
-                                color: hint == "Tab" || hint == "← →" || hint == "1–8" || hint == "B" || hint == "[ ]" || hint == "M" || hint == "⌥1–9" || hint == "⏎" ? Theme.text : Theme.text-dim;
-                                font-size: 11px;
-                                font-weight: hint == "Tab" || hint == "← →" || hint == "1–8" || hint == "B" || hint == "[ ]" || hint == "M" || hint == "⌥1–9" || hint == "⏎" ? 700 : 400;
-                                vertical-alignment: center;
-                            }
-                            Rectangle { horizontal-stretch: 1; }
-                            Text {
-                                text: "This track " + PrepUi.clock(PrepUi.track-seconds) + (PrepUi.average-seconds > 0 ? "  ·  average " + PrepUi.clock(PrepUi.average-seconds) : "");
-                                color: Theme.text-dim;
-                                font-family: "Inter Tabular";
-                                font-size: 11px;
-                                vertical-alignment: center;
-                            }
-                        }
-                    }
                     Rectangle { height: 1px; background: Theme.border; }
                 }
                 if !four && !prep: VerticalLayout {
@@ -2307,12 +2297,11 @@ export component AppWindow inherits Window {
                     Rectangle { height: 1px; background: Theme.border; }
                 }
                 // The zoom's bar, down the left edge of all the waveforms at
-                // once (Prep's one, not its key hints), while the pointer is
-                // over any of them or on the bar.
+                // once, while the pointer is over any of them or on the bar.
                 ZoomBar {
                     x: 0;
                     y: 0;
-                    height: prep ? max(0px, parent.height - 26px) : parent.height;
+                    height: parent.height;
                     shown: WaveZoom.hovered != "";
                 }
             }
@@ -2437,8 +2426,15 @@ export component AppWindow inherits Window {
             // bar hides it.
             FxBar {
                 four: four;
-                height: library-expanded || !fx-bar-shown || player ? 0px : four ? 96px : 100px;
-                visible: !library-expanded && fx-bar-shown && !player;
+                height: library-expanded || !fx-bar-shown || player || GridEditorUi.shown ? 0px : four ? 96px : 100px;
+                visible: !library-expanded && fx-bar-shown && !player && !GridEditorUi.shown;
+            }
+            // The grid editor takes the FX bar's place while shown.
+            GridEditorBar {
+                decks: root.decks;
+                one: four;
+                height: library-expanded || !fx-bar-shown || player || !GridEditorUi.shown ? 0px : four ? 96px : 100px;
+                visible: !library-expanded && fx-bar-shown && !player && GridEditorUi.shown;
             }
 
             Rectangle { height: !library-expanded && fx-bar-shown && !player ? 1px : 0px; }
