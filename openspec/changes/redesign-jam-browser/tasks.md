@@ -7,7 +7,7 @@
 - [ ] 1.3 24 px rows: kind colour square, name, instrument dimmed, deck badge, star; click loads on the panel's deck, double-click on a free deck, drag as today
 - [x] 1.4 Stars kept in settings for presets and instruments
 - [x] 1.5 The wide table right of the column goes; a hint shows there until a plugin panel opens
-- [ ] 1.6 The loaded plugin's panel takes that place (with the plugin panel change)
+- [x] 1.6 The loaded plugin's panel takes that place (with the plugin panel change), with SHOW PLUGIN in the hint to go back to it
 
 ## 2. More tags
 

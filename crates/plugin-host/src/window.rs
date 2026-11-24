@@ -130,7 +130,7 @@ impl EditorWindow {
 
     /// Follows openDJ's ask in `editor`, reporting in `shown`, and handles
     /// the window's events; waits up to `wait` for them. Without a window
-    /// this only sleeps.
+    /// it waits in [`wait_on_main`].
     pub fn step(
         &mut self,
         main: &mut dyn MainThread,
@@ -140,7 +140,7 @@ impl EditorWindow {
     ) {
         self.follow(main, editor, shown, None);
         let Some(el) = self.event_loop.as_mut() else {
-            std::thread::sleep(wait);
+            wait_on_main(wait);
             return;
         };
         let _ = el.pump_app_events(Some(wait), &mut self.events);
@@ -172,11 +172,11 @@ impl EditorWindow {
             }
         }
         let Some(el) = self.event_loop.take() else {
-            std::process::exit(0);
+            crate::leave(0);
         };
         let mut runner = Runner { win: self, tick };
         let _ = el.run_app(&mut runner);
-        std::process::exit(0);
+        crate::leave(0);
     }
 
     /// [`EditorWindow::step`] inside the platform's loop: follows openDJ's
@@ -508,3 +508,29 @@ fn keep_awake(on: bool) {
 
 #[cfg(not(target_os = "macos"))]
 fn keep_awake(_on: bool) {}
+
+/// Waits up to `wait` on the main thread without a window. On macOS this
+/// runs the main run loop, which also does the work plugins hand to the
+/// main thread (timers, `dispatch_async` to the main queue): many only
+/// finish loading there, and stayed silent until their editor was opened.
+#[cfg(target_os = "macos")]
+fn wait_on_main(wait: Duration) {
+    use std::ffi::c_void;
+    #[link(name = "CoreFoundation", kind = "framework")]
+    unsafe extern "C" {
+        static kCFRunLoopDefaultMode: *const c_void;
+        fn CFRunLoopRunInMode(mode: *const c_void, seconds: f64, return_after_source: u8) -> i32;
+    }
+    /// The loop had nothing to wait on and came back at once.
+    const FINISHED: i32 = 1;
+    // SAFETY: runs the calling (main) thread's own run loop for a while.
+    let r = unsafe { CFRunLoopRunInMode(kCFRunLoopDefaultMode, wait.as_secs_f64(), 0) };
+    if r == FINISHED {
+        std::thread::sleep(wait);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn wait_on_main(wait: Duration) {
+    std::thread::sleep(wait);
+}

@@ -60,6 +60,7 @@ export component PillCaret inherits Path {
 // the one set, a lighter row under the pointer.
 export component ListRow inherits Rectangle {
     in property <bool> selected;
+    out property <bool> hovered: ta.has-hover;
     callback clicked();
     height: 28px;
     border-radius: 6px;

@@ -9,6 +9,7 @@ import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Theme } from "theme.slint";
 import { Controls } from "controls.slint";
 import { ScrollView } from "scroll.slint";
+import { SwitchPill } from "pills.slint";
 
 // One thing to drag onto a deck: a row of the list.
 // A choice in a Mixer strip's input picker.
@@ -234,10 +235,30 @@ export global InstrumentsUi {
     in property <bool> has-display;
     in property <image> display;
     in property <float> display-aspect: 2;
+    // The colour at the picture's edge, which fills the area around it.
+    in property <color> display-edge;
     in-out property <bool> display-on;
     in-out property <length> display-area-width;
     in-out property <length> display-area-height;
     callback display-mouse(x: length, y: length, kind: int);
+    // The plugin panel in the browser area (plugin_panel.slint): asked
+    // for, actually on screen (the Jam source shows it), and showing the
+    // sliders rather than the display. `open-panel` also brings the Jam
+    // source up (`panel-request` tells the browser).
+    in-out property <bool> panel-open;
+    in-out property <bool> panel-shown;
+    in-out property <bool> panel-controls;
+    in-out property <int> panel-request;
+    public function open-panel() {
+        panel-open = true;
+        panel-request += 1;
+    }
+    // The deck the instrument plays on, from 0; -1 while on none.
+    public pure function instrument-deck() -> int {
+        live(0) == 3 ? 0 : live(1) == 3 ? 1 : live(2) == 3 ? 2 : live(3) == 3 ? 3 : -1
+    }
+    // Each ticked instrument plugin's name, in the picker's order.
+    in property <[string]> plugin-names;
     // What the instrument plays, set by the app while a deck shows it: the
     // notes held (`held[n]` is MIDI note 36 + n, C2 up) and its scope as
     // path commands in a 128 by 32 box.
@@ -996,7 +1017,8 @@ export component TagChip inherits Rectangle {
     tcta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-// Right of the column while no plugin panel shows: a hint.
+// Right of the column while no plugin panel shows: a hint, and a way
+// back to the panel while an instrument plays.
 export component JamHint inherits Rectangle {
     background: Theme.browser;
     VerticalLayout {
@@ -1015,14 +1037,16 @@ export component JamHint inherits Rectangle {
             font-size: 12px;
             horizontal-alignment: center;
         }
+        // The instrument on a deck: back to its plugin panel.
+        if InstrumentsUi.instrument-deck() >= 0: HorizontalLayout {
+            alignment: center;
+            padding-top: 6px;
+            SwitchPill {
+                text: "SHOW PLUGIN";
+                font-size: 11px;
+                on: false;
+                clicked => { InstrumentsUi.open-panel(); }
+            }
+        }
     }
-}
-
-// The source's page: the column, and beside it the loaded plugin's
-// panel; until one is open, a hint.
-export component InstrumentsPanel inherits HorizontalLayout {
-    in property <int> decks: 2;
-    JamColumn { decks: decks; }
-    Rectangle { width: 1px; background: Theme.separator; }
-    JamHint { horizontal-stretch: 1; }
 }

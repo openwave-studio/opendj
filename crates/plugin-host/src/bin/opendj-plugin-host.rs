@@ -101,10 +101,12 @@ fn main() {
         }
     }
     if let Some(file) = scan {
-        return run_scan(&file);
+        run_scan(&file);
+        opendj_plugin_host::leave(0);
     }
     if scan_au {
-        return run_scan_au();
+        run_scan_au();
+        opendj_plugin_host::leave(0);
     }
     if list_presets {
         let found = match (clap, id, au) {
@@ -113,7 +115,8 @@ fn main() {
             (None, _, Some(au)) => opendj_plugin_host::au::presets(&au),
             _ => fail("usage: opendj-plugin-host --presets (--clap <file> --id <id> | --au <id>)"),
         };
-        return run_presets(found);
+        run_presets(found);
+        opendj_plugin_host::leave(0);
     }
     let plugin = match (test, clap, vst3, au, pd, id) {
         (Some(t), None, None, None, None, _) => Plugin::Test(t),
@@ -209,13 +212,13 @@ fn main() {
         }
     }
     if !editor.wants_run() {
-        std::process::exit(0);
+        opendj_plugin_host::leave(0);
     }
     // macOS, once a window was made: the system's loop runs the main thread
     // from here, and this is done whenever it is idle.
     editor.run(move |win, el| {
         if audio.is_finished() {
-            std::process::exit(0);
+            opendj_plugin_host::leave(0);
         }
         let h = shm.header();
         let m: &mut dyn MainThread = match main.as_mut() {
@@ -500,7 +503,7 @@ fn say(line: &str) {
 
 fn fail(msg: &str) -> ! {
     say(&format!("error {}", clean(msg)));
-    std::process::exit(2);
+    opendj_plugin_host::leave(2);
 }
 
 /// Real-time priority for the helper's audio thread.

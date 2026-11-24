@@ -17,17 +17,27 @@ export global FxDisplay {
     // The picture, and its shape (width / height).
     in property <image> display;
     in property <float> aspect: 2;
+    // The colour at the picture's edge, around it.
+    in property <color> edge;
     // The size of the picture's area, which the helper draws at.
     in-out property <length> area-width;
     in-out property <length> area-height;
     // 0 down, 1 up, 2 move, at a point of the area.
     callback mouse(x: length, y: length, kind: int);
+    // Where the DJ moved the panel from the middle, and how wide they made
+    // its picture (0: as wide as fits).
+    in-out property <length> dx;
+    in-out property <length> dy;
+    in-out property <length> user-width;
 }
 
 // A plugin's picture, filling its area at its own shape; reports the
 // area's size and passes clicks and drags on.
 export component DisplayView inherits Rectangle {
     in property <image> source;
+    // Fills the area around the picture.
+    in property <color> edge;
+    background: edge;
     callback resized(width: length, height: length);
     callback mouse(x: length, y: length, kind: int);
     changed width => { root.resized(self.width, self.height); }
@@ -51,26 +61,42 @@ export component DisplayView inherits Rectangle {
     }
 }
 
-// The FX slot's display panel, centred over the window.
+// The FX slot's display panel, centred over the window at first: drag its
+// title bar to move it, its corner to resize it (it keeps the picture's
+// shape). Where it was put is kept while the app runs.
 export component FxDisplayPanel inherits Rectangle {
     in property <length> window-width;
     in property <length> window-height;
     property <length> bar: 30px;
     property <length> pad: 8px;
-    // As wide as fits, at the picture's shape.
-    property <length> fit-width: min(860px, window-width - 80px, (window-height - 160px - bar - pad) * max(FxDisplay.aspect, 0.2));
+    property <float> shape: max(FxDisplay.aspect, 0.2);
+    // The widest the picture fits in the window.
+    property <length> widest: min(window-width - 2 * pad, (window-height - bar - pad) * shape);
+    // As wide as fits (at most 860 px), or as wide as the DJ made it.
+    property <length> fit-width: FxDisplay.user-width > 0 ? clamp(FxDisplay.user-width, min(200px, widest), widest)
+        : min(860px, window-width - 80px, (window-height - 160px - bar - pad) * shape);
     width: fit-width + 2 * pad;
-    height: fit-width / max(FxDisplay.aspect, 0.2) + bar + pad;
-    x: (window-width - self.width) / 2;
-    y: (window-height - self.height) / 2;
+    height: fit-width / shape + bar + pad;
+    x: clamp((window-width - self.width) / 2 + FxDisplay.dx, 0, max(0, window-width - self.width));
+    y: clamp((window-height - self.height) / 2 + FxDisplay.dy, 0, max(0, window-height - self.height));
     background: Theme.panel-raised;
     border-radius: Theme.radius;
     border-width: 1px;
     border-color: Theme.n-3a3a3d;
     drop-shadow-blur: 16px;
     drop-shadow-color: Theme.s-000000a0;
-    // Clicks on the panel stay on it.
+    // Clicks on the panel stay on it; the title bar moves it.
     TouchArea { }
+    TouchArea {
+        height: root.bar;
+        mouse-cursor: move;
+        moved => {
+            if self.pressed {
+                FxDisplay.dx = root.x - (root.window-width - root.width) / 2 + self.mouse-x - self.pressed-x;
+                FxDisplay.dy = root.y - (root.window-height - root.height) / 2 + self.mouse-y - self.pressed-y;
+            }
+        }
+    }
     Text {
         x: root.pad + 4px;
         y: 0;
@@ -99,10 +125,42 @@ export component FxDisplayPanel inherits Rectangle {
         width: root.width - 2 * root.pad;
         height: root.height - root.bar - root.pad;
         source: FxDisplay.display;
+        edge: FxDisplay.edge;
         resized(w, h) => {
             FxDisplay.area-width = w;
             FxDisplay.area-height = h;
         }
         mouse(x, y, kind) => { FxDisplay.mouse(x, y, kind); }
+    }
+    // The corner grip: drag to resize.
+    Rectangle {
+        x: root.width - self.width;
+        y: root.height - self.height;
+        width: 16px;
+        height: 16px;
+        Path {
+            width: 8px;
+            height: 8px;
+            x: 4px;
+            y: 4px;
+            commands: "M 8 0 L 0 8 M 8 4 L 4 8";
+            stroke: grip.has-hover ? Theme.text : Theme.text-dim;
+            stroke-width: 1px;
+        }
+        grip := TouchArea {
+            mouse-cursor: nwse-resize;
+            moved => {
+                if self.pressed {
+                    // The panel grows from the middle, so its middle moves
+                    // half as far, keeping the top-left corner put.
+                    let old = root.fit-width;
+                    let new = clamp(old + max(self.mouse-x - self.pressed-x, (self.mouse-y - self.pressed-y) * root.shape), min(200px, root.widest), root.widest);
+                    FxDisplay.user-width = new;
+                    FxDisplay.dx += (new - old) / 2;
+                    FxDisplay.dy += (new - old) / root.shape / 2;
+                }
+            }
+            double-clicked => { FxDisplay.user-width = 0; FxDisplay.dx = 0; FxDisplay.dy = 0; }
+        }
     }
 }
