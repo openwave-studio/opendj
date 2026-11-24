@@ -739,16 +739,48 @@ impl Helper {
 
     /// Asks the helper to open (or close) the plugin's own window.
     pub fn set_editor(&self, open: bool) {
-        self.shm
-            .header()
-            .editor
-            .store(open as u32, Ordering::Release);
+        self.set_editor_mode(if open {
+            shm::EDITOR_WINDOW
+        } else {
+            shm::EDITOR_CLOSED
+        });
+    }
+
+    /// Asks for the editor in a window of its own, docked over openDJ's
+    /// panel ([`shm::EDITOR_DOCKED`], see [`Helper::place_editor`]), or
+    /// closed.
+    pub fn set_editor_mode(&self, mode: u32) {
+        self.shm.header().editor.store(mode, Ordering::Release);
+    }
+
+    /// Where a docked editor goes: (x, y, width, height) of the panel on
+    /// screen, in points on macOS and pixels elsewhere; None hides it.
+    pub fn place_editor(&self, rect: Option<(i32, i32, i32, i32)>) {
+        let h = self.shm.header();
+        let (x, y, w, hh) = rect.unwrap_or((0, 0, 0, 0));
+        let now = [x, y, w.max(0), hh.max(0)];
+        if h.place
+            .iter()
+            .zip(now)
+            .all(|(a, b)| a.load(Ordering::Relaxed) == b)
+        {
+            return;
+        }
+        for (a, b) in h.place.iter().zip(now) {
+            a.store(b, Ordering::Relaxed);
+        }
+        h.place_seq.fetch_add(1, Ordering::Release);
+    }
+
+    /// Whether the editor's window has the keyboard focus.
+    pub fn editor_focused(&self) -> bool {
+        self.shm.header().editor_focused.load(Ordering::Acquire) == 1
     }
 
     /// Whether openDJ's ask for the window still stands: the helper takes
     /// it back when the DJ closes the window or the plugin has none.
     pub fn editor_asked(&self) -> bool {
-        self.shm.header().editor.load(Ordering::Acquire) == 1
+        self.shm.header().editor.load(Ordering::Acquire) != shm::EDITOR_CLOSED
     }
 
     /// What became of the window: shown, closed, or none to show.

@@ -8,13 +8,21 @@
 //! opened stay headless. The window floats above openDJ, is titled after the
 //! plugin and where it plays, and closing it only hides the editor: the
 //! plugin keeps playing.
+//!
+//! Docked ([`EDITOR_DOCKED`]), the window has no frame and sits over
+//! openDJ's plugin panel, where openDJ says (`place`): sized to the panel
+//! when the plugin can be resized, else centred in it at its own size. A
+//! window of another process can't be put inside openDJ's own, so this is
+//! how the editor looks like part of the panel.
 
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU32, Ordering};
+
+use crate::shm::{Header, EDITOR_CLOSED, EDITOR_DOCKED};
 use std::time::Duration;
 
 use winit::application::ApplicationHandler;
-use winit::dpi::{LogicalSize, PhysicalSize, Size};
+use winit::dpi::{LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize, Position, Size};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::platform::pump_events::EventLoopExtPumpEvents;
@@ -33,8 +41,9 @@ const LOGICAL: bool = cfg!(target_os = "macos");
 
 #[derive(Default)]
 struct Events {
-    /// Make a window at the next chance (only possible inside a callback).
-    create: Option<String>,
+    /// Make a window at the next chance (only possible inside a callback):
+    /// its title, and whether it is docked (no frame).
+    create: Option<(String, bool)>,
     window: Option<Rc<Window>>,
     close_asked: bool,
     /// For an editor the helper draws: the pointer, what the mouse did
@@ -44,6 +53,7 @@ struct Events {
     redraw: bool,
     resized: Option<PhysicalSize<u32>>,
     scale: Option<f64>,
+    focused: Option<bool>,
 }
 
 impl ApplicationHandler for Events {
@@ -76,6 +86,7 @@ impl ApplicationHandler for Events {
                 self.mouse.push((self.cursor.0, self.cursor.1, what));
             }
             WindowEvent::RedrawRequested => self.redraw = true,
+            WindowEvent::Focused(on) => self.focused = Some(on),
             _ => {}
         }
     }
@@ -83,11 +94,12 @@ impl ApplicationHandler for Events {
 
 impl Events {
     fn make_window(&mut self, el: &ActiveEventLoop) {
-        let Some(title) = self.create.take() else {
+        let Some((title, docked)) = self.create.take() else {
             return;
         };
         let attrs = WindowAttributes::default()
             .with_title(title)
+            .with_decorations(!docked)
             .with_visible(false)
             .with_resizable(false)
             .with_window_level(WindowLevel::AlwaysOnTop)
@@ -105,6 +117,10 @@ pub struct EditorWindow {
     open: bool,
     /// The last ask failed: don't try again until openDJ asks anew.
     refused: bool,
+    /// How the editor is open (`Header::editor`), and the `place_seq` it
+    /// was last placed for.
+    mode: u32,
+    placed: u32,
     /// What a drawn editor paints into.
     #[cfg(feature = "pd")]
     canvas: Option<Canvas>,
@@ -118,6 +134,8 @@ impl EditorWindow {
             events: Events::default(),
             open: false,
             refused: false,
+            mode: EDITOR_CLOSED,
+            placed: 0,
             #[cfg(feature = "pd")]
             canvas: None,
         }
@@ -131,20 +149,15 @@ impl EditorWindow {
     /// Follows openDJ's ask in `editor`, reporting in `shown`, and handles
     /// the window's events; waits up to `wait` for them. Without a window
     /// it waits in [`wait_on_main`].
-    pub fn step(
-        &mut self,
-        main: &mut dyn MainThread,
-        editor: &AtomicU32,
-        shown: &AtomicU32,
-        wait: Duration,
-    ) {
-        self.follow(main, editor, shown, None);
+    pub fn step(&mut self, main: &mut dyn MainThread, h: &Header, wait: Duration) {
+        self.follow(main, &h.editor, &h.editor_shown, None);
         let Some(el) = self.event_loop.as_mut() else {
             wait_on_main(wait);
             return;
         };
         let _ = el.pump_app_events(Some(wait), &mut self.events);
-        self.after_events(main, editor, shown);
+        self.after_events(main, &h.editor, &h.editor_shown);
+        self.dock(main, h);
     }
 
     /// On macOS, once a window was made the platform's own loop takes over
@@ -181,15 +194,52 @@ impl EditorWindow {
 
     /// [`EditorWindow::step`] inside the platform's loop: follows openDJ's
     /// ask and handles what the window's events left.
-    pub fn step_in(
-        &mut self,
-        main: &mut dyn MainThread,
-        editor: &AtomicU32,
-        shown: &AtomicU32,
-        el: &ActiveEventLoop,
-    ) {
-        self.follow(main, editor, shown, Some(el));
-        self.after_events(main, editor, shown);
+    pub fn step_in(&mut self, main: &mut dyn MainThread, h: &Header, el: &ActiveEventLoop) {
+        self.follow(main, &h.editor, &h.editor_shown, Some(el));
+        self.after_events(main, &h.editor, &h.editor_shown);
+        self.dock(main, h);
+    }
+
+    /// A docked editor: reports its focus, and goes where openDJ's panel
+    /// is whenever that moves.
+    fn dock(&mut self, main: &mut dyn MainThread, h: &Header) {
+        if let Some(on) = self.events.focused.take() {
+            h.editor_focused.store(on as u32, Ordering::Release);
+        }
+        if !self.open || self.mode != EDITOR_DOCKED {
+            return;
+        }
+        let seq = h.place_seq.load(Ordering::Acquire);
+        if seq == self.placed {
+            return;
+        }
+        self.placed = seq;
+        let Some(window) = self.events.window.clone() else {
+            return;
+        };
+        let [x, y, w, hh] = h.place.each_ref().map(|v| v.load(Ordering::Relaxed));
+        if w <= 0 || hh <= 0 {
+            window.set_visible(false);
+            return;
+        }
+        let scale = window.scale_factor();
+        let mut size = editor_size(window.inner_size(), scale);
+        #[cfg(feature = "pd")]
+        let drawn = main.drawn_editor().is_some();
+        #[cfg(not(feature = "pd"))]
+        let drawn = false;
+        if !drawn && main.editor_can_resize() {
+            let asked = EditorSize {
+                width: w as u32,
+                height: hh as u32,
+            };
+            size = main.editor_resized(asked);
+            let _ = window.request_inner_size(window_size(size));
+            self.events.resized = None;
+        }
+        let (px, py) = dock_position((x, y, w, hh), (size.width as i32, size.height as i32));
+        window.set_outer_position(window_position(px, py));
+        window.set_visible(true);
     }
 
     /// Opens or closes the editor as openDJ asks.
@@ -200,13 +250,21 @@ impl EditorWindow {
         shown: &AtomicU32,
         el: Option<&ActiveEventLoop>,
     ) {
-        let want = editor.load(Ordering::Acquire) == OPEN;
-        if !want {
+        let mode = editor.load(Ordering::Acquire);
+        if mode == EDITOR_CLOSED {
             self.refused = false;
             if self.open {
                 self.close(main, shown);
             }
-        } else if !self.open && !self.refused {
+            return;
+        }
+        if self.open && mode != self.mode {
+            // From its own window to the panel or back: a new window.
+            self.close(main, shown);
+            self.refused = false;
+        }
+        if !self.open && !self.refused {
+            self.mode = mode;
             match self.open_editor(main, el) {
                 Ok(()) => shown.store(OPEN, Ordering::Release),
                 Err(e) => {
@@ -275,7 +333,7 @@ impl EditorWindow {
         active: Option<&ActiveEventLoop>,
     ) -> Result<(), String> {
         if self.events.window.is_none() {
-            self.events.create = Some(self.title.clone());
+            self.events.create = Some((self.title.clone(), self.mode == EDITOR_DOCKED));
             match active {
                 Some(el) => self.events.make_window(el),
                 None => {
@@ -291,16 +349,16 @@ impl EditorWindow {
         let window = self
             .events
             .window
-            .as_ref()
+            .clone()
             .ok_or("the window could not be made")?;
+        let window = &window;
         #[cfg(feature = "pd")]
         if let Some(drawn) = main.drawn_editor() {
             let (w, h) = drawn.size();
             window.set_resizable(false);
             let _ = window.request_inner_size(LogicalSize::new(w as f64, h as f64));
             self.canvas = Some(Canvas::new(window.clone())?);
-            window.set_visible(true);
-            window.focus_window();
+            self.show_opened(window);
             self.events.resized = None;
             self.events.close_asked = false;
             self.events.mouse.clear();
@@ -315,13 +373,23 @@ impl EditorWindow {
         let _ = window.request_inner_size(window_size(size));
         main.editor_placed();
         pin_top_left(parent);
-        window.set_visible(true);
-        window.focus_window();
+        self.show_opened(window);
         self.events.resized = None;
         self.events.close_asked = false;
         self.open = true;
         keep_awake(true);
         Ok(())
+    }
+
+    /// A window of its own shows at once, in front; a docked one waits to
+    /// be placed over the panel.
+    fn show_opened(&mut self, window: &Window) {
+        if self.mode == EDITOR_DOCKED {
+            self.placed = self.placed.wrapping_sub(1);
+        } else {
+            window.set_visible(true);
+            window.focus_window();
+        }
     }
 
     fn close(&mut self, main: &mut dyn MainThread, shown: &AtomicU32) {
@@ -375,6 +443,21 @@ impl Canvas {
         };
         drawn.paint(&mut buffer, size.width, size.height, scale as f32);
         let _ = buffer.present();
+    }
+}
+
+/// Where a docked window of `size` goes in the panel `rect` (x, y, w, h):
+/// centred, its top left never outside the panel.
+fn dock_position(rect: (i32, i32, i32, i32), size: (i32, i32)) -> (i32, i32) {
+    let (x, y, w, h) = rect;
+    (x + ((w - size.0) / 2).max(0), y + ((h - size.1) / 2).max(0))
+}
+
+fn window_position(x: i32, y: i32) -> Position {
+    if LOGICAL {
+        LogicalPosition::new(x as f64, y as f64).into()
+    } else {
+        PhysicalPosition::new(x, y).into()
     }
 }
 
@@ -533,4 +616,18 @@ fn wait_on_main(wait: Duration) {
 #[cfg(not(target_os = "macos"))]
 fn wait_on_main(wait: Duration) {
     std::thread::sleep(wait);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::dock_position;
+
+    #[test]
+    fn docked_editor_is_centred_in_the_panel() {
+        assert_eq!(dock_position((100, 50, 800, 400), (600, 300)), (200, 100));
+        // Larger than the panel: pinned to its top left.
+        assert_eq!(dock_position((100, 50, 400, 200), (600, 300)), (100, 50));
+        // Resized to the panel: exactly over it.
+        assert_eq!(dock_position((100, 50, 800, 400), (800, 400)), (100, 50));
+    }
 }

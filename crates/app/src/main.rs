@@ -53,6 +53,7 @@ mod cover_scan;
 mod coverart;
 mod diagnostics;
 mod dupe_scan;
+mod editor_dock;
 mod file_drop;
 mod files;
 mod graphics;
@@ -1328,6 +1329,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     }
     // The instrument's own display on its deck (a Pd patch's Lua displays).
     let _display_timer = plugin_display::install(&app, engine.clone());
+    // A plugin's own editor laid over the browser's plugin panel.
+    let _dock_timer = editor_dock::install(&app, registry.clone());
     // Automatic backups: at start, then checked every hour.
     backup::run_if_due();
     let backup_timer = slint::Timer::default();

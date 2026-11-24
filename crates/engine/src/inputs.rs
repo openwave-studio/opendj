@@ -271,6 +271,15 @@ impl InputControls {
             );
             // The instrument's own window, as an effect slot's `show_editor`.
             reg.toggle(g, "show_editor");
+            // Or docked over openDJ's plugin panel: on, where the panel is
+            // on screen (x, y, width, height, in points on macOS and pixels
+            // elsewhere; a width of 0 hides it), and whether the docked
+            // window has the keyboard (so openDJ keeps it up).
+            reg.toggle(g, "dock_editor");
+            for key in ["dock_x", "dock_y", "dock_w", "dock_h"] {
+                reg.create(g, key, 0.0, -100_000.0, 100_000.0, Behavior::Free);
+            }
+            reg.indicator(g, "editor_focused", 1.0);
             // Its first parameters (see `INSTRUMENT_PARAMETERS`), and how
             // many it has, as an effect slot's.
             for k in 1..=INSTRUMENT_PARAMETERS {

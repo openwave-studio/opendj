@@ -15,14 +15,14 @@
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::path::Path;
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, Ordering};
 
 use memmap2::MmapMut;
 
 /// "openDJ P" in ASCII, so a helper can tell it was handed the right file.
 pub const MAGIC: u64 = 0x6f70_656e_444a_2050;
 /// Bumped whenever the layout below changes.
-pub const VERSION: u32 = 5;
+pub const VERSION: u32 = 6;
 /// Two channels: decks and the main mix are stereo.
 pub const CHANNELS: usize = 2;
 /// Parameters a slot can set without a round trip.
@@ -56,8 +56,9 @@ pub struct Header {
     /// it falls on in the high 32 bits and the three MIDI bytes below.
     pub events_len: AtomicU32,
     pub events: [AtomicU64; MAX_EVENTS],
-    /// openDJ asks for the plugin's own window: 1 open, 0 closed. The
-    /// helper's main thread follows it.
+    /// openDJ asks for the plugin's own window: [`EDITOR_WINDOW`],
+    /// [`EDITOR_DOCKED`] or [`EDITOR_CLOSED`]. The helper's main thread
+    /// follows it, and sets it back to closed when the window goes.
     pub editor: AtomicU32,
     /// What the helper did about it: 0 closed, 1 open, 2 the plugin has no
     /// window of its own (or it failed to open). Closing the window sets 0.
@@ -76,7 +77,23 @@ pub struct Header {
     /// then and bumps `values_seq` after.
     pub values: [AtomicU32; MAX_PARAMS],
     pub values_seq: AtomicU32,
+    /// Where a docked editor ([`EDITOR_DOCKED`]) goes on screen: x, y,
+    /// width and height of openDJ's panel, in points on macOS and pixels
+    /// elsewhere; a width of 0 hides it. openDJ bumps `place_seq` after.
+    pub place: [AtomicI32; 4],
+    pub place_seq: AtomicU32,
+    /// 1 while the editor's window has the keyboard focus (the helper
+    /// writes it), so openDJ keeps a docked editor up while it is used.
+    pub editor_focused: AtomicU32,
 }
+
+/// `Header::editor`: no editor.
+pub const EDITOR_CLOSED: u32 = 0;
+/// `Header::editor`: the editor in a window of its own.
+pub const EDITOR_WINDOW: u32 = 1;
+/// `Header::editor`: the editor in a borderless window laid over openDJ's
+/// plugin panel (`place`), following it.
+pub const EDITOR_DOCKED: u32 = 3;
 
 /// `Header::state_cmd`: write the plugin's state to the state file.
 pub const STATE_SAVE: u32 = 1;

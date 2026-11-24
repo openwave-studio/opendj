@@ -22,6 +22,7 @@ use opendj_control::{ControlHandle, ControlRegistry};
 pub use opendj_plugin_host::display as plugin_display;
 pub use opendj_plugin_host::pd_patch;
 pub use opendj_plugin_host::presets as plugin_presets;
+use opendj_plugin_host::shm::{EDITOR_CLOSED, EDITOR_DOCKED, EDITOR_WINDOW};
 pub use opendj_plugin_host::{
     presets as own_presets, scan, scan_audio_units, Descriptor, Limits, Plugin, ScanError,
 };
@@ -424,6 +425,41 @@ fn follow_editor(
     None
 }
 
+/// [`follow_editor`] for the instrument, whose editor can also be docked
+/// over openDJ's plugin panel: `mode` is how it is wanted now
+/// (`shm::EDITOR_*`), `controls` its `show_editor` and `dock_editor`.
+fn follow_instrument_editor(
+    helper: &Helper,
+    asked: &mut bool,
+    asked_mode: &mut u32,
+    controls: [&ControlHandle; 2],
+    mode: u32,
+) -> Option<String> {
+    if mode != EDITOR_CLOSED && (!*asked || *asked_mode != mode) {
+        helper.set_editor_mode(mode);
+        *asked = true;
+        *asked_mode = mode;
+    } else if mode == EDITOR_CLOSED && *asked {
+        helper.set_editor_mode(EDITOR_CLOSED);
+        *asked = false;
+    } else if *asked && !helper.editor_asked() {
+        // The helper let go of it: the DJ closed the window, or it failed.
+        *asked = false;
+        let docked = *asked_mode == EDITOR_DOCKED;
+        controls[if docked { 1 } else { 0 }].set_bool(false);
+        // Docked, the panel shows openDJ's own controls instead.
+        if !docked && helper.editor() == Editor::Missing {
+            return Some(if cfg!(any(target_os = "macos", windows)) {
+                "it has no window of its own".into()
+            } else {
+                "it has no window of its own, or there is no X11 display (XWayland) to show it on"
+                    .into()
+            });
+        }
+    }
+    None
+}
+
 struct Supervisor {
     opts: HostOptions,
     list: Arc<Mutex<List>>,
@@ -461,6 +497,14 @@ struct InstrumentState {
     /// `[Instrument1],show_editor`, and whether its editor was asked for.
     show_editor: ControlHandle,
     editor: bool,
+    /// `[Instrument1],dock_editor` and `dock_x`, `dock_y`, `dock_w`,
+    /// `dock_h`: the editor docked over openDJ's plugin panel; and
+    /// `editor_focused`, set while its window has the keyboard.
+    dock_editor: ControlHandle,
+    dock: [ControlHandle; 4],
+    /// How the editor was asked for (`shm::EDITOR_*`) while `editor`.
+    editor_mode: u32,
+    editor_focused: ControlHandle,
     /// `[Instrument1],parameterN` and `num_parameters`.
     params: Vec<ControlHandle>,
     num_parameters: ControlHandle,
@@ -704,6 +748,11 @@ impl Supervisor {
                 running_key: String::new(),
                 show_editor: get(reg, INSTRUMENT_GROUP, "show_editor"),
                 editor: false,
+                dock_editor: get(reg, INSTRUMENT_GROUP, "dock_editor"),
+                editor_mode: EDITOR_CLOSED,
+                dock: ["dock_x", "dock_y", "dock_w", "dock_h"]
+                    .map(|k| get(reg, INSTRUMENT_GROUP, k)),
+                editor_focused: get(reg, INSTRUMENT_GROUP, "editor_focused"),
                 params: (1..=INSTRUMENT_PARAMETERS)
                     .map(|k| get(reg, INSTRUMENT_GROUP, &format!("parameter{k}")))
                     .collect(),
@@ -918,10 +967,28 @@ impl Supervisor {
         let ins = &mut self.instrument;
         match ins.running.as_ref() {
             Some((plugin, helper)) => {
-                let want = ins.show_editor.get_bool();
+                // Its own window wins over the panel's docked one.
+                let mode = if ins.show_editor.get_bool() {
+                    EDITOR_WINDOW
+                } else if ins.dock_editor.get_bool() {
+                    EDITOR_DOCKED
+                } else {
+                    EDITOR_CLOSED
+                };
                 let was_open = ins.editor;
-                if let Some(reason) = follow_editor(helper, &mut ins.editor, &ins.show_editor, want)
-                {
+                if mode == EDITOR_DOCKED {
+                    let [x, y, w, h] = ins.dock.each_ref().map(|c| c.get().round() as i32);
+                    helper.place_editor((w > 0 && h > 0).then_some((x, y, w, h)));
+                }
+                ins.editor_focused
+                    .set_bool(ins.editor && helper.editor_focused());
+                if let Some(reason) = follow_instrument_editor(
+                    helper,
+                    &mut ins.editor,
+                    &mut ins.editor_mode,
+                    [&ins.show_editor, &ins.dock_editor],
+                    mode,
+                ) {
                     let name = ins.entries[*plugin as usize].name.clone();
                     let _ = self.events.send(PluginEvent::NoWindow { name, reason });
                 }
@@ -933,6 +1000,7 @@ impl Supervisor {
             None => {
                 ins.editor = false;
                 ins.show_editor.set_bool(false);
+                ins.editor_focused.set_bool(false);
             }
         }
     }

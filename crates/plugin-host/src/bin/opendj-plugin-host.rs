@@ -206,7 +206,7 @@ fn main() {
             .next_idle()
             .map_or(IDLE, |d| d.min(IDLE))
             .max(Duration::from_millis(1));
-        editor.step(m, &h.editor, &h.editor_shown, wait);
+        editor.step(m, h, wait);
         if editor.wants_run() {
             break;
         }
@@ -230,7 +230,7 @@ fn main() {
             params.loaded(h);
         }
         params.step(m, h);
-        win.step_in(m, &h.editor, &h.editor_shown, el);
+        win.step_in(m, h, el);
         m.next_idle()
             .map_or(IDLE, |d| d.min(IDLE))
             .max(Duration::from_millis(1))

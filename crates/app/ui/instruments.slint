@@ -233,6 +233,16 @@ export global InstrumentsUi {
     in-out property <bool> panel-open;
     in-out property <bool> panel-shown;
     in-out property <bool> panel-controls;
+    // A plugin with no display of its own (CLAP, VST3, AU) shows its own
+    // editor in the panel: a borderless window of the plugin's helper laid
+    // over the panel's area, which the panel reports here (its place in
+    // the window). The app sets `panel-editor-failed` when the plugin has
+    // no editor to show; the panel then shows its sliders.
+    in-out property <length> editor-area-x;
+    in-out property <length> editor-area-y;
+    in-out property <length> editor-area-width;
+    in-out property <length> editor-area-height;
+    in property <bool> panel-editor-failed;
     in-out property <int> panel-request;
     public function open-panel() {
         panel-open = true;

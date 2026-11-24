@@ -10,7 +10,8 @@ An instrument's own controls do not fit on a deck. A Pd patch's Lua display (Lil
 
 - **Plugin panel.** While an instrument plays on a deck, the Jam source can show it in a panel that takes the track list's and the side panel's place; the rail and the Jam tree stay. The panel has a slim bar (the plugin's name, its format, the deck, an expand button for the plugin's own window, ✕ back to the list).
 - **At the plugin's shape.** A plugin's own display (a Pd patch's Lua displays) is drawn at its own width over height, as large as the panel allows, with no letterbox bars; clicks and drags go to the patch.
-- **Generic controls.** Plugins whose editor cannot be embedded (CLAP, VST3, AU windows) show openDJ's controls instead: every parameter as a slider, grouped by the plugin's pages.
+- **The plugin's own editor.** A CLAP, VST3 or AU editor is a window of the plugin's helper process, and another process's window cannot be put inside openDJ's. The helper shows it in a borderless window laid over the panel's area, which follows the panel (sized to it when the plugin can be resized, else centred at its own size) and hides while openDJ is in the background.
+- **Generic controls.** CONTROLS, or a plugin with no editor, shows openDJ's controls instead: the plugin's knob parameters as sliders, grouped by the plugin's pages.
 - **From the deck.** The instrument deck's DISPLAY tab opens the panel (the deck keeps its knobs).
 - **From the tree.** Clicking an instrument in the Jam tree or list loads it on its deck and shows it in the panel.
 - **Several at once.** One tab per deck's instrument once `add-instrument-per-deck` gives each deck its own.
@@ -19,7 +20,8 @@ An instrument's own controls do not fit on a deck. A Pd patch's Lua display (Lil
 
 ## Out of scope
 
-- Embedding CLAP, VST3 or AU editor windows.
+- Embedding CLAP, VST3 or AU editor windows inside openDJ's own window (not possible across processes; the docked window stands in).
+- A docked editor on Wayland, where windows can't be placed (the expand button's own window still works).
 - A redesign of the Jam tree.
 - The instrument deck's own simplification (another change).
 
