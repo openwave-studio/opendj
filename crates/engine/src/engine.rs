@@ -915,6 +915,17 @@ impl Deck {
                         self.c.loop_enabled.set_bool(true);
                     }
                 }
+                Action::SavedLoop => {
+                    let [start, end] = self.c.saved_loop.each_ref().map(|c| c.get());
+                    if start >= 0.0 && end > start {
+                        self.loop_in_pending = false;
+                        self.loop_start = start;
+                        self.loop_end = end;
+                        self.c.loop_enabled.set_bool(true);
+                        self.set_seconds(start);
+                        self.c.play.set_bool(true);
+                    }
+                }
                 Action::Reloop if enabled => self.c.loop_enabled.set_bool(false),
                 Action::Reloop => {
                     if self.loop_end > self.loop_start {
@@ -6579,6 +6590,23 @@ mod tests {
             "{} vs {nudged}",
             phase_gap(&engine)
         );
+    }
+
+    #[test]
+    fn a_saved_loop_plays_from_its_start() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 10.0));
+        run(&mut engine, 0.02);
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        c("saved_loop_start").set(2.0);
+        c("saved_loop_end").set(4.0);
+        c("saved_loop_activate").set_bool(true);
+        c("saved_loop_activate").set_bool(false);
+        run(&mut engine, 0.02);
+        let d = &engine.decks[0];
+        assert!(c("loop_enabled").get_bool() && c("play").get_bool());
+        assert_eq!((d.loop_start, d.loop_end), (2.0, 4.0));
+        assert!(d.seconds() >= 2.0 && d.seconds() < 2.1, "{}", d.seconds());
     }
 
     #[test]

@@ -447,7 +447,7 @@ component RowButton inherits Rectangle {
                 width: label.preferred-width + 20px;
                 border-radius: 11px;
                 border-width: r.state == 0 ? 0px : 1px;
-                border-color: r.state == 3 ? #2d6a43 : r.state == 4 ? #6a2d2d : Theme.n-48484c;
+                border-color: r.state == 3 ? Theme.f-2d6a43 : r.state == 4 ? Theme.f-6a2d2d : Theme.n-48484c;
                 background: r.state == 0 ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent) : transparent;
                 label := Text {
                     text: r.state == 0 ? (SourceUi.plays ? (r.kind == 1 ? "+ Album" : "+ Collection") : r.kind == 1 ? "↓ Album" : "↓")
@@ -783,7 +783,7 @@ export component SourceResults inherits Rectangle {
                 border-radius: 4px;
                 background: r.kind == 1 ? (ta.has-hover ? Theme.n-2e2e33 : Theme.n-26262a)
                     : r.kind == 0 ? transparent
-                    : r.checked ? #4a3f6e
+                    : r.checked ? Theme.f-4a3f6e
                     : ta.has-hover ? Theme.n-2a2a2e : mod(i, 2) == 1 ? Theme.row-alt : Theme.row;
                 ta := TouchArea {
                     clicked => {
@@ -922,9 +922,9 @@ export component SourceResults inherits Rectangle {
         if SourceUi.selected-count > 0: Rectangle {
             height: 44px;
             border-radius: 6px;
-            background: #2a2533;
+            background: Theme.f-2a2533;
             border-width: 1px;
-            border-color: #4a3f6e;
+            border-color: Theme.f-4a3f6e;
             HorizontalLayout {
                 padding-left: 14px;
                 padding-right: 10px;
@@ -983,7 +983,7 @@ export component SourceSetup inherits Rectangle {
                     height: 32px;
                     border-radius: 16px;
                     background: connect.pressed ? Theme.lilac-dim : Theme.lilac;
-                    Text { text: "Connect"; color: #000000; font-size: 13px; font-weight: 700; }
+                    Text { text: "Connect"; color: Theme.f-000000; font-size: 13px; font-weight: 700; }
                     connect := TouchArea { mouse-cursor: pointer; clicked => { SourceUi.setup-connect(); } }
                 }
                 if SourceUi.setup-status != "": Text { text: SourceUi.setup-status; color: Theme.text; font-size: 13px; horizontal-alignment: center; wrap: word-wrap; }

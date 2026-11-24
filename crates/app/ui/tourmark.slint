@@ -77,7 +77,7 @@ export component TourMark inherits Rectangle {
         height: root.height + 8px;
         border-radius: 8px;
         border-width: 2px;
-        border-color: Tour.done ? #4cd07d : Theme.lilac;
+        border-color: Tour.done ? Theme.f-4cd07d : Theme.lilac;
         // A slow pulse, so the eye finds it.
         opacity: 0.6 + 0.4 * sin(animation-tick() / 1ms * 0.25deg);
         drop-shadow-blur: glow ? 10px : 0px;

@@ -9,8 +9,7 @@ import { SourceUi, SearchesPanel, SourceResults, SourceSetup } from "sources.sli
 import { InstrumentsPanel } from "plugin_panel.slint";
 import { InstrumentsUi } from "instruments.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
-import { CuesPanel, CueList } from "cues.slint";
-import { ChecklistPanel } from "checklist.slint";
+import { CueList } from "cues.slint";
 import { LyricsPanel } from "lyrics.slint";
 import { NowPlayingView } from "nowplaying.slint";
 import { PageView, PageUi } from "pages.slint";
@@ -246,7 +245,7 @@ export global UpNextUi {
     in property <image> now-cover;
     in property <bool> now-has-cover;
     in property <string> now-initials;
-    in property <color> now-tint: #5b3fd1;
+    in property <color> now-tint: Theme.f-5b3fd1;
     // Picks the mix into Up Next's row: 0 for the panel's, else 1 + the index.
     callback set-mix(row: int, length: int, style: int);
 }
@@ -1064,7 +1063,7 @@ component CatalogChoice inherits Rectangle {
     background: cta.has-hover ? Theme.n-ffffff14 : transparent;
     HorizontalLayout {
         padding-left: 12px;
-        Text { text: root.text; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+        Text { text: root.text; color: cta.has-hover ? Theme.menu-hover-text : Theme.text; font-size: 13px; vertical-alignment: center; }
     }
     cta := TouchArea {
         mouse-cursor: pointer;
@@ -1169,8 +1168,8 @@ component CatalogResults inherits Rectangle {
                                     height: 34px;
                                     border-radius: r.kind == 1 ? 17px : 5px;
                                     clip: true;
-                                    background: @linear-gradient(135deg, Theme.accent 0%, Theme.accent.darker(0.6) 60%, #101012 100%);
-                                    if !r.has-cover: Text { text: r.initials; color: #ffffffe0; font-size: 12px; font-weight: 700; }
+                                    background: @linear-gradient(135deg, Theme.accent 0%, Theme.accent.darker(0.6) 60%, Theme.f-101012 100%);
+                                    if !r.has-cover: Text { text: r.initials; color: Theme.f-ffffffe0; font-size: 12px; font-weight: 700; }
                                     if r.has-cover: Image { width: parent.width; height: parent.height; source: r.cover; image-fit: cover; }
                                 }
                             }
@@ -1353,7 +1352,7 @@ export component MenuLine inherits Rectangle {
         x: text-x;
         width: parent.width - text-x - (submenu ? 26px : 10px) - (hint != "" ? hint-text.width + 8px : 0px);
         text: root.text;
-        color: root.text-color;
+        color: ta.has-hover && root.enabled && root.text-color == Theme.text ? Theme.menu-hover-text : root.text-color;
         font-size: 13px;
         vertical-alignment: center;
         overflow: elide;
@@ -1880,7 +1879,7 @@ component TrackMenu inherits PopupWindow {
                 // Eight swatches and none fit in the menu's width.
                 spacing: 2px;
                 Text { text: "Color"; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; width: 48px; }
-                for c[i] in [#ff3b30, #ff9500, #ffcc00, #34c759, #5ac8fa, #007aff, #af52de, #ff2d55]: Rectangle {
+                for c[i] in [Theme.f-ff3b30, Theme.f-ff9500, Theme.f-ffcc00, Theme.f-34c759, Theme.f-5ac8fa, Theme.f-007aff, Theme.f-af52de, Theme.f-ff2d55]: Rectangle {
                     width: 17px;
                     Rectangle {
                         width: sw.has-hover ? 16px : 14px;
@@ -2432,17 +2431,17 @@ component SourceIcon inherits Rectangle {
     border-radius: kind == 2 ? 15px : 7px;
     clip: kind == 3 || kind == 4 || kind == 6 || kind == 8;
     background: kind == 0 ? transparent
-        : kind == 1 ? #B59AFF1F
-        : kind == 9 ? #F3BD671F
-        : kind == 10 ? #FF686F1F
-        : kind == 12 ? #62D6CD1F
-        : kind == 11 ? #314359
+        : kind == 1 ? Theme.f-b59aff1f
+        : kind == 9 ? Theme.f-f3bd671f
+        : kind == 10 ? Theme.f-ff686f1f
+        : kind == 12 ? Theme.f-62d6cd1f
+        : kind == 11 ? Theme.f-314359
         : kind == 2 ? transparent
         : kind == 3 ? Theme.n-000000
         : kind == 5 || kind == 6 ? transparent
         : kind == 7 ? Theme.n-000000
-        : kind == 8 ? #ff5500
-        : @linear-gradient(180deg, #fc5c7d 0%, #fa2d48 100%);
+        : kind == 8 ? Theme.f-ff5500
+        : @linear-gradient(180deg, Theme.f-fc5c7d 0%, Theme.f-fa2d48 100%);
     border-width: kind == 3 || kind == 7 ? 1px : 0px;
     border-color: Theme.border;
     // Collection: openDJ's own logo.
@@ -2485,7 +2484,7 @@ component HealthIcon inherits Rectangle {
     width: 30px;
     height: 30px;
     border-radius: 7px;
-    background: #F577A81F;
+    background: Theme.f-f577a81f;
     Image { width: 22px; height: 22px; source: @image-url("icons/rail-health.svg"); }
 }
 
@@ -2670,7 +2669,7 @@ component Switch inherits Rectangle {
         height: 16px;
         border-radius: 8px;
         // The knob stays white in Light too, as macOS draws it.
-        background: #ffffff;
+        background: Theme.f-ffffff;
     }
     TouchArea { mouse-cursor: pointer; clicked => { toggled(); } }
 }
@@ -3024,7 +3023,7 @@ component InboxPanel inherits Rectangle {
                 width: 34px;
                 height: 20px;
                 border-radius: 10px;
-                background: StoreUi.inbox-on ? #30c158 : Theme.n-48484a;
+                background: StoreUi.inbox-on ? Theme.f-30c158 : Theme.n-48484a;
                 Rectangle {
                     x: StoreUi.inbox-on ? 16px : 2px;
                     width: 16px;
@@ -3098,8 +3097,8 @@ component SpotifyConnect inherits Rectangle {
         Rectangle {
             height: 32px;
             border-radius: 16px;
-            background: tidal || mixcloud ? (cta.pressed ? #dddddd : #ffffff) : apple ? (cta.pressed ? #d9263d : #fa2d48) : soundcloud ? (cta.pressed ? #e64d00 : #ff5500) : cta.pressed ? #1db954 : #1ed760;
-            Text { text: mixcloud ? "Connect" : "Sign in with " + service; color: soundcloud || apple ? #ffffff : #000000; font-size: 13px; font-weight: 700; }
+            background: tidal || mixcloud ? (cta.pressed ? Theme.f-dddddd : Theme.f-ffffff) : apple ? (cta.pressed ? Theme.f-d9263d : Theme.f-fa2d48) : soundcloud ? (cta.pressed ? Theme.f-e64d00 : Theme.f-ff5500) : cta.pressed ? Theme.f-1db954 : Theme.f-1ed760;
+            Text { text: mixcloud ? "Connect" : "Sign in with " + service; color: soundcloud || apple ? Theme.f-ffffff : Theme.f-000000; font-size: 13px; font-weight: 700; }
             cta := TouchArea { clicked => { connect(soundcloud ? client-id + " " + secret : apple ? client-id + "\n" + key-id + "\n" + secret : client-id); } }
         }
         if status != "": Text { text: status; color: Theme.text; font-size: 13px; horizontal-alignment: center; wrap: word-wrap; }
@@ -3131,7 +3130,7 @@ component FilesOptions inherits VerticalLayout {
                     border-width: 1.5px;
                     border-color: FilesUi.recursive ? Theme.accent : Theme.text-dim;
                     background: FilesUi.recursive ? Theme.accent : transparent;
-                    if FilesUi.recursive: Text { text: "✓"; color: #000000; font-size: 11px; font-weight: 700; }
+                    if FilesUi.recursive: Text { text: "✓"; color: Theme.f-000000; font-size: 11px; font-weight: 700; }
                 }
             }
             Text { text: "Include subfolders"; color: Theme.text; font-size: 13px; vertical-alignment: center; horizontal-stretch: 1; }
@@ -3644,7 +3643,7 @@ component FolderTree inherits Rectangle {
             border-width: 1px;
             border-color: Theme.border;
             drop-shadow-blur: 20px;
-            drop-shadow-color: #00000099;
+            drop-shadow-color: Theme.f-00000099;
         }
         VerticalLayout {
             padding: 16px;
@@ -4086,7 +4085,7 @@ component FolderTree inherits Rectangle {
                                     text <=> naming-text;
                                     color: Theme.text;
                                     selection-background-color: Theme.accent;
-                                    selection-foreground-color: #ffffff;
+                                    selection-foreground-color: Theme.f-ffffff;
                                     font-size: 15px * ListText.scale;
                                     vertical-alignment: center;
                                     single-line: true;
@@ -4305,7 +4304,7 @@ component HealthButton inherits Rectangle {
         : (ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.panel-raised);
     label := Text {
         text: root.text;
-        color: primary ? #000000 : Theme.text;
+        color: primary ? Theme.f-000000 : Theme.text;
         font-size: 12px;
         font-weight: 600;
         vertical-alignment: center;
@@ -4451,7 +4450,7 @@ component HealthPanel inherits Rectangle {
                                 if st.percent >= 8: Text {
                                     x: 8px;
                                     text: st.title + " " + st.percent + "%";
-                                    color: #15140f;
+                                    color: Theme.f-15140f;
                                     font-size: 11px;
                                     font-weight: 700;
                                     vertical-alignment: center;
@@ -4631,7 +4630,7 @@ component Tick inherits Rectangle {
     background: on ? Theme.accent : transparent;
     if on: Text {
         text: "✓";
-        color: #000000;
+        color: Theme.f-000000;
         font-size: 11px;
         font-weight: 700;
         horizontal-alignment: center;
@@ -4972,7 +4971,7 @@ component HealthBar inherits Rectangle {
                             background: st.count == 0 ? Theme.health-clear.with-alpha(0.2) : i == HealthUi.step ? Theme.accent : Theme.panel-raised.brighter(0.3);
                             Text {
                                 text: st.count == 0 ? "✓" : i + 1;
-                                color: st.count == 0 ? Theme.health-clear : i == HealthUi.step ? #000000 : Theme.text-dim;
+                                color: st.count == 0 ? Theme.health-clear : i == HealthUi.step ? Theme.f-000000 : Theme.text-dim;
                                 font-size: 11px;
                                 font-weight: 700;
                                 horizontal-alignment: center;
@@ -5084,7 +5083,7 @@ component ReviewKey inherits Rectangle {
             background: primary ? Theme.s-00000026 : Theme.n-ffffff14;
             k := Text {
                 text: key;
-                color: primary ? #000000 : Theme.text-dim;
+                color: primary ? Theme.f-000000 : Theme.text-dim;
                 font-size: 11px;
                 font-weight: 600;
                 vertical-alignment: center;
@@ -5093,7 +5092,7 @@ component ReviewKey inherits Rectangle {
         }
         Text {
             text: root.text;
-            color: primary ? #000000 : Theme.text;
+            color: primary ? Theme.f-000000 : Theme.text;
             font-size: 13px;
             font-weight: 600;
             vertical-alignment: center;
@@ -6085,8 +6084,8 @@ component TrackList inherits Rectangle {
                             width: 18px;
                             height: 18px;
                             border-radius: 9px;
-                            background: pta.has-hover ? (StoreUi.source == 8 ? #ff5500 : #5000ff) : Theme.n-ffffff20;
-                            Text { text: "▶"; color: #ffffff; font-size: 9px; x: 6px; }
+                            background: pta.has-hover ? (StoreUi.source == 8 ? Theme.f-ff5500 : Theme.f-5000ff) : Theme.n-ffffff20;
+                            Text { text: "▶"; color: Theme.f-ffffff; font-size: 9px; x: 6px; }
                             pta := TouchArea { mouse-cursor: pointer; clicked => { current = i; activate(i); } }
                         }
                         if !r.available && r.action == "" && StoreUi.source != 8 && StoreUi.source != 11: Rectangle {
@@ -6094,7 +6093,7 @@ component TrackList inherits Rectangle {
                             height: 10px;
                             border-radius: 5px;
                             border-width: 1.5px;
-                            border-color: #1ed760;
+                            border-color: Theme.f-1ed760;
                         }
                         // Played in this session: a lilac check; hover
                         // tells when.
@@ -6108,7 +6107,7 @@ component TrackList inherits Rectangle {
                             height: 16px;
                             border-radius: 4px;
                             background: selected ? Theme.s-00000040 : Theme.deck-color(r.deck);
-                            Text { text: r.deck + 1; color: #fff; font-size: 10px; font-weight: 700; }
+                            Text { text: r.deck + 1; color: Theme.f-ffffff; font-size: 10px; font-weight: 700; }
                         }
                     }
                     // A store result's button: buy, search the store, or download.
@@ -6121,7 +6120,7 @@ component TrackList inherits Rectangle {
                                 width: 54px;
                                 border-radius: 10px;
                                 background: ata.has-hover ? Theme.accent.brighter(0.15) : Theme.accent;
-                                Text { text: r.action; color: #000000; font-size: 11px; font-weight: 700; }
+                                Text { text: r.action; color: Theme.f-000000; font-size: 11px; font-weight: 700; }
                                 ata := TouchArea { mouse-cursor: pointer; clicked => { current = i; activate(i); } }
                             }
                         }
@@ -6272,7 +6271,7 @@ component TrackList inherits Rectangle {
         border-width: 1px;
         border-color: Theme.border;
         drop-shadow-blur: 12px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.f-00000080;
         note-row := HorizontalLayout {
             padding-left: 14px;
             padding-right: 6px;
@@ -6530,7 +6529,7 @@ component FixNamesDialog inherits Rectangle {
                     background: i == FixNamesUi.tool ? Theme.accent : tool-ta.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.control;
                     tool-text := Text {
                         text: name;
-                        color: i == FixNamesUi.tool ? #000000 : Theme.text;
+                        color: i == FixNamesUi.tool ? Theme.f-000000 : Theme.text;
                         font-size: 12px;
                         font-weight: 600;
                     }
@@ -6859,8 +6858,8 @@ component SidePanel inherits Rectangle {
     in property <[SideRow]> rows;
     in property <string> total;
     // 0 Automix, 1 Shortlist, 2 Related, 3 Info (the selected track's
-    // details, see info.slint), 4 Cues (a deck's cues, see cues.slint),
-    // 5 Checklist (what makes the deck's track ready, see checklist.slint),
+    // details, see info.slint), 4 and 5 (were Cues and Checklist, no longer
+    // shown),
     // 6 Lyrics (the playing track's lyrics, see lyrics.slint), 7 Playlist
     // (one of the DJ's playlists, to change it).
     in-out property <int> tab: 0;
@@ -6965,7 +6964,6 @@ component SidePanel inherits Rectangle {
             // Each tab as wide as its word, with the room left shared out,
             // in the DJ's order. A tab switched off folds to nothing, unless
             // it is the one open (Show Info opens Info even when it's off).
-            // Cues and Checklist only in the Prep layout.
             for t in SideTabs.tabs: Rectangle {
                 property <bool> shown: (t.on || t.i == tab) && (CueList.prep ? t.pos : t.pos-plain) >= 0;
                 horizontal-stretch: shown ? 1 : 0;
@@ -7119,7 +7117,6 @@ component SidePanel inherits Rectangle {
                             }
                         }
                         Text { text: t.name; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
-                        if (t.i == 4 || t.i == 5): Text { text: "Prep"; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
                             Switch {
@@ -7173,20 +7170,6 @@ component SidePanel inherits Rectangle {
     if tab == 6: LyricsPanel {
         y: tab-bar.height;
         height: parent.height - tab-bar.height;
-    }
-    if tab == 4 && CueList.prep: CuesPanel {
-        y: tab-bar.height;
-        height: parent.height - tab-bar.height;
-    }
-    if tab == 5 && CueList.prep: checklist-scroll := ScrollView {
-        y: tab-bar.height;
-        height: parent.height - tab-bar.height;
-        content-width: self.visible-width;
-        content-height: max(self.visible-height, checklist.preferred-height);
-        checklist := ChecklistPanel {
-            width: checklist-scroll.content-width;
-            height: checklist-scroll.content-height;
-        }
     }
     keys := FocusScope {
         y: tab-bar.height;
@@ -7369,7 +7352,7 @@ component SidePanel inherits Rectangle {
                                         KeepGoingUi.pick-pool(i);
                                         pool-menu.close();
                                     }
-                                    Text { x: 10px; text: name; color: name == KeepGoingUi.pool ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                                    Text { x: 10px; text: name; color: parent.ink; font-size: 12px; vertical-alignment: center; overflow: elide; }
                                 }
                             }
                         }
@@ -7386,7 +7369,7 @@ component SidePanel inherits Rectangle {
                     border-radius: 4px;
                     clip: true;
                     background: @linear-gradient(135deg, UpNextUi.now-tint 0%, UpNextUi.now-tint.darker(0.6) 100%);
-                    if !UpNextUi.now-has-cover: Text { text: UpNextUi.now-initials; color: #ffffffd8; font-size: 18px; font-weight: 700; }
+                    if !UpNextUi.now-has-cover: Text { text: UpNextUi.now-initials; color: Theme.f-ffffffd8; font-size: 18px; font-weight: 700; }
                     if UpNextUi.now-has-cover: Image { width: parent.width; height: parent.height; source: UpNextUi.now-cover; image-fit: cover; }
                 }
                 VerticalLayout {
@@ -7444,7 +7427,7 @@ component SidePanel inherits Rectangle {
                             automix-order(i);
                             order-menu.close();
                         }
-                        Text { x: 10px; text: name; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+                        Text { x: 10px; text: name; color: parent.ink; font-size: 12px; vertical-alignment: center; }
                     }
                     Rectangle { height: 4px; }
                     Text {
@@ -7471,7 +7454,7 @@ component SidePanel inherits Rectangle {
                             automix-set-style(i);
                             style-menu.close();
                         }
-                        Text { x: 10px; text: name; color: i == automix-style ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
+                        Text { x: 10px; text: name; color: parent.ink; font-size: 12px; vertical-alignment: center; }
                     }
                 }
             }
@@ -7492,7 +7475,7 @@ component SidePanel inherits Rectangle {
                                 automix-set-length(c.value);
                                 length-menu.close();
                             }
-                            Text { x: 10px; text: c.text; color: c.value == automix-length ? Theme.lilac-text : Theme.text; font-size: 12px; vertical-alignment: center; }
+                            Text { x: 10px; text: c.text; color: parent.ink; font-size: 12px; vertical-alignment: center; }
                         }
                     }
                 }
@@ -7521,7 +7504,7 @@ component SidePanel inherits Rectangle {
                         border-radius: 4px;
                         // Lilac while focused, a darker lilac otherwise.
                         property <bool> picked: i >= first-picked && i <= last-picked;
-                        background: picked ? (keys.has-focus ? Theme.selection : #5a4d80) : sta.has-hover ? Theme.n-1f1f22 : transparent;
+                        background: picked ? (keys.has-focus ? Theme.selection : Theme.f-5a4d80) : sta.has-hover ? Theme.n-1f1f22 : transparent;
                         // Picked rows go together, onto a deck, a list in
                         // the tree, or elsewhere in this list to reorder it.
                         DragArea {
@@ -7582,7 +7565,7 @@ component SidePanel inherits Rectangle {
                                     Text { horizontal-stretch: 1; text: r.artist; color: dim; font-size: 13px * ListText.scale; overflow: elide; }
                                     HorizontalLayout {
                                         spacing: 2px;
-                                        Text { text: r.key; color: (i >= first-picked && i <= last-picked) ? (keys.has-focus ? Theme.on-row-selection : #ffffff) : r.key-match ? Theme.lilac-text : Theme.text; font-size: 13px * ListText.scale; font-weight: 500; }
+                                        Text { text: r.key; color: (i >= first-picked && i <= last-picked) ? (keys.has-focus ? Theme.on-row-selection : Theme.f-ffffff) : r.key-match ? Theme.lilac-text : Theme.text; font-size: 13px * ListText.scale; font-weight: 500; }
                                         if r.key-shift != 0: Text {
                                             text: r.key-shift > 0 ? "+" + r.key-shift : "−" + (-r.key-shift);
                                             color: (i >= first-picked && i <= last-picked) ? Theme.on-row-selection-dim : r.key-shift == 1 || r.key-shift == -1 ? Theme.lilac-dim : Theme.key-far;
@@ -7695,7 +7678,7 @@ component SidePanel inherits Rectangle {
             border-width: 1px;
             border-color: Theme.border;
             drop-shadow-blur: 20px;
-            drop-shadow-color: #00000099;
+            drop-shadow-color: Theme.f-00000099;
         }
         VerticalLayout {
             padding: 16px;

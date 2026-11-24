@@ -1,9 +1,11 @@
 import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Palette } from "std-widgets.slint";
 import { Theme, KeyNotation, CloseIcon } from "theme.slint";
+import { SectionTitle } from "pills.slint";
+import { DownbeatIcon, GridEditorBar, GridEditorUi } from "grid_editor.slint";
 import { TourMark } from "tourmark.slint";
 import { Controls, ControlButton, VuMeter, ControlKnob, HoverTipView, HoverTip } from "controls.slint";
-import { Deck, DeckInfo, GridMenu, GridModePicker, PadsUi, KeyItem, EffectList, FxRow, FxGroup, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName } from "deck.slint";
+import { Deck, DeckInfo, GridModePicker, PadsUi, KeyItem, EffectList, FxRow, FxGroup, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName } from "deck.slint";
 import { Mixer, ExternalMixer, AudioSettings, OutputRow, MixerMode, InputSettings, InputRow } from "mixer.slint";
 import { MasterPanel, MicPanel, OnAirPanel, BroadcastState, BroadcastStation, AirTime } from "toppanels.slint";
 import { PlayerBar, PlayerDeck, PlayerMixer, TopSearch, QuickResults, QuickSearch, QuickRow } from "player.slint";
@@ -24,7 +26,6 @@ export { DeckAuto }
 import { LayoutsUi, LayoutEntry } from "layouts.slint";
 export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
-import { ChecklistUi } from "checklist.slint";
 import { LyricsUi, WaveLyrics, LyricsLane, WaveLine } from "lyrics.slint";
 import { TasksUi, TasksRing } from "tasks.slint";
 export { TasksUi, TaskRow, TaskWaiting } from "tasks.slint";
@@ -78,7 +79,7 @@ export global MacroLanes {
     // Set by the app.
     in property <[bool]> moved: [false, false, false, false, false, false, false, false];
     // Each knob's line colour, as the waveform draws it (LEVEL_COLORS).
-    out property <[color]> colors: [#FF6B6B, #FFB347, #FFE066, #7BE495, #4FD1C5, #63B3ED, #B69CFF, #F78FB3];
+    out property <[color]> colors: [Theme.f-ff6b6b, Theme.f-ffb347, Theme.f-ffe066, Theme.f-7be495, Theme.f-4fd1c5, Theme.f-63b3ed, Theme.f-b69cff, Theme.f-f78fb3];
     callback toggle(deck: int);
 }
 
@@ -113,11 +114,16 @@ component EditGridButton inherits Rectangle {
     in property <string> key;
     in property <string> text;
     in property <color> ink: Theme.text;
+    // The one to press: lilac, as a lit pill.
+    in property <bool> lit;
     callback clicked();
-    height: 30px;
-    border-radius: 6px;
-    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.panel-raised.brighter(0.35) : Theme.panel-raised.brighter(0.18);
-    Text { text: root.text; color: ink; font-size: 13px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+    height: 28px;
+    border-radius: Theme.pad-radius;
+    background: ta.pressed ? Theme.control-pressed : lit ? (ta.has-hover ? Theme.lit-fill-hover : Theme.lit-fill) : ta.has-hover ? Theme.pill-hover : Theme.pill;
+    border-width: 1px;
+    border-color: lit ? Theme.n-6e58a8 : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    Text { text: root.text; color: lit ? Theme.lilac-text : ink; font-size: 12px; font-weight: 500; horizontal-alignment: center; vertical-alignment: center; }
+    @children
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {
@@ -128,6 +134,18 @@ component EditGridButton inherits Rectangle {
             root.clicked();
         }
     }
+}
+
+// A text button in the Edit Grid popover (Reset, Show Editor).
+component TextLink inherits Rectangle {
+    in property <string> text;
+    in property <color> ink: Theme.text;
+    callback clicked();
+    height: 28px;
+    border-radius: Theme.pad-radius;
+    background: ta.has-hover ? Theme.pill-hover : transparent;
+    Text { text: root.text; color: root.ink; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
 // Scrolling waveform, rendered on the GPU into `source`. Hold it to stop
@@ -432,12 +450,14 @@ component Waveform inherits Rectangle {
             }
         }
     }
-    // Edit Grid: bar 1 at the play line, nudges, the rest of the grid tools
-    // (More…), back to the detected grid, lock, and Done.
+    // Edit Grid, as the pencil opens it: bar 1 at the play line, bar 1 a
+    // beat either way, back to the detected grid, and the grid editor bar
+    // shown or hidden.
+    property <bool> detected: info.grid-source == "Detected";
     edit-popup := PopupWindow {
         x: root.width - self.width - 5px;
         y: root.height - 2px;
-        width: 232px;
+        width: 236px;
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.pill-list;
@@ -452,10 +472,10 @@ component Waveform inherits Rectangle {
             spacing: 8px;
             HorizontalLayout {
                 height: 22px;
-                Text { text: "Edit Grid"; color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1; }
-                Text {
-                    text: info.grid-unsure && info.grid-source == "Detected" ? "check by ear" : info.grid-source;
-                    color: info.grid-unsure && info.grid-source == "Detected" ? Theme.stage-prep : Theme.text-dim;
+                SectionTitle { title: "Edit Grid"; horizontal-stretch: 1; }
+                if info.grid-unsure && detected: Text {
+                    text: "Check by ear";
+                    color: Theme.stage-prep;
                     font-size: 11px;
                     vertical-alignment: center;
                 }
@@ -463,52 +483,50 @@ component Waveform inherits Rectangle {
             if locked: Text {
                 text: "The grid is locked.";
                 color: Theme.text-dim;
-                font-size: 13px;
+                font-size: 12px;
             }
             if locked: EditGridButton {
                 text: "Unlock";
                 clicked => { Controls.set-value(Controls.resolve(group, "bpmlock"), 0); }
             }
-            if !locked: EditGridButton { group: group; key: "beats_downbeat_here"; text: "Set Downbeat"; }
+            if !locked: EditGridButton {
+                group: group;
+                key: "beats_downbeat_here";
+                height: 36px;
+                lit: true;
+                text: "";
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+                    DownbeatIcon { y: (parent.height - self.height) / 2; }
+                    Text { text: "Set Downbeat"; color: Theme.lilac-text; font-size: 13px; font-weight: 500; vertical-alignment: center; }
+                }
+            }
             if !locked: HorizontalLayout {
                 spacing: 6px;
-                EditGridButton { group: group; key: "beats_translate_earlier"; text: "◀ |"; }
-                EditGridButton { group: group; key: "beats_translate_later"; text: "| ▶"; }
+                EditGridButton { group: group; key: "beats_downbeat_earlier"; text: ""; DownbeatIcon { dir: -1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
+                EditGridButton { group: group; key: "beats_downbeat_later"; text: ""; DownbeatIcon { dir: 1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
             }
-            if !locked: GridModePicker { group: group; height: 30px; font-size: 13px; }
-            if !locked: EditGridButton {
-                text: "More…";
-                ink: Theme.text-dim;
+            if !locked: TextLink {
+                text: "Reset";
+                ink: detected ? Theme.n-48484c : Theme.f-ff6b6b;
                 clicked => {
-                    edit-popup.close();
-                    grid-menu.show();
-                }
-            }
-            HorizontalLayout {
-                spacing: 6px;
-                if !locked && info.grid-source != "Detected": EditGridButton { group: group; key: "beats_reset"; text: "Reset"; ink: #ff6b6b; }
-                if !locked: EditGridButton {
-                    text: "Lock";
-                    clicked => { Controls.set-value(Controls.resolve(group, "bpmlock"), 1); }
-                }
-                EditGridButton {
-                    text: "Done";
-                    ink: Theme.accent;
-                    clicked => {
-                        if !drag-grid {
-                            Controls.set-value(edit-index, 0);
-                        }
-                        edit-popup.close();
+                    if !detected {
+                        Controls.set-value(Controls.resolve(group, "beats_reset"), 1);
+                        Controls.set-value(Controls.resolve(group, "beats_reset"), 0);
                     }
                 }
             }
+            TextLink {
+                text: GridEditorUi.shown ? "Hide Editor" : "Show Editor";
+                ink: Theme.lilac-text;
+                clicked => {
+                    GridEditorUi.group = group;
+                    GridEditorUi.shown = !GridEditorUi.shown;
+                    edit-popup.close();
+                }
+            }
         }
-    }
-    grid-menu := GridMenu {
-        group: group;
-        info: info;
-        x: root.width - 245px;
-        y: root.height - 2px;
     }
     // The switch between the note roll and the macro lanes.
     if live-knobs: Rectangle {
@@ -684,7 +702,7 @@ component MapBarButton inherits Rectangle {
     tl := HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
-        Text { text: root.text; color: primary ? #1a1426 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
+        Text { text: root.text; color: primary ? Theme.f-1a1426 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -700,7 +718,7 @@ component MapBar inherits Rectangle {
     height: 40px;
     width: bl.preferred-width;
     border-radius: 10px;
-    background: #2a2236;
+    background: Theme.f-2a2236;
     border-width: 1px;
     border-color: Theme.lilac;
     drop-shadow-blur: 16px;
@@ -783,8 +801,8 @@ component OnAirButton inherits Rectangle {
     // 0 off, 1 connecting, 2 every station on air, 3 failed, 4 some.
     property <int> status: Controls.value(Controls.resolve("[Shoutcast]", "status"), Controls.tick);
     property <float> seconds: Controls.value(Controls.resolve("[Broadcast]", "on_air_seconds"), Controls.tick);
-    property <color> light: status == 2 ? #e5484d : status == 3 ? Theme.n-7a7a80 : #f5a524;
-    background: ta.pressed ? Theme.control-pressed : on ? #e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
+    property <color> light: status == 2 ? Theme.f-e5484d : status == 3 ? Theme.n-7a7a80 : Theme.f-f5a524;
+    background: ta.pressed ? Theme.control-pressed : on ? Theme.f-e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
     border-radius: 10px;
     border-width: 1px;
     border-color: on ? light : transparent;
@@ -921,7 +939,7 @@ component LayoutItem inherits Rectangle {
     height: 32px;
     border-radius: 6px;
     background: enabled && ta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
-    property <color> tint: !enabled ? Theme.text-dim.with-alpha(0.5) : current ? Theme.accent : Theme.text;
+    property <color> tint: !enabled ? Theme.text-dim.with-alpha(0.5) : ta.has-hover ? Theme.menu-hover-text : Theme.menu-current-text;
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;
@@ -929,7 +947,7 @@ component LayoutItem inherits Rectangle {
         VerticalLayout { alignment: center; LayoutIcon { kind: kind; tint: tint; } }
         Text { text: root.text; color: tint; font-size: 13px; font-weight: 500; vertical-alignment: center; horizontal-stretch: 1; }
         if !enabled: Text { text: "Soon"; color: Theme.text-dim.with-alpha(0.5); font-size: 10px; vertical-alignment: center; }
-        if current: Text { text: "✓"; color: Theme.lilac-text; font-size: 13px; vertical-alignment: center; }
+        if current: Text { text: "✓"; color: Theme.menu-current-text; font-size: 13px; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: enabled ? pointer : default;
@@ -1005,7 +1023,7 @@ component LayoutSwitch inherits Rectangle {
         height: 16px;
         border-radius: 8px;
         // The knob stays white in Light too, as macOS draws it.
-        background: #ffffff;
+        background: Theme.f-ffffff;
     }
     TouchArea { mouse-cursor: pointer; clicked => { toggled(); } }
 }
@@ -1594,7 +1612,7 @@ export component AppWindow inherits Window {
     callback zoom-window();
     out property <length> waveform-width: waveforms.width;
     // Two waveforms, or four in 4-Deck, share the room between the lines.
-    out property <length> waveform-height: max(1px, (waveforms.height - (wave-rows + 1) * 1px - (prep ? 24px : 0px)) / wave-rows);
+    out property <length> waveform-height: max(1px, (waveforms.height - (wave-rows + 1) * 1px) / wave-rows);
     property <int> wave-rows: four ? 4 : prep ? 1 : 2;
     // The waveforms' strip at each of the ten height steps
     // (wave_height.slint), 1 first, 3 being the height it always had: each
@@ -1631,7 +1649,7 @@ export component AppWindow inherits Window {
     changed fx-short => { if !fx-short { fx-unfold = false; } }
     property <bool> fx-unfold;
     property <bool> fx-folded: fx-short && !fx-unfold;
-    property <bool> fx-bar-shown: fx-bar-visible && !prep && !fx-folded;
+    property <bool> fx-bar-shown: (fx-bar-visible || GridEditorUi.shown) && !prep && !fx-folded;
     // The library keeps room for about five tracks under its header: a
     // step with less shows the highest one that fits, but never below 3
     // unless the DJ chose less. The chosen one comes back
@@ -1826,17 +1844,6 @@ export component AppWindow inherits Window {
         Controls.set-value(i, Controls.value(i, Controls.tick) > 0 ? 0 : 1);
     }
     // The Prep layout's keys (see the prep-layout spec); true when one ran.
-    // Option+1-9 in Prep: ticks checklist line 1-9 (macOS types ¡™£¢∞§¶•ª
-    // for them).
-    function prep-alt-key(text: string) -> bool {
-        let n = text == "1" || text == "¡" ? 1 : text == "2" || text == "™" ? 2 : text == "3" || text == "£" ? 3 : text == "4" || text == "¢" ? 4
-            : text == "5" || text == "∞" ? 5 : text == "6" || text == "§" ? 6 : text == "7" || text == "¶" ? 7 : text == "8" || text == "•" ? 8
-            : text == "9" || text == "ª" ? 9 : 0;
-        if n > 0 {
-            ChecklistUi.tick(n - 1);
-        }
-        n > 0
-    }
     function prep-key(text: string, shift: bool) -> bool {
         if text == Key.Return {
             PrepUi.ready();
@@ -1857,8 +1864,34 @@ export component AppWindow inherits Window {
             press(text == Key.RightArrow ? "beatjump_16_forward" : "beatjump_16_backward");
             return true;
         }
+        // Shift+T: a memory cue, as rekordbox's key.
+        if shift && (text == "T" || text == "t") {
+            CueList.add-memory();
+            return true;
+        }
         if shift {
             return false;
+        }
+        // Play, CUE and the loop on rekordbox's keys for deck 1.
+        if text == "z" {
+            flip("play");
+            return true;
+        }
+        if text == "a" {
+            press("cue_default");
+            return true;
+        }
+        if text == "d" {
+            press("loop_in");
+            return true;
+        }
+        if text == "f" {
+            press("loop_out");
+            return true;
+        }
+        if text == "g" {
+            press("reloop_toggle");
+            return true;
         }
         let locked = Controls.value(Controls.resolve("[Channel1]", "bpmlock"), Controls.tick) > 0;
         if text == "l" {
@@ -2086,9 +2119,6 @@ export component AppWindow inherits Window {
             if prep && !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && prep-key(e.text, e.modifiers.shift) {
                 return accept;
             }
-            if prep && !Preferences.open && e.modifiers.alt && !e.modifiers.control && !e.modifiers.meta && prep-alt-key(e.text) {
-                return accept;
-            }
             if !Preferences.open && shortcut(e.text, e.modifiers.control, e.modifiers.alt, e.modifiers.shift, master-deck, browser.first-picked, browser.last-picked) {
                 return accept;
             }
@@ -2206,32 +2236,6 @@ export component AppWindow inherits Window {
                     spacing: 0px;
                     Rectangle { height: 1px; background: Theme.border; }
                     Waveform { source: waveform-1; group: "[Channel1]"; info: decks[0]; vertical-stretch: 1; lyrics-deck: 0; drag-grid: true; first: true; }
-                    // The quick review keys, and how long this track has taken.
-                    Rectangle {
-                        height: 24px;
-                        background: Theme.panel;
-                        HorizontalLayout {
-                            padding-left: 10px;
-                            padding-right: 10px;
-                            spacing: 14px;
-                            for hint in ["Tab", "next phrase", "← →", "4 bars", "1–8", "hot cues", "B", "bar 1", "[ ]", "move grid", "M", "click", "⌥1–9", "checklist", "⏎", "ready, next"]: Text {
-                                // Keys and what they do take turns.
-                                text: hint;
-                                color: hint == "Tab" || hint == "← →" || hint == "1–8" || hint == "B" || hint == "[ ]" || hint == "M" || hint == "⌥1–9" || hint == "⏎" ? Theme.text : Theme.text-dim;
-                                font-size: 11px;
-                                font-weight: hint == "Tab" || hint == "← →" || hint == "1–8" || hint == "B" || hint == "[ ]" || hint == "M" || hint == "⌥1–9" || hint == "⏎" ? 700 : 400;
-                                vertical-alignment: center;
-                            }
-                            Rectangle { horizontal-stretch: 1; }
-                            Text {
-                                text: "This track " + PrepUi.clock(PrepUi.track-seconds) + (PrepUi.average-seconds > 0 ? "  ·  average " + PrepUi.clock(PrepUi.average-seconds) : "");
-                                color: Theme.text-dim;
-                                font-family: "Inter Tabular";
-                                font-size: 11px;
-                                vertical-alignment: center;
-                            }
-                        }
-                    }
                     Rectangle { height: 1px; background: Theme.border; }
                 }
                 if !four && !prep: VerticalLayout {
@@ -2255,12 +2259,11 @@ export component AppWindow inherits Window {
                     Rectangle { height: 1px; background: Theme.border; }
                 }
                 // The zoom's bar, down the left edge of all the waveforms at
-                // once (Prep's one, not its key hints), while the pointer is
-                // over any of them or on the bar.
+                // once, while the pointer is over any of them or on the bar.
                 ZoomBar {
                     x: 0;
                     y: 0;
-                    height: prep ? max(0px, parent.height - 26px) : parent.height;
+                    height: parent.height;
                     shown: WaveZoom.hovered != "";
                 }
             }
@@ -2366,7 +2369,7 @@ export component AppWindow inherits Window {
                 prep-deck := PrepDeck {
                     info: decks[0];
                     overview: overview-1;
-                    height: prep ? 280px : 0px;
+                    height: prep ? self.preferred-height : 0px;
                     visible: prep;
                 }
 
@@ -2385,8 +2388,15 @@ export component AppWindow inherits Window {
             // bar hides it.
             FxBar {
                 four: four;
-                height: library-expanded || !fx-bar-shown || player ? 0px : four ? 96px : 100px;
-                visible: !library-expanded && fx-bar-shown && !player;
+                height: library-expanded || !fx-bar-shown || player || GridEditorUi.shown ? 0px : four ? 96px : 100px;
+                visible: !library-expanded && fx-bar-shown && !player && !GridEditorUi.shown;
+            }
+            // The grid editor takes the FX bar's place while shown.
+            GridEditorBar {
+                decks: root.decks;
+                one: four;
+                height: library-expanded || !fx-bar-shown || player || !GridEditorUi.shown ? 0px : four ? 96px : 100px;
+                visible: !library-expanded && fx-bar-shown && !player && GridEditorUi.shown;
             }
 
             Rectangle { height: !library-expanded && fx-bar-shown && !player ? 1px : 0px; }
@@ -2572,7 +2582,7 @@ export component AppWindow inherits Window {
                         border-radius: 13px;
                         action-text := Text {
                             text: update-action;
-                            color: #000000;
+                            color: Theme.f-000000;
                             font-size: 12px;
                             font-weight: 600;
                         }

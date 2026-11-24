@@ -833,6 +833,11 @@ impl Library {
                 if !g.is_empty() {
                     t.set_grid(g);
                     t.info.fixed_grid = true;
+                } else if t.info.grid_from == "user" {
+                    // The DJ cleared the grid: no beats, and analysis
+                    // leaves it so.
+                    t.bpm = 0.0;
+                    t.info.fixed_grid = true;
                 }
             }
             out.push(t);
@@ -1210,6 +1215,31 @@ impl Library {
                     c.end,
                     c.color.map(|c| c as i64)
                 ],
+            )?;
+        }
+        tx.commit()
+    }
+
+    /// Sets one of a track's Automix points (`name` as an imported one:
+    /// "realStart" where it is mixed in, "fadeStart" where it is mixed
+    /// out), replacing any other of that name, or clears it.
+    pub fn set_automix_point(
+        &mut self,
+        id: usize,
+        name: &str,
+        seconds: Option<f64>,
+    ) -> Result<(), Error> {
+        let Some(row) = row_id(id) else { return Ok(()) };
+        let tx = self.db.transaction()?;
+        tx.execute(
+            "DELETE FROM markers WHERE track_id = ?1 AND kind = 'automix' AND name = ?2",
+            params![row, name],
+        )?;
+        if let Some(s) = seconds {
+            tx.execute(
+                "INSERT INTO markers (track_id, kind, seconds, name, source)
+                 VALUES (?1, 'automix', ?2, ?3, 'user')",
+                params![row, s, name],
             )?;
         }
         tx.commit()
@@ -3436,6 +3466,40 @@ mod tests {
         assert!(tree.iter().any(|p| p.id == mine));
         assert_eq!(tree.iter().filter(|p| p.name == "Friday").count(), 1);
         assert!(!tree.iter().any(|p| p.name == "Old ones"));
+    }
+
+    #[test]
+    fn an_automix_point_replaces_the_imported_one_and_clears() {
+        let mut lib = Library::in_memory().unwrap();
+        lib.sync(&[file_track("/m/a.mp3", "A")]).unwrap();
+        let id = lib.tracks(|_| true).unwrap()[0].id;
+        lib.db
+            .execute(
+                "INSERT INTO markers (track_id, kind, seconds, name, source)
+                 VALUES (?1, 'automix', 200.0, 'fadeStart', 'vdj')",
+                [row_id(id).unwrap()],
+            )
+            .unwrap();
+        let points = |lib: &Library| -> Vec<(String, f64, bool)> {
+            lib.tracks(|_| true).unwrap()[0]
+                .info
+                .markers
+                .iter()
+                .filter(|m| m.kind == MarkerKind::Automix)
+                .map(|m| (m.name.clone(), m.seconds, m.detected))
+                .collect()
+        };
+        lib.set_automix_point(id, "fadeStart", Some(180.0)).unwrap();
+        lib.set_automix_point(id, "realStart", Some(15.0)).unwrap();
+        assert_eq!(
+            points(&lib),
+            [
+                ("realStart".into(), 15.0, false),
+                ("fadeStart".into(), 180.0, false)
+            ]
+        );
+        lib.set_automix_point(id, "fadeStart", None).unwrap();
+        assert_eq!(points(&lib), [("realStart".into(), 15.0, false)]);
     }
 
     #[test]

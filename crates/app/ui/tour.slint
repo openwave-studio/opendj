@@ -200,7 +200,7 @@ export component TourTip inherits Rectangle {
         background: Theme.panel-raised;
         border-radius: 10px;
         border-width: 1px;
-        border-color: Tour.done ? #4cd07d : Theme.lilac;
+        border-color: Tour.done ? Theme.f-4cd07d : Theme.lilac;
         drop-shadow-blur: 20px;
         drop-shadow-color: Theme.s-000000c0;
         TouchArea { }
@@ -261,7 +261,7 @@ export component TourOffer inherits Rectangle {
                 height: 26px;
                 background: take.has-hover ? Theme.lilac.brighter(0.15) : Theme.lilac;
                 border-radius: 13px;
-                take-text := Text { text: "Take the tour"; color: #000000; font-size: 12px; font-weight: 600; }
+                take-text := Text { text: "Take the tour"; color: Theme.f-000000; font-size: 12px; font-weight: 600; }
                 take := TouchArea { mouse-cursor: pointer; clicked => { Tour.start(-1); } }
             }
         }

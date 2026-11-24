@@ -33,12 +33,22 @@ pub enum GridEdit {
     Scale(f64),
     /// Puts a beat here and makes it the first of a bar (`beats_downbeat_here`).
     BarHere,
+    /// Moves bar 1 this many beats later (earlier when negative); the beats
+    /// stay where they are (`beats_downbeat_earlier`/`_later`).
+    ShiftBar(i32),
+    /// Moves the tempo change (anchor) nearest here by this many seconds:
+    /// the sections either side stretch to meet it, and the anchors beyond
+    /// stay put (`beats_anchor_earlier`/`_later`).
+    MoveAnchor(f64),
     /// Takes back the last edit (`beats_undo_adjustment`).
     Undo,
     /// Locks or unlocks the grid against edits and analysis (`bpmlock`).
     Lock(bool),
     /// Goes back to the grid analysis found (`beats_reset`).
     Reset,
+    /// Takes the grid away, for a track with no steady beat; the tempo is
+    /// then unknown (`beats_clear`, not in Mixxx).
+    Clear,
     /// Fits the grid again from the analysed beats in this mode, and keeps
     /// the mode for the track (`beats_mode`).
     Mode(crate::gridfit::GridMode),
@@ -46,11 +56,13 @@ pub enum GridEdit {
 
 impl BeatGrid {
     /// The grid after `edit` at `seconds` (`Undo`, `Lock`, `Reset` and `Mode`
-    /// are the caller's to handle).
+    /// are the caller's to handle; `Clear` gives an empty grid).
     pub fn edited(&self, edit: GridEdit, seconds: f64) -> Self {
         match edit {
             GridEdit::BeatHere => self.with_beat_at(seconds),
             GridEdit::BarHere => self.with_beat_at(seconds).with_bar_at(seconds),
+            GridEdit::ShiftBar(beats) => self.with_bar_shifted(beats),
+            GridEdit::MoveAnchor(by) => self.with_anchor_moved(seconds, by),
             GridEdit::Shift(by) | GridEdit::Drag(by) => self.shifted(by),
             GridEdit::Tempo(by) => self.with_bpm_at(seconds, self.bpm_at(seconds) + by),
             GridEdit::SetTempo(bpm) => self.with_bpm_at(seconds, bpm),
@@ -65,6 +77,7 @@ impl BeatGrid {
                     })
                     .collect(),
             ),
+            GridEdit::Clear => Self::default(),
             GridEdit::Undo | GridEdit::Lock(_) | GridEdit::Reset | GridEdit::Mode(_) => {
                 self.clone()
             }
@@ -255,6 +268,58 @@ impl BeatGrid {
             seconds: first.seconds - to_bar * 60.0 / first.bpm,
             bpm: first.bpm,
         });
+        Self::new(markers)
+    }
+
+    /// The grid renumbered so bar 1 falls `beats` beats later (earlier when
+    /// negative). Beats stay where they are.
+    pub fn with_bar_shifted(&self, beats: i32) -> Self {
+        let Some(&first) = self.markers.first() else {
+            return self.clone();
+        };
+        // Starting the count this many beats before the first marker puts
+        // a bar on the beat `beats` after the old bar line.
+        let before = (4 - beats.rem_euclid(4)).rem_euclid(4);
+        if before == 0 {
+            return self.clone();
+        }
+        let mut markers = self.markers.clone();
+        markers.push(GridMarker {
+            seconds: first.seconds - before as f64 * 60.0 / first.bpm,
+            bpm: first.bpm,
+        });
+        Self::new(markers)
+    }
+
+    /// The grid with the tempo change nearest `seconds` moved by `by`
+    /// seconds. The section before it and the one after stretch to meet
+    /// it, keeping their number of beats; the other anchors stay put. With
+    /// one tempo the whole grid moves.
+    pub fn with_anchor_moved(&self, seconds: f64, by: f64) -> Self {
+        if self.markers.len() < 2 {
+            return self.shifted(by);
+        }
+        let k = (0..self.markers.len())
+            .min_by(|&a, &b| {
+                (self.markers[a].seconds - seconds)
+                    .abs()
+                    .total_cmp(&(self.markers[b].seconds - seconds).abs())
+            })
+            .unwrap_or(0);
+        let mut markers = self.markers.clone();
+        markers[k].seconds += by;
+        // Too close to a neighbour: no change rather than a lost anchor.
+        let room = |a: &GridMarker, b: &GridMarker| (b.seconds - a.seconds) * a.bpm / 60.0;
+        if (k > 0 && room(&markers[k - 1], &markers[k]) < MIN_SECTION_BEATS)
+            || (k + 1 < markers.len() && room(&markers[k], &markers[k + 1]) < MIN_SECTION_BEATS)
+        {
+            return self.clone();
+        }
+        // The section after keeps its beats: its tempo follows the move.
+        if k + 1 < markers.len() {
+            let beats = self.index[k + 1] - self.index[k];
+            markers[k].bpm = beats * 60.0 / (markers[k + 1].seconds - markers[k].seconds);
+        }
         Self::new(markers)
     }
 
@@ -464,6 +529,59 @@ mod tests {
         assert!((bar.bpm_at(20.0) - 125.0).abs() < 1e-9);
         assert!((bar.snap(16.0, false) - 16.0).abs() < 1e-9);
         assert_eq!(bar.markers().len(), 2);
+    }
+
+    #[test]
+    fn clearing_leaves_no_grid() {
+        let g = BeatGrid::constant(120.0, 0.5);
+        assert!(g.edited(GridEdit::Clear, 3.0).is_empty());
+    }
+
+    #[test]
+    fn shifting_bar_one_keeps_the_beats() {
+        let grid = BeatGrid::constant(120.0, 1.0);
+        let later = grid.edited(GridEdit::ShiftBar(1), 0.0);
+        // Beats stay every half second from 1 s; the bar now starts at 1.5 s.
+        assert!((later.snap(1.26, false) - 1.5).abs() < 1e-9);
+        assert_eq!(later.beat_at(1.5).round().rem_euclid(4.0), 0.0);
+        let earlier = grid.edited(GridEdit::ShiftBar(-1), 0.0);
+        assert_eq!(earlier.beat_at(0.5).round().rem_euclid(4.0), 0.0);
+        assert_eq!(grid.edited(GridEdit::ShiftBar(4), 0.0), grid);
+    }
+
+    #[test]
+    fn moving_an_anchor_stretches_both_sides() {
+        // 120 BPM from 0 s, 128 BPM from 16 s (32 beats in), 32 beats more.
+        let end = 16.0 + 32.0 * 60.0 / 128.0;
+        let grid = BeatGrid::new(vec![
+            GridMarker {
+                seconds: 0.0,
+                bpm: 120.0,
+            },
+            GridMarker {
+                seconds: 16.0,
+                bpm: 128.0,
+            },
+            GridMarker {
+                seconds: end,
+                bpm: 128.0,
+            },
+        ]);
+        let moved = grid.edited(GridEdit::MoveAnchor(0.1), 15.9);
+        let m = moved.markers();
+        assert!((m[1].seconds - 16.1).abs() < 1e-9);
+        // The anchors either side stay; the beats between still fit.
+        assert_eq!(m[0].seconds, 0.0);
+        assert!((m[2].seconds - end).abs() < 1e-9);
+        assert!((moved.beat_at(16.1) - 32.0).abs() < 1e-9);
+        assert!((moved.beat_at(end) - 64.0).abs() < 1e-9);
+        assert!(m[0].bpm < 120.0 && m[1].bpm > 128.0);
+        // One tempo: the whole grid moves.
+        let one = BeatGrid::constant(120.0, 1.0);
+        assert_eq!(
+            one.edited(GridEdit::MoveAnchor(-0.01), 3.0),
+            one.shifted(-0.01)
+        );
     }
 
     #[test]

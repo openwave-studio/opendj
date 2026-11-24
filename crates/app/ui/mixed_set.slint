@@ -6,6 +6,7 @@
 // `view-start` to `view-start + view-len` of it.
 import { Theme } from "theme.slint";
 import { Switch } from "controls.slint";
+import { ListRow, TitledList } from "pills.slint";
 import { SearchField } from "preferences.slint";
 
 // A track on the timeline: on its deck's row with Show decks on, above
@@ -211,7 +212,7 @@ component Button inherits Rectangle {
         padding-right: 12px;
         Text {
             text: root.text;
-            color: primary ? #000000 : Theme.text;
+            color: primary ? Theme.f-000000 : Theme.text;
             font-size: 12px;
             font-weight: 600;
             vertical-alignment: center;
@@ -270,7 +271,7 @@ component Chip inherits Rectangle {
         padding-right: 9px;
         Text {
             text: root.text;
-            color: on ? #000000 : Theme.text;
+            color: on ? Theme.f-000000 : Theme.text;
             font-size: 11px;
             font-weight: on ? 700 : 500;
             vertical-alignment: center;
@@ -333,7 +334,7 @@ component Timeline inherits Rectangle {
         width: max(2px, x1 - x0);
         y: 18px;
         height: MixedSetUi.show-decks ? mix-y + mix-h : rows * row-h + block-h;
-        background: s.kind == 0 ? (s.selected ? #b69cff40 : #b69cff1c) : s.kind == 3 ? #ffffff26 : #ff453a2a;
+        background: s.kind == 0 ? (s.selected ? Theme.f-b69cff40 : Theme.f-b69cff1c) : s.kind == 3 ? Theme.f-ffffff26 : Theme.f-ff453a2a;
         border-width: s.kind == 0 && s.selected ? 1px : 0px;
         border-color: Theme.accent;
         if s.kind == 0 && MixedSetUi.show-decks && s.label != "": Text {
@@ -373,7 +374,7 @@ component Timeline inherits Rectangle {
             Text {
                 x: 6px;
                 text: b.title;
-                color: b.selected ? #ffffff : Theme.text;
+                color: b.selected ? Theme.f-ffffff : Theme.text;
                 font-size: 11px;
                 vertical-alignment: center;
                 height: parent.height;
@@ -434,13 +435,13 @@ component Timeline inherits Rectangle {
                 padding-top: 3px;
                 Text {
                     text: b.title;
-                    color: b.selected ? #ffffff : Theme.text;
+                    color: b.selected ? Theme.f-ffffff : Theme.text;
                     font-size: 11px;
                     font-weight: 600;
                 }
                 Text {
                     text: b.artist;
-                    color: b.selected ? #ffffffb0 : Theme.text-dim;
+                    color: b.selected ? Theme.f-ffffffb0 : Theme.text-dim;
                     font-size: 10px;
                 }
             }
@@ -457,7 +458,7 @@ component Timeline inherits Rectangle {
             y: s.deck * row-h + row-h - 18px;
             height: 12px;
             border-radius: 3px;
-            background: s.kind == 1 ? #b69cff55 : #ff9f0a55;
+            background: s.kind == 1 ? Theme.f-b69cff55 : Theme.f-ff9f0a55;
             border-width: 1px;
             border-color: s.kind == 1 ? Theme.loop : Theme.cue;
             clip: true;
@@ -599,7 +600,7 @@ component Overview inherits Rectangle {
         border-width: 1.5px;
         border-color: Theme.accent;
         border-radius: 4px;
-        background: #b69cff14;
+        background: Theme.f-b69cff14;
     }
     TouchArea {
         mouse-cursor: pointer;
@@ -654,7 +655,7 @@ component Check inherits Rectangle {
         height: 8px;
         viewbox-width: 10;
         viewbox-height: 8;
-        stroke: #000000;
+        stroke: Theme.f-000000;
         stroke-width: 1.8px;
         commands: "M 1 4 L 4 7 L 9 1";
     }
@@ -807,7 +808,7 @@ component TransitionsTab inherits VerticalLayout {
                     }
                     Text {
                         text: t.number;
-                        color: i == MixedSetUi.selected-transition ? #ffffffb0 : Theme.text-dim;
+                        color: i == MixedSetUi.selected-transition ? Theme.f-ffffffb0 : Theme.text-dim;
                         font-size: 11px;
                         width: 18px;
                         vertical-alignment: center;
@@ -817,13 +818,13 @@ component TransitionsTab inherits VerticalLayout {
                         horizontal-stretch: 1;
                         Text {
                             text: t.out-title + " → " + t.in-title;
-                            color: i == MixedSetUi.selected-transition ? #ffffff : Theme.text;
+                            color: i == MixedSetUi.selected-transition ? Theme.f-ffffff : Theme.text;
                             font-size: 12px;
                             overflow: elide;
                         }
                         Text {
                             text: t.at + " · " + t.length + " · " + t.style + (t.saved != "" ? " · " + t.saved : "");
-                            color: i == MixedSetUi.selected-transition ? #ffffffb0 : Theme.text-dim;
+                            color: i == MixedSetUi.selected-transition ? Theme.f-ffffffb0 : Theme.text-dim;
                             font-size: 10px;
                             overflow: elide;
                         }
@@ -883,7 +884,7 @@ component TracksTab inherits VerticalLayout {
                     spacing: 8px;
                     Text {
                         text: t.number;
-                        color: now ? #ffffffb0 : Theme.text-dim;
+                        color: now ? Theme.f-ffffffb0 : Theme.text-dim;
                         font-size: 11px;
                         width: 18px;
                         vertical-alignment: center;
@@ -893,13 +894,13 @@ component TracksTab inherits VerticalLayout {
                         horizontal-stretch: 1;
                         Text {
                             text: t.title;
-                            color: now ? #ffffff : Theme.text;
+                            color: now ? Theme.f-ffffff : Theme.text;
                             font-size: 12px;
                             overflow: elide;
                         }
                         if t.artist != "" || t.swapped: Text {
                             text: t.swapped ? (t.artist != "" ? t.artist + " · swapped in" : "Swapped in") : t.artist;
-                            color: now ? #ffffffb0 : t.swapped ? Theme.lilac-text : Theme.text-dim;
+                            color: now ? Theme.f-ffffffb0 : t.swapped ? Theme.lilac-text : Theme.text-dim;
                             font-size: 10px;
                             overflow: elide;
                         }
@@ -908,13 +909,13 @@ component TracksTab inherits VerticalLayout {
                         alignment: center;
                         Text {
                             text: t.at;
-                            color: now ? #ffffff : Theme.text;
+                            color: now ? Theme.f-ffffff : Theme.text;
                             font-size: 11px;
                             horizontal-alignment: right;
                         }
                         Text {
                             text: t.length;
-                            color: now ? #ffffffb0 : Theme.text-dim;
+                            color: now ? Theme.f-ffffffb0 : Theme.text-dim;
                             font-size: 10px;
                             horizontal-alignment: right;
                         }
@@ -1253,31 +1254,11 @@ component FixesTab inherits VerticalLayout {
 }
 
 component ExportMenu inherits PopupWindow {
-    Rectangle {
-        background: Theme.panel-raised;
-        border-radius: 8px;
-        border-width: 1px;
-        border-color: Theme.border;
-        drop-shadow-blur: 16px;
-        drop-shadow-color: Theme.s-000000c0;
-        VerticalLayout {
-            padding: 4px;
-            for item[i] in ["Mixcloud tracklist", "YouTube chapters", "Cue sheet (.cue)", "Export for Mixcloud…"]: Rectangle {
-                height: 28px;
-                border-radius: 4px;
-                background: ta.has-hover ? Theme.selection : transparent;
-                Text {
-                    x: 10px;
-                    text: item;
-                    color: ta.has-hover ? #ffffff : Theme.text;
-                    font-size: 12px;
-                    vertical-alignment: center;
-                    height: parent.height;
-                }
-                ta := TouchArea {
-                    clicked => { MixedSetUi.export(i); }
-                }
-            }
+    TitledList {
+        title: "Export";
+        for item[i] in ["Mixcloud tracklist", "YouTube chapters", "Cue sheet (.cue)", "Export for Mixcloud…"]: ListRow {
+            clicked => { MixedSetUi.export(i); }
+            Text { x: 10px; text: item; color: parent.ink; font-size: 12px; vertical-alignment: center; height: parent.height; }
         }
     }
 }
@@ -1315,7 +1296,7 @@ export component MixedSetEditor inherits Rectangle {
                         height: 12px;
                         viewbox-width: 12;
                         viewbox-height: 12;
-                        fill: #000000;
+                        fill: Theme.f-000000;
                         commands: MixedSetUi.playing ? "M 2 1 L 5 1 L 5 11 L 2 11 Z M 7 1 L 10 1 L 10 11 L 7 11 Z" : "M 3 1 L 11 6 L 3 11 Z";
                     }
                     pa := TouchArea {

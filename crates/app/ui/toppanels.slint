@@ -336,7 +336,7 @@ export global Loudness {
         if (v <= -99) {
             return Theme.text-dim;
         }
-        return abs(v - target) <= 1 ? #30d158 : abs(v - target) <= 3 ? #ffd60a : #ff453a;
+        return abs(v - target) <= 1 ? Theme.f-30d158 : abs(v - target) <= 3 ? Theme.f-ffd60a : Theme.f-ff453a;
     }
     // What the target is for, as chosen in Settings › Audio.
     public pure function target-name(target: float) -> string {
@@ -422,7 +422,7 @@ component LoudnessSection inherits VerticalLayout {
         LoudnessReading {
             name: "TRUE PEAK";
             value: true-peak <= -99 ? "—" : Loudness.text(true-peak) + " dB";
-            tint: true-peak > -1 ? #ff453a : Theme.text;
+            tint: true-peak > -1 ? Theme.f-ff453a : Theme.text;
         }
     }
     Text {
@@ -613,7 +613,7 @@ export global BroadcastState {
 
     // On air: red. Connecting or some stations down: amber.
     public pure function light(state: int) -> color {
-        return state == 2 ? #e5484d : state == 1 ? #f5a524 : state == 3 ? Theme.n-7a7a80 : Theme.text-dim;
+        return state == 2 ? Theme.f-e5484d : state == 1 ? Theme.f-f5a524 : state == 3 ? Theme.n-7a7a80 : Theme.text-dim;
     }
 }
 
@@ -682,9 +682,9 @@ export component OnAirPanel inherits PopupWindow {
         Rectangle {
             height: 40px;
             border-radius: 10px;
-            background: go.pressed ? Theme.control-pressed : on ? #e5484d.with-alpha(go.has-hover ? 0.3 : 0.2) : !BroadcastState.ready ? Theme.well : go.has-hover ? #e5484d : #d13c41;
+            background: go.pressed ? Theme.control-pressed : on ? Theme.f-e5484d.with-alpha(go.has-hover ? 0.3 : 0.2) : !BroadcastState.ready ? Theme.well : go.has-hover ? Theme.f-e5484d : Theme.f-d13c41;
             border-width: 1px;
-            border-color: on ? #e5484d : transparent;
+            border-color: on ? Theme.f-e5484d : transparent;
             Text {
                 text: on ? "Go off air" : "Go on air";
                 color: !on && !BroadcastState.ready ? Theme.text-dim : Theme.text;
