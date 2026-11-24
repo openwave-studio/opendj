@@ -1,0 +1,384 @@
+{
+  "file": "Reloop Beatmix.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "hplevel": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "hpmix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-autoloop": {
+      "SHIFT": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-bendm": {
+      "SHIFT": [
+        "Beat jump back"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-bendp": {
+      "SHIFT": [
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fxamount": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-fxon": {
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 1 on",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-fxselect": {
+      "Press": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Effect 1 next",
+        "FX 1 Effect 1 previous"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-hc1": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-hc2": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-hc3": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "Ring": [
+        "Jog nudge"
+      ],
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Search": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Reloop beatmix input"
+      ]
+    },
+    "l-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "Beat jump back",
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "l-loopin": {
+      "SHIFT": [
+        "Loop in"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-t1": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-t2": {
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Play from start"
+      ]
+    },
+    "l-t3": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-t4": {
+      "SHIFT": [
+        "Key lock"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-autoloop": {
+      "SHIFT": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-bendm": {
+      "SHIFT": [
+        "Beat jump back"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-bendp": {
+      "SHIFT": [
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fxamount": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-fxon": {
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 1 on",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-fxselect": {
+      "Press": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Effect 1 next",
+        "FX 2 Effect 1 previous"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-hc1": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-hc2": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-hc3": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "Ring": [
+        "Jog nudge"
+      ],
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Search": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Reloop beatmix input"
+      ]
+    },
+    "r-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "Beat jump back",
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "r-loopin": {
+      "SHIFT": [
+        "Loop in"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-t1": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-t2": {
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Play from start"
+      ]
+    },
+    "r-t3": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-t4": {
+      "SHIFT": [
+        "Key lock"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

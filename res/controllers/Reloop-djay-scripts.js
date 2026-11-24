@@ -302,6 +302,27 @@ ReloopDJ.controller = function(data) {
         case "pitchPlus":
             c.push(ctx, g, "pitch_up");
             return;
+        case "pitchBendMinus":
+            engine.setValue(g, "rate_temp_down", ctx.press ? 1 : 0);
+            return;
+        case "pitchBendPlus":
+            engine.setValue(g, "rate_temp_up", ctx.press ? 1 : 0);
+            return;
+        case "pitchBendMove":
+            engine.setValue(g, "jog", ctx.delta / 4);
+            return;
+        case "gotoBeginning":
+        case "startPoint":
+            c.push(ctx, g, "start");
+            return;
+        case "brakeTransitionEffect":
+            if (ctx.press) {
+                engine.brake(d, !!engine.getValue(g, "play"));
+            }
+            return;
+        case "browse":
+            engine.setValue("[Library]", "MoveVertical", -ctx.delta);
+            return;
         case "speed":
             engine.setParameter(g, "rate", ctx.v);
             return;
@@ -469,6 +490,10 @@ ReloopDJ.controller = function(data) {
             }
         } else if ((m = /^fx(\d)SelectNext$/.exec(name))) {
             c.push(ctx, c.fx(d, m[1]), "next_effect");
+        } else if ((m = /^fx(\d)SelectRotary$/.exec(name))) {
+            if (ctx.delta) {
+                engine.setValue(c.fx(d, m[1]), ctx.delta > 0 ? "next_effect" : "prev_effect", 1);
+            }
         } else if ((m = /^fx(\d)SelectPrev$/.exec(name))) {
             c.push(ctx, c.fx(d, m[1]), "prev_effect");
         } else if (/^fx\dWetDryValue$/.test(name)) {

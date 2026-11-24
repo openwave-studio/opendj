@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::probe::message_key;
 
-const LAYOUTS: [&str; 98] = [
+const LAYOUTS: [&str; 110] = [
     include_str!("../layouts/flx4.json"),
     include_str!("../layouts/ddj-flx6.json"),
     include_str!("../layouts/ddj-flx10.json"),
@@ -64,6 +64,18 @@ const LAYOUTS: [&str; 98] = [
     include_str!("../layouts/reloop-buddy.json"),
     include_str!("../layouts/reloop-mixon-4.json"),
     include_str!("../layouts/reloop-mixon-8-pro.json"),
+    include_str!("../layouts/reloop-beatpad-2.json"),
+    include_str!("../layouts/reloop-beatmix.json"),
+    include_str!("../layouts/reloop-elite.json"),
+    include_str!("../layouts/reloop-rp-8000.json"),
+    include_str!("../layouts/reloop-rp-8000-mk2.json"),
+    include_str!("../layouts/reloop-beatpad.json"),
+    include_str!("../layouts/reloop-beatmix-2-4-mk2.json"),
+    include_str!("../layouts/reloop-terminal-mix-2-4.json"),
+    include_str!("../layouts/reloop-mixage.json"),
+    include_str!("../layouts/reloop-digital-jockey-2-controller-edition.json"),
+    include_str!("../layouts/reloop-digital-jockey-2-ie.json"),
+    include_str!("../layouts/reloop-jockey-3-me.json"),
     include_str!("../layouts/xone-k2.json"),
     include_str!("../layouts/twister.json"),
     include_str!("../layouts/numark-v7.json"),

@@ -1,0 +1,577 @@
+{
+  "file": "Reloop-Mixage.midi.xml",
+  "parts": {
+    "c-button-1": {
+      "normal": [
+        "Handle trax press"
+      ]
+    },
+    "c-button-2": {
+      "normal": [
+        "Left"
+      ]
+    },
+    "c-button-3": {
+      "normal": [
+        "Load and play"
+      ]
+    },
+    "c-button-4": {
+      "normal": [
+        "Right"
+      ]
+    },
+    "c-button-5": {
+      "normal": [
+        "Stop"
+      ]
+    },
+    "c-button-6": {
+      "normal": [
+        "Handle trax press"
+      ]
+    },
+    "c-encoder-1": {
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c-encoder-2": {
+      "normal": [
+        "Scroll playlists"
+      ]
+    },
+    "c-fader-1": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "c-knob-1": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-button-1": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-button-10": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-button-11": {
+      "normal": [
+        "Handle track loading"
+      ]
+    },
+    "l-button-12": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-button-13": {
+      "normal": [
+        "Handle loop length press"
+      ]
+    },
+    "l-button-14": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "l-button-15": {
+      "normal": [
+        "Handle shift"
+      ]
+    },
+    "l-button-17": {
+      "normal": [
+        "Key down"
+      ]
+    },
+    "l-button-18": {
+      "normal": [
+        "Key up"
+      ]
+    },
+    "l-button-19": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-button-2": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-button-20": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-button-21": {
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-button-22": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-button-23": {
+      "normal": [
+        "Filter on"
+      ]
+    },
+    "l-button-3": {
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-button-4": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-button-5": {
+      "normal": [
+        "FX 1 Focused effect"
+      ]
+    },
+    "l-button-6": {
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 2 Assign to Deck 1",
+        "FX 3 Assign to Deck 1",
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-button-7": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-button-8": {
+      "normal": [
+        "Cue and play"
+      ]
+    },
+    "l-button-9": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-encoder-1": {
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "l-encoder-2": {
+      "normal": [
+        "Jump 256 beats back"
+      ]
+    },
+    "l-encoder-3": {
+      "normal": [
+        "Next filter effect"
+      ]
+    },
+    "l-fader-1": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-2": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-3": {
+      "Pitch": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-jog": {
+      "Scratch Toggle": [
+        "Scratch toggle"
+      ],
+      "Wheel Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Wheel Touch 2": [
+        "Wheel touch"
+      ],
+      "Wheel Turn": [
+        "Loop end",
+        "Loop start"
+      ],
+      "Wheel Turn 2": [
+        "Loop end",
+        "Loop start"
+      ],
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "l-knob-1": {
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "l-knob-10": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-knob-11": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-knob-2": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-3": {
+      "normal": [
+        "FX 1 Super knob"
+      ]
+    },
+    "l-knob-4": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-knob-5": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-knob-6": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-knob-7": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-8": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-knob-9": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-pad-1": {
+      "normal": [
+        "Scroll toggle"
+      ]
+    },
+    "l-pad-2": {
+      "normal": [
+        "Scroll toggle"
+      ]
+    },
+    "l-pad-3": {
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad-4": {
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad-5": {
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad-6": {
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad-7": {
+      "normal": [
+        "Handle beat loop press"
+      ]
+    },
+    "r-button-1": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-button-10": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-button-11": {
+      "normal": [
+        "Handle track loading"
+      ]
+    },
+    "r-button-12": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-button-13": {
+      "normal": [
+        "Handle loop length press"
+      ]
+    },
+    "r-button-14": {
+      "normal": [
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-button-15": {
+      "normal": [
+        "Handle shift"
+      ]
+    },
+    "r-button-17": {
+      "normal": [
+        "Key down"
+      ]
+    },
+    "r-button-18": {
+      "normal": [
+        "Key up"
+      ]
+    },
+    "r-button-19": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-button-2": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-button-20": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-button-21": {
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-button-22": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-button-23": {
+      "normal": [
+        "Filter on"
+      ]
+    },
+    "r-button-3": {
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-button-4": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-button-5": {
+      "normal": [
+        "FX 2 Focused effect"
+      ]
+    },
+    "r-button-6": {
+      "normal": [
+        "FX 1 Assign to Deck 2",
+        "FX 2 Assign to Deck 2",
+        "FX 3 Assign to Deck 2",
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-button-7": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-button-8": {
+      "normal": [
+        "Cue and play"
+      ]
+    },
+    "r-button-9": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-encoder-1": {
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "r-encoder-2": {
+      "normal": [
+        "Jump 256 beats back"
+      ]
+    },
+    "r-encoder-3": {
+      "normal": [
+        "Next filter effect"
+      ]
+    },
+    "r-fader-1": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-2": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-3": {
+      "Pitch": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-jog": {
+      "Scratch Toggle": [
+        "Scratch toggle"
+      ],
+      "Wheel Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Wheel Touch 2": [
+        "Wheel touch"
+      ],
+      "Wheel Turn": [
+        "Loop end",
+        "Loop start"
+      ],
+      "Wheel Turn 2": [
+        "Loop end",
+        "Loop start"
+      ],
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "r-knob-1": {
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "r-knob-10": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-knob-11": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-knob-2": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-3": {
+      "normal": [
+        "FX 2 Super knob"
+      ]
+    },
+    "r-knob-4": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-knob-5": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-knob-6": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-knob-7": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-8": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-knob-9": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-pad-1": {
+      "normal": [
+        "Scroll toggle"
+      ]
+    },
+    "r-pad-2": {
+      "normal": [
+        "Scroll toggle"
+      ]
+    },
+    "r-pad-3": {
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad-4": {
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad-5": {
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad-6": {
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad-7": {
+      "normal": [
+        "Handle beat loop press"
+      ]
+    }
+  }
+}

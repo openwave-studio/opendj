@@ -375,6 +375,14 @@ fn model_numbers(name: &str) -> Vec<String> {
         .collect()
 }
 
+/// Every number standing on its own in a name ("Beatmix 2/4" → "2", "4").
+fn bare_numbers(name: &str) -> Vec<String> {
+    name.split(|c: char| !c.is_alphanumeric())
+        .filter(|t| !t.is_empty() && t.chars().all(|c| c.is_ascii_digit()))
+        .map(str::to_string)
+        .collect()
+}
+
 /// The mapping for a MIDI port: every word of the port's name must appear in
 /// the mapping's name ("DDJ-FLX4" → "Pioneer DDJ-FLX4", "XONE:K2" →
 /// "Allen&Heath Xone K1/K2/K3"); among those, one whose model numbers are
@@ -394,10 +402,16 @@ pub fn match_mapping<'a>(port: &str, mappings: &'a [(String, PathBuf)]) -> Optio
                 .iter()
                 .filter(|n| !port_numbers.contains(n))
                 .count();
+            // A bare number in both names ("Beatmix 2" → "Beatmix 2/4")
+            // only breaks ties between names that fit otherwise.
+            let shared = bare_numbers(port)
+                .iter()
+                .filter(|n| bare_numbers(name).contains(n))
+                .count();
             port_tokens
                 .iter()
                 .all(|t| m.contains(t))
-                .then_some(((missing, m.len()), path))
+                .then_some(((missing, usize::MAX - shared, m.len()), path))
         })
         .min_by_key(|(rank, _)| *rank)
         .map(|(_, p)| p.as_path())
@@ -1399,6 +1413,13 @@ mod tests {
             ("Reloop Buddy", "Reloop Buddy.midi.xml"),
             ("Mixon 4", "Reloop Mixon 4.midi.xml"),
             ("Reloop Mixon 8 Pro", "Reloop Mixon 8 Pro.midi.xml"),
+            ("Reloop Beatpad2", "Reloop Beatpad 2.midi.xml"),
+            ("Reloop BeatMix", "Reloop Beatmix.midi.xml"),
+            ("Reloop ELITE", "Reloop Elite.midi.xml"),
+            ("RP8000", "Reloop RP-8000.midi.xml"),
+            ("RP8000mk2", "Reloop RP-8000 MK2.midi.xml"),
+            ("Beatmix 2", "Reloop-Beatmix-2-4-MK2.midi.xml"),
+            ("Beatmix 4", "Reloop-Beatmix-2-4-MK2.midi.xml"),
             ("Reloop Beatpad", "Reloop Beatpad.midi.xml"),
             ("Terminal Mix 2", "Reloop Terminal Mix 2-4.midi.xml"),
             ("Terminal Mix 4", "Reloop Terminal Mix 2-4.midi.xml"),
