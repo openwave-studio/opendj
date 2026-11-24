@@ -2357,6 +2357,127 @@ fn ddj_flx10_browse_loops_deck_select_and_search() {
     c.shutdown();
 }
 
+/// openDJ's DDJ-1000 mapping: the DDJ-FLX10's (its successor sends the same
+/// MIDI), with the DDJ-1000's own buttons and its jog displays on each
+/// deck's channel.
+#[test]
+fn ddj_1000_decks_buttons_and_jog_displays() {
+    let (reg, mut c) = load("Pioneer-DDJ-1000.midi.xml");
+    settle(&mut c, 50);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x92, 0x5D, 0x00]),
+        "deck 3's jog display shown: {out:x?}"
+    );
+    assert!(
+        !out.iter().any(|m| m[0] == 0x9F || m[0] == 0xBF),
+        "no FLX10 display messages: {out:x?}"
+    );
+
+    // Decks, pads and mixer as on the FLX10.
+    c.receive(&[0x93, 0x0B, 0x7F]);
+    c.receive(&[0x93, 0x0B, 0x00]);
+    assert_eq!(get(&reg, "[Channel4]", "play"), 1.0);
+    c.receive(&[0x9B, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "hotcue_3_activate"), 1.0);
+    c.receive(&[0x9B, 0x02, 0x00]);
+    sweep14(&mut c, 0xB2, 0x13, 0x33, 0x40);
+    let v = get(&reg, "[Channel3]", "volume");
+    assert!((v - 0.5).abs() < 0.02, "deck 3 volume {v}");
+
+    // MASTER TEMPO toggles key lock and lights; SHIFT + CUE taps the tempo.
+    let keylock = get(&reg, "[Channel2]", "keylock");
+    c.receive(&[0x91, 0x1A, 0x7F]);
+    c.receive(&[0x91, 0x1A, 0x00]);
+    assert_ne!(get(&reg, "[Channel2]", "keylock"), keylock);
+    settle(&mut c, 5);
+    let out = c.take_output();
+    let lit = if keylock > 0.0 { 0x00 } else { 0x7F };
+    assert!(
+        out.iter().any(|m| m[..] == [0x91, 0x1A, lit]),
+        "MASTER TEMPO light: {out:x?}"
+    );
+    c.receive(&[0x90, 0x68, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "bpm_tap"), 1.0);
+    c.receive(&[0x90, 0x68, 0x00]);
+
+    // SEARCH: |<< to the start; >>| loads the next track only while paused;
+    // held, it searches.
+    let load = reg.free("[Channel1]", "LoadSelectedTrack");
+    let down = reg.free("[Library]", "MoveDown");
+    c.receive(&[0x90, 0x5F, 0x7F]);
+    assert_eq!(down.get(), 1.0);
+    assert_eq!(load.get(), 1.0);
+    load.set(0.0);
+    reg.get("[Channel2]", "play").unwrap().set(1.0);
+    let load2 = reg.free("[Channel2]", "LoadSelectedTrack");
+    c.receive(&[0x91, 0x5F, 0x7F]);
+    assert_eq!(load2.get(), 0.0, "playing deck keeps its track");
+    c.receive(&[0x91, 0x71, 0x7F]);
+    assert!(get(&reg, "[Channel2]", "rateSearch") > 0.0);
+    c.receive(&[0x91, 0x71, 0x00]);
+    assert_eq!(get(&reg, "[Channel2]", "rateSearch"), 0.0);
+
+    // SOUND COLOR FX: D-ECHO, PITCH, NOISE, FILTER.
+    for (note, preset) in [(0x00, 3.0), (0x01, 6.0), (0x02, 4.0), (0x0B, 1.0)] {
+        c.receive(&[0x96, note, 0x7F]);
+        c.receive(&[0x96, note, 0x00]);
+        assert_eq!(
+            get(&reg, "[QuickEffectRack1_[Channel4]]", "loaded_chain_preset"),
+            preset,
+            "color fx note {note:#x}"
+        );
+    }
+
+    // BEAT FX SELECT on PITCH.
+    c.receive(&[0x94, 0x29, 0x7F]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit5_Effect1]", "loaded_effect"),
+        14.0
+    );
+
+    // DECK SELECT: a press flips the side to deck 3 and back.
+    let deck3 = reg.free("[Controller]", "deck3");
+    c.receive(&[0x92, 0x72, 0x7F]);
+    c.receive(&[0x92, 0x72, 0x00]);
+    assert_eq!(deck3.get(), 1.0);
+    settle(&mut c, 300);
+    c.receive(&[0x92, 0x72, 0x7F]);
+    assert_eq!(deck3.get(), 0.0);
+
+    // The jog display on deck 1's channel: playhead, minutes, BPM.
+    reg.get("[Channel1]", "track_loaded").unwrap().set(1.0);
+    reg.get("[Channel1]", "duration").unwrap().set(180.0);
+    reg.get("[Channel1]", "bpm").unwrap().set(128.0);
+    reg.get("[Channel1]", "playposition")
+        .unwrap()
+        .set(61.5 / 180.0);
+    // settle counts from now, so run past the last pass's timer.
+    settle(&mut c, 600);
+    let out = c.take_output();
+    assert!(
+        out.iter()
+            .any(|m| m[0] == 0xB0 && (m[1] == 0x14 || m[1] == 0x34) && m[2] > 0),
+        "playhead moved: {out:x?}"
+    );
+    assert!(
+        out.iter().any(|m| m[..] == [0x90, 0x42, 0x01]),
+        "minutes shown: {out:x?}"
+    );
+    // 1280 tenths: MSB 10, LSB 0.
+    assert!(
+        out.iter().any(|m| m[..] == [0xB0, 0x15, 10])
+            && out.iter().any(|m| m[..] == [0xB0, 0x35, 0]),
+        "BPM shown: {out:x?}"
+    );
+    assert!(
+        !out.iter().any(|m| m[0] == 0x9F || m[0] == 0xBF),
+        "no FLX10 display messages: {out:x?}"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
 #[test]
 fn ddj_400_secondary_pad_modes() {
     let (reg, mut c) = load("Pioneer-DDJ-400.midi.xml");

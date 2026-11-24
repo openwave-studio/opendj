@@ -1331,6 +1331,7 @@ mod tests {
             ("DDJ-WeGO3", "Pioneer-DDJ-WeGO3.midi.xml"),
             ("DDJ-WeGO4", "Pioneer-DDJ-WeGO4.midi.xml"),
             ("PIONEER DDJ-800", "Pioneer-DDJ-800.midi.xml"),
+            ("DDJ-1000", "Pioneer-DDJ-1000.midi.xml"),
             ("XDJ-AZ", "Pioneer-XDJ-AZ.midi.xml"),
             ("OPUS-QUAD", "Pioneer-OPUS-QUAD.midi.xml"),
             ("PIONEER XDJ-RX", "Pioneer-XDJ-RX.midi.xml"),

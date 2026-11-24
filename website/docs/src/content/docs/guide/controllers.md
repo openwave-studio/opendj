@@ -197,7 +197,7 @@ openDJ looks after a list of popular controllers itself, each with a drawing
 in the Controller Editor and a guide page:
 
 - **Pioneer DJ and AlphaTheta:** DDJ-FLX2, FLX4, FLX6, FLX10, GRV6, REV5,
-  200, 400, 800, the DDJ-SB, SB2, SB3, SR, SP1, SX, SX2, RB, RR, RX, RZ, RZX,
+  200, 400, 800, 1000, the DDJ-SB, SB2, SB3, SR, SP1, SX, SX2, RB, RR, RX, RZ, RZX,
   SZ, ERGO, WeGO (1 to 4), XP1 and XP2; the XDJ-RX, RX2, RX3, RR, XZ, AZ,
   AERO, R1 and AN, the OPUS-QUAD and OMNIS-DUO; the DJM-250MK2, 450, 750MK2,
   900NXS2, A9, V5, V10, TOUR1, S7, S9, S11 and T1 mixers, the euphonia and
@@ -213,7 +213,7 @@ in the Controller Editor and a guide page:
 - **Reloop:** Mixtour, Mixtour Pro, Ready, Buddy, Mixon 4, Mixon 8 Pro, Beatpad, Beatpad 2, Beatmix, Beatmix 2/4, Terminal Mix 2/4, Mixage, Elite, Digital Jockey 2, Jockey 3 ME, RP-8000 and RP-8000 MK2.
 - **Others:** Allen & Heath Xone:K2 and DJ TechTools Midi Fighter Twister.
 
-The DDJ-REV1, DDJ-1000 and DDJ-REV7 are coming.
+The DDJ-REV1 and DDJ-REV7 are coming.
 [Supported controllers](../controllers/index.md#popular-controllers) has
 the whole list with notes on each.
 
