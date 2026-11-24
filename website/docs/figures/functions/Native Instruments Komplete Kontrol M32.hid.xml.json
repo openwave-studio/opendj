@@ -1,0 +1,169 @@
+{
+  "file": "Native Instruments Komplete Kontrol M32.hid.xml",
+  "parts": {
+    "arp": {
+      "normal": [
+        "Arpeggiator on or off"
+      ],
+      "SHIFT": [
+        "Arpeggiator hold"
+      ]
+    },
+    "browser": {
+      "normal": [
+        "Open the instrument browser"
+      ]
+    },
+    "encoder": {
+      "normal": [
+        "Turn: instruments, then presets; up/down: one step",
+        "Press or right: open the instrument / load the preset"
+      ],
+      "SHIFT": [
+        "Press or left: back a level"
+      ]
+    },
+    "ideas": {
+      "normal": [
+        "Dice: a new random pattern"
+      ]
+    },
+    "knob1": {
+      "normal": [
+        "Instrument knob 1 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 1, fine"
+      ]
+    },
+    "knob2": {
+      "normal": [
+        "Instrument knob 2 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 2, fine"
+      ]
+    },
+    "knob3": {
+      "normal": [
+        "Instrument knob 3 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 3, fine"
+      ]
+    },
+    "knob4": {
+      "normal": [
+        "Instrument knob 4 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 4, fine"
+      ]
+    },
+    "knob5": {
+      "normal": [
+        "Instrument knob 5 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 5, fine"
+      ]
+    },
+    "knob6": {
+      "normal": [
+        "Instrument knob 6 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 6, fine"
+      ]
+    },
+    "knob7": {
+      "normal": [
+        "Instrument knob 7 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 7, fine"
+      ]
+    },
+    "knob8": {
+      "normal": [
+        "Instrument knob 8 of the page shown"
+      ],
+      "SHIFT": [
+        "Instrument knob 8, fine"
+      ]
+    },
+    "metro": {
+      "normal": [
+        "Metronome on or off"
+      ]
+    },
+    "page-next": {
+      "normal": [
+        "Knob page after"
+      ]
+    },
+    "page-prev": {
+      "normal": [
+        "Knob page before"
+      ]
+    },
+    "play": {
+      "normal": [
+        "Sequencer plays"
+      ]
+    },
+    "plugin": {
+      "normal": [
+        "The instrument's own window"
+      ]
+    },
+    "preset-down": {
+      "normal": [
+        "Next preset"
+      ]
+    },
+    "preset-up": {
+      "normal": [
+        "Previous preset"
+      ]
+    },
+    "rec": {
+      "normal": [
+        "Record the set on or off"
+      ],
+      "SHIFT": [
+        "Record into the sequencer"
+      ]
+    },
+    "scale": {
+      "normal": [
+        "Scale on (Auto) or off"
+      ]
+    },
+    "shift": {
+      "normal": [
+        "Shift: fine knobs, second functions"
+      ]
+    },
+    "stop": {
+      "normal": [
+        "Sequencer stops"
+      ]
+    },
+    "tempo": {
+      "normal": [
+        "Tap the tempo"
+      ]
+    },
+    "track": {
+      "normal": [
+        "Close the browser"
+      ]
+    },
+    "undo": {
+      "normal": [
+        "Undo the last Dice"
+      ]
+    }
+  }
+}

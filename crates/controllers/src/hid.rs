@@ -21,6 +21,11 @@ pub struct Product {
     pub usage_page: Option<u16>,
     pub usage: Option<u16>,
     pub interface: Option<i32>,
+    /// openDJ: `keys="midi"`, a keyboard whose keys (and touch strips, pedal)
+    /// come in over its own USB MIDI port while the HID side runs the
+    /// buttons, knobs and screen. That MIDI port then plays instruments as
+    /// any keyboard does, rather than being the HID mapping's silent twin.
+    pub keys: bool,
 }
 
 /// Parses `0x17cc` or `17cc`: Mixxx reads these as hexadecimal either way.
@@ -47,6 +52,7 @@ impl Product {
             usage_page: num("usage_page").and_then(|v| u16::try_from(v).ok()),
             usage: num("usage").and_then(|v| u16::try_from(v).ok()),
             interface: num("interface_number").and_then(|v| i32::try_from(v).ok()),
+            keys: attr("keys").is_some_and(|k| k.eq_ignore_ascii_case("midi")),
         })
     }
 
