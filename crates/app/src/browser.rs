@@ -681,6 +681,8 @@ pub struct Browser {
     dupe_groups: OnceCell<Vec<Group>>,
     /// What each copy's file is like, read with the groups.
     dupe_facts: RefCell<HashMap<usize, opendj_library::dupes::FileFacts>>,
+    /// Reads the copies' files in the background, for the groups.
+    dupe_scan: crate::dupe_scan::DupeScan,
     /// Groups of copies opened to show every copy, by the kept copy's id.
     open_groups: HashSet<usize>,
     /// Every group shows its copies.
@@ -796,6 +798,10 @@ pub struct Browser {
     health: Facts,
     /// Looks for covers in the background, for the "No cover" check.
     cover_scan: CoverScan,
+    /// Covers and bitrates found and not yet saved or shown.
+    covers_found: Vec<(usize, opendj_library::health::FileLook)>,
+    /// When found covers were last saved and shown.
+    covers_shown: std::time::Instant,
     /// Makes audio fingerprints, for copies found by their sound.
     sound_scan: crate::sound_scan::SoundScan,
     /// Each track's audio fingerprint, by id.
@@ -1434,6 +1440,7 @@ impl Browser {
             duplicates: HashSet::new(),
             dupe_groups: OnceCell::new(),
             dupe_facts: RefCell::new(HashMap::new()),
+            dupe_scan: crate::dupe_scan::DupeScan::start(),
             open_groups: HashSet::new(),
             all_copies: false,
             links: HashSet::new(),
@@ -1511,6 +1518,8 @@ impl Browser {
             pending_moves: HashMap::new(),
             health: Facts::default(),
             cover_scan: CoverScan::start(),
+            covers_found: Vec::new(),
+            covers_shown: std::time::Instant::now(),
             sound_scan: crate::sound_scan::SoundScan::start(),
             sounds: HashMap::new(),
             alike: Vec::new(),

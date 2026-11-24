@@ -52,6 +52,7 @@ mod controller_editor;
 mod cover_scan;
 mod coverart;
 mod diagnostics;
+mod dupe_scan;
 mod file_drop;
 mod files;
 mod graphics;
@@ -1864,6 +1865,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 browser.borrow_mut().poll_rekordbox_xml();
                 browser.borrow_mut().poll_covers();
                 browser.borrow_mut().poll_sounds();
+                browser.borrow_mut().poll_dupe_files();
                 browser.borrow_mut().poll_located();
                 browser.borrow_mut().poll_cleanup();
                 browser.borrow_mut().poll_files();
