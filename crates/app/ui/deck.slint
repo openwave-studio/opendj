@@ -5196,20 +5196,6 @@ component ChordButton inherits GrooveButton {
     }
 }
 
-// A row of small choices in a GrooveMenu: one picked.
-component ChoiceChip inherits Rectangle {
-    in property <string> text;
-    in property <bool> picked;
-    callback clicked();
-    height: 22px;
-    border-radius: 4px;
-    background: picked ? Theme.accent.with-alpha(0.25) : ccta.has-hover ? Theme.n-3a3a3d : Theme.control;
-    border-width: 1px;
-    border-color: picked ? Theme.accent : transparent;
-    Text { text: root.text; color: Theme.text; font-size: 11px; }
-    ccta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
-}
-
 // The arpeggiator as a button, with its editor.
 component ArpButton inherits GrooveButton {
     property <int> on-index: Controls.resolve("[Instrument1]", "arp");
@@ -6263,7 +6249,6 @@ component DeckMenuButton inherits Rectangle {
                 checked: Controls.value(keys-index, Controls.tick) > 0;
                 clicked => { Controls.toggle(keys-index); }
             }
-            // Until the plugin panel in the browser holds it.
             if kind == 0: GrooveMenuItem {
                 text: "Show keyboard";
                 checked: InstrumentsUi.keys-shown;
@@ -6773,28 +6758,6 @@ component Keybed inherits Rectangle {
     }
 }
 
-// The plugin's knob pages as tabs, the picked one outlined.
-component KnobTabs inherits HorizontalLayout {
-    in property <int> pages;
-    in property <int> page;
-    callback picked(page: int);
-    // How many pages show at once (two with the keyboard hidden).
-    in property <int> shown: 1;
-    spacing: 4px;
-    alignment: start;
-    for p in pages: Rectangle {
-        property <bool> on: p >= root.page && p < root.page + root.shown;
-        width: label.preferred-width + 18px;
-        height: 20px;
-        border-radius: 5px;
-        border-width: 1px;
-        border-color: on ? Theme.n-3a3a3d : transparent;
-        background: on ? Theme.n-141416 : tta.has-hover ? Theme.control : transparent;
-        label := Text { text: InstrumentsUi.page-names[p] != "" ? InstrumentsUi.page-names[p] : "PAGE " + (p + 1); color: on ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; }
-        tta := TouchArea { mouse-cursor: pointer; clicked => { root.picked(min(p, max(0, root.pages - root.shown))); } }
-    }
-}
-
 // The DISPLAY tab and its way back: a pill like a knob page's tab.
 component DisplayTab inherits Rectangle {
     in property <string> text;
@@ -6822,10 +6785,6 @@ component InstrumentDisplay inherits DisplayView {
     mouse(x, y, kind) => { InstrumentsUi.display-mouse(x, y, kind); }
 }
 
-// The instrument deck under its title (2-Deck): what comes in and out
-// (scope, level, TRIM, PAN), the plugin's knobs under their page tabs on
-// a soft backdrop in the instrument's color, the octave and Note FX, then
-// the pitch bend and mod wheel beside the keyboard.
 // The step sequencer's PITCH lane, one step: a bar at its pitch (scale
 // degrees -7 to +7, the root in the middle) while it plays, nothing while
 // it is off. Click to put a note there, click its bar to take it off, drag
@@ -7310,6 +7269,10 @@ component KnobPageStepper inherits Rectangle {
     }
 }
 
+// The instrument deck under its title (2-Deck), on a soft backdrop in the
+// instrument's color: MACROS (eight knobs of a page) or STEPS (the step
+// sequencer), a small level bar, the octave and Note FX, then the small
+// keyboard with pitch bend and mod wheel when ☰ › Show keyboard is on.
 component InstrumentRack inherits Rectangle {
     in property <string> group;
     property <color> hue: StripColors.palette(InstrumentsUi.color-index());
@@ -7418,7 +7381,7 @@ component InstrumentRack inherits Rectangle {
             Rectangle { horizontal-stretch: 1; }
             NoteFxRow { }
         }
-        // The keyboard, from ☰ until the plugin panel holds it.
+        // The small keyboard, shown from ☰ › Show keyboard.
         if !root.steps && InstrumentsUi.keys-shown: HorizontalLayout {
             height: 60px;
             spacing: 4px;
