@@ -159,10 +159,14 @@ pub fn load(
     // SAFETY: as above.
     let originals = unsafe { opendj_pd_libs::object_texts(canvas) };
     drop(_pd);
-    let mut params: Vec<(CString, Param)> = Vec::new();
+    // Each knob's receive name, and what the patch holds before the knob
+    // moves: a widget's own value, which loading the patch set, and
+    // nothing yet (NaN) for an `@hv_param`.
+    let mut params: Vec<((CString, f32), Param)> = Vec::new();
     for p in &patch.params {
+        let held = if p.widget { p.default as f32 } else { f32::NAN };
         params.push((
-            c(&p.receive)?,
+            (c(&p.receive)?, held),
             Param {
                 id: param_id(&p.receive),
                 name: p.name.clone(),
@@ -174,7 +178,8 @@ pub fn load(
         ));
     }
     let all = arrange(&mut params, &[], picks);
-    let (receives, params): (Vec<CString>, Vec<Param>) = params.into_iter().unzip();
+    let (receives, params): (Vec<(CString, f32)>, Vec<Param>) = params.into_iter().unzip();
+    let (receives, held): (Vec<CString>, Vec<f32>) = receives.into_iter().unzip();
     let main = PdMain {
         displays: !objs.is_empty(),
         patch: Some(Patch {
@@ -195,7 +200,7 @@ pub fn load(
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_else(|| "Pd patch".into());
     Ok(Loaded {
-        effect: Box::new(PdEffect::new(receives, max_frames)?),
+        effect: Box::new(PdEffect::new(receives, held, max_frames)?),
         main: Some(Box::new(main)),
         info: Info {
             name,
@@ -251,8 +256,10 @@ impl Fifo {
 }
 
 impl PdEffect {
-    fn new(receives: Vec<CString>, max_frames: usize) -> Result<Self, String> {
-        let sent = vec![f32::NAN; receives.len()];
+    /// `held`: each knob's value the patch already has (NaN: none), which
+    /// isn't sent again.
+    fn new(receives: Vec<CString>, held: Vec<f32>, max_frames: usize) -> Result<Self, String> {
+        let sent = held;
         Ok(Self {
             receives,
             sent,
