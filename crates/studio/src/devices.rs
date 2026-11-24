@@ -959,6 +959,10 @@ mod tests {
             }),
             Settings::Delay(fx::DelaySettings::default()),
             Settings::Reverb(fx::ReverbSettings::default()),
+            Settings::Reverb(fx::ReverbSettings {
+                hybrid: true,
+                ..fx::ReverbSettings::default()
+            }),
             Settings::Gate(fx::GateSettings::default()),
             Settings::Overdrive(fx::OverdriveSettings::default()),
             Settings::Roar(fx::RoarSettings::default()),

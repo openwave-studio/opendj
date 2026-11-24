@@ -576,6 +576,9 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 width: num("StereoSeparation").unwrap_or(100.0) / 100.0,
                 // Live keeps Reverb's Dry/Wet under this name.
                 dry_wet: num("MixDirect").unwrap_or(0.5),
+                ir: None,
+                blend: 1.0,
+                routing: 2,
             })
         }
         "Hybrid" => {
@@ -593,6 +596,21 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 high_cut: num("Eq_HighBandFrequency").unwrap_or(8000.0),
                 width: num("StereoWidth").unwrap_or(1.0),
                 dry_wet: num("DryWet").unwrap_or(0.5),
+                // The room it convolves with; decoded by `load_irs`.
+                ir: at(
+                    d,
+                    "ImpulseResponseHandler/SampleSlot/Value/SampleRef/FileRef",
+                )
+                .map(|f| {
+                    let path = sample_path(f, Path::new(""));
+                    fx::Ir {
+                        name: ir_name(&path),
+                        path,
+                        frames: Arc::new(Vec::new()),
+                    }
+                }),
+                blend: num("ConvoAlgoBlend").unwrap_or(0.5),
+                routing: num("Routing").unwrap_or(1.0).clamp(0.0, 3.0) as u8,
             })
         }
         "Gate" => Settings::Gate(fx::GateSettings {
@@ -765,14 +783,24 @@ fn sample_path(file: Node, folder: &Path) -> PathBuf {
     let relative = value(file, "RelativePath").unwrap_or("");
     let absolute = PathBuf::from(value(file, "Path").unwrap_or(""));
     let mut candidates = vec![folder.join(relative), absolute.clone()];
-    if value(file, "LivePackName") == Some("Core Library") {
+    // Live's own files: its Core Library, or what's built into the app
+    // (Hybrid Reverb's rooms), in whichever Live is installed.
+    let inside = if value(file, "LivePackName") == Some("Core Library") {
+        Some("Core Library")
+    } else if value(file, "RelativePathType") == Some("7") {
+        Some("Builtin")
+    } else {
+        None
+    };
+    if let Some(inside) = inside {
         if let Ok(apps) = std::fs::read_dir("/Applications") {
             for app in apps.flatten() {
                 let n = app.file_name().to_string_lossy().to_string();
                 if n.starts_with("Ableton Live") && n.ends_with(".app") {
                     candidates.push(
                         app.path()
-                            .join("Contents/App-Resources/Core Library")
+                            .join("Contents/App-Resources")
+                            .join(inside)
                             .join(relative),
                     );
                 }
@@ -783,6 +811,51 @@ fn sample_path(file: Node, folder: &Path) -> PathBuf {
         .into_iter()
         .find(|p| !relative.is_empty() && p.is_file())
         .unwrap_or(absolute)
+}
+
+/// A room's name as Live lists it: "Hybrid_Early_Reflections_Wood Room"
+/// is "Wood Room".
+fn ir_name(path: &Path) -> String {
+    let stem = path
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    stem.rsplit('_').next().unwrap_or(&stem).to_string()
+}
+
+/// Decodes every Hybrid Reverb's room at `rate`; returns those not found.
+pub fn load_irs(tracks: &mut [Track], rate: f64) -> Vec<String> {
+    let mut missing = Vec::new();
+    for t in tracks.iter_mut() {
+        for d in t.devices.iter_mut() {
+            let Some(crate::devices::Settings::Reverb(r)) = d.builtin.as_mut() else {
+                continue;
+            };
+            let Some(ir) = r.ir.as_mut() else {
+                continue;
+            };
+            match opendj_engine::sampler::Sample::load(&ir.path, rate) {
+                Ok(s) => {
+                    let n = s
+                        .len()
+                        .min((crate::conv::MAX_IR_SECONDS as f64 * rate) as usize);
+                    let mut frames: Vec<[f32; 2]> = (0..n).map(|i| s.frame(i)).collect();
+                    // Rooms come at their own loudness; even them out so a
+                    // blend sounds as in Live.
+                    let energy: f32 = frames.iter().map(|f| f[0] * f[0] + f[1] * f[1]).sum();
+                    if energy > 0.0 {
+                        let g = 0.7 / (energy / 2.0).sqrt();
+                        for f in frames.iter_mut() {
+                            *f = [f[0] * g, f[1] * g];
+                        }
+                    }
+                    ir.frames = Arc::new(frames);
+                }
+                Err(_) => missing.push(ir.name.clone()),
+            }
+        }
+    }
+    missing
 }
 
 /// Decodes every Drum Rack's samples at `rate`; returns those not found.

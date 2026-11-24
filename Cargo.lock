@@ -8295,6 +8295,7 @@ dependencies = [
  "opendj-engine",
  "opendj-plugin-host",
  "png 0.18.1",
+ "realfft",
  "roxmltree",
  "rtrb",
  "rusb",

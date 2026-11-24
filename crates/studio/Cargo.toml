@@ -32,6 +32,8 @@ flate2 = "1"
 roxmltree = "0.21"
 # The studio's settings (studio.json beside openDJ's settings.json).
 serde_json = "1"
+# Hybrid Reverb's convolution (already in the workspace for stems).
+realfft = "3.5"
 # The Push screen preview (`--push-preview`).
 png = "0.18"
 

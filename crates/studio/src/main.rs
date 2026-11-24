@@ -15,6 +15,7 @@ mod audio;
 mod check;
 mod clip;
 mod control;
+mod conv;
 mod devices;
 mod engine;
 mod fx;
@@ -192,6 +193,16 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
         note
     } else {
         format!("{note} · {} drum samples not found", missing.len())
+    };
+    // Hybrid Reverbs' rooms, from the Live that's installed.
+    let rooms = als::load_irs(&mut set, rate);
+    for m in &rooms {
+        eprintln!("reverb room not found: {m}");
+    }
+    let note = if rooms.is_empty() {
+        note
+    } else {
+        format!("{note} · {} reverb rooms not found", rooms.len())
     };
     let (mut studio, remote) = Studio::new(&set, rate, tempo);
     let mut link_clock = link::LinkClock::new(tempo, rate);

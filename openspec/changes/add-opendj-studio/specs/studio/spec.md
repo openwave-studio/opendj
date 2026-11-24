@@ -94,7 +94,7 @@ The studio SHALL have a Settings panel with an Audio page choosing the output de
 - **THEN** the set keeps playing, now on the interface, and the tracks' Ext. Out pairs list the interface's outputs
 
 ### Requirement: Drum Racks and Live's devices
-A Live set's Drum Rack SHALL play each pad's own sample, found beside the set, where the set saved it, or in an installed Live's Core Library, with the pad's note, volume, pan, tuning, velocity response and choke group; a rack whose samples aren't found SHALL fall back to the built-in kit. Live's Utility, EQ Eight, Compressor, Delay, Echo, Reverb, Gate and Overdrive SHALL be played by the studio's own devices with the settings the set saved, and Hybrid Reverb and Roar by close approximations of them, in chain order with the track's plug-ins, and SHALL switch on and off from the device row.
+A Live set's Drum Rack SHALL play each pad's own sample, found beside the set, where the set saved it, or in an installed Live's Core Library, with the pad's note, volume, pan, tuning, velocity response and choke group; a rack whose samples aren't found SHALL fall back to the built-in kit. Live's Utility, EQ Eight, Compressor, Delay, Echo, Reverb, Gate and Overdrive SHALL be played by the studio's own devices with the settings the set saved, Hybrid Reverb with the set's own room (its impulse response, found in the installed Live) blended with an algorithmic reverb, and Roar by a close approximation, in chain order with the track's plug-ins, and SHALL switch on and off from the device row.
 
 #### Scenario: The 808 kit
 - **WHEN** a set with Live's 808 Core Kit is opened on a Mac with Live installed

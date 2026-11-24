@@ -59,7 +59,7 @@ Shift with them jumps by eight.
   panel in the device row; a change reaches the running device with
   `Command::DeviceParam` and retunes it in place.
 - `fx.rs`: Live's Delay, Echo, Reverb, Gate and Overdrive, and
-  approximations of Hybrid Reverb (no convolution) and Roar (shapers and
+  Hybrid Reverb (the set's room from Live's app through `conv.rs`, blended with a plate) and Roar (shapers and
   filters in series, no feedback or modulation).
 - `settings.rs`: the studio's settings (`studio.json`), starting from
   openDJ's audio choices.

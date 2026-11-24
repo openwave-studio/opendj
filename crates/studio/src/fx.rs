@@ -395,6 +395,36 @@ pub struct ReverbSettings {
     /// 0 mono to 1 full (more widens).
     pub width: f32,
     pub dry_wet: f32,
+    /// Hybrid Reverb's impulse response, once found and decoded.
+    pub ir: Option<Ir>,
+    /// Convolution (0) to algorithm (1).
+    pub blend: f32,
+    /// How the two sides connect (see [`HYBRID_ROUTINGS`]).
+    pub routing: u8,
+}
+
+/// Hybrid Reverb's routings, in Live's order.
+pub const HYBRID_ROUTINGS: &[&str] = &["Serial", "Parallel", "Algorithm", "Convolution"];
+
+/// An impulse response: where it's from, and its frames at the engine's
+/// rate (empty until it's loaded).
+#[derive(Clone)]
+pub struct Ir {
+    pub name: String,
+    pub path: std::path::PathBuf,
+    pub frames: std::sync::Arc<Vec<[f32; 2]>>,
+}
+
+impl std::fmt::Debug for Ir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Ir({}, {} frames)", self.name, self.frames.len())
+    }
+}
+
+impl PartialEq for Ir {
+    fn eq(&self, other: &Ir) -> bool {
+        self.path == other.path && std::sync::Arc::ptr_eq(&self.frames, &other.frames)
+    }
 }
 
 impl Default for ReverbSettings {
@@ -411,6 +441,9 @@ impl Default for ReverbSettings {
             high_cut: 8000.0,
             width: 1.0,
             dry_wet: 0.3,
+            ir: None,
+            blend: 0.5,
+            routing: 1,
         }
     }
 }
@@ -422,13 +455,18 @@ impl ReverbSettings {
     pub fn summary(&self) -> String {
         let mut s = format!("{:.1} s · {:.0}% wet", self.decay_s, self.dry_wet * 100.0);
         if self.hybrid {
-            s.push_str(" · approximation, no convolution");
+            match &self.ir {
+                Some(ir) if !ir.frames.is_empty() => {
+                    s.push_str(&format!(" · {}", ir.name));
+                }
+                _ => s.push_str(" · no convolution (its room wasn't found)"),
+            }
         }
         s
     }
 
     pub(crate) fn params(&self) -> Vec<Param> {
-        vec![
+        let mut p = vec![
             Param::knob(
                 "Pre-delay",
                 self.predelay_ms,
@@ -446,11 +484,22 @@ impl ReverbSettings {
             Param::toggle("High Cut", self.high_cut_on),
             Param::knob("High", self.high_cut, 500.0, 20_000.0, Unit::Hz).log(),
             Param::knob("Dry/Wet", self.dry_wet, 0.0, 1.0, Unit::Percent),
-        ]
+        ];
+        if self.hybrid {
+            p.push(Param::knob("Blend", self.blend, 0.0, 1.0, Unit::Percent));
+            p.push(Param::choice(
+                "Routing",
+                self.routing as usize,
+                HYBRID_ROUTINGS,
+            ));
+        }
+        p
     }
 
     pub(crate) fn set(&mut self, i: usize, v: f32) {
         match i {
+            10 => self.blend = v.clamp(0.0, 1.0),
+            11 => self.routing = v.round().clamp(0.0, 3.0) as u8,
             0 => self.predelay_ms = v.clamp(0.0, MAX_PREDELAY_MS),
             1 => self.decay_s = v.clamp(0.1, 60.0),
             2 => self.size = v.clamp(0.0, 1.0),
@@ -499,6 +548,8 @@ pub struct Reverb {
     swing: f32,
     lfo: f32,
     lfo_step: f32,
+    /// Hybrid Reverb's convolution side, when its response was found.
+    conv: Option<Box<crate::conv::Convolver>>,
 }
 
 impl Reverb {
@@ -530,6 +581,11 @@ impl Reverb {
             swing: 0.0,
             lfo: 0.0,
             lfo_step: 1.0 / rate as f32,
+            conv: s
+                .ir
+                .as_ref()
+                .filter(|ir| !ir.frames.is_empty())
+                .map(|ir| Box::new(crate::conv::Convolver::new(&ir.frames, rate))),
         };
         r.retune();
         r
@@ -581,51 +637,85 @@ impl Reverb {
                 x = self.cuts[1].process(x);
             }
             self.predelay.push(x[0]);
-            let x = self.predelay.tap(self.predelay_len + 1);
-            self.input += (x - self.input) * 0.9995;
-            let mut v = self.input;
-            for (d, g) in self.diffusers.iter_mut().zip([0.75, 0.75, 0.625, 0.625]) {
-                v = d.allpass(v, g);
-            }
-            self.lfo += self.lfo_step;
-            if self.lfo >= 1.0 {
-                self.lfo -= 1.0;
-            }
-            let (sin, cos) = (self.lfo * std::f32::consts::TAU).sin_cos();
-            for half in 0..2 {
-                let m = if half == 0 { sin } else { cos };
-                let input = v + self.cross[1 - half] * self.decay;
-                let [ap1, d1, ap2, d2] = &mut self.tank[half];
-                let base = ap1.len as f32 - self.swing - 2.0;
-                let delayed = ap1.tap_frac(base + self.swing * m);
-                let w = input + 0.7 * delayed;
-                ap1.push(w);
-                d1.push(delayed - 0.7 * w);
-                let t = d1.tap(d1.len);
-                self.damped[half] += (t - self.damped[half]) * (1.0 - self.damping);
-                let b = ap2.allpass(self.damped[half] * self.decay, 0.5);
-                d2.push(b);
-                self.cross[half] = d2.tap(d2.len);
-            }
-            let t = &self.taps;
-            let [_, l2, l3, l4] = &self.tank[0];
-            let [_, r2, r3, r4] = &self.tank[1];
-            let l = r2.tap(t[0][0]) + r2.tap(t[0][1]) - r3.tap(t[0][2]) + r4.tap(t[0][3])
-                - l2.tap(t[0][4])
-                - l3.tap(t[0][5])
-                - l4.tap(t[0][6]);
-            let r = l2.tap(t[1][0]) + l2.tap(t[1][1]) - l3.tap(t[1][2]) + l4.tap(t[1][3])
-                - r2.tap(t[1][4])
-                - r3.tap(t[1][5])
-                - r4.tap(t[1][6]);
+            let pre = self.predelay.tap(self.predelay_len + 1);
+            let blend = self.s.blend.clamp(0.0, 1.0);
+            let [l, r] = match (&mut self.conv, self.s.routing) {
+                (None, _) | (_, 2) => self.plate(pre),
+                (Some(c), routing) => {
+                    // The convolution starts early by its latency, so the
+                    // room lines up with the pre-delay.
+                    let early = (self.predelay_len + 1).saturating_sub(c.latency()).max(1);
+                    let room = c.process(self.predelay.tap(early));
+                    match routing {
+                        3 => room,
+                        0 => {
+                            let algo = self.plate((room[0] + room[1]) * 0.5);
+                            mix2(room, algo, blend)
+                        }
+                        _ => {
+                            let algo = self.plate(pre);
+                            mix2(room, algo, blend)
+                        }
+                    }
+                }
+            };
             let (mid, side) = ((l + r) * 0.5, (l - r) * 0.5 * width);
-            let out = [(mid + side) * 0.6, (mid - side) * 0.6];
+            let out = [mid + side, mid - side];
             *f = [
                 f[0] * (1.0 - wet) + out[0] * wet,
                 f[1] * (1.0 - wet) + out[1] * wet,
             ];
         }
     }
+
+    /// The plate (Dattorro's tank) for one pre-delayed input sample.
+    fn plate(&mut self, x: f32) -> [f32; 2] {
+        self.input += (x - self.input) * 0.9995;
+        let mut v = self.input;
+        for (d, g) in self.diffusers.iter_mut().zip([0.75, 0.75, 0.625, 0.625]) {
+            v = d.allpass(v, g);
+        }
+        self.lfo += self.lfo_step;
+        if self.lfo >= 1.0 {
+            self.lfo -= 1.0;
+        }
+        let (sin, cos) = (self.lfo * std::f32::consts::TAU).sin_cos();
+        for half in 0..2 {
+            let m = if half == 0 { sin } else { cos };
+            let input = v + self.cross[1 - half] * self.decay;
+            let [ap1, d1, ap2, d2] = &mut self.tank[half];
+            let base = ap1.len as f32 - self.swing - 2.0;
+            let delayed = ap1.tap_frac(base + self.swing * m);
+            let w = input + 0.7 * delayed;
+            ap1.push(w);
+            d1.push(delayed - 0.7 * w);
+            let t = d1.tap(d1.len);
+            self.damped[half] += (t - self.damped[half]) * (1.0 - self.damping);
+            let b = ap2.allpass(self.damped[half] * self.decay, 0.5);
+            d2.push(b);
+            self.cross[half] = d2.tap(d2.len);
+        }
+        let t = &self.taps;
+        let [_, l2, l3, l4] = &self.tank[0];
+        let [_, r2, r3, r4] = &self.tank[1];
+        let l = r2.tap(t[0][0]) + r2.tap(t[0][1]) - r3.tap(t[0][2]) + r4.tap(t[0][3])
+            - l2.tap(t[0][4])
+            - l3.tap(t[0][5])
+            - l4.tap(t[0][6]);
+        let r = l2.tap(t[1][0]) + l2.tap(t[1][1]) - l3.tap(t[1][2]) + l4.tap(t[1][3])
+            - r2.tap(t[1][4])
+            - r3.tap(t[1][5])
+            - r4.tap(t[1][6]);
+        [l * 0.6, r * 0.6]
+    }
+}
+
+/// Convolution (blend 0) to algorithm (1).
+fn mix2(a: [f32; 2], b: [f32; 2], blend: f32) -> [f32; 2] {
+    [
+        a[0] * (1.0 - blend) + b[0] * blend,
+        a[1] * (1.0 - blend) + b[1] * blend,
+    ]
 }
 
 /// Live's Gate.
@@ -1269,6 +1359,38 @@ mod tests {
         r.process(&mut after);
         let e = energy(&after);
         assert!(e > 1e-4 && e.is_finite(), "{e}");
+    }
+
+    #[test]
+    fn hybrid_plays_its_room_on_time() {
+        // A room that's one echo 1000 samples in.
+        let mut frames = vec![[0.0; 2]; 2000];
+        frames[1000] = [0.5, 0.25];
+        let s = ReverbSettings {
+            hybrid: true,
+            predelay_ms: 10.0,
+            dry_wet: 1.0,
+            routing: 3,
+            ir: Some(Ir {
+                name: "Test Room".into(),
+                path: "test.aif".into(),
+                frames: std::sync::Arc::new(frames),
+            }),
+            ..ReverbSettings::default()
+        };
+        assert!(s.summary().ends_with("Test Room"));
+        let mut r = Reverb::new(&s, 48_000.0);
+        let mut buf = click(4000);
+        r.process(&mut buf);
+        // 10 ms of pre-delay (480 samples) plus the room's echo, the convolution's
+        // latency hidden inside the pre-delay.
+        let (at, peak) = buf
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1[0].abs().total_cmp(&b.1[0].abs()))
+            .unwrap();
+        assert_eq!(at, 1480, "{peak:?}");
+        assert!((peak[0] - 0.5).abs() < 0.01 && (peak[1] - 0.25).abs() < 0.01);
     }
 
     #[test]
