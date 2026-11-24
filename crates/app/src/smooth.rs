@@ -216,6 +216,7 @@ impl FrameStats {
         scale: f32,
         timer: &mut FrameTimer,
         clocks: &mut [SmoothClock],
+        more: impl FnOnce() -> String,
     ) {
         if !moving {
             *self = Self::default();
@@ -246,7 +247,7 @@ impl FrameStats {
         }
         eprintln!(
             "waveform frames at {scale}x: {} in {:.1} s, interval {:.2} ms, late {} (longest {:.1} ms), \
-             off pattern {}, display {}, drawing {:.2} ms avg {:.1} ms max, position jumps {}, eased up to {:.1} ms",
+             off pattern {}, display {}, drawing {:.2} ms avg {:.1} ms max, position jumps {}, eased up to {:.1} ms, {}",
             self.frames,
             elapsed.as_secs_f64(),
             timer.frame.unwrap_or(0.0) * 1e3,
@@ -260,6 +261,7 @@ impl FrameStats {
             self.draw_longest * 1e3,
             snaps,
             worst * 1e3,
+            more(),
         );
         timer.off_pattern = 0;
         *self = Self {

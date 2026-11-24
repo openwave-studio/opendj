@@ -118,6 +118,7 @@ mod transport;
 mod tree_navigation;
 mod tutorials;
 mod ui_font;
+mod ui_load;
 mod ui_scale;
 mod update;
 mod vocal_pass;
@@ -1438,6 +1439,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     });
                 }
                 (slint::RenderingState::BeforeRendering, _) => {
+                    ui_load::render_start();
                     let mut gpu = gpu.borrow_mut();
                     let (Some(app), Some(gpu)) = (app_weak.upgrade(), gpu.as_mut()) else {
                         return;
@@ -1453,9 +1455,18 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         ..
                     } = gpu;
                     let scale = app.window().scale_factor();
-                    frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
+                    frame_stats.frame(
+                        start,
+                        start.elapsed(),
+                        *moving,
+                        scale,
+                        frame_timer,
+                        clocks,
+                        ui_load::take_report,
+                    );
                 }
                 (slint::RenderingState::AfterRendering, _) => {
+                    ui_load::render_end();
                     // The first frame is on screen: these graphics work here.
                     graphics.drew();
                     // While a deck moves, draw again as soon as the display
@@ -1602,6 +1613,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 let Some(app) = app_weak.upgrade() else {
                     return;
                 };
+                ui_load::tick_start();
                 // The skin reads controls through `tick`; moving it makes
                 // every one of them look again, so only when one changed.
                 for (h, frames) in &pad_requests {
@@ -1722,6 +1734,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     }
                 }
                 browser.borrow_mut().poll_controllers(&app);
+                ui_load::lap("browser.poll_controllers");
                 // A recording that just stopped shows in Mixed Sets.
                 let (finished, files) = finished_recorder.finished();
                 if finished != recordings_seen.get() {
@@ -1729,9 +1742,13 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     browser.borrow_mut().add_recordings(&files);
                 }
                 browser.borrow_mut().poll_mix_export(&app);
+                ui_load::lap("browser.poll_mix_export");
                 browser.borrow_mut().poll_mixed_set(&app);
+                ui_load::lap("browser.poll_mixed_set");
                 browser.borrow_mut().poll_streams();
+                ui_load::lap("browser.poll_streams");
                 browser.borrow_mut().poll_stores(&app);
+                ui_load::lap("browser.poll_stores");
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
                 }
@@ -1749,23 +1766,41 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     browser.borrow().preview_download(action);
                 }
                 browser.borrow_mut().poll_art();
+                ui_load::lap("browser.poll_art");
                 browser.borrow_mut().poll_waves();
+                ui_load::lap("browser.poll_waves");
                 browser.borrow_mut().poll_analysis();
+                ui_load::lap("browser.poll_analysis");
                 browser.borrow_mut().poll_tasks();
+                ui_load::lap("browser.poll_tasks");
                 browser.borrow_mut().poll_usb_export();
+                ui_load::lap("browser.poll_usb_export");
                 browser.borrow_mut().poll_playlist_files();
+                ui_load::lap("browser.poll_playlist_files");
                 browser.borrow_mut().poll_inbox_albums();
+                ui_load::lap("browser.poll_inbox_albums");
                 browser.borrow_mut().poll_rekordbox_xml();
+                ui_load::lap("browser.poll_rekordbox_xml");
                 browser.borrow_mut().poll_covers();
+                ui_load::lap("browser.poll_covers");
                 browser.borrow_mut().poll_sounds();
+                ui_load::lap("browser.poll_sounds");
                 browser.borrow_mut().poll_located();
+                ui_load::lap("browser.poll_located");
                 browser.borrow_mut().poll_cleanup();
+                ui_load::lap("browser.poll_cleanup");
                 browser.borrow_mut().poll_files();
+                ui_load::lap("browser.poll_files");
                 sampler.borrow_mut().poll();
+                ui_load::lap("sampler.poll");
                 prefs.borrow_mut().poll();
+                ui_load::lap("prefs.poll");
                 tour.borrow_mut().poll();
+                ui_load::lap("tour.poll");
                 controller_editor.borrow_mut().poll();
+                ui_load::lap("controller_editor.poll");
                 map_mode.borrow_mut().poll();
+                ui_load::lap("map_mode.poll");
                 prep_click
                     .borrow_mut()
                     .tick(app.get_layout() == PREP_LAYOUT);
@@ -1898,6 +1933,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 if controls_changed || moved || loaded_changed {
                     app.window().request_redraw();
                 }
+                ui_load::tick_end();
             },
         );
     }
