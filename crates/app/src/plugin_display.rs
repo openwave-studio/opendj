@@ -247,7 +247,7 @@ fn show_fx(app: &AppWindow, state: &mut State, scale: f32) {
 fn edge(pixels: &[u8], width: u32) -> Color {
     let at = (width as usize / 2) * 4;
     match pixels.get(at..at + 4) {
-        Some(&[r, g, b, a]) if a == 255 => Color::from_rgb_u8(r, g, b),
+        Some(&[r, g, b, 255]) => Color::from_rgb_u8(r, g, b),
         _ => Color::from_argb_u8(0, 0, 0, 0),
     }
 }
