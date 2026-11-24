@@ -3707,6 +3707,12 @@
 [Instrument1],chord_learn
 [Instrument1],chord_mode
 [Instrument1],chord_shape
+[Instrument1],dock_editor
+[Instrument1],dock_h
+[Instrument1],dock_w
+[Instrument1],dock_x
+[Instrument1],dock_y
+[Instrument1],editor_focused
 [Instrument1],enabled
 [Instrument1],fx
 [Instrument1],input_configured
