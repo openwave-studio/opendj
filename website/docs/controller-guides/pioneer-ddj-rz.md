@@ -10,8 +10,10 @@ The differences:
 
 - Pressing a **BROWSE** knob moves to the next library pane; with SHIFT, to
   the previous one. **BACK** goes back.
-- The **CFX** knobs are filters. The Sound Color FX buttons, the
-  **OSCILLATOR** section, **USB A/B** and the sequencer do nothing yet.
+- The Sound Color FX buttons **SPACE**, **PITCH** and **FILTER** pick what
+  the **CFX** knobs play on every deck; press the lit one to go back to the
+  filter. **JET**, the **OSCILLATOR** section, **USB A/B** and the
+  sequencer do nothing yet.
 
 ## When you try it
 

@@ -25,11 +25,16 @@ plugin helper when it has the `pd` feature (OpenSpec change `add-pd-rack`):
   `onelua.c`. MIT, see the end of `lua/lua.h`.
 - **Pd 0.55.2 headers** (`pd-src/`, BSD, from libpd-sys 0.3.4) to build
   against.
+- **pthreads4w headers** (`pthreads-win/`, Apache-2.0, from libpd-sys 0.3.4's
+  Windows build of pthreads-win32 v3): Windows only, for the objects that
+  use threads, against the library libpd-sys links.
 
 One vendored line is changed: ELSE's `Source/Shared/blep.h` did
 `#define t_float float`, which breaks the `bl.*~` oscillators in a
 double-precision Pd like this one (they read and wrote the wrong width and
-gave silence). What openDJ adds:
+gave silence). The same file also takes `I`, `creal` and `cexp` from the
+compiler on Windows, where cyclone and ELSE build with clang-cl (MSVC's C
+has no complex numbers or variable-length arrays). What openDJ adds:
 
 - `gui_compat.h`: stands in for the Pd 0.56 theme colours a few GUI objects
   (`knob`, `button`, `note`, `pad`, ELSE; cyclone's `file`) read when they
@@ -45,7 +50,9 @@ gave silence). What openDJ adds:
 - `pdlua_glue.c`: starts pd-lua, finds a patch's Lua objects that draw,
   and passes their drawing calls (`lua_fill_rect`, `lua_draw_text` ...) to
   the helper, which draws them itself (`crates/plugin-host/src/pd_display.rs`);
-  mouse events go back through pd-lua's own handlers.
+  mouse events go back through pd-lua's own handlers. It also lists the
+  text of a canvas's objects (`opendj_pd_object_texts`), so the helper can
+  save the arguments Lua objects set with `self:set_args` in a slot's sound.
 
 To update a library: replace its folder, run `python3 scripts/pd_libs.py`,
 then `cargo test -p opendj-plugin-host --features pd`.

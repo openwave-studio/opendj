@@ -677,8 +677,8 @@ pub fn pd_folder() -> PathBuf {
 
 /// The `.pd` files in `folder` (one level of sub-folders, which hold
 /// abstractions as often as patches, is skipped) that `keep` accepts: an
-/// instrument when the patch reads notes, else an effect when it takes
-/// audio in. Reading a patch runs none of it.
+/// instrument when the patch reads notes or only plays, else an effect
+/// when it takes audio in. Reading a patch runs none of it.
 fn pd_patches(folder: &Path, keep: fn(&Descriptor) -> bool) -> Vec<Found> {
     use opendj_engine::plugins::pd_patch::read_patch;
     let Ok(dir) = std::fs::read_dir(folder) else {
@@ -693,7 +693,7 @@ fn pd_patches(folder: &Path, keep: fn(&Descriptor) -> bool) -> Vec<Found> {
             continue;
         };
         let patch = read_patch(&text);
-        let kind = if patch.plays_notes {
+        let kind = if patch.is_instrument() {
             "instrument"
         } else if patch.takes_audio {
             "audio-effect"

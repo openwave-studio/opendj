@@ -377,6 +377,10 @@ fn natives<'js>(ctx: &Ctx<'js>, host: &Rc<RefCell<Host>>) -> rquickjs::Result<Ob
     native!("waveform", |h, g: String, per_second: f64| {
         crate::waves::for_group(&h.layered(&g), per_second)
     });
+    // openDJ: a deck's cover art as a JPEG, for controllers with screens.
+    native!("cover", |h, g: String, size: f64| {
+        crate::waves::cover_for_group(&h.layered(&g), size)
+    });
     native!("timerStop", |h, id: u32| h.timer_stop(id));
     native!("softTakeover", |h, g: String, k: String, on: bool| h
         .soft_takeover(&g, &k, on));

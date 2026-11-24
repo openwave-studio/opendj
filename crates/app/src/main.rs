@@ -346,6 +346,7 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
     g.on_set_device({
         let change = change.clone();
         let devices = devices.clone();
+        let default_device = default_device.clone();
         move |row, device| {
             let name = match device {
                 0 => String::new(),
@@ -355,12 +356,22 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
                     .map(|d| d.name.clone())
                     .unwrap_or_default(),
             };
-            change(&|s| {
-                if let Some(r) = s.routes.get_mut(row as usize) {
-                    r.device = name.clone();
-                    r.pair = 0;
-                }
-            })
+            // Channels of the device called `name` ("" the default), 2 when
+            // unknown.
+            let channels = |name: &str| {
+                let default = default_device.borrow();
+                let name = if name.is_empty() {
+                    default.as_deref().unwrap_or_default()
+                } else {
+                    name
+                };
+                devices
+                    .borrow()
+                    .iter()
+                    .find(|d| d.name == name)
+                    .map_or(2, |d| d.channels)
+            };
+            change(&|s| move_to_device(s, row as usize, &name, channels(&name)))
         }
     });
     g.on_set_pair({
@@ -459,6 +470,76 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
             s.routes.push(Route { role, device, pair });
         })
     });
+}
+
+/// Moves output `row` of `s` to `device` (with `channels` channels), on the
+/// first pair no other output plays there: a controller's headphones row
+/// lands on its second pair, not on top of the master. Moving the master
+/// to a device with a pair to spare takes the headphones along when they
+/// were on the master's old device, as a DJ plugging in a controller
+/// expects its headphone socket to play the cue.
+fn move_to_device(s: &mut AudioSetup, row: usize, device: &str, channels: u16) {
+    let Some(old) = s.routes.get(row).map(|r| (r.role, r.device.clone())) else {
+        return;
+    };
+    let pairs = (channels / 2).max(1);
+    let free_pair = |s: &AudioSetup, skip: &[usize]| {
+        (0..pairs).find(|&p| {
+            !s.routes.iter().enumerate().any(|(i, r)| {
+                !skip.contains(&i) && s.in_use(r) && r.device == device && r.pair == p
+            })
+        })
+    };
+    let pair = free_pair(s, &[row]).unwrap_or(0);
+    s.routes[row].device = device.to_string();
+    s.routes[row].pair = pair;
+    if old.0 != Role::Master || old.1 == device {
+        return;
+    }
+    let follows: Vec<usize> = s
+        .routes
+        .iter()
+        .enumerate()
+        .filter(|(_, r)| r.role == Role::Headphones && r.device == old.1)
+        .map(|(i, _)| i)
+        .collect();
+    for i in follows {
+        if let Some(p) = free_pair(s, &[i]) {
+            s.routes[i].device = device.to_string();
+            s.routes[i].pair = p;
+        }
+    }
+}
+
+/// `cover` cropped to a square in the middle and scaled to `size` pixels,
+/// as a JPEG for a controller's screen; empty if it can't be made.
+fn cover_jpeg(cover: &opendj_engine::cover::Cover, size: u32) -> Vec<u8> {
+    use image::{imageops, ImageBuffer, Rgba};
+    let Some(img) =
+        ImageBuffer::<Rgba<u8>, _>::from_raw(cover.width, cover.height, cover.rgba.clone())
+    else {
+        return Vec::new();
+    };
+    let side = cover.width.min(cover.height);
+    if side == 0 || size == 0 {
+        return Vec::new();
+    }
+    let square = imageops::crop_imm(
+        &img,
+        (cover.width - side) / 2,
+        (cover.height - side) / 2,
+        side,
+        side,
+    )
+    .to_image();
+    let scaled = imageops::resize(&square, size, size, imageops::FilterType::Triangle);
+    let rgb = image::DynamicImage::ImageRgba8(scaled).to_rgb8();
+    let mut out = Vec::new();
+    let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 75);
+    match rgb.write_with_encoder(encoder) {
+        Ok(()) => out,
+        Err(_) => Vec::new(),
+    }
 }
 
 /// The rows Settings › Audio shows with an external mixer, in order.
@@ -1067,6 +1148,19 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         opendj_controllers::waves::resample(finest, w.bins_per_second, per_second)
                     })
                 })
+            },
+        )));
+        // And their cover art, as a small JPEG.
+        let loaded = engine.loaded_tracks();
+        opendj_controllers::waves::set_cover_source(Some(std::sync::Arc::new(
+            move |deck, size| {
+                let track = loaded
+                    .read()
+                    .ok()
+                    .and_then(|l| l.get(deck).cloned().flatten());
+                track
+                    .and_then(|t| t.cover.clone())
+                    .map_or_else(Vec::new, |c| cover_jpeg(&c, size))
             },
         )));
     }
@@ -3470,4 +3564,77 @@ fn scope_path(bins: &[(f32, f32)]) -> String {
     }
     out.push('Z');
     out
+}
+
+#[cfg(test)]
+mod output_device_tests {
+    use super::{move_to_device, AudioSetup, Role, Route};
+
+    #[test]
+    fn covers_become_square_jpegs() {
+        let cover = opendj_engine::cover::Cover {
+            width: 40,
+            height: 20,
+            rgba: vec![200; 40 * 20 * 4],
+        };
+        let jpeg = super::cover_jpeg(&cover, 32);
+        assert_eq!(&jpeg[..3], &[0xFF, 0xD8, 0xFF]);
+        let back = image::load_from_memory(&jpeg).unwrap();
+        assert_eq!((back.width(), back.height()), (32, 32));
+    }
+
+    fn route(role: Role, device: &str, pair: u16) -> Route {
+        Route {
+            role,
+            device: device.into(),
+            pair,
+        }
+    }
+
+    #[test]
+    fn a_controller_takes_the_master_and_the_headphones_together() {
+        // First start: both on the system default.
+        let mut s = AudioSetup {
+            routes: vec![route(Role::Master, "", 0), route(Role::Headphones, "", 1)],
+            ..AudioSetup::default()
+        };
+        move_to_device(&mut s, 0, "DDJ-FLX10", 4);
+        assert_eq!(s.routes[0], route(Role::Master, "DDJ-FLX10", 0));
+        assert_eq!(s.routes[1], route(Role::Headphones, "DDJ-FLX10", 1));
+    }
+
+    #[test]
+    fn headphones_on_their_own_device_stay_there() {
+        let mut s = AudioSetup {
+            routes: vec![
+                route(Role::Master, "", 0),
+                route(Role::Headphones, "USB Phones", 0),
+            ],
+            ..AudioSetup::default()
+        };
+        move_to_device(&mut s, 0, "DDJ-FLX10", 4);
+        assert_eq!(s.routes[1], route(Role::Headphones, "USB Phones", 0));
+    }
+
+    #[test]
+    fn a_row_moved_to_the_masters_device_takes_the_free_pair() {
+        let mut s = AudioSetup {
+            routes: vec![
+                route(Role::Master, "DDJ-FLX10", 0),
+                route(Role::Headphones, "MacBook Pro Speakers", 0),
+            ],
+            ..AudioSetup::default()
+        };
+        move_to_device(&mut s, 1, "DDJ-FLX10", 4);
+        assert_eq!(s.routes[1], route(Role::Headphones, "DDJ-FLX10", 1));
+        // A two-channel device has no pair to spare: the master stays put
+        // and the headphones go on its only pair, as before.
+        move_to_device(&mut s, 1, "MacBook Pro Speakers", 2);
+        assert_eq!(
+            s.routes[1],
+            route(Role::Headphones, "MacBook Pro Speakers", 0)
+        );
+        move_to_device(&mut s, 0, "MacBook Pro Speakers", 2);
+        assert_eq!(s.routes[0], route(Role::Master, "MacBook Pro Speakers", 0));
+    }
 }

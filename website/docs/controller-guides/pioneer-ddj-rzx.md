@@ -10,10 +10,11 @@ The differences:
 
 - Pressing a **BROWSE** knob moves to the next library pane; with SHIFT, to
   the previous one. **BACK** goes back.
-- The **COLOR FX** knobs are filters.
+- The Sound Color FX buttons pick what the **COLOR FX** knobs play on every
+  deck; **SWEEP** plays the filter, and pressing the lit one goes back to it.
 - The screens stay dark: they show rekordbox's own pictures, which openDJ
-  doesn't send. The video, touch strip and **VIEW** buttons, the Sound Color
-  FX buttons, the **OSCILLATOR** section and the sequencer do nothing yet.
+  doesn't send. The video, touch strip and **VIEW** buttons, the
+  **OSCILLATOR** section and the sequencer do nothing yet.
 
 ## When you try it
 

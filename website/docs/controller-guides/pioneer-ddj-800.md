@@ -19,8 +19,9 @@ the FLX4's mapping and adds its own buttons:
   Ladder), then **LEVEL/DEPTH** and **ON/OFF**.
 - The jog displays show the BPM, the elapsed time and the playhead going
   round.
-- Not mapped yet: **MEMORY**, **DELETE**, the pad **PAGE** buttons and the
-  **COLOR FX** buttons. The **COLOR FX** knobs work as filters.
+- The **COLOR FX** buttons **D-ECHO**, **PITCH**, **NOISE** and **FILTER**
+  pick what both **COLOR FX** knobs play.
+- Not mapped yet: **MEMORY**, **DELETE** and the pad **PAGE** buttons.
 
 ## When you try it
 

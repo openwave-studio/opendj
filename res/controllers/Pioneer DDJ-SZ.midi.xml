@@ -3,13 +3,14 @@
     <info>
         <name>Pioneer DDJ-SZ</name>
         <author>Maximilian Beiersdorfer, DJMaxergy</author>
-        <description>Pioneer DDJ-SZ: Mixxx's DDJ-SX mapping (Maximilian Beiersdorfer), which the SZ matches message for message apart from the browser, with BACK and LOAD PREPARE added. The Sound Color FX buttons, the OSCILLATOR section, the USB A/B buttons and the velocity sampler are not mapped.</description>
+        <description>Pioneer DDJ-SZ: Mixxx's DDJ-SX mapping (Maximilian Beiersdorfer), which the SZ matches message for message apart from the browser, with BACK and LOAD PREPARE added, and the Sound Color FX buttons from the DDJ-RX script (JET is not mapped). The OSCILLATOR section, the USB A/B buttons and the velocity sampler are not mapped.</description>
     </info>
     <controller id="DDJ-SZ">
         <scriptfiles>
             <file filename="lodash.mixxx.js" />
             <file filename="midi-components-0.0.js" />
             <file functionprefix="PioneerDDJSX" filename="Pioneer-DDJ-SX-scripts.js" />
+            <file filename="Pioneer-DDJ-RX-scripts.js" />
         </scriptfiles>
         <controls>
             <control>
@@ -6020,6 +6021,66 @@
                 <midino>0x36</midino>
                 <options>
                     <script-binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX ECHO - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxDubEcho</key>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX ECHO +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxDubEcho</key>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxPitch</key>
+                <status>0x96</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxPitch</key>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxFilter</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxFilter</key>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
                 </options>
             </control>
         </controls>

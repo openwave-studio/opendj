@@ -322,6 +322,15 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
             Vec::new()
         }
     })));
+    // A 300-byte "JPEG" for deck 1's art: three reports.
+    opendj_controllers::waves::set_cover_source(Some(Arc::new(|deck, size| {
+        assert_eq!(size, 240);
+        if deck == 0 {
+            (0..300).map(|i| i as u8).collect()
+        } else {
+            Vec::new()
+        }
+    })));
     let reg = ControlRegistry::new();
     let _engine = opendj_engine::engine::Engine::new(&reg, 44_100.0);
     let dir = default_mappings_dir().unwrap();
@@ -380,7 +389,7 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     // State first, then the load in order.
     assert_eq!(kinds[0], 0x27);
     let load: Vec<u8> = kinds.iter().copied().filter(|&k| k != 0x27).collect();
-    let mut expected = vec![0x30, 0x39, 0x39, 0x39, 0x35, 0x35, 0x35];
+    let mut expected = vec![0x30, 0x39, 0x39, 0x39, 0x33, 0x33, 0x33, 0x35, 0x35, 0x35];
     expected.extend(std::iter::repeat_n(0x36, 1500usize.div_ceil(19)));
     expected.push(0x2F);
     assert_eq!(&load[..expected.len()], &expected[..], "{load:x?}");
@@ -402,6 +411,15 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     assert_eq!(&length[7..9], &[0, 10]);
     let count = reports.iter().find(|r| r[2] == 0x35).unwrap();
     assert_eq!(u16::from_le_bytes([count[3], count[4]]), 1500);
+    // The art: its size, then 119 bytes, then 122 a report.
+    let art: Vec<&Vec<u8>> = reports.iter().filter(|r| r[2] == 0x33).collect();
+    assert_eq!(art.len(), 3);
+    assert_eq!((art[0][3], art[0][5]), (1, 3));
+    assert_eq!(u16::from_le_bytes([art[0][7], art[0][8]]), 300);
+    assert_eq!((art[0][10], art[0][128]), (0, 118));
+    assert_eq!((art[1][3], art[1][7]), (2, 119));
+    assert_eq!((art[2][3], art[2][7], art[2][65]), (3, 241, 43));
+    assert_eq!(art[2][66], 0, "nothing after the end");
     let labels = reports.iter().find(|r| r[2] == 0x39).unwrap();
     assert_eq!(&labels[8..15], b"HOT CUE");
     // Red at full brightness, full height: (7 << 13) | (31 << 2).
@@ -432,6 +450,7 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     assert_eq!(midi.errors(), Vec::<String>::new());
     assert_eq!(screens.errors(), Vec::<String>::new());
     opendj_controllers::waves::set_source(None);
+    opendj_controllers::waves::set_cover_source(None);
 }
 
 /// openDJ's X1 MK3 mapping: transport and hot cues per side, the loop

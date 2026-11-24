@@ -1,0 +1,841 @@
+{
+  "file": "Reloop Mixtour Pro.midi.xml",
+  "parts": {
+    "browse": {
+      "Deck 2 MODE": [
+        "Jump 64 beats back"
+      ],
+      "Deck 3 MODE": [
+        "Jump 64 beats back"
+      ],
+      "Deck 4 MODE": [
+        "Jump 64 beats back"
+      ],
+      "MODE": [
+        "Jump 64 beats back"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Scroll playlists"
+      ],
+      "SHIFT press": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c-pad1": {
+      "Deck 2": [
+        "Stem 1 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 1 mute"
+      ],
+      "Deck 3": [
+        "Stem 1 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 1 mute"
+      ],
+      "Deck 4": [
+        "Stem 1 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 1 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 1 mute"
+      ],
+      "normal": [
+        "Stem 1 mute"
+      ]
+    },
+    "c-pad2": {
+      "Deck 2": [
+        "Stem 2 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 2 mute"
+      ],
+      "Deck 3": [
+        "Stem 2 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 2 mute"
+      ],
+      "Deck 4": [
+        "Stem 2 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 2 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 2 mute"
+      ],
+      "normal": [
+        "Stem 2 mute"
+      ]
+    },
+    "c-pad3": {
+      "Deck 2": [
+        "Stem 3 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 3 mute"
+      ],
+      "Deck 3": [
+        "Stem 3 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 3 mute"
+      ],
+      "Deck 4": [
+        "Stem 3 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 3 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 3 mute"
+      ],
+      "normal": [
+        "Stem 3 mute"
+      ]
+    },
+    "c-pad4": {
+      "Deck 2": [
+        "Stem 4 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Stem 4 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Stem 4 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 4 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Stem 4 mute"
+      ]
+    },
+    "c-pad5": {
+      "Deck 2": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ]
+    },
+    "c-pad6": {
+      "Deck 2": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ]
+    },
+    "c-pad7": {
+      "Deck 2": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ]
+    },
+    "c-pad8": {
+      "Deck 2": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 2 MODE": [
+        "Pad mode"
+      ],
+      "Deck 2 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3 MODE": [
+        "Pad mode"
+      ],
+      "Deck 3 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4 MODE": [
+        "Pad mode"
+      ],
+      "Deck 4 SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "MODE": [
+        "Pad mode"
+      ],
+      "SHIFT": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ]
+    },
+    "cuemix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "drywet": {
+      "normal": [
+        "FX 1 Wet / dry",
+        "FX 2 Wet / dry",
+        "FX 3 Wet / dry",
+        "FX 4 Wet / dry"
+      ]
+    },
+    "fx-next": {
+      "Deck 2 SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "Deck 3 SHIFT": [
+        "FX 3 Effect 1 next"
+      ],
+      "Deck 4 SHIFT": [
+        "FX 4 Effect 1 next"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Super knob",
+        "FX 2 Super knob",
+        "FX 3 Super knob",
+        "FX 4 Super knob"
+      ]
+    },
+    "fx-prev": {
+      "Deck 2 SHIFT": [
+        "FX 2 Effect 1 previous"
+      ],
+      "Deck 3 SHIFT": [
+        "FX 3 Effect 1 previous"
+      ],
+      "Deck 4 SHIFT": [
+        "FX 4 Effect 1 previous"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 previous"
+      ],
+      "normal": [
+        "FX 1 Super knob",
+        "FX 2 Super knob",
+        "FX 3 Super knob",
+        "FX 4 Super knob"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "Deck 3 MODE": [
+        "Key down"
+      ],
+      "Deck 3 SHIFT": [
+        "Nudge slower"
+      ],
+      "MODE": [
+        "Key down"
+      ],
+      "SHIFT": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-filter": {
+      "Deck 3": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-gain": {
+      "Deck 3": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-high": {
+      "Deck 3": [
+        "Stem 4 volume"
+      ],
+      "normal": [
+        "Stem 4 volume"
+      ]
+    },
+    "l-inout": {
+      "Deck 3": [
+        "Loop in"
+      ],
+      "Deck 3 MODE": [
+        "Halve loop"
+      ],
+      "Deck 3 SHIFT": [
+        "Loop (current size)"
+      ],
+      "MODE": [
+        "Halve loop"
+      ],
+      "SHIFT": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-load": {
+      "Deck 3": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-low": {
+      "Deck 3": [
+        "Stem 1 volume"
+      ],
+      "normal": [
+        "Stem 1 volume"
+      ]
+    },
+    "l-mid": {
+      "Deck 3": [
+        "Stem 3 volume"
+      ],
+      "normal": [
+        "Stem 3 volume"
+      ]
+    },
+    "l-paddle": {
+      "Amount": [
+        "FX 1 Super knob"
+      ],
+      "Deck 3": [
+        "FX 3 Assign to Deck 3",
+        "FX 3 Unit on"
+      ],
+      "Deck 3 Amount": [
+        "FX 3 Super knob"
+      ],
+      "Deck 3 SHIFT": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "SHIFT": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-pfl": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "Deck 3 MODE": [
+        "Key up"
+      ],
+      "Deck 3 SHIFT": [
+        "Nudge faster"
+      ],
+      "MODE": [
+        "Key up"
+      ],
+      "SHIFT": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-stems": {
+      "Deck 3": [
+        "Stems eq button"
+      ],
+      "normal": [
+        "Stems eq button"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "Deck 3 MODE": [
+        "Double loop"
+      ],
+      "Deck 3 SHIFT": [
+        "Match key"
+      ],
+      "MODE": [
+        "Double loop"
+      ],
+      "SHIFT": [
+        "Match key"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-vol": {
+      "Deck 3": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "Deck 4 MODE": [
+        "Key down"
+      ],
+      "Deck 4 SHIFT": [
+        "Nudge slower"
+      ],
+      "MODE": [
+        "Key down"
+      ],
+      "SHIFT": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-filter": {
+      "Deck 4": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-gain": {
+      "Deck 4": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-high": {
+      "Deck 4": [
+        "Stem 4 volume"
+      ],
+      "normal": [
+        "Stem 4 volume"
+      ]
+    },
+    "r-inout": {
+      "Deck 4": [
+        "Loop in"
+      ],
+      "Deck 4 MODE": [
+        "Halve loop"
+      ],
+      "Deck 4 SHIFT": [
+        "Loop (current size)"
+      ],
+      "MODE": [
+        "Halve loop"
+      ],
+      "SHIFT": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-load": {
+      "Deck 4": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-low": {
+      "Deck 4": [
+        "Stem 1 volume"
+      ],
+      "normal": [
+        "Stem 1 volume"
+      ]
+    },
+    "r-mid": {
+      "Deck 4": [
+        "Stem 3 volume"
+      ],
+      "normal": [
+        "Stem 3 volume"
+      ]
+    },
+    "r-paddle": {
+      "Amount": [
+        "FX 2 Super knob"
+      ],
+      "Deck 4": [
+        "FX 4 Assign to Deck 4",
+        "FX 4 Unit on"
+      ],
+      "Deck 4 Amount": [
+        "FX 4 Super knob"
+      ],
+      "Deck 4 SHIFT": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "SHIFT": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-pfl": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "Deck 4 MODE": [
+        "Key up"
+      ],
+      "Deck 4 SHIFT": [
+        "Nudge faster"
+      ],
+      "MODE": [
+        "Key up"
+      ],
+      "SHIFT": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-stems": {
+      "Deck 4": [
+        "Stems eq button"
+      ],
+      "normal": [
+        "Stems eq button"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "Deck 4 MODE": [
+        "Double loop"
+      ],
+      "Deck 4 SHIFT": [
+        "Match key"
+      ],
+      "MODE": [
+        "Double loop"
+      ],
+      "SHIFT": [
+        "Match key"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-vol": {
+      "Deck 4": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

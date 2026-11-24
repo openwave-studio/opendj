@@ -178,6 +178,9 @@ export global RailOrder {
     callback adjacent(source: int, health: bool, steps: int) -> int;
     callback position(source: int, health: bool) -> int;
     callback moved(source: int, steps: int);
+    // Where the knob or ↑ ↓ moved the rail's highlight to before that
+    // source opens (-1 Collection Health); -2 when nothing is pending.
+    in-out property <int> cursor: -2;
 }
 
 // One side panel tab in the chooser that its titles' right-click opens.
@@ -2820,12 +2823,18 @@ component SourceRail inherits Rectangle {
         }
     }
     function activate-entry(entry: int) {
+        RailOrder.cursor = -2;
         rail-keys.focus();
         source = entry < 0 ? 0 : entry;
         if entry < 0 { health-picked(); } else { picked(entry); }
     }
+    // The knob's or ↑ ↓'s highlight stays in view while it waits to open.
+    property <int> rail-cursor: RailOrder.cursor;
+    changed rail-cursor => { reveal-entry(); }
     function reveal-entry() {
-        let top = RailOrder.position(source, HealthUi.view) * 48px;
+        let top = (RailOrder.cursor == -2
+            ? RailOrder.position(source, HealthUi.view)
+            : RailOrder.position(max(RailOrder.cursor, 0), RailOrder.cursor == -1)) * 48px;
         if top + rail-scroll.content-y < 0 { rail-scroll.content-y = -top; }
         else if top + 48px + rail-scroll.content-y > rail-scroll.height {
             rail-scroll.content-y = rail-scroll.height - top - 48px;
@@ -2884,7 +2893,7 @@ component SourceRail inherits Rectangle {
                     height: HealthUi.rail-shown ? 96px : 48px;
                     RailButton {
                         y: 0;
-                        selected: 0 == source && !HealthUi.view;
+                        selected: RailOrder.cursor == -2 ? 0 == source && !HealthUi.view : RailOrder.cursor == 0;
                         tip: names[0];
                         tip-body: tips[0];
                         SourceIcon { kind: 0; }
@@ -2892,7 +2901,7 @@ component SourceRail inherits Rectangle {
                     }
                     if HealthUi.rail-shown: RailButton {
                         y: 48px;
-                        selected: source == 0 && HealthUi.view;
+                        selected: RailOrder.cursor == -2 ? source == 0 && HealthUi.view : RailOrder.cursor == -1;
                         tip: "Collection Health";
                         tip-body: "Checks your collection for duplicates, missing files and poor tags.";
                         HealthIcon {}
@@ -2906,7 +2915,7 @@ component SourceRail inherits Rectangle {
                     visible: shown[i];
                     RailButton {
                         y: 0;
-                        selected: i == source;
+                        selected: RailOrder.cursor == -2 ? i == source : RailOrder.cursor == i;
                         tip: i < names.length ? names[i] : SourceUi.sources[i - names.length].name;
                         tip-body: i < names.length ? tips[i] : "From an add-on.";
                         RailIcon { kind: i; built-ins: names.length; }
@@ -2918,7 +2927,7 @@ component SourceRail inherits Rectangle {
                     visible: shown[i];
                     RailButton {
                         y: 0;
-                        selected: i == source;
+                        selected: RailOrder.cursor == -2 ? i == source : RailOrder.cursor == i;
                         tip: i < names.length ? names[i] : SourceUi.sources[i - names.length].name;
                         tip-body: i < names.length ? tips[i] : "From an add-on.";
                         RailIcon { kind: i; built-ins: names.length; }

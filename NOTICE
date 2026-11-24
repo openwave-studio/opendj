@@ -124,4 +124,6 @@ It also builds in pd-lua 0.12.23 (third_party/pd-libs/pdlua), Copyright (c)
 2007-2024 Claude Heiland-Allen, Martin Peach, Albert Gräf, Timothy Schoen
 and others, under the GNU GPL version 2 or later; and Lua 5.4.7
 (third_party/pd-libs/lua), Copyright (c) 1994-2024 Lua.org, PUC-Rio, under
-the MIT licence.
+the MIT licence. On Windows it links pthreads4w (headers in
+third_party/pd-libs/pthreads-win), Copyright (c) 1998 John E. Bossom and
+1999-2018 the Pthreads4w contributors, under the Apache License 2.0.
