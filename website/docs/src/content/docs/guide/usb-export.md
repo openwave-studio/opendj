@@ -15,7 +15,7 @@ One stick can carry both.
 
 ## Exporting
 
-1. Plug in a USB stick formatted **FAT32** or **exFAT**.
+1. Plug in a USB stick formatted **FAT32** with a **Master Boot Record** partition map (in macOS Disk Utility: MS-DOS (FAT) and Master Boot Record). exFAT works on the CDJ-3000, XDJ-XZ, and XDJ-RX3 but not on the CDJ-2000NXS2 and older. The CDJ-3000 and the NXS2 and older don't read a GUID (GPT) partition map.
 2. Pick a playlist, folder, smart list or stage in the tree on the left and
    choose **File › Export › USB…** (or right-click it and choose
    **Export to USB…**). A folder takes its lists and

@@ -33,6 +33,12 @@ const BAND_SCALE: [f64; 3] = [1.25, 1.15, 0.6];
 /// the colour preview's band bytes are the three-band preview times these.
 const PWV6_SCALE: [f64; 3] = [0.56, 0.71, 2.0];
 const PWV4_SCALE: [f64; 3] = [2.4, 1.6, 1.1];
+/// rekordbox never writes a `PWAV` column below height 2 or a `PWV2` byte
+/// below 1; older firmware reads a zero column as an unfinished preview. Its
+/// quietest `PWAV` columns are height 2 with whiteness 5.
+const PWAV_MIN_HEIGHT: u8 = 2;
+const PWAV_FLOOR: u8 = (5 << 5) | PWAV_MIN_HEIGHT;
+const PWV2_MIN_HEIGHT: u8 = 1;
 
 /// One column: peaks of the whole signal and of the low, mid and high
 /// bands, and the sum of squared RMS over its slices.
@@ -222,6 +228,9 @@ pub fn waveforms(waveform: &Waveform, duration: f64) -> Waveforms {
             } else {
                 0
             };
+            if h < PWAV_MIN_HEIGHT {
+                return WaveformColumn::from_bytes([PWAV_FLOOR]);
+            }
             WaveformColumn::from_bytes([(white200[k / 2].min(7) << 5) | h.min(31)])
         })
         .collect();
@@ -235,7 +244,7 @@ pub fn waveforms(waveform: &Waveform, duration: f64) -> Waveforms {
             } else {
                 0
             };
-            TinyWaveformColumn::from_bytes([h])
+            TinyWaveformColumn::from_bytes([h.max(PWV2_MIN_HEIGHT)])
         })
         .collect();
 
@@ -328,5 +337,14 @@ mod tests {
         let w = waveforms(&steady(1.0, [0; 8]), 1.0);
         assert!(w.detail.data.iter().all(|c| c.into_bytes()[0] & 0x1f == 0));
         assert_eq!(w.band_gains.low_gain, GAIN_FLOOR[0]);
+    }
+
+    #[test]
+    fn previews_never_drop_to_zero() {
+        let w = waveforms(&steady(1.0, [0; 8]), 1.0);
+        let pwav: Vec<u8> = w.preview.data.iter().map(|c| c.into_bytes()[0]).collect();
+        let pwv2: Vec<u8> = w.tiny.data.iter().map(|c| c.into_bytes()[0]).collect();
+        assert!(pwav.iter().all(|&b| b == PWAV_FLOOR));
+        assert!(pwv2.iter().all(|&b| b == PWV2_MIN_HEIGHT));
     }
 }
