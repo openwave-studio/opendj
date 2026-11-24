@@ -2,10 +2,10 @@
 
 ## 1. One plugin panel
 
-- [ ] 1.1 Jam source shows the instrument's panel in the list's and side panel's place, with name, format, deck, an expand button (own window) and ✕
-- [ ] 1.2 A plugin's own display drawn at its own shape, as large as fits, with mouse input
-- [ ] 1.3 Generic controls for plugins with no display: every parameter as a slider, grouped by page
-- [ ] 1.4 The deck's DISPLAY tab opens the panel
+- [x] 1.1 Jam source shows the instrument's panel in the list's and side panel's place, with name, format, deck, an expand button (own window) and ✕
+- [x] 1.2 A plugin's own display drawn at its own shape, as large as fits, with mouse input
+- [x] 1.3 Generic controls for plugins with no display: every parameter as a slider, grouped by page
+- [x] 1.4 The deck's DISPLAY tab opens the panel
 
 ## 2. Swap from the tree
 
