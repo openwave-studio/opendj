@@ -9,6 +9,7 @@ use std::sync::atomic::{
 use std::sync::{Arc, Mutex};
 
 use crate::clip::{Clip, Io, Note, Sound, Track, MAX_TRACKS, SCENES};
+use crate::devices::Settings;
 use crate::engine::{Command, Monitor, Program, Quantize, Routing};
 use crate::scale::Key;
 use crate::sound::{self, PARAMS};
@@ -119,6 +120,8 @@ pub struct Controls {
     devices_on: Vec<Vec<AtomicBool>>,
     /// Each track's inputs and outputs.
     io: Mutex<Vec<Io>>,
+    /// Each track's built-in devices' settings now, by place in its chain.
+    builtin: Mutex<Vec<Vec<Option<Settings>>>>,
     /// Goes up on every change, so a screen can tell when to redraw.
     version: AtomicU64,
 }
@@ -179,6 +182,11 @@ impl Controls {
                 .map(|t| t.devices.iter().map(|d| AtomicBool::new(d.on)).collect())
                 .collect(),
             io: Mutex::new(set.iter().map(|t| t.io.clone()).collect()),
+            builtin: Mutex::new(
+                set.iter()
+                    .map(|t| t.devices.iter().map(|d| d.builtin.clone()).collect())
+                    .collect(),
+            ),
             version: AtomicU64::new(1),
         }
     }
@@ -392,6 +400,34 @@ impl Controls {
             .get(track)
             .and_then(|t| t.get(device))
             .is_some_and(|d| d.load(Ordering::Relaxed))
+    }
+
+    /// A built-in device's settings as they are now.
+    pub fn builtin(&self, track: usize, device: usize) -> Option<Settings> {
+        self.builtin.lock().ok()?.get(track)?.get(device)?.clone()
+    }
+
+    /// Changes one setting of a built-in device (see `Settings::params`).
+    pub fn set_device_param(&self, track: usize, device: usize, index: usize, value: f32) {
+        let Ok(mut all) = self.builtin.lock() else {
+            return;
+        };
+        let Some(s) = all
+            .get_mut(track)
+            .and_then(|t| t.get_mut(device))
+            .and_then(|d| d.as_mut())
+        else {
+            return;
+        };
+        s.set(index, value);
+        drop(all);
+        self.send(Command::DeviceParam {
+            track,
+            device,
+            index,
+            value,
+        });
+        self.bump();
     }
 
     /// Switches a device in a track's chain on or off.

@@ -407,7 +407,7 @@ fn ui(
     let plugins = plugins::Plugins::start(&set, rate as u32, controls.clone());
     let tracks = Rc::new(VecModel::from(
         (0..set.len())
-            .map(|i| track_row(&controls, &plugins, i))
+            .map(|i| track_row(&controls, &plugins, i, None))
             .collect::<Vec<_>>(),
     ));
     let slots = Rc::new(VecModel::from(
@@ -544,6 +544,45 @@ fn ui(
     {
         let c = controls.clone();
         window.on_toggle_arm(move |t| c.toggle_arm(t as usize));
+    }
+    {
+        let c = controls.clone();
+        window.on_device_param(move |t, d, i, n| {
+            let (t, d, i) = (t as usize, d as usize, i as usize);
+            if let Some(p) = c.builtin(t, d).and_then(|s| s.params().get(i).cloned()) {
+                c.set_device_param(t, d, i, p.at_norm(n));
+            }
+        });
+    }
+    {
+        let c = controls.clone();
+        window.on_device_click(move |t, d, i| {
+            let (t, d, i) = (t as usize, d as usize, i as usize);
+            if let Some(p) = c.builtin(t, d).and_then(|s| s.params().get(i).cloned()) {
+                c.set_device_param(t, d, i, p.next());
+            }
+        });
+    }
+    {
+        // An EQ Eight band's dot dragged on its graph: frequency across,
+        // gain up and down (for the shapes with a gain).
+        let c = controls.clone();
+        window.on_device_drag(move |t, d, band, x, y| {
+            let (t, d, b) = (t as usize, d as usize, band.max(0) as usize);
+            let Some(devices::Settings::Eq8(e)) = c.builtin(t, d) else {
+                return;
+            };
+            let Some(bd) = e.bands.get(b) else {
+                return;
+            };
+            let base = b * devices::BAND_PARAMS;
+            let freq = devices::graph_freq(x.clamp(0.0, 1.0));
+            c.set_device_param(t, d, base + 2, freq);
+            if bd.shape.has_gain() {
+                let gain = devices::EQ_GAIN - y.clamp(0.0, 1.0) * 2.0 * devices::EQ_GAIN;
+                c.set_device_param(t, d, base + 3, gain);
+            }
+        });
     }
     {
         let p = plugins.clone();
@@ -693,7 +732,7 @@ fn ui(
                             progress: row.progress,
                             stopping: row.stopping,
                             level: row.level,
-                            ..track_row(&controls, &plugins, t)
+                            ..track_row(&controls, &plugins, t, Some(&row))
                         };
                     }
                     if changed
@@ -739,7 +778,136 @@ fn ui(
 }
 
 /// A track's row for the window, from the shared controls.
-fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
+/// Puts `new` in `old`'s model when it has as many rows, so the lists on
+/// screen keep their items (a knob being dragged stays under the pointer).
+fn reuse<T: Clone + PartialEq + 'static>(old: Option<&ModelRc<T>>, new: Vec<T>) -> ModelRc<T> {
+    if let Some(old) = old {
+        if let Some(m) = old.as_any().downcast_ref::<VecModel<T>>() {
+            if m.row_count() == new.len() {
+                for (i, v) in new.into_iter().enumerate() {
+                    if m.row_data(i).as_ref() != Some(&v) {
+                        m.set_row_data(i, v);
+                    }
+                }
+                return old.clone();
+            }
+        }
+    }
+    ModelRc::new(VecModel::from(new))
+}
+
+/// A knob or switch on a built-in device's panel.
+fn knob_data(i: usize, p: &devices::Param) -> KnobData {
+    KnobData {
+        index: i as i32,
+        name: p.name.as_str().into(),
+        value: p.norm(),
+        text: p.text().into(),
+        bipolar: p.bipolar,
+        toggle: p.unit == devices::Unit::Toggle,
+        on: p.unit == devices::Unit::Toggle && p.value >= 0.5,
+    }
+}
+
+/// Fills a device row's panel from its built-in settings.
+fn device_row(
+    mut row: DeviceData,
+    s: Option<&devices::Settings>,
+    old: Option<&DeviceData>,
+) -> DeviceData {
+    let Some(s) = s else {
+        return row;
+    };
+    let params = s.params();
+    let all: Vec<KnobData> = params
+        .iter()
+        .enumerate()
+        .map(|(i, p)| knob_data(i, p))
+        .collect();
+    let layout = s.knob_layout();
+    let knobs: Vec<KnobData> = match &layout {
+        Some((order, _)) => order.iter().filter_map(|&i| all.get(i).cloned()).collect(),
+        None => params
+            .iter()
+            .zip(&all)
+            .filter(|(p, _)| !p.is_switch())
+            .map(|(_, k)| k.clone())
+            .collect(),
+    };
+    let switches: Vec<KnobData> = params
+        .iter()
+        .zip(&all)
+        .filter(|(p, _)| p.is_switch())
+        .map(|(_, k)| k.clone())
+        .collect();
+    let eq = matches!(s, devices::Settings::Eq8(_));
+    let rows = if knobs.len() > 8 {
+        3
+    } else if knobs.len() > 3 {
+        2
+    } else {
+        1
+    };
+    let cols = layout.map_or(knobs.len().div_ceil(rows).max(1), |(_, c)| c);
+    let mut dots = Vec::new();
+    if let Some((curve, top, bottom)) = s.curve() {
+        let y = |db: f32| ((top - db) / (top - bottom) * 100.0).clamp(-2.0, 102.0);
+        let mut path = String::new();
+        for (i, db) in curve.iter().enumerate() {
+            let x = i as f32 / (curve.len() - 1) as f32 * 300.0;
+            path += &format!("{} {x:.1} {:.1} ", if i == 0 { "M" } else { "L" }, y(*db));
+        }
+        row.curve = path.into();
+        row.zero = y(0.0);
+        if let devices::Settings::Eq8(e) = s {
+            dots = e
+                .bands
+                .iter()
+                .enumerate()
+                .map(|(b, band)| {
+                    let at = if band.shape.has_gain() {
+                        band.gain_db
+                    } else {
+                        e.response(48_000.0, band.freq as f64) - e.gain_db
+                    };
+                    DotData {
+                        band: b as i32,
+                        x: devices::graph_place(band.freq),
+                        y: y(at.clamp(bottom, top)) / 100.0,
+                        on: band.on,
+                        gain: band.shape.has_gain(),
+                    }
+                })
+                .collect();
+        }
+    }
+    let graph = !row.curve.is_empty() && !eq;
+    row.panel_width = if eq {
+        560.0
+    } else {
+        (if switches.is_empty() { 0.0 } else { 96.0 }
+            + cols as f32 * 58.0
+            + if graph { 190.0 } else { 0.0 }
+            + 20.0)
+            .max(150.0)
+    };
+    row.builtin = true;
+    row.eq = eq;
+    row.cols = cols as i32;
+    row.rows = rows as i32;
+    row.params = reuse(old.map(|o| &o.params), all);
+    row.knobs = reuse(old.map(|o| &o.knobs), knobs);
+    row.switches = reuse(old.map(|o| &o.switches), switches);
+    row.dots = reuse(old.map(|o| &o.dots), dots);
+    row
+}
+
+fn track_row(
+    c: &Controls,
+    plugins: &plugins::Plugins,
+    t: usize,
+    old: Option<&TrackData>,
+) -> TrackData {
     let info = &c.tracks[t];
     let params: Vec<ParamData> = (0..sound::PARAMS)
         .map(|i| ParamData {
@@ -805,13 +973,15 @@ fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
         audio: info.audio(),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
         input: io.input_text(info.audio()).into(),
-        chain: ModelRc::new(VecModel::from(
+        chain: reuse(
+            old.map(|o| &o.chain),
             info.devices
                 .iter()
                 .enumerate()
                 .map(|(i, d)| {
                     let state = plugins.state(t, i);
                     let running = state == Some(plugins::State::Running);
+                    let builtin = c.builtin(t, i);
                     let note = match &state {
                         Some(plugins::State::Running) => {
                             if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
@@ -822,22 +992,28 @@ fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
                         }
                         Some(s) => s.text(),
                         None if d.plugin.is_some() => "Plug-in".to_string(),
-                        None if d.builtin.is_some() => format!(
-                            "Playing, with the set's settings: {}",
-                            d.builtin.as_ref().map_or(String::new(), |b| b.summary())
-                        ),
+                        None if builtin.is_some() => String::new(),
+                        None if d.name.ends_with("Drum Rack)") || d.name == "Drum Rack" => {
+                            "Its pads play as the track's kit".to_string()
+                        }
                         None => "Live device: no built-in match yet".to_string(),
                     };
-                    DeviceData {
-                        name: d.name.as_str().into(),
-                        kind: d.kind.as_str().into(),
-                        note: note.into(),
-                        on: c.device_on(t, i),
-                        can_open: running,
-                    }
+                    let before = old.and_then(|o| o.chain.row_data(i));
+                    device_row(
+                        DeviceData {
+                            name: d.name.as_str().into(),
+                            kind: d.kind.as_str().into(),
+                            note: note.into(),
+                            on: c.device_on(t, i),
+                            can_open: running,
+                            ..DeviceData::default()
+                        },
+                        builtin.as_ref(),
+                        before.as_ref(),
+                    )
                 })
-                .collect::<Vec<_>>(),
-        )),
+                .collect(),
+        ),
         plugin_instrument: info
             .devices
             .iter()

@@ -461,19 +461,19 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
             channels: num("ChannelMode").unwrap_or(1.0) as u8,
         }),
         "Eq8" => Settings::Eq8(Eq8Settings {
-            bands: (0..8)
-                .filter_map(|i| {
-                    let a = at(d, &format!("Bands.{i}/ParameterA"))?;
-                    let n = |p: &str| number(a, &format!("{p}/Manual")).map(|v| v as f32);
-                    Some(Band {
-                        on: value(a, "IsOn/Manual") == Some("true"),
-                        shape: Shape::from_live(n("Mode").unwrap_or(3.0) as u8),
-                        freq: n("Freq").unwrap_or(1000.0),
-                        gain_db: n("Gain").unwrap_or(0.0),
-                        q: n("Q").unwrap_or(0.71),
-                    })
-                })
-                .collect(),
+            bands: std::array::from_fn(|i| {
+                let Some(a) = at(d, &format!("Bands.{i}/ParameterA")) else {
+                    return Band::default();
+                };
+                let n = |p: &str| number(a, &format!("{p}/Manual")).map(|v| v as f32);
+                Band {
+                    on: value(a, "IsOn/Manual") == Some("true"),
+                    shape: Shape::from_live(n("Mode").unwrap_or(3.0) as u8),
+                    freq: n("Freq").unwrap_or(1000.0),
+                    gain_db: n("Gain").unwrap_or(0.0),
+                    q: n("Q").unwrap_or(0.71),
+                }
+            }),
             gain_db: num("GlobalGain").unwrap_or(0.0),
             scale: num("Scale").unwrap_or(1.0),
         }),
@@ -489,77 +489,67 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
         "Delay" => {
             // Live's synced choices, in sixteenths.
             const SIXTEENTHS: [f64; 8] = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 16.0];
-            let side = |c: &str| {
-                let n = |p: &str| num(&format!("DelayLine_{p}{c}"));
-                if flag(&format!("DelayLine_Sync{c}")) {
-                    let i = n("SyncedSixteenth").unwrap_or(2.0).clamp(0.0, 7.0) as usize;
-                    let offset = n("Offset").unwrap_or(0.0) as f64 / 100.0;
-                    fx::Time::Beats(SIXTEENTHS[i] / 4.0 * (1.0 + offset))
-                } else {
-                    fx::Time::Seconds(n("Time").unwrap_or(0.25))
-                }
+            let n = |p: &str, c: &str| num(&format!("DelayLine_{p}{c}"));
+            let beats = |c: &str| {
+                let i = n("SyncedSixteenth", c).unwrap_or(2.0).clamp(0.0, 7.0) as usize;
+                let offset = n("Offset", c).unwrap_or(0.0) as f64 / 100.0;
+                SIXTEENTHS[i] / 4.0 * (1.0 + offset)
             };
-            let left = side("L");
-            let freq = num("Filter_Frequency").unwrap_or(1000.0);
-            let half = 2f32.powf(num("Filter_Bandwidth").unwrap_or(8.0) / 2.0);
-            Settings::Delay(fx::DelaySettings {
+            let mut s = fx::DelaySettings {
                 echo: false,
-                time: [
-                    left,
-                    if flag("DelayLine_Link") {
-                        left
-                    } else {
-                        side("R")
-                    },
+                sync: flag("DelayLine_SyncL"),
+                beats: [beats("L"), beats("R")],
+                seconds: [
+                    n("Time", "L").unwrap_or(0.25),
+                    n("Time", "R").unwrap_or(0.25),
                 ],
+                link: flag("DelayLine_Link"),
                 feedback: num("Feedback").unwrap_or(0.5),
                 invert: false,
                 ping_pong: flag("DelayLine_PingPong"),
-                filter: flag("Filter_On").then_some((freq / half, freq * half)),
+                filter_on: flag("Filter_On"),
+                high_pass: 60.0,
+                low_pass: 8000.0,
                 input_db: 0.0,
                 output: 1.0,
                 dry_wet: num("DryWet").unwrap_or(0.5),
-            })
+            };
+            s.set_band(
+                num("Filter_Frequency").unwrap_or(1000.0),
+                num("Filter_Bandwidth").unwrap_or(8.0),
+            );
+            Settings::Delay(s)
         }
         "Echo" => {
-            let side = |c: &str| {
-                let n = |p: &str| num(&format!("Delay_{p}{c}"));
-                if flag(&format!("Delay_Sync{c}")) {
-                    // Notes, triplets, dotted or sixteenths; a division of
-                    // d is 2^d of a bar.
-                    let whole = 4.0 * 2f64.powf(n("SyncedDivision").unwrap_or(-3.0) as f64);
-                    let offset = n("Offset").unwrap_or(0.0) as f64 / 100.0;
-                    let beats = match n("SyncMode").unwrap_or(0.0) as u8 {
-                        1 => whole * 2.0 / 3.0,
-                        2 => whole * 1.5,
-                        3 => n("SyncedSixteenth").unwrap_or(3.0).max(1.0) as f64 / 4.0,
-                        _ => whole,
-                    };
-                    fx::Time::Beats(beats * (1.0 + offset))
-                } else {
-                    fx::Time::Seconds(n("Time").unwrap_or(0.375))
-                }
+            let n = |p: &str, c: &str| num(&format!("Delay_{p}{c}"));
+            let beats = |c: &str| {
+                // Notes, triplets, dotted or sixteenths; a division of d is
+                // 2^d of a bar.
+                let whole = 4.0 * 2f64.powf(n("SyncedDivision", c).unwrap_or(-3.0) as f64);
+                let offset = n("Offset", c).unwrap_or(0.0) as f64 / 100.0;
+                let b = match n("SyncMode", c).unwrap_or(0.0) as u8 {
+                    1 => whole * 2.0 / 3.0,
+                    2 => whole * 1.5,
+                    3 => n("SyncedSixteenth", c).unwrap_or(3.0).max(1.0) as f64 / 4.0,
+                    _ => whole,
+                };
+                b * (1.0 + offset)
             };
-            let left = side("L");
             Settings::Delay(fx::DelaySettings {
                 echo: true,
-                time: [
-                    left,
-                    if flag("Delay_TimeLink") {
-                        left
-                    } else {
-                        side("R")
-                    },
+                sync: flag("Delay_SyncL"),
+                beats: [beats("L"), beats("R")],
+                seconds: [
+                    n("Time", "L").unwrap_or(0.375),
+                    n("Time", "R").unwrap_or(0.375),
                 ],
+                link: flag("Delay_TimeLink"),
                 feedback: num("Feedback").unwrap_or(0.5),
                 invert: flag("FeedbackInvert"),
                 ping_pong: num("ChannelMode") == Some(1.0),
-                filter: flag("Filter_On").then(|| {
-                    (
-                        num("Filter_HighPassFrequency").unwrap_or(50.0),
-                        num("Filter_LowPassFrequency").unwrap_or(5000.0),
-                    )
-                }),
+                filter_on: flag("Filter_On"),
+                high_pass: num("Filter_HighPassFrequency").unwrap_or(50.0),
+                low_pass: num("Filter_LowPassFrequency").unwrap_or(5000.0),
                 input_db: num("InputGain").unwrap_or(0.0),
                 output: num("OutputGain").unwrap_or(1.0),
                 dry_wet: num("DryWet").unwrap_or(0.5),
@@ -579,8 +569,10 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 } else {
                     0.1
                 },
-                low_cut: flag("BandLowOn").then_some(band / half),
-                high_cut: flag("BandHighOn").then_some(band * half),
+                low_cut_on: flag("BandLowOn"),
+                low_cut: band / half,
+                high_cut_on: flag("BandHighOn"),
+                high_cut: band * half,
                 width: num("StereoSeparation").unwrap_or(100.0) / 100.0,
                 // Live keeps Reverb's Dry/Wet under this name.
                 dry_wet: num("MixDirect").unwrap_or(0.5),
@@ -594,8 +586,11 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 decay_s: num("Algorithm_Decay").unwrap_or(3.5),
                 size: num("Algorithm_Size").unwrap_or(0.5),
                 damping: num("Algorithm_Damping").unwrap_or(0.5),
-                low_cut: num("Eq_LowBandFrequency").filter(|_| eq),
-                high_cut: num("Eq_HighBandFrequency").filter(|_| eq),
+                // Its EQ's outer bands, where they're cuts (type 0).
+                low_cut_on: eq && num("Eq_LowBandType") == Some(0.0),
+                low_cut: num("Eq_LowBandFrequency").unwrap_or(80.0),
+                high_cut_on: eq && num("Eq_HighBandType") == Some(0.0),
+                high_cut: num("Eq_HighBandFrequency").unwrap_or(8000.0),
                 width: num("StereoWidth").unwrap_or(1.0),
                 dry_wet: num("DryWet").unwrap_or(0.5),
             })
@@ -612,38 +607,46 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
         "Overdrive" => Settings::Overdrive(fx::OverdriveSettings {
             mid_freq: num("MidFreq").unwrap_or(1600.0),
             bandwidth: num("BandWidth").unwrap_or(3.0),
-            drive: num("Drive").unwrap_or(50.0),
-            tone: num("Tone").unwrap_or(50.0),
+            drive: num("Drive").unwrap_or(50.0) / 100.0,
+            tone: num("Tone").unwrap_or(50.0) / 100.0,
             dry_wet: num("DryWet").unwrap_or(100.0) / 100.0,
         }),
-        "Roar" => Settings::Roar(fx::RoarSettings {
-            input_db: num("Input_InputGain").unwrap_or(0.0),
-            stages: (1..=3)
-                .filter(|i| flag(&format!("Stage{i}_On")))
-                .map(|i| {
-                    let n = |p: &str| num(&format!("Stage{i}_{p}"));
-                    let shaped = flag(&format!("Stage{i}_Shaper_On"));
-                    let lowpass =
-                        flag(&format!("Stage{i}_Filter_On")) && n("Filter_Type") == Some(0.0);
-                    fx::RoarStage {
-                        amount: if shaped {
-                            n("Shaper_Amount").unwrap_or(0.0)
-                        } else {
-                            0.0
-                        },
-                        bias: if shaped {
-                            n("Shaper_Bias").unwrap_or(0.0)
-                        } else {
-                            0.0
-                        },
-                        lowpass: n("Filter_Frequency").filter(|f| lowpass && *f < 18_000.0),
-                    }
-                })
-                .collect(),
-            compression: num("Output_CompressionAmount").unwrap_or(0.0),
-            output_db: num("Output_OutputGain").unwrap_or(0.0),
-            dry_wet: num("Output_DryWet").unwrap_or(1.0),
-        }),
+        "Roar" => {
+            let stage = |i: usize| {
+                let n = |p: &str| num(&format!("Stage{i}_{p}"));
+                let shaped = flag(&format!("Stage{i}_Shaper_On"));
+                let lowpass = flag(&format!("Stage{i}_Filter_On")) && n("Filter_Type") == Some(0.0);
+                fx::RoarStage {
+                    on: flag(&format!("Stage{i}_On")),
+                    amount: if shaped {
+                        n("Shaper_Amount").unwrap_or(0.0)
+                    } else {
+                        0.0
+                    },
+                    bias: if shaped {
+                        n("Shaper_Bias").unwrap_or(0.0)
+                    } else {
+                        0.0
+                    },
+                    lowpass: n("Filter_Frequency")
+                        .filter(|_| lowpass)
+                        .unwrap_or(20_000.0),
+                }
+            };
+            // Roar keeps its gains as plain factors.
+            Settings::Roar(fx::RoarSettings {
+                input_db: db(num("Input_InputGain").unwrap_or(1.0)),
+                routing: value(d, "Input_RoutingMode")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(1),
+                low_mid: num("Input_LowMidCrossover").unwrap_or(200.0),
+                mid_high: num("Input_MidHighCrossover").unwrap_or(2000.0),
+                stages: [stage(1), stage(2), stage(3)],
+                compression: num("Output_CompressionAmount").unwrap_or(0.0),
+                output_db: db(num("Output_OutputGain").unwrap_or(1.0)),
+                dry_wet: num("Output_DryWet").unwrap_or(1.0),
+            })
+        }
         _ => return None,
     })
 }

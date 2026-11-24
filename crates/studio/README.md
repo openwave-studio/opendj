@@ -55,6 +55,9 @@ Shift with them jumps by eight.
   runs them as slots in each track's chain (`engine.rs`).
 - `devices.rs`: the studio's own devices matching Live's (Utility, EQ
   Eight, Compressor), run in the chain with the plug-ins.
+- Each built-in device lists its settings (`Settings::params`) for its
+  panel in the device row; a change reaches the running device with
+  `Command::DeviceParam` and retunes it in place.
 - `fx.rs`: Live's Delay, Echo, Reverb, Gate and Overdrive, and
   approximations of Hybrid Reverb (no convolution) and Roar (shapers and
   filters in series, no feedback or modulation).

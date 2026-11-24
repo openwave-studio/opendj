@@ -151,6 +151,13 @@ pub enum Command {
         device: usize,
         on: bool,
     },
+    /// One setting of a built-in device (see `devices::Settings::params`).
+    DeviceParam {
+        track: usize,
+        device: usize,
+        index: usize,
+        value: f32,
+    },
     /// A track's inputs and outputs.
     Route {
         track: usize,
@@ -856,6 +863,21 @@ impl Engine {
                 if let Some(c) = self.columns.get_mut(track) {
                     for s in c.slots.iter_mut().filter(|s| s.device == device) {
                         s.on = on;
+                    }
+                }
+                None
+            }
+            Command::DeviceParam {
+                track,
+                device,
+                index,
+                value,
+            } => {
+                if let Some(c) = self.columns.get_mut(track) {
+                    for s in c.slots.iter_mut().filter(|s| s.device == device) {
+                        if let SlotKind::Builtin(d) = &mut s.kind {
+                            d.set(index, value);
+                        }
                     }
                 }
                 None

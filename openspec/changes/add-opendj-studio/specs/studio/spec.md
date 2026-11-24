@@ -100,6 +100,10 @@ A Live set's Drum Rack SHALL play each pad's own sample, found beside the set, w
 - **WHEN** a set with Live's 808 Core Kit is opened on a Mac with Live installed
 - **THEN** the track plays Live's 808 samples, and the open hi-hat is cut off by the closed one
 
+#### Scenario: Editing a device
+- **WHEN** a built-in device's knob is turned, a switch clicked, or an EQ Eight band dragged on its curve
+- **THEN** the device changes while it plays, without cutting a reverb's tail or a delay's repeats
+
 #### Scenario: A synced delay
 - **WHEN** a track's Delay is synced to 3/16 and the set plays at 120 BPM
 - **THEN** its repeats come 375 ms apart, and follow the tempo when it changes

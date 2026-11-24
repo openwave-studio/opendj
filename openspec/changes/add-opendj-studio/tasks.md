@@ -39,6 +39,8 @@
 - [x] 2.25 The studio's own Utility, EQ Eight and Compressor, with the set's settings, in each track's chain with the plug-ins
 - [x] 2.26 The studio's own Echo, Delay, Reverb, Gate and Overdrive with the set's settings; approximations of Hybrid Reverb and Roar
 - [ ] 2.27 Hear the set's 808 and 606 kits and its EQ, Utility, Compressor, Delay, Echo, reverbs, Overdrive and Roar on macOS
+- [x] 2.28 Panels for the studio's own devices: their settings as knobs and switches, editable while playing; EQ Eight's curve with draggable bands; filter curves for Delay, Overdrive and the reverbs
+- [ ] 2.29 Chord and Scale MIDI effects, and a Wavetable instrument read from the set
 
 ## 3. Clip editing
 

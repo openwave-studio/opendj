@@ -43,7 +43,29 @@ export struct ParamData {
     text: string,
 }
 
-// A device a set lists, shown until it can load.
+// A knob or switch on a built-in device's panel; `index` is its setting.
+export struct KnobData {
+    index: int,
+    name: string,
+    // The knob's position, 0..1 (a list's place for a switch).
+    value: float,
+    text: string,
+    bipolar: bool,
+    // An on/off switch (else a list that steps on a click).
+    toggle: bool,
+    on: bool,
+}
+
+// An EQ Eight band on its graph: place across and down, 0..1.
+export struct DotData {
+    band: int,
+    x: float,
+    y: float,
+    on: bool,
+    gain: bool,
+}
+
+// A device a set lists: a plug-in, or one of the studio's own with its panel.
 export struct DeviceData {
     name: string,
     kind: string,
@@ -51,6 +73,19 @@ export struct DeviceData {
     on: bool,
     // A plug-in, running: its window can open.
     can-open: bool,
+    // The studio's own device: its panel shows these.
+    builtin: bool,
+    eq: bool,
+    params: [KnobData],
+    knobs: [KnobData],
+    switches: [KnobData],
+    cols: int,
+    rows: int,
+    // Its response, as path commands in a 300 x 100 box, and where 0 dB is.
+    curve: string,
+    zero: float,
+    dots: [DotData],
+    panel-width: float,
 }
 
 export struct TrackData {
@@ -968,6 +1003,240 @@ component Device inherits Rectangle {
     }
 }
 
+
+// A built-in device's on/off switch, or a list that steps on a click.
+component SwitchPill inherits Rectangle {
+    in property <KnobData> k;
+    in property <color> tint;
+    callback clicked();
+    height: 20px;
+    border-radius: 3px;
+    background: k.toggle && k.on ? tint : Theme.bg;
+    border-width: 1px;
+    border-color: k.toggle && k.on ? tint : Theme.line;
+    Text {
+        x: 6px;
+        width: parent.width - 12px;
+        text: k.toggle ? k.name : k.text + " ▸";
+        color: k.toggle && k.on ? Theme.bg : Theme.text;
+        font-size: 10px;
+        font-weight: k.toggle && k.on ? 700 : 400;
+        horizontal-alignment: k.toggle ? center : left;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A device's frequency response on a log scale, 10 Hz to 22 kHz.
+component Graph inherits Rectangle {
+    in property <string> curve;
+    in property <float> zero;
+    in property <color> tint;
+    border-radius: 2px;
+    background: Theme.bg;
+    clip: true;
+    // 100 Hz, 1 kHz and 10 kHz.
+    for f in [0.299, 0.598, 0.898]: Rectangle {
+        x: parent.width * f;
+        width: 1px;
+        background: Theme.line;
+    }
+    Rectangle {
+        y: parent.height * zero / 100;
+        height: 1px;
+        background: Theme.line;
+    }
+    Text { x: parent.width * 0.299 + 3px; y: parent.height - 13px; text: "100"; color: Theme.faint; font-size: 9px; }
+    Text { x: parent.width * 0.598 + 3px; y: parent.height - 13px; text: "1k"; color: Theme.faint; font-size: 9px; }
+    Text { x: parent.width * 0.898 + 3px; y: parent.height - 13px; text: "10k"; color: Theme.faint; font-size: 9px; }
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 300;
+        viewbox-height: 100;
+        commands: curve;
+        stroke: tint;
+        stroke-width: 1.5px;
+    }
+    @children
+}
+
+// One of the studio's own devices: its switches, knobs and graph.
+component KnobPanel inherits HorizontalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    callback param(int, float);
+    callback click(int);
+    padding: 8px;
+    spacing: 8px;
+    if d.switches.length > 0: VerticalLayout {
+        width: 88px;
+        spacing: 3px;
+        alignment: center;
+        for k in d.switches: SwitchPill {
+            k: k;
+            tint: root.tint;
+            clicked => { root.click(k.index); }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        Rectangle {
+            width: d.cols * 58px;
+            height: d.rows * 58px;
+            for k[i] in d.knobs: Knob {
+                x: mod(i, d.cols) * 58px;
+                y: floor(i / d.cols) * 58px;
+                width: 58px;
+                size: 28px;
+                label: k.name;
+                display: k.text;
+                value: k.value;
+                bipolar: k.bipolar;
+                tint: root.tint;
+                changed(v) => { root.param(k.index, v); }
+            }
+        }
+    }
+    if d.curve != "": Graph {
+        width: 180px;
+        curve: d.curve;
+        zero: d.zero;
+        tint: root.tint;
+    }
+}
+
+// EQ Eight as Live lays it out: the selected band's knobs, the curve with a
+// dot per band to drag, the bands below it, and the output.
+component Eq8Panel inherits HorizontalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    in-out property <int> band: 0;
+    callback param(int, float);
+    callback click(int);
+    callback drag(int, float, float);
+    padding: 6px;
+    spacing: 6px;
+    VerticalLayout {
+        width: 56px;
+        alignment: center;
+        for j in 3: Knob {
+            width: 56px;
+            size: 26px;
+            label: d.params[band * 5 + 2 + j].name;
+            display: d.params[band * 5 + 2 + j].text;
+            value: d.params[band * 5 + 2 + j].value;
+            bipolar: d.params[band * 5 + 2 + j].bipolar;
+            tint: root.tint;
+            changed(v) => { root.param(band * 5 + 2 + j, v); }
+        }
+    }
+    VerticalLayout {
+        spacing: 4px;
+        graph := Graph {
+            vertical-stretch: 1;
+            curve: d.curve;
+            zero: d.zero;
+            tint: root.tint;
+            for dot in d.dots: Rectangle {
+                property <float> sx;
+                property <float> sy;
+                visible: dot.on;
+                x: parent.width * dot.x - 7px;
+                y: parent.height * dot.y - 7px;
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                background: dot.band == root.band ? root.tint : Theme.bg;
+                border-width: 1.5px;
+                border-color: root.tint;
+                Text {
+                    text: dot.band + 1;
+                    color: dot.band == root.band ? Theme.bg : root.tint;
+                    font-size: 9px;
+                    font-weight: 700;
+                }
+                TouchArea {
+                    mouse-cursor: move;
+                    pointer-event(e) => {
+                        if e.kind == PointerEventKind.down {
+                            root.band = dot.band;
+                            parent.sx = dot.x;
+                            parent.sy = dot.y;
+                        }
+                    }
+                    moved => {
+                        root.drag(dot.band,
+                            parent.sx + (self.mouse-x - self.pressed-x) / graph.width,
+                            parent.sy + (self.mouse-y - self.pressed-y) / graph.height);
+                    }
+                }
+            }
+        }
+        HorizontalLayout {
+            height: 36px;
+            spacing: 3px;
+            for b in 8: VerticalLayout {
+                spacing: 2px;
+                Rectangle {
+                    height: 16px;
+                    border-radius: 2px;
+                    background: b == root.band ? Theme.select : Theme.bg;
+                    Text {
+                        text: d.params[b * 5 + 1].text;
+                        color: d.params[b * 5].on ? Theme.text : Theme.faint;
+                        font-size: 8px;
+                        overflow: elide;
+                    }
+                    TouchArea { clicked => { root.band = b; } }
+                }
+                HorizontalLayout {
+                    spacing: 3px;
+                    alignment: center;
+                    Rectangle {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 2px;
+                        background: d.params[b * 5].on ? root.tint : transparent;
+                        border-width: 1px;
+                        border-color: root.tint;
+                        TouchArea { clicked => { root.click(b * 5); } }
+                    }
+                    Text {
+                        text: b + 1;
+                        color: b == root.band ? Theme.text : Theme.dim;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                        TouchArea { clicked => { root.band = b; } }
+                    }
+                }
+            }
+        }
+    }
+    VerticalLayout {
+        width: 64px;
+        spacing: 4px;
+        alignment: center;
+        Text { text: "Shape"; color: Theme.dim; font-size: 10px; horizontal-alignment: center; }
+        SwitchPill {
+            k: d.params[band * 5 + 1];
+            tint: root.tint;
+            clicked => { root.click(band * 5 + 1); }
+        }
+        for j in 2: Knob {
+            width: 64px;
+            size: 26px;
+            label: d.params[40 + j].name;
+            display: d.params[40 + j].text;
+            value: d.params[40 + j].value;
+            bipolar: d.params[40 + j].bipolar;
+            tint: root.tint;
+            changed(v) => { root.param(40 + j, v); }
+        }
+    }
+}
+
 component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
@@ -1279,6 +1548,11 @@ export component AppWindow inherits Window {
     // A device in the chain: switch it on or off, open its window.
     callback toggle-device(int, int, bool);
     callback open-device(int, int);
+    // A built-in device's setting (track, device, setting): a knob moved
+    // (0..1), a switch clicked, or an EQ Eight band dragged (band, x, y).
+    callback device-param(int, int, int, float);
+    callback device-click(int, int, int);
+    callback device-drag(int, int, int, float, float);
     // Track, picker (0 Audio From, 1 its channel, 2 Audio To, 3 its pair,
     // 4 MIDI From, 5 its channel, 6 MIDI To, 7 its channel), option.
     callback io-pick(int, int, int);
@@ -1707,13 +1981,26 @@ export component AppWindow inherits Window {
                         // A set's own devices: plug-ins run, Live's own are
                         // listed until they have built-in matches.
                         for d[i] in track.chain: Device {
-                            width: 150px;
+                            width: d.builtin ? d.panel-width * 1px : 150px;
                             title: d.name;
                             on: d.on;
-                            tint: d.kind == "Live" ? Theme.faint : Theme.effect;
+                            tint: d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
                             toggled(v) => { root.toggle-device(selected-track, i, v); }
                             opened => { root.open-device(selected-track, i); }
-                            VerticalLayout {
+                            if d.builtin && !d.eq: KnobPanel {
+                                d: d;
+                                tint: Theme.effect;
+                                param(k, v) => { root.device-param(selected-track, i, k, v); }
+                                click(k) => { root.device-click(selected-track, i, k); }
+                            }
+                            if d.eq: Eq8Panel {
+                                d: d;
+                                tint: Theme.effect;
+                                param(k, v) => { root.device-param(selected-track, i, k, v); }
+                                click(k) => { root.device-click(selected-track, i, k); }
+                                drag(b, x, y) => { root.device-drag(selected-track, i, b, x, y); }
+                            }
+                            if !d.builtin: VerticalLayout {
                                 padding: 10px;
                                 spacing: 6px;
                                 Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
