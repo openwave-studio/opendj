@@ -953,6 +953,7 @@ fn route(status: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use slint::Model;
 
     #[test]
     fn bend_and_mod_wheel_are_midi() {
