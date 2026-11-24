@@ -23,9 +23,9 @@ The Jam source lists instruments in a 270 px tree of 34 px rows (Recently played
 - Colour favourites and playlists of presets (the star is enough for now).
 - Art tiles for instruments (assessed in the mockups, left out).
 
-## Open question
+## Right of the column
 
-What the area right of the column shows when no plugin panel is open: today's wide table, or the plugin panel of the deck's instrument with a hint when none plays (recommended).
+The wide table goes. The loaded plugin's panel shows right of the column; until one is open, a short hint shows there.
 
 ## Capabilities
 
@@ -35,5 +35,5 @@ What the area right of the column shows when no plugin panel is open: today's wi
 
 ## Impact
 
-- UI: `crates/app/ui/instruments.slint` (`InstrumentTree` replaced by the column; `InstrumentList` follows the open question).
+- UI: `crates/app/ui/instruments.slint` (`InstrumentTree` replaced by the column; `InstrumentList` replaced by a hint until the plugin panel is open).
 - App: `crates/app/src/instruments.rs` (`nodes()` gives way to facets: values and counts per menu, picks, starred items); `presets.rs` (stars, more tag groups); settings for the stars and the preferred format.

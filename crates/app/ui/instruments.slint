@@ -188,12 +188,6 @@ export global InstrumentsUi {
     callback clear-filters();
     // Stars the item (kind and index as `drop`), or takes its star off.
     callback toggle-star(kind: int, index: int);
-    // The column the list is sorted by: -1 as listed, 0 name, 1 type,
-    // 2 maker or input, 3 format; and which way. Set by the app.
-    in property <int> sort-column: -1;
-    in property <bool> sort-descending;
-    // Sorts by `column`, or the other way if it already is.
-    callback sort-by(column: int);
     // Item `item` (see `drop`) went onto a deck: Recently played lists it.
     callback played(item: int);
     // True while an item is being dragged, so every deck shows it takes drops.
@@ -626,35 +620,6 @@ export component LiveIcon inherits Rectangle {
     }
 }
 
-// The tree's icons: the LiveIcon drawings, plus a folder for the rest.
-component NodeIcon inherits Rectangle {
-    in property <int> kind;
-    in property <color> tint;
-    width: 18px;
-    height: 18px;
-    if kind == 1 || kind == 2 || kind == 3 || kind == 4 || kind == 9 || kind == 10: LiveIcon {
-        kind: kind == 9 ? 6 : kind == 10 ? 8 : kind;
-        tint: tint;
-        size: 18px;
-    }
-    if kind == 0 || kind == 5 || kind == 6 || kind == 7 || kind == 8: Path {
-        width: parent.width;
-        height: parent.height;
-        viewbox-width: 18;
-        viewbox-height: 18;
-        stroke: tint;
-        stroke-width: 1.3px;
-        stroke-line-join: round;
-        fill: transparent;
-        commands: kind == 6 ? "M 3 4 L 15 4 L 15 14 L 3 14 Z M 6 4 L 6 10 M 9 4 L 9 10 M 12 4 L 12 10"
-            // A preset: three sliders.
-            : kind == 7 ? "M 4 3 L 4 15 M 9 3 L 9 15 M 14 3 L 14 15 M 2.5 11 L 5.5 11 M 7.5 6 L 10.5 6 M 12.5 9 L 15.5 9"
-            // Recently played: a clock.
-            : kind == 8 ? "M 9 2.5 A 6.5 6.5 0 1 1 8.99 2.5 Z M 9 5 L 9 9 L 12 11"
-            : "M 2.5 5 L 7 5 L 8.5 6.5 L 15.5 6.5 L 15.5 14 L 2.5 14 Z";
-    }
-}
-
 // A value to pick in the Jam column's filter menus.
 component JamChipButton inherits Rectangle {
     in property <JamChip> chip;
@@ -1019,92 +984,6 @@ component JamColumn inherits Rectangle {
     }
 }
 
-// A column heading.
-component Heading inherits Text {
-    color: Theme.text-dim;
-    font-size: 11px;
-    font-weight: 600;
-    vertical-alignment: center;
-    overflow: elide;
-}
-
-// A column heading to sort by: a click sorts, another the other way.
-component SortHeading inherits Rectangle {
-    in property <string> text;
-    in property <int> column;
-    property <bool> on: InstrumentsUi.sort-column == column;
-    HorizontalLayout {
-        spacing: 4px;
-        Heading { text: root.text; color: on ? Theme.text : Theme.text-dim; }
-        if on: Heading { text: InstrumentsUi.sort-descending ? "▼" : "▲"; color: Theme.lilac-text; font-size: 9px; }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    TouchArea { mouse-cursor: pointer; clicked => { InstrumentsUi.sort-by(column); } }
-}
-
-// One row of the list, laid out like a track row.
-component InstrumentRow inherits Rectangle {
-    in property <LiveItem> item;
-    in property <int> line;
-    in property <bool> selected;
-    in property <bool> focused;
-    in property <length> type-width;
-    in property <length> maker-width;
-    in property <length> format-width;
-    callback select();
-    callback load();
-    property <string> decks: InstrumentsUi.decks-of(item.kind, item.index);
-    height: 32px;
-    background: selected ? (focused ? Theme.selection : Theme.selection-idle) : Math.mod(line, 2) == 0 ? Theme.row : Theme.row-alt;
-    drag := DragArea {
-        data: InstrumentsUi.payload(item.kind, item.index);
-        allow-copy: true;
-        changed dragging => { InstrumentsUi.dragging = self.dragging; }
-        TouchArea {
-            mouse-cursor: grab;
-            clicked => { select(); }
-            double-clicked => { load(); }
-        }
-    }
-    HorizontalLayout {
-        padding-left: 10px;
-        padding-right: 10px;
-        spacing: 10px;
-        VerticalLayout {
-            alignment: center;
-            Rectangle {
-                width: 24px;
-                height: 24px;
-                border-radius: 4px;
-                background: Theme.n-000000;
-                if item.kind != 5: LiveIcon { kind: item.kind; size: 20px; tint: Theme.accent; }
-                if item.kind == 5: NodeIcon { kind: 7; tint: Theme.accent; }
-            }
-        }
-        Text { text: item.name; color: selected ? Theme.on-row-selection : Theme.text; font-size: 13px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
-        Text { width: type-width; text: item.type; color: selected ? Theme.on-row-selection : Theme.text-dim; font-size: 13px; vertical-alignment: center; overflow: elide; }
-        Text {
-            width: maker-width;
-            text: item.problem != "" ? item.problem : item.maker;
-            color: item.problem != "" ? Theme.c-ff9f0a : selected ? Theme.on-row-selection : Theme.text-dim;
-            font-size: 13px;
-            vertical-alignment: center;
-            overflow: elide;
-        }
-        Text { width: format-width; text: item.format; color: selected ? Theme.on-row-selection : Theme.text-dim; font-size: 13px; vertical-alignment: center; overflow: elide; }
-        Text {
-            width: 64px;
-            text: decks == "" ? "" : (decks.character-count > 1 ? "Decks " : "Deck ") + decks;
-            color: selected ? Theme.on-row-selection : Theme.lilac-text;
-            font-size: 12px;
-            font-weight: 600;
-            vertical-alignment: center;
-            overflow: elide;
-        }
-    }
-}
-
-// The list on the right: the selected node's instruments, like tracks.
 // A tag to switch on or off: a chip over the list, or in a preset's tags.
 export component TagChip inherits Rectangle {
     in property <string> text;
@@ -1120,123 +999,31 @@ export component TagChip inherits Rectangle {
     tcta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-component InstrumentList inherits Rectangle {
-    property <int> navigation-request: BrowserFocus.request;
-    changed navigation-request => { focus-pending = true; }
-    property <bool> focus-pending;
-    Timer {
-        interval: 1ms;
-        running: root.focus-pending;
-        triggered => {
-            root.focus-pending = false;
-            if root.visible && BrowserFocus.pane == BrowserPane.content { item-keys.focus(); }
-        }
-    }
-    item-keys := FocusScope {
-        focus-on-click: false;
-        changed has-focus => {
-            if self.has-focus { BrowserFocus.pane = BrowserPane.content; }
-        }
-        key-pressed(e) => {
-            if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
-            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift { return reject; }
-            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
-            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
-            else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
-            else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
-            else { return reject; }
-            accept
-        }
-    }
-    Timer {
-        interval: 1ms;
-        running: item-keys.has-focus && BrowserFocus.pane == BrowserPane.content
-            && (root.current < 0 || root.current >= InstrumentsUi.rows.length) && InstrumentsUi.rows.length > 0;
-        triggered => { root.current = 0; }
-    }
-    changed current => {
-        if current >= 0 {
-            if current * 32px + items-scroll.content-y < 0 { items-scroll.content-y = -current * 32px; }
-            else if (current + 1) * 32px + items-scroll.content-y > items-scroll.visible-height {
-                items-scroll.content-y = items-scroll.visible-height - (current + 1) * 32px;
-            }
-        }
-    }
-
-    // How many decks are shown, for double-click.
-    in property <int> decks;
-    property <int> current <=> InstrumentsUi.current-item;
-    property <length> type-width: 110px;
-    property <length> maker-width: 200px;
-    property <length> format-width: 70px;
-    background: Theme.browser;
-    VerticalLayout {
-        // Column headings.
-        Rectangle {
-            height: 28px;
-            HorizontalLayout {
-                padding-left: 10px;
-                padding-right: 10px;
-                spacing: 10px;
-                Rectangle { width: 24px; }
-                SortHeading { text: "NAME"; column: 0; horizontal-stretch: 1; }
-                SortHeading { width: type-width; text: "TYPE"; column: 1; }
-                SortHeading { width: maker-width; text: "MAKER / INPUT"; column: 2; }
-                SortHeading { width: format-width; text: "FORMAT"; column: 3; }
-                Heading { width: 64px; text: "DECK"; }
-            }
-            Rectangle { y: parent.height - 1px; height: 1px; background: Theme.separator; }
-        }
-        items-scroll := ScrollView {
-            VerticalLayout {
-                alignment: start;
-                for it[i] in InstrumentsUi.rows: InstrumentRow {
-                    item: it;
-                    line: i;
-                    selected: i == current;
-                    focused: item-keys.has-focus;
-                    type-width: type-width;
-                    maker-width: maker-width;
-                    format-width: format-width;
-                    select => { item-keys.focus(); current = i; }
-                    load => {
-                        item-keys.focus();
-                        current = i;
-                        if InstrumentsUi.free-deck(decks) >= 0 {
-                            InstrumentsUi.drop(InstrumentsUi.free-deck(decks), it.kind * 1000 + it.index);
-                        }
-                    }
-                }
-                if InstrumentsUi.empty-text != "": Rectangle {
-                    height: 64px;
-                    Text {
-                        text: InstrumentsUi.empty-text;
-                        color: InstrumentsUi.empty-page >= 0 ? Theme.lilac-text : Theme.text-dim;
-                        font-size: 13px;
-                    }
-                    if InstrumentsUi.empty-page >= 0: TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => { InstrumentsUi.open-settings(InstrumentsUi.empty-page, InstrumentsUi.empty-tab); }
-                    }
-                }
-            }
-        }
-        Text {
-            height: 30px;
-            x: 10px;
-            text: "Drag onto a deck, or double-click to load on a free deck. It plays through that deck's channel; drop a track on the deck to go back.";
-            color: Theme.text-dim;
-            font-size: 11px;
-            vertical-alignment: center;
-            overflow: elide;
-        }
-    }
-}
-
-// The source's page: the tree and the list, in the browser's place.
+// The source's page: the column, and beside it the loaded plugin's
+// panel; until one is open, a hint.
 export component InstrumentsPanel inherits HorizontalLayout {
     in property <int> decks: 2;
     JamColumn { decks: decks; }
     Rectangle { width: 1px; background: Theme.separator; }
-    InstrumentList { decks: decks; horizontal-stretch: 1; }
+    Rectangle {
+        horizontal-stretch: 1;
+        background: Theme.browser;
+        VerticalLayout {
+            alignment: center;
+            spacing: 6px;
+            Text {
+                text: "Pick a preset or instrument";
+                color: Theme.text-dim;
+                font-size: 14px;
+                font-weight: 600;
+                horizontal-alignment: center;
+            }
+            Text {
+                text: "Drag it onto a deck, or double-click to load it on a free deck.";
+                color: Theme.text-dim;
+                font-size: 12px;
+                horizontal-alignment: center;
+            }
+        }
+    }
 }

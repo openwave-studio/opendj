@@ -74,9 +74,6 @@ struct State {
     starred_only: bool,
     /// What went onto a deck lately, newest first (see [`recent_key`]).
     recent: Vec<String>,
-    /// The column the list is sorted by (0 name, 1 type, 2 maker,
-    /// 3 format) and whether it is the other way round; none as listed.
-    sort: Option<(i32, bool)>,
 }
 
 /// How many items Recently played keeps.
@@ -149,9 +146,6 @@ pub(crate) fn navigate_column(app: &AppWindow, code: i32) {
         Some(Direction::Left) => app
             .global::<BrowserFocus>()
             .invoke_focus(BrowserPane::Sources),
-        Some(Direction::Right) => app
-            .global::<BrowserFocus>()
-            .invoke_focus(BrowserPane::Content),
         _ => {}
     }
 }
@@ -205,18 +199,6 @@ pub fn install(app: &AppWindow) {
         }
     });
     let weak = app.as_weak();
-    ui.on_sort_by(move |column| {
-        STATE.with_borrow_mut(|s| {
-            s.sort = match s.sort {
-                Some((c, down)) if c == column => Some((column, !down)),
-                _ => Some((column, false)),
-            };
-        });
-        if let Some(app) = weak.upgrade() {
-            refresh(&app);
-        }
-    });
-    let weak = app.as_weak();
     ui.on_search(move |text| update(&weak, |s| s.search = text.to_string()));
     let weak = app.as_weak();
     ui.on_set_view(move |view| {
@@ -225,7 +207,6 @@ pub fn install(app: &AppWindow) {
                 s.view = view;
                 s.picks.clear();
                 s.open_facet = None;
-                s.sort = None;
             }
         })
     });
@@ -645,24 +626,8 @@ fn filtered(s: &State) -> (Vec<LiveItem>, Vec<Facet>) {
         .filter(|e| base(e) && fits(e, None))
         .map(|e| e.item.clone())
         .collect();
-    if s.view == PRESETS && s.sort.is_none() {
+    if s.view == PRESETS {
         rows.sort_by_cached_key(|r| (r.name.to_lowercase(), r.maker.to_lowercase()));
-    }
-    if let Some((column, descending)) = s.sort {
-        let text = |r: &LiveItem| {
-            match column {
-                0 => &r.name,
-                1 => &r.r#type,
-                2 if r.maker.is_empty() => &r.problem,
-                2 => &r.maker,
-                _ => &r.format,
-            }
-            .to_lowercase()
-        };
-        rows.sort_by_cached_key(|r| (text(r), r.name.to_lowercase()));
-        if descending {
-            rows.reverse();
-        }
     }
     let facets = names
         .iter()
@@ -814,8 +779,6 @@ fn refresh(app: &AppWindow) {
         ui.set_empty_text(empty.into());
         ui.set_empty_page(page);
         ui.set_empty_tab(tab);
-        ui.set_sort_column(s.sort.map_or(-1, |(c, _)| c));
-        ui.set_sort_descending(s.sort.is_some_and(|(_, down)| down));
     });
 }
 
@@ -1088,13 +1051,6 @@ mod tests {
         s.picks.clear();
         s.search = "vital".into();
         assert_eq!(names(&s), ["Vital"]);
-        // Sorted by maker, then the other way.
-        s.search.clear();
-        pick(&mut s, "Kind", "Synths");
-        s.sort = Some((2, false));
-        assert_eq!(names(&s), ["Acid V", "Jun-6 V", "Vital"]);
-        s.sort = Some((0, true));
-        assert_eq!(names(&s), ["Vital", "Jun-6 V", "Acid V"]);
     }
 
     #[test]

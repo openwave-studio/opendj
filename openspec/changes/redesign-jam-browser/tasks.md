@@ -6,7 +6,8 @@
 - [x] 1.2 Filter menus as chip groups (Sound type, Character, Instrument, Maker from what exists today), picks on a closed menu's header, counts that narrow each other, Clear all
 - [ ] 1.3 24 px rows: kind colour square, name, instrument dimmed, deck badge, star; click loads on the panel's deck, double-click on a free deck, drag as today
 - [x] 1.4 Stars kept in settings for presets and instruments
-- [ ] 1.5 The area right of the column when no plugin panel is open (open question)
+- [x] 1.5 The wide table right of the column goes; a hint shows there until a plugin panel opens
+- [ ] 1.6 The loaded plugin's panel takes that place (with the plugin panel change)
 
 ## 2. More tags
 
