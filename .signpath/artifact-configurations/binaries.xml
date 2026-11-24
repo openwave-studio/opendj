@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration "binaries": the app and its plugin
+     helper, signed before they go into the portable zip and the setup.
+     The GitHub artifact the release workflow uploads is a zip with both
+     files at its root. Paste this into the SignPath project (slug opendj)
+     as the artifact configuration with slug "binaries". -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="opendj.exe">
+      <authenticode-sign/>
+    </pe-file>
+    <pe-file path="opendj-plugin-host.exe">
+      <authenticode-sign/>
+    </pe-file>
+  </zip-file>
+</artifact-configuration>
