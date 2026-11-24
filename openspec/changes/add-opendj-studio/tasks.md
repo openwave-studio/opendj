@@ -31,8 +31,9 @@
 - [ ] 2.17 Try the drum sequencer on hardware (macOS)
 - [x] 2.18 A chain of plug-in slots per track: a Live set's Audio Units and VST3s start in helpers with the sound the set saved, found by id or name; Vital plays in place of Wavetable; devices switch on and off and open their windows
 - [ ] 2.19 Open the set with its plug-ins on macOS
-- [ ] 2.20 Audio inputs per track: Audio From with channel, Monitor In/Auto/Off, Audio To
-- [ ] 2.21 MIDI From and To per MIDI track, with channel
+- [x] 2.20 Audio inputs per track: Audio From with channel, Monitor In/Auto/Off, Audio To
+- [x] 2.21 MIDI From and To per MIDI track, with channel
+- [ ] 2.22 Play the set's live inputs and keyboards through their tracks on macOS
 
 ## 3. Clip editing
 

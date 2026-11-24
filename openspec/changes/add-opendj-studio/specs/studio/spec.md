@@ -74,3 +74,14 @@ Each track SHALL have a chain of plug-in slots run in `opendj-plugin-host` helpe
 #### Scenario: A set's synth with its sound
 - **WHEN** a set whose MIDI track holds Prophet-5 V is opened on a Mac with Prophet-5 V installed
 - **THEN** the track's clips play through Prophet-5 V with the patch the set saved, and its device box opens Prophet-5 V's window
+
+### Requirement: Track inputs and outputs
+Each track SHALL have an I/O section as Live's. An audio track SHALL take one sound card input channel or a stereo pair (Audio From), and SHALL play it when Monitor is In (its clips then quiet), or Auto while the track is armed and plays no clip; Off SHALL never play it. A MIDI track SHALL take notes from every MIDI input or one, on every channel or one (MIDI From), when Monitor is In, or Auto while it is armed (or, with no track armed, selected); Push SHALL stay out of MIDI From. A track's sound SHALL go to Main, a pair of sound card outputs (Ext. Out) or only its sends (Audio To). A MIDI track with a MIDI To port SHALL send its notes there on its channel in place of its own sound. Arming a track SHALL disarm the others. A Live set's routings, monitoring and arm SHALL open as saved.
+
+#### Scenario: A microphone through a track's effects
+- **WHEN** a set whose audio track takes input 1 with Monitor In is opened
+- **THEN** what comes into input 1 plays through that track's chain and fader to Main
+
+#### Scenario: A keyboard on its own track
+- **WHEN** a MIDI track's MIDI From names a keyboard and Monitor is In
+- **THEN** that keyboard plays the track, and other tracks set to other inputs don't hear it

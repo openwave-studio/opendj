@@ -66,8 +66,22 @@ export struct TrackData {
     // An audio track: recordings, no instrument.
     audio: bool,
     kind: string,
-    // Where it listens (an audio input, or a MIDI controller).
+    // Where it listens (an audio input, or a MIDI controller), in words.
     input: string,
+    // The I/O section, as Live's: the pickers' texts.
+    audio-from: string,
+    in-channel: string,
+    midi-from: string,
+    midi-channel: string,
+    // 0 In, 1 Auto, 2 Off.
+    monitor: int,
+    armed: bool,
+    audio-to: string,
+    // Shown when the sound goes to Ext. Out.
+    out-channel: string,
+    midi-to: string,
+    // Shown when notes go out over MIDI.
+    midi-to-channel: string,
     // The devices a set lists for it.
     chain: [DeviceData],
     // A plug-in plays its notes (the built-in sound isn't shown).
@@ -334,6 +348,149 @@ component SmallButton inherits Rectangle {
     ta := TouchArea { clicked => { root.clicked(); } }
 }
 
+// A drop-down: the current choice, and a list to pick from.
+component Picker inherits Rectangle {
+    in property <string> text;
+    in property <[string]> options;
+    callback picked(int);
+    height: 18px;
+    border-radius: 2px;
+    background: ta.has-hover ? Theme.slot-hover : Theme.slot;
+    HorizontalLayout {
+        padding-left: 5px;
+        padding-right: 4px;
+        spacing: 2px;
+        Text {
+            text: root.text;
+            color: Theme.text;
+            font-size: 10px;
+            overflow: elide;
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+        }
+        Text { text: "▾"; color: Theme.dim; font-size: 9px; vertical-alignment: center; }
+    }
+    ta := TouchArea { clicked => { popup.show(); } }
+    popup := PopupWindow {
+        x: 0;
+        y: root.height;
+        width: max(root.width, 170px);
+        Rectangle {
+            background: Theme.panel-2;
+            border-width: 1px;
+            border-color: Theme.line;
+            VerticalLayout {
+                padding: 2px;
+                for o[i] in root.options: Rectangle {
+                    height: 20px;
+                    background: oa.has-hover ? Theme.select : transparent;
+                    Text {
+                        x: 6px;
+                        width: parent.width - 12px;
+                        text: o;
+                        color: o == root.text ? Theme.accent : Theme.text;
+                        font-size: 11px;
+                        overflow: elide;
+                    }
+                    oa := TouchArea { clicked => { root.picked(i); } }
+                }
+            }
+        }
+    }
+}
+
+component IoLabel inherits Text {
+    color: Theme.dim;
+    font-size: 9px;
+    height: 11px;
+}
+
+// A track's I/O section, as Live's: where it listens, when it monitors and
+// where its sound (and, for a MIDI track, its notes) go.
+component IoSection inherits Rectangle {
+    in property <TrackData> t;
+    in property <[string]> in-channels;
+    in property <[string]> out-channels;
+    in property <[string]> midi-froms;
+    in property <[string]> midi-tos;
+    // Which picker (see AppWindow.io-pick) and the option picked.
+    callback picked(int, int);
+    callback monitor(int);
+    VerticalLayout {
+        padding: 4px;
+        spacing: 2px;
+        IoLabel { text: t.audio ? "Audio From" : "MIDI From"; }
+        if t.audio: Picker {
+            text: t.audio-from;
+            options: ["Ext. In", "No Input"];
+            picked(i) => { root.picked(0, i); }
+        }
+        if t.audio: Picker {
+            text: t.in-channel == "" ? "—" : t.in-channel;
+            options: root.in-channels;
+            picked(i) => { root.picked(1, i); }
+        }
+        if !t.audio: Picker {
+            text: t.midi-from;
+            options: root.midi-froms;
+            picked(i) => { root.picked(4, i); }
+        }
+        if !t.audio: Picker {
+            text: t.midi-channel;
+            options: ["All Channels", "Ch. 1", "Ch. 2", "Ch. 3", "Ch. 4", "Ch. 5", "Ch. 6", "Ch. 7", "Ch. 8",
+                "Ch. 9", "Ch. 10", "Ch. 11", "Ch. 12", "Ch. 13", "Ch. 14", "Ch. 15", "Ch. 16"];
+            picked(i) => { root.picked(5, i); }
+        }
+        IoLabel { text: "Monitor"; }
+        HorizontalLayout {
+            spacing: 2px;
+            height: 18px;
+            for m[i] in ["In", "Auto", "Off"]: Rectangle {
+                horizontal-stretch: 1;
+                border-radius: 2px;
+                background: t.monitor == i ? (i == 2 ? Theme.select : Theme.queued) : (ma.has-hover ? Theme.slot-hover : Theme.slot);
+                Text {
+                    text: m;
+                    color: t.monitor == i && i != 2 ? #101112 : Theme.text;
+                    font-size: 10px;
+                    font-weight: 600;
+                }
+                ma := TouchArea { clicked => { root.monitor(i); } }
+            }
+        }
+        IoLabel { text: "Audio To"; }
+        HorizontalLayout {
+            spacing: 2px;
+            Picker {
+                text: t.audio-to;
+                options: ["Main", "Ext. Out", "Sends Only"];
+                picked(i) => { root.picked(2, i); }
+            }
+            if t.out-channel != "": Picker {
+                width: 42px;
+                text: t.out-channel;
+                options: root.out-channels;
+                picked(i) => { root.picked(3, i); }
+            }
+        }
+        if !t.audio: IoLabel { text: "MIDI To"; }
+        if !t.audio: HorizontalLayout {
+            spacing: 2px;
+            Picker {
+                text: t.midi-to;
+                options: root.midi-tos;
+                picked(i) => { root.picked(6, i); }
+            }
+            if t.midi-to-channel != "": Picker {
+                width: 42px;
+                text: t.midi-to-channel;
+                options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"];
+                picked(i) => { root.picked(7, i); }
+            }
+        }
+    }
+}
+
 // A mixer strip: sends, pan, fader with meter, activator, solo and arm.
 // Values come from the model; `free` strips (returns, not connected yet)
 // keep their own.
@@ -349,13 +506,14 @@ component Strip inherits Rectangle {
     in property <string> pan-text: "C";
     in property <float> send-a;
     in property <float> send-b;
+    in property <bool> armed;
     // Which control (0 volume, 1 pan, 2 send A, 3 send B) and its value.
     callback changed(int, float);
+    callback arm-toggled();
     property <float> fader: free ? local-volume : volume;
     property <float> local-volume: 60 / 66;
     property <bool> active: true;
     property <bool> solo;
-    property <bool> armed;
     background: tint.with-alpha(0.10);
     VerticalLayout {
         padding: 4px;
@@ -427,7 +585,7 @@ component Strip inherits Rectangle {
                 TouchArea { clicked => { root.active = !root.active; } }
             }
             SmallButton { label: "S"; on: solo; on-color: Theme.return-b; clicked => { root.solo = !root.solo; } }
-            if arm: SmallButton { label: "●"; on: armed; on-color: #ff6b6b; clicked => { root.armed = !root.armed; } }
+            if arm: SmallButton { label: "●"; on: armed; on-color: #ff6b6b; clicked => { root.arm-toggled(); } }
         }
     }
 }
@@ -959,6 +1117,14 @@ export component AppWindow inherits Window {
     in property <string> return-b: "B Return";
     in property <color> return-a-color: Theme.return-a;
     in property <color> return-b-color: Theme.return-b;
+    // The I/O pickers' lists: input channels ("1", …, "1/2", …), output
+    // pairs, MIDI inputs ("All Ins", ports, "No Input") and outputs ("No
+    // Output", ports).
+    in property <[string]> in-channels: ["1", "2", "1/2"];
+    in property <[string]> out-channels: ["1/2"];
+    in property <[string]> midi-froms: ["All Ins", "No Input"];
+    in property <[string]> midi-tos: ["No Output"];
+    in-out property <bool> io-shown: true;
 
     callback launch-clip(int, int);   // track, scene
     callback launch-scene(int);
@@ -979,6 +1145,12 @@ export component AppWindow inherits Window {
     // A device in the chain: switch it on or off, open its window.
     callback toggle-device(int, int, bool);
     callback open-device(int, int);
+    // Track, picker (0 Audio From, 1 its channel, 2 Audio To, 3 its pair,
+    // 4 MIDI From, 5 its channel, 6 MIDI To, 7 its channel), option.
+    callback io-pick(int, int, int);
+    // Track, 0 In, 1 Auto, 2 Off.
+    callback set-monitor(int, int);
+    callback toggle-arm(int);
 
     property <TrackData> track: tracks[selected-track];
     property <bool> has-clip: selected-scene >= 0
@@ -1030,6 +1202,10 @@ export component AppWindow inherits Window {
                 Readout { title: ""; value: root.position; value-width: 52px; }
                 Rectangle { horizontal-stretch: 1; }
                 Readout { title: "CPU"; value: root.load; value-width: 36px; }
+                VerticalLayout {
+                    alignment: center;
+                    Pill { label: "I/O"; on: root.io-shown; clicked => { root.io-shown = !root.io-shown; } }
+                }
                 VerticalLayout { alignment: center; Pill { label: "Session"; on: true; } }
                 VerticalLayout { alignment: center; Pill { label: "Arrangement"; enabled: false; } }
             }
@@ -1058,6 +1234,9 @@ export component AppWindow inherits Window {
                     property <length> ret-x: self.width - main - 2 * (ret + gap) - gap;
                     property <length> main-x: self.width - main;
                     property <length> mixer-y: self.height - mixer;
+                    // The I/O section, above the mixer, when shown and there's room.
+                    property <length> io: root.io-shown && self.height - mixer - stop-y - row-h - gap >= 172px ? 172px : 0px;
+                    property <length> io-y: mixer-y - io;
                     property <length> tracks-end: tracks.length * (col-w + gap);
 
                     // Tracks, scrolling sideways when there are more than fit.
@@ -1123,6 +1302,17 @@ export component AppWindow inherits Window {
                             border-width: 1px;
                             border-color: t.color;
                         }
+                        if session.io > 0: IoSection {
+                            y: session.io-y;
+                            height: session.io;
+                            t: t;
+                            in-channels: root.in-channels;
+                            out-channels: root.out-channels;
+                            midi-froms: root.midi-froms;
+                            midi-tos: root.midi-tos;
+                            picked(which, k) => { root.io-pick(i, which, k); }
+                            monitor(m) => { root.set-monitor(i, m); }
+                        }
                         // Mixer strip.
                         Strip {
                             y: session.mixer-y;
@@ -1130,6 +1320,8 @@ export component AppWindow inherits Window {
                             tint: t.color;
                             number: i + 1;
                             level: t.level;
+                            armed: t.armed;
+                            arm-toggled => { root.toggle-arm(i); }
                             volume: t.volume;
                             pan: t.pan;
                             pan-text: t.pan-text;
@@ -1149,7 +1341,7 @@ export component AppWindow inherits Window {
                         x: session.tracks-end + 10px;
                         y: session.head + session.gap;
                         width: max(0px, session.ret-x - session.tracks-end - 20px);
-                        height: session.mixer-y - session.head - 2 * session.gap;
+                        height: session.io-y - session.head - 2 * session.gap;
                         if self.width > 130px: VerticalLayout {
                             alignment: start;
                             spacing: 4px;
@@ -1307,7 +1499,7 @@ export component AppWindow inherits Window {
                                 padding: 10px;
                                 spacing: 6px;
                                 Text { text: track.input == "" ? "No input" : track.input; color: Theme.text; font-size: 13px; font-weight: 600; }
-                                Text { text: "Recordings play from the clips. Live input and monitoring come next."; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
+                                Text { text: track.audio-from == "No Input" ? "Recordings play from the clips." : (track.monitor == 0 ? "Plays what comes in; its clips are quiet (Monitor In)." : track.monitor == 1 ? "Plays what comes in when armed and no clip plays (Monitor Auto)." : "Plays its clips only (Monitor Off)."); color: Theme.dim; font-size: 11px; wrap: word-wrap; }
                             }
                         }
                         if track.drums: Device {

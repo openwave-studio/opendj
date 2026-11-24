@@ -8,8 +8,8 @@ use std::sync::atomic::{
 };
 use std::sync::{Arc, Mutex};
 
-use crate::clip::{Clip, Note, Sound, Track, MAX_TRACKS, SCENES};
-use crate::engine::{Command, Monitor, Program, Quantize};
+use crate::clip::{Clip, Io, Note, Sound, Track, MAX_TRACKS, SCENES};
+use crate::engine::{Command, Monitor, Program, Quantize, Routing};
 use crate::scale::Key;
 use crate::sound::{self, PARAMS};
 use crate::steps::Stages;
@@ -53,7 +53,6 @@ pub struct TrackInfo {
     pub color: u32,
     pub sound: Sound,
     pub devices: Vec<crate::clip::DeviceInfo>,
-    pub input: String,
 }
 
 impl TrackInfo {
@@ -116,6 +115,8 @@ pub struct Controls {
     key: Mutex<Key>,
     /// Each track's devices switched on, by place in its chain.
     devices_on: Vec<Vec<AtomicBool>>,
+    /// Each track's inputs and outputs.
+    io: Mutex<Vec<Io>>,
     /// Goes up on every change, so a screen can tell when to redraw.
     version: AtomicU64,
 }
@@ -135,7 +136,6 @@ impl Controls {
                 color: t.color.or(colors.get(i).copied()).unwrap_or(0xb69cff),
                 sound: t.sound,
                 devices: t.devices.clone(),
-                input: t.input.clone(),
             })
             .collect();
         let params = std::array::from_fn(|t| {
@@ -166,7 +166,61 @@ impl Controls {
                 .iter()
                 .map(|t| t.devices.iter().map(|d| AtomicBool::new(d.on)).collect())
                 .collect(),
+            io: Mutex::new(set.iter().map(|t| t.io.clone()).collect()),
             version: AtomicU64::new(1),
+        }
+    }
+
+    /// A track's inputs and outputs.
+    pub fn io(&self, track: usize) -> Io {
+        self.io
+            .lock()
+            .ok()
+            .and_then(|io| io.get(track).cloned())
+            .unwrap_or_default()
+    }
+
+    /// Every track's inputs and outputs.
+    pub fn all_io(&self) -> Vec<Io> {
+        self.io.lock().map(|io| io.clone()).unwrap_or_default()
+    }
+
+    /// Changes a track's inputs and outputs.
+    pub fn edit_io(&self, track: usize, f: impl FnOnce(&mut Io)) {
+        let routing = {
+            let Ok(mut all) = self.io.lock() else {
+                return;
+            };
+            let Some(io) = all.get_mut(track) else {
+                return;
+            };
+            f(io);
+            if self.tracks[track].sound != Sound::Audio {
+                io.audio_in = None;
+            }
+            Routing::from(&*io)
+        };
+        self.send(Command::Route { track, routing });
+        self.bump();
+    }
+
+    /// Arms a track (disarming the others, as Live's exclusive arm) or
+    /// disarms it.
+    pub fn toggle_arm(&self, track: usize) {
+        let arm = !self.io(track).armed;
+        for t in 0..self.tracks.len() {
+            let was = self.io(t).armed;
+            let now = if t == track { arm } else { was && !arm };
+            if now != was {
+                self.edit_io(t, |io| io.armed = now);
+            }
+        }
+    }
+
+    /// A controller's MIDI message (other than a note) for a track.
+    pub fn midi(&self, track: usize, data: [u8; 3]) {
+        if track < self.tracks.len() {
+            self.send(Command::Midi { track, data });
         }
     }
 

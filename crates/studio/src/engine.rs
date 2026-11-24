@@ -32,7 +32,7 @@ use opendj_plugin_host::{Connection, Midi, Transport};
 
 #[cfg(test)]
 use crate::clip::TRACKS;
-use crate::clip::{Clip, Lock, Sound, Track, MAX_TRACKS, SCENES};
+use crate::clip::{AudioTo, Clip, Io, Lock, Monitoring, Sound, Track, MAX_TRACKS, SCENES};
 use crate::sound::{self, Drums, Instrument, Synth, PARAMS};
 use opendj_engine::keyshift::KeyShifter;
 
@@ -151,7 +151,52 @@ pub enum Command {
         device: usize,
         on: bool,
     },
+    /// A track's inputs and outputs.
+    Route {
+        track: usize,
+        routing: Routing,
+    },
+    /// A MIDI message from a controller (not a note) for a track's
+    /// plug-in instrument.
+    Midi {
+        track: usize,
+        data: [u8; 3],
+    },
 }
+
+/// A track's I/O as the audio thread uses it.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Routing {
+    pub audio_in: Option<(u16, bool)>,
+    pub monitor: Monitoring,
+    pub armed: bool,
+    pub audio_to: AudioTo,
+    /// Notes go out over MIDI in place of the track's own sound.
+    pub midi_out: bool,
+}
+
+impl From<&Io> for Routing {
+    fn from(io: &Io) -> Routing {
+        Routing {
+            audio_in: io.audio_in,
+            monitor: io.monitor,
+            armed: io.armed,
+            audio_to: io.audio_to,
+            midi_out: io.midi_to.is_some(),
+        }
+    }
+}
+
+/// A note (or all-notes-off) a track sends to its MIDI To port, on channel
+/// 1: the port's thread puts it on the track's channel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MidiOut {
+    pub track: usize,
+    pub data: [u8; 3],
+}
+
+/// The most sound card channels the studio takes in or sends out.
+pub const MAX_CHANNELS: usize = 32;
 
 /// A plug-in on a track, as the audio thread runs it.
 pub struct PluginSlot {
@@ -389,6 +434,7 @@ struct Column {
     midi: Vec<Midi>,
     /// Left and right in, left and right out, for the plug-ins.
     planar: Vec<f32>,
+    routing: Routing,
 }
 
 impl Column {
@@ -498,6 +544,14 @@ pub struct Engine {
     /// Programs replaced, on their way back to the UI thread to be dropped.
     trash: rtrb::Producer<Box<Program>>,
     log: Option<Vec<Logged>>,
+    /// This block's sound card input, interleaved.
+    input: Vec<f32>,
+    in_channels: usize,
+    /// Tracks sent to Ext. Out pairs, interleaved over every output.
+    ext: Vec<f32>,
+    out_channels: usize,
+    /// Notes for tracks that play external instruments.
+    midi_out: Option<rtrb::Producer<MidiOut>>,
 }
 
 /// Frames an audio clip fades in or out over where it starts or stops.
@@ -539,6 +593,7 @@ impl Engine {
                 } else {
                     Vec::new()
                 },
+                routing: Routing::from(&t.io),
                 rng: 0x9E37_79B9 ^ (i as u32 + 1).wrapping_mul(0x85EB_CA6B),
                 instrument: match t.sound {
                     Sound::Drums(kit) => Instrument::Drums(Box::new(Drums::new(kit, rate, 0.45))),
@@ -563,6 +618,59 @@ impl Engine {
             rate,
             trash,
             log: None,
+            input: Vec::new(),
+            in_channels: 0,
+            ext: Vec::new(),
+            out_channels: 0,
+            midi_out: None,
+        }
+    }
+
+    /// Takes `channels` of sound card input per block (before the audio
+    /// starts).
+    pub fn set_inputs(&mut self, channels: usize) {
+        self.in_channels = channels.min(MAX_CHANNELS);
+        self.input = vec![0.0; MAX_BLOCK * self.in_channels];
+    }
+
+    /// Sends tracks routed to Ext. Out to `channels` outputs (before the
+    /// audio starts).
+    pub fn set_outputs(&mut self, channels: usize) {
+        self.out_channels = channels.min(MAX_CHANNELS);
+        self.ext = vec![0.0; MAX_BLOCK * self.out_channels];
+    }
+
+    /// The last block's Ext. Out sound, interleaved over every output.
+    pub fn ext(&self, frames: usize) -> &[f32] {
+        &self.ext[..(frames * self.out_channels).min(self.ext.len())]
+    }
+
+    /// Plays a note on a track: out over MIDI, on a plug-in instrument or
+    /// on the built-in sound.
+    fn play_note(&mut self, track: usize, pitch: u8, velocity: f32) {
+        let Some(c) = self.columns.get_mut(track) else {
+            return;
+        };
+        let v = (velocity.min(1.0) * 127.0).round() as u8;
+        if c.routing.midi_out {
+            if let Some(q) = self.midi_out.as_mut() {
+                let data = if v > 0 {
+                    [0x90, pitch, v.max(1)]
+                } else {
+                    [0x80, pitch, 0]
+                };
+                let _ = q.push(MidiOut { track, data });
+            }
+        } else if c.plugin_instrument() {
+            c.push_midi(if v > 0 {
+                Midi::note_on(0, 0, pitch, v.max(1))
+            } else {
+                Midi::note_off(0, 0, pitch)
+            });
+        } else if velocity > 0.0 {
+            c.instrument.note_on(pitch, velocity.min(1.0));
+        } else {
+            c.instrument.note_off(pitch);
         }
     }
 
@@ -670,20 +778,7 @@ impl Engine {
                 pitch,
                 velocity,
             } => {
-                if let Some(c) = self.columns.get_mut(track) {
-                    if c.plugin_instrument() {
-                        let v = (velocity.min(1.0) * 127.0).round() as u8;
-                        c.push_midi(if v > 0 {
-                            Midi::note_on(0, 0, pitch, v.max(1))
-                        } else {
-                            Midi::note_off(0, 0, pitch)
-                        });
-                    } else if velocity > 0.0 {
-                        c.instrument.note_on(pitch, velocity.min(1.0));
-                    } else {
-                        c.instrument.note_off(pitch);
-                    }
-                }
+                self.play_note(track, pitch, velocity);
                 None
             }
             Command::Quantize(q) => {
@@ -717,6 +812,39 @@ impl Engine {
                 if let Some(c) = self.columns.get_mut(track) {
                     for s in c.slots.iter_mut().filter(|s| s.device == device) {
                         s.on = on;
+                    }
+                }
+                None
+            }
+            Command::Route { track, routing } => {
+                if let Some(c) = self.columns.get_mut(track) {
+                    let was = c.routing.midi_out;
+                    c.routing = routing;
+                    if routing.midi_out && !was {
+                        c.instrument.all_off();
+                        c.push_midi(Midi {
+                            frame: 0,
+                            data: [0xB0, 123, 0],
+                        });
+                    } else if was && !routing.midi_out {
+                        if let Some(q) = self.midi_out.as_mut() {
+                            let _ = q.push(MidiOut {
+                                track,
+                                data: [0xB0, 123, 0],
+                            });
+                        }
+                    }
+                }
+                None
+            }
+            Command::Midi { track, data } => {
+                if let Some(c) = self.columns.get_mut(track) {
+                    if c.routing.midi_out {
+                        if let Some(q) = self.midi_out.as_mut() {
+                            let _ = q.push(MidiOut { track, data });
+                        }
+                    } else if c.plugin_instrument() {
+                        c.push_midi(Midi { frame: 0, data });
                     }
                 }
                 None
@@ -786,8 +914,11 @@ impl Engine {
             beat: start,
             playing: self.playing,
         };
+        self.ext.fill(0.0);
         for t in 0..self.columns.len() {
-            let plugin = self.columns[t].plugin_instrument();
+            let routing = self.columns[t].routing;
+            // Notes going out over MIDI leave the track's own sound quiet.
+            let plugin = self.columns[t].plugin_instrument() || routing.midi_out;
             let mut switch = None;
             if self.playing {
                 self.events.clear();
@@ -813,7 +944,17 @@ impl Engine {
                     done = at;
                 }
                 let col = &mut self.columns[t];
-                if plugin {
+                if routing.midi_out {
+                    let data = match e.kind {
+                        Kind::On(p, v) => Some([0x90, p, ((v * 127.0).round() as u8).max(1)]),
+                        Kind::Off(p) => Some([0x80, p, 0]),
+                        Kind::AllOff => Some([0xB0, 123, 0]),
+                        _ => None,
+                    };
+                    if let (Some(data), Some(q)) = (data, self.midi_out.as_mut()) {
+                        let _ = q.push(MidiOut { track: t, data });
+                    }
+                } else if plugin {
                     let f = at.min(frames.saturating_sub(1)) as u32;
                     match e.kind {
                         Kind::On(p, v) => col.push_midi(Midi::note_on(
@@ -832,6 +973,7 @@ impl Engine {
                     }
                 }
                 match e.kind {
+                    Kind::On(..) | Kind::Off(_) if routing.midi_out => {}
                     Kind::On(p, v) => col.instrument.note_on(p, v),
                     Kind::Off(p) => col.instrument.note_off(p),
                     Kind::AllOff => col.instrument.all_off(),
@@ -890,15 +1032,37 @@ impl Engine {
                     }
                 }
             }
+            self.listen(t, frames);
             self.run_plugins(t, frames, transport, deadline);
             let gain = self.columns[t].gain;
             let [pl, pr] = self.columns[t].pan;
             let mut peak = 0.0f32;
-            for (o, s) in out.iter_mut().zip(self.scratch[..frames].iter()) {
+            let ext = match routing.audio_to {
+                AudioTo::Ext(first) if (first as usize) < self.out_channels => Some((
+                    first as usize,
+                    (first as usize + 1).min(self.out_channels - 1),
+                )),
+                _ => None,
+            };
+            let ch = self.out_channels;
+            for (i, (o, s)) in out
+                .iter_mut()
+                .zip(self.scratch[..frames].iter())
+                .enumerate()
+            {
                 let (l, r) = (s[0] * gain * pl, s[1] * gain * pr);
                 peak = peak.max(l.abs()).max(r.abs());
-                o[0] += l;
-                o[1] += r;
+                match (routing.audio_to, ext) {
+                    (AudioTo::Main, _) => {
+                        o[0] += l;
+                        o[1] += r;
+                    }
+                    (_, Some((a, b))) => {
+                        self.ext[i * ch + a] += l;
+                        self.ext[i * ch + b] += r;
+                    }
+                    _ => {}
+                }
             }
             // Positive floats order like their bits.
             self.monitor.peaks[t].fetch_max(peak.to_bits(), Ordering::Relaxed);
@@ -915,6 +1079,43 @@ impl Engine {
             .fetch_max(peak.to_bits(), Ordering::Relaxed);
         self.frames_done += frames as u64;
         self.publish(end, span.tempo);
+    }
+
+    /// Adds what comes in to an audio track that is listening: with Monitor
+    /// on In always (its clips then quiet), on Auto when it is armed and
+    /// plays no clip.
+    fn listen(&mut self, t: usize, frames: usize) {
+        let c = &self.columns[t];
+        if c.stretch.is_none() {
+            return;
+        }
+        let r = c.routing;
+        let clip = self.playing && c.playing.is_some();
+        let listening = match r.monitor {
+            Monitoring::In => true,
+            Monitoring::Auto => r.armed && !clip,
+            Monitoring::Off => false,
+        };
+        if !listening {
+            return;
+        }
+        let scratch = &mut self.scratch[..frames];
+        if r.monitor == Monitoring::In {
+            scratch.fill([0.0; 2]);
+        }
+        let ch = self.in_channels;
+        let Some((first, stereo)) = r.audio_in else {
+            return;
+        };
+        let a = first as usize;
+        if a >= ch {
+            return;
+        }
+        let b = if stereo { (a + 1).min(ch - 1) } else { a };
+        for (i, s) in scratch.iter_mut().enumerate() {
+            s[0] += self.input[i * ch + a];
+            s[1] += self.input[i * ch + b];
+        }
     }
 
     /// Runs the track's sound through its plug-ins, in chain order: an
@@ -1246,6 +1447,8 @@ pub struct Studio {
     commands: rtrb::Consumer<Command>,
     pub monitor: Arc<Monitor>,
     rate: f64,
+    /// The sound card input, interleaved, from its own stream.
+    input: Option<rtrb::Consumer<f32>>,
 }
 
 /// The UI's ends of the queues.
@@ -1253,6 +1456,8 @@ pub struct Remote {
     pub commands: rtrb::Producer<Command>,
     pub trash: rtrb::Consumer<Box<Program>>,
     pub monitor: Arc<Monitor>,
+    /// Notes for the tracks' MIDI To ports.
+    pub midi_out: rtrb::Consumer<MidiOut>,
 }
 
 impl Studio {
@@ -1261,7 +1466,9 @@ impl Studio {
         let (cmd_tx, cmd_rx) = rtrb::RingBuffer::new(256);
         // Room for a burst of edits from Push between UI timer ticks.
         let (trash_tx, trash_rx) = rtrb::RingBuffer::new(64);
-        let engine = Engine::new(tracks, rate, monitor.clone(), trash_tx);
+        let mut engine = Engine::new(tracks, rate, monitor.clone(), trash_tx);
+        let (midi_tx, midi_rx) = rtrb::RingBuffer::new(1024);
+        engine.midi_out = Some(midi_tx);
         let mut clock = Clock::new(rate, tempo);
         clock.set_tempo(tempo);
         monitor.tempo.store(tempo.to_bits(), Ordering::Relaxed);
@@ -1273,17 +1480,58 @@ impl Studio {
                 commands: cmd_rx,
                 monitor: monitor.clone(),
                 rate,
+                input: None,
             },
             Remote {
                 commands: cmd_tx,
                 trash: trash_rx,
                 monitor,
+                midi_out: midi_rx,
             },
         )
     }
 
     pub fn rate(&self) -> f64 {
         self.rate
+    }
+
+    /// Takes `channels` of sound card input from `ring` (interleaved), as
+    /// an input stream fills it.
+    pub fn set_input(&mut self, ring: rtrb::Consumer<f32>, channels: usize) {
+        self.engine.set_inputs(channels);
+        self.input = Some(ring);
+    }
+
+    /// Moves a block of input from the ring to the engine. Short of input,
+    /// the rest is silence; with more than a few blocks waiting, the oldest
+    /// go, so the input never lags behind.
+    fn take_input(&mut self, frames: usize) {
+        let Some(ring) = self.input.as_mut() else {
+            return;
+        };
+        let ch = self.engine.in_channels;
+        if ch == 0 {
+            return;
+        }
+        let want = frames * ch;
+        let extra = ring.slots().saturating_sub(want * 4);
+        // Whole frames only, so the channels stay in place.
+        let extra = extra - extra % ch;
+        if extra > 0 {
+            if let Ok(c) = ring.read_chunk(extra) {
+                c.commit_all();
+            }
+        }
+        let n = ring.slots().min(want);
+        let n = n - n % ch;
+        let buf = &mut self.engine.input[..want];
+        if let Ok(c) = ring.read_chunk(n) {
+            let (a, b) = c.as_slices();
+            buf[..a.len()].copy_from_slice(a);
+            buf[a.len()..a.len() + b.len()].copy_from_slice(b);
+            c.commit_all();
+        }
+        buf[n..].fill(0.0);
     }
 
     /// Renders `out` (stereo frames), cutting it into blocks of at most
@@ -1344,6 +1592,7 @@ impl Studio {
                 }
             }
         };
+        self.take_input(frames);
         self.engine.render(span, out);
     }
 }
@@ -1597,6 +1846,80 @@ mod tests {
         assert!(loud > 0.2, "peak {loud}");
         // Two seconds at 100 BPM is 3.33 beats of the clip's 8.
         assert!((studio.monitor.progress(0) - 3.33 / 8.0).abs() < 0.02);
+    }
+
+    #[test]
+    fn input_is_heard_as_monitor_and_arm_say() {
+        let set = vec![Track::new("Mic", Sound::Audio, vec![None; SCENES])];
+        let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        let (mut tx, rx) = rtrb::RingBuffer::new(BLOCK * 2 * 8);
+        studio.set_input(rx, 2);
+        studio.engine.set_outputs(4);
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        // A block of input 1 at a quarter, input 2 silent; what comes out.
+        let mut play = |studio: &mut Studio, routing: Option<Routing>| {
+            if let Some(routing) = routing {
+                r.commands.push(Command::Route { track: 0, routing }).ok();
+            }
+            for _ in 0..BLOCK {
+                tx.push(0.25).ok();
+                tx.push(0.0).ok();
+            }
+            studio.process(&mut out);
+            let ext = studio.engine.ext(BLOCK);
+            (
+                out[BLOCK / 2],
+                [ext[BLOCK / 2 * 4 + 2], ext[BLOCK / 2 * 4 + 3]],
+            )
+        };
+        let base = Routing::from(&set[0].io);
+        assert_eq!(base.monitor, Monitoring::Auto);
+        let (main, _) = play(&mut studio, None);
+        assert_eq!(main, [0.0, 0.0], "Auto and not armed: quiet");
+        let armed = Routing {
+            armed: true,
+            ..base
+        };
+        let (main, _) = play(&mut studio, Some(armed));
+        assert!(
+            main[0] > 0.05 && (main[0] - main[1]).abs() < 1e-6,
+            "{main:?}"
+        );
+        let off = Routing {
+            monitor: Monitoring::Off,
+            ..armed
+        };
+        assert_eq!(play(&mut studio, Some(off)).0, [0.0, 0.0]);
+        let ext = Routing {
+            monitor: Monitoring::In,
+            armed: false,
+            audio_to: AudioTo::Ext(2),
+            ..base
+        };
+        let (main, ext) = play(&mut studio, Some(ext));
+        assert_eq!(main, [0.0, 0.0], "sent to outputs 3/4, not Main");
+        assert!(ext[0] > 0.05 && ext[1] > 0.05, "{ext:?}");
+    }
+
+    #[test]
+    fn midi_to_sends_the_notes_out_and_leaves_the_track_quiet() {
+        let mut set = one_note_set();
+        set[0].io.midi_to = Some(("Synth".into(), 2));
+        let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let mut loud = 0.0f32;
+        for _ in 0..40 {
+            studio.process(&mut out);
+            loud = out.iter().fold(loud, |m, f| m.max(f[0].abs()));
+        }
+        assert_eq!(loud, 0.0);
+        let sent: Vec<MidiOut> = std::iter::from_fn(|| r.midi_out.pop().ok()).collect();
+        assert!(
+            sent.iter()
+                .any(|m| m.track == 0 && m.data == [0x90, 60, 127]),
+            "{sent:?}"
+        );
     }
 
     /// The plug-in helper, built once next to the test binary.

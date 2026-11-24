@@ -17,6 +17,7 @@ mod clip;
 mod control;
 mod engine;
 mod link;
+mod midi;
 mod plugins;
 mod push;
 mod scale;
@@ -28,10 +29,9 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use cpal::traits::DeviceTrait;
 use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
-use clip::{SCENES, TRACKS};
+use clip::{AudioTo, Io, MidiFrom, Monitoring, SCENES, TRACKS};
 use control::{Controls, Mix};
 use engine::{Quantize, Studio};
 use std::path::Path;
@@ -187,6 +187,34 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
         .as_ref()
         .map_or(48_000.0, |(_, c)| c.sample_rate() as f64);
     let (mut studio, remote) = Studio::new(&set, rate, tempo);
+    // The sound card input, for audio tracks (and only for a set that has
+    // them, so the demo never asks for the microphone).
+    let wants_input = set.iter().any(|t| t.sound == clip::Sound::Audio)
+        && device.is_some()
+        && std::env::var_os("OPENDJ_NO_INPUT").is_none();
+    let input = if wants_input {
+        match audio::start_input(rate as u32) {
+            Ok((input, ring)) => {
+                studio.set_input(ring, input.channels);
+                Some(input)
+            }
+            Err(e) => {
+                eprintln!("audio input: {e}");
+                None
+            }
+        }
+    } else {
+        None
+    };
+    let out_channels = device.as_ref().map_or(2, |(_, c)| c.channels() as usize);
+    let channels = Channels {
+        inputs: input.as_ref().map_or(0, |i| i.channels),
+        outputs: out_channels,
+    };
+    let input_note = match &input {
+        Some(i) => format!(" · in: {} ({} ch)", i.name, i.channels),
+        None => String::new(),
+    };
     let mut link_clock = link::LinkClock::new(tempo, rate);
     link_clock.set_latency(audio::BUFFER_FRAMES as f64 / rate);
     let link = link_clock.handle();
@@ -194,15 +222,12 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
 
     let (output, status) = match &device {
         Some((dev, config)) => {
-            let name = dev
-                .description()
-                .map(|d| d.name().to_string())
-                .unwrap_or_else(|_| "audio device".into());
+            let name = audio::name(dev);
             match audio::start(dev, config, studio) {
                 Ok(out) => (
                     out,
                     format!(
-                        "{name} · {} Hz · {} frames",
+                        "{name} · {} Hz · {} frames{input_note}",
                         config.sample_rate(),
                         audio::BUFFER_FRAMES
                     ),
@@ -215,12 +240,13 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
                     return ui(
                         set,
                         &returns,
-                        audio::start_silent(studio),
+                        (audio::start_silent(studio), None),
                         remote2,
                         link,
                         format!("No sound: {e}"),
                         note,
                         rate,
+                        Channels::default(),
                     );
                 }
             }
@@ -230,19 +256,123 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
             "No audio output found: playing silently".to_string(),
         ),
     };
-    ui(set, &returns, output, remote, link, status, note, rate)
+    ui(
+        set,
+        &returns,
+        (output, input),
+        remote,
+        link,
+        status,
+        note,
+        rate,
+        channels,
+    )
+}
+
+/// The sound card's channel counts, for the I/O pickers.
+#[derive(Clone, Copy, Default)]
+struct Channels {
+    inputs: usize,
+    outputs: usize,
+}
+
+/// Input channels as Live lists them: each one, then each pair.
+fn in_channel_options(n: usize) -> Vec<(String, (u16, bool))> {
+    let n = n.max(2) as u16;
+    let mono = (0..n).map(|c| (format!("{}", c + 1), (c, false)));
+    let pairs = (0..n / 2).map(|p| (format!("{}/{}", 2 * p + 1, 2 * p + 2), (2 * p, true)));
+    mono.chain(pairs).collect()
+}
+
+/// Output pairs: "1/2", "3/4", …
+fn out_pair_options(n: usize) -> Vec<String> {
+    (0..n.max(2) / 2)
+        .map(|p| format!("{}/{}", 2 * p + 1, 2 * p + 2))
+        .collect()
+}
+
+fn strings(v: impl IntoIterator<Item = String>) -> ModelRc<SharedString> {
+    ModelRc::new(VecModel::from(
+        v.into_iter().map(SharedString::from).collect::<Vec<_>>(),
+    ))
+}
+
+/// The MIDI From list: every input, between All Ins and No Input.
+fn midi_froms(ports: &midi::Ports) -> Vec<String> {
+    std::iter::once("All Ins".to_string())
+        .chain(ports.inputs.iter().cloned())
+        .chain(std::iter::once("No Input".to_string()))
+        .collect()
+}
+
+/// The MIDI To list: No Output, then every output.
+fn midi_tos(ports: &midi::Ports) -> Vec<String> {
+    std::iter::once("No Output".to_string())
+        .chain(ports.outputs.iter().cloned())
+        .collect()
+}
+
+/// Applies a pick from a track's I/O section (see `io-pick` in the window).
+fn pick_io(io: &mut Io, which: i32, k: usize, ch: Channels, ports: &midi::Ports) {
+    match which {
+        0 => io.audio_in = (k == 0).then(|| io.audio_in.unwrap_or((0, false))),
+        1 => {
+            if let Some((_, c)) = in_channel_options(ch.inputs).get(k) {
+                io.audio_in = Some(*c);
+            }
+        }
+        2 => {
+            io.audio_to = match k {
+                0 => AudioTo::Main,
+                1 => match io.audio_to {
+                    AudioTo::Ext(a) => AudioTo::Ext(a),
+                    _ => AudioTo::Ext(0),
+                },
+                _ => AudioTo::SendsOnly,
+            }
+        }
+        3 => {
+            if matches!(io.audio_to, AudioTo::Ext(_)) {
+                io.audio_to = AudioTo::Ext(2 * k as u16);
+            }
+        }
+        4 => {
+            io.midi_from = match k {
+                0 => MidiFrom::All,
+                k => match ports.inputs.get(k - 1) {
+                    Some(p) => MidiFrom::Port(p.clone()),
+                    None => MidiFrom::None,
+                },
+            }
+        }
+        5 => io.midi_channel = k.checked_sub(1).map(|c| c as u8),
+        6 => {
+            let channel = io.midi_to.as_ref().map_or(0, |m| m.1);
+            io.midi_to = k
+                .checked_sub(1)
+                .and_then(|k| ports.outputs.get(k))
+                .map(|p| (p.clone(), channel));
+        }
+        7 => {
+            if let Some(m) = io.midi_to.as_mut() {
+                m.1 = k.min(15) as u8;
+            }
+        }
+        _ => {}
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
 fn ui(
     set: Vec<clip::Track>,
     returns: &[(String, u32)],
-    output: audio::Output,
+    (output, input): (audio::Output, Option<audio::Input>),
     remote: engine::Remote,
     link: Arc<rusty_link::AblLink>,
     status: String,
     note: String,
     rate: f64,
+    channels: Channels,
 ) -> Result<(), slint::PlatformError> {
     let status = if note.is_empty() {
         status
@@ -258,6 +388,17 @@ fn ui(
         remote.commands,
         monitor.clone(),
     ));
+    // Keyboards to tracks, tracks' notes to external synths.
+    let router = Rc::new(midi::start(controls.clone(), remote.midi_out));
+    let mut ports = router.ports();
+    window.set_in_channels(strings(
+        in_channel_options(channels.inputs)
+            .into_iter()
+            .map(|(name, _)| name),
+    ));
+    window.set_out_channels(strings(out_pair_options(channels.outputs)));
+    window.set_midi_froms(strings(midi_froms(&ports)));
+    window.set_midi_tos(strings(midi_tos(&ports)));
     // Plug-ins start in their helpers and join the tracks as they come up.
     let plugins = plugins::Plugins::start(&set, rate as u32, controls.clone());
     let tracks = Rc::new(VecModel::from(
@@ -381,6 +522,27 @@ fn ui(
         window.on_toggle_device(move |t, d, on| c.set_device_on(t as usize, d as usize, on));
     }
     {
+        let (c, r) = (controls.clone(), router.clone());
+        window.on_io_pick(move |t, which, k| {
+            let ports = r.ports();
+            c.edit_io(t as usize, |io| {
+                pick_io(io, which, k.max(0) as usize, channels, &ports)
+            });
+        });
+    }
+    {
+        let c = controls.clone();
+        window.on_set_monitor(move |t, m| {
+            if let Some(&m) = Monitoring::ALL.get(m as usize) {
+                c.edit_io(t as usize, |io| io.monitor = m);
+            }
+        });
+    }
+    {
+        let c = controls.clone();
+        window.on_toggle_arm(move |t| c.toggle_arm(t as usize));
+    }
+    {
         let p = plugins.clone();
         window.on_open_device(move |t, d| {
             p.toggle_window(t as usize, d as usize);
@@ -395,6 +557,12 @@ fn ui(
         Duration::from_millis(33),
         move || {
             let Some(w) = w.upgrade() else { return };
+            let now = router.ports();
+            if now != ports {
+                w.set_midi_froms(strings(midi_froms(&now)));
+                w.set_midi_tos(strings(midi_tos(&now)));
+                ports = now;
+            }
             // Programs the audio thread replaced are dropped here.
             while trash.borrow_mut().pop().is_ok() {}
             for s in 0..SCENES {
@@ -446,16 +614,12 @@ fn ui(
                     let stopping = monitor.stopping(t);
                     let level = meter(row.level, monitor.take_peak(t));
                     if changed {
-                        let fresh = track_row(&controls, &plugins, t);
-                        row.chain = fresh.chain;
-                        row.plugin_instrument = fresh.plugin_instrument;
-                        row.volume = fresh.volume;
-                        row.pan = fresh.pan;
-                        row.pan_text = fresh.pan_text;
-                        row.send_a = fresh.send_a;
-                        row.send_b = fresh.send_b;
-                        row.volume_text = fresh.volume_text;
-                        row.params = fresh.params;
+                        row = TrackData {
+                            progress: row.progress,
+                            stopping: row.stopping,
+                            level: row.level,
+                            ..track_row(&controls, &plugins, t)
+                        };
                     }
                     if changed
                         || (row.progress - progress).abs() > 0.002
@@ -496,6 +660,7 @@ fn ui(
     // Push back to Live before the sound stops.
     drop(push);
     drop(output);
+    drop(input);
     result
 }
 
@@ -511,7 +676,47 @@ fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
         .collect();
     let volume = c.mix(t, Mix::Volume);
     let pan = c.mix(t, Mix::Pan);
+    let io = c.io(t);
     TrackData {
+        audio_from: if io.audio_in.is_some() {
+            "Ext. In"
+        } else {
+            "No Input"
+        }
+        .into(),
+        in_channel: io.in_channel_text().into(),
+        midi_from: match &io.midi_from {
+            MidiFrom::All => "All Ins".into(),
+            MidiFrom::Port(p) => p.as_str().into(),
+            MidiFrom::None => "No Input".into(),
+        },
+        midi_channel: match io.midi_channel {
+            Some(c) => format!("Ch. {}", c + 1).into(),
+            None => "All Channels".into(),
+        },
+        monitor: Monitoring::ALL
+            .iter()
+            .position(|&m| m == io.monitor)
+            .unwrap_or(1) as i32,
+        armed: io.armed,
+        audio_to: match io.audio_to {
+            AudioTo::Main => "Main",
+            AudioTo::Ext(_) => "Ext. Out",
+            AudioTo::SendsOnly => "Sends Only",
+        }
+        .into(),
+        out_channel: match io.audio_to {
+            AudioTo::Ext(a) => format!("{}/{}", a + 1, a + 2).into(),
+            _ => SharedString::new(),
+        },
+        midi_to: io
+            .midi_to
+            .as_ref()
+            .map_or("No Output".into(), |(p, _)| p.as_str().into()),
+        midi_to_channel: io
+            .midi_to
+            .as_ref()
+            .map_or(SharedString::new(), |(_, ch)| format!("{}", ch + 1).into()),
         name: info.name.as_str().into(),
         color: color(info.color),
         progress: c.monitor.progress(t),
@@ -520,7 +725,7 @@ fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
         drums: info.drums(),
         audio: info.audio(),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
-        input: info.input.as_str().into(),
+        input: io.input_text(info.audio()).into(),
         chain: ModelRc::new(VecModel::from(
             info.devices
                 .iter()

@@ -144,6 +144,99 @@ pub enum PluginFormat {
     Named,
 }
 
+/// When a track plays what comes in, as Live's Monitor switch.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Monitoring {
+    /// Always, and an audio track's clips are quiet.
+    In,
+    /// When the track is armed (an audio track: and plays no clip).
+    #[default]
+    Auto,
+    Off,
+}
+
+impl Monitoring {
+    pub const ALL: [Monitoring; 3] = [Monitoring::In, Monitoring::Auto, Monitoring::Off];
+}
+
+/// Where a track's sound goes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum AudioTo {
+    #[default]
+    Main,
+    /// A pair of the sound card's outputs, by its first channel (0-based).
+    Ext(u16),
+    /// Nowhere but the sends.
+    SendsOnly,
+}
+
+/// Where a track takes notes from.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum MidiFrom {
+    /// Every MIDI input (but Push, which plays the selected track itself).
+    #[default]
+    All,
+    /// One input, by name as the set or the computer names it.
+    Port(String),
+    None,
+}
+
+/// A track's inputs and outputs, as Live's I/O section.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Io {
+    /// The sound card input: first channel (0-based) and whether it is a
+    /// stereo pair. Audio tracks only.
+    pub audio_in: Option<(u16, bool)>,
+    pub monitor: Monitoring,
+    pub armed: bool,
+    pub audio_to: AudioTo,
+    pub midi_from: MidiFrom,
+    /// 0..16; None takes every channel.
+    pub midi_channel: Option<u8>,
+    /// A MIDI output and channel (0..16) the track's notes go to, in place
+    /// of its own sound. MIDI tracks only.
+    pub midi_to: Option<(String, u8)>,
+}
+
+impl Io {
+    /// A new track's: an audio track listens to input 1.
+    pub fn new(audio: bool) -> Io {
+        Io {
+            audio_in: audio.then_some((0, false)),
+            ..Io::default()
+        }
+    }
+
+    /// The input channel as Live shows it: "1", or "1/2" for a pair.
+    pub fn in_channel_text(&self) -> String {
+        match self.audio_in {
+            Some((c, false)) => format!("{}", c + 1),
+            Some((c, true)) => format!("{}/{}", c + 1, c + 2),
+            None => String::new(),
+        }
+    }
+
+    /// What the track listens to, in a few words.
+    pub fn input_text(&self, audio: bool) -> String {
+        if audio {
+            match self.audio_in {
+                Some(_) => format!("In {}", self.in_channel_text()),
+                None => String::new(),
+            }
+        } else {
+            let ch = match self.midi_channel {
+                Some(c) => format!(", channel {}", c + 1),
+                None => String::new(),
+            };
+            match &self.midi_from {
+                MidiFrom::All => format!("All MIDI inputs{ch}"),
+                MidiFrom::Port(p) => format!("{p}{ch}"),
+                MidiFrom::None => String::new(),
+            }
+        }
+    }
+}
+
 /// A track: a column of clip slots.
 #[derive(Clone, Debug)]
 pub struct Track {
@@ -157,8 +250,8 @@ pub struct Track {
     pub pan: f32,
     /// Its devices in order, for show until they can load.
     pub devices: Vec<DeviceInfo>,
-    /// Where it listens, as the set names it (audio tracks).
-    pub input: String,
+    /// Where it listens and where its sound goes.
+    pub io: Io,
 }
 
 impl Track {
@@ -171,7 +264,7 @@ impl Track {
             volume: None,
             pan: 0.5,
             devices: Vec::new(),
-            input: String::new(),
+            io: Io::new(sound == Sound::Audio),
         }
     }
 }

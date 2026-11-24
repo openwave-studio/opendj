@@ -53,12 +53,29 @@ Shift with them jumps by eight.
 - `als.rs`: reading Live sets (gzipped XML) into tracks and clips.
 - `plugins.rs`: finding and starting a set's plug-ins; the audio thread
   runs them as slots in each track's chain (`engine.rs`).
+- `midi.rs`: MIDI From and To: every input but Push routed to the tracks
+  that listen, and tracks' notes out to external synths.
 - `check.rs`: the offline checks, with a counting allocator.
 
 The design follows a review of Suhina, transit, maolan and Ardour
 (`notes/daw-architecture-review.md` in the project files).
 
 openDJ never depends on this crate, so it can move to its own repository.
+
+## Inputs and outputs
+
+Each track has Live's I/O section above its mixer strip (the I/O button in
+the top bar shows or hides it): Audio From and its channel, Monitor
+(In, Auto, Off), Audio To (Main, Ext. Out with its pair, Sends Only), and
+for MIDI tracks MIDI From with its channel and MIDI To with its channel. A
+Live set opens with its routings. Monitor In plays the input always (an
+audio track's clips are then quiet); Auto plays it while the track is
+armed (a MIDI track also while it is selected and no track is armed).
+
+The studio uses the computer's default sound card for both. To pick
+others, set `OPENDJ_STUDIO_OUTPUT` and `OPENDJ_STUDIO_INPUT` to part of a
+device's name. The input opens only for a set with audio tracks, and must
+run at the output's sample rate. `OPENDJ_NO_INPUT=1` leaves it closed.
 
 ## Ableton Push 2
 

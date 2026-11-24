@@ -13,7 +13,8 @@ use std::sync::Arc;
 use roxmltree::{Document, Node};
 
 use crate::clip::{
-    AudioClip, Clip, DeviceInfo, Note, PluginFormat, PluginRef, Sound, Track, MAX_TRACKS, SCENES,
+    AudioClip, AudioTo, Clip, DeviceInfo, Io, MidiFrom, Monitoring, Note, PluginFormat, PluginRef,
+    Sound, Track, MAX_TRACKS, SCENES,
 };
 
 /// What the studio takes from a Live set.
@@ -202,11 +203,7 @@ fn read_track(
     if let Some(c) = chain {
         track.volume = number(c, "Mixer/Volume/Manual").map(fader);
         track.pan = number(c, "Mixer/Pan/Manual").map_or(0.5, |p| ((p + 1.0) / 2.0) as f32);
-        track.input = if audio {
-            input_name(value(c, "AudioInputRouting/Target").unwrap_or(""))
-        } else {
-            midi_input_name(value(c, "MidiInputRouting/Target").unwrap_or(""))
-        };
+        track.io = io(c, audio);
         if let Some(slots) = at(c, "MainSequencer/ClipSlotList") {
             for (s, slot) in slots.children().filter(Node::is_element).enumerate() {
                 let Some(clip) = slot
@@ -477,33 +474,87 @@ fn stand_in(track: &str, devices: Option<Node>) -> Sound {
     }
 }
 
-/// "AudioIn/External/M0" as "In 1", "S2" as "In 5/6".
-fn input_name(target: &str) -> String {
-    let last = target.rsplit('/').next().unwrap_or("");
-    let n: usize = last.get(1..).and_then(|n| n.parse().ok()).unwrap_or(0);
-    match last.chars().next() {
-        _ if !target.starts_with("AudioIn/External") => {
-            target.rsplit('/').next().unwrap_or("").to_string()
-        }
-        Some('M') => format!("In {}", n + 1),
-        Some('S') => format!("In {}/{}", 2 * n + 1, 2 * n + 2),
-        _ => String::new(),
+/// A track's I/O section from its device chain's routings.
+fn io(c: Node, audio: bool) -> Io {
+    let target = |name: &str| value(c, &format!("{name}/Target")).unwrap_or("");
+    let midi_in = target("MidiInputRouting");
+    let (from, channel) = midi_from(midi_in);
+    Io {
+        audio_in: if audio {
+            audio_in(target("AudioInputRouting"))
+        } else {
+            None
+        },
+        monitor: match value(c, "MainSequencer/MonitoringEnum") {
+            Some("0") => Monitoring::In,
+            Some("2") => Monitoring::Off,
+            _ => Monitoring::Auto,
+        },
+        armed: value(c, "MainSequencer/Recorder/IsArmed") == Some("true"),
+        audio_to: audio_to(target("AudioOutputRouting")),
+        midi_from: if audio { MidiFrom::None } else { from },
+        midi_channel: if audio { None } else { channel },
+        midi_to: midi_to(target("MidiOutputRouting")),
     }
 }
 
-/// "MidiIn/External.Dev:Arturia KeyLab Essential 61 (MIDI In){…}/-1" as
-/// "Arturia KeyLab Essential 61".
-fn midi_input_name(target: &str) -> String {
-    match target.split_once(".Dev:") {
-        Some((_, dev)) => dev
-            .split(['{', '('])
-            .next()
-            .unwrap_or("")
-            .trim()
-            .to_string(),
-        None if target.contains("External.All") => "All MIDI inputs".into(),
-        None => String::new(),
+/// "AudioIn/External/M0" is input 1, "S2" the pair 5/6.
+fn audio_in(target: &str) -> Option<(u16, bool)> {
+    let rest = target.strip_prefix("AudioIn/External/")?;
+    let n: u16 = rest.get(1..)?.parse().ok()?;
+    match rest.chars().next()? {
+        'M' => Some((n, false)),
+        'S' => Some((2 * n, true)),
+        _ => None,
     }
+}
+
+/// "AudioOut/External/S1" is the pair 3/4; "AudioOut/None" sends only.
+fn audio_to(target: &str) -> AudioTo {
+    if let Some(rest) = target.strip_prefix("AudioOut/External/") {
+        let n: u16 = rest.get(1..).and_then(|n| n.parse().ok()).unwrap_or(0);
+        return match rest.chars().next() {
+            Some('S') => AudioTo::Ext(2 * n),
+            _ => AudioTo::Ext(n),
+        };
+    }
+    if target == "AudioOut/None" {
+        AudioTo::SendsOnly
+    } else {
+        AudioTo::Main
+    }
+}
+
+/// The channel at the end of a MIDI target ("…/-1" is every channel).
+fn midi_channel(target: &str) -> Option<u8> {
+    let n: i32 = target.rsplit('/').next()?.parse().ok()?;
+    u8::try_from(n).ok().filter(|&n| n < 16)
+}
+
+/// The device name in a MIDI target, without Live's id:
+/// "External.Dev:Arturia KeyLab Essential 61 (MIDI In){…}" as "Arturia
+/// KeyLab Essential 61".
+fn midi_device(target: &str) -> Option<String> {
+    let (_, dev) = target.split_once(".Dev:")?;
+    let name = dev.split(['{', '(']).next().unwrap_or("").trim();
+    (!name.is_empty()).then(|| name.to_string())
+}
+
+/// "MidiIn/External.All/-1", "MidiIn/External.Dev:…/3" or "MidiIn/None".
+fn midi_from(target: &str) -> (MidiFrom, Option<u8>) {
+    let channel = midi_channel(target);
+    if let Some(dev) = midi_device(target) {
+        (MidiFrom::Port(dev), channel)
+    } else if target.contains("External.All") || target.is_empty() {
+        (MidiFrom::All, channel)
+    } else {
+        (MidiFrom::None, None)
+    }
+}
+
+/// "MidiOut/External.Dev:…/0" as the port and channel; "MidiOut/None".
+fn midi_to(target: &str) -> Option<(String, u8)> {
+    Some((midi_device(target)?, midi_channel(target).unwrap_or(0)))
 }
 
 /// The loop a clip plays: start and length in clip beats.
@@ -645,10 +696,13 @@ pub fn summary(set: &LiveSet) -> String {
             i + 1,
             t.name,
             t.color.unwrap_or(0),
-            if t.input.is_empty() {
-                "no input".into()
-            } else {
-                t.input.clone()
+            {
+                let i = t.io.input_text(t.sound == Sound::Audio);
+                if i.is_empty() {
+                    "no input".into()
+                } else {
+                    i
+                }
             },
             t.volume.map_or(String::new(), |v| format!(
                 ", fader {}",
@@ -729,6 +783,26 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn routings() {
+        assert_eq!(audio_in("AudioIn/External/M2"), Some((2, false)));
+        assert_eq!(audio_in("AudioIn/External/S1"), Some((2, true)));
+        assert_eq!(audio_in("AudioIn/None"), None);
+        assert_eq!(audio_to("AudioOut/Main"), AudioTo::Main);
+        assert_eq!(audio_to("AudioOut/None"), AudioTo::SendsOnly);
+        assert_eq!(midi_from("MidiIn/External.All/3"), (MidiFrom::All, Some(3)));
+        assert_eq!(midi_from("MidiIn/None"), (MidiFrom::None, None));
+        assert_eq!(
+            midi_from("MidiIn/External.Dev:KOMPLETE KONTROL M32{17CC-1860-0-in-0}/-1"),
+            (MidiFrom::Port("KOMPLETE KONTROL M32".into()), None)
+        );
+        assert_eq!(midi_to("MidiOut/None"), None);
+        assert_eq!(
+            midi_to("MidiOut/External.Dev:MiniFreak{1}/1"),
+            Some(("MiniFreak".into(), 1))
+        );
+    }
+
     /// A small set in Live 12's layout: an audio track with a warped
     /// recording and a MIDI track with a Drum Rack and a clip.
     const SET: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -740,6 +814,7 @@ mod tests {
     <Color Value="2" />
     <DeviceChain>
       <AudioInputRouting><Target Value="AudioIn/External/M0" /></AudioInputRouting>
+      <AudioOutputRouting><Target Value="AudioOut/External/S1" /></AudioOutputRouting>
       <Mixer><Volume><Manual Value="1" /></Volume><Pan><Manual Value="-0.5" /></Pan></Mixer>
       <MainSequencer><ClipSlotList>
         <ClipSlot Id="0"><ClipSlot><Value>
@@ -753,7 +828,7 @@ mod tests {
           </AudioClip>
         </Value></ClipSlot></ClipSlot>
         <ClipSlot Id="1"><ClipSlot><Value /></ClipSlot></ClipSlot>
-      </ClipSlotList></MainSequencer>
+      </ClipSlotList><MonitoringEnum Value="0" /><Recorder><IsArmed Value="true" /></Recorder></MainSequencer>
       <DeviceChain><Devices>
         <AudioEffectGroupDevice Id="9"><Branches><AudioEffectBranch Id="0"><DeviceChain><AudioToAudioDeviceChain><Devices>
           <Eq8 Id="2"><UserName Value="" /></Eq8>
@@ -819,7 +894,11 @@ mod tests {
             (mic.name.as_str(), mic.sound, mic.color),
             ("Mic", Sound::Audio, Some(0xCC9927))
         );
-        assert_eq!(mic.input, "In 1");
+        assert_eq!(mic.io.input_text(true), "In 1");
+        assert_eq!(
+            (mic.io.monitor, mic.io.armed, mic.io.audio_to),
+            (Monitoring::In, true, AudioTo::Ext(2))
+        );
         assert_eq!(mic.pan, 0.25);
         assert!((mic.volume.unwrap() - crate::control::UNITY).abs() < 1e-4);
         let devices: Vec<(&str, &str)> = mic
@@ -846,7 +925,15 @@ mod tests {
         assert!(mic.slots[1].is_none());
 
         assert_eq!(kit.sound, Sound::Drums("Analog"));
-        assert_eq!(kit.input, "Arturia KeyLab Essential 61");
+        assert_eq!(
+            kit.io.midi_from,
+            MidiFrom::Port("Arturia KeyLab Essential 61".into())
+        );
+        assert_eq!(
+            (kit.io.midi_channel, kit.io.monitor),
+            (None, Monitoring::Auto)
+        );
+        assert_eq!(kit.io.audio_in, None);
         assert_eq!(kit.devices[0].name, "808 Core Kit (Drum Rack)");
         assert_eq!(kit.devices[1].kind, "VST3");
         let tone = kit.devices[1].plugin.as_ref().expect("a plug-in");
