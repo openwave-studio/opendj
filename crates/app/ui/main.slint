@@ -2,7 +2,7 @@ import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Palette } from "std-widgets.slint";
 import { Theme, KeyNotation, CloseIcon } from "theme.slint";
 import { SectionTitle } from "pills.slint";
-import { GridEditorBar, GridEditorUi } from "grid_editor.slint";
+import { DownbeatIcon, GridEditorBar, GridEditorUi } from "grid_editor.slint";
 import { TourMark } from "tourmark.slint";
 import { Controls, ControlButton, VuMeter, ControlKnob, HoverTipView, HoverTip } from "controls.slint";
 import { Deck, DeckInfo, GridModePicker, PadsUi, KeyItem, EffectList, FxRow, FxGroup, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName } from "deck.slint";
@@ -26,7 +26,6 @@ export { DeckAuto }
 import { LayoutsUi, LayoutEntry } from "layouts.slint";
 export { LayoutsUi, LayoutEntry } from "layouts.slint";
 import { CueList } from "cues.slint";
-import { ChecklistUi } from "checklist.slint";
 import { LyricsUi, WaveLyrics, LyricsLane, WaveLine } from "lyrics.slint";
 import { TasksUi, TasksRing } from "tasks.slint";
 export { TasksUi, TaskRow, TaskWaiting } from "tasks.slint";
@@ -147,29 +146,6 @@ component TextLink inherits Rectangle {
     background: ta.has-hover ? Theme.pill-hover : transparent;
     Text { text: root.text; color: root.ink; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
     ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
-}
-
-// Bar 1 as a lit bar and three plain beats, or (`dir` -1 or 1) the lit bar
-// with an arrow: bar 1 a beat that way.
-component DownbeatMark inherits Rectangle {
-    in property <int> dir;
-    width: dir == 0 ? 20px : 15px;
-    height: 14px;
-    if dir == 0: Rectangle { x: 0; width: 3px; height: 14px; border-radius: 1px; background: Theme.accent; }
-    if dir == 0: Rectangle { x: 8px; width: 1.5px; height: 14px; background: Theme.n-58585d; }
-    if dir == 0: Rectangle { x: 13px; width: 1.5px; height: 14px; background: Theme.n-58585d; }
-    if dir == 0: Rectangle { x: 18px; width: 1.5px; height: 14px; background: Theme.n-58585d; }
-    if dir != 0: Rectangle { x: dir < 0 ? 7px : 5px; width: 3px; height: 14px; border-radius: 1px; background: Theme.accent; }
-    if dir != 0: Path {
-        x: dir < 0 ? 0px : 10px;
-        width: 5px;
-        height: 14px;
-        viewbox-width: 5;
-        viewbox-height: 14;
-        commands: dir < 0 ? "M 0 7 L 5 3.5 L 5 10.5 Z" : "M 5 7 L 0 3.5 L 0 10.5 Z";
-        fill: Theme.text-dim;
-        stroke-width: 0px;
-    }
 }
 
 // Scrolling waveform, rendered on the GPU into `source`. Hold it to stop
@@ -522,14 +498,14 @@ component Waveform inherits Rectangle {
                 HorizontalLayout {
                     alignment: center;
                     spacing: 8px;
-                    DownbeatMark { y: (parent.height - self.height) / 2; }
+                    DownbeatIcon { y: (parent.height - self.height) / 2; }
                     Text { text: "Set Downbeat"; color: Theme.lilac-text; font-size: 13px; font-weight: 500; vertical-alignment: center; }
                 }
             }
             if !locked: HorizontalLayout {
                 spacing: 6px;
-                EditGridButton { group: group; key: "beats_downbeat_earlier"; text: ""; DownbeatMark { dir: -1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
-                EditGridButton { group: group; key: "beats_downbeat_later"; text: ""; DownbeatMark { dir: 1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
+                EditGridButton { group: group; key: "beats_downbeat_earlier"; text: ""; DownbeatIcon { dir: -1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
+                EditGridButton { group: group; key: "beats_downbeat_later"; text: ""; DownbeatIcon { dir: 1; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; } }
             }
             if !locked: TextLink {
                 text: "Reset";
@@ -1868,17 +1844,6 @@ export component AppWindow inherits Window {
         Controls.set-value(i, Controls.value(i, Controls.tick) > 0 ? 0 : 1);
     }
     // The Prep layout's keys (see the prep-layout spec); true when one ran.
-    // Option+1-9 in Prep: ticks checklist line 1-9 (macOS types ¡™£¢∞§¶•ª
-    // for them).
-    function prep-alt-key(text: string) -> bool {
-        let n = text == "1" || text == "¡" ? 1 : text == "2" || text == "™" ? 2 : text == "3" || text == "£" ? 3 : text == "4" || text == "¢" ? 4
-            : text == "5" || text == "∞" ? 5 : text == "6" || text == "§" ? 6 : text == "7" || text == "¶" ? 7 : text == "8" || text == "•" ? 8
-            : text == "9" || text == "ª" ? 9 : 0;
-        if n > 0 {
-            ChecklistUi.tick(n - 1);
-        }
-        n > 0
-    }
     function prep-key(text: string, shift: bool) -> bool {
         if text == Key.Return {
             PrepUi.ready();
@@ -2152,9 +2117,6 @@ export component AppWindow inherits Window {
             // Prep's own keys, ahead of the DJ's shortcuts: Enter for Play
             // Ready and next, 1-8 the hot cues, and the grid tools.
             if prep && !Preferences.open && !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && prep-key(e.text, e.modifiers.shift) {
-                return accept;
-            }
-            if prep && !Preferences.open && e.modifiers.alt && !e.modifiers.control && !e.modifiers.meta && prep-alt-key(e.text) {
                 return accept;
             }
             if !Preferences.open && shortcut(e.text, e.modifiers.control, e.modifiers.alt, e.modifiers.shift, master-deck, browser.first-picked, browser.last-picked) {

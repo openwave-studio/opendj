@@ -2515,7 +2515,7 @@ export component LoopStepper inherits Rectangle {
 // The pad pages as four tabs, one over each column of pads: a click opens
 // a page, Shift-click its partner in the other four (the DDJ-FLX4's pad
 // mode buttons, with Shift), and a right-click picks what it shows.
-component PadTab inherits Rectangle {
+export component PadTab inherits Rectangle {
     in property <string> text;
     in property <bool> on;
     callback clicked(shift: bool);

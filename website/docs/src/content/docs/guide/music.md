@@ -326,14 +326,13 @@ each label with a small tick along its top. While you edit the grid, every
 tempo change is labelled, to a tenth of a BPM. Turn them off with **BPM
 labels** in the drop-down on the waveforms button.
 
-The Edit BPM menu (the BPM in the [grid editor](#grid-editor)) has
-**Lock**, which keeps a grid as it is: a locked grid can't be edited, and
-analysing the track again leaves it alone. Grids imported from another app
-come in locked. **Reset** throws away your edits or the imported grid and
-uses openDJ's own. A detected grid that fits the beats poorly says **Check
+**Lock** (key **L** in Prep) keeps a grid as it is: a locked grid can't be edited,
+and analysing the track again leaves it alone. Grids imported from another
+app come in locked; **Unlock** in the Edit Grid popover frees one.
+**Reset** throws away your edits or the imported grid and uses openDJ's own. A detected grid that fits the beats poorly says **Check
 by ear** in the Edit Grid popover.
 
-To check a grid by ear, turn on **Click** in the Edit BPM menu: the deck
+To check a grid by ear, turn on the click (key **M** in Prep): the deck
 clicks on every beat of the grid, higher on bar 1, through the deck's
 fader and cue like the music. If the clicks drift off the music, fix the
 grid while it plays.
@@ -358,13 +357,13 @@ in lilac, and the pencil lights up. While you edit:
 ### Grid editor
 
 The grid editor takes the FX bar's place. In 2-Deck it has deck 1's tools
-on the left and deck 2's on the right, with **Reset** at each outer edge;
-in 4-Deck it shows the deck whose pencil opened it, and Prep shows deck 1's.
-Each side has four groups:
+on the left and deck 2's on the right; in 4-Deck it shows the deck whose
+pencil opened it, and Prep shows deck 1's. At each outer edge are the grid
+**Type** (click it to pick **Auto**, **Fixed** or **Flexible**) and
+**Reset**. Then four groups:
 
-- **BPM**: the tempo (click it for Edit BPM: **½**, **×2**, **Tap**, the grid
-  type **Fixed**, **Auto** or **Flexible**, **Undo**, **Lock** and **Click**),
-  and **½** and **×2**.
+- **BPM**: the tempo with **Tap** beside it (tap along to set it), and
+  **½** and **×2**.
 - **Downbeat**: **Set** makes the beat at the play line bar 1; the arrows
   move bar 1 a beat either way.
 - **Anchor**: an anchor is where the tempo changes, for a live track that

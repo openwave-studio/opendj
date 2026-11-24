@@ -1,17 +1,16 @@
 // The Prep layout: deck 1 alone, for getting In Prep tracks ready to play.
 // Under the deck's header (cover, title, tempo, key, time, overview) one
-// row: the grid editor on the left, transport in the middle and eight
-// big hot cue pads on the right, with the track's stage and Play Ready,
-// next track above them. The large scrolling waveform above is deck 1's;
+// row: the grid editor on the left (one side of the 2-Deck grid editor
+// bar), transport in the middle, and pads on the right under four tabs:
+// Hot Cues, Loops (saved loops), Automix (where Automix mixes in and out)
+// and Memory (memory cues, for Pioneer players). The large scrolling waveform above is deck 1's;
 // dragging and the wheel zoom it, as on every large waveform. No mixer,
 // crossfader or FX.
 import { Theme } from "theme.slint";
 import { ControlButton, ControlKnob, Controls, CueHeadphones, HoverTip } from "controls.slint";
-import { DeckInfo, Header, PlayButton } from "deck.slint";
+import { DeckInfo, Header, PadTab, PlayButton } from "deck.slint";
 import { CueList } from "cues.slint";
 import { GridEditorSide } from "grid_editor.slint";
-import { SectionTitle } from "pills.slint";
-import { LibraryEdit } from "library.slint";
 
 export global PrepUi {
     // Whether the Prep layout is offered (off until v0.6).
@@ -69,27 +68,11 @@ component PressButton inherits ControlButton {
     height: 28px;
 }
 
-// The grid editor's side for deck 1 under a title with Tap and the click,
-// which preparing a track uses most (their keys T and M work too).
+// The grid editor's side for deck 1, as in the 2-Deck bar.
 component PrepGrid inherits VerticalLayout {
     in property <string> group;
     in property <DeckInfo> info;
-    property <bool> clicking: Controls.value(Controls.resolve(group, "metronome"), Controls.tick) > 0;
     padding: 10px;
-    spacing: 8px;
-    HorizontalLayout {
-        height: 26px;
-        spacing: 6px;
-        SectionTitle { title: "Grid Editor"; horizontal-stretch: 1; }
-        if info.grid-unsure && info.grid-source == "Detected": Text {
-            text: "Check by ear";
-            color: Theme.stage-prep;
-            font-size: 11px;
-            vertical-alignment: center;
-        }
-        PressButton { group: group; key: "bpm_tap"; text: "Tap"; width: 56px; height: 26px; tip-title: "Tap"; tip-body: "Tap along to set the tempo  (T)"; }
-        ControlButton { group: group; key: "metronome"; text: "Click"; font-size: 12px; height: 26px; width: 56px; outline-when-lit: true; tip-title: "Click"; tip-body: "A click on every beat, higher on bar 1  (M)"; }
-    }
     Rectangle {
         border-radius: Theme.pad-radius;
         border-width: 1px;
@@ -218,55 +201,115 @@ component PrepPad inherits Rectangle {
     }
 }
 
-// The stage and Play Ready, next track, over the pads.
-component ReadyBar inherits HorizontalLayout {
-    // On a narrow window (1280 wide): no tracks-left count, and a
-    // shorter Play Ready button.
-    in property <bool> narrow;
-    spacing: 8px;
-    height: 30px;
-    Rectangle {
-        width: stage-text.preferred-width + 26px;
-        border-radius: 15px;
-        border-width: 1px;
-        border-color: PrepUi.stage-color(PrepUi.stage);
-        background: PrepUi.stage-color(PrepUi.stage).with-alpha(0.12);
-        stage-text := Text {
-            text: "● " + PrepUi.stage-name(PrepUi.stage);
-            color: PrepUi.stage-color(PrepUi.stage);
-            font-size: 12px;
-            font-weight: 600;
+// A pad on the Loops or Automix page: a title and a time, filled with
+// `tint` once set. A click does `pressed(false)`, a Shift-click
+// `pressed(true)` (clears).
+component PrepTile inherits Rectangle {
+    in property <string> title;
+    in property <string> time;
+    in property <string> detail;
+    in property <bool> set;
+    in property <bool> enabled: true;
+    in property <string> empty-text: "Click to set";
+    in property <color> tint;
+    in property <color> ink: Theme.f-ffffff;
+    in property <string> tip-title;
+    in property <string> tip-body;
+    callback pressed(clear: bool);
+    property <bool> tip-mine;
+    property <bool> shift;
+    border-radius: 7px;
+    background: set ? (touch.pressed ? tint.darker(0.3) : tint) : touch.pressed ? Theme.control-pressed : touch.has-hover && enabled ? Theme.n-1d1d20 : Theme.control;
+    border-width: set ? 0px : 1px;
+    border-color: touch.has-hover && enabled ? Theme.n-48484c : Theme.n-2c2c31;
+    VerticalLayout {
+        padding: 7px;
+        HorizontalLayout {
+            spacing: 6px;
+            Text { text: title; color: set ? ink : Theme.text-dim; font-size: 12px; font-weight: 700; overflow: elide; horizontal-stretch: 1; }
+            if set: Text { text: detail; color: ink.with-alpha(0.8); font-size: 11px; }
+        }
+        Rectangle { vertical-stretch: 1; }
+        Text { text: set ? time : empty-text; color: set ? ink.with-alpha(0.82) : Theme.text-dim; font-family: "Inter Tabular"; font-size: 11px; overflow: elide; }
+    }
+    touch := TouchArea {
+        enabled: root.enabled || root.set;
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                root.shift = e.modifiers.shift;
+            }
+        }
+        clicked => { root.pressed(root.shift); }
+        changed has-hover => {
+            if !self.has-hover && tip-mine {
+                tip-mine = false;
+                HoverTip.shown = false;
+            }
         }
     }
-    if !narrow: Text {
-        text: PrepUi.left == 1 ? "1 track In Prep" : PrepUi.left + " tracks In Prep";
-        color: Theme.text-dim;
-        font-size: 12px;
-        vertical-alignment: center;
+    Timer {
+        interval: 600ms;
+        running: touch.has-hover && !tip-mine && tip-title != "";
+        triggered => {
+            tip-mine = true;
+            HoverTip.title = tip-title;
+            HoverTip.body = tip-body;
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
+        }
     }
-    Rectangle { horizontal-stretch: 1; }
-    // Lit when every checklist line is ticked; outlined until then (it
-    // still works, for a track that is fine as it is).
-    property <bool> all-done: PrepUi.done >= PrepUi.total;
-    if PrepUi.total > 0: Text {
-        text: PrepUi.done + "/" + PrepUi.total;
-        color: all-done ? Theme.stage-ready : Theme.text-dim;
-        font-family: "Inter Tabular";
-        font-size: 12px;
-        font-weight: 600;
-        vertical-alignment: center;
-    }
-    ready := Rectangle {
-        width: ready-text.preferred-width + 28px;
-        border-radius: Theme.radius;
-        border-width: all-done ? 0px : 1px;
-        border-color: Theme.stage-ready;
-        background: all-done
-            ? (ready-touch.pressed ? Theme.stage-ready.darker(0.2) : ready-touch.has-hover ? Theme.stage-ready.brighter(0.1) : Theme.stage-ready)
-            : (ready-touch.pressed ? Theme.stage-ready.with-alpha(0.3) : ready-touch.has-hover ? Theme.stage-ready.with-alpha(0.2) : Theme.stage-ready.with-alpha(0.1));
-        ready-text := Text { text: narrow ? "✓ Play Ready  ⏎" : "✓ Play Ready, next  ⏎"; color: all-done ? Theme.n-0e0e10 : Theme.stage-ready; font-size: 13px; font-weight: 700; }
-        ready-touch := TouchArea { mouse-cursor: pointer; clicked => { PrepUi.ready(); } }
-    }
+}
+
+// Saved loop pad `slot` (0 to 7).
+component LoopPad inherits PrepTile {
+    in property <string> group;
+    in property <int> slot;
+    property <bool> looping: Controls.value(Controls.resolve(group, "loop_enabled"), Controls.tick) > 0;
+    set: slot < CueList.prep-loops.length;
+    enabled: looping;
+    title: root.set && CueList.prep-loops[slot].name != "" ? CueList.prep-loops[slot].name : "Loop " + (slot + 1);
+    time: CueList.prep-loops[slot].time;
+    detail: CueList.prep-loops[slot].detail;
+    tint: Theme.loop;
+    ink: Theme.n-0e0e10;
+    empty-text: looping ? "Click to save" : "Set a loop first";
+    tip-title: "Saved loop";
+    tip-body: root.set ? "Play this loop\nShift-click removes it" : "Saves the loop playing, to play again later";
+    pressed(clear) => { CueList.loop-pad(slot, clear); }
+}
+
+// Memory cue pad `slot` (0 to 7): a marker in the track, on no pad (as
+// Pioneer players keep them).
+component MemoryPad inherits PrepTile {
+    in property <int> slot;
+    set: slot < CueList.prep-memory.length;
+    title: root.set && CueList.prep-memory[slot].name != "" ? CueList.prep-memory[slot].name : "Memory " + (slot + 1);
+    time: CueList.prep-memory[slot].time;
+    detail: CueList.prep-memory[slot].detail;
+    tint: Theme.accent;
+    ink: Theme.n-0e0e10;
+    empty-text: "Click to add";
+    tip-title: "Memory cue";
+    tip-body: root.set ? "Jump here\nShift-click removes it" : "Adds a memory cue at the play line  (C)\nPioneer players step through these";
+    pressed(clear) => { CueList.memory-pad(slot, clear); }
+}
+
+// Mix in (0) or mix out (1): where Automix mixes this track in or out.
+component MixPad inherits PrepTile {
+    in property <int> which;
+    set: CueList.mix-times[which] != "";
+    title: which == 0 ? "Mix in" : "Mix out";
+    time: CueList.mix-times[which];
+    detail: CueList.mix-details[which];
+    tint: Theme.automix;
+    ink: Theme.automix-ink;
+    tip-title: which == 0 ? "Mix in" : "Mix out";
+    tip-body: (which == 0 ? "Where Automix brings this track in" : "Where Automix starts mixing out of this track")
+        + (root.set ? "\nClick to jump here, Shift-click clears it" : "\nClick to set it at the play line");
+    pressed(clear) => { CueList.mix-pad(which, clear); }
 }
 
 export component PrepDeck inherits Rectangle {
@@ -276,6 +319,8 @@ export component PrepDeck inherits Rectangle {
     out property <length> overview-height: header.overview-height;
     property <string> group: "[Channel1]";
     property <color> tint: Theme.deck-color(0);
+    // The pads' page: 0 Hot Cues, 1 Loops, 2 Automix, 3 Memory.
+    property <int> page;
     VerticalLayout {
         spacing: 1px;
         header := Header { deck: 0; info: info; overview: overview; group: group; }
@@ -297,16 +342,31 @@ export component PrepDeck inherits Rectangle {
                 horizontal-stretch: 1;
                 VerticalLayout {
                     padding: 10px;
-                    spacing: 8px;
-                    // The bar needs about 640 px: 1,420 less the two panels at its left.
-                    ReadyBar { narrow: LibraryEdit.window-width < 1420px; }
+                    spacing: 6px;
+                    // One tab over each pad column.
                     HorizontalLayout {
                         spacing: 6px;
-                        for n in 4: PrepPad { group: group; number: n + 1; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
+                        height: 24px;
+                        for name[i] in ["Hot Cues", "Loops", "Automix", "Memory"]: PadTab {
+                            horizontal-stretch: 1;
+                            min-width: 0px;
+                            preferred-width: 0px;
+                            text: name;
+                            on: page == i;
+                            clicked => { page = i; }
+                        }
                     }
-                    HorizontalLayout {
+                    for row in 2: HorizontalLayout {
                         spacing: 6px;
-                        for n in 4: PrepPad { group: group; number: n + 5; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
+                        for n in 4: Rectangle {
+                            horizontal-stretch: 1;
+                            min-width: 0px;
+                            preferred-width: 0px;
+                            if page == 0: PrepPad { group: group; number: row * 4 + n + 1; }
+                            if page == 1: LoopPad { group: group; slot: row * 4 + n; }
+                            if page == 2 && row == 0 && n < 2: MixPad { which: n; }
+                            if page == 3: MemoryPad { slot: row * 4 + n; }
+                        }
                     }
                 }
             }

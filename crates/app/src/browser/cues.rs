@@ -7,7 +7,9 @@
 //! changes that list, saves it, and sets the pads to match.
 
 use opendj_control::{ControlHandle, ControlRegistry};
-use opendj_engine::{deck_group, Hotcue, Track, MEMORY_CUE, NUM_DECKS, NUM_HOTCUES};
+use opendj_engine::{
+    deck_group, Hotcue, Marker, MarkerKind, Track, MEMORY_CUE, NUM_DECKS, NUM_HOTCUES,
+};
 use slint::{Color, ComponentHandle, ModelRc, SharedString, VecModel};
 
 use super::Browser;
@@ -41,6 +43,9 @@ struct DeckCues {
     loop_enabled: ControlHandle,
     loop_start: ControlHandle,
     loop_end: ControlHandle,
+    /// The saved loop to play, and the press that plays it.
+    saved_loop: [ControlHandle; 2],
+    saved_loop_activate: ControlHandle,
 }
 
 pub(super) struct CueState {
@@ -49,6 +54,8 @@ pub(super) struct CueState {
     rows: Vec<Hotcue>,
     /// What the list was made from, so it is made again only on a change.
     shown: Option<(usize, Option<usize>, Vec<Hotcue>, bool)>,
+    /// Prep's Automix pads as shown: deck 1's track and its two points.
+    mix_shown: Option<(Option<usize>, [Option<f64>; 2])>,
 }
 
 impl CueState {
@@ -71,6 +78,8 @@ impl CueState {
                     loop_enabled: c("loop_enabled"),
                     loop_start: c("loop_start_position"),
                     loop_end: c("loop_end_position"),
+                    saved_loop: [c("saved_loop_start"), c("saved_loop_end")],
+                    saved_loop_activate: c("saved_loop_activate"),
                 }
             })
             .collect();
@@ -78,6 +87,7 @@ impl CueState {
             decks,
             rows: Vec::new(),
             shown: None,
+            mix_shown: None,
         }
     }
 }
@@ -133,6 +143,39 @@ fn detail(t: Option<&Track>, c: &Hotcue) -> String {
     }
 }
 
+/// The names Automix reads its points by (as imported ones): where a
+/// track is mixed in, and where it is mixed out.
+const MIX_POINTS: [&str; 2] = ["realStart", "fadeStart"];
+
+/// A track's Automix point `name`.
+fn mix_point(t: &Track, name: &str) -> Option<f64> {
+    t.info
+        .markers
+        .iter()
+        .find(|m| m.kind == MarkerKind::Automix && m.name == name)
+        .map(|m| m.seconds)
+}
+
+/// The saved loops among `cues` (memory cues with an end), in time order.
+fn saved_loops(cues: &[Hotcue]) -> Vec<&Hotcue> {
+    let mut loops: Vec<&Hotcue> = cues
+        .iter()
+        .filter(|c| c.is_memory() && c.end.is_some())
+        .collect();
+    loops.sort_by(|a, b| a.seconds.total_cmp(&b.seconds));
+    loops
+}
+
+/// The memory cues among `cues` (no end), in time order.
+fn memory_cues(cues: &[Hotcue]) -> Vec<&Hotcue> {
+    let mut marks: Vec<&Hotcue> = cues
+        .iter()
+        .filter(|c| c.is_memory() && c.end.is_none())
+        .collect();
+    marks.sort_by(|a, b| a.seconds.total_cmp(&b.seconds));
+    marks
+}
+
 /// The next free memory cue number.
 fn next_memory(cues: &[Hotcue]) -> usize {
     cues.iter()
@@ -183,6 +226,12 @@ impl Browser {
         ui.on_go(move |row| w(&|b| b.go_to_cue(row)));
         let w = with.clone();
         ui.on_add_memory(move || w(&|b| b.add_memory_cue()));
+        let w = with.clone();
+        ui.on_loop_pad(move |slot, clear| w(&|b| b.press_loop_pad(slot, clear)));
+        let w = with.clone();
+        ui.on_mix_pad(move |which, clear| w(&|b| b.press_mix_pad(which, clear)));
+        let w = with.clone();
+        ui.on_memory_pad(move |slot, clear| w(&|b| b.press_memory_pad(slot, clear)));
     }
 
     /// The deck the tab follows: deck 1 in Prep.
@@ -222,6 +271,9 @@ impl Browser {
         };
         let deck = self.cue_deck();
         let prep = app.get_layout() == PREP_LAYOUT;
+        if prep {
+            self.refresh_mix_pads(&app);
+        }
         // Cues and Checklist are Prep's tabs: out of Prep, the first tab
         // that shows.
         super::side_tabs::keep_open_tab(&app, prep);
@@ -285,6 +337,33 @@ impl Browser {
                     .map_or(Color::from_argb_u8(0, 0, 0, 0), color)
             })
             .collect();
+        let pad_track = self.cue_track(0).cloned();
+        let loops: Vec<CueRow> = saved_loops(&pad_cues)
+            .into_iter()
+            .take(NUM_HOTCUES)
+            .map(|c| CueRow {
+                pad: -1,
+                is_loop: true,
+                time: clock(c.seconds).into(),
+                detail: detail(pad_track.as_deref(), c).into(),
+                name: SharedString::from(c.name.as_str()),
+                color: color(shown_color(c)),
+            })
+            .collect();
+        ui.set_prep_loops(ModelRc::new(VecModel::from(loops)));
+        let marks: Vec<CueRow> = memory_cues(&pad_cues)
+            .into_iter()
+            .take(NUM_HOTCUES)
+            .map(|c| CueRow {
+                pad: -1,
+                is_loop: false,
+                time: clock(c.seconds).into(),
+                detail: detail(pad_track.as_deref(), c).into(),
+                name: SharedString::from(c.name.as_str()),
+                color: color(shown_color(c)),
+            })
+            .collect();
+        ui.set_prep_memory(ModelRc::new(VecModel::from(marks)));
         ui.set_pad_names(ModelRc::new(VecModel::from(names)));
         ui.set_pad_colors(ModelRc::new(VecModel::from(colors)));
         self.cues.rows = rows;
@@ -452,6 +531,166 @@ impl Browser {
 }
 
 impl Browser {
+    /// Shows deck 1's Automix points on Prep's Automix pads, when they
+    /// changed.
+    fn refresh_mix_pads(&mut self, app: &AppWindow) {
+        let track = self.cue_track(0).cloned();
+        let points = MIX_POINTS.map(|n| track.as_deref().and_then(|t| mix_point(t, n)));
+        let key = (self.loaded[0], points);
+        if self.cues.mix_shown == Some(key) {
+            return;
+        }
+        let at = |p: Option<f64>| Hotcue {
+            number: MEMORY_CUE,
+            seconds: p.unwrap_or(0.0),
+            name: String::new(),
+            end: None,
+            color: None,
+        };
+        let times: Vec<SharedString> = points
+            .iter()
+            .map(|p| p.map(|s| clock(s).into()).unwrap_or_default())
+            .collect();
+        let details: Vec<SharedString> = points
+            .iter()
+            .map(|&p| {
+                p.map(|_| detail(track.as_deref(), &at(p)).into())
+                    .unwrap_or_default()
+            })
+            .collect();
+        let ui = app.global::<CueList>();
+        ui.set_mix_times(ModelRc::new(VecModel::from(times)));
+        ui.set_mix_details(ModelRc::new(VecModel::from(details)));
+        self.cues.mix_shown = Some(key);
+    }
+
+    /// A Loops pad in Prep: plays saved loop `slot`, removes it (`clear`),
+    /// or on an empty pad saves the loop playing.
+    fn press_loop_pad(&mut self, slot: i32, clear: bool) {
+        let cues = self.deck_cues(0);
+        let loops = saved_loops(&cues);
+        let Ok(slot) = usize::try_from(slot) else {
+            return;
+        };
+        match loops.get(slot).map(|c| (c.number, c.seconds, c.end)) {
+            Some((number, seconds, _)) if clear => self.change_cues(0, |cues| {
+                cues.retain(|c| !(c.number == number && c.seconds == seconds))
+            }),
+            Some((_, seconds, Some(end))) => {
+                let d = &self.cues.decks[0];
+                d.saved_loop[0].set(seconds);
+                d.saved_loop[1].set(end);
+                d.saved_loop_activate.set_bool(true);
+                d.saved_loop_activate.set_bool(false);
+            }
+            Some(_) => {}
+            None if clear => {}
+            None => {
+                let d = &self.cues.decks[0];
+                if d.loop_enabled.get_bool() && d.loop_end.get() > d.loop_start.get() {
+                    self.add_memory_cue();
+                }
+            }
+        }
+    }
+
+    /// A Memory pad in Prep: jumps to memory cue `slot`, removes it
+    /// (`clear`), or on an empty pad adds one at the playhead.
+    fn press_memory_pad(&mut self, slot: i32, clear: bool) {
+        let cues = self.deck_cues(0);
+        let Ok(slot) = usize::try_from(slot) else {
+            return;
+        };
+        let found = memory_cues(&cues).get(slot).map(|c| (c.number, c.seconds));
+        let d = &self.cues.decks[0];
+        let duration = d.duration.get();
+        match found {
+            Some((number, seconds)) if clear => self.change_cues(0, |cues| {
+                cues.retain(|c| !(c.number == number && c.seconds == seconds))
+            }),
+            Some((_, seconds)) => {
+                if duration > 0.0 {
+                    d.playposition.set((seconds / duration).clamp(0.0, 1.0));
+                }
+            }
+            None if clear || duration <= 0.0 || self.loaded[0].is_none() => {}
+            None => {
+                let seconds = d.playposition.get() * duration;
+                self.change_cues(0, |cues| {
+                    if cues.iter().any(|c| {
+                        c.is_memory() && c.end.is_none() && (c.seconds - seconds).abs() < 0.01
+                    }) {
+                        return;
+                    }
+                    let number = next_memory(cues);
+                    cues.push(Hotcue {
+                        number,
+                        seconds,
+                        name: String::new(),
+                        end: None,
+                        color: None,
+                    });
+                });
+            }
+        }
+    }
+
+    /// An Automix pad in Prep: jumps to mix in (0) or out (1), sets it at
+    /// the playhead when not set, or clears it.
+    fn press_mix_pad(&mut self, which: i32, clear: bool) {
+        let Some(name) = usize::try_from(which).ok().and_then(|w| MIX_POINTS.get(w)) else {
+            return;
+        };
+        let Some(id) = self.loaded[0] else {
+            return;
+        };
+        let Some(track) = self.cue_track(0).cloned() else {
+            return;
+        };
+        let d = &self.cues.decks[0];
+        let duration = d.duration.get();
+        if duration <= 0.0 {
+            return;
+        }
+        let now = mix_point(&track, name);
+        let point = match (now, clear) {
+            (Some(s), false) => {
+                d.playposition.set((s / duration).clamp(0.0, 1.0));
+                return;
+            }
+            (None, true) => return,
+            (Some(_), true) => None,
+            (None, false) => Some(d.playposition.get() * duration),
+        };
+        if opendj_library::row_id(id).is_some() && self.saved() {
+            if let Some(db) = &mut self.db {
+                if let Err(e) = db.set_automix_point(id, name, point) {
+                    eprintln!("can't save the Automix point: {e}");
+                }
+            }
+        }
+        if let Some(&i) = self.index_of.get(&id) {
+            let mut e = (*self.library[i]).clone();
+            e.info
+                .markers
+                .retain(|m| !(m.kind == MarkerKind::Automix && m.name == *name));
+            if let Some(seconds) = point {
+                e.info.markers.push(Marker {
+                    kind: MarkerKind::Automix,
+                    seconds,
+                    end: None,
+                    name: name.to_string(),
+                    color: None,
+                    detected: false,
+                });
+            }
+            self.library[i] = std::sync::Arc::new(e);
+        }
+        if let Some(app) = self.app.upgrade() {
+            self.refresh_mix_pads(&app);
+        }
+    }
+
     /// Quick review's Tab: to the start of the next phrase of the track on
     /// the Prep deck (`direction` 1), or back to the start of this one, or
     /// the one before when just past a start (-1). Without phrases, 8 bars

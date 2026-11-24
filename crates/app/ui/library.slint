@@ -8,8 +8,7 @@ import { HoverTip } from "controls.slint";
 import { SourceUi, SearchesPanel, SourceResults, SourceSetup } from "sources.slint";
 import { InstrumentsPanel } from "instruments.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
-import { CuesPanel, CueList } from "cues.slint";
-import { ChecklistPanel } from "checklist.slint";
+import { CueList } from "cues.slint";
 import { LyricsPanel } from "lyrics.slint";
 import { NowPlayingView } from "nowplaying.slint";
 import { PageView, PageUi } from "pages.slint";
@@ -6858,8 +6857,8 @@ component SidePanel inherits Rectangle {
     in property <[SideRow]> rows;
     in property <string> total;
     // 0 Automix, 1 Shortlist, 2 Related, 3 Info (the selected track's
-    // details, see info.slint), 4 Cues (a deck's cues, see cues.slint),
-    // 5 Checklist (what makes the deck's track ready, see checklist.slint),
+    // details, see info.slint), 4 and 5 (were Cues and Checklist, no longer
+    // shown),
     // 6 Lyrics (the playing track's lyrics, see lyrics.slint), 7 Playlist
     // (one of the DJ's playlists, to change it).
     in-out property <int> tab: 0;
@@ -6964,7 +6963,6 @@ component SidePanel inherits Rectangle {
             // Each tab as wide as its word, with the room left shared out,
             // in the DJ's order. A tab switched off folds to nothing, unless
             // it is the one open (Show Info opens Info even when it's off).
-            // Cues and Checklist only in the Prep layout.
             for t in SideTabs.tabs: Rectangle {
                 property <bool> shown: (t.on || t.i == tab) && (CueList.prep ? t.pos : t.pos-plain) >= 0;
                 horizontal-stretch: shown ? 1 : 0;
@@ -7118,7 +7116,6 @@ component SidePanel inherits Rectangle {
                             }
                         }
                         Text { text: t.name; color: Theme.text; font-size: 15px; vertical-alignment: center; horizontal-stretch: 1; }
-                        if (t.i == 4 || t.i == 5): Text { text: "Prep"; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
                             Switch {
@@ -7172,20 +7169,6 @@ component SidePanel inherits Rectangle {
     if tab == 6: LyricsPanel {
         y: tab-bar.height;
         height: parent.height - tab-bar.height;
-    }
-    if tab == 4 && CueList.prep: CuesPanel {
-        y: tab-bar.height;
-        height: parent.height - tab-bar.height;
-    }
-    if tab == 5 && CueList.prep: checklist-scroll := ScrollView {
-        y: tab-bar.height;
-        height: parent.height - tab-bar.height;
-        content-width: self.visible-width;
-        content-height: max(self.visible-height, checklist.preferred-height);
-        checklist := ChecklistPanel {
-            width: checklist-scroll.content-width;
-            height: checklist-scroll.content-height;
-        }
     }
     keys := FocusScope {
         y: tab-bar.height;
