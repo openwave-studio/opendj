@@ -17,6 +17,7 @@ mod clip;
 mod control;
 mod devices;
 mod engine;
+mod fx;
 mod link;
 mod midi;
 mod plugins;

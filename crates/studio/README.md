@@ -55,6 +55,9 @@ Shift with them jumps by eight.
   runs them as slots in each track's chain (`engine.rs`).
 - `devices.rs`: the studio's own devices matching Live's (Utility, EQ
   Eight, Compressor), run in the chain with the plug-ins.
+- `fx.rs`: Live's Delay, Echo, Reverb, Gate and Overdrive, and
+  approximations of Hybrid Reverb (no convolution) and Roar (shapers and
+  filters in series, no feedback or modulation).
 - `settings.rs`: the studio's settings (`studio.json`), starting from
   openDJ's audio choices.
 - `midi.rs`: MIDI From and To: every input but Push routed to the tracks

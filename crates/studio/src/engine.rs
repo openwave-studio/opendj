@@ -1185,7 +1185,7 @@ impl Engine {
             let conn = match &mut slot.kind {
                 SlotKind::Builtin(d) => {
                     if slot.on {
-                        d.process(scratch);
+                        d.process(scratch, transport.bpm);
                     }
                     continue;
                 }

@@ -1,9 +1,11 @@
 //! The studio's own devices, matching Live's so a set's chains sound as
-//! they do in Live: Utility, EQ Eight and Compressor, with the settings the
-//! set saved. Each runs on the audio thread in the track's chain, in order
+//! they do in Live: Utility, EQ Eight and Compressor here, and the time and
+//! character effects in [`crate::fx`], with the settings the set saved. Each runs on the audio thread in the track's chain, in order
 //! with the plug-ins; all memory is set up before the audio starts.
 
 use opendj_engine::dsp::Biquad;
+
+use crate::fx;
 
 /// A device's settings, as a set saves them (Live's own units).
 #[derive(Clone, Debug, PartialEq)]
@@ -11,6 +13,11 @@ pub enum Settings {
     Utility(UtilitySettings),
     Eq8(Eq8Settings),
     Compressor(CompressorSettings),
+    Delay(fx::DelaySettings),
+    Reverb(fx::ReverbSettings),
+    Gate(fx::GateSettings),
+    Overdrive(fx::OverdriveSettings),
+    Roar(fx::RoarSettings),
 }
 
 impl Settings {
@@ -41,15 +48,20 @@ impl Settings {
                 c.attack_ms,
                 c.release_ms
             ),
+            Settings::Delay(d) => d.summary(),
+            Settings::Reverb(r) => r.summary(),
+            Settings::Gate(g) => g.summary(),
+            Settings::Overdrive(o) => o.summary(),
+            Settings::Roar(r) => r.summary(),
         }
     }
 }
 
-fn db(gain: f32) -> f32 {
+pub(crate) fn db(gain: f32) -> f32 {
     20.0 * gain.max(1e-6).log10()
 }
 
-fn from_db(db: f32) -> f32 {
+pub(crate) fn from_db(db: f32) -> f32 {
     10f32.powf(db / 20.0)
 }
 
@@ -150,6 +162,11 @@ pub enum Device {
     Utility(UtilitySettings),
     Eq8(Box<Eq8>),
     Compressor(Compressor),
+    Delay(Box<fx::Delay>),
+    Reverb(Box<fx::Reverb>),
+    Gate(fx::Gate),
+    Overdrive(Box<fx::Overdrive>),
+    Roar(Box<fx::Roar>),
 }
 
 impl Device {
@@ -158,15 +175,25 @@ impl Device {
             Settings::Utility(u) => Device::Utility(u.clone()),
             Settings::Eq8(e) => Device::Eq8(Box::new(Eq8::new(e, rate))),
             Settings::Compressor(c) => Device::Compressor(Compressor::new(c, rate)),
+            Settings::Delay(d) => Device::Delay(Box::new(fx::Delay::new(d, rate))),
+            Settings::Reverb(r) => Device::Reverb(Box::new(fx::Reverb::new(r, rate))),
+            Settings::Gate(g) => Device::Gate(fx::Gate::new(g, rate)),
+            Settings::Overdrive(o) => Device::Overdrive(Box::new(fx::Overdrive::new(o, rate))),
+            Settings::Roar(r) => Device::Roar(Box::new(fx::Roar::new(r, rate))),
         }
     }
 
-    /// Processes `buf` in place.
-    pub fn process(&mut self, buf: &mut [[f32; 2]]) {
+    /// Processes `buf` in place; `tempo` times synced delays.
+    pub fn process(&mut self, buf: &mut [[f32; 2]], tempo: f64) {
         match self {
             Device::Utility(u) => utility(u, buf),
             Device::Eq8(e) => e.process(buf),
             Device::Compressor(c) => c.process(buf),
+            Device::Delay(d) => d.process(buf, tempo),
+            Device::Reverb(r) => r.process(buf),
+            Device::Gate(g) => g.process(buf),
+            Device::Overdrive(o) => o.process(buf),
+            Device::Roar(r) => r.process(buf),
         }
     }
 }
@@ -268,7 +295,7 @@ pub struct Compressor {
 }
 
 impl Compressor {
-    fn new(s: &CompressorSettings, rate: f64) -> Compressor {
+    pub(crate) fn new(s: &CompressorSettings, rate: f64) -> Compressor {
         let coef = |ms: f32| (-1.0 / (ms.max(0.01) * 0.001 * rate as f32)).exp();
         Compressor {
             threshold_db: db(s.threshold),
@@ -298,7 +325,7 @@ impl Compressor {
         }
     }
 
-    fn process(&mut self, buf: &mut [[f32; 2]]) {
+    pub(crate) fn process(&mut self, buf: &mut [[f32; 2]]) {
         let wet = self.s.dry_wet.clamp(0.0, 1.0);
         for f in buf.iter_mut() {
             let level = f[0].abs().max(f[1].abs());
@@ -345,7 +372,7 @@ mod tests {
             48_000.0,
         );
         let mut buf = vec![[0.5, -0.5], [0.25, 0.25]];
-        d.process(&mut buf);
+        d.process(&mut buf, 120.0);
         assert_eq!(buf, vec![[0.0, 0.0], [0.5, 0.5]]);
     }
 
@@ -368,7 +395,7 @@ mod tests {
         };
         let mut d = Device::new(&Settings::Eq8(s), 48_000.0);
         let mut low = sine(50.0, 0.5, 48_000);
-        d.process(&mut low);
+        d.process(&mut low, 120.0);
         assert!(peak(&low[24_000..]) < 0.01, "{}", peak(&low[24_000..]));
         let mut d = Device::new(
             &Settings::Eq8(Eq8Settings {
@@ -379,7 +406,7 @@ mod tests {
             48_000.0,
         );
         let mut mid = sine(3000.0, 0.25, 48_000);
-        d.process(&mut mid);
+        d.process(&mut mid, 120.0);
         let p = peak(&mid[24_000..]);
         assert!((p - 0.5).abs() < 0.02, "{p}");
     }
@@ -398,7 +425,7 @@ mod tests {
         let mut d = Device::new(&Settings::Compressor(s), 48_000.0);
         // 0 dB in: 20 dB over, so 15 dB down.
         let mut buf = sine(100.0, 1.0, 48_000);
-        d.process(&mut buf);
+        d.process(&mut buf, 120.0);
         let p = db(peak(&buf[24_000..]));
         assert!((p + 15.0).abs() < 1.5, "{p} dB");
         // Quiet sound passes.
@@ -415,7 +442,7 @@ mod tests {
             }),
             48_000.0,
         );
-        d.process(&mut quiet);
+        d.process(&mut quiet, 120.0);
         assert!((peak(&quiet[24_000..]) - 0.05).abs() < 0.002);
     }
 }

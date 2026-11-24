@@ -37,8 +37,8 @@
 - [x] 2.23 Settings with an Audio page: output and input devices, sample rate and buffer, starting from openDJ's audio settings; devices change without closing the set
 - [x] 2.24 Drum Racks play their own samples (Live's Core Library or the set's), with each pad's volume, pan, tuning and choke; Push's drum pads follow the rack
 - [x] 2.25 The studio's own Utility, EQ Eight and Compressor, with the set's settings, in each track's chain with the plug-ins
-- [ ] 2.26 The studio's own Echo, Delay, Reverb, Gate and Overdrive with the set's settings; approximations of Hybrid Reverb and Roar
-- [ ] 2.27 Hear the set's 808 and 606 kits and its EQ, Utility and Compressor on macOS
+- [x] 2.26 The studio's own Echo, Delay, Reverb, Gate and Overdrive with the set's settings; approximations of Hybrid Reverb and Roar
+- [ ] 2.27 Hear the set's 808 and 606 kits and its EQ, Utility, Compressor, Delay, Echo, reverbs, Overdrive and Roar on macOS
 
 ## 3. Clip editing
 

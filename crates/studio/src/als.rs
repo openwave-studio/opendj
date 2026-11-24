@@ -447,6 +447,7 @@ fn device(d: Node) -> DeviceInfo {
 /// settings.
 fn builtin(d: Node) -> Option<crate::devices::Settings> {
     use crate::devices::*;
+    use crate::fx;
     let num = |p: &str| number(d, &format!("{p}/Manual")).map(|v| v as f32);
     let flag = |p: &str| value(d, &format!("{p}/Manual")) == Some("true");
     Some(match d.tag_name().name() {
@@ -484,6 +485,164 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
             makeup_db: num("Gain").unwrap_or(0.0),
             knee_db: num("Knee").unwrap_or(6.0),
             dry_wet: num("DryWet").unwrap_or(1.0),
+        }),
+        "Delay" => {
+            // Live's synced choices, in sixteenths.
+            const SIXTEENTHS: [f64; 8] = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 16.0];
+            let side = |c: &str| {
+                let n = |p: &str| num(&format!("DelayLine_{p}{c}"));
+                if flag(&format!("DelayLine_Sync{c}")) {
+                    let i = n("SyncedSixteenth").unwrap_or(2.0).clamp(0.0, 7.0) as usize;
+                    let offset = n("Offset").unwrap_or(0.0) as f64 / 100.0;
+                    fx::Time::Beats(SIXTEENTHS[i] / 4.0 * (1.0 + offset))
+                } else {
+                    fx::Time::Seconds(n("Time").unwrap_or(0.25))
+                }
+            };
+            let left = side("L");
+            let freq = num("Filter_Frequency").unwrap_or(1000.0);
+            let half = 2f32.powf(num("Filter_Bandwidth").unwrap_or(8.0) / 2.0);
+            Settings::Delay(fx::DelaySettings {
+                echo: false,
+                time: [
+                    left,
+                    if flag("DelayLine_Link") {
+                        left
+                    } else {
+                        side("R")
+                    },
+                ],
+                feedback: num("Feedback").unwrap_or(0.5),
+                invert: false,
+                ping_pong: flag("DelayLine_PingPong"),
+                filter: flag("Filter_On").then_some((freq / half, freq * half)),
+                input_db: 0.0,
+                output: 1.0,
+                dry_wet: num("DryWet").unwrap_or(0.5),
+            })
+        }
+        "Echo" => {
+            let side = |c: &str| {
+                let n = |p: &str| num(&format!("Delay_{p}{c}"));
+                if flag(&format!("Delay_Sync{c}")) {
+                    // Notes, triplets, dotted or sixteenths; a division of
+                    // d is 2^d of a bar.
+                    let whole = 4.0 * 2f64.powf(n("SyncedDivision").unwrap_or(-3.0) as f64);
+                    let offset = n("Offset").unwrap_or(0.0) as f64 / 100.0;
+                    let beats = match n("SyncMode").unwrap_or(0.0) as u8 {
+                        1 => whole * 2.0 / 3.0,
+                        2 => whole * 1.5,
+                        3 => n("SyncedSixteenth").unwrap_or(3.0).max(1.0) as f64 / 4.0,
+                        _ => whole,
+                    };
+                    fx::Time::Beats(beats * (1.0 + offset))
+                } else {
+                    fx::Time::Seconds(n("Time").unwrap_or(0.375))
+                }
+            };
+            let left = side("L");
+            Settings::Delay(fx::DelaySettings {
+                echo: true,
+                time: [
+                    left,
+                    if flag("Delay_TimeLink") {
+                        left
+                    } else {
+                        side("R")
+                    },
+                ],
+                feedback: num("Feedback").unwrap_or(0.5),
+                invert: flag("FeedbackInvert"),
+                ping_pong: num("ChannelMode") == Some(1.0),
+                filter: flag("Filter_On").then(|| {
+                    (
+                        num("Filter_HighPassFrequency").unwrap_or(50.0),
+                        num("Filter_LowPassFrequency").unwrap_or(5000.0),
+                    )
+                }),
+                input_db: num("InputGain").unwrap_or(0.0),
+                output: num("OutputGain").unwrap_or(1.0),
+                dry_wet: num("DryWet").unwrap_or(0.5),
+            })
+        }
+        "Reverb" => {
+            let band = num("BandFreq").unwrap_or(830.0);
+            let half = 2f32.powf(num("BandWidth").unwrap_or(5.8) / 2.0);
+            let room = num("RoomSize").unwrap_or(100.0).max(0.22);
+            Settings::Reverb(fx::ReverbSettings {
+                hybrid: false,
+                predelay_ms: num("PreDelay").unwrap_or(2.5),
+                decay_s: num("DecayTime").unwrap_or(1200.0) / 1000.0,
+                size: (room / 0.22).ln() / (500f32 / 0.22).ln(),
+                damping: if flag("ShelfHighOn") {
+                    1.0 - num("ShelfHiGain").unwrap_or(0.75)
+                } else {
+                    0.1
+                },
+                low_cut: flag("BandLowOn").then_some(band / half),
+                high_cut: flag("BandHighOn").then_some(band * half),
+                width: num("StereoSeparation").unwrap_or(100.0) / 100.0,
+                // Live keeps Reverb's Dry/Wet under this name.
+                dry_wet: num("MixDirect").unwrap_or(0.5),
+            })
+        }
+        "Hybrid" => {
+            let eq = flag("Eq_On");
+            Settings::Reverb(fx::ReverbSettings {
+                hybrid: true,
+                predelay_ms: num("PreDelay_Time").unwrap_or(0.01) * 1000.0,
+                decay_s: num("Algorithm_Decay").unwrap_or(3.5),
+                size: num("Algorithm_Size").unwrap_or(0.5),
+                damping: num("Algorithm_Damping").unwrap_or(0.5),
+                low_cut: num("Eq_LowBandFrequency").filter(|_| eq),
+                high_cut: num("Eq_HighBandFrequency").filter(|_| eq),
+                width: num("StereoWidth").unwrap_or(1.0),
+                dry_wet: num("DryWet").unwrap_or(0.5),
+            })
+        }
+        "Gate" => Settings::Gate(fx::GateSettings {
+            threshold: num("Threshold").unwrap_or(0.03),
+            attack_ms: num("Attack").unwrap_or(0.1),
+            hold_ms: num("Hold").unwrap_or(10.0),
+            release_ms: num("Release").unwrap_or(15.0),
+            return_db: num("Return").unwrap_or(3.0),
+            floor_db: num("Gain").unwrap_or(-40.0),
+            flip: num("FlipMode").unwrap_or(0.0) != 0.0,
+        }),
+        "Overdrive" => Settings::Overdrive(fx::OverdriveSettings {
+            mid_freq: num("MidFreq").unwrap_or(1600.0),
+            bandwidth: num("BandWidth").unwrap_or(3.0),
+            drive: num("Drive").unwrap_or(50.0),
+            tone: num("Tone").unwrap_or(50.0),
+            dry_wet: num("DryWet").unwrap_or(100.0) / 100.0,
+        }),
+        "Roar" => Settings::Roar(fx::RoarSettings {
+            input_db: num("Input_InputGain").unwrap_or(0.0),
+            stages: (1..=3)
+                .filter(|i| flag(&format!("Stage{i}_On")))
+                .map(|i| {
+                    let n = |p: &str| num(&format!("Stage{i}_{p}"));
+                    let shaped = flag(&format!("Stage{i}_Shaper_On"));
+                    let lowpass =
+                        flag(&format!("Stage{i}_Filter_On")) && n("Filter_Type") == Some(0.0);
+                    fx::RoarStage {
+                        amount: if shaped {
+                            n("Shaper_Amount").unwrap_or(0.0)
+                        } else {
+                            0.0
+                        },
+                        bias: if shaped {
+                            n("Shaper_Bias").unwrap_or(0.0)
+                        } else {
+                            0.0
+                        },
+                        lowpass: n("Filter_Frequency").filter(|f| lowpass && *f < 18_000.0),
+                    }
+                })
+                .collect(),
+            compression: num("Output_CompressionAmount").unwrap_or(0.0),
+            output_db: num("Output_OutputGain").unwrap_or(0.0),
+            dry_wet: num("Output_DryWet").unwrap_or(1.0),
         }),
         _ => return None,
     })
@@ -897,11 +1056,17 @@ pub fn summary(set: &LiveSet) -> String {
                 .iter()
                 .map(|d| {
                     let saved = d.plugin.as_ref().is_some_and(|p| p.state.is_some());
+                    let built = d
+                        .builtin
+                        .as_ref()
+                        .map(|b| format!(", built in: {}", b.summary()))
+                        .unwrap_or_default();
                     format!(
-                        "{} [{}{}]{}",
+                        "{} [{}{}{}]{}",
                         d.name,
                         d.kind,
                         if saved { ", saved sound" } else { "" },
+                        built,
                         if d.on { "" } else { " (off)" }
                     )
                 })
