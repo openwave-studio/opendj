@@ -117,6 +117,8 @@ pub struct DeviceInfo {
     pub on: bool,
     /// A plug-in the studio can run in its place.
     pub plugin: Option<PluginRef>,
+    /// The studio's own device that plays it, with the set's settings.
+    pub builtin: Option<crate::devices::Settings>,
 }
 
 /// Which plug-in a device is, and the sound it was saved with.
@@ -142,6 +144,49 @@ pub enum PluginFormat {
     /// Whatever installed plug-in carries this name (VST3, then CLAP, then
     /// AU): for a device swapped for another plug-in.
     Named,
+}
+
+/// A Drum Rack: a sample on each pad.
+#[derive(Clone, Debug, Default)]
+pub struct Kit {
+    pub pads: Vec<Pad>,
+}
+
+/// One pad of a Drum Rack, as Simpler plays its sample.
+#[derive(Clone)]
+pub struct Pad {
+    pub note: u8,
+    pub name: String,
+    pub path: PathBuf,
+    /// Simpler's volume and the pad's (and its rack's) faders, as a gain.
+    pub gain: f32,
+    /// -1 (left) to 1 (right).
+    pub pan: f32,
+    /// Semitones, with Simpler's fine tune.
+    pub transpose: f32,
+    /// How much velocity lowers the volume, 0..1 (Simpler's Vel > Vol).
+    pub velocity: f32,
+    /// Pads in the same group (not 0) cut each other off.
+    pub choke: u8,
+    /// Where it plays from and to, in seconds of the file.
+    pub start: f64,
+    pub end: Option<f64>,
+    /// Switched on and not muted.
+    pub on: bool,
+    /// Decoded at the engine's rate.
+    pub sample: Option<Arc<opendj_engine::sampler::Sample>>,
+}
+
+impl std::fmt::Debug for Pad {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("Pad")
+            .field("note", &self.note)
+            .field("name", &self.name)
+            .field("path", &self.path)
+            .field("gain", &self.gain)
+            .field("loaded", &self.sample.is_some())
+            .finish()
+    }
 }
 
 /// When a track plays what comes in, as Live's Monitor switch.
@@ -252,6 +297,8 @@ pub struct Track {
     pub devices: Vec<DeviceInfo>,
     /// Where it listens and where its sound goes.
     pub io: Io,
+    /// A Drum Rack's pads, played in place of the built-in kit.
+    pub kit: Option<Arc<Kit>>,
 }
 
 impl Track {
@@ -265,6 +312,7 @@ impl Track {
             pan: 0.5,
             devices: Vec::new(),
             io: Io::new(sound == Sound::Audio),
+            kit: None,
         }
     }
 }

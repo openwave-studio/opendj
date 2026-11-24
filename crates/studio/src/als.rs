@@ -13,8 +13,8 @@ use std::sync::Arc;
 use roxmltree::{Document, Node};
 
 use crate::clip::{
-    AudioClip, AudioTo, Clip, DeviceInfo, Io, MidiFrom, Monitoring, Note, PluginFormat, PluginRef,
-    Sound, Track, MAX_TRACKS, SCENES,
+    AudioClip, AudioTo, Clip, DeviceInfo, Io, Kit, MidiFrom, Monitoring, Note, Pad, PluginFormat,
+    PluginRef, Sound, Track, MAX_TRACKS, SCENES,
 };
 
 /// What the studio takes from a Live set.
@@ -200,6 +200,10 @@ fn read_track(
     let mut track = Track::new(&name, sound, vec![None; SCENES]);
     track.color = Some(colour);
     track.devices = devices;
+    track.kit = chain
+        .and_then(|c| at(c, "DeviceChain/Devices"))
+        .and_then(|d| d.children().find(|n| n.has_tag_name("DrumGroupDevice")))
+        .map(|d| Arc::new(kit(d, folder)));
     if let Some(c) = chain {
         track.volume = number(c, "Mixer/Volume/Manual").map(fader);
         track.pan = number(c, "Mixer/Pan/Manual").map_or(0.5, |p| ((p + 1.0) / 2.0) as f32);
@@ -385,6 +389,7 @@ fn device(d: Node) -> DeviceInfo {
             kind: kind.into(),
             on,
             plugin,
+            builtin: None,
         };
     }
     if tag == "InstrumentVector" {
@@ -401,8 +406,10 @@ fn device(d: Node) -> DeviceInfo {
                 instrument: true,
                 state: None,
             }),
+            builtin: None,
         };
     }
+    let builtin = builtin(d);
     let user = value(d, "UserName").filter(|n| !n.is_empty());
     let live = match tag {
         "Eq8" => "EQ Eight",
@@ -432,7 +439,54 @@ fn device(d: Node) -> DeviceInfo {
         kind: "Live".into(),
         on,
         plugin: None,
+        builtin,
     }
+}
+
+/// The studio's own device for a Live device it matches, with the set's
+/// settings.
+fn builtin(d: Node) -> Option<crate::devices::Settings> {
+    use crate::devices::*;
+    let num = |p: &str| number(d, &format!("{p}/Manual")).map(|v| v as f32);
+    let flag = |p: &str| value(d, &format!("{p}/Manual")) == Some("true");
+    Some(match d.tag_name().name() {
+        "StereoGain" => Settings::Utility(UtilitySettings {
+            gain: num("Gain").unwrap_or(1.0),
+            width: num("StereoWidth").unwrap_or(1.0),
+            mono: flag("Mono"),
+            balance: num("Balance").unwrap_or(0.0),
+            mute: flag("Mute"),
+            invert: [flag("PhaseInvertL"), flag("PhaseInvertR")],
+            channels: num("ChannelMode").unwrap_or(1.0) as u8,
+        }),
+        "Eq8" => Settings::Eq8(Eq8Settings {
+            bands: (0..8)
+                .filter_map(|i| {
+                    let a = at(d, &format!("Bands.{i}/ParameterA"))?;
+                    let n = |p: &str| number(a, &format!("{p}/Manual")).map(|v| v as f32);
+                    Some(Band {
+                        on: value(a, "IsOn/Manual") == Some("true"),
+                        shape: Shape::from_live(n("Mode").unwrap_or(3.0) as u8),
+                        freq: n("Freq").unwrap_or(1000.0),
+                        gain_db: n("Gain").unwrap_or(0.0),
+                        q: n("Q").unwrap_or(0.71),
+                    })
+                })
+                .collect(),
+            gain_db: num("GlobalGain").unwrap_or(0.0),
+            scale: num("Scale").unwrap_or(1.0),
+        }),
+        "Compressor2" => Settings::Compressor(CompressorSettings {
+            threshold: num("Threshold").unwrap_or(1.0),
+            ratio: num("Ratio").unwrap_or(2.0),
+            attack_ms: num("Attack").unwrap_or(10.0),
+            release_ms: num("Release").unwrap_or(100.0),
+            makeup_db: num("Gain").unwrap_or(0.0),
+            knee_db: num("Knee").unwrap_or(6.0),
+            dry_wet: num("DryWet").unwrap_or(1.0),
+        }),
+        _ => return None,
+    })
 }
 
 /// The built-in sound that stands in for a MIDI track's instrument.
@@ -472,6 +526,133 @@ fn stand_in(track: &str, devices: Option<Node>) -> Sound {
     } else {
         Sound::Lead
     }
+}
+
+/// A Drum Rack's pads: each one's note, and the first Simpler in it with
+/// its sample and settings.
+fn kit(rack: Node, folder: &Path) -> Kit {
+    let pads = at(rack, "Branches")
+        .into_iter()
+        .flat_map(|b| b.children().filter(|n| n.has_tag_name("DrumBranch")))
+        .filter_map(|b| pad(b, folder))
+        .collect();
+    Kit { pads }
+}
+
+fn pad(branch: Node, folder: &Path) -> Option<Pad> {
+    // Live keeps the note as 128 minus it.
+    let note = 128
+        - value(branch, "BranchInfo/ReceivingNote")?
+            .parse::<i32>()
+            .ok()?;
+    let note = u8::try_from(note).ok().filter(|n| *n < 128)?;
+    let simpler = branch
+        .descendants()
+        .find(|n| n.has_tag_name("OriginalSimpler"))?;
+    let part = simpler
+        .descendants()
+        .find(|n| n.has_tag_name("MultiSamplePart"))?;
+    let sample = at(part, "SampleRef")?;
+    let file_rate = number(sample, "DefaultSampleRate").filter(|r| *r > 0.0);
+    let seconds = |name: &str| Some(number(part, name)? / file_rate?);
+    // The pad's fader and those of any rack inside it.
+    let mixers: Vec<Node> = branch
+        .descendants()
+        .filter(|n| n.has_tag_name("MixerDevice"))
+        .collect();
+    let db = number(simpler, "VolumeAndPan/Volume/Manual").unwrap_or(0.0);
+    let gain = mixers
+        .iter()
+        .filter_map(|m| number(*m, "Volume/Manual"))
+        .fold(10f64.powf(db / 20.0), |g, v| g * v);
+    let pan = mixers
+        .iter()
+        .filter_map(|m| number(*m, "Panorama/Manual"))
+        .fold(
+            number(simpler, "VolumeAndPan/Panorama/Manual").unwrap_or(0.0),
+            |p, v| p + v,
+        );
+    let heard = mixers
+        .iter()
+        .all(|m| value(*m, "Speaker/Manual") != Some("false"));
+    Some(Pad {
+        note,
+        name: value(branch, "Name/EffectiveName")
+            .unwrap_or("Pad")
+            .to_string(),
+        path: sample_path(at(sample, "FileRef")?, folder),
+        gain: gain as f32,
+        pan: pan.clamp(-1.0, 1.0) as f32,
+        transpose: (number(simpler, "Pitch/TransposeKey/Manual").unwrap_or(0.0)
+            + number(simpler, "Pitch/TransposeFine/Manual").unwrap_or(0.0) / 100.0)
+            as f32,
+        velocity: number(simpler, "VolumeAndPan/VolumeVelScale/Manual")
+            .unwrap_or(0.35)
+            .clamp(0.0, 1.0) as f32,
+        choke: number(branch, "BranchInfo/ChokeGroup").unwrap_or(0.0) as u8,
+        start: seconds("SampleStart").unwrap_or(0.0),
+        end: seconds("SampleEnd").filter(|e| *e > 0.0),
+        on: on(simpler) && heard,
+        sample: None,
+    })
+}
+
+/// Where a sample is on this computer: beside the set, where the set says,
+/// or in an installed Live's Core Library (whatever its edition).
+fn sample_path(file: Node, folder: &Path) -> PathBuf {
+    let relative = value(file, "RelativePath").unwrap_or("");
+    let absolute = PathBuf::from(value(file, "Path").unwrap_or(""));
+    let mut candidates = vec![folder.join(relative), absolute.clone()];
+    if value(file, "LivePackName") == Some("Core Library") {
+        if let Ok(apps) = std::fs::read_dir("/Applications") {
+            for app in apps.flatten() {
+                let n = app.file_name().to_string_lossy().to_string();
+                if n.starts_with("Ableton Live") && n.ends_with(".app") {
+                    candidates.push(
+                        app.path()
+                            .join("Contents/App-Resources/Core Library")
+                            .join(relative),
+                    );
+                }
+            }
+        }
+    }
+    candidates
+        .into_iter()
+        .find(|p| !relative.is_empty() && p.is_file())
+        .unwrap_or(absolute)
+}
+
+/// Decodes every Drum Rack's samples at `rate`; returns those not found.
+pub fn load_kits(tracks: &mut [Track], rate: f64) -> Vec<String> {
+    let mut missing = Vec::new();
+    for t in tracks.iter_mut() {
+        let Some(kit) = t.kit.as_mut() else {
+            continue;
+        };
+        let kit = Arc::make_mut(kit);
+        std::thread::scope(|scope| {
+            let handles: Vec<_> = kit
+                .pads
+                .iter()
+                .map(|p| {
+                    let path = p.path.clone();
+                    scope.spawn(move || {
+                        opendj_engine::sampler::Sample::load(&path, rate).map(Arc::new)
+                    })
+                })
+                .collect();
+            for (pad, h) in kit.pads.iter_mut().zip(handles) {
+                match h.join() {
+                    Ok(Ok(sample)) => pad.sample = Some(sample),
+                    _ => missing.push(pad.path.display().to_string()),
+                }
+            }
+        });
+    }
+    missing.sort();
+    missing.dedup();
+    missing
 }
 
 /// A track's I/O section from its device chain's routings.
@@ -727,6 +908,13 @@ pub fn summary(set: &LiveSet) -> String {
                 .collect();
             out += &format!("     devices: {}\n", d.join(", "));
         }
+        if let Some(kit) = &t.kit {
+            let found = kit.pads.iter().filter(|p| p.path.is_file()).count();
+            out += &format!(
+                "     drum rack: {} pads, {found} samples found on this computer\n",
+                kit.pads.len()
+            );
+        }
         for (s, c) in t.slots.iter().enumerate() {
             let Some(c) = c else { continue };
             match &c.audio {
@@ -864,7 +1052,23 @@ mod tests {
         </Value></ClipSlot></ClipSlot>
       </ClipSlotList></MainSequencer>
       <DeviceChain><Devices>
-        <DrumGroupDevice Id="5"><UserName Value="808 Core Kit" /></DrumGroupDevice>
+        <DrumGroupDevice Id="5"><UserName Value="808 Core Kit" /><Branches>
+          <DrumBranch Id="0"><Name><EffectiveName Value="Closed Hi Hat" /></Name>
+            <DeviceChain><MidiToAudioDeviceChain><Devices><InstrumentGroupDevice Id="1"><Branches><InstrumentBranch Id="0">
+              <DeviceChain><MidiToAudioDeviceChain><Devices><OriginalSimpler Id="2">
+                <Player><MultiSampleMap><SampleParts><MultiSamplePart Id="0">
+                  <SampleStart Value="0" /><SampleEnd Value="48000" />
+                  <SampleRef><FileRef><RelativePath Value="Samples/One Shots/Drums/Hihat/Hihat Closed 808.aif" /><Path Value="/nowhere/Hihat Closed 808.aif" /><LivePackName Value="Core Library" /></FileRef><DefaultSampleRate Value="96000" /></SampleRef>
+                </MultiSamplePart></SampleParts></MultiSampleMap></Player>
+                <Pitch><TransposeKey><Manual Value="-12" /></TransposeKey><TransposeFine><Manual Value="50" /></TransposeFine></Pitch>
+                <VolumeAndPan><Volume><Manual Value="-6" /></Volume><Panorama><Manual Value="0.25" /></Panorama><VolumeVelScale><Manual Value="0.5" /></VolumeVelScale></VolumeAndPan>
+              </OriginalSimpler></Devices></MidiToAudioDeviceChain></DeviceChain>
+              <MixerDevice><Speaker><Manual Value="true" /></Speaker><Volume><Manual Value="0.5" /></Volume><Panorama><Manual Value="0" /></Panorama></MixerDevice>
+            </InstrumentBranch></Branches></InstrumentGroupDevice></Devices></MidiToAudioDeviceChain></DeviceChain>
+            <MixerDevice><Speaker><Manual Value="true" /></Speaker><Volume><Manual Value="1" /></Volume><Panorama><Manual Value="0.5" /></Panorama></MixerDevice>
+            <BranchInfo><ReceivingNote Value="86" /><ChokeGroup Value="1" /></BranchInfo>
+          </DrumBranch>
+        </Branches></DrumGroupDevice>
         <PluginDevice Id="6"><PluginDesc><Vst3PluginInfo>
           <Uid><Fields.0 Value="-1412567295" /><Fields.1 Value="1" /><Fields.2 Value="2" /><Fields.3 Value="3" /></Uid>
           <DeviceType Value="2" /><Name Value="TONE3000" />
@@ -934,6 +1138,22 @@ mod tests {
             (None, Monitoring::Auto)
         );
         assert_eq!(kit.io.audio_in, None);
+        assert!(matches!(
+            mic.devices[0].builtin,
+            Some(crate::devices::Settings::Eq8(_))
+        ));
+        let rack = kit.kit.as_ref().expect("a Drum Rack");
+        let [hat] = &rack.pads[..] else {
+            panic!("one pad")
+        };
+        assert_eq!(
+            (hat.note, hat.name.as_str(), hat.choke),
+            (42, "Closed Hi Hat", 1)
+        );
+        assert!((hat.gain - 0.5 * 10f32.powf(-6.0 / 20.0)).abs() < 1e-4);
+        assert_eq!((hat.pan, hat.transpose, hat.velocity), (0.75, -11.5, 0.5));
+        assert_eq!((hat.start, hat.end), (0.0, Some(0.5)));
+        assert!(hat.on);
         assert_eq!(kit.devices[0].name, "808 Core Kit (Drum Rack)");
         assert_eq!(kit.devices[1].kind, "VST3");
         let tone = kit.devices[1].plugin.as_ref().expect("a plug-in");

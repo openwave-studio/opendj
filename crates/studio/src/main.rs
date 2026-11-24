@@ -15,6 +15,7 @@ mod audio;
 mod check;
 mod clip;
 mod control;
+mod devices;
 mod engine;
 mod link;
 mod midi;
@@ -174,13 +175,23 @@ fn open_set(path: &Path) -> Result<Opened, String> {
 
 fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
     let Opened {
-        tracks: set,
+        tracks: mut set,
         tempo,
         returns,
         note,
     } = opened;
     let chosen = settings::audio();
     let rate = audio::rate(&chosen);
+    // Drum Racks' samples, at the rate the studio runs at.
+    let missing = als::load_kits(&mut set, rate);
+    for m in &missing {
+        eprintln!("drum sample not found: {m}");
+    }
+    let note = if missing.is_empty() {
+        note
+    } else {
+        format!("{note} · {} drum samples not found", missing.len())
+    };
     let (mut studio, remote) = Studio::new(&set, rate, tempo);
     let mut link_clock = link::LinkClock::new(tempo, rate);
     let link = link_clock.handle();
@@ -783,7 +794,12 @@ fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
         color: color(info.color),
         progress: c.monitor.progress(t),
         stopping: c.monitor.stopping(t),
-        device: device_name(info.sound).into(),
+        device: if info.pads.is_empty() {
+            device_name(info.sound)
+        } else {
+            format!("Drum Rack · {} pads", info.pads.len())
+        }
+        .into(),
         drums: info.drums(),
         audio: info.audio(),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
@@ -805,6 +821,10 @@ fn track_row(c: &Controls, plugins: &plugins::Plugins, t: usize) -> TrackData {
                         }
                         Some(s) => s.text(),
                         None if d.plugin.is_some() => "Plug-in".to_string(),
+                        None if d.builtin.is_some() => format!(
+                            "Playing, with the set's settings: {}",
+                            d.builtin.as_ref().map_or(String::new(), |b| b.summary())
+                        ),
                         None => "Live device: no built-in match yet".to_string(),
                     };
                     DeviceData {

@@ -14,6 +14,8 @@ use opendj_engine::sampler::Sample;
 /// A track's instrument.
 pub enum Instrument {
     Drums(Box<Drums>),
+    /// A Drum Rack from a set, its own samples on its pads.
+    Kit(Box<KitPlayer>),
     Synth(Box<Synth>),
     /// An audio track's: notes do nothing.
     None,
@@ -23,6 +25,7 @@ impl Instrument {
     pub fn note_on(&mut self, pitch: u8, velocity: f32) {
         match self {
             Instrument::Drums(d) => d.note_on(pitch, velocity),
+            Instrument::Kit(k) => k.note_on(pitch, velocity),
             Instrument::Synth(s) => s.note_on(pitch, velocity),
             Instrument::None => {}
         }
@@ -38,6 +41,7 @@ impl Instrument {
     pub fn all_off(&mut self) {
         match self {
             Instrument::Drums(_) | Instrument::None => {}
+            Instrument::Kit(k) => k.all_off(),
             Instrument::Synth(s) => s.all_off(),
         }
     }
@@ -47,6 +51,7 @@ impl Instrument {
         let v = value.clamp(0.0, 1.0);
         match self {
             Instrument::Drums(d) => d.set_param(index, v),
+            Instrument::Kit(k) => k.set_param(index, v),
             Instrument::Synth(s) => s.preset.set_param(index, v),
             Instrument::None => {}
         }
@@ -56,6 +61,7 @@ impl Instrument {
     pub fn render(&mut self, out: &mut [[f32; 2]]) {
         match self {
             Instrument::Drums(d) => d.render(out),
+            Instrument::Kit(k) => k.render(out),
             Instrument::Synth(s) => s.render(out),
             Instrument::None => {}
         }
@@ -317,6 +323,183 @@ impl Drums {
                 if v.fade < 1.5 {
                     v.fade *= 0.999;
                 }
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------ drum rack
+
+const KIT_VOICES: usize = 32;
+/// Frames a choked or stopped pad fades over, and an ending one.
+const KIT_FADE: f64 = 96.0;
+
+#[derive(Clone, Copy, Default)]
+struct KitVoice {
+    pad: usize,
+    /// Where in the sample, in frames at the engine's rate.
+    pos: f64,
+    /// Frames per frame: the pad's tuning.
+    step: f64,
+    end: f64,
+    gain: [f32; 2],
+    /// 1 while playing, falling to 0 once cut off.
+    fade: f32,
+    cut: bool,
+    active: bool,
+}
+
+/// A pad as the audio thread plays it.
+struct KitPad {
+    note: u8,
+    sample: Arc<Sample>,
+    gain: [f32; 2],
+    step: f64,
+    start: f64,
+    end: f64,
+    velocity: f32,
+    choke: u8,
+    /// Which level knob it follows (see [`DRUM_PARAMS`]).
+    group: usize,
+}
+
+/// A Drum Rack: each pad plays its own sample, as Simpler in one-shot
+/// mode does (to the end of the sample, whatever the note's length).
+pub struct KitPlayer {
+    pads: Vec<KitPad>,
+    voices: [KitVoice; KIT_VOICES],
+    volume: f32,
+    length: f32,
+    levels: [f32; 6],
+}
+
+/// The level knob a General MIDI drum note goes with: kick, snare, hats,
+/// claps, perc, cymbals.
+fn drum_group(note: u8) -> usize {
+    match note {
+        35 | 36 => 0,
+        37 | 38 | 40 => 1,
+        42 | 44 | 46 => 2,
+        39 => 3,
+        49 | 51 | 52 | 53 | 55 | 57 | 59 => 5,
+        _ => 4,
+    }
+}
+
+impl KitPlayer {
+    /// The pads of `kit` that have their sample, for an engine at `rate`.
+    pub fn new(kit: &crate::clip::Kit, rate: f64) -> KitPlayer {
+        let pads = kit
+            .pads
+            .iter()
+            .filter(|p| p.on)
+            .filter_map(|p| {
+                let sample = p.sample.clone()?;
+                let len = sample.len() as f64;
+                let end = p.end.map_or(len, |e| (e * rate).min(len));
+                let (l, r) = ((1.0 - p.pan).min(1.0), (1.0 + p.pan).min(1.0));
+                Some(KitPad {
+                    note: p.note,
+                    gain: [p.gain * l, p.gain * r],
+                    step: 2f64.powf(p.transpose as f64 / 12.0),
+                    start: (p.start * rate).min(end),
+                    end,
+                    velocity: p.velocity,
+                    choke: p.choke,
+                    group: drum_group(p.note),
+                    sample,
+                })
+            })
+            .collect();
+        KitPlayer {
+            pads,
+            voices: [KitVoice::default(); KIT_VOICES],
+            volume: 1.0,
+            length: 1.0,
+            levels: [1.0; 6],
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.pads.is_empty()
+    }
+
+    fn set_param(&mut self, index: usize, v: f32) {
+        match index {
+            0 => self.volume = level(v),
+            1 => self.length = v,
+            2..=7 => self.levels[index - 2] = level(v),
+            _ => {}
+        }
+    }
+
+    fn note_on(&mut self, pitch: u8, velocity: f32) {
+        let Some(i) = self.pads.iter().position(|p| p.note == pitch) else {
+            return;
+        };
+        let pad = &self.pads[i];
+        if pad.choke != 0 {
+            for v in self.voices.iter_mut().filter(|v| v.active) {
+                if self.pads[v.pad].choke == pad.choke {
+                    v.cut = true;
+                }
+            }
+        }
+        let slot = self
+            .voices
+            .iter()
+            .position(|v| !v.active)
+            .unwrap_or_else(|| {
+                // Steal the voice furthest through its sound.
+                (0..KIT_VOICES)
+                    .max_by(|&a, &b| self.voices[a].pos.total_cmp(&self.voices[b].pos))
+                    .unwrap_or(0)
+            });
+        let vel = 1.0 - pad.velocity * (1.0 - velocity.clamp(0.0, 1.0));
+        let g = vel * self.levels[pad.group];
+        self.voices[slot] = KitVoice {
+            pad: i,
+            pos: pad.start,
+            step: pad.step,
+            end: pad.end,
+            gain: [pad.gain[0] * g, pad.gain[1] * g],
+            fade: 1.0,
+            cut: false,
+            active: true,
+        };
+    }
+
+    fn all_off(&mut self) {
+        for v in self.voices.iter_mut() {
+            v.cut = true;
+        }
+    }
+
+    fn render(&mut self, out: &mut [[f32; 2]]) {
+        let volume = self.volume;
+        // The Length knob shortens every pad, as the built-in kit's does.
+        let length = (self.length * self.length) as f64;
+        let fall = (1.0 / KIT_FADE) as f32;
+        for v in self.voices.iter_mut().filter(|v| v.active) {
+            let pad = &self.pads[v.pad];
+            let start = pad.start;
+            let end = start + (v.end - start) * length.max(0.001);
+            for frame in out.iter_mut() {
+                if v.pos >= end || v.fade <= 0.0 {
+                    v.active = false;
+                    break;
+                }
+                if v.cut || v.pos >= end - KIT_FADE * v.step {
+                    v.fade -= fall;
+                }
+                let i = v.pos as usize;
+                let t = (v.pos - i as f64) as f32;
+                let [a0, a1] = pad.sample.frame(i);
+                let [b0, b1] = pad.sample.frame(i + 1);
+                let g = volume * v.fade.max(0.0);
+                frame[0] += (a0 + (b0 - a0) * t) * v.gain[0] * g;
+                frame[1] += (a1 + (b1 - a1) * t) * v.gain[1] * g;
+                v.pos += v.step;
             }
         }
     }
@@ -599,6 +782,48 @@ mod tests {
 
     fn energy(out: &[[f32; 2]]) -> f32 {
         out.iter().map(|f| f[0] * f[0] + f[1] * f[1]).sum()
+    }
+
+    fn pad(note: u8, choke: u8, value: f32) -> crate::clip::Pad {
+        let frames = vec![[value, value]; 4800];
+        let audio = opendj_engine::track::Audio::from_frames(48_000, frames);
+        crate::clip::Pad {
+            note,
+            name: format!("pad {note}"),
+            path: Default::default(),
+            gain: 1.0,
+            pan: 0.0,
+            transpose: 0.0,
+            velocity: 0.0,
+            choke,
+            start: 0.0,
+            end: None,
+            on: true,
+            sample: Some(Arc::new(Sample::from_audio(&audio, 48_000.0))),
+        }
+    }
+
+    #[test]
+    fn drum_rack_pads_play_their_samples_and_choke() {
+        let kit = crate::clip::Kit {
+            pads: vec![pad(42, 1, 0.5), pad(46, 1, 0.25), pad(36, 0, 0.1)],
+        };
+        let mut k = KitPlayer::new(&kit, 48_000.0);
+        let mut out = vec![[0.0; 2]; 64];
+        k.note_on(46, 1.0);
+        k.note_on(36, 1.0);
+        k.render(&mut out);
+        assert!((out[10][0] - 0.35).abs() < 0.01, "{:?}", out[10]);
+        // The closed hat cuts the open one; the kick plays on.
+        k.note_on(42, 1.0);
+        let mut out = vec![[0.0; 2]; 256];
+        k.render(&mut out);
+        assert!((out[200][0] - 0.6).abs() < 0.01, "{:?}", out[200]);
+        // A note no pad has plays nothing; every sample ends.
+        k.note_on(99, 1.0);
+        let mut tail = vec![[0.0; 2]; 9600];
+        k.render(&mut tail);
+        assert!(k.voices.iter().all(|v| !v.active));
     }
 
     #[test]

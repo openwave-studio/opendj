@@ -85,8 +85,8 @@ impl Surface {
     }
 
     /// The selected sound's note.
-    pub fn drum_pitch(&self) -> Option<u8> {
-        DRUM_NOTES.get(self.drum).copied()
+    pub fn drum_pitch(&self, c: &Controls) -> Option<u8> {
+        c.drum_note(c.selected_track(), self.drum)
     }
 
     /// Where step `step` of the shown page starts, in beats.
@@ -109,7 +109,7 @@ impl Surface {
 
     /// The notes of the selected sound in the held steps.
     pub fn held_notes(&self, c: &Controls) -> Vec<Note> {
-        let (Some(pitch), held) = (self.drum_pitch(), self.held_steps()) else {
+        let (Some(pitch), held) = (self.drum_pitch(c), self.held_steps()) else {
             return Vec::new();
         };
         let (t, s) = c.steps_slot();
@@ -133,7 +133,7 @@ impl Surface {
         let len = self.resolution();
         match seq_pad(index) {
             SeqPad::Step(step) => {
-                let Some(pitch) = self.drum_pitch() else {
+                let Some(pitch) = self.drum_pitch(c) else {
                     return;
                 };
                 let start = self.step_start(step);
@@ -189,7 +189,7 @@ impl Surface {
                     }
                     return;
                 }
-                let Some(&pitch) = DRUM_NOTES.get(i) else {
+                let Some(pitch) = c.drum_note(c.selected_track(), i) else {
                     return;
                 };
                 if self.pressed[DELETE as usize].is_some() {
@@ -250,7 +250,7 @@ impl Surface {
     /// Encoder `i` turned while steps are held: their notes' velocity,
     /// length or chance.
     pub(super) fn edit_held_notes(&mut self, i: usize, step: f32, c: &Controls) {
-        let Some(pitch) = self.drum_pitch() else {
+        let Some(pitch) = self.drum_pitch(c) else {
             return;
         };
         let (t, s) = c.steps_slot();
@@ -301,7 +301,7 @@ impl Surface {
         }
         match seq_pad(index) {
             SeqPad::Step(step) => {
-                let Some(pitch) = self.drum_pitch() else {
+                let Some(pitch) = self.drum_pitch(c) else {
                     return Led::OFF;
                 };
                 let start = self.step_start(step);
@@ -326,7 +326,7 @@ impl Surface {
                 if self.held[index].is_some() {
                     return Led::solid(GREEN);
                 }
-                let Some(&pitch) = DRUM_NOTES.get(i) else {
+                let Some(pitch) = c.drum_note(c.selected_track(), i) else {
                     return Led::OFF;
                 };
                 if i == self.drum {

@@ -94,7 +94,7 @@ impl Surface {
             if row >= 4 || col >= 4 {
                 return None;
             }
-            return DRUM_NOTES.get(row * 4 + col).copied();
+            return c.drum_note(track, row * 4 + col);
         }
         let key = c.key();
         let pitch = key.pad(key.home(sound) + self.octave * 12, row, col);

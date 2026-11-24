@@ -198,14 +198,20 @@ pub struct MidiOut {
 /// The most sound card channels the studio takes in or sends out.
 pub const MAX_CHANNELS: usize = 32;
 
-/// A plug-in on a track, as the audio thread runs it.
+/// A device in a track's chain, as the audio thread runs it: a plug-in or
+/// one of the studio's own devices.
 pub struct PluginSlot {
     /// Its place in the track's device chain.
     device: usize,
     /// Plays the track's notes in place of the built-in sound.
     instrument: bool,
     on: bool,
-    conn: Connection,
+    kind: SlotKind,
+}
+
+enum SlotKind {
+    Plugin(Connection),
+    Builtin(crate::devices::Device),
 }
 
 impl PluginSlot {
@@ -214,7 +220,16 @@ impl PluginSlot {
             device,
             instrument,
             on,
-            conn,
+            kind: SlotKind::Plugin(conn),
+        }
+    }
+
+    fn builtin(device: usize, on: bool, d: crate::devices::Device) -> PluginSlot {
+        PluginSlot {
+            device,
+            instrument: false,
+            on,
+            kind: SlotKind::Builtin(d),
         }
     }
 }
@@ -570,7 +585,16 @@ impl Engine {
         let columns = tracks
             .iter()
             .enumerate()
-            .map(|(i, t)| Column {
+            .map(|(i, t)| {
+                (
+                    i,
+                    t,
+                    t.kit
+                        .as_ref()
+                        .map(|k| crate::sound::KitPlayer::new(k, rate)),
+                )
+            })
+            .map(|(i, t, kit)| Column {
                 playing: None,
                 pending: None,
                 held: [Held { pitch: 0, off: 0.0 }; MAX_HELD],
@@ -586,7 +610,23 @@ impl Engine {
                 } else {
                     Vec::new()
                 },
-                slots: Vec::with_capacity(MAX_SLOTS),
+                slots: {
+                    let mut slots = Vec::with_capacity(MAX_SLOTS);
+                    // The studio's own devices are there from the start; the
+                    // plug-ins join in chain order as they come up.
+                    for (d, info) in t.devices.iter().enumerate() {
+                        if let Some(b) = &info.builtin {
+                            if slots.len() < MAX_SLOTS {
+                                slots.push(Box::new(PluginSlot::builtin(
+                                    d,
+                                    info.on,
+                                    crate::devices::Device::new(b, rate),
+                                )));
+                            }
+                        }
+                    }
+                    slots
+                },
                 midi: Vec::with_capacity(MAX_MIDI),
                 planar: if t.devices.iter().any(|d| d.plugin.is_some()) {
                     vec![0.0; 4 * MAX_BLOCK]
@@ -596,6 +636,10 @@ impl Engine {
                 routing: Routing::from(&t.io),
                 rng: 0x9E37_79B9 ^ (i as u32 + 1).wrapping_mul(0x85EB_CA6B),
                 instrument: match t.sound {
+                    // A set's Drum Rack plays its own samples when they loaded.
+                    Sound::Drums(_) if kit.as_ref().is_some_and(|k| !k.is_empty()) => {
+                        Instrument::Kit(Box::new(kit.expect("checked")))
+                    }
                     Sound::Drums(kit) => Instrument::Drums(Box::new(Drums::new(kit, rate, 0.45))),
                     Sound::Bass => Instrument::Synth(Box::new(Synth::new(sound::BASS, rate))),
                     Sound::Pad => Instrument::Synth(Box::new(Synth::new(sound::PAD, rate))),
@@ -1132,10 +1176,22 @@ impl Engine {
             return;
         }
         let scratch = &mut self.scratch[..frames];
-        let (inl, rest) = planar.split_at_mut(MAX_BLOCK);
-        let (inr, rest) = rest.split_at_mut(MAX_BLOCK);
-        let (outl, outr) = rest.split_at_mut(MAX_BLOCK);
+        // Plug-in buffers: only a track with plug-in devices has them.
+        let quarter = planar.len() / 4;
+        let (inl, rest) = planar.split_at_mut(quarter);
+        let (inr, rest) = rest.split_at_mut(inl.len());
+        let (outl, outr) = rest.split_at_mut(inl.len());
         for slot in slots.iter_mut() {
+            let conn = match &mut slot.kind {
+                SlotKind::Builtin(d) => {
+                    if slot.on {
+                        d.process(scratch);
+                    }
+                    continue;
+                }
+                SlotKind::Plugin(_) if inl.len() < frames => continue,
+                SlotKind::Plugin(conn) => conn,
+            };
             if slot.instrument {
                 inl[..frames].fill(0.0);
                 inr[..frames].fill(0.0);
@@ -1153,7 +1209,7 @@ impl Engine {
             } else {
                 &[]
             };
-            slot.conn.process_events(
+            conn.process_events(
                 [&inl[..frames], &inr[..frames]],
                 [&mut outl[..frames], &mut outr[..frames]],
                 transport,
@@ -1995,6 +2051,7 @@ mod tests {
                     instrument: true,
                     state: None,
                 }),
+                builtin: None,
             };
             2
         ];

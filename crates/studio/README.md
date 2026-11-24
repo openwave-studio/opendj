@@ -53,6 +53,8 @@ Shift with them jumps by eight.
 - `als.rs`: reading Live sets (gzipped XML) into tracks and clips.
 - `plugins.rs`: finding and starting a set's plug-ins; the audio thread
   runs them as slots in each track's chain (`engine.rs`).
+- `devices.rs`: the studio's own devices matching Live's (Utility, EQ
+  Eight, Compressor), run in the chain with the plug-ins.
 - `settings.rs`: the studio's settings (`studio.json`), starting from
   openDJ's audio choices.
 - `midi.rs`: MIDI From and To: every input but Push routed to the tracks

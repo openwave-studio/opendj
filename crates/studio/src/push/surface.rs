@@ -10,7 +10,7 @@ use crate::clip::{Sound, SCENES};
 use crate::control::{Controls, Mix};
 use crate::engine::SlotState;
 use crate::scale::{LOWER_ROOTS, UPPER_ROOTS};
-use crate::sound::{DRUM_NOTES, PARAMS};
+use crate::sound::PARAMS;
 use crate::steps::{self, Layer, Stage};
 
 mod mode;

@@ -53,6 +53,8 @@ pub struct TrackInfo {
     pub color: u32,
     pub sound: Sound,
     pub devices: Vec<crate::clip::DeviceInfo>,
+    /// A Drum Rack's pads that play (note and name), lowest note first.
+    pub pads: Vec<(u8, String)>,
 }
 
 impl TrackInfo {
@@ -136,6 +138,16 @@ impl Controls {
                 color: t.color.or(colors.get(i).copied()).unwrap_or(0xb69cff),
                 sound: t.sound,
                 devices: t.devices.clone(),
+                pads: t.kit.as_ref().map_or(Vec::new(), |k| {
+                    let mut pads: Vec<(u8, String)> = k
+                        .pads
+                        .iter()
+                        .filter(|p| p.on && p.sample.is_some())
+                        .map(|p| (p.note, p.name.clone()))
+                        .collect();
+                    pads.sort();
+                    pads
+                }),
             })
             .collect();
         let params = std::array::from_fn(|t| {
@@ -168,6 +180,35 @@ impl Controls {
                 .collect(),
             io: Mutex::new(set.iter().map(|t| t.io.clone()).collect()),
             version: AtomicU64::new(1),
+        }
+    }
+
+    /// The note drum pad `i` (0..16, bottom left first) plays on a drum
+    /// track: a Drum Rack's pads from C1 up, as Live lays them out, or the
+    /// built-in kit's sounds.
+    pub fn drum_note(&self, track: usize, i: usize) -> Option<u8> {
+        match self.tracks.get(track) {
+            Some(t) if !t.pads.is_empty() => (i < 16).then_some(36 + i as u8),
+            _ => crate::sound::DRUM_NOTES.get(i).copied(),
+        }
+    }
+
+    /// The name of the sound drum pad `i` plays.
+    pub fn drum_name(&self, track: usize, i: usize) -> String {
+        let Some(note) = self.drum_note(track, i) else {
+            return "Pad".into();
+        };
+        match self.tracks.get(track) {
+            Some(t) if !t.pads.is_empty() => t
+                .pads
+                .iter()
+                .find(|(n, _)| *n == note)
+                .map_or_else(|| "Empty".into(), |(_, name)| name.clone()),
+            _ => crate::push::surface::DRUM_NAMES
+                .get(i)
+                .copied()
+                .unwrap_or("Pad")
+                .into(),
         }
     }
 

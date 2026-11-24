@@ -17,7 +17,7 @@ use slint::platform::software_renderer::{
 use slint::platform::{Platform, WindowAdapter};
 use slint::{Color, ComponentHandle, ModelRc, VecModel};
 
-use super::surface::{Mode, Surface, View, DRUM_NAMES, RESOLUTIONS};
+use super::surface::{Mode, Surface, View, RESOLUTIONS};
 use crate::control::{fader_text, pan_text, Controls, Mix};
 use crate::sound::PARAMS;
 use crate::{PushKnob, PushMenu, PushScreen, PushTrack};
@@ -375,7 +375,7 @@ impl Renderer {
         let title = match (surface.view, surface.mode) {
             (_, Mode::Scales) => format!("Scale · {}", c.key().name()),
             (View::Note, _) if surface.sequencing(c) => {
-                let sound = DRUM_NAMES.get(surface.drum).copied().unwrap_or("Pad");
+                let sound = c.drum_name(selected, surface.drum);
                 let held = surface.held_steps();
                 match held.first() {
                     Some(h) => format!(
