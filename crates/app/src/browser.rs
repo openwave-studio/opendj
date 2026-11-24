@@ -4894,14 +4894,11 @@ impl Browser {
         }
     }
 
-    /// Whether the folder picked in the tree (or Jam's tree) is open.
+    /// Whether the folder picked in the tree is open.
     fn picked_folder_open(&self, app: &AppWindow) -> bool {
+        // Jam's column has no folders.
         if app.global::<StoreUi>().get_source() == INSTRUMENTS {
-            let ui = app.global::<crate::InstrumentsUi>();
-            return usize::try_from(ui.get_current_node())
-                .ok()
-                .and_then(|i| ui.get_nodes().row_data(i))
-                .is_some_and(|n| n.children == 2);
+            return false;
         }
         self.visible_nodes.contains(&self.current_node)
             && self.navigation_row(self.current_node).children == 2
@@ -4991,8 +4988,7 @@ impl Browser {
         let go = take(&self.lib.go_to_item) > 0.0;
         if take(&self.lib.toggle_folder) > 0.0 {
             if app.global::<StoreUi>().get_source() == INSTRUMENTS {
-                let ui = app.global::<crate::InstrumentsUi>();
-                ui.invoke_toggle_node(ui.get_current_node());
+                // Jam's column has no folders to open.
             } else if let Some(row) = self
                 .visible_nodes
                 .iter()

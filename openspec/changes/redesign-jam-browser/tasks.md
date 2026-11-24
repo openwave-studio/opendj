@@ -2,10 +2,10 @@
 
 ## 1. The column
 
-- [ ] 1.1 Presets | Instruments switch, search and star over one list in a 250 px column, in place of the tree
-- [ ] 1.2 Filter menus as chip groups (Sound type, Character, Instrument, Maker from what exists today), picks on a closed menu's header, counts that narrow each other, Clear all
+- [x] 1.1 Presets | Instruments switch, search and star over one list in a 250 px column, in place of the tree
+- [x] 1.2 Filter menus as chip groups (Sound type, Character, Instrument, Maker from what exists today), picks on a closed menu's header, counts that narrow each other, Clear all
 - [ ] 1.3 24 px rows: kind colour square, name, instrument dimmed, deck badge, star; click loads on the panel's deck, double-click on a free deck, drag as today
-- [ ] 1.4 Stars kept in settings for presets and instruments
+- [x] 1.4 Stars kept in settings for presets and instruments
 - [ ] 1.5 The area right of the column when no plugin panel is open (open question)
 
 ## 2. More tags
