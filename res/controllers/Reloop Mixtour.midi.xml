@@ -1,0 +1,855 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxMIDIPreset mixxxVersion="2.4" schemaVersion="1">
+    <info>
+        <name>Reloop Mixtour</name>
+        <author>openDJ</author>
+        <description>Reloop Mixtour, written for openDJ from the MIDI notes djay Pro's built-in mapping uses.</description>
+    </info>
+    <controller id="MIXTOUR">
+        <scriptfiles>
+            <file functionprefix="ReloopMixtour" filename="Reloop-Mixtour-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Library]</group>
+                <key>MoveVertical</key>
+                <description>BROWSE: turn to move through the list</description>
+                <status>0xB0</status>
+                <midino>0x07</midino>
+                <options>
+                    <selectknob/>
+                </options>
+            </control>
+            <control>
+                <group>[Playlist]</group>
+                <key>SelectPlaylist</key>
+                <description>SHIFT + BROWSE: turn to move through the sidebar</description>
+                <status>0xB0</status>
+                <midino>0x47</midino>
+                <options>
+                    <selectknob/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <description>BROWSE press: open the folder or load the track</description>
+                <status>0x90</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <description>BACK</description>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <description>Crossfader</description>
+                <status>0xB0</status>
+                <midino>0x08</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>headMix</key>
+                <description>CUE/MIX: cue or main in the headphones</description>
+                <status>0xB0</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>gain</key>
+                <description>MASTER volume</description>
+                <status>0xB4</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>headGain</key>
+                <description>Headphone volume</description>
+                <status>0xB4</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <description>Volume fader, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x05</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <description>GAIN, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter3</key>
+                <description>HIGH, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter2</key>
+                <description>MID, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>parameter1</key>
+                <description>LOW, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtour.filter</key>
+                <description>FILTER (with FX on, also the effects' amount), deck 1</description>
+                <status>0xB0</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>super1</key>
+                <description>SHIFT + FILTER: effects' amount, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x44</midino>
+                <options>
+                    <soft-takeover/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtour.fxMode</key>
+                <description>FX: the deck's effects on or off, deck 1</description>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>next_effect</key>
+                <description>SHIFT + FX: next effect, deck 1</description>
+                <status>0x90</status>
+                <midino>0x41</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>LoadSelectedTrack</key>
+                <description>LOAD, deck 1</description>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <description>Headphone cue, deck 1</description>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtour.seek</key>
+                <description>T + BROWSE: move through the track a beat at a time, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtour.loop</key>
+                <description>LOOP: loop on or off, deck 1</description>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <description>SYNC, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <description>CUE, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>play</key>
+                <description>PLAY, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>loop_halve</key>
+                <description>SHIFT + LOOP: halve the loop, deck 1</description>
+                <status>0x90</status>
+                <midino>0x48</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>loop_double</key>
+                <description>SHIFT + SYNC: double the loop, deck 1</description>
+                <status>0x90</status>
+                <midino>0x49</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>beats_translate_curpos</key>
+                <description>SHIFT + CUE: set the beat grid here, deck 1</description>
+                <status>0x90</status>
+                <midino>0x4A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>start</key>
+                <description>SHIFT + PLAY: go to the start, deck 1</description>
+                <status>0x90</status>
+                <midino>0x4B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_1_activate</key>
+                <description>C mode, button 1: hot cue 1, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0D</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_1_clear</key>
+                <description>C mode, SHIFT + button 1: delete hot cue 1, deck 1</description>
+                <status>0x90</status>
+                <midino>0x4C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_2_activate</key>
+                <description>C mode, button 2: hot cue 2, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_2_clear</key>
+                <description>C mode, SHIFT + button 2: delete hot cue 2, deck 1</description>
+                <status>0x90</status>
+                <midino>0x4D</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_3_activate</key>
+                <description>C mode, button 3: hot cue 3, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_3_clear</key>
+                <description>C mode, SHIFT + button 3: delete hot cue 3, deck 1</description>
+                <status>0x90</status>
+                <midino>0x4E</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_4_activate</key>
+                <description>C mode, button 4: hot cue 4, deck 1</description>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>hotcue_4_clear</key>
+                <description>C mode, SHIFT + button 4: delete hot cue 4, deck 1</description>
+                <status>0x90</status>
+                <midino>0x4F</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <description>Volume fader, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x05</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <description>GAIN, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter3</key>
+                <description>HIGH, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter2</key>
+                <description>MID, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>parameter1</key>
+                <description>LOW, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtour.filter</key>
+                <description>FILTER (with FX on, also the effects' amount), deck 2</description>
+                <status>0xB1</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>super1</key>
+                <description>SHIFT + FILTER: effects' amount, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x44</midino>
+                <options>
+                    <soft-takeover/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtour.fxMode</key>
+                <description>FX: the deck's effects on or off, deck 2</description>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>next_effect</key>
+                <description>SHIFT + FX: next effect, deck 2</description>
+                <status>0x91</status>
+                <midino>0x41</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>LoadSelectedTrack</key>
+                <description>LOAD, deck 2</description>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <description>Headphone cue, deck 2</description>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtour.seek</key>
+                <description>T + BROWSE: move through the track a beat at a time, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtour.loop</key>
+                <description>LOOP: loop on or off, deck 2</description>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <description>SYNC, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <description>CUE, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>play</key>
+                <description>PLAY, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>loop_halve</key>
+                <description>SHIFT + LOOP: halve the loop, deck 2</description>
+                <status>0x91</status>
+                <midino>0x48</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>loop_double</key>
+                <description>SHIFT + SYNC: double the loop, deck 2</description>
+                <status>0x91</status>
+                <midino>0x49</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>beats_translate_curpos</key>
+                <description>SHIFT + CUE: set the beat grid here, deck 2</description>
+                <status>0x91</status>
+                <midino>0x4A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>start</key>
+                <description>SHIFT + PLAY: go to the start, deck 2</description>
+                <status>0x91</status>
+                <midino>0x4B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_1_activate</key>
+                <description>C mode, button 1: hot cue 1, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0D</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_1_clear</key>
+                <description>C mode, SHIFT + button 1: delete hot cue 1, deck 2</description>
+                <status>0x91</status>
+                <midino>0x4C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_2_activate</key>
+                <description>C mode, button 2: hot cue 2, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0E</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_2_clear</key>
+                <description>C mode, SHIFT + button 2: delete hot cue 2, deck 2</description>
+                <status>0x91</status>
+                <midino>0x4D</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_3_activate</key>
+                <description>C mode, button 3: hot cue 3, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_3_clear</key>
+                <description>C mode, SHIFT + button 3: delete hot cue 3, deck 2</description>
+                <status>0x91</status>
+                <midino>0x4E</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_4_activate</key>
+                <description>C mode, button 4: hot cue 4, deck 2</description>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>hotcue_4_clear</key>
+                <description>C mode, SHIFT + button 4: delete hot cue 4, deck 2</description>
+                <status>0x91</status>
+                <midino>0x4F</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>loop_enabled</key>
+                <description>LOOP LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <description>SYNC LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x0A</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <description>CUE LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <description>PLAY LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <description>Headphone cue LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_1_enabled</key>
+                <description>C mode, button 1 LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x0D</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_2_enabled</key>
+                <description>C mode, button 2 LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_3_enabled</key>
+                <description>C mode, button 3 LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>hotcue_4_enabled</key>
+                <description>C mode, button 4 LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>loop_enabled</key>
+                <description>LOOP LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <description>SYNC LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x0A</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <description>CUE LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <description>PLAY LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <on>0x1E</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <description>Headphone cue LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <on>0x7F</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_1_enabled</key>
+                <description>C mode, button 1 LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x0D</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_2_enabled</key>
+                <description>C mode, button 2 LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x0E</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_3_enabled</key>
+                <description>C mode, button 3 LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>hotcue_4_enabled</key>
+                <description>C mode, button 4 LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <on>0x2B</on>
+                <off>0x00</off>
+            </output>
+        </outputs>
+    </controller>
+</MixxxMIDIPreset>

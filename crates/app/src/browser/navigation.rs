@@ -1,7 +1,45 @@
 //! Semantic browser navigation shared by keyboard and controller input.
 use super::*;
+use std::time::{Duration, Instant};
+
+/// How long the rail's highlight rests before its source opens.
+/// RailOrder's `cursor` when nothing is pending.
+const NO_RAIL_CURSOR: i32 = -2;
+
+pub(super) const RAIL_SETTLE: Duration = Duration::from_millis(250);
 
 impl Browser {
+    /// Opens the rail entry the knob or ↑ ↓ moved to, once it has rested
+    /// for `RAIL_SETTLE` (or at once with `now`). A click on the rail in
+    /// the meantime clears the cursor and wins.
+    pub(super) fn settle_rail(&mut self, now: bool) {
+        let Some((next, at)) = self.rail_pending else {
+            return;
+        };
+        if !now && at.elapsed() < RAIL_SETTLE {
+            return;
+        }
+        self.rail_pending = None;
+        let Some(app) = self.app.upgrade() else {
+            return;
+        };
+        let order = app.global::<crate::RailOrder>();
+        if order.get_cursor() != next {
+            return;
+        }
+        order.set_cursor(NO_RAIL_CURSOR);
+        if next != COLLECTION && self.history_tab || next < 0 {
+            self.show_history(false);
+            app.global::<LibraryEdit>().set_history_tab(false);
+        }
+        if next < 0 {
+            self.show_health(true);
+        } else {
+            app.global::<StoreUi>().set_source(next);
+            self.select_source(next);
+        }
+    }
+
     pub(super) fn navigate_browser(&mut self, code: i32, steps: i32) {
         let (Some(direction), Some(app)) = (Direction::from_code(code), self.app.upgrade()) else {
             return;
@@ -14,29 +52,30 @@ impl Browser {
         match pane {
             BrowserPane::Sources => match direction {
                 Direction::Up | Direction::Down => {
-                    let source = app.global::<StoreUi>().get_source();
+                    // Only the highlight moves now; the source opens once
+                    // the moves stop, so a fast turn doesn't wait for each
+                    // source (Collection Health above all) to load.
+                    let (source, health) = match self.rail_pending {
+                        Some((entry, _)) => (entry.max(0), entry < 0),
+                        None => (app.global::<StoreUi>().get_source(), self.health_view),
+                    };
                     let next = app.global::<crate::RailOrder>().invoke_adjacent(
                         source,
-                        self.health_view,
+                        health,
                         if matches!(direction, Direction::Up) {
                             -steps
                         } else {
                             steps
                         },
                     );
-                    if next != COLLECTION && self.history_tab || next < 0 {
-                        self.show_history(false);
-                        app.global::<LibraryEdit>().set_history_tab(false);
-                    }
-                    if next < 0 {
-                        self.show_health(true);
-                    } else {
-                        app.global::<StoreUi>().set_source(next);
-                        self.select_source(next);
-                    }
+                    app.global::<crate::RailOrder>().set_cursor(next);
+                    self.rail_pending = Some((next, Instant::now()));
                     focus.invoke_focus(BrowserPane::Sources);
                 }
-                Direction::Right => focus.invoke_focus(BrowserPane::Folders),
+                Direction::Right => {
+                    self.settle_rail(true);
+                    focus.invoke_focus(BrowserPane::Folders);
+                }
                 Direction::Left => {}
             },
             BrowserPane::Folders => {
