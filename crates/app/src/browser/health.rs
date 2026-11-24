@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use opendj_engine::{tags, Track};
+use opendj_engine::Track;
 use opendj_library::cleanup::Field;
 use opendj_library::dupes::{self, Case, FileFacts, Group, Match};
 use opendj_library::health::{self, Area, Check, Facts};
@@ -873,8 +873,10 @@ impl Browser {
         self.quarantined = self.count_quarantined();
     }
 
-    /// The copies grouped by case, each with the copy to keep first. The
-    /// first call after the library changes reads the copies' files.
+    /// The copies grouped by case, each with the copy to keep first. Their
+    /// files are read in the background (see [`crate::dupe_scan`]): until
+    /// a group's are, it is grouped without knowing them, and
+    /// [`Browser::poll_dupe_files`] groups the copies again once they're in.
     fn dupe_groups(&self) -> &[Group] {
         self.dupe_groups.get_or_init(|| {
             let tracks = self
@@ -882,28 +884,25 @@ impl Browser {
                 .iter()
                 .filter(|t| self.in_collection(t) && self.duplicates.contains(&t.id))
                 .map(|t| &**t);
-            // Files iCloud has taken off this computer aren't read.
-            fn here(t: &Track) -> Option<&Path> {
-                file_path(t).filter(|p| !cover_scan::offloaded(p))
+            let path = |t: &Track| file_path(t).map(Path::to_path_buf);
+            let copies = dupes::copies(tracks, &self.alike);
+            for c in &copies {
+                self.dupe_scan
+                    .ask(c.iter().filter_map(|t| path(t)).collect());
             }
             let facts = |t: &Track| {
-                let f = here(t).map_or_else(FileFacts::default, |p| {
-                    let info = tags::file_info(p);
-                    FileFacts {
-                        size: info.size,
-                        lossless: dupes::lossless(&info.format, info.bit_depth),
-                        bitrate: info.bitrate.unwrap_or(0),
-                    }
-                });
+                let f = path(t)
+                    .and_then(|p| self.dupe_scan.facts(&p))
+                    .unwrap_or_default();
                 self.dupe_facts.borrow_mut().insert(t.id, f);
                 f
             };
-            let same = |a: &Track, b: &Track| match (here(a), here(b)) {
-                (Some(x), Some(y)) => dupes::same_bytes(x, y),
+            let same = |a: &Track, b: &Track| match (path(a), path(b)) {
+                (Some(x), Some(y)) => self.dupe_scan.same(&x, &y).unwrap_or(false),
                 _ => false,
             };
             let alike: HashSet<(usize, usize)> = self.alike.iter().copied().collect();
-            dupes::copies(tracks, &self.alike)
+            copies
                 .iter()
                 .flat_map(|c| {
                     dupes::groups(
@@ -917,6 +916,21 @@ impl Browser {
                 })
                 .collect()
         })
+    }
+
+    /// Takes in the copies' files read since last time, and groups the
+    /// copies again with them.
+    pub fn poll_dupe_files(&mut self) {
+        if !self.dupe_scan.take() {
+            return;
+        }
+        self.dupe_groups = OnceCell::new();
+        if self.health_view {
+            self.refresh_tree();
+        }
+        if self.dupe_view().is_some() {
+            self.refresh_rows_keeping_current();
+        }
     }
 
     /// The copies (indices into `library`) in groups of `case`, or in any
@@ -1096,6 +1110,10 @@ impl Browser {
     /// [`opendj_library::Library::merge_copies`]), as one change the undo
     /// line takes back.
     fn merge(&mut self, plan: Vec<(usize, Vec<usize>)>) -> String {
+        // Which copy to keep depends on their files.
+        if self.dupe_scan.busy() {
+            return "Still reading the copies' files: try again in a moment.".into();
+        }
         if plan.is_empty() {
             return "Nothing to merge here.".into();
         }
@@ -1469,18 +1487,26 @@ impl Browser {
     /// Takes in what the cover scan found since last time.
     pub fn poll_covers(&mut self) {
         let found = self.cover_scan.take();
-        if found.is_empty() {
+        for (id, look) in &found {
+            self.health.set_cover(*id, look.cover);
+            if let Some(kbps) = look.bitrate {
+                self.health.set_bitrate(*id, kbps);
+            }
+        }
+        self.covers_found.extend(found);
+        // Saved and shown every few seconds while the scan runs, rather
+        // than file by file: each refresh counts every check again.
+        if self.covers_found.is_empty()
+            || (self.cover_scan.progress().is_some()
+                && self.covers_shown.elapsed() < std::time::Duration::from_secs(2))
+        {
             return;
         }
+        self.covers_shown = std::time::Instant::now();
+        let found = std::mem::take(&mut self.covers_found);
         if let Some(db) = &mut self.db {
             if let Err(e) = db.save_covers(&found) {
                 eprintln!("can't save covers: {e}");
-            }
-        }
-        for (id, look) in found {
-            self.health.set_cover(id, look.cover);
-            if let Some(kbps) = look.bitrate {
-                self.health.set_bitrate(id, kbps);
             }
         }
         self.refresh_tree();
@@ -2008,6 +2034,9 @@ impl Browser {
                 } else {
                     self.dupe_groups.get().map(Vec::as_slice)
                 };
+                if self.dupe_scan.busy() {
+                    return "Reading the copies' files…".into();
+                }
                 let Some(groups) = groups.filter(|g| !g.is_empty()) else {
                     return String::new();
                 };
