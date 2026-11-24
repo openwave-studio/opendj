@@ -1484,6 +1484,18 @@ impl Prefs {
                             "A track can't be loaded onto a deck while it plays.",
                             settings::flag("protect_playing", true),
                         ),
+                        PrefItem {
+                            choices: strings(&crate::quit_prompt::LABELS),
+                            chosen: crate::quit_prompt::chosen() as i32,
+                            ..item(
+                                crate::quit_prompt::KEY,
+                                MENU,
+                                "Ask before quitting",
+                                "Closing openDJ or picking Quit asks first, naming the decks \
+                                 playing and any recording or broadcast that would stop. \
+                                 Cancel is the default, so a stray Return keeps playing.",
+                            )
+                        },
                         switch(
                             "pfl_on_load",
                             "Headphones follow the loaded deck",
@@ -3202,6 +3214,7 @@ impl Prefs {
                 key::set_mixing(m);
             }
             crate::track_end::KEY => crate::track_end::choose(index),
+            crate::quit_prompt::KEY => crate::quit_prompt::choose(index),
             crate::appearance::KEY => {
                 if let Some(app) = self.app.upgrade() {
                     crate::appearance::choose(&app, index);

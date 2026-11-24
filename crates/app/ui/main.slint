@@ -40,6 +40,8 @@ import { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi } from "instr
 import { Browser, BrowserPanels, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, ListText, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow } from "library.slint";
 import { Preferences, PreferencesOverlay, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart } from "preferences.slint";
 import { UsbExport, UsbExportDialog } from "usb_export.slint";
+import { QuitDialog, QuitPrompt } from "quit.slint";
+export { QuitPrompt }
 import { MixedSetEditor, MixedSetUi } from "mixed_set.slint";
 export { MixedSetUi, SetBlock, SetSpan, SetTransitionRow, SetFindingRow, SetFixRow, SetLane } from "mixed_set.slint";
 import { Tour, TourSetup, TourSetupDialog, TourTip, TourOffer } from "tour.slint";
@@ -2681,6 +2683,11 @@ export component AppWindow inherits Window {
             height: root.height;
         }
         if MixedSetUi.open: MixedSetEditor {
+            width: root.width;
+            height: root.height;
+        }
+        // Over everything: it answers a quit, whatever else is open.
+        if QuitPrompt.open: QuitDialog {
             width: root.width;
             height: root.height;
         }

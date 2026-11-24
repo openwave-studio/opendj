@@ -96,6 +96,7 @@ mod presets;
 mod put_back;
 mod quality;
 mod quick_search;
+mod quit_prompt;
 mod remote;
 mod room_eq;
 mod sampler;
@@ -885,6 +886,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         let counter = app.global::<BeatCounter>();
         counter.set_mode(beat_counter_mode());
         track_end::load();
+        quit_prompt::load();
         wave_look::load();
         wave_look::install(&app);
         let app_weak = app.as_weak();
@@ -1623,6 +1625,22 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let play_controls: Vec<ControlHandle> = (0..NUM_DECKS)
         .filter_map(|d| registry.get(&deck_group(d), "play"))
         .collect();
+    // Closing the window or picking Quit mid-set asks first.
+    {
+        let play = play_controls.clone();
+        let recorder = recorder.clone();
+        let broadcast = broadcast.clone();
+        quit_prompt::install(&app, move || quit_prompt::Busy {
+            decks: play
+                .iter()
+                .enumerate()
+                .filter(|(_, c)| c.get() > 0.5)
+                .map(|(i, _)| i + 1)
+                .collect(),
+            recording: recorder.is_recording(),
+            on_air: broadcast.as_ref().is_some_and(|b| b.is_on_air()),
+        });
+    }
     {
         let update = update.clone();
         let installing = installing.clone();
