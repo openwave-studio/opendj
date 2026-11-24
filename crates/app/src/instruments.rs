@@ -392,6 +392,13 @@ pub fn show_plugins(app: &AppWindow, instruments: &[Found], names: &[String]) {
             .collect();
     });
     app.global::<InstrumentsUi>()
+        .set_plugin_names(ModelRc::new(VecModel::from(
+            names
+                .iter()
+                .map(|n| SharedString::from(n.as_str()))
+                .collect::<Vec<_>>(),
+        )));
+    app.global::<InstrumentsUi>()
         .set_plugin_formats(ModelRc::new(VecModel::from(
             instruments
                 .iter()

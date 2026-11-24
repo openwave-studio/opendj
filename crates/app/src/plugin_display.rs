@@ -1,7 +1,8 @@
 //! A plugin's own display (a Pd patch's Lua displays) inside openDJ: the
 //! helper draws it into a shared file (`opendj_plugin_host::display`), and
 //! openDJ shows that picture, sending clicks and drags back. The
-//! instrument deck shows its instrument's display under its DISPLAY tab;
+//! instrument deck shows its instrument's display under its DISPLAY tab,
+//! and the browser's plugin panel shows it at its own shape;
 //! an FX slot's opens in a panel from the slot's VIEW button.
 
 use std::cell::RefCell;
@@ -168,15 +169,20 @@ fn show_instrument(app: &AppWindow, engine: &AudioEngine, viewer: &mut Viewer, s
     }
     if !ui.get_has_display() {
         ui.set_has_display(true);
-        // An instrument with no knobs of its own opens on its display.
+        // An instrument with no knobs of its own opens on its display, on
+        // the deck and in the browser's plugin panel.
         if engine.instrument_parameters().is_empty() {
             ui.set_display_on(true);
+            ui.set_panel_open(true);
         }
     }
     if let Some(aspect) = viewer.aspect() {
         ui.set_display_aspect(aspect);
     }
-    if !ui.get_display_on() {
+    // Drawn for the deck's DISPLAY tab or the browser's plugin panel
+    // (whichever shows it sets the area's size).
+    let in_panel = ui.get_panel_shown() && !ui.get_panel_controls();
+    if !ui.get_display_on() && !in_panel {
         viewer.hide();
         return;
     }

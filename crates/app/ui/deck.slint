@@ -7292,7 +7292,8 @@ component InstrumentRack inherits Rectangle {
         background: @radial-gradient(circle, root.hue.with-alpha(0.24) 0%, root.hue.with-alpha(0.11) 45%, root.hue.with-alpha(0.04) 100%);
     }
     // The instrument's own display fills the panel while its tab is on.
-    if InstrumentsUi.has-display && InstrumentsUi.display-on: VerticalLayout {
+    // (Not while the browser's plugin panel shows it.)
+    if InstrumentsUi.has-display && InstrumentsUi.display-on && !InstrumentsUi.panel-shown: VerticalLayout {
         padding: 6px;
         spacing: 4px;
         HorizontalLayout {
@@ -7303,7 +7304,7 @@ component InstrumentRack inherits Rectangle {
         }
         InstrumentDisplay { vertical-stretch: 1; }
     }
-    if !(InstrumentsUi.has-display && InstrumentsUi.display-on): VerticalLayout {
+    if !(InstrumentsUi.has-display && InstrumentsUi.display-on && !InstrumentsUi.panel-shown): VerticalLayout {
         padding: 6px;
         spacing: 6px;
         HorizontalLayout {
@@ -7370,7 +7371,7 @@ component InstrumentRack inherits Rectangle {
                             page: root.page;
                             picked(p) => { InstrumentsUi.knob-page = p; }
                         }
-                        if InstrumentsUi.has-display: DisplayTab { text: "DISPLAY"; on: false; clicked => { InstrumentsUi.display-on = true; } }
+                        if InstrumentsUi.has-display: DisplayTab { text: "DISPLAY"; on: InstrumentsUi.panel-shown; clicked => { if InstrumentsUi.panel-shown { InstrumentsUi.panel-open = false; } else { InstrumentsUi.open-panel(); } } }
                     }
                     for r in root.shown: HorizontalLayout {
                         vertical-stretch: 1;
