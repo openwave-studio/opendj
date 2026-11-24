@@ -7,7 +7,7 @@
 // dragging and the wheel zoom it, as on every large waveform. No mixer,
 // crossfader or FX.
 import { Theme } from "theme.slint";
-import { ControlButton, ControlKnob, Controls, CueHeadphones, HoverTip } from "controls.slint";
+import { ControlButton, ControlFader, Controls, HoverTip } from "controls.slint";
 import { DeckInfo, Header, PadTab, PlayButton } from "deck.slint";
 import { CueList } from "cues.slint";
 import { GridEditorSide } from "grid_editor.slint";
@@ -50,22 +50,11 @@ export global PrepUi {
     }
 }
 
-// A small caption over a group of buttons.
-component PrepLabel inherits Text {
-    // A section title, as the kit's: condensed capitals.
-    font-family: Theme.title-font;
-    color: Theme.section-title;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.4px;
-    vertical-alignment: center;
-}
-
 // A button that presses a control once (grid moves, beat jumps).
 component PressButton inherits ControlButton {
     momentary: true;
     font-size: 12px;
-    height: 28px;
+    height: 22px;
 }
 
 // The grid editor's side for deck 1, as in the 2-Deck bar.
@@ -76,42 +65,51 @@ component PrepGrid inherits Rectangle {
     GridEditorSide { group: group; info: info; }
 }
 
-// Play and CUE, beat jumps of 1, 4 and 8 bars, a loop, and the deck's level
-// and headphone cue, since Prep has no mixer.
-component PrepTransport inherits VerticalLayout {
+// Play and CUE, beat jumps of 4 to 32 beats and a loop, with a thin level
+// fader at the right, since Prep has no mixer.
+component PrepTransport inherits HorizontalLayout {
     in property <string> group;
     in property <DeckInfo> info;
     in property <color> tint;
-    padding: 8px;
-    spacing: 6px;
-    alignment: center;
-    HorizontalLayout {
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    spacing: 4px;
+    VerticalLayout {
+        spacing: 2px;
         alignment: center;
-        spacing: 10px;
-        ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tip-title: "CUE"; tip-body: "Key: A"; tint: Theme.cue-lit; outline-when-lit: true; font-size: 14px; width: 72px; height: 40px; }
-        PlayButton { group: group; tint: tint; width: 72px; height: 40px; }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tip-title: "CUE"; tip-body: "Key: A"; tint: Theme.cue-lit; outline-when-lit: true; font-size: 14px; width: 108px; height: 24px; }
+            PlayButton { group: group; tint: tint; width: 108px; height: 24px; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            PressButton { group: group; key: "beatjump_4_backward"; text: "−4"; width: 52px; }
+            PressButton { group: group; key: "beatjump_4_forward"; text: "+4"; width: 52px; }
+            PressButton { group: group; key: "beatjump_8_backward"; text: "−8"; width: 52px; }
+            PressButton { group: group; key: "beatjump_8_forward"; text: "+8"; width: 52px; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            PressButton { group: group; key: "beatjump_16_backward"; text: "−16"; width: 52px; tip-title: "Back 4 bars"; tip-body: "Key: ←"; }
+            PressButton { group: group; key: "beatjump_16_forward"; text: "+16"; width: 52px; tip-title: "On 4 bars"; tip-body: "Key: →  (Tab: the next phrase)"; }
+            PressButton { group: group; key: "beatjump_32_backward"; text: "−32"; width: 52px; }
+            PressButton { group: group; key: "beatjump_32_forward"; text: "+32"; width: 52px; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            ControlButton { group: group; key: "beatloop_activate"; light-key: "loop_enabled"; text: "LOOP " + info.loop-size; momentary: true; tint: Theme.loop; font-size: 12px; height: 22px; width: 108px; }
+            PressButton { group: group; key: "loop_in"; text: "IN"; width: 52px; tip-title: "Loop in"; tip-body: "Key: D"; }
+            PressButton { group: group; key: "loop_out"; text: "OUT"; width: 52px; tip-title: "Loop out"; tip-body: "Key: F  (G: loop on and off)"; }
+        }
     }
-    HorizontalLayout {
-        alignment: center;
-        spacing: 4px;
-        PressButton { group: group; key: "beatjump_32_backward"; text: "‹8"; width: 30px; }
-        PressButton { group: group; key: "beatjump_16_backward"; text: "‹4"; width: 30px; tip-title: "Back 4 bars"; tip-body: "Key: ←"; }
-        PressButton { group: group; key: "beatjump_4_backward"; text: "‹1"; width: 30px; }
-        PrepLabel { text: "BARS"; horizontal-alignment: center; width: 34px; }
-        PressButton { group: group; key: "beatjump_4_forward"; text: "1›"; width: 30px; }
-        PressButton { group: group; key: "beatjump_16_forward"; text: "4›"; width: 30px; tip-title: "On 4 bars"; tip-body: "Key: →  (Tab: the next phrase)"; }
-        PressButton { group: group; key: "beatjump_32_forward"; text: "8›"; width: 30px; }
-    }
-    HorizontalLayout {
-        alignment: center;
-        spacing: 4px;
-        ControlButton { group: group; key: "beatloop_activate"; light-key: "loop_enabled"; text: "LOOP " + info.loop-size; momentary: true; tint: Theme.loop; font-size: 12px; height: 28px; width: 72px; }
-        PressButton { group: group; key: "loop_in"; text: "IN"; width: 36px; tip-title: "Loop in"; tip-body: "Key: D"; }
-        PressButton { group: group; key: "loop_out"; text: "OUT"; width: 40px; tip-title: "Loop out"; tip-body: "Key: F  (G: loop on and off)"; }
-        Rectangle { width: 2px; }
-        VerticalLayout { alignment: center; CueHeadphones { group: group; tint: tint; } }
-        ControlKnob { group: group; key: "volume"; size: 28px; look: 4; readout: 1; arc-color: Theme.accent; }
-    }
+    ControlFader { group: group; key: "volume"; tint: tint; ticks: 5; width: 18px; look: 1; }
 }
 
 // One hot cue pad: its number and time, filled with its color once set.
@@ -317,9 +315,10 @@ export component PrepDeck inherits Rectangle {
     VerticalLayout {
         spacing: 1px;
         header := Header { deck: 0; info: info; overview: overview; group: group; }
+        // As tall as the 2-Deck grid editor bar.
         HorizontalLayout {
             spacing: 1px;
-            vertical-stretch: 1;
+            height: 100px;
             // As the 2-Deck grid editor bar over the decks and mixer: deck 1's
             // side, the transport as wide as the mixer, then the pads.
             PrepGrid { group: group; info: info; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
@@ -338,7 +337,7 @@ export component PrepDeck inherits Rectangle {
                     // One tab over each pad column.
                     HorizontalLayout {
                         spacing: 4px;
-                        height: 24px;
+                        height: 22px;
                         for name[i] in ["Hot Cues", "Loops", "Automix", "Memory"]: PadTab {
                             horizontal-stretch: 1;
                             min-width: 0px;

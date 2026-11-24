@@ -19,16 +19,15 @@ export global GridEditorUi {
 // crisp: 1 px beat lines, 2 px bars and a 5 by 8 triangle centred on them.
 
 // A small solid triangle pointing left (`dir` -1) or right (1).
-component Tri inherits Path {
+// A line with a triangle pointing away from it: move that line a step
+// earlier (`dir` -1) or later (1). One drawing for every nudge button,
+// so they all match.
+component StepIcon inherits Image {
     in property <int> dir;
-    width: 5px;
-    height: 8px;
-    y: 3px;
-    viewbox-width: 5;
-    viewbox-height: 8;
-    commands: dir < 0 ? "M 0 4 L 5 0 L 5 8 Z" : "M 5 4 L 0 0 L 0 8 Z";
-    fill: Theme.text-dim;
-    stroke-width: 0px;
+    width: 14px;
+    height: 14px;
+    source: dir < 0 ? @image-url("icons/step-back.svg") : @image-url("icons/step-forward.svg");
+    colorize: Theme.text;
 }
 
 // Bar 1 as a lit bar and three plain beats; with `dir` -1 or 1 an arrow
@@ -36,14 +35,13 @@ component Tri inherits Path {
 export component DownbeatIcon inherits Rectangle {
     in property <int> dir;
     in property <bool> lit: true;
-    width: dir == 0 ? 15px : 9px;
+    width: dir == 0 ? 15px : 14px;
     height: 14px;
     if dir == 0: Rectangle { x: 0; width: 2px; background: lit ? Theme.accent : Theme.n-58585d; }
     if dir == 0: Rectangle { x: 6px; width: 1px; background: Theme.n-58585d; }
     if dir == 0: Rectangle { x: 10px; width: 1px; background: Theme.n-58585d; }
     if dir == 0: Rectangle { x: 14px; width: 1px; background: Theme.n-58585d; }
-    if dir != 0: Rectangle { x: dir < 0 ? 7px : 0px; width: 2px; background: lit ? Theme.accent : Theme.n-58585d; }
-    if dir != 0: Tri { dir: dir; x: dir < 0 ? 0px : 4px; }
+    if dir != 0: StepIcon { dir: dir; colorize: lit ? Theme.accent : Theme.n-58585d; }
 }
 
 // An anchor: a pin, crossed out with `remove`; with `move` -1 or 1, its
@@ -51,7 +49,7 @@ export component DownbeatIcon inherits Rectangle {
 component AnchorIcon inherits Rectangle {
     in property <bool> remove;
     in property <int> move;
-    width: move == 0 ? 10px : 9px;
+    width: move == 0 ? 10px : 14px;
     height: 14px;
     if move == 0: Rectangle { x: 2px; y: 0; width: 6px; height: 6px; border-radius: 3px; background: Theme.text; }
     if move == 0: Rectangle { x: 4px; y: 6px; width: 2px; height: 8px; background: Theme.accent; }
@@ -65,8 +63,7 @@ component AnchorIcon inherits Rectangle {
         stroke-width: 1.5px;
         fill: transparent;
     }
-    if move != 0: Rectangle { x: move < 0 ? 7px : 0px; width: 2px; background: Theme.text; }
-    if move != 0: Tri { dir: move; x: move < 0 ? 0px : 4px; }
+    if move != 0: StepIcon { dir: move; }
 }
 
 // |1|: the grid's first beat.
@@ -81,10 +78,9 @@ component GridOneIcon inherits Rectangle {
 // A thin beat line with an arrow: the whole grid nudged that way.
 component NudgeIcon inherits Rectangle {
     in property <int> dir;
-    width: 8px;
+    width: 14px;
     height: 14px;
-    Rectangle { x: dir < 0 ? 7px : 0px; width: 1px; background: Theme.text; }
-    Tri { dir: dir; x: dir < 0 ? 0px : 3px; }
+    StepIcon { dir: dir; }
 }
 
 // One press of a grid control (`key` on `group`), or `clicked` without a
@@ -111,8 +107,10 @@ component GridCell inherits Rectangle {
     // take it as its own largest.
     max-height: 10000px;
     background: !enabled ? transparent : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : transparent;
+    // Centred on a whole pixel, so icons stay sharp.
     HorizontalLayout {
-        alignment: center;
+        x: round((root.width - self.preferred-width) / 1px / 2) * 1px;
+        width: self.preferred-width;
         spacing: 6px;
         @children
     }
@@ -293,13 +291,13 @@ export component GridEditorSide inherits HorizontalLayout {
         opacity: live ? 1 : 0.45;
         GroupHead { title: "Downbeat"; }
         HLine { }
-        GridCell { group: group; key: "beats_downbeat_here"; enabled: live; tip: "Make the beat at the play line bar 1  (B)"; CellText { text: "Set"; } DownbeatIcon { y: (parent.height - self.height) / 2; } }
+        GridCell { group: group; key: "beats_downbeat_here"; enabled: live; tip: "Make the beat at the play line bar 1  (B)"; CellText { text: "Set"; } DownbeatIcon { y: round((parent.height - self.height) / 1px / 2) * 1px; } }
         HLine { }
         HorizontalLayout {
             vertical-stretch: 1;
-            GridCell { group: group; key: "beats_downbeat_earlier"; enabled: live; tip: "Bar 1 a beat earlier"; DownbeatIcon { dir: -1; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_downbeat_earlier"; enabled: live; tip: "Bar 1 a beat earlier"; DownbeatIcon { dir: -1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
             VLine { }
-            GridCell { group: group; key: "beats_downbeat_later"; enabled: live; tip: "Bar 1 a beat later"; DownbeatIcon { dir: 1; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_downbeat_later"; enabled: live; tip: "Bar 1 a beat later"; DownbeatIcon { dir: 1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
         }
     }
     VLine { }
@@ -313,16 +311,16 @@ export component GridEditorSide inherits HorizontalLayout {
         HLine { }
         HorizontalLayout {
             vertical-stretch: 1;
-            GridCell { group: group; key: "beats_section_add"; enabled: live; tip: "Add an anchor here, where the tempo changes"; CellText { text: "Add"; } AnchorIcon { y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_section_add"; enabled: live; tip: "Add an anchor here, where the tempo changes"; CellText { text: "Add"; } AnchorIcon { y: round((parent.height - self.height) / 1px / 2) * 1px; } }
             VLine { }
-            GridCell { group: group; key: "beats_section_remove"; enabled: live && info.grid-sections > 1; tip: "Remove the anchor here"; AnchorIcon { remove: true; opacity: info.grid-sections > 1 ? 1 : 0.4; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_section_remove"; enabled: live && info.grid-sections > 1; tip: "Remove the anchor here"; AnchorIcon { remove: true; opacity: info.grid-sections > 1 ? 1 : 0.4; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
         }
         HLine { }
         HorizontalLayout {
             vertical-stretch: 1;
-            GridCell { group: group; key: "beats_anchor_earlier"; enabled: live; tip: "Move the nearest anchor earlier"; AnchorIcon { move: -1; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_anchor_earlier"; enabled: live; tip: "Move the nearest anchor earlier"; AnchorIcon { move: -1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
             VLine { }
-            GridCell { group: group; key: "beats_anchor_later"; enabled: live; tip: "Move the nearest anchor later"; AnchorIcon { move: 1; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_anchor_later"; enabled: live; tip: "Move the nearest anchor later"; AnchorIcon { move: 1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
         }
     }
     VLine { }
@@ -336,16 +334,16 @@ export component GridEditorSide inherits HorizontalLayout {
         HLine { }
         HorizontalLayout {
             vertical-stretch: 1;
-            GridCell { group: group; key: "beats_translate_curpos"; enabled: live; tip: "Put a beat at the play line"; CellText { text: "Set"; } GridOneIcon { y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_translate_curpos"; enabled: live; tip: "Put a beat at the play line"; CellText { text: "Set"; } GridOneIcon { y: round((parent.height - self.height) / 1px / 2) * 1px; } }
             VLine { }
             GridCell { group: group; key: "beats_clear"; enabled: live; tip: "No grid, for a track with no steady beat (Undo or Reset brings it back)"; CellText { text: "Clear"; } }
         }
         HLine { }
         HorizontalLayout {
             vertical-stretch: 1;
-            GridCell { group: group; key: "beats_translate_earlier"; enabled: live; tip: "Nudge the grid earlier  ([)"; NudgeIcon { dir: -1; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_translate_earlier"; enabled: live; tip: "Nudge the grid earlier  ([)"; NudgeIcon { dir: -1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
             VLine { }
-            GridCell { group: group; key: "beats_translate_later"; enabled: live; tip: "Nudge the grid later  (])"; NudgeIcon { dir: 1; y: (parent.height - self.height) / 2; } }
+            GridCell { group: group; key: "beats_translate_later"; enabled: live; tip: "Nudge the grid later  (])"; NudgeIcon { dir: 1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
         }
     }
     if !reset-left: VLine { }

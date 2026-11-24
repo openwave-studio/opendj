@@ -2369,7 +2369,7 @@ export component AppWindow inherits Window {
                 prep-deck := PrepDeck {
                     info: decks[0];
                     overview: overview-1;
-                    height: prep ? 280px : 0px;
+                    height: prep ? self.preferred-height : 0px;
                     visible: prep;
                 }
 

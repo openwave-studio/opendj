@@ -170,8 +170,8 @@ in any list; In Prep keeps its own set. Load a track and work through it:
 - On the left, deck 1's side of the [grid editor](music.md#grid-editor)
   (Type, Reset, BPM, Downbeat, Anchor and Grid), as in 2-Deck. Point at a
   button to see what it does and its key.
-- **CUE** and play, jumps of 1, 4 and 8 bars, a loop, and the deck's
-  headphone cue and level.
+- **CUE** and play, beat jumps of 4, 8, 16 and 32 beats either way, a loop,
+  and a thin level fader for the deck at the right.
 - On the right, pads under four tabs:
   - **Hot Cues**: eight pads with their names and times. Click an empty pad
     to set it, a set one to jump there, Shift-click to clear it.
