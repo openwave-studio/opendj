@@ -45,8 +45,10 @@ plugin on a deck (see [Instruments](fx.md#instruments)). Its row in
 **Settings › Controllers** says **Plays instruments**. A controller running
 a mapping never plays instruments. Neither do a keyboard's DAW or Mackie
 Control port (marked **DAW port: not used**), the computer's own ports, or
-the MIDI side of an HID controller running its HID mapping. To make any of
-them play instruments, pick **Play instruments** in its mapping menu.
+the MIDI side of an HID controller running its HID mapping (except a
+keyboard's, such as the Komplete Kontrol M32's, whose keys keep playing). To
+make any of them play instruments, pick **Play instruments** in its mapping
+menu.
 
 The menu before the mapping picks the deck the device plays:
 
@@ -66,6 +68,13 @@ deck 1 is that deck, lights and all. openDJ keeps these choices.
 The first time a keyboard plays the instrument, a message names it, so a
 device that shouldn't play it is easy to spot. The keyboard button in the
 instrument deck's header shows which keyboard played it last.
+
+A keyboard with its own mapping (the Komplete Kontrol M32 first) does more:
+its knobs turn the instrument's knobs on the page the deck shows, **PLAY**
+and **STOP** run the instrument deck's sequencer, its preset buttons step
+through the instrument's presets, and its browse knob picks instruments and
+presets, with its screen showing what plays. See its page under
+[Supported controllers](../controllers/index.md#popular-controllers).
 
 ## Controller Editor
 
@@ -194,7 +203,8 @@ in the Controller Editor and a guide page:
   900NXS2, A9, V5, V10, TOUR1, S7, S9, S11 and T1 mixers, the euphonia and
   the PLX-CRSS12.
 - **Native Instruments:** Traktor Kontrol S2 MK3, S3, S4 MK3, S5, S8, D2, X1
-  MK3, Z1 MK2, Traktor MX2 and Maschine Mikro MK3.
+  MK3, Z1 MK2, Traktor MX2, Maschine Mikro MK3 and the Komplete Kontrol M32
+  keyboard.
 - **Denon DJ:** SC LIVE 4, PRIME 4, PRIME GO, MC7000, MC6000MK2, MC4000,
   MC3000, DN-SC2000 and DN-HS5500.
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,

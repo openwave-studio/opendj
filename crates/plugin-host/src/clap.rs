@@ -53,6 +53,9 @@ use crate::descriptor::Descriptor;
 use crate::effects::{arrange, EditorSize, Effect, Info, Loaded, MainThread, Param, ParentWindow};
 use crate::shm::{Midi, CHANNELS, MAX_EVENTS, MAX_PARAMS};
 
+/// The most channels one audio port gets buffers for.
+const MAX_PORT_CHANNELS: usize = 64;
+
 fn text(s: Option<&CStr>) -> String {
     s.map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default()
@@ -820,6 +823,23 @@ pub fn load(
             return Err(format!("{name} is not a stereo effect or instrument"));
         }
     }
+    // Every port it has gets buffers, as CLAP asks: plugins read all the
+    // ports they declare (Cardinal's extra inputs and outputs, a side
+    // chain), and one handed fewer reads past the end and crashes. The
+    // deck plays through the first stereo pair; the rest are silent in and
+    // ignored out.
+    let mut layout = |is_input: bool| -> Vec<usize> {
+        (0..ports.count(&handle, is_input))
+            .map(|i| {
+                ports
+                    .get(&handle, i, is_input, &mut buf)
+                    .map_or(0, |p| p.channel_count as usize)
+                    .min(MAX_PORT_CHANNELS)
+            })
+            .collect()
+    };
+    let in_layout = layout(true);
+    let out_layout = layout(false);
 
     // Its first parameters, as the slot's parameters: the DJ's picks, then
     // those on its remote controls pages, in the pages' order (what its
@@ -883,11 +903,12 @@ pub fn load(
 
     let effect = ClapEffect {
         processor: processor.into(),
-        input: [vec![0.0; max_frames], vec![0.0; max_frames]],
-        output: [vec![0.0; max_frames], vec![0.0; max_frames]],
-        in_ports: AudioPorts::with_capacity(CHANNELS, 1),
-        has_input,
-        out_ports: AudioPorts::with_capacity(CHANNELS, 1),
+        input: vec![vec![0.0; max_frames]; in_layout.iter().sum()],
+        output: vec![vec![0.0; max_frames]; out_layout.iter().sum()],
+        in_ports: AudioPorts::with_capacity(in_layout.iter().sum(), in_layout.len()),
+        out_ports: AudioPorts::with_capacity(out_layout.iter().sum(), out_layout.len()),
+        in_layout,
+        out_layout,
         events: EventBuffer::with_capacity(MAX_PARAMS + MAX_EVENTS + 4),
         out_events: EventBuffer::with_capacity(64),
         ids: params.iter().map(|(id, _)| *id).collect(),
@@ -915,12 +936,16 @@ pub fn load(
 
 struct ClapEffect {
     processor: PluginAudioProcessor<Host>,
-    input: [Vec<f32>; CHANNELS],
-    output: [Vec<f32>; CHANNELS],
+    /// Every channel of every input port, in port order; the deck's audio
+    /// goes in the first two. An instrument has none.
+    input: Vec<Vec<f32>>,
+    /// Every channel of every output port; the first two come back.
+    output: Vec<Vec<f32>>,
     in_ports: AudioPorts,
-    /// False for an instrument, which takes notes instead of audio.
-    has_input: bool,
     out_ports: AudioPorts,
+    /// Channels per input port, and per output port.
+    in_layout: Vec<usize>,
+    out_layout: Vec<usize>,
     events: EventBuffer,
     out_events: EventBuffer,
     ids: Vec<ClapId>,
@@ -997,30 +1022,41 @@ impl Effect for ClapEffect {
             }
         }
         for (ch, data) in input.iter().enumerate() {
-            self.input[ch][..frames].copy_from_slice(data);
+            if let Some(buf) = self.input.get_mut(ch) {
+                buf[..frames].copy_from_slice(data);
+            }
+        }
+        for buf in self.input.iter_mut().skip(CHANNELS) {
+            buf[..frames].fill(0.0);
         }
         let transport = (transport.bpm > 0.0).then(|| transport_event(transport));
-        let [in_l, in_r] = &mut self.input;
-        let ports = usize::from(self.has_input);
-        let inputs = self.in_ports.with_input_buffers(
-            [AudioPortBuffer {
-                latency: 0,
-                channels: AudioPortBufferType::f32_input_only(
-                    [&mut in_l[..frames], &mut in_r[..frames]]
-                        .into_iter()
-                        .map(InputChannel::variable),
-                ),
-            }]
-            .into_iter()
-            .take(ports),
-        );
-        let [out_l, out_r] = &mut self.output;
-        let mut outputs = self.out_ports.with_output_buffers([AudioPortBuffer {
-            latency: 0,
-            channels: AudioPortBufferType::f32_output_only(
-                [&mut out_l[..frames], &mut out_r[..frames]].into_iter(),
-            ),
-        }]);
+        let mut rest: &mut [Vec<f32>] = &mut self.input;
+        let inputs = self
+            .in_ports
+            .with_input_buffers(self.in_layout.iter().map(|&n| {
+                let (port, after) = std::mem::take(&mut rest).split_at_mut(n);
+                rest = after;
+                AudioPortBuffer {
+                    latency: 0,
+                    channels: AudioPortBufferType::f32_input_only(
+                        port.iter_mut()
+                            .map(|c| InputChannel::variable(&mut c[..frames])),
+                    ),
+                }
+            }));
+        let mut rest: &mut [Vec<f32>] = &mut self.output;
+        let mut outputs = self
+            .out_ports
+            .with_output_buffers(self.out_layout.iter().map(|&n| {
+                let (port, after) = std::mem::take(&mut rest).split_at_mut(n);
+                rest = after;
+                AudioPortBuffer {
+                    latency: 0,
+                    channels: AudioPortBufferType::f32_output_only(
+                        port.iter_mut().map(|c| &mut c[..frames]),
+                    ),
+                }
+            }));
         self.out_events.clear();
         let ok = match self.processor.as_started_mut() {
             Ok(p) => p

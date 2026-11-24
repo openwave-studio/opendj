@@ -1,0 +1,225 @@
+// The instrument plugin on a deck, shown in the browser area (the Jam
+// source) in place of the track list and the side panel: its own display
+// at the display's own shape, or openDJ's sliders for its parameters when
+// it has no display (a CLAP, VST3 or AU editor can't sit inside openDJ;
+// the expand button opens it in its own window).
+
+import { Theme, CloseIcon } from "theme.slint";
+import { Controls } from "controls.slint";
+import { DisplayView } from "plugin_display.slint";
+import { SwitchPill } from "pills.slint";
+import { InstrumentsUi, InstrumentTree, InstrumentList } from "instruments.slint";
+
+// The plugin's format, as on the instrument deck's title.
+component Chip inherits Rectangle {
+    in property <string> text;
+    width: chip-text.preferred-width + 10px;
+    height: 16px;
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: Theme.accent;
+    background: Theme.accent.with-alpha(0.15);
+    chip-text := Text { text: root.text; color: Theme.accent; font-size: 9px; font-weight: 700; }
+}
+
+// One parameter: its name, a bar to drag or click, and where it is.
+component ParamSlider inherits Rectangle {
+    in property <int> index;
+    property <int> control: Controls.resolve("[Instrument1]", "parameter" + (index + 1));
+    property <float> value: Controls.parameter(control, Controls.tick);
+    height: 22px;
+    HorizontalLayout {
+        spacing: 8px;
+        Text {
+            width: 104px;
+            text: index < InstrumentsUi.param-names.length ? InstrumentsUi.param-names[index] : "";
+            color: Theme.n-d8d8dc;
+            font-size: 11px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        bar := Rectangle {
+            horizontal-stretch: 1;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 8px;
+                border-radius: 4px;
+                background: Theme.n-26262a;
+                Rectangle {
+                    x: 0;
+                    width: parent.width * clamp(root.value, 0, 1);
+                    border-radius: 4px;
+                    background: ta.has-hover || ta.pressed ? Theme.lilac-text : Theme.accent;
+                }
+            }
+            ta := TouchArea {
+                mouse-cursor: pointer;
+                pointer-event(e) => {
+                    if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                        Controls.set-parameter(root.control, clamp(self.mouse-x / self.width, 0, 1));
+                    }
+                }
+                moved => {
+                    if self.pressed {
+                        Controls.set-parameter(root.control, clamp(self.mouse-x / self.width, 0, 1));
+                    }
+                }
+                double-clicked => { Controls.reset(root.control); }
+            }
+        }
+        Text {
+            width: 36px;
+            text: round(clamp(root.value, 0, 1) * 100) + "%";
+            color: Theme.text-dim;
+            font-size: 11px;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// The plugin's parameters as sliders, a column for each page of eight,
+// named as the plugin names its pages.
+component PluginControls inherits Rectangle {
+    property <int> count: InstrumentsUi.param-names.length;
+    property <int> pages: ceil(count / 8);
+    if count == 0: Text {
+        text: InstrumentsUi.instrument() > 0 ? "This plugin shows no parameters. The expand button opens its own window." : "No instrument plugin plays on this deck.";
+        color: Theme.text-dim;
+        font-size: 13px;
+    }
+    if count > 0: HorizontalLayout {
+        padding: 12px;
+        spacing: 12px;
+        for p in pages: Rectangle {
+            horizontal-stretch: 1;
+            max-width: 360px;
+            border-radius: Theme.radius;
+            background: Theme.panel;
+            VerticalLayout {
+                padding: 10px;
+                spacing: 6px;
+                alignment: start;
+                Text {
+                    text: p < InstrumentsUi.page-names.length && InstrumentsUi.page-names[p] != "" ? InstrumentsUi.page-names[p] : "PAGE " + (p + 1);
+                    color: Theme.lilac-text;
+                    font-size: 10px;
+                    font-weight: 600;
+                    letter-spacing: 0.6px;
+                    overflow: elide;
+                }
+                for k in min(8, root.count - p * 8): ParamSlider { index: p * 8 + k; }
+            }
+        }
+    }
+}
+
+// The plugin's own display, as large as the area allows at its own shape:
+// no bars beside it.
+component PluginDisplay inherits Rectangle {
+    property <float> aspect: max(InstrumentsUi.display-aspect, 0.2);
+    property <length> fit-width: min(root.width, root.height * aspect);
+    view := DisplayView {
+        width: root.fit-width;
+        height: root.fit-width / root.aspect;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        source: InstrumentsUi.display;
+        resized(w, h) => {
+            InstrumentsUi.display-area-width = w;
+            InstrumentsUi.display-area-height = h;
+        }
+        mouse(x, y, kind) => { InstrumentsUi.display-mouse(x, y, kind); }
+    }
+}
+
+export component PluginPanel inherits Rectangle {
+    // The deck playing the instrument, from 0.
+    in property <int> deck;
+    property <int> instrument: InstrumentsUi.instrument();
+    property <string> name: instrument > 0 && instrument <= InstrumentsUi.plugin-names.length ? InstrumentsUi.plugin-names[instrument - 1] : "Instrument";
+    // The display while the plugin has one and CONTROLS isn't picked.
+    property <bool> show-display: InstrumentsUi.has-display && !InstrumentsUi.panel-controls;
+    background: Theme.browser;
+    VerticalLayout {
+        Rectangle {
+            height: 40px;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 8px;
+                spacing: 8px;
+                Text {
+                    text: root.name;
+                    color: Theme.text;
+                    font-size: 15px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+                if InstrumentsUi.format() != "": VerticalLayout {
+                    alignment: center;
+                    Chip { text: InstrumentsUi.format(); }
+                }
+                Text {
+                    text: "Deck " + (root.deck + 1);
+                    color: Theme.text-dim;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                }
+                Rectangle { horizontal-stretch: 1; }
+                if InstrumentsUi.has-display: VerticalLayout {
+                    alignment: center;
+                    HorizontalLayout {
+                        spacing: 4px;
+                        SwitchPill { text: "DISPLAY"; font-size: 10px; on: root.show-display; clicked => { InstrumentsUi.panel-controls = false; } }
+                        SwitchPill { text: "CONTROLS"; font-size: 10px; on: !root.show-display; clicked => { InstrumentsUi.panel-controls = true; } }
+                    }
+                }
+                // Opens the plugin in its own window (lit while open).
+                pop := Rectangle {
+                    property <int> editor: Controls.resolve("[Instrument1]", "show_editor");
+                    property <bool> lit: Controls.value(editor, Controls.tick) > 0;
+                    width: 30px;
+                    border-radius: 6px;
+                    background: pta.has-hover ? Theme.control : transparent;
+                    Path {
+                        width: 13px;
+                        height: 13px;
+                        viewbox-width: 13;
+                        viewbox-height: 13;
+                        // A box with an arrow out of its corner.
+                        commands: "M 5.5 1.5 L 1.5 1.5 L 1.5 11.5 L 11.5 11.5 L 11.5 7.5 M 7.5 1.5 L 11.5 1.5 L 11.5 5.5 M 11.5 1.5 L 5.5 7.5";
+                        stroke: pop.lit ? Theme.accent : pta.has-hover ? Theme.text : Theme.text-dim;
+                        stroke-width: 1.5px;
+                        fill: transparent;
+                    }
+                    pta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { Controls.toggle(pop.editor); }
+                    }
+                }
+                close := Rectangle {
+                    width: 30px;
+                    border-radius: 6px;
+                    background: cta.has-hover ? Theme.control : transparent;
+                    CloseIcon { size: 11px; color: cta.has-hover ? Theme.text : Theme.text-dim; }
+                    cta := TouchArea { mouse-cursor: pointer; clicked => { InstrumentsUi.panel-open = false; } }
+                }
+            }
+            Rectangle { y: parent.height - 1px; height: 1px; background: Theme.separator; }
+        }
+        if root.show-display: PluginDisplay { vertical-stretch: 1; }
+        if !root.show-display: PluginControls { vertical-stretch: 1; }
+    }
+}
+
+// The Jam source's page: the tree, and the list or, with `plugin` on,
+// the instrument's plugin panel in its place.
+export component InstrumentsPanel inherits HorizontalLayout {
+    in property <int> decks: 2;
+    in property <bool> plugin;
+    InstrumentTree {}
+    Rectangle { width: 1px; background: Theme.separator; }
+    if !plugin: InstrumentList { decks: decks; horizontal-stretch: 1; }
+    if plugin: PluginPanel { deck: InstrumentsUi.instrument-deck(); horizontal-stretch: 1; }
+}

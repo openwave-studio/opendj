@@ -47,3 +47,24 @@ pub use descriptor::Descriptor;
 pub use effects::{Info, Param, Plugin};
 pub use policy::{Action, Limits, Policy};
 pub use shm::Midi;
+
+/// Ends the helper at once with `code`, after flushing what it printed.
+///
+/// A plain exit runs every loaded library's static destructors and exit
+/// handlers while the plugin's own threads (timers, sample loaders) are
+/// still running, and many plugins crash right there: on macOS that made
+/// a crash report and a "quit unexpectedly" dialog every time a plugin was
+/// scanned, unloaded or openDJ quit. `_exit` skips them; the system frees
+/// the process's memory and files anyway.
+pub fn leave(code: i32) -> ! {
+    use std::io::Write;
+    let _ = std::io::stdout().flush();
+    let _ = std::io::stderr().flush();
+    #[cfg(unix)]
+    // SAFETY: ends the process; nothing runs after it.
+    unsafe {
+        libc::_exit(code)
+    }
+    #[cfg(not(unix))]
+    std::process::exit(code)
+}

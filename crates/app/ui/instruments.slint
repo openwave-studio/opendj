@@ -9,6 +9,7 @@ import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Theme } from "theme.slint";
 import { Controls } from "controls.slint";
 import { ScrollView } from "scroll.slint";
+import { SwitchPill } from "pills.slint";
 
 // One thing to drag onto a deck: a row of the list.
 // A choice in a Mixer strip's input picker.
@@ -225,6 +226,24 @@ export global InstrumentsUi {
     in-out property <length> display-area-width;
     in-out property <length> display-area-height;
     callback display-mouse(x: length, y: length, kind: int);
+    // The plugin panel in the browser area (plugin_panel.slint): asked
+    // for, actually on screen (the Jam source shows it), and showing the
+    // sliders rather than the display. `open-panel` also brings the Jam
+    // source up (`panel-request` tells the browser).
+    in-out property <bool> panel-open;
+    in-out property <bool> panel-shown;
+    in-out property <bool> panel-controls;
+    in-out property <int> panel-request;
+    public function open-panel() {
+        panel-open = true;
+        panel-request += 1;
+    }
+    // The deck the instrument plays on, from 0; -1 while on none.
+    public pure function instrument-deck() -> int {
+        live(0) == 3 ? 0 : live(1) == 3 ? 1 : live(2) == 3 ? 2 : live(3) == 3 ? 3 : -1
+    }
+    // Each ticked instrument plugin's name, in the picker's order.
+    in property <[string]> plugin-names;
     // What the instrument plays, set by the app while a deck shows it: the
     // notes held (`held[n]` is MIDI note 36 + n, C2 up) and its scope as
     // path commands in a 128 by 32 box.
@@ -637,7 +656,7 @@ component NodeIcon inherits Rectangle {
 }
 
 // The tree on the left: everything, the Groove Box, plugins by maker, inputs.
-component InstrumentTree inherits Rectangle {
+export component InstrumentTree inherits Rectangle {
     property <int> navigation-request: BrowserFocus.request;
     changed navigation-request => { focus-pending = true; }
     property <bool> focus-pending;
@@ -886,7 +905,7 @@ component TagRow inherits HorizontalLayout {
     }
 }
 
-component InstrumentList inherits Rectangle {
+export component InstrumentList inherits Rectangle {
     property <int> navigation-request: BrowserFocus.request;
     changed navigation-request => { focus-pending = true; }
     property <bool> focus-pending;
@@ -971,6 +990,13 @@ component InstrumentList inherits Rectangle {
                 // Takes the rest of the row, so the box's max-width doesn't
                 // cap the whole list's width.
                 Rectangle { horizontal-stretch: 1; }
+                // The instrument on a deck, in the plugin panel.
+                if InstrumentsUi.instrument-deck() >= 0: SwitchPill {
+                    text: "SHOW PLUGIN";
+                    font-size: 11px;
+                    on: false;
+                    clicked => { InstrumentsUi.panel-open = true; }
+                }
             }
         }
         // Tag chips: narrow the list to presets with every tag picked.
@@ -1039,9 +1065,3 @@ component InstrumentList inherits Rectangle {
 }
 
 // The source's page: the tree and the list, in the browser's place.
-export component InstrumentsPanel inherits HorizontalLayout {
-    in property <int> decks: 2;
-    InstrumentTree {}
-    Rectangle { width: 1px; background: Theme.separator; }
-    InstrumentList { decks: decks; horizontal-stretch: 1; }
-}

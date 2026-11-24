@@ -8,7 +8,8 @@ the controller always show the same page.
 
 ## Pad pages
 
-Four tabs show at a time. The first four are **HOT CUES**, **PAD FX 1**,
+Four tabs show at a time, one over each column of pads; click one to open
+it. The first four are **HOT CUES**, **PAD FX 1**,
 **BEAT JUMP** and **SAMPLER**. **Shift-click** a tab for its partner, as
 SHIFT + a pad mode button does on the controller: **KEYBOARD**, **PAD FX
 2**, **BEAT LOOP** and **KEY SHIFT**.
@@ -16,10 +17,12 @@ SHIFT + a pad mode button does on the controller: **KEYBOARD**, **PAD FX
 **Right-click** a tab to put another page in it. There are twelve pages in all;
 **STEMS**, **LOOP ROLL**, **SLICER** and **FREEZE** are only there this way. For example, put STEMS
 in place of the sampler. A controller's pad mode button then opens whatever
-page is in its tab.
+page is in its tab. The menu's last row turns to the other four tabs.
 
-The narrow column left of the pads flips the open page's own pages, such as
-the sampler's **1** and **2**.
+A page's own setting sits under the pads, on the right: **Quantize** on HOT
+CUES, the bank on SAMPLER, **×1**, **×½** or **×¼** on BEAT JUMP,
+**Match** on KEY SHIFT and **Roll** on BEAT LOOP. In 2-Deck it shares that
+row with the loop controls on the left.
 
 | Page | Pads |
 |---|---|

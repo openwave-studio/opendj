@@ -5,7 +5,9 @@
 //! preset saved from it).
 
 use std::rc::Rc;
+use std::time::Duration;
 
+use opendj_control::ControlRegistry;
 use opendj_engine::AudioEngine;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
@@ -52,6 +54,37 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>) {
             eprintln!("instrument knob {}: {e}", knob + 1);
         }
     });
+}
+
+/// Keeps the knob page the instrument deck shows and `[Instrument1],knob_page`
+/// in step, so a keyboard's knobs (the Komplete Kontrol M32's) turn the
+/// knobs on screen and its page buttons turn the page there. Whichever side
+/// moved last wins.
+pub fn follow_page(app: &AppWindow, registry: &ControlRegistry) -> slint::Timer {
+    let timer = slint::Timer::default();
+    let Some(control) = registry.get("[Instrument1]", "knob_page") else {
+        return timer;
+    };
+    let weak = app.as_weak();
+    let mut last = (control.get().round() as i32, 0);
+    timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_millis(50),
+        move || {
+            let Some(app) = weak.upgrade() else {
+                return;
+            };
+            let ui = app.global::<InstrumentsUi>();
+            let (mine, shown) = (control.get().round() as i32, ui.get_knob_page());
+            if mine != last.0 {
+                ui.set_knob_page(mine.max(0));
+            } else if shown != last.1 {
+                control.set(shown.max(0) as f64);
+            }
+            last = (control.get().round() as i32, ui.get_knob_page());
+        },
+    );
+    timer
 }
 
 /// Shows which knobs were picked and what each turns, when they changed.
