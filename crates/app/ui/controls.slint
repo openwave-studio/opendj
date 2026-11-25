@@ -211,14 +211,14 @@ export component ControlKnob inherits Rectangle {
         background: look == 4
             ? @radial-gradient(circle, Theme.knob-matte-hi 0%, Theme.knob-matte-lo 100%)
             : look == 3
-            ? (touch.has-hover ? @radial-gradient(circle, #55575f 0%, #24252a 100%) : @radial-gradient(circle, #4a4c54 0%, #1d1e23 100%))
+            ? (touch.has-hover ? @radial-gradient(circle, Theme.f-55575f 0%, Theme.f-24252a 100%) : @radial-gradient(circle, Theme.f-4a4c54 0%, Theme.f-1d1e23 100%))
             : look == 1
-            ? (touch.has-hover ? @linear-gradient(180deg, #ffffff 0%, #d4d4d8 100%) : @linear-gradient(180deg, #f2f2f4 0%, #c8c8cc 100%))
+            ? (touch.has-hover ? @linear-gradient(180deg, Theme.f-ffffff 0%, Theme.f-d4d4d8 100%) : @linear-gradient(180deg, Theme.f-f2f2f4 0%, Theme.f-c8c8cc 100%))
             : look == 2
             ? (touch.has-hover ? Theme.n-1c1c1e : Theme.n-0e0e10)
             : touch.has-hover
-            ? @linear-gradient(180deg, #505055 0%, #303034 100%)
-            : @linear-gradient(180deg, #46464b 0%, #2a2a2e 100%);
+            ? @linear-gradient(180deg, Theme.f-505055 0%, Theme.f-303034 100%)
+            : @linear-gradient(180deg, Theme.f-46464b 0%, Theme.f-2a2a2e 100%);
         border-width: look == 4 ? 0px : look == 2 ? max(2px, size / 12) : 1px;
         drop-shadow-blur: look == 3 || look == 4 ? 4px : 0px;
         drop-shadow-color: Theme.s-000000b0;
@@ -425,7 +425,7 @@ export component ControlButton inherits Rectangle {
     property <int> shift-index: shift-key == "" ? -1 : Controls.resolve(group, shift-key);
     property <bool> shift-held;
     property <color> label-color: pill ? (lit ? Theme.lilac-text : touch.has-hover ? Theme.text : Theme.pill-off-text)
-        : lit ? (fill-when-lit ? #ffffff : root.tint) : Theme.text;
+        : lit ? (fill-when-lit ? Theme.f-ffffff : root.tint) : Theme.text;
     property <int> index: Controls.resolve(group, key);
     property <int> light-index: Controls.resolve(group, light-key);
     property <bool> lit: Controls.value(light-index, Controls.tick) > 0;
@@ -849,7 +849,7 @@ export component VuMeter inherits Rectangle {
         width: vertical ? root.width : seg;
         height: vertical ? seg : root.height;
         border-radius: 1px;
-        background: level < at ? Theme.n-2c2c2f : (at > 0.9 ? #ff453a : (at > 0.72 ? #ffd60a : #30d158));
+        background: level < at ? Theme.n-2c2c2f : (at > 0.9 ? Theme.f-ff453a : (at > 0.72 ? Theme.f-ffd60a : Theme.f-30d158));
     }
 }
 
@@ -889,8 +889,8 @@ export component HoverTipView inherits Rectangle {
         tip := VerticalLayout {
             padding: 8px;
             spacing: 2px;
-            Text { text: HoverTip.title; color: Theme.text; font-size: 12px; font-weight: 700; }
-            if HoverTip.body != "": Text { text: HoverTip.body; color: Theme.text-dim; font-size: 12px; }
+            if HoverTip.title != "": Text { text: HoverTip.title; color: Theme.text; font-size: 12px; font-weight: 700; }
+            if HoverTip.body != "": Text { text: HoverTip.body; color: HoverTip.title != "" ? Theme.text-dim : Theme.text; font-size: 12px; }
         }
     }
 }
@@ -1050,7 +1050,7 @@ export component SyncButton inherits Rectangle {
                         horizontal-stretch: 1;
                         border-radius: 3px;
                         background: on ? Theme.accent : sta.has-hover ? Theme.n-38373d : transparent;
-                        Text { text: size.label; color: on ? #000000 : Theme.text; font-size: 12px; font-weight: on ? 700 : 400; }
+                        Text { text: size.label; color: on ? Theme.f-000000 : Theme.text; font-size: 12px; font-weight: on ? 700 : 400; }
                         sta := TouchArea {
                             mouse-cursor: pointer;
                             clicked => {

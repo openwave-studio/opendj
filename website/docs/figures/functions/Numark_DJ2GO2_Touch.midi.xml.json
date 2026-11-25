@@ -1,0 +1,251 @@
+{
+  "file": "Numark_DJ2GO2_Touch.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Browse encoder"
+      ],
+      "normal": [
+        "Play / pause",
+        "Position"
+      ]
+    },
+    "cue-level": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "l-cue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-jog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-pad1": {
+      "Auto": [
+        "Loop 1 beat"
+      ],
+      "Cues": [
+        "Hot cue 1"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 1"
+      ],
+      "Manual": [
+        "Loop in"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ]
+    },
+    "l-pad2": {
+      "Auto": [
+        "Loop 2 beats"
+      ],
+      "Cues": [
+        "Hot cue 2"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 2"
+      ],
+      "Manual": [
+        "Loop out"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ]
+    },
+    "l-pad3": {
+      "Auto": [
+        "Loop 4 beats"
+      ],
+      "Cues": [
+        "Hot cue 3"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 3"
+      ],
+      "Manual": [
+        "Reloop / exit"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ]
+    },
+    "l-pad4": {
+      "Auto": [
+        "Loop 8 beats"
+      ],
+      "Cues": [
+        "Hot cue 4"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 4"
+      ],
+      "Manual": [
+        "Reloop and stop"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-cue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-jog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-pad1": {
+      "Auto": [
+        "Loop 1 beat"
+      ],
+      "Cues": [
+        "Hot cue 1"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 1"
+      ],
+      "Manual": [
+        "Loop in"
+      ],
+      "Sampler": [
+        "Sampler 5 Play from start"
+      ]
+    },
+    "r-pad2": {
+      "Auto": [
+        "Loop 2 beats"
+      ],
+      "Cues": [
+        "Hot cue 2"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 2"
+      ],
+      "Manual": [
+        "Loop out"
+      ],
+      "Sampler": [
+        "Sampler 6 Play from start"
+      ]
+    },
+    "r-pad3": {
+      "Auto": [
+        "Loop 4 beats"
+      ],
+      "Cues": [
+        "Hot cue 3"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 3"
+      ],
+      "Manual": [
+        "Reloop / exit"
+      ],
+      "Sampler": [
+        "Sampler 7 Play from start"
+      ]
+    },
+    "r-pad4": {
+      "Auto": [
+        "Loop 8 beats"
+      ],
+      "Cues": [
+        "Hot cue 4"
+      ],
+      "Cues, PAD MODE held": [
+        "Clear hot cue 4"
+      ],
+      "Manual": [
+        "Reloop and stop"
+      ],
+      "Sampler": [
+        "Sampler 8 Play from start"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

@@ -3,7 +3,7 @@
     <info>
         <name>Pioneer DDJ-RX</name>
         <author>Maximilian Beiersdorfer, DJMaxergy</author>
-        <description>Pioneer DDJ-RX: Mixxx's DDJ-SX mapping (Maximilian Beiersdorfer), which the RX matches message for message, with QUANTIZE added. The Sound Color FX buttons, CAPTURE and SEQUENCER buttons are not mapped.</description>
+        <description>Pioneer DDJ-RX: Mixxx's DDJ-SX mapping (Maximilian Beiersdorfer), which the RX matches message for message, with QUANTIZE and the Sound Color FX buttons added. CAPTURE and SEQUENCER buttons are not mapped.</description>
         <forums>https://mixxx.discourse.group/t/pioneer-ddj-sx-controller-mapping/15954</forums>
         <manual>pioneer_ddj_sx</manual>
     </info>
@@ -6423,6 +6423,86 @@
                 <midino>0x36</midino>
                 <options>
                     <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxNoise</key>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE +SHIFT - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxNoise</key>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX CRUSH - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxCrush</key>
+                <status>0x96</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX CRUSH +SHIFT - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxCrush</key>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxPitch</key>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH +SHIFT - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxPitch</key>
+                <status>0x96</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxFilter</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER +SHIFT - what the COLOR knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJRX.colorFxFilter</key>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
                 </options>
             </control>
         </controls>

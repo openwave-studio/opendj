@@ -1,0 +1,1289 @@
+{
+  "file": "Pioneer DDJ-SP1.midi.xml",
+  "parts": {
+    "back": {
+      "SHIFT": [
+        "Big browser"
+      ],
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "SHIFT": [
+        "Add to Automix",
+        "Left / right"
+      ],
+      "normal": [
+        "Open or load item",
+        "Scroll list"
+      ]
+    },
+    "fx1-1": {
+      "SHIFT": [
+        "FX 1 Effect 1 knob",
+        "FX 1 W391"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "fx1-2": {
+      "SHIFT": [
+        "FX 1 Effect 2 knob",
+        "FX 1 W395"
+      ],
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "fx1-3": {
+      "SHIFT": [
+        "FX 1 Effect 3 knob",
+        "FX 1 W399"
+      ],
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "fx1-assign1": {
+      "SHIFT": [
+        "W197"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1"
+      ]
+    },
+    "fx1-assign2": {
+      "SHIFT": [
+        "W290"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 2"
+      ]
+    },
+    "fx1-beats": {
+      "SHIFT": [
+        "FX 1 Wet / dry"
+      ],
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "fx1-on1": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "fx1-on2": {
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "fx1-on3": {
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "fx1-tap": {
+      "SHIFT": [
+        "FX 1 Show focus",
+        "FX 1 Show parameters"
+      ],
+      "normal": [
+        "FX 1 Show focus",
+        "FX 1 Show parameters"
+      ]
+    },
+    "fx2-1": {
+      "SHIFT": [
+        "FX 2 Effect 1 knob",
+        "FX 2 W410"
+      ],
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "fx2-2": {
+      "SHIFT": [
+        "FX 2 Effect 2 knob",
+        "FX 2 W414"
+      ],
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "fx2-3": {
+      "SHIFT": [
+        "FX 2 Effect 3 knob",
+        "FX 2 W418"
+      ],
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "fx2-assign1": {
+      "SHIFT": [
+        "W198"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 1"
+      ]
+    },
+    "fx2-assign2": {
+      "SHIFT": [
+        "W291"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2"
+      ]
+    },
+    "fx2-beats": {
+      "SHIFT": [
+        "FX 2 Wet / dry"
+      ],
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "fx2-on1": {
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "fx2-on2": {
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "fx2-on3": {
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "fx2-tap": {
+      "SHIFT": [
+        "FX 2 Show focus",
+        "FX 2 Show parameters"
+      ],
+      "normal": [
+        "FX 2 Show focus",
+        "FX 2 Show parameters"
+      ]
+    },
+    "l-autoloop": {
+      "Deck 3": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-censor": {
+      "Deck 3": [
+        "Reverse roll (censor)"
+      ],
+      "Deck 3 SHIFT": [
+        "Reverse"
+      ],
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "l-load": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-m-hot": {
+      "Deck 3": [
+        "W284"
+      ],
+      "normal": [
+        "W98"
+      ]
+    },
+    "l-m-roll": {
+      "Deck 3": [
+        "W285"
+      ],
+      "Deck 3 SHIFT": [
+        "W288"
+      ],
+      "SHIFT": [
+        "W102"
+      ],
+      "normal": [
+        "W99"
+      ]
+    },
+    "l-m-sampler": {
+      "Deck 3": [
+        "W287"
+      ],
+      "normal": [
+        "W101"
+      ]
+    },
+    "l-m-slicer": {
+      "Deck 3": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3 Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 1/8 beat"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W254"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W253"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/16 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1/8 beat"
+      ],
+      "Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W68"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W67"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3 Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W257"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W256"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/8 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1/4 beat"
+      ],
+      "Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W71"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W70"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3 Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W260"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W259"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/4 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1/2 beat"
+      ],
+      "Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W74"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W73"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3 Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 1 beat"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W263"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W262"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/2 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1 beat"
+      ],
+      "Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W77"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W76"
+      ]
+    },
+    "l-pad5": {
+      "Deck 3 Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 2 beats"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W266"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W265"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 2 beats"
+      ],
+      "Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W80"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W79"
+      ]
+    },
+    "l-pad6": {
+      "Deck 3 Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 4 beats"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W269"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W268"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX 1": [
+        "Loop roll 2 beats"
+      ],
+      "Pad FX 2": [
+        "Loop 4 beats"
+      ],
+      "Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W83"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W82"
+      ]
+    },
+    "l-pad7": {
+      "Deck 3 Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 8 beats"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W272"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W271"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX 1": [
+        "Loop roll 4 beats"
+      ],
+      "Pad FX 2": [
+        "Loop 8 beats"
+      ],
+      "Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W86"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W85"
+      ]
+    },
+    "l-pad8": {
+      "Deck 3 Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 3 Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 3 Pad FX 1": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 3 Pad FX 2": [
+        "Loop 16 beats"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Deck 3 Sampler + SHIFT": [
+        "W275"
+      ],
+      "Deck 3 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 3 VelocitySampler+Velocity": [
+        "W274"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX 1": [
+        "Loop roll 8 beats"
+      ],
+      "Pad FX 2": [
+        "Loop 16 beats"
+      ],
+      "Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W89"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W88"
+      ]
+    },
+    "l-param-l": {
+      "Deck 3": [
+        "Beat jump back",
+        "W211",
+        "W213",
+        "W215",
+        "W217",
+        "W219"
+      ],
+      "Deck 3 SHIFT": [
+        "Beat jump size 2"
+      ],
+      "SHIFT": [
+        "Beat jump size 2"
+      ],
+      "normal": [
+        "Beat jump back",
+        "W25",
+        "W27",
+        "W29",
+        "W31",
+        "W33"
+      ]
+    },
+    "l-param-r": {
+      "Deck 3": [
+        "Beat jump forward",
+        "W210",
+        "W212",
+        "W214",
+        "W216",
+        "W218"
+      ],
+      "Deck 3 SHIFT": [
+        "Beat jump size 8"
+      ],
+      "SHIFT": [
+        "Beat jump size 8"
+      ],
+      "normal": [
+        "Beat jump forward",
+        "W24",
+        "W26",
+        "W28",
+        "W30",
+        "W32"
+      ]
+    },
+    "l-slip": {
+      "Deck 3": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "Deck 3 SHIFT": [
+        "Quantize"
+      ],
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "load-prepare": {
+      "SHIFT": [
+        "Quantize",
+        "Automix on"
+      ],
+      "normal": [
+        "W9"
+      ]
+    },
+    "r-autoloop": {
+      "Deck 4": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-censor": {
+      "Deck 4": [
+        "Reverse roll (censor)"
+      ],
+      "Deck 4 SHIFT": [
+        "Reverse"
+      ],
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "r-load": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-m-hot": {
+      "Deck 4": [
+        "W377"
+      ],
+      "normal": [
+        "W191"
+      ]
+    },
+    "r-m-roll": {
+      "Deck 4": [
+        "W378"
+      ],
+      "Deck 4 SHIFT": [
+        "W381"
+      ],
+      "SHIFT": [
+        "W195"
+      ],
+      "normal": [
+        "W192"
+      ]
+    },
+    "r-m-sampler": {
+      "Deck 4": [
+        "W380"
+      ],
+      "normal": [
+        "W194"
+      ]
+    },
+    "r-m-slicer": {
+      "Deck 4": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4 Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 1/8 beat"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W347"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W346"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/16 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1/8 beat"
+      ],
+      "Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W161"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W160"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4 Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W350"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W349"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/8 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1/4 beat"
+      ],
+      "Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W164"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W163"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4 Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W353"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W352"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/4 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1/2 beat"
+      ],
+      "Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W167"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W166"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4 Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 1 beat"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W356"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W355"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1/2 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 1 beat"
+      ],
+      "Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W170"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W169"
+      ]
+    },
+    "r-pad5": {
+      "Deck 4 Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 2 beats"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W359"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W358"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX 1": [
+        "Loop roll 1 beat"
+      ],
+      "Pad FX 2": [
+        "Loop 2 beats"
+      ],
+      "Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W173"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W172"
+      ]
+    },
+    "r-pad6": {
+      "Deck 4 Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 4 beats"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W362"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W361"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX 1": [
+        "Loop roll 2 beats"
+      ],
+      "Pad FX 2": [
+        "Loop 4 beats"
+      ],
+      "Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W176"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W175"
+      ]
+    },
+    "r-pad7": {
+      "Deck 4 Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 8 beats"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W365"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W364"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX 1": [
+        "Loop roll 4 beats"
+      ],
+      "Pad FX 2": [
+        "Loop 8 beats"
+      ],
+      "Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W179"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W178"
+      ]
+    },
+    "r-pad8": {
+      "Deck 4 Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 4 Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 4 Pad FX 1": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 4 Pad FX 2": [
+        "Loop 16 beats"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Deck 4 Sampler + SHIFT": [
+        "W368"
+      ],
+      "Deck 4 Slicer": [
+        "Slip mode"
+      ],
+      "Deck 4 VelocitySampler+Velocity": [
+        "W367"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX 1": [
+        "Loop roll 8 beats"
+      ],
+      "Pad FX 2": [
+        "Loop 16 beats"
+      ],
+      "Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Sampler + SHIFT": [
+        "W182"
+      ],
+      "Slicer": [
+        "Slip mode"
+      ],
+      "VelocitySampler+Velocity": [
+        "W181"
+      ]
+    },
+    "r-param-l": {
+      "Deck 4": [
+        "Beat jump back",
+        "W304",
+        "W306",
+        "W308",
+        "W310",
+        "W312"
+      ],
+      "Deck 4 SHIFT": [
+        "Beat jump size 2"
+      ],
+      "SHIFT": [
+        "Beat jump size 2"
+      ],
+      "normal": [
+        "Beat jump back",
+        "W118",
+        "W120",
+        "W122",
+        "W124",
+        "W126"
+      ]
+    },
+    "r-param-r": {
+      "Deck 4": [
+        "Beat jump forward",
+        "W303",
+        "W305",
+        "W307",
+        "W309",
+        "W311"
+      ],
+      "Deck 4 SHIFT": [
+        "Beat jump size 8"
+      ],
+      "SHIFT": [
+        "Beat jump size 8"
+      ],
+      "normal": [
+        "Beat jump forward",
+        "W117",
+        "W119",
+        "W121",
+        "W123",
+        "W125"
+      ]
+    },
+    "r-slip": {
+      "Deck 4": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "Deck 4 SHIFT": [
+        "Quantize"
+      ],
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "sampler-vol": {
+      "normal": [
+        "Sampler 1 Channel fader",
+        "Sampler 2 Channel fader",
+        "Sampler 3 Channel fader",
+        "Sampler 4 Channel fader",
+        "Sampler 5 Channel fader",
+        "Sampler 6 Channel fader",
+        "Sampler 7 Channel fader",
+        "Sampler 8 Channel fader",
+        "Sampler 9 Channel fader",
+        "Sampler 10 Channel fader",
+        "Sampler 11 Channel fader",
+        "Sampler 12 Channel fader",
+        "Sampler 13 Channel fader",
+        "Sampler 14 Channel fader",
+        "Sampler 15 Channel fader",
+        "Sampler 16 Channel fader",
+        "Samplers W1"
+      ]
+    },
+    "shift": {
+      "normal": [
+        "W13",
+        "W106",
+        "W199",
+        "W292"
+      ]
+    }
+  }
+}

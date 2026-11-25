@@ -100,7 +100,7 @@ component Pick inherits Rectangle {
             HorizontalLayout {
                 padding-left: 14px;
                 padding-right: 14px;
-                Text { text: c; color: i == chosen ? #ffffff : Theme.text-dim; font-size: 12px; font-weight: i == chosen ? 600 : 500; vertical-alignment: center; horizontal-alignment: center; }
+                Text { text: c; color: i == chosen ? Theme.f-ffffff : Theme.text-dim; font-size: 12px; font-weight: i == chosen ? 600 : 500; vertical-alignment: center; horizontal-alignment: center; }
             }
             ta := TouchArea {
                 mouse-cursor: pointer;
@@ -134,6 +134,7 @@ export component RoomEqEditor inherits VerticalLayout {
             picked(i) => { RoomEqUi.pick-target(i); }
         }
         if !RoomEqUi.naming: MenuField {
+            title: "Preset";
             width: 200px;
             text: RoomEqUi.preset;
             choices: RoomEqUi.preset-menu;
@@ -190,7 +191,7 @@ export component RoomEqEditor inherits VerticalLayout {
             background: bypass-ta.pressed ? Theme.accent : bypass-ta.has-hover ? Theme.n-2a2a2e : Theme.control;
             border-width: 1px;
             border-color: Theme.border;
-            bypass-label := Text { text: "Bypass"; color: bypass-ta.pressed ? #000000 : Theme.text; font-size: 12px; vertical-alignment: center; horizontal-alignment: center; }
+            bypass-label := Text { text: "Bypass"; color: bypass-ta.pressed ? Theme.f-000000 : Theme.text; font-size: 12px; vertical-alignment: center; horizontal-alignment: center; }
             bypass-ta := TouchArea {
                 mouse-cursor: pointer;
                 changed pressed => { RoomEqUi.bypass(self.pressed); }
@@ -219,8 +220,8 @@ export component RoomEqEditor inherits VerticalLayout {
             changed width => { RoomEqUi.resized(self.width / 1px, self.height / 1px); }
             changed height => { RoomEqUi.resized(self.width / 1px, self.height / 1px); }
             // +6, 0 and -6 dB; 100 Hz, 1 kHz and 10 kHz.
-            for y in [0.25, 0.5, 0.75]: Rectangle { y: parent.height * y; height: 1px; background: y == 0.5 ? #2e2e33 : #1f1f23; }
-            for x in [0.2330, 0.5663, 0.8997]: Rectangle { x: parent.width * x; width: 1px; background: #1f1f23; }
+            for y in [0.25, 0.5, 0.75]: Rectangle { y: parent.height * y; height: 1px; background: y == 0.5 ? Theme.f-2e2e33 : Theme.f-1f1f23; }
+            for x in [0.2330, 0.5663, 0.8997]: Rectangle { x: parent.width * x; width: 1px; background: Theme.f-1f1f23; }
             if RoomEqUi.spectrum != "": Path {
                 width: parent.width;
                 height: parent.height;
@@ -237,7 +238,7 @@ export component RoomEqEditor inherits VerticalLayout {
                 viewbox-width: self.width / 1px;
                 viewbox-height: self.height / 1px;
                 commands: RoomEqUi.frozen;
-                stroke: #ffffff.with-alpha(0.45);
+                stroke: Theme.f-ffffff.with-alpha(0.45);
                 stroke-width: 1px;
                 fill: transparent;
             }
@@ -257,9 +258,9 @@ export component RoomEqEditor inherits VerticalLayout {
                 width: i == RoomEqUi.selected ? 18px : 14px;
                 height: self.width;
                 border-radius: self.width / 2;
-                background: !d.on ? transparent : i == RoomEqUi.selected ? #ffffff : Theme.lilac;
+                background: !d.on ? transparent : i == RoomEqUi.selected ? Theme.f-ffffff : Theme.lilac;
                 border-width: !d.on ? 2px : i == RoomEqUi.selected ? 3px : 0px;
-                border-color: !d.on ? #6b6c70 : Theme.lilac;
+                border-color: !d.on ? Theme.f-6b6c70 : Theme.lilac;
             }
             TouchArea {
                 pointer-event(e) => {
@@ -317,7 +318,7 @@ export component RoomEqEditor inherits VerticalLayout {
                     border-width: 1.5px;
                     border-color: RoomEqUi.show-spectrum ? Theme.accent : Theme.text-dim;
                     background: RoomEqUi.show-spectrum ? Theme.accent : transparent;
-                    Text { text: RoomEqUi.show-spectrum ? "✓" : ""; color: #000000; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                    Text { text: RoomEqUi.show-spectrum ? "✓" : ""; color: Theme.f-000000; font-size: 10px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
                 }
             }
             Text { text: "Spectrum"; color: Theme.text; font-size: 12px; vertical-alignment: center; }
@@ -356,7 +357,7 @@ export component RoomEqEditor inherits VerticalLayout {
             min-width: 0px;
             height: 62px;
             border-radius: 7px;
-            background: i == RoomEqUi.selected ? #2a2440 : Theme.row;
+            background: i == RoomEqUi.selected ? Theme.f-2a2440 : Theme.row;
             border-width: 1px;
             border-color: i == RoomEqUi.selected ? Theme.lilac : Theme.separator;
             TouchArea {
@@ -374,7 +375,7 @@ export component RoomEqEditor inherits VerticalLayout {
                         border-radius: 6px;
                         background: b.on ? Theme.lilac : transparent;
                         border-width: 1.5px;
-                        border-color: b.on ? Theme.lilac : #6b6c70;
+                        border-color: b.on ? Theme.lilac : Theme.f-6b6c70;
                         TouchArea {
                             mouse-cursor: pointer;
                             clicked => { RoomEqUi.band-toggled(i, !b.on); }

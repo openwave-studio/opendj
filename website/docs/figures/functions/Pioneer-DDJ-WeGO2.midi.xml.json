@@ -1,0 +1,627 @@
+{
+  "file": "Pioneer-DDJ-WeGO2.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Next panel"
+      ],
+      "Press + SHIFT": [
+        "Previous panel"
+      ],
+      "SHIFT": [
+        "zoom the waveforms"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "Deck 3 + SHIFT": [
+        "Jump to start"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fader": {
+      "Deck 3": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-filter": {
+      "Deck 3": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-hi": {
+      "Deck 3": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Side, SHIFT": [
+        "Jog search"
+      ],
+      "Side|Deck 3": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Top, SHIFT": [
+        "Jog search"
+      ],
+      "Top, vinyl off": [
+        "Jog rim bend"
+      ],
+      "Top, vinyl off|Deck 3": [
+        "Jog rim bend"
+      ],
+      "Top|Deck 3": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-load": {
+      "Deck 3": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-low": {
+      "Deck 3": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "Deck 3": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 3 + Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 3 + Sampler": [
+        "Sampler 9 Play from start"
+      ],
+      "Deck 3 + Sampler + SHIFT": [
+        "Sampler 9 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 3 + Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 3 + Sampler": [
+        "Sampler 10 Play from start"
+      ],
+      "Deck 3 + Sampler + SHIFT": [
+        "Sampler 10 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 3 + Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 3 + Sampler": [
+        "Sampler 11 Play from start"
+      ],
+      "Deck 3 + Sampler + SHIFT": [
+        "Sampler 11 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 3 + Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 3 + Sampler": [
+        "Sampler 12 Play from start"
+      ],
+      "Deck 3 + Sampler + SHIFT": [
+        "Sampler 12 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "l-pfl": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "Deck 3 + SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo",
+        "Tempo msb"
+      ],
+      "normal": [
+        "Tempo",
+        "Tempo msb"
+      ]
+    },
+    "l-top1": {
+      "Deck 3": [
+        "Double loop",
+        "Halve loop"
+      ],
+      "Deck 3 + Press": [
+        "Loop (current size)"
+      ],
+      "Deck 3 + SHIFT": [
+        "Move loop"
+      ],
+      "Deck 3 + SHIFT press": [
+        "Reloop / exit"
+      ],
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "Move loop"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "l-top4": {
+      "Effect amount": [
+        "FX 1 Effect 1 knob"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-top5": {
+      "Effect amount": [
+        "FX 1 Effect 2 knob"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 2 next"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "l-top6": {
+      "Effect amount": [
+        "FX 1 Effect 3 knob"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 3 next"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "Deck 4 + SHIFT": [
+        "Jump to start"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fader": {
+      "Deck 4": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-filter": {
+      "Deck 4": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-hi": {
+      "Deck 4": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Side, SHIFT": [
+        "Jog search"
+      ],
+      "Side|Deck 4": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Top, SHIFT": [
+        "Jog search"
+      ],
+      "Top, vinyl off": [
+        "Jog rim bend"
+      ],
+      "Top, vinyl off|Deck 4": [
+        "Jog rim bend"
+      ],
+      "Top|Deck 4": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-load": {
+      "Deck 4": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-low": {
+      "Deck 4": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "Deck 4": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 4 + Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 4 + Sampler": [
+        "Sampler 13 Play from start"
+      ],
+      "Deck 4 + Sampler + SHIFT": [
+        "Sampler 13 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 4 + Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 4 + Sampler": [
+        "Sampler 14 Play from start"
+      ],
+      "Deck 4 + Sampler + SHIFT": [
+        "Sampler 14 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 4 + Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 4 + Sampler": [
+        "Sampler 15 Play from start"
+      ],
+      "Deck 4 + Sampler + SHIFT": [
+        "Sampler 15 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 4 + Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 4 + Sampler": [
+        "Sampler 16 Play from start"
+      ],
+      "Deck 4 + Sampler + SHIFT": [
+        "Sampler 16 Stop at cue"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    },
+    "r-pfl": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "Deck 4 + SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo",
+        "Tempo msb"
+      ],
+      "normal": [
+        "Tempo",
+        "Tempo msb"
+      ]
+    },
+    "r-top1": {
+      "Deck 4": [
+        "Double loop",
+        "Halve loop"
+      ],
+      "Deck 4 + Press": [
+        "Loop (current size)"
+      ],
+      "Deck 4 + SHIFT": [
+        "Move loop"
+      ],
+      "Deck 4 + SHIFT press": [
+        "Reloop / exit"
+      ],
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "Move loop"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "r-top4": {
+      "Effect amount": [
+        "FX 2 Effect 1 knob"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-top5": {
+      "Effect amount": [
+        "FX 2 Effect 2 knob"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 2 next"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "r-top6": {
+      "Effect amount": [
+        "FX 2 Effect 3 knob"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 3 next"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "select": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

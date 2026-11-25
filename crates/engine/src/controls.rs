@@ -235,6 +235,9 @@ pub(crate) struct DeckControls {
     pub(crate) beatjump: ControlHandle,
     /// Set to N to multiply the loop length by N; the engine zeroes it.
     pub(crate) loop_scale: ControlHandle,
+    /// Not in Mixxx: a saved loop to play next, its start and end in
+    /// seconds, for `saved_loop_activate` (Prep's Loops pads).
+    pub(crate) saved_loop: [ControlHandle; 2],
     /// Moves the loop by that many beats (Mixxx's loop_move), or by that many
     /// of its own lengths (openDJ's loop_move_loops, VirtualDJ's loop_move).
     pub(crate) loop_move: [ControlHandle; 2],
@@ -524,6 +527,8 @@ impl DeckControls {
             beatjump_size: reg.create(g, "beatjump_size", 4.0, 1.0 / 32.0, 512.0, Behavior::Linear),
             beatjump: reg.create(g, "beatjump", 0.0, -512.0, 512.0, Behavior::Free),
             loop_scale: reg.create(g, "loop_scale", 0.0, 0.0, 64.0, Behavior::Free),
+            saved_loop: ["saved_loop_start", "saved_loop_end"]
+                .map(|k| reg.create(g, k, -1.0, -1.0, 36000.0, Behavior::Free)),
             loop_move: ["loop_move", "loop_move_loops"]
                 .map(|k| reg.create(g, k, 0.0, -512.0, 512.0, Behavior::Free)),
             grid_move: reg.create(g, "beats_translate_by", 0.0, -60.0, 60.0, Behavior::Free),
@@ -601,6 +606,8 @@ pub(crate) enum Action {
     LoopIn,
     LoopOut,
     Reloop,
+    /// Loops the saved loop in `saved_loop` and plays it.
+    SavedLoop,
     /// A tap of the deck's tempo: taps in time set the track's BPM.
     BpmTap,
     BeatJump(f64),
@@ -638,6 +645,8 @@ pub(crate) fn deck_pushes(reg: &ControlRegistry, g: &str) -> Vec<Push> {
         ("loop_in".into(), Action::LoopIn),
         ("loop_out".into(), Action::LoopOut),
         ("reloop_toggle".into(), Action::Reloop),
+        // Not in Mixxx: loops saved_loop_start to saved_loop_end and plays.
+        ("saved_loop_activate".into(), Action::SavedLoop),
         ("bpm_tap".into(), Action::BpmTap),
         ("rate_perm_up_small".into(), Action::RateStep(0.001)),
         ("rate_perm_down_small".into(), Action::RateStep(-0.001)),
@@ -681,6 +690,26 @@ pub(crate) fn deck_pushes(reg: &ControlRegistry, g: &str) -> Vec<Push> {
             Action::Grid(GridEdit::BarHere),
         ),
         ("beats_reset".into(), Action::Grid(GridEdit::Reset)),
+        // Not in Mixxx: no grid at all, for a track with no steady beat.
+        ("beats_clear".into(), Action::Grid(GridEdit::Clear)),
+        // Not in Mixxx: bar 1 a beat either way, and moving a tempo
+        // change (anchor) a little either way.
+        (
+            "beats_downbeat_earlier".into(),
+            Action::Grid(GridEdit::ShiftBar(-1)),
+        ),
+        (
+            "beats_downbeat_later".into(),
+            Action::Grid(GridEdit::ShiftBar(1)),
+        ),
+        (
+            "beats_anchor_earlier".into(),
+            Action::Grid(GridEdit::MoveAnchor(-0.005)),
+        ),
+        (
+            "beats_anchor_later".into(),
+            Action::Grid(GridEdit::MoveAnchor(0.005)),
+        ),
         // Not in Mixxx: tempo sections and halving or doubling.
         (
             "beats_section_add".into(),

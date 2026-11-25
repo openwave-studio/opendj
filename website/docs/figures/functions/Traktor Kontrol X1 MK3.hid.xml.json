@@ -1,0 +1,403 @@
+{
+  "file": "Traktor Kontrol X1 MK3.hid.xml",
+  "parts": {
+    "l-assign-l": {
+      "SHIFT": [
+        "FX 3 Send FX 3 to deck 1"
+      ],
+      "normal": [
+        "FX 1 Send FX 1 to deck 1"
+      ]
+    },
+    "l-assign-r": {
+      "SHIFT": [
+        "FX 3 Send FX 3 to deck 2"
+      ],
+      "normal": [
+        "FX 1 Send FX 1 to deck 2"
+      ]
+    },
+    "l-browse": {
+      "Push": [
+        "Load the selected track"
+      ],
+      "SHIFT": [
+        "Scroll the sidebar"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fxbtn1": {
+      "Mixer": [
+        "Cut the highs"
+      ],
+      "normal": [
+        "FX 1 Effect unit on or off"
+      ]
+    },
+    "l-fxbtn2": {
+      "Mixer": [
+        "Cut the mids"
+      ],
+      "SHIFT": [
+        "FX 1 Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on or off"
+      ]
+    },
+    "l-fxbtn3": {
+      "Mixer": [
+        "Cut the lows"
+      ],
+      "SHIFT": [
+        "FX 1 Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on or off"
+      ]
+    },
+    "l-fxbtn4": {
+      "Mixer": [
+        "Headphone cue"
+      ],
+      "SHIFT": [
+        "FX 1 Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on or off"
+      ]
+    },
+    "l-fxknob1": {
+      "Mixer": [
+        "EQ high"
+      ],
+      "normal": [
+        "FX 1 Dry / wet"
+      ]
+    },
+    "l-fxknob2": {
+      "Mixer": [
+        "EQ mid"
+      ],
+      "normal": [
+        "FX 1 Effect 1 amount"
+      ]
+    },
+    "l-fxknob3": {
+      "Mixer": [
+        "EQ low"
+      ],
+      "normal": [
+        "FX 1 Effect 2 amount"
+      ]
+    },
+    "l-fxknob4": {
+      "Mixer": [
+        "Volume"
+      ],
+      "normal": [
+        "FX 1 Effect 3 amount"
+      ]
+    },
+    "l-hotcue1": {
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-hotcue2": {
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-hotcue3": {
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-hotcue4": {
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-loop": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Jump by the loop length (moves an active loop)"
+      ],
+      "SYNC held": [
+        "Tempo (push for bigger steps)"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "l-nudge-l": {
+      "SHIFT": [
+        "Beat jump back"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-nudge-r": {
+      "SHIFT": [
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-rev": {
+      "SHIFT": [
+        "Flux (slip) on or off"
+      ],
+      "normal": [
+        "Flux reverse while held"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync on or off"
+      ]
+    },
+    "mode": {
+      "normal": [
+        "Top section: FX 1 and 2, FX 3 and 4, or the mixer"
+      ]
+    },
+    "r-assign-l": {
+      "SHIFT": [
+        "FX 4 Send FX 4 to deck 1"
+      ],
+      "normal": [
+        "FX 2 Send FX 2 to deck 1"
+      ]
+    },
+    "r-assign-r": {
+      "SHIFT": [
+        "FX 4 Send FX 4 to deck 2"
+      ],
+      "normal": [
+        "FX 2 Send FX 2 to deck 2"
+      ]
+    },
+    "r-browse": {
+      "Push": [
+        "Load the selected track"
+      ],
+      "SHIFT": [
+        "Scroll the sidebar"
+      ],
+      "SHIFT + push": [
+        "Open the selected sidebar item"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fxbtn1": {
+      "Mixer": [
+        "Cut the highs"
+      ],
+      "normal": [
+        "FX 2 Effect unit on or off"
+      ]
+    },
+    "r-fxbtn2": {
+      "Mixer": [
+        "Cut the mids"
+      ],
+      "SHIFT": [
+        "FX 2 Next effect in slot 1"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on or off"
+      ]
+    },
+    "r-fxbtn3": {
+      "Mixer": [
+        "Cut the lows"
+      ],
+      "SHIFT": [
+        "FX 2 Next effect in slot 2"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on or off"
+      ]
+    },
+    "r-fxbtn4": {
+      "Mixer": [
+        "Headphone cue"
+      ],
+      "SHIFT": [
+        "FX 2 Next effect in slot 3"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on or off"
+      ]
+    },
+    "r-fxknob1": {
+      "Mixer": [
+        "EQ high"
+      ],
+      "normal": [
+        "FX 2 Dry / wet"
+      ]
+    },
+    "r-fxknob2": {
+      "Mixer": [
+        "EQ mid"
+      ],
+      "normal": [
+        "FX 2 Effect 1 amount"
+      ]
+    },
+    "r-fxknob3": {
+      "Mixer": [
+        "EQ low"
+      ],
+      "normal": [
+        "FX 2 Effect 2 amount"
+      ]
+    },
+    "r-fxknob4": {
+      "Mixer": [
+        "Volume"
+      ],
+      "normal": [
+        "FX 2 Effect 3 amount"
+      ]
+    },
+    "r-hotcue1": {
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-hotcue2": {
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-hotcue3": {
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-hotcue4": {
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-loop": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Jump by the loop length (moves an active loop)"
+      ],
+      "SYNC held": [
+        "Tempo (push for bigger steps)"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "r-nudge-l": {
+      "SHIFT": [
+        "Beat jump back"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-nudge-r": {
+      "SHIFT": [
+        "Beat jump forward"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-rev": {
+      "SHIFT": [
+        "Flux (slip) on or off"
+      ],
+      "normal": [
+        "Flux reverse while held"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Tempo leader"
+      ],
+      "normal": [
+        "Sync on or off"
+      ]
+    },
+    "shift": {
+      "normal": [
+        "Shift"
+      ]
+    }
+  }
+}

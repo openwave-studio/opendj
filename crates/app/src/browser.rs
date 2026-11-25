@@ -65,6 +65,7 @@ mod side_tabs;
 mod sidelist;
 mod spotify_export;
 mod staging;
+mod stem_files;
 mod stream_play;
 mod streamed;
 mod tag_chips;
@@ -626,6 +627,9 @@ pub struct Browser {
     lib: LibraryControls,
     /// Moving the selection with a controller goes through folders instead of tracks.
     folders_focused: bool,
+    /// The rail entry the knob or ↑ ↓ moved to (-1 Collection Health), and
+    /// when: it opens once the moves stop (see `navigation::RAIL_SETTLE`).
+    rail_pending: Option<(i32, std::time::Instant)>,
     /// Tracks loaded with LoadSelectedTrackAndPlay, to start once they arrive.
     play_when_loaded: [Option<usize>; NUM_DECKS],
     /// The streaming services, in the order of [`STREAMS`].
@@ -677,6 +681,8 @@ pub struct Browser {
     dupe_groups: OnceCell<Vec<Group>>,
     /// What each copy's file is like, read with the groups.
     dupe_facts: RefCell<HashMap<usize, opendj_library::dupes::FileFacts>>,
+    /// Reads the copies' files in the background, for the groups.
+    dupe_scan: crate::dupe_scan::DupeScan,
     /// Groups of copies opened to show every copy, by the kept copy's id.
     open_groups: HashSet<usize>,
     /// Every group shows its copies.
@@ -776,6 +782,7 @@ pub struct Browser {
     /// Export to USB's dialog and export.
     usb: usb::State,
     playlist_files: playlist_files::State,
+    stem_files: stem_files::State,
     inbox_albums: inbox_albums::InboxAlbums,
     rekordbox_xml: rekordbox_xml::State,
     phrases_seen: analysis::SeenDecks,
@@ -791,6 +798,10 @@ pub struct Browser {
     health: Facts,
     /// Looks for covers in the background, for the "No cover" check.
     cover_scan: CoverScan,
+    /// Covers and bitrates found and not yet saved or shown.
+    covers_found: Vec<(usize, opendj_library::health::FileLook)>,
+    /// When found covers were last saved and shown.
+    covers_shown: std::time::Instant,
     /// Makes audio fingerprints, for copies found by their sound.
     sound_scan: crate::sound_scan::SoundScan,
     /// Each track's audio fingerprint, by id.
@@ -1361,6 +1372,7 @@ impl Browser {
             key_rules: (key::Mixing::Harmonic, 1),
             lib: LibraryControls::create(registry),
             folders_focused: false,
+            rail_pending: None,
             play_when_loaded: [None; NUM_DECKS],
             streams: STREAMS
                 .iter()
@@ -1428,6 +1440,7 @@ impl Browser {
             duplicates: HashSet::new(),
             dupe_groups: OnceCell::new(),
             dupe_facts: RefCell::new(HashMap::new()),
+            dupe_scan: crate::dupe_scan::DupeScan::start(),
             open_groups: HashSet::new(),
             all_copies: false,
             links: HashSet::new(),
@@ -1496,6 +1509,7 @@ impl Browser {
             analysis_shown: Default::default(),
             usb: Default::default(),
             playlist_files: Default::default(),
+            stem_files: Default::default(),
             inbox_albums: inbox_albums::InboxAlbums::new(),
             rekordbox_xml: Default::default(),
             phrases_seen: Default::default(),
@@ -1504,6 +1518,8 @@ impl Browser {
             pending_moves: HashMap::new(),
             health: Facts::default(),
             cover_scan: CoverScan::start(),
+            covers_found: Vec::new(),
+            covers_shown: std::time::Instant::now(),
             sound_scan: crate::sound_scan::SoundScan::start(),
             sounds: HashMap::new(),
             alike: Vec::new(),
@@ -2258,6 +2274,7 @@ impl Browser {
         Self::install_usb_export(app, &edit, &with);
         Self::install_spotify_export(&edit, &with);
         Self::install_playlist_files(&edit, &with);
+        Self::install_stem_files(&edit, &with);
         Self::install_rekordbox_xml(&edit, &with);
     }
 
@@ -4877,9 +4894,20 @@ impl Browser {
         }
     }
 
+    /// Whether the folder picked in the tree is open.
+    fn picked_folder_open(&self, app: &AppWindow) -> bool {
+        // Jam's column has no folders.
+        if app.global::<StoreUi>().get_source() == INSTRUMENTS {
+            return false;
+        }
+        self.visible_nodes.contains(&self.current_node)
+            && self.navigation_row(self.current_node).children == 2
+    }
+
     /// Acts on library controls set by controller mappings: browsing,
     /// switching between folders and tracks, loading. Called every frame.
     pub fn poll_controllers(&mut self, app: &AppWindow) {
+        self.settle_rail(false);
         if take(&self.lib.show_linked) > 0.0 {
             app.set_side_panel_visible(true);
             app.set_side_tab(LINKED_TAB as i32);
@@ -4901,7 +4929,16 @@ impl Browser {
             }
         }
         for _ in 0..backward.max(0) {
-            self.navigate_browser(2, 1);
+            // A Shift+press steps left, as ← does, except in the folders:
+            // it closes an open folder, and otherwise goes straight to the
+            // rail instead of up one folder at a time, since turning the
+            // knob already reaches the parents.
+            let focus = app.global::<BrowserFocus>();
+            if focus.get_pane() == BrowserPane::Folders && !self.picked_folder_open(app) {
+                focus.invoke_focus(BrowserPane::Sources);
+            } else {
+                self.navigate_browser(2, 1);
+            }
         }
         for _ in 0..relative.saturating_abs() {
             self.navigate_browser(if relative > 0 { 3 } else { 2 }, 1);
@@ -4951,8 +4988,7 @@ impl Browser {
         let go = take(&self.lib.go_to_item) > 0.0;
         if take(&self.lib.toggle_folder) > 0.0 {
             if app.global::<StoreUi>().get_source() == INSTRUMENTS {
-                let ui = app.global::<crate::InstrumentsUi>();
-                ui.invoke_toggle_node(ui.get_current_node());
+                // Jam's column has no folders to open.
             } else if let Some(row) = self
                 .visible_nodes
                 .iter()
@@ -5579,6 +5615,7 @@ impl Browser {
                     && matches!(kind, KIND_LIST | KIND_HISTORY | KIND_CRATE),
                 mixcloud: self.tree == MIXED_SETS,
                 rekordbox: node.is_some() && self.rekordbox_exportable(self.current_node),
+                stems: analysable,
             });
             let name = match self.nodes.get(self.current_node) {
                 Some(n) => n.title.clone().unwrap_or_else(|| n.name.clone()),

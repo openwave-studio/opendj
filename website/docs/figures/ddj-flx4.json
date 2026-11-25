@@ -1,0 +1,190 @@
+{
+ "groups": [
+  {
+   "name": "Loop",
+   "at": [
+    54,
+    40
+   ]
+  },
+  {
+   "name": "Deck",
+   "at": [
+    268,
+    228
+   ]
+  },
+  {
+   "name": "Pads",
+   "at": [
+    134,
+    652
+   ]
+  },
+  {
+   "name": "Mixer",
+   "at": [
+    574,
+    236
+   ]
+  },
+  {
+   "name": "Beat FX",
+   "at": [
+    948,
+    330
+   ]
+  },
+  {
+   "name": "Browse",
+   "at": [
+    656,
+    10
+   ]
+  }
+ ],
+ "labels": {
+  "l-in": [
+   "Loop in",
+   "Start"
+  ],
+  "l-out": [
+   "Loop out",
+   "End"
+  ],
+  "l-exit": [
+   "Loop / exit"
+  ],
+  "l-call-l": [
+   "Halve"
+  ],
+  "l-call-r": [
+   "Double"
+  ],
+  "l-sync": [
+   "Sync",
+   "Tempo range"
+  ],
+  "l-jog": [
+   "Scratch \u00b7 nudge",
+   "Search"
+  ],
+  "l-cue": [
+   "Cue",
+   "To start",
+   "inside"
+  ],
+  "l-play": [
+   "Play",
+   "Censor",
+   "inside"
+  ],
+  "l-tempo": [
+   "Tempo"
+  ],
+  "l-m-hot": [
+   "Hot cues"
+  ],
+  "l-m-fx": [
+   "Pad FX"
+  ],
+  "l-m-jump": [
+   "Beat jump"
+  ],
+  "l-m-samp": [
+   "Sampler"
+  ],
+  "l-pfl": [
+   "Cue in phones",
+   "Quantize"
+  ],
+  "l-hi": [
+   "High"
+  ],
+  "l-mid": [
+   "Mid"
+  ],
+  "l-low": [
+   "Low"
+  ],
+  "l-cfx": [
+   "Color FX"
+  ],
+  "xfader": [
+   "Crossfader"
+  ],
+  "browse": [
+   "Scroll \u00b7 open",
+   "Zoom"
+  ],
+  "load-l": [
+   "Load 1",
+   "Linked"
+  ],
+  "load-r": [
+   "Load 2",
+   "Layout"
+  ],
+  "smart-cfx": [
+   "",
+   "Next CFX"
+  ],
+  "fx-select": [
+   "Effect",
+   "Back"
+  ],
+  "fx-level": [
+   "Amount"
+  ],
+  "fx-on": [
+   "On / off",
+   "Release"
+  ],
+  "fx-ch": [
+   "Deck 1 \u00b7 2 \u00b7 both"
+  ],
+  "master": [
+   "Main level"
+  ],
+  "mix": [
+   "Cue / main"
+  ],
+  "phones": [
+   "Phones level"
+  ],
+  "l-trim": [
+   "Gain"
+  ],
+  "l-fader": [
+   "Volume"
+  ],
+  "r-fader": [
+   "Volume"
+  ],
+  "l-shift": [
+   "SHIFT"
+  ],
+  "beat-l": [
+   "\u00bd"
+  ],
+  "beat-r": [
+   "\u00d72"
+  ]
+ },
+ "notes": [
+  {
+   "text": "The right deck works the same",
+   "at": [
+    1351,
+    500
+   ]
+  },
+  {
+   "text": "\u21e7 = with SHIFT held",
+   "at": [
+    1351,
+    530
+   ]
+  }
+ ]
+}

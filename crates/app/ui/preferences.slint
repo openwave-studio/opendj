@@ -221,7 +221,7 @@ export component Button inherits Rectangle {
     HorizontalLayout {
         padding-left: 12px;
         padding-right: 12px;
-        Text { text: root.text; color: primary ? #000000 : Theme.text; font-size: 12px; font-weight: primary ? 600 : 500; vertical-alignment: center; horizontal-alignment: center; }
+        Text { text: root.text; color: primary ? Theme.f-000000 : Theme.text; font-size: 12px; font-weight: primary ? 600 : 500; vertical-alignment: center; horizontal-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -310,7 +310,7 @@ component KeyButton inherits Rectangle {
     width: 130px;
     height: 28px;
     border-radius: Theme.radius;
-    background: listening ? #2a2440 : ta.has-hover ? Theme.n-222225 : Theme.well;
+    background: listening ? Theme.f-2a2440 : ta.has-hover ? Theme.n-222225 : Theme.well;
     border-width: 1px;
     border-color: listening ? Theme.accent : Theme.separator;
     Text {
@@ -347,7 +347,7 @@ component ScriptField inherits Rectangle {
     border-radius: Theme.radius;
     background: Theme.well;
     border-width: 1px;
-    border-color: item.on ? #ff6b6b : input.has-focus ? Theme.accent : Theme.separator;
+    border-color: item.on ? Theme.f-ff6b6b : input.has-focus ? Theme.accent : Theme.separator;
     if input.text == "": Text {
         x: 8px;
         text: "Type an action…";
@@ -381,7 +381,7 @@ component FilterChipButton inherits Rectangle {
     border-color: on ? Theme.accent : Theme.border;
     label := Text {
         text: root.text;
-        color: on ? #000000 : Theme.text;
+        color: on ? Theme.f-000000 : Theme.text;
         font-size: 12px;
         font-weight: 600;
         vertical-alignment: center;
@@ -679,7 +679,7 @@ component StorageButton inherits Rectangle {
     height: 24px;
     border-radius: Theme.radius;
     border-width: 1px;
-    border-color: warn ? #ff9f0a : Theme.border;
+    border-color: warn ? Theme.f-ff9f0a : Theme.border;
     background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-2a2a2e : Theme.control;
     label := Text { text: root.text; color: warn ? Theme.c-ff9f0a : Theme.text; font-size: 12px; }
     ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
@@ -786,8 +786,8 @@ component StorageView inherits VerticalLayout {
     if StorageUi.confirm != "": Rectangle {
         border-radius: Theme.radius;
         border-width: 1px;
-        border-color: #ff9f0a80;
-        background: #ff9f0a14;
+        border-color: Theme.f-ff9f0a80;
+        background: Theme.f-ff9f0a14;
         HorizontalLayout {
             padding: 10px;
             spacing: 10px;
@@ -815,8 +815,8 @@ component StorageView inherits VerticalLayout {
 component TrackColorPreview inherits Rectangle {
     in property <int> mode;
     property <[{title: string, artist: string, tint: color}]> rows: [
-        { title: "Sunrise", artist: "Artist", tint: #ff9f0a },
-        { title: "Night Drive", artist: "Artist", tint: #b69cff },
+        { title: "Sunrise", artist: "Artist", tint: Theme.f-ff9f0a },
+        { title: "Night Drive", artist: "Artist", tint: Theme.f-b69cff },
     ];
     width: 240px;
     height: 52px;
@@ -922,6 +922,7 @@ export component PrefRow inherits Rectangle {
             if item.title != "": VerticalLayout {
                 alignment: start;
                 MenuField {
+                    title: item.title;
                     width: 96px;
                     text: "Actions";
                     choices: item.choices;
@@ -974,7 +975,7 @@ export component PrefRow inherits Rectangle {
                     background: item.on || item.value == "some" ? Theme.accent : transparent;
                     Text {
                         text: item.on ? "✓" : item.value == "some" ? "–" : "";
-                        color: #000000;
+                        color: Theme.f-000000;
                         font-size: 11px;
                         font-weight: 700;
                         horizontal-alignment: center;
@@ -1044,7 +1045,7 @@ export component PrefRow inherits Rectangle {
                     width: 8px;
                     height: 8px;
                     border-radius: 4px;
-                    background: item.chosen == 1 ? #30c158 : item.chosen == 2 ? #ff9f0a : Theme.n-4a4a4f;
+                    background: item.chosen == 1 ? Theme.f-30c158 : item.chosen == 2 ? Theme.f-ff9f0a : Theme.n-4a4a4f;
                 }
             }
             Text {
@@ -1129,6 +1130,7 @@ export component PrefRow inherits Rectangle {
             if item.kind == 1: VerticalLayout {
                 alignment: center;
                 MenuField {
+                    title: item.title;
                     width: 260px;
                     text: item.value != "" ? item.value : item.choices[item.chosen];
                     choices: item.choices;
@@ -1163,6 +1165,7 @@ export component PrefRow inherits Rectangle {
                 if item.choices2.length > 0: VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: "Deck";
                         width: 128px;
                         opacity: item.on ? 1 : 0.4;
                         text: item.choices2[item.chosen2];
@@ -1175,6 +1178,7 @@ export component PrefRow inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: "Mapping";
                         width: 240px;
                         opacity: item.on ? 1 : 0.4;
                         text: item.choices[item.chosen];
@@ -1249,6 +1253,7 @@ export component PrefRow inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: item.title;
                         width: 110px;
                         text: item.choices[item.chosen];
                         choices: item.choices;
@@ -1268,6 +1273,7 @@ export component PrefRow inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: item.title;
                         width: 260px;
                         text: item.choices[item.chosen];
                         choices: item.choices;

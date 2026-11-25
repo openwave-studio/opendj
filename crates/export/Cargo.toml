@@ -32,6 +32,10 @@ rbox-onelib = { version = "0.3.0", default-features = false, features = ["bundle
 [target.'cfg(not(target_vendor = "apple"))'.dependencies]
 rbox-onelib = { version = "0.3.0", default-features = false, features = ["bundled-vendored-openssl"] }
 
+# The stick's file system: an HFS+ stick gets the hidden .PIONEER folder.
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
 # The tests read OneLibrary back without rbox; this is the workspace's own
 # SQLite, which rbox-onelib already builds with SQLCipher.

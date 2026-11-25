@@ -3718,6 +3718,86 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <description>SOUND COLOR FX D-ECHO - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX D-ECHO +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x01</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX PITCH +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX NOISE +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0A</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
+                <description>SOUND COLOR FX FILTER +SHIFT - what the COLOR FX knobs play (openDJ)</description>
+                <group>[Master]</group>
+                <key>PioneerDDJ800.colorFxPressed</key>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
         </controls>
         <outputs>
             <!-- PLAY -->

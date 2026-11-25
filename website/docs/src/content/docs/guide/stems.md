@@ -67,13 +67,17 @@ one track at a time; the footer's [Background panel](music.md#background-work)
 shows how far along it is and lets you pause or stop it. To get a whole crate,
 playlist or set ready before a gig, right-click it in the sidebar and choose
 **Prepare HQ Stems for All**: its tracks join the same queue, skipping any that
-have them already. When it's done the deck crossfades to the new stems in a
-fiftieth of a second, so nothing clicks even with a stem muted, and the track
-loads with them from then on.
+have them already. For a track on a deck, the separation starts where the deck
+is playing and works outwards, mostly ahead, so the high quality stems play
+there within seconds instead of once the whole track is done. The deck
+crossfades to them in a fiftieth of a second, so nothing clicks even with a
+stem muted; if you jump somewhere they haven't reached yet, the quick stems play
+there until they do. Once it's done, the track loads with them from then on.
 
 The top-right stems pad shows which stems are playing: **INSTANT** for the
 quick ones made on load, **HQ…** while they wait their turn, **HQ 42%** while
-they are being prepared, and **HQ** once they play.
+they are being prepared (the part already done plays them), and **HQ** once
+the whole track has them.
 
 ## Settings
 
@@ -82,7 +86,7 @@ they are being prepared, and **HQ** once they play.
 - **Stems on load**: turn it off to save CPU on an older computer. Tracks then
   only get stems you prepare with Prepare High Quality Stems (or from an NI
   stem file).
-- **High quality stems kept**: high quality stems take about 4 times the
+- **High quality stems kept**: high quality stems take about 3 times the
   space of the track. Once they pass this size (10 GB at first), the stems
   played longest ago are deleted to make room. Shows how many tracks have
   them and how much space they take.
@@ -91,3 +95,15 @@ they are being prepared, and **HQ** once they play.
 - Whether each stems model is downloaded yet.
 
 NI stem files (`.stem.mp4`) play their own stems.
+
+## Stem files
+
+To take high quality stems to another computer, or to other DJ software that
+plays NI stem files, pick a list, crate, set or folder in the sidebar and
+choose **File › Export › Stem Files…**, then a folder. openDJ saves a
+`.stem.mp4` there for each track that has high quality
+stems, named after the track, holding the track itself and its drums, bass,
+other and vocals in Apple Lossless, with the track's title, artist and album.
+Players that don't know stems play just the track. Tracks without high quality
+stems yet are skipped (the message at the end says how many); prepare them
+first with **Prepare HQ Stems for All**.

@@ -9,8 +9,8 @@ the first time it loads; see [When tracks are analysed](music.md#when-tracks-are
 
 ## The LOOP controls
 
-In 2-Deck the **LOOP** column sits between the pads and the jog. Under its
-title:
+In 2-Deck the loop controls sit under the pads, on the left: IN and OUT,
+then the loop length.
 
 - **The loop length** in the middle box, such as **4**. Press it to start a
   loop of that many beats from where the track is playing; it turns green

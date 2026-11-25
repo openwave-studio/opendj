@@ -281,7 +281,7 @@ export component WaveHeightList inherits VerticalLayout {
     }
     if WaveLook.color == 1: WaveSegments {
         choices: ["Blue-Orange", "Lilac-Cyan"];
-        swatches: [[#0050E0, #F8A000, #F0E8D0], [#B69CFF, #22C7E0, #F4FBFF]];
+        swatches: [[Theme.f-0050e0, Theme.f-f8a000, Theme.f-f0e8d0], [Theme.f-b69cff, Theme.f-22c7e0, Theme.f-f4fbff]];
         chosen: WaveLook.palette;
         picked(i) => {
             WaveLook.pick-palette(i);

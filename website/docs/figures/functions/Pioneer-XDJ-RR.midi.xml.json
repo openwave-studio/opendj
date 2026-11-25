@@ -1,0 +1,775 @@
+{
+  "file": "Pioneer-XDJ-RR.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Waveform zoom"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c1-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "c1-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c1-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "c1-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "c1-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "c1-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "c2-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "c2-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c2-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "c2-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "c2-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "c2-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "cfx-dub-echo": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-filter": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-noise": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "fx-beat-down": {
+      "normal": [
+        "FX 5 Effect 1 beats halve"
+      ]
+    },
+    "fx-beat-up": {
+      "normal": [
+        "FX 5 Effect 1 beats double"
+      ]
+    },
+    "fx-echo": {
+      "normal": [
+        "FX 5 Effect 1 loaded effect"
+      ]
+    },
+    "fx-flanger": {
+      "normal": [
+        "FX 5 Effect 1 loaded effect"
+      ]
+    },
+    "fx-level": {
+      "normal": [
+        "FX 5 Effect 1 knob"
+      ]
+    },
+    "fx-on": {
+      "normal": [
+        "FX 5 Effect 1 on"
+      ]
+    },
+    "fx-reverb": {
+      "normal": [
+        "FX 5 Effect 1 loaded effect"
+      ]
+    },
+    "l-call-next": {
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-call-prev": {
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-cue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-jog": {
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "l-loop-in": {
+      "Long press": [
+        "Loop adjust"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-loop-out": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-master": {
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-master-tempo": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-mode-beatjump": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-mode-beatloop": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-mode-hotcuemode": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-mode-sliploop": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-pad1": {
+      "Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX": [
+        "Loop roll 1/16 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/16 beat"
+      ]
+    },
+    "l-pad2": {
+      "Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX": [
+        "Loop roll 1/8 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/8 beat"
+      ]
+    },
+    "l-pad3": {
+      "Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 32 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX": [
+        "Loop roll 1/4 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/4 beat"
+      ]
+    },
+    "l-pad4": {
+      "Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 32 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX": [
+        "Loop roll 1/2 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/2 beat"
+      ]
+    },
+    "l-pad5": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 4 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX": [
+        "Loop roll 1 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1 beat"
+      ]
+    },
+    "l-pad6": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 8 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX": [
+        "Loop roll 2 beats"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 2 beats"
+      ]
+    },
+    "l-pad7": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats back"
+      ],
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX": [
+        "Loop roll 4 beats"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 4 beats"
+      ]
+    },
+    "l-pad8": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX": [
+        "Loop roll 8 beats"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 8 beats"
+      ]
+    },
+    "l-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-quantize": {
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "l-reloop": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-search-fwd": {
+      "normal": [
+        "Jump 4 beats forward"
+      ]
+    },
+    "l-search-rev": {
+      "normal": [
+        "Jump 4 beats back"
+      ]
+    },
+    "l-sync": {
+      "Long press": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-tempo-range": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-track-fwd": {
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "l-track-rev": {
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "l-vinyl": {
+      "normal": [
+        "Jog mode"
+      ]
+    },
+    "load1": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load2": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-call-next": {
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-call-prev": {
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-cue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-jog": {
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "r-loop-in": {
+      "Long press": [
+        "Loop adjust"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-loop-out": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-master": {
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-master-tempo": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-mode-beatjump": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-mode-beatloop": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-mode-hotcuemode": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-mode-sliploop": {
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-pad1": {
+      "Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX": [
+        "Loop roll 1/16 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/16 beat"
+      ]
+    },
+    "r-pad2": {
+      "Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX": [
+        "Loop roll 1/8 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/8 beat"
+      ]
+    },
+    "r-pad3": {
+      "Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 32 beats back"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX": [
+        "Loop roll 1/4 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/4 beat"
+      ]
+    },
+    "r-pad4": {
+      "Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 32 beats forward"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX": [
+        "Loop roll 1/2 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1/2 beat"
+      ]
+    },
+    "r-pad5": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 4 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX": [
+        "Loop roll 1 beat"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 1 beat"
+      ]
+    },
+    "r-pad6": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 8 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX": [
+        "Loop roll 2 beats"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 2 beats"
+      ]
+    },
+    "r-pad7": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats back"
+      ],
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX": [
+        "Loop roll 4 beats"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 4 beats"
+      ]
+    },
+    "r-pad8": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Beat loop, SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX": [
+        "Loop roll 8 beats"
+      ],
+      "Pad FX, SHIFT": [
+        "Loop roll 8 beats"
+      ]
+    },
+    "r-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-reloop": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-search-fwd": {
+      "normal": [
+        "Jump 4 beats forward"
+      ]
+    },
+    "r-search-rev": {
+      "normal": [
+        "Jump 4 beats back"
+      ]
+    },
+    "r-sync": {
+      "Long press": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-tempo-range": {
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-track-fwd": {
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "r-track-rev": {
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "r-vinyl": {
+      "normal": [
+        "Jog mode"
+      ]
+    },
+    "tag": {
+      "normal": [
+        "Add to Automix"
+      ]
+    }
+  }
+}

@@ -1,16 +1,16 @@
 // The Prep layout: deck 1 alone, for getting In Prep tracks ready to play.
 // Under the deck's header (cover, title, tempo, key, time, overview) one
-// row: the beat grid tools on the left, transport in the middle and eight
-// big hot cue pads on the right, with the track's stage and Play Ready,
-// next track above them. The large scrolling waveform above is deck 1's,
-// at the zoom every large waveform shares (zoom.slint). No mixer,
+// row: the grid editor on the left (one side of the 2-Deck grid editor
+// bar), transport in the middle, and pads on the right under four tabs:
+// Hot Cues, Loops (saved loops), Automix (where Automix mixes in and out)
+// and Memory (memory cues, for Pioneer players). The large scrolling waveform above is deck 1's;
+// dragging and the wheel zoom it, as on every large waveform. No mixer,
 // crossfader or FX.
 import { Theme } from "theme.slint";
-import { ControlButton, ControlKnob, Controls, CueHeadphones } from "controls.slint";
-import { DeckInfo, Header, PlayButton } from "deck.slint";
+import { ControlButton, ControlFader, Controls, HoverTip } from "controls.slint";
+import { DeckInfo, Header, PadTab, PlayButton } from "deck.slint";
 import { CueList } from "cues.slint";
-import { WaveZoom } from "zoom.slint";
-import { LibraryEdit } from "library.slint";
+import { GridEditorSide } from "grid_editor.slint";
 
 export global PrepUi {
     // Whether the Prep layout is offered (off until v0.6).
@@ -50,120 +50,66 @@ export global PrepUi {
     }
 }
 
-// A small caption over a group of buttons.
-component PrepLabel inherits Text {
-    // A section title, as the kit's: condensed capitals.
-    font-family: Theme.title-font;
-    color: Theme.section-title;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.4px;
-    vertical-alignment: center;
-}
-
 // A button that presses a control once (grid moves, beat jumps).
 component PressButton inherits ControlButton {
     momentary: true;
     font-size: 12px;
-    height: 28px;
+    height: 22px;
 }
 
-// The beat grid tools, the jog grid menu's controls laid out flat: Bar 1
-// here, a beat here, tap, the click, lock; move, tempo, ½ and ×2; tempo
-// sections, undo and back to the detected grid.
-component GridPanel inherits VerticalLayout {
+// The grid editor's side for deck 1, as in the 2-Deck bar.
+component PrepGrid inherits Rectangle {
     in property <string> group;
     in property <DeckInfo> info;
-    property <bool> locked: Controls.value(Controls.resolve(group, "bpmlock"), Controls.tick) > 0;
-    padding: 10px;
-    spacing: 6px;
-    HorizontalLayout {
-        height: 24px;
-        spacing: 8px;
-        PrepLabel { text: "BEAT GRID"; }
-        Text {
-            text: (info.grid-sections > 1 ? info.grid-sections + " tempo sections" : "Steady tempo") + " · "
-                + (info.grid-unsure && info.grid-source == "Detected" ? "may be off, check by ear" : info.grid-source);
-            color: info.grid-unsure && info.grid-source == "Detected" ? Theme.stage-prep : Theme.text-dim;
-            font-size: 12px;
-            vertical-alignment: center;
-            horizontal-stretch: 1;
-            overflow: elide;
-        }
-        ControlButton { group: group; key: "bpmlock"; text: locked ? "Locked" : "Lock"; font-size: 12px; width: 70px; outline-when-lit: true; tip-title: "Lock grid (L)"; tip-body: "A locked grid can't be moved by mistake, and analysis leaves it alone."; tip-right-aligned: true; }
-    }
-    if locked: Text {
-        text: "Unlock the grid to edit it.";
-        color: Theme.text-dim;
-        font-size: 13px;
-        vertical-alignment: center;
-        vertical-stretch: 1;
-    }
-    if !locked: HorizontalLayout {
-        spacing: 6px;
-        PressButton { group: group; key: "beats_downbeat_here"; text: "Bar 1 here  B"; tint: Theme.accent; horizontal-stretch: 3; }
-        PressButton { group: group; key: "beats_translate_curpos"; text: "Beat here"; horizontal-stretch: 2; }
-        PressButton { group: group; key: "bpm_tap"; text: "Tap  T"; horizontal-stretch: 2; }
-        ControlButton { group: group; key: "metronome"; text: "Click  M"; font-size: 12px; height: 28px; outline-when-lit: true; horizontal-stretch: 2; }
-    }
-    if !locked: HorizontalLayout {
-        spacing: 6px;
-        PrepLabel { text: "MOVE"; width: 38px; }
-        PressButton { group: group; key: "beats_translate_earlier"; text: "‹  ["; width: 44px; }
-        PressButton { group: group; key: "beats_translate_later"; text: "]  ›"; width: 44px; }
-        Rectangle { width: 4px; }
-        PrepLabel { text: "TEMPO"; width: 44px; }
-        PressButton { group: group; key: "beats_adjust_slower"; text: "−"; width: 30px; }
-        Text { text: info.bpm; color: Theme.text; font-family: "Inter Tabular"; font-size: 13px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; width: 54px; }
-        PressButton { group: group; key: "beats_adjust_faster"; text: "+"; width: 30px; }
-        PressButton { group: group; key: "beats_scale_half"; text: "½"; width: 30px; }
-        PressButton { group: group; key: "beats_scale_double"; text: "×2"; width: 30px; }
-    }
-    if !locked: HorizontalLayout {
-        spacing: 6px;
-        PressButton { group: group; key: "beats_section_add"; text: "+ Section here"; horizontal-stretch: 2; }
-        if info.grid-sections > 1: PressButton { group: group; key: "beats_section_remove"; text: "− Section"; horizontal-stretch: 2; }
-        PressButton { group: group; key: "beats_undo_adjustment"; text: "Undo"; horizontal-stretch: 1; }
-        if info.grid-source != "Detected": PressButton { group: group; key: "beats_reset"; text: "↺ Detected"; horizontal-stretch: 2; }
-    }
+    background: Theme.pill;
+    GridEditorSide { group: group; info: info; }
 }
 
-// Play and CUE, beat jumps of 1, 4 and 8 bars, a loop, and the deck's level
-// and headphone cue, since Prep has no mixer.
-component PrepTransport inherits VerticalLayout {
+// Play and CUE, beat jumps of 4 to 32 beats and a loop, with a thin level
+// fader at the right, since Prep has no mixer.
+component PrepTransport inherits HorizontalLayout {
     in property <string> group;
     in property <DeckInfo> info;
     in property <color> tint;
-    padding: 10px;
-    spacing: 6px;
-    alignment: center;
-    HorizontalLayout {
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    spacing: 4px;
+    VerticalLayout {
+        spacing: 2px;
         alignment: center;
-        spacing: 10px;
-        ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tint: Theme.cue-lit; outline-when-lit: true; font-size: 14px; width: 72px; height: 40px; }
-        PlayButton { group: group; tint: tint; width: 72px; height: 40px; }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            ControlButton { group: group; key: "cue_default"; text: "CUE"; momentary: true; tip-title: "CUE"; tip-body: "Key: A"; tint: Theme.cue-lit; outline-when-lit: true; font-size: 14px; width: 108px; height: 24px; }
+            PlayButton { group: group; tint: tint; width: 108px; height: 24px; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            PressButton { group: group; key: "beatjump_4_backward"; text: "−4"; width: 52px; }
+            PressButton { group: group; key: "beatjump_4_forward"; text: "+4"; width: 52px; }
+            PressButton { group: group; key: "beatjump_8_backward"; text: "−8"; width: 52px; }
+            PressButton { group: group; key: "beatjump_8_forward"; text: "+8"; width: 52px; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            PressButton { group: group; key: "beatjump_16_backward"; text: "−16"; width: 52px; tip-title: "Back 4 bars"; tip-body: "Key: ←"; }
+            PressButton { group: group; key: "beatjump_16_forward"; text: "+16"; width: 52px; tip-title: "On 4 bars"; tip-body: "Key: →  (Tab: the next phrase)"; }
+            PressButton { group: group; key: "beatjump_32_backward"; text: "−32"; width: 52px; }
+            PressButton { group: group; key: "beatjump_32_forward"; text: "+32"; width: 52px; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 4px;
+            ControlButton { group: group; key: "beatloop_activate"; light-key: "loop_enabled"; text: "LOOP " + info.loop-size; momentary: true; tint: Theme.loop; font-size: 12px; height: 22px; width: 108px; }
+            PressButton { group: group; key: "loop_in"; text: "IN"; width: 52px; tip-title: "Loop in"; tip-body: "Key: D"; }
+            PressButton { group: group; key: "loop_out"; text: "OUT"; width: 52px; tip-title: "Loop out"; tip-body: "Key: F  (G: loop on and off)"; }
+        }
     }
-    HorizontalLayout {
-        alignment: center;
-        spacing: 4px;
-        PressButton { group: group; key: "beatjump_32_backward"; text: "‹8"; width: 38px; }
-        PressButton { group: group; key: "beatjump_16_backward"; text: "‹4"; width: 38px; }
-        PressButton { group: group; key: "beatjump_4_backward"; text: "‹1"; width: 38px; }
-        PrepLabel { text: "BARS"; horizontal-alignment: center; width: 40px; }
-        PressButton { group: group; key: "beatjump_4_forward"; text: "1›"; width: 38px; }
-        PressButton { group: group; key: "beatjump_16_forward"; text: "4›"; width: 38px; }
-        PressButton { group: group; key: "beatjump_32_forward"; text: "8›"; width: 38px; }
-    }
-    HorizontalLayout {
-        alignment: center;
-        spacing: 4px;
-        ControlButton { group: group; key: "beatloop_activate"; light-key: "loop_enabled"; text: "LOOP " + info.loop-size; momentary: true; tint: Theme.loop; font-size: 12px; height: 28px; width: 82px; }
-        PressButton { group: group; key: "loop_in"; text: "IN"; width: 40px; }
-        PressButton { group: group; key: "loop_out"; text: "OUT"; width: 44px; }
-        Rectangle { width: 6px; }
-        VerticalLayout { alignment: center; CueHeadphones { group: group; tint: tint; } }
-        ControlKnob { group: group; key: "volume"; size: 28px; look: 4; readout: 1; arc-color: Theme.accent; }
-    }
+    ControlFader { group: group; key: "volume"; tint: tint; ticks: 5; width: 18px; look: 1; }
 }
 
 // One hot cue pad: its number and time, filled with its color once set.
@@ -177,6 +123,7 @@ component PrepPad inherits Rectangle {
     property <int> index: Controls.resolve(group, "hotcue_" + number + "_activate");
     property <int> clear-index: Controls.resolve(group, "hotcue_" + number + "_clear");
     property <bool> clearing;
+    property <bool> tip-mine;
     property <bool> set: Controls.value(Controls.resolve(group, "hotcue_" + number + "_enabled"), Controls.tick) > 0;
     property <float> seconds: Controls.value(Controls.resolve(group, "hotcue_" + number + "_position"), Controls.tick);
     property <int> minutes: floor(seconds / 60);
@@ -192,8 +139,8 @@ component PrepPad inherits Rectangle {
         padding: 7px;
         HorizontalLayout {
             spacing: 6px;
-            Text { text: number; color: set ? #ffffff : Theme.text-dim; font-size: 13px; font-weight: 700; }
-            if set: Text { text: name; color: #ffffff; font-size: 12px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
+            Text { text: number; color: set ? Theme.f-ffffff : Theme.text-dim; font-size: 13px; font-weight: 700; }
+            if set: Text { text: name; color: Theme.f-ffffff; font-size: 12px; font-weight: 600; overflow: elide; horizontal-stretch: 1; }
         }
         Rectangle { vertical-stretch: 1; }
         Text { text: set ? time : "Click to set"; color: set ? Theme.n-ffffffd0 : Theme.text-dim; font-family: "Inter Tabular"; font-size: 11px; overflow: elide; }
@@ -223,81 +170,137 @@ component PrepPad inherits Rectangle {
             }
         }
     }
-}
-
-// The waveform zoom's − and +.
-component ZoomButton inherits Rectangle {
-    in property <string> text;
-    callback clicked();
-    width: 28px;
-    border-radius: 7px;
-    border-width: 1px;
-    border-color: zt.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
-    background: zt.pressed ? Theme.control-pressed : zt.has-hover ? Theme.pill-hover : Theme.pill;
-    Text { text: root.text; color: Theme.text; font-size: 15px; }
-    zt := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
-}
-
-// The stage, the waveform zoom and Play Ready, next track, over the pads.
-component ReadyBar inherits HorizontalLayout {
-    // On a narrow window (1280 wide): no tracks-left count, and a
-    // shorter Play Ready button, so the bar fits beside the zoom.
-    in property <bool> narrow;
-    spacing: 8px;
-    height: 30px;
-    Rectangle {
-        width: stage-text.preferred-width + 26px;
-        border-radius: 15px;
-        border-width: 1px;
-        border-color: PrepUi.stage-color(PrepUi.stage);
-        background: PrepUi.stage-color(PrepUi.stage).with-alpha(0.12);
-        stage-text := Text {
-            text: "● " + PrepUi.stage-name(PrepUi.stage);
-            color: PrepUi.stage-color(PrepUi.stage);
-            font-size: 12px;
-            font-weight: 600;
+    changed hovered => {
+        if !hovered && tip-mine {
+            tip-mine = false;
+            HoverTip.shown = false;
         }
     }
-    if !narrow: Text {
-        text: PrepUi.left == 1 ? "1 track In Prep" : PrepUi.left + " tracks In Prep";
-        color: Theme.text-dim;
-        font-size: 12px;
-        vertical-alignment: center;
+    property <bool> hovered: touch.has-hover;
+    Timer {
+        interval: 600ms;
+        running: touch.has-hover && !tip-mine;
+        triggered => {
+            tip-mine = true;
+            HoverTip.title = "Hot cue " + number;
+            HoverTip.body = (set ? "Jump here" : "Set it at the play line") + "  (key: " + number + ")\nShift-click clears it";
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
+        }
     }
-    Rectangle { horizontal-stretch: 1; }
-    ZoomButton { text: "−"; clicked => { WaveZoom.step(-1); } }
-    Text {
-        text: "Zoom " + WaveZoom.percent(WaveZoom.level);
-        color: Theme.text;
-        font-size: 12px;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-        width: 72px;
+}
+
+// A pad on the Loops or Automix page: a title and a time, filled with
+// `tint` once set. A click does `pressed(false)`, a Shift-click
+// `pressed(true)` (clears).
+component PrepTile inherits Rectangle {
+    in property <string> title;
+    in property <string> time;
+    in property <string> detail;
+    in property <bool> set;
+    in property <bool> enabled: true;
+    in property <string> empty-text: "Click to set";
+    in property <color> tint;
+    in property <color> ink: Theme.f-ffffff;
+    in property <string> tip-title;
+    in property <string> tip-body;
+    callback pressed(clear: bool);
+    property <bool> tip-mine;
+    property <bool> shift;
+    border-radius: 7px;
+    background: set ? (touch.pressed ? tint.darker(0.3) : tint) : touch.pressed ? Theme.control-pressed : touch.has-hover && enabled ? Theme.n-1d1d20 : Theme.control;
+    border-width: set ? 0px : 1px;
+    border-color: touch.has-hover && enabled ? Theme.n-48484c : Theme.n-2c2c31;
+    VerticalLayout {
+        padding: 7px;
+        HorizontalLayout {
+            spacing: 6px;
+            Text { text: title; color: set ? ink : Theme.text-dim; font-size: 12px; font-weight: 700; overflow: elide; horizontal-stretch: 1; }
+            if set: Text { text: detail; color: ink.with-alpha(0.8); font-size: 11px; }
+        }
+        Rectangle { vertical-stretch: 1; }
+        Text { text: set ? time : empty-text; color: set ? ink.with-alpha(0.82) : Theme.text-dim; font-family: "Inter Tabular"; font-size: 11px; overflow: elide; }
     }
-    ZoomButton { text: "+"; clicked => { WaveZoom.step(1); } }
-    Rectangle { width: 8px; }
-    // Lit when every checklist line is ticked; outlined until then (it
-    // still works, for a track that is fine as it is).
-    property <bool> all-done: PrepUi.done >= PrepUi.total;
-    if PrepUi.total > 0: Text {
-        text: PrepUi.done + "/" + PrepUi.total;
-        color: all-done ? Theme.stage-ready : Theme.text-dim;
-        font-family: "Inter Tabular";
-        font-size: 12px;
-        font-weight: 600;
-        vertical-alignment: center;
+    touch := TouchArea {
+        enabled: root.enabled || root.set;
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                root.shift = e.modifiers.shift;
+            }
+        }
+        clicked => { root.pressed(root.shift); }
+        changed has-hover => {
+            if !self.has-hover && tip-mine {
+                tip-mine = false;
+                HoverTip.shown = false;
+            }
+        }
     }
-    ready := Rectangle {
-        width: ready-text.preferred-width + 28px;
-        border-radius: Theme.radius;
-        border-width: all-done ? 0px : 1px;
-        border-color: Theme.stage-ready;
-        background: all-done
-            ? (ready-touch.pressed ? Theme.stage-ready.darker(0.2) : ready-touch.has-hover ? Theme.stage-ready.brighter(0.1) : Theme.stage-ready)
-            : (ready-touch.pressed ? Theme.stage-ready.with-alpha(0.3) : ready-touch.has-hover ? Theme.stage-ready.with-alpha(0.2) : Theme.stage-ready.with-alpha(0.1));
-        ready-text := Text { text: narrow ? "✓ Play Ready  ⏎" : "✓ Play Ready, next  ⏎"; color: all-done ? Theme.n-0e0e10 : Theme.stage-ready; font-size: 13px; font-weight: 700; }
-        ready-touch := TouchArea { mouse-cursor: pointer; clicked => { PrepUi.ready(); } }
+    Timer {
+        interval: 600ms;
+        running: touch.has-hover && !tip-mine && tip-title != "";
+        triggered => {
+            tip-mine = true;
+            HoverTip.title = tip-title;
+            HoverTip.body = tip-body;
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
+        }
     }
+}
+
+// Saved loop pad `slot` (0 to 7).
+component LoopPad inherits PrepTile {
+    in property <string> group;
+    in property <int> slot;
+    property <bool> looping: Controls.value(Controls.resolve(group, "loop_enabled"), Controls.tick) > 0;
+    set: slot < CueList.prep-loops.length;
+    enabled: looping;
+    title: root.set && CueList.prep-loops[slot].name != "" ? CueList.prep-loops[slot].name : "Loop " + (slot + 1);
+    time: CueList.prep-loops[slot].time;
+    detail: CueList.prep-loops[slot].detail;
+    tint: Theme.loop;
+    ink: Theme.n-0e0e10;
+    empty-text: looping ? "Click to save" : "Set a loop first";
+    tip-title: "Saved loop";
+    tip-body: root.set ? "Play this loop\nShift-click removes it" : "Saves the loop playing, to play again later";
+    pressed(clear) => { CueList.loop-pad(slot, clear); }
+}
+
+// Memory cue pad `slot` (0 to 7): a marker in the track, on no pad (as
+// Pioneer players keep them).
+component MemoryPad inherits PrepTile {
+    in property <int> slot;
+    set: slot < CueList.prep-memory.length;
+    title: root.set && CueList.prep-memory[slot].name != "" ? CueList.prep-memory[slot].name : "Memory " + (slot + 1);
+    time: CueList.prep-memory[slot].time;
+    detail: CueList.prep-memory[slot].detail;
+    tint: Theme.accent;
+    ink: Theme.n-0e0e10;
+    empty-text: "Click to add";
+    tip-title: "Memory cue";
+    tip-body: root.set ? "Jump here\nShift-click removes it" : "Adds a memory cue at the play line  (C)\nPioneer players step through these";
+    pressed(clear) => { CueList.memory-pad(slot, clear); }
+}
+
+// Mix in (0) or mix out (1): where Automix mixes this track in or out.
+component MixPad inherits PrepTile {
+    in property <int> which;
+    set: CueList.mix-times[which] != "";
+    title: which == 0 ? "Mix in" : "Mix out";
+    time: CueList.mix-times[which];
+    detail: CueList.mix-details[which];
+    tint: Theme.automix;
+    ink: Theme.automix-ink;
+    tip-title: which == 0 ? "Mix in" : "Mix out";
+    tip-body: (which == 0 ? "Where Automix brings this track in" : "Where Automix starts mixing out of this track")
+        + (root.set ? "\nClick to jump here, Shift-click clears it" : "\nClick to set it at the play line");
+    pressed(clear) => { CueList.mix-pad(which, clear); }
 }
 
 export component PrepDeck inherits Rectangle {
@@ -307,37 +310,54 @@ export component PrepDeck inherits Rectangle {
     out property <length> overview-height: header.overview-height;
     property <string> group: "[Channel1]";
     property <color> tint: Theme.deck-color(0);
+    // The pads' page: 0 Hot Cues, 1 Loops, 2 Automix, 3 Memory.
+    property <int> page;
     VerticalLayout {
         spacing: 1px;
         header := Header { deck: 0; info: info; overview: overview; group: group; }
+        // As tall as the 2-Deck grid editor bar.
         HorizontalLayout {
             spacing: 1px;
-            vertical-stretch: 1;
+            height: 100px;
+            // As the 2-Deck grid editor bar over the decks and mixer: deck 1's
+            // side, the transport as wide as the mixer, then the pads.
+            PrepGrid { group: group; info: info; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
             Rectangle {
                 background: Theme.panel;
-                width: 440px;
-                GridPanel { group: group; info: info; }
-            }
-            Rectangle {
-                background: Theme.panel;
-                width: 310px;
+                width: 254px;
                 PrepTransport { group: group; info: info; tint: tint; }
             }
             Rectangle {
                 background: Theme.panel;
                 horizontal-stretch: 1;
+                min-width: 0px;
+                preferred-width: 0px;
                 VerticalLayout {
-                    padding: 10px;
-                    spacing: 8px;
-                    // The bar needs about 640 px: 1,420 less the two panels at its left.
-                    ReadyBar { narrow: LibraryEdit.window-width < 1420px; }
+                    spacing: 4px;
+                    // One tab over each pad column.
                     HorizontalLayout {
-                        spacing: 6px;
-                        for n in 4: PrepPad { group: group; number: n + 1; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
+                        spacing: 4px;
+                        height: 22px;
+                        for name[i] in ["Hot Cues", "Loops", "Automix", "Memory"]: PadTab {
+                            horizontal-stretch: 1;
+                            min-width: 0px;
+                            preferred-width: 0px;
+                            text: name;
+                            on: page == i;
+                            clicked => { page = i; }
+                        }
                     }
-                    HorizontalLayout {
-                        spacing: 6px;
-                        for n in 4: PrepPad { group: group; number: n + 5; horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
+                    for row in 2: HorizontalLayout {
+                        spacing: 4px;
+                        for n in 4: Rectangle {
+                            horizontal-stretch: 1;
+                            min-width: 0px;
+                            preferred-width: 0px;
+                            if page == 0: PrepPad { group: group; number: row * 4 + n + 1; }
+                            if page == 1: LoopPad { group: group; slot: row * 4 + n; }
+                            if page == 2 && row == 0 && n < 2: MixPad { which: n; }
+                            if page == 3: MemoryPad { slot: row * 4 + n; }
+                        }
                     }
                 }
             }

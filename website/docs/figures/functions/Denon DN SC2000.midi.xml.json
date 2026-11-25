@@ -1,0 +1,305 @@
+{
+  "file": "Denon DN SC2000.midi.xml",
+  "parts": {
+    "autoloop": {
+      "Deck B": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "beat+": {
+      "Deck B + Move loop on": [
+        "Move loop right"
+      ],
+      "Move loop on": [
+        "Move loop right"
+      ]
+    },
+    "beat-": {
+      "Deck B + Move loop back": [
+        "Move loop left"
+      ],
+      "Move loop back": [
+        "Move loop left"
+      ]
+    },
+    "bend+": {
+      "Deck B": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "bend-": {
+      "Deck B": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "cue": {
+      "Deck B": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "cue1": {
+      "CUE 5": [
+        "Hot cue 5"
+      ],
+      "Deck B": [
+        "Hot cue 1"
+      ],
+      "Deck B + CUE 5": [
+        "Hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "cue2": {
+      "CUE 6": [
+        "Hot cue 6"
+      ],
+      "Deck B": [
+        "Hot cue 2"
+      ],
+      "Deck B + CUE 6": [
+        "Hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "cue3": {
+      "CUE 7": [
+        "Hot cue 7"
+      ],
+      "Deck B": [
+        "Hot cue 3"
+      ],
+      "Deck B + CUE 7": [
+        "Hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "cue4": {
+      "CUE 8": [
+        "Hot cue 8"
+      ],
+      "Deck B": [
+        "Hot cue 4"
+      ],
+      "Deck B + CUE 8": [
+        "Hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "deckchg": {
+      "Deck B": [
+        "Change deck"
+      ],
+      "normal": [
+        "Change deck"
+      ]
+    },
+    "ffwd": {
+      "Deck B": [
+        "Fast forward"
+      ],
+      "normal": [
+        "Fast forward"
+      ]
+    },
+    "filter": {
+      "Deck B + Loop size": [
+        "Loop end"
+      ],
+      "Loop size": [
+        "Loop end"
+      ]
+    },
+    "fxon1": {
+      "Deck B + Flanger": [
+        "Flanger"
+      ],
+      "Flanger": [
+        "Flanger"
+      ]
+    },
+    "jog": {
+      "Deck B + Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck B + Turn": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "keylock": {
+      "Deck B": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "loopin": {
+      "Deck B": [
+        "Loop in"
+      ],
+      "Deck B + SHIFT": [
+        "Loop start"
+      ],
+      "SHIFT": [
+        "Loop start"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "loopout": {
+      "Deck B": [
+        "Loop out"
+      ],
+      "Deck B + SHIFT": [
+        "Loop end"
+      ],
+      "SHIFT": [
+        "Loop end"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "next": {
+      "Deck B": [
+        "Next playlist"
+      ],
+      "normal": [
+        "Next playlist"
+      ]
+    },
+    "param1": {
+      "Deck B + Flanger depth": [
+        "Lfo depth"
+      ],
+      "Deck B + Press (reset)": [
+        "Lfo depth"
+      ],
+      "Flanger depth": [
+        "Lfo depth"
+      ],
+      "Press (reset)": [
+        "Lfo depth"
+      ]
+    },
+    "param2": {
+      "Deck B + Flanger delay": [
+        "Lfo delay"
+      ],
+      "Deck B + Press (reset)": [
+        "Lfo delay"
+      ],
+      "Flanger delay": [
+        "Lfo delay"
+      ],
+      "Press (reset)": [
+        "Lfo delay"
+      ]
+    },
+    "param3": {
+      "Deck B + Flanger LFO": [
+        "Lfo period"
+      ],
+      "Deck B + Press (reset)": [
+        "Lfo period"
+      ],
+      "Flanger LFO": [
+        "Lfo period"
+      ],
+      "Press (reset)": [
+        "Lfo period"
+      ]
+    },
+    "pitch": {
+      "Deck B": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "play": {
+      "Deck B": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "previous": {
+      "Deck B": [
+        "Previous playlist"
+      ],
+      "normal": [
+        "Previous playlist"
+      ]
+    },
+    "rew": {
+      "Deck B": [
+        "Rewind"
+      ],
+      "normal": [
+        "Rewind"
+      ]
+    },
+    "shift": {
+      "Deck B": [
+        "SHIFT"
+      ],
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "sync": {
+      "Deck B": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "trackselect": {
+      "Deck B + Press (load)": [
+        "Load selected track"
+      ],
+      "Deck B + Turn": [
+        "Down",
+        "Up"
+      ],
+      "Press (load)": [
+        "Load selected track"
+      ],
+      "Turn": [
+        "Down",
+        "Up"
+      ]
+    }
+  }
+}

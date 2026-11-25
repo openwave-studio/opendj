@@ -145,6 +145,8 @@ middle and more the further you turn it either way.
   is back in the middle.
 - **Noise**: adds filtered white noise.
 - **Crush**: lowers the bit depth and sample rate.
+- **Pitch**: shifts the deck down to the left and up to the right, up to an
+  octave, keeping its tempo.
 
 On a DDJ-FLX4, **SHIFT** + **SMART CFX** steps through the Color FX.
 

@@ -1143,6 +1143,16 @@
                 </options>
             </control>
             <control>
+                <description>SOUND COLOR FX PITCH</description>
+                <group>[Master]</group>
+                <key>PioneerXDJR1.colorFxPressed</key>
+                <status>0x94</status>
+                <midino>0x4F</midino>
+                <options>
+                    <Script-Binding />
+                </options>
+            </control>
+            <control>
                 <description>SOUND COLOR FX CRUSH</description>
                 <group>[Master]</group>
                 <key>PioneerXDJR1.colorFxPressed</key>

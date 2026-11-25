@@ -1,0 +1,47 @@
+{
+  "file": "Pioneer-DJM-450.midi.xml",
+  "parts": {
+    "ch1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1-input": {
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "ch2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-input": {
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "usb": {
+      "USB A": [
+        "this computer is on the mixer's USB A port"
+      ]
+    }
+  }
+}

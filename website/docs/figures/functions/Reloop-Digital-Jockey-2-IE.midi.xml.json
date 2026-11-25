@@ -1,0 +1,627 @@
+{
+  "file": "Reloop-Digital-Jockey-2-IE.midi.xml",
+  "parts": {
+    "c-button-1": {
+      "normal": [
+        "Maximise browser"
+      ]
+    },
+    "c-button-2": {
+      "normal": [
+        "Open or load item"
+      ]
+    },
+    "c-button-3": {
+      "normal": [
+        "Open or load item"
+      ]
+    },
+    "c-button-4": {
+      "normal": [
+        "Maximise browser"
+      ]
+    },
+    "c-button-5": {
+      "normal": [
+        "Open or load item"
+      ]
+    },
+    "c-button-6": {
+      "normal": [
+        "Open or load item"
+      ]
+    },
+    "c-fader-1": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "c-knob-1": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "c-knob-2": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "c-knob-3": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "c-knob-4": {
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c-knob-5": {
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "l-button-1": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-button-10": {
+      "normal": [
+        "FX 1 Show focus",
+        "FX 1 Show parameters"
+      ]
+    },
+    "l-button-11": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-button-12": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-button-13": {
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-button-14": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-button-15": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-button-16": {
+      "normal": [
+        "Kill high"
+      ]
+    },
+    "l-button-17": {
+      "normal": [
+        "Kill mid"
+      ]
+    },
+    "l-button-18": {
+      "normal": [
+        "Kill low"
+      ]
+    },
+    "l-button-19": {
+      "normal": [
+        "Cue and play"
+      ]
+    },
+    "l-button-2": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-button-20": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-button-21": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-button-22": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-button-23": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-button-24": {
+      "normal": [
+        "FX 1 Assign to Deck 1"
+      ]
+    },
+    "l-button-25": {
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "l-button-26": {
+      "normal": [
+        "FX 2 Assign to Deck 1"
+      ]
+    },
+    "l-button-27": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-button-28": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-button-29": {
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-button-3": {
+      "normal": [
+        "Bend minus button"
+      ]
+    },
+    "l-button-30": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-button-31": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-button-32": {
+      "normal": [
+        "Kill high"
+      ]
+    },
+    "l-button-33": {
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "l-button-34": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-button-35": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-button-4": {
+      "normal": [
+        "Bend plus button"
+      ]
+    },
+    "l-button-5": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-button-6": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-button-7": {
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "l-button-8": {
+      "normal": [
+        "Left shift button"
+      ]
+    },
+    "l-button-9": {
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "l-encoder-1": {
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "l-fader-1": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-2": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-jog": {
+      "Input": [
+        "Jog mode selector"
+      ],
+      "Input 2": [
+        "Jog mode selector"
+      ],
+      "Input 3": [
+        "Jog mode selector"
+      ],
+      "Input 4": [
+        "Jog mode selector"
+      ],
+      "Input 5": [
+        "Jog mode selector"
+      ],
+      "On Jog Spin": [
+        "FX 1 Wet / dry"
+      ],
+      "On Jog Spin 2": [
+        "FX 1 Wet / dry"
+      ],
+      "On Jog Touch": [
+        "On jog touch"
+      ],
+      "normal": [
+        "Jog mode selector"
+      ]
+    },
+    "l-knob-1": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-10": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-knob-11": {
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "l-knob-12": {
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "l-knob-2": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-knob-3": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-knob-4": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-knob-5": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-knob-6": {
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "l-knob-7": {
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "l-knob-8": {
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "l-knob-9": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-button-1": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-button-10": {
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-button-11": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-button-12": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-button-13": {
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-button-14": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-button-15": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-button-16": {
+      "normal": [
+        "Kill high"
+      ]
+    },
+    "r-button-17": {
+      "normal": [
+        "Kill mid"
+      ]
+    },
+    "r-button-18": {
+      "normal": [
+        "Kill low"
+      ]
+    },
+    "r-button-19": {
+      "normal": [
+        "Cue and play"
+      ]
+    },
+    "r-button-2": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-button-20": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-button-21": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-button-22": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-button-23": {
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "r-button-24": {
+      "normal": [
+        "FX 2 Assign to Deck 2"
+      ]
+    },
+    "r-button-25": {
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-button-26": {
+      "normal": [
+        "FX 1 Assign to Deck 2"
+      ]
+    },
+    "r-button-27": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-button-28": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-button-29": {
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-button-3": {
+      "normal": [
+        "Bend minus button"
+      ]
+    },
+    "r-button-30": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-button-31": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-button-32": {
+      "normal": [
+        "Kill high"
+      ]
+    },
+    "r-button-33": {
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "r-button-34": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-button-35": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-button-4": {
+      "normal": [
+        "Bend plus button"
+      ]
+    },
+    "r-button-5": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-button-6": {
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "r-button-7": {
+      "normal": [
+        "FX 2 Show focus",
+        "FX 2 Show parameters"
+      ]
+    },
+    "r-button-8": {
+      "normal": [
+        "Right shift button"
+      ]
+    },
+    "r-button-9": {
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-encoder-1": {
+      "normal": [
+        "Double loop",
+        "Halve loop"
+      ]
+    },
+    "r-fader-1": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-2": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-jog": {
+      "Input": [
+        "Jog mode selector"
+      ],
+      "Input 2": [
+        "Jog mode selector"
+      ],
+      "Input 3": [
+        "Jog mode selector"
+      ],
+      "Input 4": [
+        "Jog mode selector"
+      ],
+      "Input 5": [
+        "Jog mode selector"
+      ],
+      "On Jog Spin": [
+        "FX 2 Wet / dry"
+      ],
+      "On Jog Spin 2": [
+        "FX 2 Wet / dry"
+      ],
+      "On Jog Touch": [
+        "On jog touch"
+      ],
+      "normal": [
+        "Jog mode selector"
+      ]
+    },
+    "r-knob-1": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-10": {
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "r-knob-11": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-knob-12": {
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "r-knob-2": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-knob-3": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-knob-4": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-knob-5": {
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "r-knob-6": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-knob-7": {
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "r-knob-8": {
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "r-knob-9": {
+      "normal": [
+        "Filter"
+      ]
+    }
+  }
+}

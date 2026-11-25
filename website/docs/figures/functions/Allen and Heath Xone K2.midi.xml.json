@@ -1,0 +1,385 @@
+{
+  "file": "Allen and Heath Xone K2.midi.xml",
+  "parts": {
+    "btn1-1": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "btn1-2": {
+      "SHIFT": [
+        "Rate set zero"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "btn1-3": {
+      "SHIFT": [
+        "Rate set zero"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "btn1-4": {
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "btn2-1": {
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "btn2-2": {
+      "SHIFT": [
+        "Back to start and stop"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "btn2-3": {
+      "SHIFT": [
+        "Back to start and stop"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "btn2-4": {
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "btn3-1": {
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "btn3-2": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "btn3-3": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "btn3-4": {
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "enc-bl": {
+      "Press": [
+        "Decks bottom left encoder press"
+      ],
+      "Press + SHIFT": [
+        "Split cue"
+      ],
+      "SHIFT": [
+        "Headphone level"
+      ],
+      "normal": [
+        "Decks bottom left encoder"
+      ]
+    },
+    "enc-br": {
+      "Press": [
+        "Load into a stopped deck"
+      ],
+      "SHIFT": [
+        "Main level"
+      ],
+      "normal": [
+        "Up"
+      ]
+    },
+    "enc1": {
+      "Press": [
+        "FX 1 Show parameters"
+      ],
+      "Press + SHIFT": [
+        "FX 1 Controller input active"
+      ],
+      "normal": [
+        "Encoder"
+      ]
+    },
+    "enc2": {
+      "Press": [
+        "Sync"
+      ],
+      "Press + SHIFT": [
+        "Filter on"
+      ],
+      "SHIFT": [
+        "Gain"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "enc3": {
+      "Press": [
+        "Sync"
+      ],
+      "Press + SHIFT": [
+        "Filter on"
+      ],
+      "SHIFT": [
+        "Gain"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "enc4": {
+      "Press": [
+        "FX 2 Show parameters"
+      ],
+      "Press + SHIFT": [
+        "FX 2 Controller input active"
+      ],
+      "normal": [
+        "Encoder"
+      ]
+    },
+    "exit": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "fader1": {
+      "SHIFT": [
+        "FX 1 Super knob"
+      ],
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "fader2": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "fader3": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "fader4": {
+      "SHIFT": [
+        "FX 2 Super knob"
+      ],
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "knob1-1": {
+      "SHIFT": [
+        "FX 1 Effect 1 choose"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "knob1-2": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "knob1-3": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "knob1-4": {
+      "SHIFT": [
+        "FX 2 Effect 1 choose"
+      ],
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "knob2-1": {
+      "SHIFT": [
+        "FX 1 Effect 2 choose"
+      ],
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "knob2-2": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "knob2-3": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "knob2-4": {
+      "SHIFT": [
+        "FX 2 Effect 2 choose"
+      ],
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "knob3-1": {
+      "SHIFT": [
+        "FX 1 Effect 3 choose"
+      ],
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "knob3-2": {
+      "SHIFT": [
+        "Filter"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "knob3-3": {
+      "SHIFT": [
+        "Filter"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "knob3-4": {
+      "SHIFT": [
+        "FX 2 Effect 3 choose"
+      ],
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "layer": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Decks layer button"
+      ]
+    },
+    "pad-A": {
+      "normal": [
+        "FX 1 Assign to Deck 1"
+      ]
+    },
+    "pad-B": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "pad-C": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "pad-D": {
+      "normal": [
+        "FX 2 Assign to Deck 1"
+      ]
+    },
+    "pad-E": {
+      "normal": [
+        "FX 1 Assign to Deck 2"
+      ]
+    },
+    "pad-F": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "pad-G": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "pad-H": {
+      "normal": [
+        "FX 2 Assign to Deck 2"
+      ]
+    },
+    "pad-I": {
+      "normal": [
+        "FX 1 Assign to Master"
+      ]
+    },
+    "pad-J": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "pad-K": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "pad-L": {
+      "normal": [
+        "FX 2 Assign to Master"
+      ]
+    },
+    "pad-M": {
+      "normal": [
+        "FX 1 Assign to Headphone"
+      ]
+    },
+    "pad-N": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "pad-O": {
+      "SHIFT": [
+        "Rate search"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "pad-P": {
+      "normal": [
+        "FX 2 Assign to Headphone"
+      ]
+    }
+  }
+}

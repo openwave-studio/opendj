@@ -486,6 +486,21 @@ impl Deck {
         self.quantize_beats().min(1.0)
     }
 
+    /// Where CUE on a paused deck sets the cue point: here, or with quantize
+    /// on the nearest quantize step (a beat at most), as for hot cues. The
+    /// deck moves there too, so the cue plays from where it now is.
+    fn cue_spot(&mut self, track: &Track) -> f64 {
+        let at = self.seconds();
+        if !self.c.quantize.get_bool() || track.bpm <= 0.0 {
+            return at;
+        }
+        let snapped = track.snap_to(at, self.point_step(), false).max(0.0);
+        if (snapped - at).abs() > 1e-9 {
+            self.seek(snapped);
+        }
+        snapped
+    }
+
     /// The deck's quantize size in beats, 1/16 to 4.
     fn quantize_beats(&self) -> f64 {
         let b = self.c.quantize_beats.get();
@@ -666,7 +681,8 @@ impl Deck {
                 let cue = self.c.cue_point.get();
                 self.seek(cue);
             } else {
-                self.c.cue_point.set(self.seconds());
+                let at = self.cue_spot(&track);
+                self.c.cue_point.set(at);
                 if self.c.cue_mode.get() != 3.0 {
                     self.c.play.set_bool(true);
                     self.previewing = Some(self.c.play.version());
@@ -690,7 +706,8 @@ impl Deck {
                 let cue = self.c.cue_point.get();
                 self.seek(cue);
             } else {
-                self.c.cue_point.set(self.seconds());
+                let at = self.cue_spot(&track);
+                self.c.cue_point.set(at);
             }
             self.cup_held = true;
         }
@@ -896,6 +913,17 @@ impl Deck {
                     if end > self.loop_start + 0.01 {
                         self.loop_end = end;
                         self.c.loop_enabled.set_bool(true);
+                    }
+                }
+                Action::SavedLoop => {
+                    let [start, end] = self.c.saved_loop.each_ref().map(|c| c.get());
+                    if start >= 0.0 && end > start {
+                        self.loop_in_pending = false;
+                        self.loop_start = start;
+                        self.loop_end = end;
+                        self.c.loop_enabled.set_bool(true);
+                        self.set_seconds(start);
+                        self.c.play.set_bool(true);
                     }
                 }
                 Action::Reloop if enabled => self.c.loop_enabled.set_bool(false),
@@ -1521,6 +1549,12 @@ const SHIFT_LINGER_SECONDS: f64 = 1.0;
 /// How long the stems made on load crossfade into high-quality ones once
 /// those are ready, so a muted stem doesn't click at the switch.
 pub(crate) const STEM_UPGRADE_SECONDS: f64 = 0.02;
+
+/// How far around the play position high-quality stems must be there
+/// before a deck crossfades to them: more than a buffer, the
+/// time-stretcher's reach ahead and a fast scratch, so the crossfade is
+/// over before the deck reads past them.
+pub(crate) const STEM_UPGRADE_MARGIN_SECONDS: f64 = 0.5;
 
 /// Below this speed, in multiples of normal, a deck fades out with its
 /// speed: there the music is too low to hear anyway, and what is left is the
@@ -3610,19 +3644,31 @@ impl Engine {
                 d.stem_gains = [1.0; MAX_STEMS];
                 // Stems that are already high quality when they turn up
                 // start there.
-                d.stem_upgrade = if stems.and_then(Stems::ready_upgrade).is_some() {
+                d.stem_upgrade = if stems
+                    .and_then(Stems::ready_upgrade)
+                    .is_some_and(Stems::is_complete)
+                {
                     1.0
                 } else {
                     0.0
                 };
             }
+            // High-quality stems separated from the play position outwards
+            // take over a stretch at a time: crossfade to them where they
+            // are there around the deck, and back ahead of a stretch they
+            // haven't reached yet.
             let upgrade = match stems.and_then(Stems::ready_upgrade) {
-                Some(_) => (
-                    d.stem_upgrade,
-                    (d.stem_upgrade
-                        + frames as f32 / (STEM_UPGRADE_SECONDS * self.sample_rate) as f32)
-                        .min(1.0),
-                ),
+                Some(up) => {
+                    let margin = (STEM_UPGRADE_MARGIN_SECONDS * d.source_rate()) as usize;
+                    let there = up.has_around(d.pos.max(0.0) as usize, margin);
+                    let step = frames as f32 / (STEM_UPGRADE_SECONDS * self.sample_rate) as f32;
+                    let to = if there {
+                        (d.stem_upgrade + step).min(1.0)
+                    } else {
+                        (d.stem_upgrade - step).max(0.0)
+                    };
+                    (d.stem_upgrade, to)
+                }
                 None => (0.0, 0.0),
             };
             d.stem_upgrade = upgrade.1;
@@ -4159,6 +4205,10 @@ impl Engine {
             };
             self.fx.process_blocks(&mut blocks);
         }
+        // The instrument's scope can follow its deck after the effects.
+        if let Some(i) = (0..NUM_DECKS).find(|&i| live_on[i] == crate::inputs::INSTRUMENT + 1) {
+            self.fx.show_instrument_deck(&deck_buf[i][..frames]);
+        }
         let preview_main = self.preview.on_main();
         // The Mixer's dry strips join its deck after the deck's effects.
         if let Some(m) = mixer_deck {
@@ -4676,7 +4726,7 @@ mod tests {
         run(&mut engine, 0.01);
         assert_eq!(presets(), vec![1.0, 1.0, 3.0, 1.0]);
         // Stepping on deck 3 wraps round past the last.
-        for want in [4.0, 5.0, 1.0] {
+        for want in [4.0, 5.0, 6.0, 1.0] {
             c(2, "next_chain_preset").set(1.0);
             c(2, "next_chain_preset").set(0.0);
             run(&mut engine, 0.01);
@@ -4685,7 +4735,7 @@ mod tests {
         c(1, "prev_chain_preset").set(1.0);
         c(1, "prev_chain_preset").set(0.0);
         run(&mut engine, 0.01);
-        assert_eq!(presets(), vec![1.0, 5.0, 1.0, 1.0]);
+        assert_eq!(presets(), vec![1.0, 6.0, 1.0, 1.0]);
     }
 
     #[test]
@@ -5095,6 +5145,65 @@ mod tests {
             .windows(2)
             .fold(0f32, |m, w| m.max((w[1] - w[0]).abs()));
         assert!(step < 0.02, "a click at the switch: {step}");
+    }
+
+    #[test]
+    fn high_quality_stems_play_a_stretch_at_a_time() {
+        // As above, but the better stems only have their first chunk, as
+        // when they are separated from the play position outwards: the deck
+        // fades to them there, and back to the stems made on load before
+        // it reaches the chunk they don't have yet.
+        let mut t = (*short_track(120.0, 4.0)).clone();
+        let n = (SR * 4.0) as usize;
+        let tone = |i: usize| (std::f64::consts::TAU * 220.0 * i as f64 / SR).sin() as f32 * 0.3;
+        let audio = Audio::from_frames(SR as u32, (0..n).map(|i| [tone(i); 2]).collect());
+        let info = crate::stems::default_info();
+        let layer = |stem: bool, quality, chunks: usize| {
+            let s = Arc::new(crate::stems::Stems::separated(
+                info.clone(),
+                SR as u32,
+                n,
+                quality,
+            ));
+            for (k, start) in (0..n).step_by(crate::stems::CHUNK).enumerate().take(chunks) {
+                let end = (start + crate::stems::CHUNK).min(n);
+                let frames = (start..end)
+                    .map(|i| {
+                        let mut f = [[0i16; 2]; MAX_STEMS];
+                        if stem {
+                            f[0] = [crate::stems::to_i16(tone(i)); 2];
+                        }
+                        f
+                    })
+                    .collect();
+                s.fill(k, frames);
+            }
+            s
+        };
+        let fast = layer(true, crate::stems::Quality::Fast, usize::MAX);
+        fast.finish();
+        assert!(audio.set_stems(fast.clone()));
+        assert!(fast.set_upgrade(layer(false, crate::stems::Quality::High, 1)));
+        t.audio = Some(Arc::new(audio));
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, Arc::new(t));
+        run(&mut engine, 0.01);
+        reg.get("[Channel1_Stem1]", "mute").unwrap().set_bool(true);
+        run(&mut engine, 0.01);
+        reg.get("[Channel1]", "play").unwrap().set_bool(true);
+        let peak = |v: &[f32]| v.iter().fold(0f32, |m, x| m.max(x.abs()));
+        // The first chunk is high quality: the tone plays.
+        let first = record(&mut engine, 0.6);
+        assert!(peak(&first[first.len() / 2..]) > 0.2, "{}", peak(&first));
+        // Half a second before the second chunk, which isn't there yet, the
+        // muted stem is cut again.
+        let later = record(&mut engine, 0.8);
+        assert!(peak(&later[later.len() / 2..]) < 1e-3, "{}", peak(&later));
+        let left: Vec<f32> = first.iter().chain(&later).step_by(2).copied().collect();
+        let step = left
+            .windows(2)
+            .fold(0f32, |m, w| m.max((w[1] - w[0]).abs()));
+        assert!(step < 0.02, "a click: {step}");
     }
 
     #[test]
@@ -6123,6 +6232,40 @@ mod tests {
     }
 
     #[test]
+    fn cue_on_a_paused_deck_is_set_on_the_beat() {
+        let (reg, mut engine, mut input) = setup();
+        let track = short_track(120.0, 30.0);
+        load(&mut input, 0, track.clone());
+        run(&mut engine, 0.02);
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        // Paused just past beat 6 with quantize on (as by default): the cue
+        // point and the deck go to beat 6.
+        c("playposition").set(track.seconds_at(6.3) / track.duration);
+        run(&mut engine, 0.02);
+        press(&reg, "[Channel1]", "cue_default");
+        run(&mut engine, 0.02);
+        assert!((track.beat_at(c("cue_point").get()) - 6.0).abs() < 1e-3);
+        assert!((track.beat_at(engine.decks[0].seconds()) - 6.0).abs() < 1e-3);
+        // CUE PLAY too, from just before beat 9.
+        c("playposition").set(track.seconds_at(8.8) / track.duration);
+        run(&mut engine, 0.02);
+        c("cue_play").set_bool(true);
+        run(&mut engine, 0.01);
+        assert!((track.beat_at(c("cue_point").get()) - 9.0).abs() < 1e-3);
+        c("cue_play").set_bool(false);
+        run(&mut engine, 0.02);
+        c("play").set_bool(false);
+        run(&mut engine, 0.02);
+        // Quantize off: where the deck is.
+        c("quantize").set_bool(false);
+        c("playposition").set(track.seconds_at(4.3) / track.duration);
+        run(&mut engine, 0.02);
+        press(&reg, "[Channel1]", "cue_default");
+        run(&mut engine, 0.02);
+        assert!((track.beat_at(c("cue_point").get()) - 4.3).abs() < 0.02);
+    }
+
+    #[test]
     fn a_hot_cue_is_set_on_the_quantize_step() {
         let (reg, mut engine, mut input) = setup();
         let track = short_track(120.0, 30.0);
@@ -6451,6 +6594,23 @@ mod tests {
             "{} vs {nudged}",
             phase_gap(&engine)
         );
+    }
+
+    #[test]
+    fn a_saved_loop_plays_from_its_start() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 10.0));
+        run(&mut engine, 0.02);
+        let c = |k: &str| reg.get("[Channel1]", k).unwrap();
+        c("saved_loop_start").set(2.0);
+        c("saved_loop_end").set(4.0);
+        c("saved_loop_activate").set_bool(true);
+        c("saved_loop_activate").set_bool(false);
+        run(&mut engine, 0.02);
+        let d = &engine.decks[0];
+        assert!(c("loop_enabled").get_bool() && c("play").get_bool());
+        assert_eq!((d.loop_start, d.loop_end), (2.0, 4.0));
+        assert!(d.seconds() >= 2.0 && d.seconds() < 2.1, "{}", d.seconds());
     }
 
     #[test]
@@ -7546,6 +7706,9 @@ mod tests {
         run(&mut engine, 0.01);
         let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
         let seconds = || ctl("playposition").get() * 10.0;
+        // Off the grid on purpose: cue_on_a_paused_deck_is_set_on_the_beat
+        // covers quantize.
+        ctl("quantize").set_bool(false);
         ctl("playposition").set(0.2);
         run(&mut engine, 0.01);
         // Held on a stopped deck: sets the cue point there and plays.

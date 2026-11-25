@@ -52,6 +52,7 @@ mod controller_editor;
 mod cover_scan;
 mod coverart;
 mod diagnostics;
+mod dupe_scan;
 mod file_drop;
 mod files;
 mod graphics;
@@ -88,6 +89,7 @@ mod now_playing;
 mod now_playing_view;
 mod osc;
 mod osc_events;
+mod plugin_display;
 mod prefs;
 mod prep_click;
 mod presets;
@@ -118,6 +120,7 @@ mod transport;
 mod tree_navigation;
 mod tutorials;
 mod ui_font;
+mod ui_load;
 mod ui_scale;
 mod update;
 mod vocal_pass;
@@ -129,7 +132,9 @@ mod waveform_zoom;
 mod waves;
 
 /// Fills the master and headphone output menus and switches devices when
-/// one is picked. The menus list the devices present when they open.
+/// one is picked. The menus list the devices as last scanned (see
+/// [`opendj_engine::scan_devices`]): opening one loads no driver, and
+/// looks at the system's own devices again in the background.
 /// The settings page's output table: shows the routes in use and applies
 /// changes to them.
 fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
@@ -303,6 +308,11 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
             *devices.borrow_mut() = output_devices();
             *default_device.borrow_mut() = default_output_device();
             show();
+            // A device menu opening (or Settings › Audio): the system's
+            // devices are looked at again in the background, so one plugged
+            // in since start-up shows up moments later. No ASIO driver is
+            // loaded, and a scan moments ago isn't repeated.
+            opendj_engine::rescan_devices(opendj_engine::DeviceScan::System);
         }
     });
     let change = {
@@ -345,6 +355,7 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
     g.on_set_device({
         let change = change.clone();
         let devices = devices.clone();
+        let default_device = default_device.clone();
         move |row, device| {
             let name = match device {
                 0 => String::new(),
@@ -354,12 +365,22 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
                     .map(|d| d.name.clone())
                     .unwrap_or_default(),
             };
-            change(&|s| {
-                if let Some(r) = s.routes.get_mut(row as usize) {
-                    r.device = name.clone();
-                    r.pair = 0;
-                }
-            })
+            // Channels of the device called `name` ("" the default), 2 when
+            // unknown.
+            let channels = |name: &str| {
+                let default = default_device.borrow();
+                let name = if name.is_empty() {
+                    default.as_deref().unwrap_or_default()
+                } else {
+                    name
+                };
+                devices
+                    .borrow()
+                    .iter()
+                    .find(|d| d.name == name)
+                    .map_or(2, |d| d.channels)
+            };
+            change(&|s| move_to_device(s, row as usize, &name, channels(&name)))
         }
     });
     g.on_set_pair({
@@ -458,6 +479,76 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
             s.routes.push(Route { role, device, pair });
         })
     });
+}
+
+/// Moves output `row` of `s` to `device` (with `channels` channels), on the
+/// first pair no other output plays there: a controller's headphones row
+/// lands on its second pair, not on top of the master. Moving the master
+/// to a device with a pair to spare takes the headphones along when they
+/// were on the master's old device, as a DJ plugging in a controller
+/// expects its headphone socket to play the cue.
+fn move_to_device(s: &mut AudioSetup, row: usize, device: &str, channels: u16) {
+    let Some(old) = s.routes.get(row).map(|r| (r.role, r.device.clone())) else {
+        return;
+    };
+    let pairs = (channels / 2).max(1);
+    let free_pair = |s: &AudioSetup, skip: &[usize]| {
+        (0..pairs).find(|&p| {
+            !s.routes.iter().enumerate().any(|(i, r)| {
+                !skip.contains(&i) && s.in_use(r) && r.device == device && r.pair == p
+            })
+        })
+    };
+    let pair = free_pair(s, &[row]).unwrap_or(0);
+    s.routes[row].device = device.to_string();
+    s.routes[row].pair = pair;
+    if old.0 != Role::Master || old.1 == device {
+        return;
+    }
+    let follows: Vec<usize> = s
+        .routes
+        .iter()
+        .enumerate()
+        .filter(|(_, r)| r.role == Role::Headphones && r.device == old.1)
+        .map(|(i, _)| i)
+        .collect();
+    for i in follows {
+        if let Some(p) = free_pair(s, &[i]) {
+            s.routes[i].device = device.to_string();
+            s.routes[i].pair = p;
+        }
+    }
+}
+
+/// `cover` cropped to a square in the middle and scaled to `size` pixels,
+/// as a JPEG for a controller's screen; empty if it can't be made.
+fn cover_jpeg(cover: &opendj_engine::cover::Cover, size: u32) -> Vec<u8> {
+    use image::{imageops, ImageBuffer, Rgba};
+    let Some(img) =
+        ImageBuffer::<Rgba<u8>, _>::from_raw(cover.width, cover.height, cover.rgba.clone())
+    else {
+        return Vec::new();
+    };
+    let side = cover.width.min(cover.height);
+    if side == 0 || size == 0 {
+        return Vec::new();
+    }
+    let square = imageops::crop_imm(
+        &img,
+        (cover.width - side) / 2,
+        (cover.height - side) / 2,
+        side,
+        side,
+    )
+    .to_image();
+    let scaled = imageops::resize(&square, size, size, imageops::FilterType::Triangle);
+    let rgb = image::DynamicImage::ImageRgba8(scaled).to_rgb8();
+    let mut out = Vec::new();
+    let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 75);
+    match rgb.write_with_encoder(encoder) {
+        Ok(()) => out,
+        Err(_) => Vec::new(),
+    }
 }
 
 /// The rows Settings › Audio shows with an external mixer, in order.
@@ -590,6 +681,14 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     unsafe {
         windows_sys::Win32::Media::timeBeginPeriod(1);
     }
+    // The audio devices, found while the window gets ready and before any
+    // output opens: listing ASIO devices loads each installed driver in
+    // turn, which takes a while and can cut off a Windows Audio stream
+    // already playing through the same interface. Settings and the menus
+    // read what this finds.
+    let device_scan = std::thread::Builder::new()
+        .name("opendj-device-scan".into())
+        .spawn(|| opendj_engine::scan_devices(opendj_engine::DeviceScan::All));
     // A restore picked in Settings goes in before anything reads the
     // settings or opens the library.
     let restored =
@@ -616,6 +715,11 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let ui_family = ui_font::install();
 
     let registry = ControlRegistry::new();
+    // Not found yet (or the thread didn't start), the device lists are
+    // scanned the first time they are read instead.
+    if let Ok(scan) = device_scan {
+        let _ = scan.join();
+    }
     let engine = Rc::new(AudioEngine::start(
         registry.clone(),
         &settings::audio_setup(),
@@ -750,6 +854,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     mixer_picker::install(&app, engine.clone());
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());
+    let _knob_page = instrument_knobs::follow_page(&app, &registry);
+    let _preset_keys = presets::follow_controllers(&app);
     instrument_seq::install(&app, registry.clone());
     let groove_keeper = RefCell::new(groove_box::Keeper::new(&registry));
     // The Mixer's channels as they were left, saved again as they change.
@@ -1068,6 +1174,19 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 })
             },
         )));
+        // And their cover art, as a small JPEG.
+        let loaded = engine.loaded_tracks();
+        opendj_controllers::waves::set_cover_source(Some(std::sync::Arc::new(
+            move |deck, size| {
+                let track = loaded
+                    .read()
+                    .ok()
+                    .and_then(|l| l.get(deck).cloned().flatten());
+                track
+                    .and_then(|t| t.cover.clone())
+                    .map_or_else(Vec::new, |c| cover_jpeg(&c, size))
+            },
+        )));
     }
     let controllers = match opendj_controllers::default_mappings_dir() {
         Some(dir) => Some(Rc::new(opendj_controllers::Controllers::start(
@@ -1162,6 +1281,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         let (weak, view) = (app.as_weak(), engine.instrument_view());
         let mut last_held = u128::MAX;
         let mut quiet = false;
+        let mut last_choice = (false, false);
         instrument_timer.start(
             slint::TimerMode::Repeated,
             Duration::from_millis(40),
@@ -1176,13 +1296,21 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     let keys: Vec<bool> = (36..84).map(|n| held >> n & 1 == 1).collect();
                     ui.set_held(slint::ModelRc::from(keys.as_slice()));
                 }
+                let (freq, post) = (ui.get_scope_freq(), ui.get_scope_post());
+                view.set_post(post);
                 let scope = view.scope();
                 let silent = scope.iter().all(|&(lo, hi)| lo == 0.0 && hi == 0.0);
-                if silent && quiet {
+                if silent && quiet && (freq, post) == last_choice {
                     return;
                 }
                 quiet = silent;
-                ui.set_scope(scope_path(&scope).into());
+                last_choice = (freq, post);
+                let path = if freq {
+                    spectrum_path(&view.spectrum(64))
+                } else {
+                    scope_path(&scope)
+                };
+                ui.set_scope(path.into());
             },
         );
     }
@@ -1230,6 +1358,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
             },
         );
     }
+    // The instrument's own display on its deck (a Pd patch's Lua displays).
+    let _display_timer = plugin_display::install(&app, engine.clone());
     // Automatic backups: at start, then checked every hour.
     backup::run_if_due();
     let backup_timer = slint::Timer::default();
@@ -1438,6 +1568,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     });
                 }
                 (slint::RenderingState::BeforeRendering, _) => {
+                    ui_load::render_start();
                     let mut gpu = gpu.borrow_mut();
                     let (Some(app), Some(gpu)) = (app_weak.upgrade(), gpu.as_mut()) else {
                         return;
@@ -1453,9 +1584,18 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         ..
                     } = gpu;
                     let scale = app.window().scale_factor();
-                    frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
+                    frame_stats.frame(
+                        start,
+                        start.elapsed(),
+                        *moving,
+                        scale,
+                        frame_timer,
+                        clocks,
+                        ui_load::take_report,
+                    );
                 }
                 (slint::RenderingState::AfterRendering, _) => {
+                    ui_load::render_end();
                     // The first frame is on screen: these graphics work here.
                     graphics.drew();
                     // While a deck moves, draw again as soon as the display
@@ -1486,6 +1626,14 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
 
     // A newer release: checked once per start, offered while nothing plays.
     update::install_model_fetch();
+    // High-quality stems' GPU kernels, compiled once the app has settled,
+    // so the first track prepared starts playing them seconds sooner.
+    let _ = std::thread::Builder::new()
+        .name("stems-warm-up".into())
+        .spawn(|| {
+            std::thread::sleep(std::time::Duration::from_secs(20));
+            opendj_engine::stems::warm_up_when_idle();
+        });
     let update_check = update::check();
     let update: Rc<RefCell<Option<update::Release>>> = Default::default();
     let installing: Rc<RefCell<Option<std::sync::mpsc::Receiver<update::Progress>>>> =
@@ -1602,6 +1750,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 let Some(app) = app_weak.upgrade() else {
                     return;
                 };
+                ui_load::tick_start();
                 // The skin reads controls through `tick`; moving it makes
                 // every one of them look again, so only when one changed.
                 for (h, frames) in &pad_requests {
@@ -1721,7 +1870,9 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         browser.borrow_mut().show_in_prep();
                     }
                 }
+                ui_load::lap("start of tick");
                 browser.borrow_mut().poll_controllers(&app);
+                ui_load::lap("browser.poll_controllers");
                 // A recording that just stopped shows in Mixed Sets.
                 let (finished, files) = finished_recorder.finished();
                 if finished != recordings_seen.get() {
@@ -1729,9 +1880,13 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     browser.borrow_mut().add_recordings(&files);
                 }
                 browser.borrow_mut().poll_mix_export(&app);
+                ui_load::lap("browser.poll_mix_export");
                 browser.borrow_mut().poll_mixed_set(&app);
+                ui_load::lap("browser.poll_mixed_set");
                 browser.borrow_mut().poll_streams();
+                ui_load::lap("browser.poll_streams");
                 browser.borrow_mut().poll_stores(&app);
+                ui_load::lap("browser.poll_stores");
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
                 }
@@ -1749,26 +1904,49 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     browser.borrow().preview_download(action);
                 }
                 browser.borrow_mut().poll_art();
+                ui_load::lap("browser.poll_art");
                 browser.borrow_mut().poll_waves();
+                ui_load::lap("browser.poll_waves");
                 browser.borrow_mut().poll_analysis();
+                ui_load::lap("browser.poll_analysis");
                 browser.borrow_mut().poll_tasks();
+                ui_load::lap("browser.poll_tasks");
                 browser.borrow_mut().poll_usb_export();
+                ui_load::lap("browser.poll_usb_export");
                 browser.borrow_mut().poll_playlist_files();
+                ui_load::lap("browser.poll_playlist_files");
+                browser.borrow_mut().poll_stem_files();
+                ui_load::lap("browser.poll_stem_files");
                 browser.borrow_mut().poll_inbox_albums();
+                ui_load::lap("browser.poll_inbox_albums");
                 browser.borrow_mut().poll_rekordbox_xml();
+                ui_load::lap("browser.poll_rekordbox_xml");
                 browser.borrow_mut().poll_covers();
+                ui_load::lap("browser.poll_covers");
                 browser.borrow_mut().poll_sounds();
+                ui_load::lap("browser.poll_sounds");
+                browser.borrow_mut().poll_dupe_files();
+                ui_load::lap("browser.poll_dupe_files");
                 browser.borrow_mut().poll_located();
+                ui_load::lap("browser.poll_located");
                 browser.borrow_mut().poll_cleanup();
+                ui_load::lap("browser.poll_cleanup");
                 browser.borrow_mut().poll_files();
+                ui_load::lap("browser.poll_files");
                 sampler.borrow_mut().poll();
+                ui_load::lap("sampler.poll");
                 prefs.borrow_mut().poll();
+                ui_load::lap("prefs.poll");
                 tour.borrow_mut().poll();
+                ui_load::lap("tour.poll");
                 controller_editor.borrow_mut().poll();
+                ui_load::lap("controller_editor.poll");
                 map_mode.borrow_mut().poll();
+                ui_load::lap("map_mode.poll");
                 prep_click
                     .borrow_mut()
                     .tick(app.get_layout() == PREP_LAYOUT);
+                ui_load::lap("prep_click.tick");
                 if let Some(c) = &controllers {
                     let names: Vec<String> = c.connected().into_iter().map(|c| c.port).collect();
                     let status = if names.is_empty() {
@@ -1785,8 +1963,10 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         settings.set_controllers(status.into());
                     }
                 }
+                ui_load::lap("controllers status");
                 let tracks = loaded.read().unwrap().clone();
                 put_back.borrow_mut().tick(&app, &tracks);
+                ui_load::lap("put_back.tick");
                 let camelot = app.global::<KeyNotation>().get_camelot();
                 let mut b = browser.borrow_mut();
                 b.set_camelot(camelot);
@@ -1799,12 +1979,18 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     &app,
                     std::array::from_fn(|d| tracks[d].as_ref().map(|t| t.id)),
                 );
+                ui_load::lap("browser.set_loaded");
                 b.learn_deck_phrases(&tracks);
+                ui_load::lap("browser.learn_deck_phrases");
                 b.learn_analysis(&tracks);
+                ui_load::lap("browser.learn_analysis");
                 let fetches = b.deck_fetches();
                 b.show_row_fetches();
+                ui_load::lap("browser.show_row_fetches");
                 b.poll_prep();
+                ui_load::lap("browser.poll_prep");
                 b.keep(&tracks, 0.016);
+                ui_load::lap("browser.keep");
                 let mut host = browser::AutomixHost {
                     browser: &mut b,
                     engine: &engine,
@@ -1825,7 +2011,9 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 if host.browser.take_keep_going_automix() {
                     automix.borrow_mut().set_enabled(true);
                 }
+                ui_load::lap("keep_going");
                 automix.borrow_mut().tick(&mut host, &tracks, dt.min(0.1));
+                ui_load::lap("automix.tick");
                 remote.borrow_mut().tick(
                     &app,
                     &mut automix.borrow_mut(),
@@ -1836,9 +2024,11 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 quick
                     .borrow_mut()
                     .tick(&app, &mut automix.borrow_mut(), &mut b, &tracks);
+                ui_load::lap("remote + quick");
                 automix.borrow().show(&app, &tracks);
                 let automix_spans = automix.borrow().spans(&tracks);
                 drop(b);
+                ui_load::lap("automix.show");
                 // Row by row and only when it differs: a whole new model
                 // would make everything on the decks lay out and draw again.
                 for (d, track) in tracks.iter().enumerate() {
@@ -1875,6 +2065,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         deck_rows.set_row_data(d, info);
                     }
                 }
+                ui_load::lap("deck rows");
                 let clock = wall_clock::format(chrono::Local::now().time(), twenty_four_hour);
                 if app.get_clock() != clock.as_str() {
                     app.set_clock(clock.into());
@@ -1898,6 +2089,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 if controls_changed || moved || loaded_changed {
                     app.window().request_redraw();
                 }
+                ui_load::tick_end();
             },
         );
     }
@@ -3458,4 +3650,96 @@ fn scope_path(bins: &[(f32, f32)]) -> String {
     }
     out.push('Z');
     out
+}
+
+/// Path commands for the instrument's spectrum in the scope's 128 by 32
+/// box: an area rising from the bottom, low notes on the left.
+fn spectrum_path(bands: &[f32]) -> String {
+    use std::fmt::Write;
+    let last = bands.len().saturating_sub(1).max(1) as f32;
+    let mut out = String::with_capacity(bands.len() * 16 + 16);
+    out.push_str("M 0 32 ");
+    for (i, &v) in bands.iter().enumerate() {
+        let _ = write!(
+            out,
+            "L {:.1} {:.1} ",
+            i as f32 * 128.0 / last,
+            32.0 - 31.0 * v.clamp(0.0, 1.0)
+        );
+    }
+    out.push_str("L 128 32 Z");
+    out
+}
+
+#[cfg(test)]
+mod output_device_tests {
+    use super::{move_to_device, AudioSetup, Role, Route};
+
+    #[test]
+    fn covers_become_square_jpegs() {
+        let cover = opendj_engine::cover::Cover {
+            width: 40,
+            height: 20,
+            rgba: vec![200; 40 * 20 * 4],
+        };
+        let jpeg = super::cover_jpeg(&cover, 32);
+        assert_eq!(&jpeg[..3], &[0xFF, 0xD8, 0xFF]);
+        let back = image::load_from_memory(&jpeg).unwrap();
+        assert_eq!((back.width(), back.height()), (32, 32));
+    }
+
+    fn route(role: Role, device: &str, pair: u16) -> Route {
+        Route {
+            role,
+            device: device.into(),
+            pair,
+        }
+    }
+
+    #[test]
+    fn a_controller_takes_the_master_and_the_headphones_together() {
+        // First start: both on the system default.
+        let mut s = AudioSetup {
+            routes: vec![route(Role::Master, "", 0), route(Role::Headphones, "", 1)],
+            ..AudioSetup::default()
+        };
+        move_to_device(&mut s, 0, "DDJ-FLX10", 4);
+        assert_eq!(s.routes[0], route(Role::Master, "DDJ-FLX10", 0));
+        assert_eq!(s.routes[1], route(Role::Headphones, "DDJ-FLX10", 1));
+    }
+
+    #[test]
+    fn headphones_on_their_own_device_stay_there() {
+        let mut s = AudioSetup {
+            routes: vec![
+                route(Role::Master, "", 0),
+                route(Role::Headphones, "USB Phones", 0),
+            ],
+            ..AudioSetup::default()
+        };
+        move_to_device(&mut s, 0, "DDJ-FLX10", 4);
+        assert_eq!(s.routes[1], route(Role::Headphones, "USB Phones", 0));
+    }
+
+    #[test]
+    fn a_row_moved_to_the_masters_device_takes_the_free_pair() {
+        let mut s = AudioSetup {
+            routes: vec![
+                route(Role::Master, "DDJ-FLX10", 0),
+                route(Role::Headphones, "MacBook Pro Speakers", 0),
+            ],
+            ..AudioSetup::default()
+        };
+        move_to_device(&mut s, 1, "DDJ-FLX10", 4);
+        assert_eq!(s.routes[1], route(Role::Headphones, "DDJ-FLX10", 1));
+        // A two-channel device has no pair to spare: the master stays put
+        // and the headphones go on its only pair, as before.
+        move_to_device(&mut s, 1, "MacBook Pro Speakers", 2);
+        assert_eq!(
+            s.routes[1],
+            route(Role::Headphones, "MacBook Pro Speakers", 0)
+        );
+        move_to_device(&mut s, 0, "MacBook Pro Speakers", 2);
+        assert_eq!(s.routes[0], route(Role::Master, "MacBook Pro Speakers", 0));
+    }
 }

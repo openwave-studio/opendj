@@ -1,0 +1,221 @@
+{
+  "file": "Numark-Party-Mix.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cue-gain": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "cue-mix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-cue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "Turn": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mode": {
+      "Cue": [
+        "Mode button press"
+      ],
+      "Effect": [
+        "Mode button press"
+      ],
+      "Loop": [
+        "Mode button press"
+      ],
+      "Sampler": [
+        "Mode button press"
+      ]
+    },
+    "l-pad1": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "l-pad2": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "l-pad3": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "l-pad4": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-scratch": {
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "l-sync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-cue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "Turn": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mode": {
+      "Cue": [
+        "Mode button press"
+      ],
+      "Effect": [
+        "Mode button press"
+      ],
+      "Loop": [
+        "Mode button press"
+      ],
+      "Sampler": [
+        "Mode button press"
+      ]
+    },
+    "r-pad1": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "r-pad2": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "r-pad3": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "r-pad4": {
+      "normal": [
+        "Pad press"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-scratch": {
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "r-sync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

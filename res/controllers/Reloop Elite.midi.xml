@@ -1,0 +1,969 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxMIDIPreset mixxxVersion="2.4" schemaVersion="1">
+    <info>
+        <name>Reloop Elite</name>
+        <author>openDJ</author>
+        <description>openDJ's own mapping, from the control list djay Pro's mapping uses.</description>
+    </info>
+    <controller id="Reloop ELITE">
+        <scriptfiles>
+            <file functionprefix="" filename="Reloop-djay-scripts.js"/>
+            <file functionprefix="ReloopElite" filename="Reloop-Elite-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: EQ high</description>
+                <status>0xB1</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: EQ mid</description>
+                <status>0xB1</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: EQ low</description>
+                <status>0xB1</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: EQ high</description>
+                <status>0xB2</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: EQ mid</description>
+                <status>0xB2</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: EQ low</description>
+                <status>0xB2</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopElite.input</key>
+                <description>Browse the list</description>
+                <status>0xBF</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopElite.input</key>
+                <description>Open the selected list</description>
+                <status>0x9F</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopElite.input</key>
+                <description>Browse the sidebar</description>
+                <status>0xBF</status>
+                <midino>0x78</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopElite.input</key>
+                <description>Back</description>
+                <status>0x9F</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopElite.input</key>
+                <description>Load the selected track to deck 1</description>
+                <status>0x9F</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopElite.input</key>
+                <description>Load the selected track to deck 2</description>
+                <status>0x9F</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Sampler level</description>
+                <status>0xBF</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Crossfader</description>
+                <status>0xBF</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Tap tempo</description>
+                <status>0x99</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Effect 1: next</description>
+                <status>0x9F</status>
+                <midino>0x7E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Effect 2: next</description>
+                <status>0x9F</status>
+                <midino>0x7D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Effect 3: next</description>
+                <status>0x9F</status>
+                <midino>0x7C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Effects dry/wet</description>
+                <status>0xB9</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Effect 1 amount</description>
+                <status>0xB9</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Tap tempo</description>
+                <status>0x9A</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Effects dry/wet</description>
+                <status>0xBA</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Effect 1 amount</description>
+                <status>0xBA</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Loop size</description>
+                <status>0xB5</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Loop on/off</description>
+                <status>0x95</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Match key</description>
+                <status>0x91</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Loop out</description>
+                <status>0x95</status>
+                <midino>0x39</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 1 | Pitch play 1 | Loop roll 1/16 beats | Slice 1 | ...</description>
+                <status>0x95</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 2 | Pitch play 2 | Loop roll 1/8 beats | Slice 2 | ...</description>
+                <status>0x95</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 3 | Pitch play 3 | Loop roll 1/4 beats | Slice 3 | ...</description>
+                <status>0x95</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 4 | Pitch play 4 | Loop roll 1/2 beats | Slice 4 | ...</description>
+                <status>0x95</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 5 | Pitch play 5 | Loop roll 1 beat | Slice 5 | ...</description>
+                <status>0x95</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 6 | Pitch play 6 | Loop roll 2 beats | Slice 6 | ...</description>
+                <status>0x95</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 7 | Pitch play 7 | Loop roll 4 beats | Slice 7 | ...</description>
+                <status>0x95</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Hot cue 8 | Pitch play 8 | Loop roll 8 beats | Slice 8 | ...</description>
+                <status>0x95</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 1 | Pitch play: hot cue 1 | Loop 1/16 beats | Sampler 1 stop</description>
+                <status>0x95</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 2 | Pitch play: hot cue 2 | Loop 1/8 beats | Sampler 2 stop</description>
+                <status>0x95</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 3 | Pitch play: hot cue 3 | Loop 1/4 beats | Sampler 3 stop</description>
+                <status>0x95</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 4 | Pitch play: hot cue 4 | Loop 1/2 beats | Sampler 4 stop</description>
+                <status>0x95</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 5 | Pitch play: hot cue 5 | Loop 1 beat | Sampler 5 stop</description>
+                <status>0x95</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 6 | Pitch play: hot cue 6 | Loop 2 beats | Sampler 6 stop</description>
+                <status>0x95</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 7 | Pitch play: hot cue 7 | Loop 4 beats | Sampler 7 stop</description>
+                <status>0x95</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Delete hot cue 8 | Pitch play: hot cue 8 | Loop 8 beats | Sampler 8 stop</description>
+                <status>0x95</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 1 level</description>
+                <status>0xB5</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 2 level</description>
+                <status>0xB5</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 3 level</description>
+                <status>0xB5</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 4 level</description>
+                <status>0xB5</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 5 level</description>
+                <status>0xB5</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 6 level</description>
+                <status>0xB5</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 7 level</description>
+                <status>0xB5</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 1: Sampler 8 level</description>
+                <status>0xB5</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Loop size</description>
+                <status>0xB6</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Loop on/off</description>
+                <status>0x96</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Match key</description>
+                <status>0x92</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Loop out</description>
+                <status>0x96</status>
+                <midino>0x39</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 1 | Pitch play 1 | Loop roll 1/16 beats | Slice 1 | ...</description>
+                <status>0x96</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 2 | Pitch play 2 | Loop roll 1/8 beats | Slice 2 | ...</description>
+                <status>0x96</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 3 | Pitch play 3 | Loop roll 1/4 beats | Slice 3 | ...</description>
+                <status>0x96</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 4 | Pitch play 4 | Loop roll 1/2 beats | Slice 4 | ...</description>
+                <status>0x96</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 5 | Pitch play 5 | Loop roll 1 beat | Slice 5 | ...</description>
+                <status>0x96</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 6 | Pitch play 6 | Loop roll 2 beats | Slice 6 | ...</description>
+                <status>0x96</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 7 | Pitch play 7 | Loop roll 4 beats | Slice 7 | ...</description>
+                <status>0x96</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Hot cue 8 | Pitch play 8 | Loop roll 8 beats | Slice 8 | ...</description>
+                <status>0x96</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 1 | Pitch play: hot cue 1 | Loop 1/16 beats | Sampler 1 stop</description>
+                <status>0x96</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 2 | Pitch play: hot cue 2 | Loop 1/8 beats | Sampler 2 stop</description>
+                <status>0x96</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 3 | Pitch play: hot cue 3 | Loop 1/4 beats | Sampler 3 stop</description>
+                <status>0x96</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 4 | Pitch play: hot cue 4 | Loop 1/2 beats | Sampler 4 stop</description>
+                <status>0x96</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 5 | Pitch play: hot cue 5 | Loop 1 beat | Sampler 5 stop</description>
+                <status>0x96</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 6 | Pitch play: hot cue 6 | Loop 2 beats | Sampler 6 stop</description>
+                <status>0x96</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 7 | Pitch play: hot cue 7 | Loop 4 beats | Sampler 7 stop</description>
+                <status>0x96</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Delete hot cue 8 | Pitch play: hot cue 8 | Loop 8 beats | Sampler 8 stop</description>
+                <status>0x96</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 1 level</description>
+                <status>0xB6</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 2 level</description>
+                <status>0xB6</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 3 level</description>
+                <status>0xB6</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 4 level</description>
+                <status>0xB6</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 5 level</description>
+                <status>0xB6</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 6 level</description>
+                <status>0xB6</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 7 level</description>
+                <status>0xB6</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopElite.input</key>
+                <description>Deck 2: Sampler 8 level</description>
+                <status>0xB6</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x95</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x95</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x95</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x95</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: pitch play</description>
+                <status>0x95</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: saved loop</description>
+                <status>0x95</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: slicer loop</description>
+                <status>0x95</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x95</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: pitch play</description>
+                <status>0x96</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: saved loop</description>
+                <status>0x96</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: slicer loop</description>
+                <status>0x96</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopElite.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs>
+
+        </outputs>
+    </controller>
+</MixxxMIDIPreset>

@@ -1,0 +1,708 @@
+{
+  "file": "AlphaTheta-OMNIS-DUO.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Waveform zoom"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c1-color": {
+      "Deck 3": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "c1-cue": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c1-fader": {
+      "Deck 3": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c1-hi": {
+      "Deck 3": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "c1-low": {
+      "Deck 3": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "c1-mid": {
+      "Deck 3": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "c1-trim": {
+      "Deck 3": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "c2-color": {
+      "Deck 4": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "c2-cue": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "c2-fader": {
+      "Deck 4": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c2-hi": {
+      "Deck 4": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "c2-low": {
+      "Deck 4": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "c2-mid": {
+      "Deck 4": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "c2-trim": {
+      "Deck 4": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "fx-beat-down": {
+      "normal": [
+        "FX 5 Effect 1 beats halve"
+      ]
+    },
+    "fx-beat-up": {
+      "normal": [
+        "FX 5 Effect 1 beats double"
+      ]
+    },
+    "fx-level": {
+      "normal": [
+        "FX 5 Effect 1 knob"
+      ]
+    },
+    "fx-on": {
+      "normal": [
+        "FX 5 Effect 1 on"
+      ]
+    },
+    "l-beat-loop": {
+      "Deck 3": [
+        "Loop size 2"
+      ],
+      "Deck 3, Press": [
+        "Loop (current size)"
+      ],
+      "Deck 3, SHIFT press": [
+        "Reloop / exit"
+      ],
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop size 2"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "Deck 3, SHIFT": [
+        "Jump to start"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-jog": {
+      "Deck 3, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT touch": [
+        "Jog touch"
+      ],
+      "Deck 3, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Touch": [
+        "Jog touch"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "l-master": {
+      "Deck 3": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-master-tempo": {
+      "Deck 3": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-needle": {
+      "Deck 3": [
+        "Position"
+      ],
+      "normal": [
+        "Position"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3, Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3, Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3, Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3, Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ]
+    },
+    "l-pad5": {
+      "Deck 3, Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ]
+    },
+    "l-pad6": {
+      "Deck 3, Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ]
+    },
+    "l-pad7": {
+      "Deck 3, Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ]
+    },
+    "l-pad8": {
+      "Deck 3, Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ]
+    },
+    "l-param-left": {
+      "Deck 3": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-param-right": {
+      "Deck 3": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-quantize": {
+      "Deck 3": [
+        "Quantize"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "l-slip": {
+      "Deck 3": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vinyl": {
+      "Deck 3": [
+        "Jog mode"
+      ],
+      "normal": [
+        "Jog mode"
+      ]
+    },
+    "load1": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load2": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load3": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load4": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-beat-loop": {
+      "Deck 4": [
+        "Loop size 2"
+      ],
+      "Deck 4, Press": [
+        "Loop (current size)"
+      ],
+      "Deck 4, SHIFT press": [
+        "Reloop / exit"
+      ],
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop size 2"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "Deck 4, SHIFT": [
+        "Jump to start"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-jog": {
+      "Deck 4, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT touch": [
+        "Jog touch"
+      ],
+      "Deck 4, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Touch": [
+        "Jog touch"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "r-master": {
+      "Deck 4": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-master-tempo": {
+      "Deck 4": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-needle": {
+      "Deck 4": [
+        "Position"
+      ],
+      "normal": [
+        "Position"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4, Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4, Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4, Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4, Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ]
+    },
+    "r-pad5": {
+      "Deck 4, Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ]
+    },
+    "r-pad6": {
+      "Deck 4, Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ]
+    },
+    "r-pad7": {
+      "Deck 4, Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ]
+    },
+    "r-pad8": {
+      "Deck 4, Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ]
+    },
+    "r-param-left": {
+      "Deck 4": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-param-right": {
+      "Deck 4": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-quantize": {
+      "Deck 4": [
+        "Quantize"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "r-slip": {
+      "Deck 4": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vinyl": {
+      "Deck 4": [
+        "Jog mode"
+      ],
+      "normal": [
+        "Jog mode"
+      ]
+    }
+  }
+}

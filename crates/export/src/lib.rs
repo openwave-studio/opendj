@@ -164,8 +164,9 @@ const LIBRARY_FILES: [&str; 5] = [
 ];
 
 /// The stick's export folder: the one that already holds a library, else
-/// `PIONEER`. rekordbox can write it hidden as `.PIONEER`, and a second
-/// library beside it would leave players to pick one.
+/// `.PIONEER` on HFS+ and `PIONEER` elsewhere. rekordbox writes it hidden on
+/// HFS+, and a CDJ-3000 reads an HFS+ stick only from there. A second
+/// library beside the first would leave players to pick one.
 fn export_dir(root: &Path) -> Result<&'static str, Error> {
     let holds_library = |name: &str| {
         let dir = root.join(name);
@@ -178,8 +179,35 @@ fn export_dir(root: &Path) -> Result<&'static str, Error> {
             "the stick has two libraries, in PIONEER and .PIONEER; remove one first".into(),
         )),
         (false, true) => Ok(".PIONEER"),
+        (false, false) if is_hfs_plus(root) => Ok(".PIONEER"),
         _ => Ok("PIONEER"),
     }
+}
+
+/// Whether `path` is on an HFS+ (Mac OS Extended) volume.
+#[cfg(target_os = "macos")]
+fn is_hfs_plus(path: &Path) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    let Ok(path) = std::ffi::CString::new(path.as_os_str().as_bytes()) else {
+        return false;
+    };
+    let mut fs = std::mem::MaybeUninit::<libc::statfs>::uninit();
+    // SAFETY: `path` is NUL-terminated, and `fs` is only read after statfs
+    // has filled it in.
+    if unsafe { libc::statfs(path.as_ptr(), fs.as_mut_ptr()) } != 0 {
+        return false;
+    }
+    let fs = unsafe { fs.assume_init() };
+    fs.f_fstypename
+        .iter()
+        .take_while(|&&c| c != 0)
+        .map(|&c| c as u8)
+        .eq(*b"hfs")
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_hfs_plus(_: &Path) -> bool {
+    false
 }
 
 /// Joins a stick path (`/Contents/...`) onto the stick's folder.

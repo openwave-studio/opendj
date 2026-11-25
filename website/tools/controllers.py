@@ -17,13 +17,14 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from controller_figure import numbered  # noqa: E402
+
 MIXXX_MANUAL = "https://manual.mixxx.org/2.4/en/hardware/controllers/{}"
 ISSUE_URL = "https://github.com/openwave-studio/opendj/issues/new?template=controller.yml"
 STATUS = {
-    "supported": "**Supported.** Tried on the hardware, and the mapping is settled.",
-    "beta": ("**Beta.** This mapping works on paper and has a picture in the Controller "
-             "Editor, but nobody has tried it in openDJ on the real controller yet. If you "
-             "have one, [tell us how it goes]({}): what works, and what doesn't."),
+    "supported": "**Supported.** Tried on the hardware.",
+    "beta": "**Beta.** [Let us know]({}) if you run into any issues.",
     "planned": "**Coming soon.** openDJ doesn't have a mapping for this controller yet.",
 }
 
@@ -285,12 +286,14 @@ class Mapping:
         sections = list(dict.fromkeys(l["section"] for l in lines))
         return [(l["section"], l) for s in sections for l in lines if l["section"] == s]
 
-    def page(self, status=None, guide=None):
+    def page(self, status=None, guide=None, figure=None):
         out = front_matter(self.name, status)
         if status:
             out += [STATUS[status].format(ISSUE_URL), ""]
         if guide:
-            out += [guide.strip(), "", "## Every control", ""]
+            out += [guide.strip(), ""]
+        if figure:
+            out += figure_section(self.name, figure)
         meta = []
         if self.author:
             meta.append(f"Mapping by {md(self.author)}, from Mixxx")
@@ -298,42 +301,32 @@ class Mapping:
             meta.append(f"[Mixxx manual page]({MIXXX_MANUAL.format(self.manual.lower())})")
         if self.forums.startswith("http"):
             meta.append(f"[Forum thread]({self.forums})")
-        if meta:
-            out += [" · ".join(meta), ""]
+        rest = []
         if self.description and self.description != self.name:
-            out += [md(self.description), ""]
+            rest += [md(self.description), ""]
         if self.mapped:
             works = self.mapped - self.missing
             line = (f"openDJ supports **{works} of the {self.mapped}** controls this mapping "
                     "sets directly.")
             if self.scripted:
                 line += " The rest of the mapping runs as a script, which isn't counted here."
-            out += [line, ""]
+            rest += [line, ""]
             if self.missing and self.documented:
-                out += ["Lines marked *Not in openDJ yet* don't do anything yet.", ""]
-        if not self.documented and self.hid:
-            out += ["This is a USB HID mapping: it runs as a script, with no list of controls "
-                    "to show here."]
-            if self.manual:
-                out[-1] += " The Mixxx manual page above shows what each control does."
-            out += [""]
-        elif not self.documented:
-            out += ["This mapping doesn't describe its controls one by one, so there's no "
-                    "list here yet."]
-            if self.manual:
-                out[-1] += " The Mixxx manual page above shows the layout."
-            out += [""]
-        else:
+                rest += ["Lines marked *Not in openDJ yet* don't do anything yet.", ""]
+        if self.documented:
             rows = self.table_rows()
             # Mappings that describe controls in sentences, without naming the
             # hardware, get a table without the Control column.
             named = sum(1 for _, r in rows if r["name"]) >= len(rows) / 2
             current = None
+            # Under a figure the full list is folded away, with small headings
+            # that stay out of the page outline.
+            level = "####" if figure else "##"
             for section, row in rows:
                 if section != current:
                     current = section
                     head = "| Control | Action | With SHIFT |" if named else "| Action | With SHIFT |"
-                    out += ["", f"## {md(section)}", "", head, "|---" * head.count("|", 1) + "|"]
+                    rest += ["", f"{level} {md(section)}", "", head, "|---" * head.count("|", 1) + "|"]
                 action = md(row["normal"]) or "–"
                 if row["missing"]:
                     action += " *Not in openDJ yet*"
@@ -341,14 +334,46 @@ class Mapping:
                 if not named and row["name"] and not row["normal"]:
                     action = md(row["name"])
                 cells += [action, md(row["shift"]) or "–"]
-                out.append("| " + " | ".join(cells) + " |")
+                rest.append("| " + " | ".join(cells) + " |")
             if self.undescribed:
-                out += ["", f"{self.undescribed} more controls in this mapping have no "
-                        "description, so they aren't listed."]
-        out += ["", "---", "",
-                f"Generated from `res/controllers/{self.path.name}`. If something here is "
+                rest += ["", f"{self.undescribed} more controls in this mapping have no "
+                         "description, so they aren't listed."]
+            if figure:
+                out += ["<details>", "<summary>Every control, as the mapping describes it</summary>",
+                        ""] + rest + ["", "</details>", ""]
+            else:
+                out += (["## Every control", ""] if guide else []) + rest
+        elif not figure:
+            out += rest
+            if self.hid:
+                out += ["This is a USB HID mapping: it runs as a script, with no list of controls "
+                        "to show here."]
+            else:
+                out += ["This mapping doesn't describe its controls one by one, so there's no "
+                        "list here yet."]
+            if self.manual:
+                out[-1] += " The Mixxx manual page linked below shows the layout."
+            out += [""]
+        out += ["", "---", ""]
+        if meta:
+            out += [" · ".join(meta), ""]
+        out += [f"Generated from `res/controllers/{self.path.name}`. If something here is "
                 f"wrong on your controller, [tell us]({ISSUE_URL}).", ""]
         return "\n".join(out)
+
+
+def figure_section(name, figure):
+    """The controller's picture with a number on each control, and what each
+    number does."""
+    image, rows = figure
+    out = ["## What the controls do", "",
+           f"![The {html.escape(name)} with a number on each control](figures/{image})", ""]
+    if any(r[0] for r in rows):
+        out += ["Grey numbers do the same as the lilac one with that number, on the other deck.", "",
+                "| | Control | Does | With SHIFT |", "|--:|---|---|---|"]
+        out += [f"| {n} | {md(c)} | {md(d) or '–'} | {md(s) or '–'} |" for n, c, d, s in rows]
+        out.append("")
+    return out
 
 
 class OwnMapping:
@@ -364,12 +389,14 @@ class OwnMapping:
         self.name = data.get("name") or path.stem
         self.author = data.get("author", "")
 
-    def page(self, status=None, guide=None):
+    def page(self, status=None, guide=None, figure=None):
         out = front_matter(self.name, status)
         if status:
             out += [STATUS[status].format(ISSUE_URL), ""]
         if guide:
             out += [guide.strip(), ""]
+        if figure:
+            out += figure_section(self.name, figure)
         out += ["---", "",
                 f"openDJ's own mapping, `res/controllers/{self.path.name}`. If something here "
                 f"is wrong on your controller, [tell us]({ISSUE_URL}).", ""]
@@ -383,6 +410,10 @@ def main():
     out = docs / "src" / "content" / "docs" / "controllers"
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob("*.md"):
+        old.unlink()
+    figures_out = out / "figures"
+    figures_out.mkdir(exist_ok=True)
+    for old in figures_out.glob("*.svg"):
         old.unlink()
 
     mappings = []
@@ -401,15 +432,23 @@ def main():
     looked_after = support["controllers"]
     status = {c["file"]: c["status"] for c in looked_after if c["file"]}
     guides = docs / "controller-guides"
+    # The Controller Editor's pictures, and what each control does in them
+    # (written by `cargo run -p opendj-controllers --example docs_controls`).
+    layouts = {}
+    for f in sorted((controllers.parent.parent / "crates/controllers/layouts").glob("*.json")):
+        layout = json.loads(f.read_text())
+        for file in [layout.get("file")] + layout.get("also", []):
+            if file:
+                layouts[file] = layout
+    functions = docs / "figures" / "functions"
 
     index = front_matter("Supported controllers") + [
              "openDJ uses Mixxx's controller mappings, so these MIDI and USB HID controllers "
              "load their mapping as soon as they're plugged in.", "",
              "## Popular controllers", "",
              "openDJ looks after these itself: each has a picture in the Controller Editor and "
-             "a guide. **Beta** means nobody has tried it in openDJ on the real controller yet; "
-             f"if you have one, [tell us how it goes]({ISSUE_URL}). It becomes **Supported** "
-             "once it has been tried and its mapping is settled.", ""]
+             f"a guide. **Beta** ones are new: [let us know]({ISSUE_URL}) if you run into any "
+             "issues.", ""]
     by_file = {m.path.name: m for m in mappings}
     labels = {"supported": "Supported", "beta": "Beta", "planned": "Coming soon"}
     by_maker = {}
@@ -431,7 +470,14 @@ def main():
     for m in mappings:
         s = slug(m.path)
         guide = guides / f"{s}.md"
-        page = m.page(status.get(m.path.name), guide.read_text() if guide.exists() else None)
+        figure = None
+        if m.path.name in layouts and (functions / f"{m.path.name}.json").exists():
+            svg, rows = numbered(layouts[m.path.name],
+                                 json.loads((functions / f"{m.path.name}.json").read_text()))
+            (figures_out / f"{s}.svg").write_text(svg)
+            figure = (f"{s}.svg", rows)
+        page = m.page(status.get(m.path.name), guide.read_text() if guide.exists() else None,
+                      figure)
         (out / f"{s}.md").write_text(page)
         listed = "Yes" if m.documented else "Not yet"
         index.append(f"| [{md(m.name)}]({s}.md) | {md(m.author) or '–'} | {listed} |")

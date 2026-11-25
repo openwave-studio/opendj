@@ -1,0 +1,179 @@
+{
+  "file": "Traktor Kontrol Z1 MK2.hid.xml",
+  "parts": {
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "decks": {
+      "normal": [
+        "Channels play decks A and B, or C and D"
+      ]
+    },
+    "filter": {
+      "normal": [
+        "FX knobs play the filter"
+      ]
+    },
+    "fx1": {
+      "normal": [
+        "FX knobs play Space"
+      ]
+    },
+    "fx2": {
+      "normal": [
+        "FX knobs play Dub Echo"
+      ]
+    },
+    "fx3": {
+      "normal": [
+        "FX knobs play Noise"
+      ]
+    },
+    "fx4": {
+      "normal": [
+        "FX knobs play Crush"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Headphone cue / main mix"
+      ]
+    },
+    "hp-vol": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "l-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-eq": {
+      "normal": [
+        "Knobs are the EQ"
+      ]
+    },
+    "l-fx": {
+      "normal": [
+        "Mixer FX (filter or the chosen one)"
+      ]
+    },
+    "l-gain": {
+      "Stems": [
+        "Stem 1 volume (drums)"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-hi": {
+      "Stems": [
+        "Stem 2 volume (bass)"
+      ],
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "l-low": {
+      "Stems": [
+        "Stem 4 volume (vocals)"
+      ],
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "l-mid": {
+      "Stems": [
+        "Stem 3 volume (other)"
+      ],
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "l-on": {
+      "normal": [
+        "Mixer FX on or off"
+      ]
+    },
+    "l-stems": {
+      "normal": [
+        "Knobs set the stem volumes (track with stems)"
+      ]
+    },
+    "l-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "main": {
+      "normal": [
+        "Main level (on the device)"
+      ]
+    },
+    "r-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-eq": {
+      "normal": [
+        "Knobs are the EQ"
+      ]
+    },
+    "r-fx": {
+      "normal": [
+        "Mixer FX (filter or the chosen one)"
+      ]
+    },
+    "r-gain": {
+      "Stems": [
+        "Stem 1 volume (drums)"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-hi": {
+      "Stems": [
+        "Stem 2 volume (bass)"
+      ],
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "r-low": {
+      "Stems": [
+        "Stem 4 volume (vocals)"
+      ],
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "r-mid": {
+      "Stems": [
+        "Stem 3 volume (other)"
+      ],
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "r-on": {
+      "normal": [
+        "Mixer FX on or off"
+      ]
+    },
+    "r-stems": {
+      "normal": [
+        "Knobs set the stem volumes (track with stems)"
+      ]
+    },
+    "r-volume": {
+      "normal": [
+        "Volume"
+      ]
+    }
+  }
+}

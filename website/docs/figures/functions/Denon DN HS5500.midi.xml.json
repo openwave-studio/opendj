@@ -1,0 +1,197 @@
+{
+  "file": "Denon DN HS5500.midi.xml",
+  "parts": {
+    "a1": {
+      "Deck 2 + Hot cue 1": [
+        "Hot cue 1"
+      ],
+      "Deck 2 + Loop in": [
+        "Loop in"
+      ],
+      "Hot cue 1": [
+        "Hot cue 1"
+      ],
+      "Loop in": [
+        "Loop in"
+      ]
+    },
+    "a2": {
+      "Deck 2 + Hot cue 2": [
+        "Hot cue 2"
+      ],
+      "Hot cue 2": [
+        "Hot cue 2"
+      ]
+    },
+    "b": {
+      "Deck 2 + Hot cue 3": [
+        "Hot cue 3"
+      ],
+      "Deck 2 + Loop out": [
+        "Loop out"
+      ],
+      "Hot cue 3": [
+        "Hot cue 3"
+      ],
+      "Loop out": [
+        "Loop out"
+      ]
+    },
+    "back": {
+      "Deck 2 + Eject": [
+        "Eject"
+      ],
+      "Eject": [
+        "Eject"
+      ]
+    },
+    "bend+": {
+      "Deck 2": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "bend-": {
+      "Deck 2": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "brake": {
+      "Deck 2": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "cont": {
+      "Deck 2 + Repeat": [
+        "Repeat"
+      ],
+      "Repeat": [
+        "Repeat"
+      ]
+    },
+    "cue": {
+      "Deck 2": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Stop at cue"
+      ]
+    },
+    "exit": {
+      "Deck 2": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "keyadjust": {
+      "Deck 2 + Key lock": [
+        "Key lock"
+      ],
+      "Key lock": [
+        "Key lock"
+      ]
+    },
+    "pitch": {
+      "Deck 2": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "platter": {
+      "Deck 2 + Platter motor": [
+        "Platter turn"
+      ],
+      "Deck 2 + Touch": [
+        "Wheel touch"
+      ],
+      "Deck 2 + Touch (scratch)": [
+        "Wheel touch"
+      ],
+      "Deck 2 + Turn": [
+        "Wheel turn"
+      ],
+      "Platter motor": [
+        "Platter turn"
+      ],
+      "Touch": [
+        "Wheel touch"
+      ],
+      "Touch (scratch)": [
+        "Wheel touch"
+      ],
+      "Turn": [
+        "Wheel turn"
+      ]
+    },
+    "play": {
+      "Deck 2": [
+        "Play / pause",
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Play / pause",
+        "Scratch (platter touch)"
+      ]
+    },
+    "reverse": {
+      "Deck 2": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "search+": {
+      "Deck 2": [
+        "Fast forward"
+      ],
+      "normal": [
+        "Fast forward"
+      ]
+    },
+    "search-": {
+      "Deck 2": [
+        "Rewind"
+      ],
+      "normal": [
+        "Rewind"
+      ]
+    },
+    "select": {
+      "Deck 2 + Press (load)": [
+        "Load into a stopped deck"
+      ],
+      "Deck 2 + Turn": [
+        "Down",
+        "Up"
+      ],
+      "Press (load)": [
+        "Load into a stopped deck"
+      ],
+      "Turn": [
+        "Down",
+        "Up"
+      ]
+    },
+    "tap": {
+      "Deck 2": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Tap tempo"
+      ]
+    }
+  }
+}

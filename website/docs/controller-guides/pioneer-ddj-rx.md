@@ -12,9 +12,9 @@ these changes:
 - **PAD FX** mode plays loop rolls, as the SX's ROLL mode does.
 - **MASTER TEMPO** is key lock. SHIFT and **SLIP** turns scratching on the
   jog wheel on and off.
-- The **COLOR** knobs are filters. The Sound Color FX buttons (**NOISE**,
-  **CRUSH**, **PITCH**, **FILTER**), **CAPTURE** and the sequencer buttons do
-  nothing yet.
+- The Sound Color FX buttons (**NOISE**, **CRUSH**, **PITCH**, **FILTER**)
+  pick what the **COLOR** knobs play on every deck; press the lit one to go
+  back to the filter. **CAPTURE** and the sequencer buttons do nothing yet.
 
 ## When you try it
 

@@ -825,11 +825,20 @@ impl Helper {
     }
 }
 
+impl Helper {
+    /// Where the helper puts its display for the deck, if it draws one
+    /// (see [`crate::display`]).
+    pub fn display_path(&self) -> PathBuf {
+        crate::display::path_for(&self.shm_path)
+    }
+}
+
 impl Drop for Helper {
     fn drop(&mut self) {
         self.kill();
         let _ = std::fs::remove_file(&self.shm_path);
         let _ = std::fs::remove_file(&self.state_path);
+        let _ = std::fs::remove_file(self.display_path());
     }
 }
 

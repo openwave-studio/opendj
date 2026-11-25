@@ -1,0 +1,536 @@
+{
+  "file": "Denon MC4000.midi.xml",
+  "parts": {
+    "back": {
+      "SHIFT (panel)": [
+        "Next panel"
+      ],
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "l-auto": {
+      "SHIFT (quantize)": [
+        "Quantize"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "l-beats": {
+      "Press": [
+        "FX 1 Show parameters"
+      ],
+      "Turn (wet/dry)": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "l-bend+": {
+      "SHIFT": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-bend-": {
+      "SHIFT": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-cue": {
+      "SHIFT (to start)": [
+        "Back to start and stop"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-cue-hp": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-double": {
+      "SHIFT (loop out)": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fx1": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-fx1-on": {
+      "SHIFT (FX select)": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "l-fx2-on": {
+      "SHIFT (FX select)": [
+        "FX 1 Effect 2 next"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "l-fx3": {
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "l-fx3-on": {
+      "SHIFT (FX select)": [
+        "FX 1 Effect 3 next"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "l-halve": {
+      "SHIFT (loop in)": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "l-keylock": {
+      "SHIFT (range)": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "SHIFT (delete)": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "SHIFT (delete)": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "SHIFT (delete)": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "SHIFT (delete)": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pitch": {
+      "Fine": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-play": {
+      "SHIFT (stutter)": [
+        "Stutter play"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-reloop": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-sync": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tap": {
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "l-vinyl": {
+      "SHIFT (censor)": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Vinyl mode toggle"
+      ]
+    },
+    "library": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT turn": [
+        "Scroll list"
+      ],
+      "Turn": [
+        "Scroll list"
+      ]
+    },
+    "load1": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load2": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "loadprep": {
+      "SHIFT (open prep)": [
+        "Eject"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "phones-level": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "phones-pan": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "r-auto": {
+      "SHIFT (quantize)": [
+        "Quantize"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-beats": {
+      "Press": [
+        "FX 2 Show parameters"
+      ],
+      "Turn (wet/dry)": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "r-bend+": {
+      "SHIFT": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-bend-": {
+      "SHIFT": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-cue": {
+      "SHIFT (to start)": [
+        "Back to start and stop"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-cue-hp": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-double": {
+      "SHIFT (loop out)": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fx1": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-fx1-on": {
+      "SHIFT (FX select)": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "r-fx2-on": {
+      "SHIFT (FX select)": [
+        "FX 2 Effect 2 next"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "r-fx3": {
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "r-fx3-on": {
+      "SHIFT (FX select)": [
+        "FX 2 Effect 3 next"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-halve": {
+      "SHIFT (loop in)": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "r-keylock": {
+      "SHIFT (range)": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "SHIFT (delete)": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "SHIFT (delete)": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "SHIFT (delete)": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "SHIFT (delete)": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pitch": {
+      "Fine": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-play": {
+      "SHIFT (stutter)": [
+        "Stutter play"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-reloop": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-sync": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tap": {
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "r-vinyl": {
+      "SHIFT (censor)": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Vinyl mode toggle"
+      ]
+    },
+    "sampler-level": {
+      "normal": [
+        "Sampler 1 Gain",
+        "Sampler 2 Gain",
+        "Sampler 3 Gain",
+        "Sampler 4 Gain"
+      ]
+    },
+    "sampler1": {
+      "SHIFT (stop)": [
+        "Sampler 1 Stop"
+      ],
+      "normal": [
+        "Sampler 1 Play from start"
+      ]
+    },
+    "sampler2": {
+      "SHIFT (stop)": [
+        "Sampler 2 Stop"
+      ],
+      "normal": [
+        "Sampler 2 Play from start"
+      ]
+    },
+    "sampler3": {
+      "SHIFT (stop)": [
+        "Sampler 3 Stop"
+      ],
+      "normal": [
+        "Sampler 3 Play from start"
+      ]
+    },
+    "sampler4": {
+      "SHIFT (stop)": [
+        "Sampler 4 Stop"
+      ],
+      "normal": [
+        "Sampler 4 Play from start"
+      ]
+    },
+    "split": {
+      "normal": [
+        "Split cue"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

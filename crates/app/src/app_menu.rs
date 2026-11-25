@@ -27,6 +27,7 @@ pub enum Action {
     ExportSpotify,
     ExportRekordboxXml,
     ExportMixcloud,
+    ExportStemFiles,
     RecordMix,
     MiniPlayer,
     KaraokeScreen,
@@ -82,7 +83,7 @@ const UPDATE_CHECK: &str = "update_check";
 const USER_GUIDE: &str = "https://opendj.app/docs";
 
 impl Action {
-    const ALL: [Action; 33] = [
+    const ALL: [Action; 34] = [
         Action::Settings,
         Action::Quit,
         Action::Undo,
@@ -92,6 +93,7 @@ impl Action {
         Action::ExportSpotify,
         Action::ExportMixcloud,
         Action::ExportRekordboxXml,
+        Action::ExportStemFiles,
         Action::RecordMix,
         Action::MiniPlayer,
         Action::KaraokeScreen,
@@ -218,6 +220,11 @@ pub const MENUS: &[Menu] = &[
                     Entry::Item {
                         action: Action::ExportRekordboxXml,
                         title: "rekordbox XML…",
+                        key: None,
+                    },
+                    Entry::Item {
+                        action: Action::ExportStemFiles,
+                        title: "Stem Files…",
                         key: None,
                     },
                     Entry::Separator,
@@ -587,6 +594,9 @@ pub fn run(app: &AppWindow, action: Action) {
         Action::ExportRekordboxXml => app
             .global::<LibraryEdit>()
             .invoke_export_rekordbox(app.get_current_folder()),
+        Action::ExportStemFiles => app
+            .global::<LibraryEdit>()
+            .invoke_export_stem_files(app.get_current_folder()),
         // The mixed set picked in Recordings.
         Action::ExportMixcloud => crate::export_mixcloud(app),
         // [Recording],toggle_recording, as the REC button and controllers.
@@ -721,14 +731,15 @@ pub struct Exports {
     pub spotify: bool,
     pub mixcloud: bool,
     pub rekordbox: bool,
+    pub stems: bool,
 }
 
 /// Greys File › Export's items out or back in.
 pub fn set_exports(e: Exports) {
     thread_local! {
-        static LAST: std::cell::Cell<Option<[bool; 5]>> = const { std::cell::Cell::new(None) };
+        static LAST: std::cell::Cell<Option<[bool; 6]>> = const { std::cell::Cell::new(None) };
     }
-    let now = [e.m3u, e.usb, e.spotify, e.mixcloud, e.rekordbox];
+    let now = [e.m3u, e.usb, e.spotify, e.mixcloud, e.rekordbox, e.stems];
     if LAST.with(|l| l.replace(Some(now))) == Some(now) {
         return;
     }
@@ -737,6 +748,7 @@ pub fn set_exports(e: Exports) {
     set_item(Action::ExportSpotify, None, e.spotify);
     set_item(Action::ExportMixcloud, None, e.mixcloud);
     set_item(Action::ExportRekordboxXml, None, e.rekordbox);
+    set_item(Action::ExportStemFiles, None, e.stems);
 }
 
 fn default_title(action: Action) -> String {
@@ -815,7 +827,7 @@ mod tests {
             .iter()
             .filter(|l| l.parent == export as i32 && l.kind == 0)
             .collect();
-        assert_eq!(inside.len(), 5);
+        assert_eq!(inside.len(), 6);
         // Settings… and Quit sit in the ☰ list itself, under the menus.
         for a in [Action::Settings, Action::Quit] {
             let line = lines.iter().find(|l| l.action == a.id()).unwrap();

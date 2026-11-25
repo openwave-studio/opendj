@@ -129,6 +129,18 @@
         getWaveform(group, perSecond) {
             return new Uint8Array(native.waveform(String(group), Number(perSecond) || 150));
         },
+        // openDJ: the cover art of the track on `group`'s deck as a JPEG
+        // about `size` pixels square (16 to 480), as a Uint8Array; empty with
+        // no track or no art.
+        getCoverArt(group, size) {
+            return new Uint8Array(native.cover(String(group), Number(size) || 240));
+        },
+        // openDJ: words the app shares for screens, such as
+        // getText("[Instrument1]", "name"); empty when there are none (see
+        // crates/controllers/src/texts.rs for the keys).
+        getText(group, key) {
+            return String(native.text(String(group), String(key)));
+        },
         stopTimer(id) {
             if (timers.delete(id)) {
                 native.timerStop(id);

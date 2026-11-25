@@ -9,21 +9,75 @@
 //!
 //! Chord mode (`chord_mode`, see [`CHORDS`]) plays a chord built on the
 //! scale from each key; `chord_learn` takes the next chord held as Mine.
+//! `scale_off` is what a key outside the scale does: 0 moves to the
+//! nearest note (Snap), 1 plays nothing (Mute). A chord can strum: its
+//! notes start `chord_strum` ms apart, from the lowest, the highest or
+//! each way in turn (`chord_strum_from`, see [`STRUM_FROM`]), getting
+//! louder or softer along the way (`chord_crescendo`, -1 to 1).
 
 use opendj_plugin_host::Midi;
 
 use crate::key::Key;
 
 /// The scales to pick from, as `scale_type` numbers them.
-pub const SCALES: [&str; 4] = ["Major", "Minor", "Major pentatonic", "Minor pentatonic"];
+pub const SCALES: [&str; 9] = [
+    "Major",
+    "Minor",
+    "Major pentatonic",
+    "Minor pentatonic",
+    "Dorian",
+    "Phrygian",
+    "Mixolydian",
+    "Harmonic minor",
+    "Blues",
+];
 
 /// Each scale's notes, in semitones from its root.
-const STEPS: [&[u8]; 4] = [
+const STEPS: [&[u8]; 9] = [
     &[0, 2, 4, 5, 7, 9, 11],
     &[0, 2, 3, 5, 7, 8, 10],
     &[0, 2, 4, 7, 9],
     &[0, 3, 5, 7, 10],
+    &[0, 2, 3, 5, 7, 9, 10],
+    &[0, 1, 3, 5, 7, 8, 10],
+    &[0, 2, 4, 5, 7, 9, 10],
+    &[0, 2, 3, 5, 7, 8, 11],
+    &[0, 3, 5, 6, 7, 10],
 ];
+
+/// `chord_strum_from` values: which end of a chord a strum starts from.
+pub const STRUM_FROM: [&str; 3] = ["Low", "High", "Alternate"];
+pub const FROM_LOW: u8 = 0;
+pub const FROM_HIGH: u8 = 1;
+pub const FROM_ALTERNATE: u8 = 2;
+
+/// The longest strum, from one note to the next, in ms.
+pub const MAX_STRUM_MS: f64 = 200.0;
+
+/// How a chord plays out: the frames between its notes, which end goes
+/// first, and how much louder (above 0) or softer (below) the later notes
+/// get. `mute` silences keys outside the scale instead of moving them.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Feel {
+    pub strum: u32,
+    pub from: u8,
+    pub crescendo: f32,
+    pub mute: bool,
+}
+
+/// A strummed note waiting for its frame (counted from this buffer's
+/// start), and the key that played it.
+#[derive(Clone, Copy)]
+struct Pending {
+    due: u32,
+    ch: u8,
+    key: u8,
+    note: u8,
+    vel: u8,
+}
+
+/// The most strummed notes waiting at once.
+const MAX_PENDING: usize = 128;
 
 /// `scale_mode` values.
 pub const OFF: u8 = 0;
@@ -130,6 +184,12 @@ pub struct NoteMapper {
     learn_held: u8,
     /// A chord just learned, for `chord_shape`.
     new_shape: Option<u32>,
+    feel: Feel,
+    /// The next Alternate strum goes down.
+    down_next: bool,
+    /// Keys silenced for being outside the scale, a bit per key by channel.
+    muted: [u128; 16],
+    pending: Vec<Pending>,
 }
 
 impl Default for NoteMapper {
@@ -143,6 +203,10 @@ impl Default for NoteMapper {
             learned: 0,
             learn_held: 0,
             new_shape: None,
+            feel: Feel::default(),
+            down_next: false,
+            muted: [0; 16],
+            pending: Vec::with_capacity(MAX_PENDING),
         }
     }
 }
@@ -158,6 +222,35 @@ impl NoteMapper {
             self.learned = 0;
             self.learn_held = 0;
         }
+    }
+
+    /// How chords strum and what keys outside the scale do.
+    pub fn set_feel(&mut self, feel: Feel) {
+        self.feel = feel;
+    }
+
+    /// Adds the strummed notes due in this buffer of `frames` to `out`,
+    /// and counts the rest down to the next. Call once a buffer, after
+    /// [`NoteMapper::map`].
+    pub fn flush(&mut self, frames: usize, out: &mut Vec<Midi>) {
+        let frames = frames as u32;
+        self.pending.retain_mut(|p| {
+            if p.due < frames {
+                if out.len() < out.capacity() {
+                    out.push(Midi::note_on(p.due, p.ch, p.note, p.vel));
+                }
+                false
+            } else {
+                p.due -= frames;
+                true
+            }
+        });
+    }
+
+    /// Forgets the strummed notes `key` of `ch` has still to play.
+    fn drop_pending(&mut self, ch: usize, key: usize) {
+        self.pending
+            .retain(|p| !(usize::from(p.ch) == ch && usize::from(p.key) == key));
     }
 
     /// The chord learned, once its keys are let go.
@@ -182,25 +275,67 @@ impl NoteMapper {
         if let Some((ch, key, _)) = m.as_note_on() {
             let (ch, key) = (ch as usize, key as usize);
             let mode = if self.learning { CHORD_OFF } else { self.mode };
-            let notes = chord(key as u8, mask, mode, self.shape);
+            let outside = mask & 0xfff != 0 && mask >> (key % 12) & 1 == 0;
+            let notes = if self.feel.mute && outside && !self.learning {
+                0
+            } else {
+                chord(key as u8, mask, mode, self.shape)
+            };
             // Played again without a note-off: let go of the old notes.
+            self.drop_pending(ch, key);
             let old = std::mem::replace(&mut self.to[ch][key], notes);
             if old != 0 {
                 self.release(ch, old, m.frame, out);
                 self.learn_held = self.learn_held.saturating_sub(1);
             }
+            if notes == 0 {
+                self.muted[ch] |= 1 << key;
+                return;
+            }
+            self.muted[ch] &= !(1 << key);
             if self.learning {
                 self.learned |= notes;
                 self.learn_held += 1;
             }
+            let count = notes.count_ones();
+            let down = match self.feel.from {
+                FROM_HIGH => true,
+                FROM_ALTERNATE => {
+                    self.down_next = !self.down_next;
+                    !self.down_next
+                }
+                _ => false,
+            };
+            let mut i = 0;
             for n in (0..128).filter(|n| notes >> n & 1 == 1) {
                 self.holding[ch][n] = self.holding[ch][n].saturating_add(1);
-                if out.len() < out.capacity() {
-                    out.push(Midi::note_on(m.frame, ch as u8, n as u8, m.data[2]));
+            }
+            let order = (0..128u32).map(|n| if down { 127 - n } else { n });
+            for n in order.filter(|&n| notes >> n & 1 == 1) {
+                let vel = feel_velocity(m.data[2], i, count, self.feel.crescendo);
+                let due = m.frame + i * self.feel.strum;
+                if i == 0 || self.feel.strum == 0 {
+                    if out.len() < out.capacity() {
+                        out.push(Midi::note_on(due, ch as u8, n as u8, vel));
+                    }
+                } else if self.pending.len() < MAX_PENDING {
+                    self.pending.push(Pending {
+                        due,
+                        ch: ch as u8,
+                        key: key as u8,
+                        note: n as u8,
+                        vel,
+                    });
                 }
+                i += 1;
             }
         } else if let Some((ch, key)) = m.as_note_off() {
             let (ch, key) = (ch as usize, key as usize);
+            if self.muted[ch] >> key & 1 == 1 {
+                self.muted[ch] &= !(1 << key);
+                return;
+            }
+            self.drop_pending(ch, key);
             let notes = std::mem::take(&mut self.to[ch][key]);
             if notes == 0 {
                 if out.len() < out.capacity() {
@@ -220,15 +355,36 @@ impl NoteMapper {
             }
         } else {
             if m.data[0] & 0xf0 == 0xb0 && matches!(m.data[1], 120 | 123) {
-                let (mode, shape) = (self.mode, self.shape);
-                *self = Self::default();
-                (self.mode, self.shape) = (mode, shape);
+                // Everything stops: forget every note (without the
+                // allocation a fresh mapper would make).
+                self.to = [[0; 128]; 16];
+                self.holding = [[0; 128]; 16];
+                self.muted = [0; 16];
+                self.pending.clear();
+                self.learning = false;
+                self.learned = 0;
+                self.learn_held = 0;
             }
             if out.len() < out.capacity() {
                 out.push(m);
             }
         }
     }
+}
+
+/// The velocity of a chord's `i`-th note of `count`, played at `vel`:
+/// with a crescendo above 0 the first notes are softer and the last at
+/// `vel`, below 0 the other way round.
+fn feel_velocity(vel: u8, i: u32, count: u32, crescendo: f32) -> u8 {
+    if count < 2 || crescendo == 0.0 {
+        return vel;
+    }
+    let t = i as f32 / (count - 1) as f32;
+    let c = crescendo.clamp(-1.0, 1.0);
+    let cut = if c > 0.0 { c * (1.0 - t) } else { -c * t };
+    (f32::from(vel) * (1.0 - 0.7 * cut))
+        .round()
+        .clamp(1.0, 127.0) as u8
 }
 
 #[cfg(test)]
@@ -353,5 +509,57 @@ mod tests {
         assert_eq!(s.take_learned(), None, "one key still held");
         play(&mut s, Midi::note_off(0, 0, 64), 0);
         assert_eq!(s.take_learned(), Some(1 | 1 << 3 | 1 << 7), "A minor");
+    }
+
+    #[test]
+    fn new_scales_hold_their_notes() {
+        assert_eq!(mask(2, 4), mask(0, 0), "D Dorian has C major's notes");
+        assert_eq!(mask(4, 5), mask(0, 0), "E Phrygian too");
+        assert_eq!(mask(7, 6), mask(0, 0), "and G Mixolydian");
+        assert_eq!(
+            mask(9, 7),
+            mask(9, 1) & !(1 << 7) | 1 << 8,
+            "A harmonic minor: G#"
+        );
+        assert_eq!(mask(0, 8).count_ones(), 6, "blues: six notes");
+    }
+
+    #[test]
+    fn keys_outside_the_scale_can_be_muted() {
+        let mut s = NoteMapper::default();
+        s.set_feel(Feel {
+            mute: true,
+            ..Feel::default()
+        });
+        let c_major = mask(0, 0);
+        assert!(play(&mut s, Midi::note_on(0, 0, 61, 90), c_major).is_empty());
+        assert!(play(&mut s, Midi::note_off(0, 0, 61), c_major).is_empty());
+        assert_eq!(play(&mut s, Midi::note_on(0, 0, 60, 90), c_major).len(), 1);
+    }
+
+    #[test]
+    fn a_chord_strums() {
+        let mut s = NoteMapper::default();
+        s.set_chord(TRIAD, DEFAULT_SHAPE, false);
+        s.set_feel(Feel {
+            strum: 100,
+            from: FROM_HIGH,
+            crescendo: 1.0,
+            mute: false,
+        });
+        let mut out = Vec::with_capacity(16);
+        s.map(Midi::note_on(10, 0, 60, 100), 0, &mut out);
+        assert_eq!(out.len(), 1, "the first note at once");
+        assert_eq!((out[0].frame, out[0].data[1]), (10, 67), "from the top");
+        s.flush(64, &mut out);
+        assert_eq!(out.len(), 1, "the next is 100 frames on");
+        s.flush(64, &mut out);
+        assert_eq!((out[1].frame, out[1].data[1]), (110 - 64, 64));
+        assert!(out[0].data[2] < out[1].data[2], "getting louder");
+        // Let go before the last note: it never plays.
+        out.clear();
+        s.map(Midi::note_off(0, 0, 60), 0, &mut out);
+        s.flush(256, &mut out);
+        assert!(out.iter().all(|m| m.data[0] & 0xf0 == 0x80));
     }
 }

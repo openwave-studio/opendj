@@ -1,0 +1,2979 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxMIDIPreset mixxxVersion="2.4" schemaVersion="1">
+    <info>
+        <name>Reloop RP-8000</name>
+        <author>openDJ</author>
+        <description>openDJ's own mapping, from the control list djay Pro's mapping uses.</description>
+    </info>
+    <controller id="RP8000">
+        <scriptfiles>
+            <file functionprefix="" filename="Reloop-djay-scripts.js"/>
+            <file functionprefix="ReloopRP8000" filename="Reloop-RP-8000-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 1</description>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 2</description>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 3</description>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 4</description>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 5</description>
+                <status>0x90</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 6</description>
+                <status>0x90</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 7</description>
+                <status>0x90</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Hot cue 8</description>
+                <status>0x90</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 1</description>
+                <status>0x90</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 2</description>
+                <status>0x90</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 3</description>
+                <status>0x90</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 4</description>
+                <status>0x90</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 5</description>
+                <status>0x90</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 6</description>
+                <status>0x90</status>
+                <midino>0x25</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 7</description>
+                <status>0x90</status>
+                <midino>0x26</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Delete hot cue 8</description>
+                <status>0x90</status>
+                <midino>0x27</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 32 beats</description>
+                <status>0x90</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 16 beats</description>
+                <status>0x90</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 8 beats</description>
+                <status>0x90</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 4 beats</description>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 2 beats</description>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 1 beat</description>
+                <status>0x90</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 1/2 beats</description>
+                <status>0x90</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop 1/4 beats</description>
+                <status>0x90</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 1/16 beats</description>
+                <status>0x90</status>
+                <midino>0x28</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 1/8 beats</description>
+                <status>0x90</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 1/4 beats</description>
+                <status>0x90</status>
+                <midino>0x2A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 1/2 beats</description>
+                <status>0x90</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 1 beat</description>
+                <status>0x90</status>
+                <midino>0x2C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 2 beats</description>
+                <status>0x90</status>
+                <midino>0x2D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 4 beats</description>
+                <status>0x90</status>
+                <midino>0x2E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Loop roll 8 beats</description>
+                <status>0x90</status>
+                <midino>0x2F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 1 play</description>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 2 play</description>
+                <status>0x90</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 3 play</description>
+                <status>0x90</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 4 play</description>
+                <status>0x90</status>
+                <midino>0x13</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 5 play</description>
+                <status>0x90</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 6 play</description>
+                <status>0x90</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 7 play</description>
+                <status>0x90</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 8 play</description>
+                <status>0x90</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 1 stop</description>
+                <status>0x90</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 2 stop</description>
+                <status>0x90</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 3 stop</description>
+                <status>0x90</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 4 stop</description>
+                <status>0x90</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 5 stop</description>
+                <status>0x90</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 6 stop</description>
+                <status>0x90</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 7 stop</description>
+                <status>0x90</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Sampler 8 stop</description>
+                <status>0x90</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 1</description>
+                <status>0x90</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 2</description>
+                <status>0x90</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 3</description>
+                <status>0x90</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 4</description>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 5</description>
+                <status>0x90</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 6</description>
+                <status>0x90</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 7</description>
+                <status>0x90</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Slice 8</description>
+                <status>0x90</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 1 alone</description>
+                <status>0x90</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 2 alone</description>
+                <status>0x90</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 3 alone</description>
+                <status>0x90</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 4 alone</description>
+                <status>0x90</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 1 on/off</description>
+                <status>0x90</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 2 on/off</description>
+                <status>0x90</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 3 on/off</description>
+                <status>0x90</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Stem 4 on/off</description>
+                <status>0x90</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Browse the list</description>
+                <status>0xB0</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Browse the list</description>
+                <status>0xB0</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 1: Load the selected track</description>
+                <status>0x90</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Back</description>
+                <status>0x90</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 1</description>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 2</description>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 3</description>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 4</description>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 5</description>
+                <status>0x91</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 6</description>
+                <status>0x91</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 7</description>
+                <status>0x91</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Hot cue 8</description>
+                <status>0x91</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 1</description>
+                <status>0x91</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 2</description>
+                <status>0x91</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 3</description>
+                <status>0x91</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 4</description>
+                <status>0x91</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 5</description>
+                <status>0x91</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 6</description>
+                <status>0x91</status>
+                <midino>0x25</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 7</description>
+                <status>0x91</status>
+                <midino>0x26</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Delete hot cue 8</description>
+                <status>0x91</status>
+                <midino>0x27</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 32 beats</description>
+                <status>0x91</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 16 beats</description>
+                <status>0x91</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 8 beats</description>
+                <status>0x91</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 4 beats</description>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 2 beats</description>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 1 beat</description>
+                <status>0x91</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 1/2 beats</description>
+                <status>0x91</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop 1/4 beats</description>
+                <status>0x91</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 1/16 beats</description>
+                <status>0x91</status>
+                <midino>0x28</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 1/8 beats</description>
+                <status>0x91</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 1/4 beats</description>
+                <status>0x91</status>
+                <midino>0x2A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 1/2 beats</description>
+                <status>0x91</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 1 beat</description>
+                <status>0x91</status>
+                <midino>0x2C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 2 beats</description>
+                <status>0x91</status>
+                <midino>0x2D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 4 beats</description>
+                <status>0x91</status>
+                <midino>0x2E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Loop roll 8 beats</description>
+                <status>0x91</status>
+                <midino>0x2F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 1 play</description>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 2 play</description>
+                <status>0x91</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 3 play</description>
+                <status>0x91</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 4 play</description>
+                <status>0x91</status>
+                <midino>0x13</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 5 play</description>
+                <status>0x91</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 6 play</description>
+                <status>0x91</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 7 play</description>
+                <status>0x91</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 8 play</description>
+                <status>0x91</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 1 stop</description>
+                <status>0x91</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 2 stop</description>
+                <status>0x91</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 3 stop</description>
+                <status>0x91</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 4 stop</description>
+                <status>0x91</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 5 stop</description>
+                <status>0x91</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 6 stop</description>
+                <status>0x91</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 7 stop</description>
+                <status>0x91</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Sampler 8 stop</description>
+                <status>0x91</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 1</description>
+                <status>0x91</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 2</description>
+                <status>0x91</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 3</description>
+                <status>0x91</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 4</description>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 5</description>
+                <status>0x91</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 6</description>
+                <status>0x91</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 7</description>
+                <status>0x91</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Slice 8</description>
+                <status>0x91</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 1 alone</description>
+                <status>0x91</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 2 alone</description>
+                <status>0x91</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 3 alone</description>
+                <status>0x91</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 4 alone</description>
+                <status>0x91</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 1 on/off</description>
+                <status>0x91</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 2 on/off</description>
+                <status>0x91</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 3 on/off</description>
+                <status>0x91</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Stem 4 on/off</description>
+                <status>0x91</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Browse the list</description>
+                <status>0xB1</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Browse the list</description>
+                <status>0xB1</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 2: Load the selected track</description>
+                <status>0x91</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Back</description>
+                <status>0x91</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 1</description>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 2</description>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 3</description>
+                <status>0x92</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 4</description>
+                <status>0x92</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 5</description>
+                <status>0x92</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 6</description>
+                <status>0x92</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 7</description>
+                <status>0x92</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Hot cue 8</description>
+                <status>0x92</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 1</description>
+                <status>0x92</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 2</description>
+                <status>0x92</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 3</description>
+                <status>0x92</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 4</description>
+                <status>0x92</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 5</description>
+                <status>0x92</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 6</description>
+                <status>0x92</status>
+                <midino>0x25</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 7</description>
+                <status>0x92</status>
+                <midino>0x26</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Delete hot cue 8</description>
+                <status>0x92</status>
+                <midino>0x27</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 32 beats</description>
+                <status>0x92</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 16 beats</description>
+                <status>0x92</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 8 beats</description>
+                <status>0x92</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 4 beats</description>
+                <status>0x92</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 2 beats</description>
+                <status>0x92</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 1 beat</description>
+                <status>0x92</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 1/2 beats</description>
+                <status>0x92</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop 1/4 beats</description>
+                <status>0x92</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 1/16 beats</description>
+                <status>0x92</status>
+                <midino>0x28</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 1/8 beats</description>
+                <status>0x92</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 1/4 beats</description>
+                <status>0x92</status>
+                <midino>0x2A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 1/2 beats</description>
+                <status>0x92</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 1 beat</description>
+                <status>0x92</status>
+                <midino>0x2C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 2 beats</description>
+                <status>0x92</status>
+                <midino>0x2D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 4 beats</description>
+                <status>0x92</status>
+                <midino>0x2E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Loop roll 8 beats</description>
+                <status>0x92</status>
+                <midino>0x2F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 1 play</description>
+                <status>0x92</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 2 play</description>
+                <status>0x92</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 3 play</description>
+                <status>0x92</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 4 play</description>
+                <status>0x92</status>
+                <midino>0x13</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 5 play</description>
+                <status>0x92</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 6 play</description>
+                <status>0x92</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 7 play</description>
+                <status>0x92</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 8 play</description>
+                <status>0x92</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 1 stop</description>
+                <status>0x92</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 2 stop</description>
+                <status>0x92</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 3 stop</description>
+                <status>0x92</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 4 stop</description>
+                <status>0x92</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 5 stop</description>
+                <status>0x92</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 6 stop</description>
+                <status>0x92</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 7 stop</description>
+                <status>0x92</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Sampler 8 stop</description>
+                <status>0x92</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 1</description>
+                <status>0x92</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 2</description>
+                <status>0x92</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 3</description>
+                <status>0x92</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 4</description>
+                <status>0x92</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 5</description>
+                <status>0x92</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 6</description>
+                <status>0x92</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 7</description>
+                <status>0x92</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Slice 8</description>
+                <status>0x92</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 1 alone</description>
+                <status>0x92</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 2 alone</description>
+                <status>0x92</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 3 alone</description>
+                <status>0x92</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 4 alone</description>
+                <status>0x92</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 1 on/off</description>
+                <status>0x92</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 2 on/off</description>
+                <status>0x92</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 3 on/off</description>
+                <status>0x92</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Stem 4 on/off</description>
+                <status>0x92</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Browse the list</description>
+                <status>0xB2</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Browse the list</description>
+                <status>0xB2</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 3: Load the selected track</description>
+                <status>0x92</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Back</description>
+                <status>0x92</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 1</description>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 2</description>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 3</description>
+                <status>0x93</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 4</description>
+                <status>0x93</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 5</description>
+                <status>0x93</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 6</description>
+                <status>0x93</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 7</description>
+                <status>0x93</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Hot cue 8</description>
+                <status>0x93</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 1</description>
+                <status>0x93</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 2</description>
+                <status>0x93</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 3</description>
+                <status>0x93</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 4</description>
+                <status>0x93</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 5</description>
+                <status>0x93</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 6</description>
+                <status>0x93</status>
+                <midino>0x25</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 7</description>
+                <status>0x93</status>
+                <midino>0x26</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Delete hot cue 8</description>
+                <status>0x93</status>
+                <midino>0x27</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 32 beats</description>
+                <status>0x93</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 16 beats</description>
+                <status>0x93</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 8 beats</description>
+                <status>0x93</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 4 beats</description>
+                <status>0x93</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 2 beats</description>
+                <status>0x93</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 1 beat</description>
+                <status>0x93</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 1/2 beats</description>
+                <status>0x93</status>
+                <midino>0x0E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop 1/4 beats</description>
+                <status>0x93</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 1/16 beats</description>
+                <status>0x93</status>
+                <midino>0x28</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 1/8 beats</description>
+                <status>0x93</status>
+                <midino>0x29</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 1/4 beats</description>
+                <status>0x93</status>
+                <midino>0x2A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 1/2 beats</description>
+                <status>0x93</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 1 beat</description>
+                <status>0x93</status>
+                <midino>0x2C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 2 beats</description>
+                <status>0x93</status>
+                <midino>0x2D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 4 beats</description>
+                <status>0x93</status>
+                <midino>0x2E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Loop roll 8 beats</description>
+                <status>0x93</status>
+                <midino>0x2F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 1 play</description>
+                <status>0x93</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 2 play</description>
+                <status>0x93</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 3 play</description>
+                <status>0x93</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 4 play</description>
+                <status>0x93</status>
+                <midino>0x13</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 5 play</description>
+                <status>0x93</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 6 play</description>
+                <status>0x93</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 7 play</description>
+                <status>0x93</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 8 play</description>
+                <status>0x93</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 1 stop</description>
+                <status>0x93</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 2 stop</description>
+                <status>0x93</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 3 stop</description>
+                <status>0x93</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 4 stop</description>
+                <status>0x93</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 5 stop</description>
+                <status>0x93</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 6 stop</description>
+                <status>0x93</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 7 stop</description>
+                <status>0x93</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Sampler 8 stop</description>
+                <status>0x93</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 1</description>
+                <status>0x93</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 2</description>
+                <status>0x93</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 3</description>
+                <status>0x93</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 4</description>
+                <status>0x93</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 5</description>
+                <status>0x93</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 6</description>
+                <status>0x93</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 7</description>
+                <status>0x93</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Slice 8</description>
+                <status>0x93</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 1 alone</description>
+                <status>0x93</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 2 alone</description>
+                <status>0x93</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 3 alone</description>
+                <status>0x93</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 4 alone</description>
+                <status>0x93</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 1 on/off</description>
+                <status>0x93</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 2 on/off</description>
+                <status>0x93</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 3 on/off</description>
+                <status>0x93</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Stem 4 on/off</description>
+                <status>0x93</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Browse the list</description>
+                <status>0xB3</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Browse the list</description>
+                <status>0xB3</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Deck 4: Load the selected track</description>
+                <status>0x93</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Back</description>
+                <status>0x93</status>
+                <midino>0x50</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x90</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x90</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x90</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x90</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x90</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x91</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x91</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x91</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x91</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x91</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x92</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x92</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x92</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x92</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x92</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x92</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x93</status>
+                <midino>0x41</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x93</status>
+                <midino>0x42</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x93</status>
+                <midino>0x58</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x93</status>
+                <midino>0x43</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x93</status>
+                <midino>0x44</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x93</status>
+                <midino>0x57</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs>
+
+        </outputs>
+    </controller>
+</MixxxMIDIPreset>

@@ -1,0 +1,415 @@
+{
+  "file": "Pioneer-DDJ-WeGO3.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Next panel"
+      ],
+      "Press + SHIFT": [
+        "Previous panel"
+      ],
+      "SHIFT": [
+        "zoom the waveforms"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Side, SHIFT": [
+        "Jog search"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Top, SHIFT": [
+        "Jog search"
+      ],
+      "Top, vinyl off": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "l-pad2": {
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "l-pad3": {
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "l-pad4": {
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo",
+        "Tempo msb"
+      ]
+    },
+    "l-top1": {
+      "SHIFT (LOOP IN)": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-top2": {
+      "SHIFT (RELOOP)": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-top3": {
+      "SHIFT (LOOP OUT)": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-top4": {
+      "Effect amount": [
+        "FX 1 Effect 1 knob"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-top5": {
+      "Effect amount": [
+        "FX 1 Effect 2 knob"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 2 next"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "l-top6": {
+      "Effect amount": [
+        "FX 1 Effect 3 knob"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 3 next"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Side, SHIFT": [
+        "Jog search"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Top, SHIFT": [
+        "Jog search"
+      ],
+      "Top, vinyl off": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "r-pad2": {
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "r-pad3": {
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "r-pad4": {
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo",
+        "Tempo msb"
+      ]
+    },
+    "r-top1": {
+      "SHIFT (LOOP IN)": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-top2": {
+      "SHIFT (RELOOP)": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-top3": {
+      "SHIFT (LOOP OUT)": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-top4": {
+      "Effect amount": [
+        "FX 2 Effect 1 knob"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-top5": {
+      "Effect amount": [
+        "FX 2 Effect 2 knob"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 2 next"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "r-top6": {
+      "Effect amount": [
+        "FX 2 Effect 3 knob"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 3 next"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "select": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

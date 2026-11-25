@@ -1,0 +1,138 @@
+{
+  "file": "Pioneer-DJM-TOUR1.midi.xml",
+  "parts": {
+    "ch1-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1-input": {
+      "DIGITAL": [
+        "sets whether the channel plays this computer"
+      ],
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "RETURNAUX": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB B": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "ch2-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-input": {
+      "DIGITAL": [
+        "sets whether the channel plays this computer"
+      ],
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "RETURNAUX": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB B": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "ch3-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch3-fader": {
+      "Deck 3": [
+        "Channel fader"
+      ]
+    },
+    "ch3-input": {
+      "DIGITAL": [
+        "sets whether the channel plays this computer"
+      ],
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "RETURNAUX": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB B": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "ch4-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch4-fader": {
+      "Deck 4": [
+        "Channel fader"
+      ]
+    },
+    "ch4-input": {
+      "DIGITAL": [
+        "sets whether the channel plays this computer"
+      ],
+      "LINE": [
+        "sets whether the channel plays this computer"
+      ],
+      "PHONO": [
+        "sets whether the channel plays this computer"
+      ],
+      "RETURNAUX": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB A": [
+        "sets whether the channel plays this computer"
+      ],
+      "USB B": [
+        "sets whether the channel plays this computer"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "usb": {
+      "USB A": [
+        "this computer is on the mixer's USB A port"
+      ],
+      "USB B": [
+        "this computer is on the mixer's USB B port"
+      ]
+    }
+  }
+}

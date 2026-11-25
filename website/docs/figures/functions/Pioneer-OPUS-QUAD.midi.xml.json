@@ -1,0 +1,1026 @@
+{
+  "file": "Pioneer-OPUS-QUAD.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "beat-l": {
+      "normal": [
+        "FX 5 Effect 1 beats halve"
+      ]
+    },
+    "beat-r": {
+      "normal": [
+        "FX 5 Effect 1 beats double"
+      ]
+    },
+    "booth": {
+      "normal": [
+        "Booth level"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "zoom the waveforms (openDJ)"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "Tilt down": [
+        "Down"
+      ],
+      "Tilt left": [
+        "Previous panel"
+      ],
+      "Tilt right": [
+        "Next panel"
+      ],
+      "Tilt up": [
+        "Up"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cfx-crush": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-dub-echo": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-filter": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-noise": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-space": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "cfx-sweep": {
+      "normal": [
+        "Loaded chain preset"
+      ]
+    },
+    "ch1-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch1-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch1-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch1-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch1-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch1-xfader-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch2-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch2-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch2-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch2-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch2-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2-xfader-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch3-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch3-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch3-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch3-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch3-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch3-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch3-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch3-xfader-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch4-color": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch4-cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch4-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch4-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch4-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch4-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch4-trim": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch4-xfader-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "fx-level": {
+      "normal": [
+        "FX 5 Effect 1 knob"
+      ]
+    },
+    "fx-on": {
+      "normal": [
+        "FX 5 Effect 1 on"
+      ]
+    },
+    "fx-select": {
+      "Delay": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Echo": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Filter": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Flanger": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Helix": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Phaser": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Ping pong": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Pitch": [
+        "FX 5 pick the Beat FX (openDJ)"
+      ],
+      "Reverb": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Roll": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Spiral": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Spiral roll": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Trans": [
+        "FX 5 Effect 1 loaded effect"
+      ],
+      "Vinyl brake": [
+        "FX 5 Effect 1 loaded effect"
+      ]
+    },
+    "l-beat-loop": {
+      "Deck 3": [
+        "Loop size 2"
+      ],
+      "Deck 3, Press": [
+        "Loop (current size)"
+      ],
+      "Deck 3, SHIFT press": [
+        "Reloop / exit"
+      ],
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop size 2"
+      ]
+    },
+    "l-beatjump-fwd": {
+      "Deck 3": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 3, SHIFT": [
+        "Beat jump size 8"
+      ],
+      "SHIFT": [
+        "Beat jump size 8"
+      ],
+      "normal": [
+        "Jump 4 beats forward"
+      ]
+    },
+    "l-beatjump-rev": {
+      "Deck 3": [
+        "Jump 4 beats back"
+      ],
+      "Deck 3, SHIFT": [
+        "Beat jump size 2"
+      ],
+      "SHIFT": [
+        "Beat jump size 2"
+      ],
+      "normal": [
+        "Jump 4 beats back"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-in": {
+      "Deck 3": [
+        "Loop in"
+      ],
+      "Deck 3, Long press": [
+        "adjust the loop start with the jog"
+      ],
+      "Long press": [
+        "adjust the loop start with the jog"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-jog": {
+      "Deck 3, SHIFT side": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT touch": [
+        "touch"
+      ],
+      "Deck 3, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Touch": [
+        "scratch in VINYL mode"
+      ],
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "scratch in VINYL mode"
+      ]
+    },
+    "l-jog-mode": {
+      "Deck 3": [
+        "VINYL (scratch) or CDJ (bend)"
+      ],
+      "normal": [
+        "VINYL (scratch) or CDJ (bend)"
+      ]
+    },
+    "l-key-sync": {
+      "Deck 3": [
+        "Match key"
+      ],
+      "normal": [
+        "Match key"
+      ]
+    },
+    "l-master": {
+      "Deck 3": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-master-tempo": {
+      "Deck 3": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-out": {
+      "Deck 3": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3": [
+        "Hot cue 1"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3": [
+        "Hot cue 2"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3": [
+        "Hot cue 3"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3": [
+        "Hot cue 4"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad5": {
+      "Deck 3": [
+        "Hot cue 5"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "l-pad6": {
+      "Deck 3": [
+        "Hot cue 6"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "l-pad7": {
+      "Deck 3": [
+        "Hot cue 7"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "l-pad8": {
+      "Deck 3": [
+        "Hot cue 8"
+      ],
+      "Deck 3, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-quantize": {
+      "Deck 3": [
+        "Quantize"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "l-reverse": {
+      "Deck 3": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo",
+        "slide (MSB)"
+      ],
+      "normal": [
+        "Tempo",
+        "slide (MSB)"
+      ]
+    },
+    "l-tempo-range": {
+      "Deck 3": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-tempo-reset": {
+      "Deck 3": [
+        "Rate set zero"
+      ],
+      "normal": [
+        "Rate set zero"
+      ]
+    },
+    "l-track-fwd": {
+      "Deck 3": [
+        "Jump 32 beats forward"
+      ],
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "l-track-rev": {
+      "Deck 3": [
+        "Jump 32 beats back"
+      ],
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "load-1": {
+      "Deck 3": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load-2": {
+      "Deck 4": [
+        "Load selected track"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "master-level": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "phones": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "phones-mix": {
+      "normal": [
+        "Head mix"
+      ]
+    },
+    "r-beat-loop": {
+      "Deck 4": [
+        "Loop size 2"
+      ],
+      "Deck 4, Press": [
+        "Loop (current size)"
+      ],
+      "Deck 4, SHIFT press": [
+        "Reloop / exit"
+      ],
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT press": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop size 2"
+      ]
+    },
+    "r-beatjump-fwd": {
+      "Deck 4": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 4, SHIFT": [
+        "Beat jump size 8"
+      ],
+      "SHIFT": [
+        "Beat jump size 8"
+      ],
+      "normal": [
+        "Jump 4 beats forward"
+      ]
+    },
+    "r-beatjump-rev": {
+      "Deck 4": [
+        "Jump 4 beats back"
+      ],
+      "Deck 4, SHIFT": [
+        "Beat jump size 2"
+      ],
+      "SHIFT": [
+        "Beat jump size 2"
+      ],
+      "normal": [
+        "Jump 4 beats back"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-in": {
+      "Deck 4": [
+        "Loop in"
+      ],
+      "Deck 4, Long press": [
+        "adjust the loop start with the jog"
+      ],
+      "Long press": [
+        "adjust the loop start with the jog"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-jog": {
+      "Deck 4, SHIFT side": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT touch": [
+        "touch"
+      ],
+      "Deck 4, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Touch": [
+        "scratch in VINYL mode"
+      ],
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "scratch in VINYL mode"
+      ]
+    },
+    "r-jog-mode": {
+      "Deck 4": [
+        "VINYL (scratch) or CDJ (bend)"
+      ],
+      "normal": [
+        "VINYL (scratch) or CDJ (bend)"
+      ]
+    },
+    "r-key-sync": {
+      "Deck 4": [
+        "Match key"
+      ],
+      "normal": [
+        "Match key"
+      ]
+    },
+    "r-master": {
+      "Deck 4": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-master-tempo": {
+      "Deck 4": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-out": {
+      "Deck 4": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4": [
+        "Hot cue 1"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4": [
+        "Hot cue 2"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4": [
+        "Hot cue 3"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4": [
+        "Hot cue 4"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad5": {
+      "Deck 4": [
+        "Hot cue 5"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "r-pad6": {
+      "Deck 4": [
+        "Hot cue 6"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "r-pad7": {
+      "Deck 4": [
+        "Hot cue 7"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "r-pad8": {
+      "Deck 4": [
+        "Hot cue 8"
+      ],
+      "Deck 4, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-quantize": {
+      "Deck 4": [
+        "Quantize"
+      ],
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "r-reverse": {
+      "Deck 4": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo",
+        "slide (MSB)"
+      ],
+      "normal": [
+        "Tempo",
+        "slide (MSB)"
+      ]
+    },
+    "r-tempo-range": {
+      "Deck 4": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-tempo-reset": {
+      "Deck 4": [
+        "Rate set zero"
+      ],
+      "normal": [
+        "Rate set zero"
+      ]
+    },
+    "r-track-fwd": {
+      "Deck 4": [
+        "Jump 32 beats forward"
+      ],
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "r-track-rev": {
+      "Deck 4": [
+        "Jump 32 beats back"
+      ],
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "screen": {
+      "Deck 1 needle": [
+        "Position"
+      ],
+      "Deck 2 needle": [
+        "Position"
+      ],
+      "Deck 3 needle": [
+        "Position"
+      ],
+      "Deck 4 needle": [
+        "Position"
+      ]
+    },
+    "tag": {
+      "SHIFT": [
+        "Add to top of Automix"
+      ],
+      "normal": [
+        "Add to Automix"
+      ]
+    },
+    "tap": {
+      "normal": [
+        "FX 5 Tap effect tempo"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

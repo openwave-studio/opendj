@@ -101,14 +101,12 @@ const MONO_MIX = vec3<f32>(0.357, 0.298, 0.541);
 const MONO_GREY = vec3<f32>(0.40, 0.40, 0.44);
 // Blue style: the body, and what it lightens towards where the highs are loud.
 // 3-Band weights (see three_band): the mids and highs against the lows,
-// the highs' extra share when the overview stacks the bands, and how much
-// darker the mid colour is where the low and the mids overlap.
+// and how much darker the mid colour is where the low and the mids overlap.
 // The analyser's lift of the low, mid and high levels (BAND_GAIN in
 // crates/engine/src/analysis.rs).
 const BAND_LIFT = vec3<f32>(1.0, 1.4, 2.0);
 const BAND_MID: f32 = 0.75;
 const BAND_HIGH: f32 = 0.2;
-const BAND_HIGH_STACKED: f32 = 2.5;
 const BAND_BOTH = vec3<f32>(0.7, 0.6, 0.6);
 const BLUE_BODY = vec3<f32>(0.173, 0.482, 0.898);   // #2C7BE5
 const BLUE_HIGHS = vec3<f32>(0.863, 0.922, 1.0);    // #DCEBFF
@@ -390,6 +388,21 @@ fn height(v: f32) -> f32 {
     return clamp(pow(v, 0.8) * 0.94 * p.gain, 0.0, 1.0);
 }
 
+// The overview's share of its height for the low, mid and high (each
+// band's RMS as stored, with the analyser's lift), stacked from the line
+// in that order. Fitted to rekordbox's 3-band overview of the same track:
+// the mids and highs at their true loudness, so quiet intros sit low and
+// the drops stand out, and the low evened out into a steady base.
+fn overview_bands(s: Slice) -> vec3<f32> {
+    return vec3<f32>(0.4 * pow(s.rms.x, 0.45), 1.13 * s.rms.y, 1.08 * s.rms.z);
+}
+
+// The overview's height for a level, 0 to 1: linear, so it keeps the
+// track's ups and downs (the scrolling view evens them out with `height`).
+fn overview_height(v: f32) -> f32 {
+    return clamp(v * p.gain, 0.0, 1.0);
+}
+
 // The waveform is one solid shape: the RMS body, doubled so a loud track
 // fills about as much height as its peaks did, and never past the peaks.
 // Short hits no longer stick out as a fainter outline.
@@ -612,22 +625,23 @@ fn phrase_color(kind: u32) -> vec3<f32> {
 // Scrolling: the louder of low and mid at the back in its own colour, the
 // part where both sound (the quieter one's height) in a darker mid, and the
 // highs on top. The overview stacks the bands instead, as rekordbox's
-// overview does: low from the line, the mids on it and the highs on top, so
-// the highs are a thin edge along the outside.
+// overview does (see overview_bands): low from the line, the mids on it and
+// the highs on top.
 fn three_band(base: vec3<f32>, s: Slice, d: f32, span: f32) -> vec3<f32> {
-    let low = body(s.rms.x, s.peak.x);
-    let mid = body(s.rms.y, s.peak.y) * BAND_MID;
-    let high = body(s.rms.z, s.peak.z) * BAND_HIGH;
     var color = base;
     if (p.mode == 1u) {
-        let lr = height(low) * span;
-        let mr = height(low + mid) * span;
-        let hr = height(low + mid + high * BAND_HIGH_STACKED) * span;
+        let b = overview_bands(s);
+        let lr = overview_height(b.x) * span;
+        let mr = overview_height(b.x + b.y) * span;
+        let hr = overview_height(b.x + b.y + b.z) * span;
         color = over(color, p.high_color.rgb, fill(hr, d));
         color = over(color, p.mid_color.rgb, fill(mr, d));
         color = over(color, p.low_color.rgb, fill(lr, d));
         return color;
     }
+    let low = body(s.rms.x, s.peak.x);
+    let mid = body(s.rms.y, s.peak.y) * BAND_MID;
+    let high = body(s.rms.z, s.peak.z) * BAND_HIGH;
     let lr = height(low) * span;
     let mr = height(mid) * span;
     let hr = height(high) * span;
@@ -644,7 +658,13 @@ fn three_band(base: vec3<f32>, s: Slice, d: f32, span: f32) -> vec3<f32> {
 // parts stay readable. Zoomed in, the shape moves towards the slice's true
 // loudness, so the gaps between hits and between bass cycles stay open
 // instead of filling in to a solid block.
+// The overview (but the Player's Mono scrubber) is as tall as its 3-Band
+// stack, at true loudness.
 fn shape(s: Slice) -> f32 {
+    if (p.mode == 1u && p.style != 2u) {
+        let b = overview_bands(s);
+        return overview_height(b.x + b.y + b.z);
+    }
     let squashed = height(body(s.rms.w, s.peak.w));
     let loud = clamp(pow(s.peak.w * s.peak.w, 0.85) * 0.94 * p.gain, 0.0, 1.0);
     return mix(squashed, loud, close_zoom());

@@ -1,0 +1,561 @@
+{
+  "file": "Numark Mixtrack Pro FX.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Next panel"
+      ],
+      "SHIFT": [
+        "Knob"
+      ],
+      "SHIFT press": [
+        "Open or load item"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cue-gain": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "cue-mix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "fx-beats": {
+      "SHIFT": [
+        "FX 1 Effect 1 parameter 2",
+        "FX 2 Effect 1 parameter 2"
+      ],
+      "normal": [
+        "FX 1 Effect 1 parameter 1",
+        "FX 2 Effect 1 parameter 1"
+      ]
+    },
+    "fx-wet": {
+      "normal": [
+        "FX 1 Wet / dry",
+        "FX 2 Wet / dry"
+      ]
+    },
+    "l-bend-down": {
+      "SHIFT": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-bend-up": {
+      "SHIFT": [
+        "Key lock"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Back to start and stop"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-double": {
+      "SHIFT": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fx-paddle": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-fx1": {
+      "SHIFT": [
+        "Key up"
+      ],
+      "normal": [
+        "FX 1 Effect 1 previous"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "Move grid to playhead"
+      ]
+    },
+    "l-fx3": {
+      "SHIFT": [
+        "Key up"
+      ],
+      "normal": [
+        "FX 2 Effect 1 previous"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-half": {
+      "SHIFT": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ],
+      "Turn + SHIFT": [
+        "Position"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-loop": {
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-m-cuts": {
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-m-hot": {
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-m-loop": {
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-m-samp": {
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "SHIFT": [
+        "Sampler 9 Eject"
+      ],
+      "normal": [
+        "Sampler 9 Load selected track"
+      ]
+    },
+    "l-pad2": {
+      "SHIFT": [
+        "Sampler 10 Eject"
+      ],
+      "normal": [
+        "Sampler 10 Load selected track"
+      ]
+    },
+    "l-pad3": {
+      "SHIFT": [
+        "Sampler 11 Eject"
+      ],
+      "normal": [
+        "Sampler 11 Load selected track"
+      ]
+    },
+    "l-pad4": {
+      "SHIFT": [
+        "Sampler 12 Eject"
+      ],
+      "normal": [
+        "Sampler 12 Load selected track"
+      ]
+    },
+    "l-pad5": {
+      "SHIFT": [
+        "Sampler 13 Eject"
+      ],
+      "normal": [
+        "Sampler 13 Load selected track"
+      ]
+    },
+    "l-pad6": {
+      "SHIFT": [
+        "Sampler 14 Eject"
+      ],
+      "normal": [
+        "Sampler 14 Load selected track"
+      ]
+    },
+    "l-pad7": {
+      "SHIFT": [
+        "Sampler 15 Eject"
+      ],
+      "normal": [
+        "Sampler 15 Load selected track"
+      ]
+    },
+    "l-pad8": {
+      "SHIFT": [
+        "Sampler 16 Eject"
+      ],
+      "normal": [
+        "Sampler 16 Load selected track"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-scratch": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-bend-down": {
+      "SHIFT": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-bend-up": {
+      "SHIFT": [
+        "Key lock"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Back to start and stop"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-double": {
+      "SHIFT": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fx-paddle": {
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-fx1": {
+      "SHIFT": [
+        "Key down"
+      ],
+      "normal": [
+        "FX 1 Effect 1 next"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "Move grid to playhead"
+      ]
+    },
+    "r-fx3": {
+      "SHIFT": [
+        "Key down"
+      ],
+      "normal": [
+        "FX 2 Effect 1 next"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-half": {
+      "SHIFT": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ],
+      "Turn + SHIFT": [
+        "Position"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-loop": {
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-m-cuts": {
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-m-hot": {
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-m-loop": {
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-m-samp": {
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "SHIFT": [
+        "Sampler 9 Eject"
+      ],
+      "normal": [
+        "Sampler 9 Load selected track"
+      ]
+    },
+    "r-pad2": {
+      "SHIFT": [
+        "Sampler 10 Eject"
+      ],
+      "normal": [
+        "Sampler 10 Load selected track"
+      ]
+    },
+    "r-pad3": {
+      "SHIFT": [
+        "Sampler 11 Eject"
+      ],
+      "normal": [
+        "Sampler 11 Load selected track"
+      ]
+    },
+    "r-pad4": {
+      "SHIFT": [
+        "Sampler 12 Eject"
+      ],
+      "normal": [
+        "Sampler 12 Load selected track"
+      ]
+    },
+    "r-pad5": {
+      "SHIFT": [
+        "Sampler 13 Eject"
+      ],
+      "normal": [
+        "Sampler 13 Load selected track"
+      ]
+    },
+    "r-pad6": {
+      "SHIFT": [
+        "Sampler 14 Eject"
+      ],
+      "normal": [
+        "Sampler 14 Load selected track"
+      ]
+    },
+    "r-pad7": {
+      "SHIFT": [
+        "Sampler 15 Eject"
+      ],
+      "normal": [
+        "Sampler 15 Load selected track"
+      ]
+    },
+    "r-pad8": {
+      "SHIFT": [
+        "Sampler 16 Eject"
+      ],
+      "normal": [
+        "Sampler 16 Load selected track"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-scratch": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "tap": {
+      "Deck 1": [
+        "Tap tempo"
+      ],
+      "Deck 2": [
+        "Tap tempo"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

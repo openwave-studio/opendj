@@ -1,0 +1,893 @@
+{
+  "file": "Numark Mixtrack Platinum FX.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Next panel"
+      ],
+      "SHIFT": [
+        "Scroll list"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cue-gain": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "cue-mix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "fx-beats": {
+      "normal": [
+        "FX 1 Effect 1 parameter 1",
+        "FX 1 Effect 2 parameter 1",
+        "FX 1 Effect 3 parameter 1",
+        "FX 2 Effect 1 parameter 1",
+        "FX 2 Effect 2 parameter 1",
+        "FX 2 Effect 3 parameter 1"
+      ]
+    },
+    "fx-wet": {
+      "normal": [
+        "FX 1 Wet / dry",
+        "FX 2 Wet / dry"
+      ]
+    },
+    "l-bend-down": {
+      "Deck 3": [
+        "Nudge slower"
+      ],
+      "Deck 3 + SHIFT": [
+        "Nudge slower"
+      ],
+      "SHIFT": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-bend-up": {
+      "Deck 3": [
+        "Nudge faster"
+      ],
+      "Deck 3 + SHIFT": [
+        "Nudge faster"
+      ],
+      "SHIFT": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "Deck 3 + SHIFT": [
+        "Cue"
+      ],
+      "SHIFT": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-double": {
+      "Deck 3": [
+        "Double loop"
+      ],
+      "Deck 3 + SHIFT": [
+        "Double loop"
+      ],
+      "SHIFT": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-fader": {
+      "Deck 3": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-filter": {
+      "Deck 3": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fx-paddle": {
+      "normal": [
+        "FX 1 Assign to Deck 3",
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Assign to Deck 3"
+      ]
+    },
+    "l-fx1": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "l-fx3": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "l-gain": {
+      "Deck 3": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-half": {
+      "Deck 3": [
+        "Halve loop"
+      ],
+      "Deck 3 + SHIFT": [
+        "Halve loop"
+      ],
+      "SHIFT": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-hi": {
+      "Deck 3": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "Deck 3 + Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck 3 + Turn": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "l-load": {
+      "Deck 3": [
+        "Load button"
+      ],
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-loop": {
+      "Deck 3": [
+        "Loop (current size)"
+      ],
+      "Deck 3 + SHIFT": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-low": {
+      "Deck 3": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-m-cuts": {
+      "Deck 3": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-m-hot": {
+      "Deck 3": [
+        "Mode button press"
+      ],
+      "Deck 3 + SHIFT": [
+        "Mode button press"
+      ],
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-m-loop": {
+      "Deck 3": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-m-samp": {
+      "Deck 3": [
+        "Mode button press"
+      ],
+      "Deck 3 + SHIFT": [
+        "Mode button press"
+      ],
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "l-mid": {
+      "Deck 3": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3": [
+        "Sampler 9 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 9 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 9 Load selected track"
+      ],
+      "normal": [
+        "Sampler 9 Load selected track"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3": [
+        "Sampler 10 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 10 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 10 Load selected track"
+      ],
+      "normal": [
+        "Sampler 10 Load selected track"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3": [
+        "Sampler 11 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 11 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 11 Load selected track"
+      ],
+      "normal": [
+        "Sampler 11 Load selected track"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3": [
+        "Sampler 12 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 12 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 12 Load selected track"
+      ],
+      "normal": [
+        "Sampler 12 Load selected track"
+      ]
+    },
+    "l-pad5": {
+      "Deck 3": [
+        "Sampler 13 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 13 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 13 Load selected track"
+      ],
+      "normal": [
+        "Sampler 13 Load selected track"
+      ]
+    },
+    "l-pad6": {
+      "Deck 3": [
+        "Sampler 14 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 14 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 14 Load selected track"
+      ],
+      "normal": [
+        "Sampler 14 Load selected track"
+      ]
+    },
+    "l-pad7": {
+      "Deck 3": [
+        "Sampler 15 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 15 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 15 Load selected track"
+      ],
+      "normal": [
+        "Sampler 15 Load selected track"
+      ]
+    },
+    "l-pad8": {
+      "Deck 3": [
+        "Sampler 16 Load selected track"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sampler 16 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 16 Load selected track"
+      ],
+      "normal": [
+        "Sampler 16 Load selected track"
+      ]
+    },
+    "l-pfl": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "Deck 3 + SHIFT": [
+        "Move grid to playhead"
+      ],
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-scratch": {
+      "Deck 3": [
+        "Scratch toggle"
+      ],
+      "Deck 3 + SHIFT": [
+        "Deck switch"
+      ],
+      "SHIFT": [
+        "Deck switch"
+      ],
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "l-shift": {
+      "Deck 3": [
+        "Shift toggle"
+      ],
+      "normal": [
+        "Shift toggle"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync once"
+      ],
+      "Deck 3 + SHIFT": [
+        "Sync once"
+      ],
+      "SHIFT": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-bend-down": {
+      "Deck 4": [
+        "Nudge slower"
+      ],
+      "Deck 4 + SHIFT": [
+        "Nudge slower"
+      ],
+      "SHIFT": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-bend-up": {
+      "Deck 4": [
+        "Nudge faster"
+      ],
+      "Deck 4 + SHIFT": [
+        "Nudge faster"
+      ],
+      "SHIFT": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "Deck 4 + SHIFT": [
+        "Cue"
+      ],
+      "SHIFT": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-double": {
+      "Deck 4": [
+        "Double loop"
+      ],
+      "Deck 4 + SHIFT": [
+        "Double loop"
+      ],
+      "SHIFT": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-fader": {
+      "Deck 4": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-filter": {
+      "Deck 4": [
+        "Filter"
+      ],
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fx-paddle": {
+      "normal": [
+        "FX 1 Assign to Deck 4",
+        "FX 2 Assign to Deck 4",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-fx1": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-fx3": {
+      "normal": [
+        "FX 1 Effect 1 on",
+        "FX 1 Effect 2 on",
+        "FX 1 Effect 3 on",
+        "FX 2 Effect 1 on",
+        "FX 2 Effect 2 on",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-gain": {
+      "Deck 4": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-half": {
+      "Deck 4": [
+        "Halve loop"
+      ],
+      "Deck 4 + SHIFT": [
+        "Halve loop"
+      ],
+      "SHIFT": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-hi": {
+      "Deck 4": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "Deck 4 + Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck 4 + Turn": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ]
+    },
+    "r-load": {
+      "Deck 4": [
+        "Load button"
+      ],
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-loop": {
+      "Deck 4": [
+        "Loop (current size)"
+      ],
+      "Deck 4 + SHIFT": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-low": {
+      "Deck 4": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-m-cuts": {
+      "Deck 4": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-m-hot": {
+      "Deck 4": [
+        "Mode button press"
+      ],
+      "Deck 4 + SHIFT": [
+        "Mode button press"
+      ],
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-m-loop": {
+      "Deck 4": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-m-samp": {
+      "Deck 4": [
+        "Mode button press"
+      ],
+      "Deck 4 + SHIFT": [
+        "Mode button press"
+      ],
+      "SHIFT": [
+        "Mode button press"
+      ],
+      "normal": [
+        "Mode button press"
+      ]
+    },
+    "r-mid": {
+      "Deck 4": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4": [
+        "Sampler 9 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 9 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 9 Load selected track"
+      ],
+      "normal": [
+        "Sampler 9 Load selected track"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4": [
+        "Sampler 10 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 10 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 10 Load selected track"
+      ],
+      "normal": [
+        "Sampler 10 Load selected track"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4": [
+        "Sampler 11 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 11 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 11 Load selected track"
+      ],
+      "normal": [
+        "Sampler 11 Load selected track"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4": [
+        "Sampler 12 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 12 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 12 Load selected track"
+      ],
+      "normal": [
+        "Sampler 12 Load selected track"
+      ]
+    },
+    "r-pad5": {
+      "Deck 4": [
+        "Sampler 13 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 13 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 13 Load selected track"
+      ],
+      "normal": [
+        "Sampler 13 Load selected track"
+      ]
+    },
+    "r-pad6": {
+      "Deck 4": [
+        "Sampler 14 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 14 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 14 Load selected track"
+      ],
+      "normal": [
+        "Sampler 14 Load selected track"
+      ]
+    },
+    "r-pad7": {
+      "Deck 4": [
+        "Sampler 15 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 15 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 15 Load selected track"
+      ],
+      "normal": [
+        "Sampler 15 Load selected track"
+      ]
+    },
+    "r-pad8": {
+      "Deck 4": [
+        "Sampler 16 Load selected track"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sampler 16 Load selected track"
+      ],
+      "SHIFT": [
+        "Sampler 16 Load selected track"
+      ],
+      "normal": [
+        "Sampler 16 Load selected track"
+      ]
+    },
+    "r-pfl": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "Deck 4 + SHIFT": [
+        "Move grid to playhead"
+      ],
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-scratch": {
+      "Deck 4": [
+        "Scratch toggle"
+      ],
+      "Deck 4 + SHIFT": [
+        "Deck switch"
+      ],
+      "SHIFT": [
+        "Deck switch"
+      ],
+      "normal": [
+        "Scratch toggle"
+      ]
+    },
+    "r-shift": {
+      "Deck 4": [
+        "Shift toggle"
+      ],
+      "normal": [
+        "Shift toggle"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync once"
+      ],
+      "Deck 4 + SHIFT": [
+        "Sync once"
+      ],
+      "SHIFT": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "tap": {
+      "Deck 1": [
+        "Tap"
+      ],
+      "Deck 2": [
+        "Tap"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

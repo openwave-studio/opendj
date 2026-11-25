@@ -93,3 +93,14 @@ out of date; regenerate it from the repository root with:
 ```sh
 cargo run -q -p opendj -- --list-controls > website/docs/supported-controls.txt
 ```
+
+Every controller with a picture in the Controller Editor
+(`crates/controllers/layouts/`) gets that picture on its page, with a number
+on each control and a short table of what each number does, with and without
+SHIFT. The text comes from what the Controller Editor shows for the mapping,
+saved in `docs/figures/functions/`. After changing a mapping or a layout,
+regenerate it from the repository root with:
+
+```sh
+cargo run -q -p opendj-controllers --example docs_controls -- website/docs/figures/functions
+```

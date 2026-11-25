@@ -1,0 +1,542 @@
+{
+  "file": "DJ TechTools MIDI Fighter Twister.midi.xml",
+  "parts": {
+    "enc1": {
+      "Bank 1": [
+        "Gain"
+      ],
+      "Bank 1 + SHIFT": [
+        "Gain"
+      ],
+      "Bank 1 press": [
+        "Gain button"
+      ],
+      "Bank 2 press": [
+        "FX 1 Assign to Deck 1"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Assign to Deck 3"
+      ],
+      "Bank 3": [
+        "Stem 1 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 1 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 1 mute"
+      ]
+    },
+    "enc10": {
+      "Bank 1": [
+        "Low EQ"
+      ],
+      "Bank 1 + SHIFT": [
+        "Low EQ"
+      ],
+      "Bank 1 press": [
+        "Low button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Kill low"
+      ],
+      "Bank 2": [
+        "FX 1 Effect 3 knob"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 3 Effect 3 choose"
+      ],
+      "Bank 2 press": [
+        "FX 1 Effect 3 on"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Effect 3 on"
+      ],
+      "Bank 3": [
+        "Stem 3 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 2"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 3 FX on"
+      ]
+    },
+    "enc11": {
+      "Bank 1": [
+        "Low EQ"
+      ],
+      "Bank 1 + SHIFT": [
+        "Low EQ"
+      ],
+      "Bank 1 press": [
+        "Low button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Kill low"
+      ],
+      "Bank 2": [
+        "FX 2 Effect 3 knob"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 4 Effect 3 choose"
+      ],
+      "Bank 2 press": [
+        "FX 2 Effect 3 on"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 4 Effect 3 on"
+      ],
+      "Bank 3": [
+        "Stem 3 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 2"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 3 FX on"
+      ]
+    },
+    "enc12": {
+      "Bank 1": [
+        "Channel fader"
+      ],
+      "Bank 1 + SHIFT": [
+        "Channel fader"
+      ],
+      "Bank 1 press": [
+        "Headphone cue"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Headphone cue"
+      ],
+      "Bank 2 press": [
+        "FX 2 Assign to Headphone"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 4 Assign to Headphone"
+      ],
+      "Bank 3": [
+        "Stem 3 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 3 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 3 mute"
+      ]
+    },
+    "enc13": {
+      "Bank 1": [
+        "Crossfader"
+      ],
+      "Bank 1 + SHIFT": [
+        "Balance"
+      ],
+      "Bank 1 press": [
+        "Crossfader button"
+      ],
+      "Bank 2 press": [
+        "FX 1 Mix mode"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Mix mode"
+      ],
+      "Bank 3": [
+        "Stem 4 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 4 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 4 mute"
+      ]
+    },
+    "enc14": {
+      "Bank 1": [
+        "Filter"
+      ],
+      "Bank 1 + SHIFT": [
+        "Filter"
+      ],
+      "Bank 1 press": [
+        "Super button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Filter on"
+      ],
+      "Bank 2": [
+        "FX 1 Wet / dry"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 3 Super knob"
+      ],
+      "Bank 2 press": [
+        "FX 1 Show focus",
+        "FX 1 Show parameters"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 1 Controller input active"
+      ],
+      "Bank 3": [
+        "Stem 4 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 3"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 4 FX on"
+      ]
+    },
+    "enc15": {
+      "Bank 1": [
+        "Filter"
+      ],
+      "Bank 1 + SHIFT": [
+        "Filter"
+      ],
+      "Bank 1 press": [
+        "Super button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Filter on"
+      ],
+      "Bank 2": [
+        "FX 2 Wet / dry"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 4 Super knob"
+      ],
+      "Bank 2 press": [
+        "FX 2 Show focus",
+        "FX 2 Show parameters"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 2 Controller input active"
+      ],
+      "Bank 3": [
+        "Stem 4 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 3"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 4 FX on"
+      ]
+    },
+    "enc16": {
+      "Bank 1": [
+        "Main level"
+      ],
+      "Bank 1 + SHIFT": [
+        "Headphone level"
+      ],
+      "Bank 1 press": [
+        "Main gain button"
+      ],
+      "Bank 2 press": [
+        "FX 2 Mix mode"
+      ],
+      "Bank 3": [
+        "Stem 4 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 4 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 4 mute"
+      ]
+    },
+    "enc2": {
+      "Bank 1": [
+        "High EQ"
+      ],
+      "Bank 1 + SHIFT": [
+        "High EQ"
+      ],
+      "Bank 1 press": [
+        "High button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Kill high"
+      ],
+      "Bank 2": [
+        "FX 1 Effect 1 knob"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 3 Effect 1 choose"
+      ],
+      "Bank 2 press": [
+        "FX 1 Effect 1 on"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Effect 1 on"
+      ],
+      "Bank 3": [
+        "Stem 1 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 0"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 1 FX on"
+      ]
+    },
+    "enc3": {
+      "Bank 1": [
+        "High EQ"
+      ],
+      "Bank 1 + SHIFT": [
+        "High EQ"
+      ],
+      "Bank 1 press": [
+        "High button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Kill high"
+      ],
+      "Bank 2": [
+        "FX 2 Effect 1 knob"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 4 Effect 1 choose"
+      ],
+      "Bank 2 press": [
+        "FX 2 Effect 1 on"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 4 Effect 1 on"
+      ],
+      "Bank 3": [
+        "Stem 1 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 0"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 1 FX on"
+      ]
+    },
+    "enc4": {
+      "Bank 1": [
+        "Gain"
+      ],
+      "Bank 1 + SHIFT": [
+        "Gain"
+      ],
+      "Bank 1 press": [
+        "Gain button"
+      ],
+      "Bank 2 press": [
+        "FX 2 Assign to Deck 1"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 4 Assign to Deck 3"
+      ],
+      "Bank 3": [
+        "Stem 1 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 1 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 1 mute"
+      ]
+    },
+    "enc5": {
+      "Bank 1": [
+        "Tempo"
+      ],
+      "Bank 1 + SHIFT": [
+        "Tempo"
+      ],
+      "Bank 1 press": [
+        "Rate button"
+      ],
+      "Bank 2 press": [
+        "FX 1 Assign to Deck 2"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Assign to Deck 4"
+      ],
+      "Bank 3": [
+        "Stem 2 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 2 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 2 mute"
+      ]
+    },
+    "enc6": {
+      "Bank 1": [
+        "Mid EQ"
+      ],
+      "Bank 1 + SHIFT": [
+        "Mid EQ"
+      ],
+      "Bank 1 press": [
+        "Mid button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Kill mid"
+      ],
+      "Bank 2": [
+        "FX 1 Effect 2 knob"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 3 Effect 2 choose"
+      ],
+      "Bank 2 press": [
+        "FX 1 Effect 2 on"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Effect 2 on"
+      ],
+      "Bank 3": [
+        "Stem 2 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 1"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 2 FX on"
+      ]
+    },
+    "enc7": {
+      "Bank 1": [
+        "Mid EQ"
+      ],
+      "Bank 1 + SHIFT": [
+        "Mid EQ"
+      ],
+      "Bank 1 press": [
+        "Mid button"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Kill mid"
+      ],
+      "Bank 2": [
+        "FX 2 Effect 2 knob"
+      ],
+      "Bank 2 + SHIFT": [
+        "FX 4 Effect 2 choose"
+      ],
+      "Bank 2 press": [
+        "FX 2 Effect 2 on"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 4 Effect 2 on"
+      ],
+      "Bank 3": [
+        "Stem 2 FX knob"
+      ],
+      "Bank 3 press": [
+        "Effect reset 1"
+      ],
+      "Bank 3 press + SHIFT": [
+        "Stem 2 FX on"
+      ]
+    },
+    "enc8": {
+      "Bank 1": [
+        "Tempo"
+      ],
+      "Bank 1 + SHIFT": [
+        "Tempo"
+      ],
+      "Bank 1 press": [
+        "Rate button"
+      ],
+      "Bank 2 press": [
+        "FX 2 Assign to Deck 2"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 4 Assign to Deck 4"
+      ],
+      "Bank 3": [
+        "Stem 2 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 2 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 2 mute"
+      ]
+    },
+    "enc9": {
+      "Bank 1": [
+        "Channel fader"
+      ],
+      "Bank 1 + SHIFT": [
+        "Channel fader"
+      ],
+      "Bank 1 press": [
+        "Headphone cue"
+      ],
+      "Bank 1 press + SHIFT": [
+        "Headphone cue"
+      ],
+      "Bank 2 press": [
+        "FX 1 Assign to Headphone"
+      ],
+      "Bank 2 press + SHIFT": [
+        "FX 3 Assign to Headphone"
+      ],
+      "Bank 3": [
+        "Stem 3 volume"
+      ],
+      "Bank 3 + SHIFT": [
+        "Stem 3 volume"
+      ],
+      "Bank 3 press": [
+        "Stem 3 mute"
+      ]
+    },
+    "l1": {
+      "Bank 1": [
+        "Toggle deck"
+      ],
+      "Bank 2": [
+        "FX 3 Controller input active"
+      ],
+      "Bank 3": [
+        "Toggle deck"
+      ]
+    },
+    "l3": {
+      "Bank 1": [
+        "SHIFT"
+      ],
+      "Bank 2": [
+        "SHIFT"
+      ],
+      "Bank 3": [
+        "SHIFT"
+      ]
+    },
+    "r1": {
+      "Bank 1": [
+        "Toggle deck"
+      ],
+      "Bank 2": [
+        "FX 4 Controller input active"
+      ],
+      "Bank 3": [
+        "Toggle deck"
+      ]
+    },
+    "r3": {
+      "Bank 1": [
+        "SHIFT"
+      ],
+      "Bank 2": [
+        "SHIFT"
+      ],
+      "Bank 3": [
+        "SHIFT"
+      ]
+    }
+  }
+}

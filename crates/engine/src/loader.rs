@@ -486,7 +486,14 @@ fn edit_grid(
             after
         }
     };
-    t.set_grid(grid);
+    if grid.is_empty() {
+        // Cleared: no grid and no tempo, until Undo or Reset.
+        t.grid = grid;
+        t.bpm = 0.0;
+        t.first_beat = 0.0;
+    } else {
+        t.set_grid(grid);
+    }
     t.info.fixed_grid = true;
     t.info.grid_from = "user".into();
     t.info.grid_unsure = false;
@@ -528,15 +535,34 @@ fn separate_on_load(
 /// all decoded, so a deck switches to them with nothing missing (taking
 /// over from stems separated on load). Stops if `keep_going` turns false.
 pub(crate) fn load_stems(
-    audio: &Audio,
+    audio: &Arc<Audio>,
     source: &StemSource,
     keep_going: impl Fn() -> bool,
 ) -> Result<(), String> {
-    let stems = stems::Decode::open(source)?.run(&keep_going)?;
+    // High-quality stems this deck already has, or has had filled as
+    // they were separated: what is missing (if anything, after a separation
+    // that fell back to the Demucs command) comes from the cache.
+    let filling = audio.stems().and_then(|s| {
+        if s.quality == stems::Quality::High {
+            Some(s.clone())
+        } else {
+            s.upgrade().cloned()
+        }
+    });
+    if filling.as_ref().is_some_and(|s| s.is_complete()) {
+        return Ok(());
+    }
+    let stems = stems::Decode::open(source)?
+        .with_original(audio.clone())
+        .run(&keep_going)?;
     // Better stems take over from the ones Spleeter made on load.
-    let given = match audio.stems() {
-        Some(s) => s.set_upgrade(stems),
-        None => audio.set_stems(stems),
+    let given = match (filling, audio.stems()) {
+        (Some(f), _) => {
+            f.fill_missing(&stems);
+            true
+        }
+        (None, Some(s)) => s.set_upgrade(stems),
+        (None, None) => audio.set_stems(stems),
     };
     if keep_going() && !given {
         return Err("the stems don't match the track".into());

@@ -322,6 +322,15 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
             Vec::new()
         }
     })));
+    // A 300-byte "JPEG" for deck 1's art: three reports.
+    opendj_controllers::waves::set_cover_source(Some(Arc::new(|deck, size| {
+        assert_eq!(size, 240);
+        if deck == 0 {
+            (0..300).map(|i| i as u8).collect()
+        } else {
+            Vec::new()
+        }
+    })));
     let reg = ControlRegistry::new();
     let _engine = opendj_engine::engine::Engine::new(&reg, 44_100.0);
     let dir = default_mappings_dir().unwrap();
@@ -380,7 +389,7 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     // State first, then the load in order.
     assert_eq!(kinds[0], 0x27);
     let load: Vec<u8> = kinds.iter().copied().filter(|&k| k != 0x27).collect();
-    let mut expected = vec![0x30, 0x39, 0x39, 0x39, 0x35, 0x35, 0x35];
+    let mut expected = vec![0x30, 0x39, 0x39, 0x39, 0x33, 0x33, 0x33, 0x35, 0x35, 0x35];
     expected.extend(std::iter::repeat_n(0x36, 1500usize.div_ceil(19)));
     expected.push(0x2F);
     assert_eq!(&load[..expected.len()], &expected[..], "{load:x?}");
@@ -402,6 +411,15 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     assert_eq!(&length[7..9], &[0, 10]);
     let count = reports.iter().find(|r| r[2] == 0x35).unwrap();
     assert_eq!(u16::from_le_bytes([count[3], count[4]]), 1500);
+    // The art: its size, then 119 bytes, then 122 a report.
+    let art: Vec<&Vec<u8>> = reports.iter().filter(|r| r[2] == 0x33).collect();
+    assert_eq!(art.len(), 3);
+    assert_eq!((art[0][3], art[0][5]), (1, 3));
+    assert_eq!(u16::from_le_bytes([art[0][7], art[0][8]]), 300);
+    assert_eq!((art[0][10], art[0][128]), (0, 118));
+    assert_eq!((art[1][3], art[1][7]), (2, 119));
+    assert_eq!((art[2][3], art[2][7], art[2][65]), (3, 241, 43));
+    assert_eq!(art[2][66], 0, "nothing after the end");
     let labels = reports.iter().find(|r| r[2] == 0x39).unwrap();
     assert_eq!(&labels[8..15], b"HOT CUE");
     // Red at full brightness, full height: (7 << 13) | (31 << 2).
@@ -432,6 +450,7 @@ fn ddj_flx10_jog_screens_show_the_waveform() {
     assert_eq!(midi.errors(), Vec::<String>::new());
     assert_eq!(screens.errors(), Vec::<String>::new());
     opendj_controllers::waves::set_source(None);
+    opendj_controllers::waves::set_cover_source(None);
 }
 
 /// openDJ's X1 MK3 mapping: transport and hot cues per side, the loop
@@ -715,4 +734,101 @@ fn traktor_kontrol_s5_plays_as_traktor() {
         "crossfader centred"
     );
     assert_eq!(c.errors(), Vec::<String>::new());
+}
+
+/// The Komplete Kontrol M32 plays the instrument deck: its knobs turn the
+/// instrument's knobs on the page shown, < > turn the page, the transport
+/// runs the sequencer, PRESET asks for the next preset, and the 4-D encoder
+/// browses the instruments the app lists.
+#[test]
+fn komplete_kontrol_m32_plays_the_instrument_deck() {
+    let (reg, mut c, _device) = load("Native Instruments Komplete Kontrol M32.hid.xml");
+    reg.get("[Channel2]", "live_input").unwrap().set(3.0);
+    reg.get("[Instrument1]", "num_parameters")
+        .unwrap()
+        .set(20.0);
+    opendj_controllers::texts::set_text("[Instrument1]", "name", "Test Synth");
+    opendj_controllers::texts::set_text("[Instrument1]", "instruments", "One\nTwo\nThree");
+    opendj_controllers::texts::set_text("[Instrument1]", "parameter1_name", "Cutoff");
+    settle(&mut c, 100);
+    let reports = c.take_reports();
+    assert!(reports.iter().any(|r| r[0] == 0x80 && r.len() == 1 + 21));
+    let screen: Vec<&Vec<u8>> = reports.iter().filter(|r| r[0] == 0xe0).collect();
+    assert!(!screen.is_empty() && screen.iter().all(|r| r.len() == 1 + 8 + 256));
+
+    // Knob counters start at 100; the first report only says where they are.
+    let mut idle = vec![0u8; 32];
+    idle[0] = 0x01;
+    for k in 0..8 {
+        idle[6 + 2 * k] = 100;
+    }
+    c.receive_report(&idle);
+    let send = |c: &mut Controller, r: &[u8]| {
+        c.receive_report(r);
+        c.poll(Instant::now());
+    };
+    let tap = |c: &mut Controller, idle: &[u8], byte: usize, mask: u8| {
+        let mut r = idle.to_vec();
+        r[byte] |= mask;
+        c.receive_report(&r);
+        c.receive_report(idle);
+        c.poll(Instant::now());
+    };
+    // Knob 1 on 50 counts: a tenth of the way up.
+    let mut knob = idle.clone();
+    knob[6] = 150;
+    send(&mut c, &knob);
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 0.1).abs() < 1e-9);
+    // Back down past 0 wraps: 150 -> 990 is 160 counts down, clamped at 0.
+    knob[6] = (990u16 & 0xff) as u8;
+    knob[7] = (990u16 >> 8) as u8;
+    send(&mut c, &knob);
+    assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
+    let idle = knob;
+
+    // > (S): page 2, where knob 1 turns knob 9.
+    tap(&mut c, &idle, 2, 0x80);
+    assert_eq!(get(&reg, "[Instrument1]", "knob_page"), 1.0);
+    let mut knob = idle.clone();
+    knob[6] = ((990u16 + 5) & 0xff) as u8;
+    send(&mut c, &knob);
+    assert!(get(&reg, "[Instrument1]", "parameter9") > 0.0);
+    assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
+    let idle = knob;
+
+    // PLAY and STOP run the sequencer; PRESET DOWN asks for the next preset.
+    tap(&mut c, &idle, 2, 0x02);
+    assert_eq!(get(&reg, "[Instrument1]", "seq"), 1.0);
+    tap(&mut c, &idle, 2, 0x08);
+    assert_eq!(get(&reg, "[Instrument1]", "seq"), 0.0);
+    tap(&mut c, &idle, 2, 0x20);
+    assert_eq!(get(&reg, "[Instrument1]", "preset_next"), 1.0);
+    // ARP and SCALE.
+    tap(&mut c, &idle, 1, 0x04);
+    assert_eq!(get(&reg, "[Instrument1]", "arp"), 1.0);
+    tap(&mut c, &idle, 1, 0x02);
+    assert_eq!(get(&reg, "[Instrument1]", "scale_mode"), 0.0);
+
+    // The encoder: the first turn opens the instruments, the next picks the
+    // second, the press loads it.
+    for turn in [1u8, 2] {
+        let mut r = idle.clone();
+        r[24] = turn;
+        send(&mut c, &r);
+    }
+    tap(
+        &mut c,
+        &{
+            let mut r = idle.clone();
+            r[24] = 2;
+            r
+        },
+        5,
+        0x02,
+    );
+    assert_eq!(get(&reg, "[Instrument1]", "instrument_load"), 2.0);
+    settle(&mut c, 100);
+    let _ = c.take_reports();
+    assert!(c.errors().is_empty(), "{:#?}", c.errors());
+    c.shutdown();
 }

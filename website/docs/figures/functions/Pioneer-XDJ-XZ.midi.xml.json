@@ -1,0 +1,1295 @@
+{
+  "file": "Pioneer-XDJ-XZ.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Waveform zoom"
+      ],
+      "SHIFT press": [
+        "Next panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c1-xf-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "c2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c2-xf-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "c3-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c3-xf-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "c4-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "c4-xf-assign": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "l-call-next": {
+      "Deck 3": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-call-prev": {
+      "Deck 3": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-four-beat": {
+      "Deck 3": [
+        "Loop 4 beats"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "l-jog": {
+      "Deck 3, SHIFT side": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 3, SHIFT touch": [
+        "Jog touch"
+      ],
+      "Deck 3, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 3, Touch": [
+        "Jog touch"
+      ],
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "l-loop-in": {
+      "Deck 3": [
+        "Loop in"
+      ],
+      "Deck 3, Long press": [
+        "Loop adjust"
+      ],
+      "Long press": [
+        "Loop adjust"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-loop-out": {
+      "Deck 3": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-master": {
+      "Deck 3": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "l-master-tempo": {
+      "Deck 3": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-mode-beatjump": {
+      "Deck 3": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-mode-beatloop": {
+      "Deck 3": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-mode-hotcue": {
+      "Deck 3": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-mode-sliploop": {
+      "Deck 3": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "l-needle": {
+      "Deck 3": [
+        "Position"
+      ],
+      "normal": [
+        "Position"
+      ]
+    },
+    "l-pad1": {
+      "Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 1 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX": [
+        "Loop roll 1/16 beat"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 1 Eject"
+      ]
+    },
+    "l-pad2": {
+      "Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 2 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX": [
+        "Loop roll 1/8 beat"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 2 Eject"
+      ]
+    },
+    "l-pad3": {
+      "Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 3 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX": [
+        "Loop roll 1/4 beat"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 3 Eject"
+      ]
+    },
+    "l-pad4": {
+      "Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 4 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX": [
+        "Loop roll 1/2 beat"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 4 Eject"
+      ]
+    },
+    "l-pad5": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 5 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX": [
+        "Loop roll 1 beat"
+      ],
+      "Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 5 Eject"
+      ]
+    },
+    "l-pad6": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 6 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX": [
+        "Loop roll 2 beats"
+      ],
+      "Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 6 Eject"
+      ]
+    },
+    "l-pad7": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats back"
+      ],
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Deck 3, Beat jump, SHIFT": [
+        "Jump 128 beats back"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 7 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX": [
+        "Loop roll 4 beats"
+      ],
+      "Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 7 Eject"
+      ]
+    },
+    "l-pad8": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 3, Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 3, Beat jump, SHIFT": [
+        "Jump 128 beats forward"
+      ],
+      "Deck 3, Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 3, Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 3, Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 3, Pad FX": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 3, Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 3, Sampler, SHIFT": [
+        "Sampler 8 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX": [
+        "Loop roll 8 beats"
+      ],
+      "Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 8 Eject"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-quantize": {
+      "normal": [
+        "Quantize"
+      ]
+    },
+    "l-reloop": {
+      "Deck 3": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-reverse": {
+      "Deck 3": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "l-search-fwd": {
+      "Deck 3": [
+        "Jump 4 beats forward"
+      ],
+      "normal": [
+        "Jump 4 beats forward"
+      ]
+    },
+    "l-search-rev": {
+      "Deck 3": [
+        "Jump 4 beats back"
+      ],
+      "normal": [
+        "Jump 4 beats back"
+      ]
+    },
+    "l-slip": {
+      "Deck 3": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "Deck 3, Long press": [
+        "Sync leader"
+      ],
+      "Long press": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "Deck 3": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-tempo-range": {
+      "Deck 3": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-tempo-reset": {
+      "Deck 3": [
+        "Rate set zero"
+      ],
+      "normal": [
+        "Rate set zero"
+      ]
+    },
+    "l-track-fwd": {
+      "Deck 3": [
+        "Jump 32 beats forward"
+      ],
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "l-track-rev": {
+      "Deck 3": [
+        "Jump 32 beats back"
+      ],
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "l-vinyl": {
+      "Deck 3": [
+        "Jog mode"
+      ],
+      "normal": [
+        "Jog mode"
+      ]
+    },
+    "load1": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load2": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load3": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load4": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-call-next": {
+      "Deck 4": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-call-prev": {
+      "Deck 4": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-four-beat": {
+      "Deck 4": [
+        "Loop 4 beats"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-jog": {
+      "Deck 4, SHIFT side": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT top": [
+        "Jog search"
+      ],
+      "Deck 4, SHIFT touch": [
+        "Jog touch"
+      ],
+      "Deck 4, Side": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Top": [
+        "Jog rim bend"
+      ],
+      "Deck 4, Touch": [
+        "Jog touch"
+      ],
+      "SHIFT side": [
+        "Jog search"
+      ],
+      "SHIFT top": [
+        "Jog search"
+      ],
+      "SHIFT touch": [
+        "Jog touch"
+      ],
+      "Side": [
+        "Jog rim bend"
+      ],
+      "Top": [
+        "Jog rim bend"
+      ],
+      "Touch": [
+        "Jog touch"
+      ]
+    },
+    "r-loop-in": {
+      "Deck 4": [
+        "Loop in"
+      ],
+      "Deck 4, Long press": [
+        "Loop adjust"
+      ],
+      "Long press": [
+        "Loop adjust"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-loop-out": {
+      "Deck 4": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-master": {
+      "Deck 4": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync leader"
+      ]
+    },
+    "r-master-tempo": {
+      "Deck 4": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-mode-beatjump": {
+      "Deck 4": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-mode-beatloop": {
+      "Deck 4": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-mode-hotcue": {
+      "Deck 4": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-mode-sliploop": {
+      "Deck 4": [
+        "Pad mode pressed"
+      ],
+      "normal": [
+        "Pad mode pressed"
+      ]
+    },
+    "r-needle": {
+      "Deck 4": [
+        "Position"
+      ],
+      "normal": [
+        "Position"
+      ]
+    },
+    "r-pad1": {
+      "Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 1 beat back"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 1"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 9 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Pad FX": [
+        "Loop roll 1/16 beat"
+      ],
+      "Sampler": [
+        "Sampler 9 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 9 Eject"
+      ]
+    },
+    "r-pad2": {
+      "Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 1 beat forward"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 2"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 10 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Pad FX": [
+        "Loop roll 1/8 beat"
+      ],
+      "Sampler": [
+        "Sampler 10 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 10 Eject"
+      ]
+    },
+    "r-pad3": {
+      "Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 2 beats back"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 3"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 11 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Pad FX": [
+        "Loop roll 1/4 beat"
+      ],
+      "Sampler": [
+        "Sampler 11 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 11 Eject"
+      ]
+    },
+    "r-pad4": {
+      "Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 2 beats forward"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 4"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 12 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Pad FX": [
+        "Loop roll 1/2 beat"
+      ],
+      "Sampler": [
+        "Sampler 12 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 12 Eject"
+      ]
+    },
+    "r-pad5": {
+      "Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 4 beats back"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 5"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 13 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 5"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Pad FX": [
+        "Loop roll 1 beat"
+      ],
+      "Sampler": [
+        "Sampler 13 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 13 Eject"
+      ]
+    },
+    "r-pad6": {
+      "Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 4 beats forward"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 6"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 14 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 6"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Pad FX": [
+        "Loop roll 2 beats"
+      ],
+      "Sampler": [
+        "Sampler 14 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 14 Eject"
+      ]
+    },
+    "r-pad7": {
+      "Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats back"
+      ],
+      "Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 8 beats back"
+      ],
+      "Deck 4, Beat jump, SHIFT": [
+        "Jump 128 beats back"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 7"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 15 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 7"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Pad FX": [
+        "Loop roll 4 beats"
+      ],
+      "Sampler": [
+        "Sampler 15 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 15 Eject"
+      ]
+    },
+    "r-pad8": {
+      "Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Beat jump, SHIFT": [
+        "Jump 128 beats forward"
+      ],
+      "Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 4, Beat jump": [
+        "Jump 8 beats forward"
+      ],
+      "Deck 4, Beat jump, SHIFT": [
+        "Jump 128 beats forward"
+      ],
+      "Deck 4, Beat loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 4, Hot cue": [
+        "Hot cue 8"
+      ],
+      "Deck 4, Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 4, Pad FX": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 4, Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Deck 4, Sampler, SHIFT": [
+        "Sampler 16 Eject"
+      ],
+      "Hot cue": [
+        "Hot cue 8"
+      ],
+      "Hot cue, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Pad FX": [
+        "Loop roll 8 beats"
+      ],
+      "Sampler": [
+        "Sampler 16 Load selected track"
+      ],
+      "Sampler, SHIFT": [
+        "Sampler 16 Eject"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-reloop": {
+      "Deck 4": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-reverse": {
+      "Deck 4": [
+        "Reverse"
+      ],
+      "normal": [
+        "Reverse"
+      ]
+    },
+    "r-search-fwd": {
+      "Deck 4": [
+        "Jump 4 beats forward"
+      ],
+      "normal": [
+        "Jump 4 beats forward"
+      ]
+    },
+    "r-search-rev": {
+      "Deck 4": [
+        "Jump 4 beats back"
+      ],
+      "normal": [
+        "Jump 4 beats back"
+      ]
+    },
+    "r-slip": {
+      "Deck 4": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "Deck 4, Long press": [
+        "Sync leader"
+      ],
+      "Long press": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "Deck 4": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-tempo-range": {
+      "Deck 4": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-tempo-reset": {
+      "Deck 4": [
+        "Rate set zero"
+      ],
+      "normal": [
+        "Rate set zero"
+      ]
+    },
+    "r-track-fwd": {
+      "Deck 4": [
+        "Jump 32 beats forward"
+      ],
+      "normal": [
+        "Jump 32 beats forward"
+      ]
+    },
+    "r-track-rev": {
+      "Deck 4": [
+        "Jump 32 beats back"
+      ],
+      "normal": [
+        "Jump 32 beats back"
+      ]
+    },
+    "r-vinyl": {
+      "Deck 4": [
+        "Jog mode"
+      ],
+      "normal": [
+        "Jog mode"
+      ]
+    },
+    "tag": {
+      "normal": [
+        "Add to Automix"
+      ]
+    }
+  }
+}

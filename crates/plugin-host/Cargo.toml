@@ -20,6 +20,10 @@ winit = { version = "0.30", optional = true, default-features = false, features 
 libpd-sys = { version = "0.3.4", optional = true }
 # The cyclone and ELSE object libraries, built in (third_party/pd-libs).
 opendj-pd-libs = { path = "../../third_party/pd-libs", optional = true }
+# Drawing a patch's Lua displays in the helper's window.
+tiny-skia = { version = "0.11", optional = true }
+ab_glyph = { version = "0.2", optional = true }
+softbuffer = { version = "0.4", optional = true, default-features = false, features = ["x11", "x11-dlopen"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"
@@ -37,7 +41,7 @@ default = ["formats"]
 formats = ["dep:clack-host", "dep:clack-extensions", "dep:vst3", "dep:libloading", "dep:winit"]
 # Pure Data patches as effects and instruments, in the helper. Off by default
 # while experimental: `cargo build -p opendj-plugin-host --features pd`.
-pd = ["formats", "dep:libpd-sys", "dep:opendj-pd-libs"]
+pd = ["formats", "dep:libpd-sys", "dep:opendj-pd-libs", "dep:tiny-skia", "dep:ab_glyph", "dep:softbuffer"]
 
 [[bin]]
 name = "opendj-plugin-host"

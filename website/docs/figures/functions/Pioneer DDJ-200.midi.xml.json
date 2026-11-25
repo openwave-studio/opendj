@@ -1,0 +1,320 @@
+{
+  "file": "Pioneer DDJ-200.midi.xml",
+  "parts": {
+    "l-cfx": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader",
+        "Volume msb"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "SHIFT": [
+        "Position"
+      ],
+      "Side": [
+        "Jog"
+      ],
+      "Top": [
+        "Scratch"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pad1": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad5": {
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "l-pad6": {
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "l-pad7": {
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "l-pad8": {
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "l-pfl": {
+      "SHIFT": [
+        "Toggle deck"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Set cue"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "Shift left"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo",
+        "Rate msb"
+      ]
+    },
+    "master": {
+      "SHIFT": [
+        "Toggle four deck mode"
+      ],
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "r-cfx": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader",
+        "Volume msb"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "SHIFT": [
+        "Position"
+      ],
+      "Side": [
+        "Jog"
+      ],
+      "Top": [
+        "Scratch"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad5": {
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "r-pad6": {
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "r-pad7": {
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "r-pad8": {
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "r-pfl": {
+      "SHIFT": [
+        "Toggle deck"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Set cue"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "Shift right"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo",
+        "Rate msb"
+      ]
+    },
+    "transition": {
+      "SHIFT": [
+        "Fade now"
+      ],
+      "normal": [
+        "Automix on"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

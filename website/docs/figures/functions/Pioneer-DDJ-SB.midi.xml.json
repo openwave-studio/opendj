@@ -1,0 +1,746 @@
+{
+  "file": "Pioneer-DDJ-SB.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Play / pause",
+        "Big browser"
+      ]
+    },
+    "browse": {
+      "SHIFT": [
+        "Open or close folder",
+        "Previous playlist"
+      ],
+      "normal": [
+        "Scroll list",
+        "Load and play"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fader": {
+      "SHIFT": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader",
+        "Deck fader msb"
+      ]
+    },
+    "l-filter": {
+      "SHIFT": [
+        "Gain"
+      ],
+      "normal": [
+        "Filter",
+        "Filter knob msb"
+      ]
+    },
+    "l-fx1": {
+      "SHIFT": [
+        "FX 1 Assign to Deck 1"
+      ],
+      "normal": [
+        "FX 1 Fx button"
+      ]
+    },
+    "l-fx2": {
+      "SHIFT": [
+        "FX 1 Assign to Headphone"
+      ],
+      "normal": [
+        "FX 1 Fx button"
+      ]
+    },
+    "l-fx3": {
+      "SHIFT": [
+        "FX 1 Assign to Deck 2"
+      ],
+      "normal": [
+        "FX 1 Fx button"
+      ]
+    },
+    "l-fxlevel": {
+      "normal": [
+        "FX 1 Super knob",
+        "FX 1 Wet / dry",
+        "Fx knob shifted msb",
+        "FX 1 Fx knob msb"
+      ]
+    },
+    "l-hi": {
+      "SHIFT": [
+        "Filter high"
+      ],
+      "normal": [
+        "Filter high knob msb",
+        "Filter high"
+      ]
+    },
+    "l-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Search": [
+        "Jog nudge"
+      ],
+      "Side": [
+        "Jog nudge"
+      ],
+      "Side search": [
+        "Jog nudge"
+      ],
+      "Top": [
+        "Jog nudge"
+      ],
+      "Top, vinyl off": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-keylock": {
+      "SHIFT": [
+        "Deck toggle button"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-load": {
+      "SHIFT": [
+        "Show"
+      ],
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-low": {
+      "SHIFT": [
+        "Filter low"
+      ],
+      "normal": [
+        "Filter low knob msb",
+        "Filter low"
+      ]
+    },
+    "l-mid": {
+      "SHIFT": [
+        "Filter mid"
+      ],
+      "normal": [
+        "Filter mid knob msb",
+        "Filter mid"
+      ]
+    },
+    "l-pad1": {
+      "Auto loop": [
+        "Loop 1 beat"
+      ],
+      "Auto loop + SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Bank": [
+        "Sampler 1 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 1 Eject"
+      ],
+      "Cue loop": [
+        "Low kill button"
+      ],
+      "Cue loop + SHIFT": [
+        "FX 1 Previous chain"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 5"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Manual loop": [
+        "Loop in"
+      ],
+      "Manual loop + SHIFT": [
+        "Move loop"
+      ],
+      "Roll": [
+        "Loop roll 1/16 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 1 beat"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 1 Stop"
+      ]
+    },
+    "l-pad2": {
+      "Auto loop": [
+        "Loop 2 beats"
+      ],
+      "Auto loop + SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Bank": [
+        "Sampler 2 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 2 Eject"
+      ],
+      "Cue loop": [
+        "Mid kill button"
+      ],
+      "Cue loop + SHIFT": [
+        "FX 1 Next chain"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 6"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Manual loop": [
+        "Loop out"
+      ],
+      "Manual loop + SHIFT": [
+        "Move loop"
+      ],
+      "Roll": [
+        "Loop roll 1/8 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 2 beats"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 2 Stop"
+      ]
+    },
+    "l-pad3": {
+      "Auto loop": [
+        "Loop 4 beats"
+      ],
+      "Auto loop + SHIFT": [
+        "Loop 64 beats"
+      ],
+      "Bank": [
+        "Sampler 3 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 3 Eject"
+      ],
+      "Cue loop": [
+        "High kill button"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 7"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Manual loop": [
+        "Reloop / exit"
+      ],
+      "Roll": [
+        "Loop roll 1/4 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 4 beats"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 3 Stop"
+      ]
+    },
+    "l-pad4": {
+      "Auto loop": [
+        "Loop 8 beats"
+      ],
+      "Bank": [
+        "Sampler 4 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 4 Eject"
+      ],
+      "Cue loop": [
+        "Mute"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 8"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Manual loop": [
+        "Halve loop"
+      ],
+      "Manual loop + SHIFT": [
+        "Double loop"
+      ],
+      "Roll": [
+        "Loop roll 1/2 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 8 beats"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 4 Stop"
+      ]
+    },
+    "l-pfl": {
+      "SHIFT": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "SHIFT"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "SHIFT": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo",
+        "Tempo slider msb"
+      ]
+    },
+    "l-vinyl": {
+      "SHIFT": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode",
+        "Vinyl button"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fader": {
+      "SHIFT": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader",
+        "Deck fader msb"
+      ]
+    },
+    "r-filter": {
+      "SHIFT": [
+        "Gain"
+      ],
+      "normal": [
+        "Filter",
+        "Filter knob msb"
+      ]
+    },
+    "r-fx1": {
+      "SHIFT": [
+        "FX 2 Assign to Deck 1"
+      ],
+      "normal": [
+        "FX 2 Fx button"
+      ]
+    },
+    "r-fx2": {
+      "SHIFT": [
+        "FX 2 Assign to Headphone"
+      ],
+      "normal": [
+        "FX 2 Fx button"
+      ]
+    },
+    "r-fx3": {
+      "SHIFT": [
+        "FX 2 Assign to Deck 2"
+      ],
+      "normal": [
+        "FX 2 Fx button"
+      ]
+    },
+    "r-fxlevel": {
+      "normal": [
+        "FX 2 Super knob",
+        "FX 2 Wet / dry",
+        "Fx knob shifted msb",
+        "FX 2 Fx knob msb"
+      ]
+    },
+    "r-hi": {
+      "SHIFT": [
+        "Filter high"
+      ],
+      "normal": [
+        "Filter high knob msb",
+        "Filter high"
+      ]
+    },
+    "r-jog": {
+      "SHIFT touch": [
+        "Scratch (platter touch)"
+      ],
+      "Search": [
+        "Jog nudge"
+      ],
+      "Side": [
+        "Jog nudge"
+      ],
+      "Side search": [
+        "Jog nudge"
+      ],
+      "Top": [
+        "Jog nudge"
+      ],
+      "Top, vinyl off": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-keylock": {
+      "SHIFT": [
+        "Deck toggle button"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-load": {
+      "SHIFT": [
+        "Samplers Show samplers"
+      ],
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-low": {
+      "SHIFT": [
+        "Filter low"
+      ],
+      "normal": [
+        "Filter low knob msb",
+        "Filter low"
+      ]
+    },
+    "r-mid": {
+      "SHIFT": [
+        "Filter mid"
+      ],
+      "normal": [
+        "Filter mid knob msb",
+        "Filter mid"
+      ]
+    },
+    "r-pad1": {
+      "Auto loop": [
+        "Loop 1 beat"
+      ],
+      "Auto loop + SHIFT": [
+        "Loop 16 beats"
+      ],
+      "Bank": [
+        "Sampler 1 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 1 Eject"
+      ],
+      "Cue loop": [
+        "Low kill button"
+      ],
+      "Cue loop + SHIFT": [
+        "FX 2 Previous chain"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 5"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Manual loop": [
+        "Loop in"
+      ],
+      "Manual loop + SHIFT": [
+        "Move loop"
+      ],
+      "Roll": [
+        "Loop roll 1/16 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 1 beat"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 1 Stop"
+      ]
+    },
+    "r-pad2": {
+      "Auto loop": [
+        "Loop 2 beats"
+      ],
+      "Auto loop + SHIFT": [
+        "Loop 32 beats"
+      ],
+      "Bank": [
+        "Sampler 2 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 2 Eject"
+      ],
+      "Cue loop": [
+        "Mid kill button"
+      ],
+      "Cue loop + SHIFT": [
+        "FX 2 Next chain"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 6"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Manual loop": [
+        "Loop out"
+      ],
+      "Manual loop + SHIFT": [
+        "Move loop"
+      ],
+      "Roll": [
+        "Loop roll 1/8 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 2 beats"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 2 Stop"
+      ]
+    },
+    "r-pad3": {
+      "Auto loop": [
+        "Loop 4 beats"
+      ],
+      "Auto loop + SHIFT": [
+        "Loop 64 beats"
+      ],
+      "Bank": [
+        "Sampler 3 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 3 Eject"
+      ],
+      "Cue loop": [
+        "High kill button"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 7"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Manual loop": [
+        "Reloop / exit"
+      ],
+      "Roll": [
+        "Loop roll 1/4 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 4 beats"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 3 Stop"
+      ]
+    },
+    "r-pad4": {
+      "Auto loop": [
+        "Loop 8 beats"
+      ],
+      "Bank": [
+        "Sampler 4 Load selected track"
+      ],
+      "Bank + SHIFT": [
+        "Sampler 4 Eject"
+      ],
+      "Cue loop": [
+        "Mute"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue + SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Hot cue 5-8": [
+        "Hot cue 8"
+      ],
+      "Hot cue 5-8 + SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Manual loop": [
+        "Halve loop"
+      ],
+      "Manual loop + SHIFT": [
+        "Double loop"
+      ],
+      "Roll": [
+        "Loop roll 1/2 beat"
+      ],
+      "Roll + SHIFT": [
+        "Loop roll 8 beats"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler + SHIFT": [
+        "Sampler 4 Stop"
+      ]
+    },
+    "r-pfl": {
+      "SHIFT": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "SHIFT": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo",
+        "Tempo slider msb"
+      ]
+    },
+    "r-vinyl": {
+      "SHIFT": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Slip mode",
+        "Vinyl button"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

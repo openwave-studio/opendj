@@ -1,0 +1,808 @@
+{
+  "file": "Denon-MC6000MK2.midi.xml",
+  "parts": {
+    "area": {
+      "normal": [
+        "Recv area button"
+      ]
+    },
+    "back": {
+      "normal": [
+        "Recv back button"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Recv track select button"
+      ],
+      "Turn": [
+        "Scroll list"
+      ]
+    },
+    "ch1-cue": {
+      "normal": [
+        "Recv cue mix button"
+      ]
+    },
+    "ch1-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch1-level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch1-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch1-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch1-xf": {
+      "A": [
+        "Recv xfader assign left button"
+      ],
+      "B": [
+        "Recv xfader assign right button"
+      ],
+      "THRU": [
+        "Recv xfader assign thru button"
+      ]
+    },
+    "ch2-cue": {
+      "normal": [
+        "Recv cue mix button"
+      ]
+    },
+    "ch2-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch2-level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch2-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch2-xf": {
+      "A": [
+        "Recv xfader assign left button"
+      ],
+      "B": [
+        "Recv xfader assign right button"
+      ],
+      "THRU": [
+        "Recv xfader assign thru button"
+      ]
+    },
+    "ch3-cue": {
+      "normal": [
+        "Recv cue mix button"
+      ]
+    },
+    "ch3-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch3-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch3-level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch3-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch3-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch3-xf": {
+      "A": [
+        "Recv xfader assign left button"
+      ],
+      "B": [
+        "Recv xfader assign right button"
+      ],
+      "THRU": [
+        "Recv xfader assign thru button"
+      ]
+    },
+    "ch4-cue": {
+      "normal": [
+        "Recv cue mix button"
+      ]
+    },
+    "ch4-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch4-hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch4-level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch4-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch4-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch4-xf": {
+      "A": [
+        "Recv xfader assign left button"
+      ],
+      "B": [
+        "Recv xfader assign right button"
+      ],
+      "THRU": [
+        "Recv xfader assign thru button"
+      ]
+    },
+    "contour": {
+      "normal": [
+        "Recv xfader contour knob"
+      ]
+    },
+    "filter-l": {
+      "normal": [
+        "Filter",
+        "Filter on"
+      ]
+    },
+    "filter-l-on": {
+      "normal": [
+        "Recv filter button"
+      ]
+    },
+    "filter-r": {
+      "normal": [
+        "Filter",
+        "Filter on"
+      ]
+    },
+    "filter-r-on": {
+      "normal": [
+        "Recv filter button"
+      ]
+    },
+    "fwd": {
+      "normal": [
+        "Recv fwd button"
+      ]
+    },
+    "l-assign1": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "l-assign2": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "l-assign3": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "l-assign4": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "l-autoloop": {
+      "Deck 3": [
+        "Loop end",
+        "Loop in",
+        "Loop out",
+        "Loop start",
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop end",
+        "Loop in",
+        "Loop out",
+        "Loop start",
+        "Reloop / exit"
+      ]
+    },
+    "l-beats": {
+      "Press (V.FX SEL.)": [
+        "FX 1 Show focus",
+        "FX 1 Show parameters"
+      ],
+      "Turn (wet/dry)": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "l-bend+": {
+      "Deck 3": [
+        "Recv bend plus button"
+      ],
+      "normal": [
+        "Recv bend plus button"
+      ]
+    },
+    "l-bend-": {
+      "Deck 3": [
+        "Recv bend minus button"
+      ],
+      "normal": [
+        "Recv bend minus button"
+      ]
+    },
+    "l-censor": {
+      "Deck 3": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "l-cue": {
+      "Deck 3": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-cut+": {
+      "Deck 3": [
+        "Recv loop cut plus button"
+      ],
+      "normal": [
+        "Recv loop cut plus button"
+      ]
+    },
+    "l-cut-": {
+      "Deck 3": [
+        "Recv loop cut minus button"
+      ],
+      "normal": [
+        "Recv loop cut minus button"
+      ]
+    },
+    "l-deck": {
+      "Deck 1": [
+        "Recv deck button"
+      ],
+      "Deck 3": [
+        "Recv deck button"
+      ]
+    },
+    "l-fx1": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-fx1-on": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "l-fx2-on": {
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "l-fx3": {
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "l-fx3-on": {
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "l-in": {
+      "Deck 3": [
+        "Loop in"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-jog": {
+      "Deck 3 + Touch": [
+        "Recv jog touch"
+      ],
+      "Deck 3 + Touch (vinyl)": [
+        "Recv jog touch vinyl"
+      ],
+      "Deck 3 + Turn": [
+        "Jog nudge"
+      ],
+      "Deck 3 + Turn (vinyl)": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Recv jog touch"
+      ],
+      "Touch (vinyl)": [
+        "Recv jog touch vinyl"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ],
+      "Turn (vinyl)": [
+        "Jog nudge"
+      ]
+    },
+    "l-keylock": {
+      "Deck 3": [
+        "Recv key lock button"
+      ],
+      "normal": [
+        "Recv key lock button"
+      ]
+    },
+    "l-out": {
+      "Deck 3": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-pad1": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Sampler 1": [
+        "Sampler 1 Recv sampler button"
+      ]
+    },
+    "l-pad2": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Sampler 2": [
+        "Sampler 2 Recv sampler button"
+      ]
+    },
+    "l-pad3": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Sampler 3": [
+        "Sampler 3 Recv sampler button"
+      ]
+    },
+    "l-pad4": {
+      "Deck 3 + Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Sampler 4": [
+        "Sampler 4 Recv sampler button"
+      ]
+    },
+    "l-pitch": {
+      "Deck 3": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-play": {
+      "Deck 3": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-shift": {
+      "Deck 3": [
+        "Shift button input"
+      ],
+      "normal": [
+        "Shift button input"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-tap": {
+      "normal": [
+        "Recv tap button"
+      ]
+    },
+    "l-vinyl": {
+      "Deck 3": [
+        "Recv vinyl button"
+      ],
+      "normal": [
+        "Recv vinyl button"
+      ]
+    },
+    "list": {
+      "normal": [
+        "Recv list button"
+      ]
+    },
+    "load-l": {
+      "Deck 3": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "load-r": {
+      "Deck 4": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "pan": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "panel": {
+      "normal": [
+        "Recv panel button"
+      ]
+    },
+    "phones": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "r-assign1": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "r-assign2": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "r-assign3": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "r-assign4": {
+      "normal": [
+        "Recv deck button"
+      ]
+    },
+    "r-autoloop": {
+      "Deck 4": [
+        "Loop end",
+        "Loop in",
+        "Loop out",
+        "Loop start",
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop end",
+        "Loop in",
+        "Loop out",
+        "Loop start",
+        "Reloop / exit"
+      ]
+    },
+    "r-beats": {
+      "Press (V.FX SEL.)": [
+        "FX 2 Show focus",
+        "FX 2 Show parameters"
+      ],
+      "Turn (wet/dry)": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "r-bend+": {
+      "Deck 4": [
+        "Recv bend plus button"
+      ],
+      "normal": [
+        "Recv bend plus button"
+      ]
+    },
+    "r-bend-": {
+      "Deck 4": [
+        "Recv bend minus button"
+      ],
+      "normal": [
+        "Recv bend minus button"
+      ]
+    },
+    "r-censor": {
+      "Deck 4": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "r-cue": {
+      "Deck 4": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-cut+": {
+      "Deck 4": [
+        "Recv loop cut plus button"
+      ],
+      "normal": [
+        "Recv loop cut plus button"
+      ]
+    },
+    "r-cut-": {
+      "Deck 4": [
+        "Recv loop cut minus button"
+      ],
+      "normal": [
+        "Recv loop cut minus button"
+      ]
+    },
+    "r-deck": {
+      "Deck 2": [
+        "Recv deck button"
+      ],
+      "Deck 4": [
+        "Recv deck button"
+      ]
+    },
+    "r-fx1": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-fx1-on": {
+      "normal": [
+        "FX 2 Effect 1 on"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "r-fx2-on": {
+      "normal": [
+        "FX 2 Effect 2 on"
+      ]
+    },
+    "r-fx3": {
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "r-fx3-on": {
+      "normal": [
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-in": {
+      "Deck 4": [
+        "Loop in"
+      ],
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-jog": {
+      "Deck 4 + Touch": [
+        "Recv jog touch"
+      ],
+      "Deck 4 + Touch (vinyl)": [
+        "Recv jog touch vinyl"
+      ],
+      "Deck 4 + Turn": [
+        "Jog nudge"
+      ],
+      "Deck 4 + Turn (vinyl)": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Recv jog touch"
+      ],
+      "Touch (vinyl)": [
+        "Recv jog touch vinyl"
+      ],
+      "Turn": [
+        "Jog nudge"
+      ],
+      "Turn (vinyl)": [
+        "Jog nudge"
+      ]
+    },
+    "r-keylock": {
+      "Deck 4": [
+        "Recv key lock button"
+      ],
+      "normal": [
+        "Recv key lock button"
+      ]
+    },
+    "r-out": {
+      "Deck 4": [
+        "Loop out"
+      ],
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-pad1": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 1"
+      ],
+      "Hot cue": [
+        "Hot cue 1"
+      ],
+      "Sampler 5": [
+        "Sampler 5 Recv sampler button"
+      ]
+    },
+    "r-pad2": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 2"
+      ],
+      "Hot cue": [
+        "Hot cue 2"
+      ],
+      "Sampler 6": [
+        "Sampler 6 Recv sampler button"
+      ]
+    },
+    "r-pad3": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 3"
+      ],
+      "Hot cue": [
+        "Hot cue 3"
+      ],
+      "Sampler 7": [
+        "Sampler 7 Recv sampler button"
+      ]
+    },
+    "r-pad4": {
+      "Deck 4 + Hot cue": [
+        "Hot cue 4"
+      ],
+      "Hot cue": [
+        "Hot cue 4"
+      ],
+      "Sampler 8": [
+        "Sampler 8 Recv sampler button"
+      ]
+    },
+    "r-pitch": {
+      "Deck 4": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-play": {
+      "Deck 4": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-shift": {
+      "Deck 4": [
+        "Shift button input"
+      ],
+      "normal": [
+        "Shift button input"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync once"
+      ],
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-tap": {
+      "normal": [
+        "Recv tap button"
+      ]
+    },
+    "r-vinyl": {
+      "Deck 4": [
+        "Recv vinyl button"
+      ],
+      "normal": [
+        "Recv vinyl button"
+      ]
+    },
+    "view": {
+      "normal": [
+        "Recv view button"
+      ]
+    },
+    "xfader": {
+      "Video": [
+        "Crossfader"
+      ],
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

@@ -19,6 +19,7 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
+pub use opendj_plugin_host::display as plugin_display;
 pub use opendj_plugin_host::pd_patch;
 pub use opendj_plugin_host::presets as plugin_presets;
 pub use opendj_plugin_host::{
@@ -127,6 +128,14 @@ struct List {
     instrument_picks: Vec<(usize, u32)>,
     /// The parameter id each of the playing instrument's knobs turns.
     instrument_ids: Vec<u32>,
+    /// Where the playing instrument's display for the deck is (see
+    /// `opendj_plugin_host::display`): a file that exists only once the
+    /// plugin draws one.
+    instrument_display: Option<PathBuf>,
+    /// The same for each effect slot, `[unit][slot]`, from the first deck
+    /// (or the master) it plays on.
+    /// Each FX slot's: its display file and the plugin's name.
+    slot_displays: Vec<Vec<Option<(PathBuf, String)>>>,
 }
 
 /// What the app asks of the instrument's sound (see
@@ -306,6 +315,20 @@ impl PluginHost {
         self.list.lock().unwrap().requests.push(request(tx));
         rx.recv_timeout(SOUND_WAIT)
             .unwrap_or_else(|_| Err("the instrument didn't answer".into()))
+    }
+
+    /// The playing instrument's display file, for the deck (see
+    /// `opendj_plugin_host::display::Display::open`); none while no
+    /// instrument plays. The file exists only for a plugin that draws one.
+    pub fn instrument_display(&self) -> Option<PathBuf> {
+        self.list.lock().unwrap().instrument_display.clone()
+    }
+
+    /// Effect slot `slot` of unit `unit`'s display file and plugin name, as for
+    /// [`PluginHost::instrument_display`].
+    pub fn slot_display(&self, unit: usize, slot: usize) -> Option<(PathBuf, String)> {
+        let list = self.list.lock().unwrap();
+        list.slot_displays.get(unit)?.get(slot)?.clone()
     }
 
     /// What happened since the last call.
@@ -719,6 +742,7 @@ impl Supervisor {
         self.follow_instrument();
         self.follow_instrument_params();
         self.follow_editors();
+        self.publish_displays();
         self.keep_open_sounds();
         self.serve_sound_requests();
     }
@@ -815,6 +839,33 @@ impl Supervisor {
             let _ = self.link.to_engine.push(PluginMsg::Instrument(None));
             // `follow_instrument` starts it again on its next round.
         }
+    }
+
+    /// Tells the app where each running plugin's display file is.
+    fn publish_displays(&mut self) {
+        let mut slots = vec![vec![None; EFFECTS_PER_UNIT]; NUM_EFFECT_UNITS];
+        for (u, unit) in slots.iter_mut().enumerate() {
+            for (s, slot) in unit.iter_mut().enumerate() {
+                *slot = (0..TARGETS)
+                    .filter_map(|t| self.index[u][s][t])
+                    .find_map(|i| self.running[i as usize].as_ref())
+                    .map(|r| {
+                        let name = self
+                            .entries
+                            .get(r.plugin as usize)
+                            .map_or_else(String::new, |e| e.name.clone());
+                        (r.helper.display_path(), name)
+                    });
+            }
+        }
+        let instrument = self
+            .instrument
+            .running
+            .as_ref()
+            .map(|(_, h)| h.display_path());
+        let mut list = self.list.lock().unwrap();
+        list.slot_displays = slots;
+        list.instrument_display = instrument;
     }
 
     /// Opens and closes plugin windows as the `show_editor` controls ask.

@@ -1740,6 +1740,105 @@ fn ddj_rx_quantize() {
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
+/// The DDJ-RX, RZ, RZX and SZ Sound Color FX buttons pick what the COLOR knobs
+/// play on every deck; PITCH is the Pitch Color FX (6). Pressing the lit
+/// one goes back to the filter.
+#[test]
+fn ddj_rx_family_sound_color_fx() {
+    let cfx = |reg: &ControlRegistry, deck: usize| {
+        get(
+            reg,
+            &format!("[QuickEffectRack1_[Channel{deck}]]"),
+            "loaded_chain_preset",
+        )
+    };
+    for (file, pitch, other, preset) in [
+        ("Pioneer DDJ-RX.midi.xml", 0x02, 0x00, 4.0),
+        ("Pioneer DDJ-RZ.midi.xml", 0x02, 0x00, 2.0),
+        ("Pioneer DDJ-RZX.midi.xml", 0x24, 0x01, 3.0),
+        ("Pioneer DDJ-SZ.midi.xml", 0x01, 0x00, 3.0),
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        c.receive(&[0x96, pitch, 0x7F]);
+        c.receive(&[0x96, pitch, 0x00]);
+        for deck in 1..=4 {
+            assert_eq!(cfx(&reg, deck), 6.0, "{file} PITCH");
+        }
+        c.poll(Instant::now());
+        assert!(
+            c.take_output().iter().any(|m| m[..] == [0x96, pitch, 0x7F]),
+            "{file} PITCH lit"
+        );
+        c.receive(&[0x96, other, 0x7F]);
+        assert_eq!(cfx(&reg, 2), preset, "{file} {other:#x}");
+        // SHIFT + the lit one goes back to the filter.
+        let shifted = if other < 0x08 {
+            other + 0x08
+        } else {
+            other + 0x10
+        };
+        c.receive(&[0x96, shifted, 0x7F]);
+        assert_eq!(cfx(&reg, 2), 1.0, "{file} back to the filter");
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+/// The XDJ-R1's and XDJ-RR's SOUND COLOR FX PITCH plays the Pitch Color FX.
+#[test]
+fn xdj_r1_and_rr_pitch_color_fx() {
+    for (file, msg) in [
+        ("Pioneer-XDJ-R1.midi.xml", [0x94, 0x4F, 0x7F]),
+        ("Pioneer-XDJ-RR.midi.xml", [0xB4, 0x56, 0x7F]),
+    ] {
+        let (reg, mut c) = load(file);
+        settle(&mut c, 50);
+        c.receive(&msg);
+        for deck in 1..=2 {
+            assert_eq!(
+                get(
+                    &reg,
+                    &format!("[QuickEffectRack1_[Channel{deck}]]"),
+                    "loaded_chain_preset"
+                ),
+                6.0,
+                "{file}"
+            );
+        }
+        assert_eq!(c.errors(), Vec::<String>::new(), "{file}");
+        c.shutdown();
+    }
+}
+
+/// The DDJ-800's COLOR FX buttons pick what both COLOR FX knobs play, and
+/// the chosen one lights.
+#[test]
+fn ddj_800_color_fx() {
+    let (reg, mut c) = load("Pioneer-DDJ-800.midi.xml");
+    settle(&mut c, 50);
+    let cfx = |reg: &ControlRegistry, deck: usize| {
+        get(
+            reg,
+            &format!("[QuickEffectRack1_[Channel{deck}]]"),
+            "loaded_chain_preset",
+        )
+    };
+    for (note, preset) in [(0x01, 6.0), (0x00, 3.0), (0x0A, 4.0), (0x03, 1.0)] {
+        c.receive(&[0x96, note, 0x7F]);
+        c.receive(&[0x96, note, 0x00]);
+        assert_eq!((cfx(&reg, 1), cfx(&reg, 2)), (preset, preset), "{note:#x}");
+    }
+    c.receive(&[0x96, 0x01, 0x7F]);
+    settle(&mut c, 5);
+    assert!(
+        c.take_output().iter().any(|m| m[..] == [0x96, 0x01, 0x7F]),
+        "PITCH lit"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
 /// openDJ's DDJ-800 mapping: the DDJ-FLX4's, moved to the DDJ-800's
 /// messages, plus its own buttons and Beat FX switches.
 #[test]
@@ -2101,6 +2200,18 @@ fn ddj_flx10_decks_mixer_fx_and_displays() {
             .any(|m| m[0] == 0x96 && m[1] == 0x04 && m[2] == 0x7F),
         "NOISE lit: {out:x?}"
     );
+
+    // SOUND COLOR FX PITCH: the Pitch Color FX; SHIFT + PITCH back to FILTER.
+    c.receive(&[0x96, 0x03, 0x7F]);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel3]]", "loaded_chain_preset"),
+        6.0
+    );
+    c.receive(&[0x96, 0x0B, 0x7F]);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel3]]", "loaded_chain_preset"),
+        1.0
+    );
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }
@@ -2170,6 +2281,198 @@ fn ddj_flx10_pad_colours_lights_and_jog_scale() {
     assert!(
         (bend - 10.0 * 720.0 / 5760.0).abs() < 1e-6,
         "jog_bend {bend}"
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+#[test]
+fn ddj_flx10_browse_loops_deck_select_and_search() {
+    let (reg, mut c) = load("Pioneer-DDJ-FLX10.midi.xml");
+    settle(&mut c, 50);
+
+    // BROWSE press (sent as LOAD for the side's deck): in the folders it
+    // opens the picked item, in the track list it loads the track.
+    let focus = reg.free("[Library]", "focused_widget");
+    let go = reg.free("[Library]", "GoToItem");
+    let load3 = reg.free("[Channel3]", "LoadSelectedTrack");
+    focus.set(2.0);
+    c.receive(&[0x96, 0x48, 0x7F]);
+    c.receive(&[0x96, 0x48, 0x00]);
+    assert_eq!(go.get(), 1.0);
+    assert_eq!(load3.get(), 0.0);
+    go.set(0.0);
+    focus.set(3.0);
+    c.receive(&[0x96, 0x48, 0x7F]);
+    assert_eq!(go.get(), 0.0);
+    assert_eq!(load3.get(), 1.0);
+
+    // LOOP IN・1/2X and LOOP OUT・2X set the loop, and halve and double
+    // it while it plays; the release goes where the press went.
+    c.receive(&[0x90, 0x10, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_in"), 1.0);
+    c.receive(&[0x90, 0x10, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_in"), 0.0);
+    reg.get("[Channel1]", "loop_enabled").unwrap().set(1.0);
+    c.receive(&[0x90, 0x10, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_halve"), 1.0);
+    assert_eq!(get(&reg, "[Channel1]", "loop_in"), 0.0);
+    c.receive(&[0x90, 0x10, 0x00]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_halve"), 0.0);
+    c.receive(&[0x90, 0x11, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "loop_double"), 1.0);
+    c.receive(&[0x90, 0x11, 0x00]);
+    c.receive(&[0x91, 0x13, 0x7F]);
+    assert_eq!(get(&reg, "[Channel2]", "loop_double"), 1.0);
+    c.receive(&[0x91, 0x13, 0x00]);
+
+    // 4 BEAT JUMP held searches while held.
+    c.receive(&[0x92, 0x71, 0x7F]);
+    assert!(get(&reg, "[Channel3]", "rateSearch") > 0.0);
+    c.receive(&[0x92, 0x71, 0x00]);
+    assert_eq!(get(&reg, "[Channel3]", "rateSearch"), 0.0);
+    c.receive(&[0x90, 0x70, 0x7F]);
+    assert!(get(&reg, "[Channel1]", "rateSearch") < 0.0);
+    c.receive(&[0x90, 0x70, 0x00]);
+
+    // DECK 3 on the left: 4-Deck opens and lights deck 3; DECK 1 goes back.
+    let layout = reg.free("[Skin]", "layout");
+    let deck3 = reg.free("[Controller]", "deck3");
+    c.receive(&[0x92, 0x3C, 0x7F]);
+    c.receive(&[0x90, 0x3C, 0x00]);
+    assert_eq!(layout.get(), 2.0);
+    assert_eq!(deck3.get(), 1.0);
+    c.receive(&[0x90, 0x3C, 0x7F]);
+    c.receive(&[0x92, 0x3C, 0x00]);
+    assert_eq!(deck3.get(), 0.0);
+    assert_eq!(layout.get(), 2.0);
+
+    // SHIFT + a SOUND COLOR FX button picks it too.
+    c.receive(&[0x96, 0x09, 0x7F]);
+    assert_eq!(
+        get(&reg, "[QuickEffectRack1_[Channel2]]", "loaded_chain_preset"),
+        3.0
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// openDJ's DDJ-1000 mapping: the DDJ-FLX10's (its successor sends the same
+/// MIDI), with the DDJ-1000's own buttons and its jog displays on each
+/// deck's channel.
+#[test]
+fn ddj_1000_decks_buttons_and_jog_displays() {
+    let (reg, mut c) = load("Pioneer-DDJ-1000.midi.xml");
+    settle(&mut c, 50);
+    let out = c.take_output();
+    assert!(
+        out.iter().any(|m| m[..] == [0x92, 0x5D, 0x00]),
+        "deck 3's jog display shown: {out:x?}"
+    );
+    assert!(
+        !out.iter().any(|m| m[0] == 0x9F || m[0] == 0xBF),
+        "no FLX10 display messages: {out:x?}"
+    );
+
+    // Decks, pads and mixer as on the FLX10.
+    c.receive(&[0x93, 0x0B, 0x7F]);
+    c.receive(&[0x93, 0x0B, 0x00]);
+    assert_eq!(get(&reg, "[Channel4]", "play"), 1.0);
+    c.receive(&[0x9B, 0x02, 0x7F]);
+    assert_eq!(get(&reg, "[Channel3]", "hotcue_3_activate"), 1.0);
+    c.receive(&[0x9B, 0x02, 0x00]);
+    sweep14(&mut c, 0xB2, 0x13, 0x33, 0x40);
+    let v = get(&reg, "[Channel3]", "volume");
+    assert!((v - 0.5).abs() < 0.02, "deck 3 volume {v}");
+
+    // MASTER TEMPO toggles key lock and lights; SHIFT + CUE taps the tempo.
+    let keylock = get(&reg, "[Channel2]", "keylock");
+    c.receive(&[0x91, 0x1A, 0x7F]);
+    c.receive(&[0x91, 0x1A, 0x00]);
+    assert_ne!(get(&reg, "[Channel2]", "keylock"), keylock);
+    settle(&mut c, 5);
+    let out = c.take_output();
+    let lit = if keylock > 0.0 { 0x00 } else { 0x7F };
+    assert!(
+        out.iter().any(|m| m[..] == [0x91, 0x1A, lit]),
+        "MASTER TEMPO light: {out:x?}"
+    );
+    c.receive(&[0x90, 0x68, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1]", "bpm_tap"), 1.0);
+    c.receive(&[0x90, 0x68, 0x00]);
+
+    // SEARCH: |<< to the start; >>| loads the next track only while paused;
+    // held, it searches.
+    let load = reg.free("[Channel1]", "LoadSelectedTrack");
+    let down = reg.free("[Library]", "MoveDown");
+    c.receive(&[0x90, 0x5F, 0x7F]);
+    assert_eq!(down.get(), 1.0);
+    assert_eq!(load.get(), 1.0);
+    load.set(0.0);
+    reg.get("[Channel2]", "play").unwrap().set(1.0);
+    let load2 = reg.free("[Channel2]", "LoadSelectedTrack");
+    c.receive(&[0x91, 0x5F, 0x7F]);
+    assert_eq!(load2.get(), 0.0, "playing deck keeps its track");
+    c.receive(&[0x91, 0x71, 0x7F]);
+    assert!(get(&reg, "[Channel2]", "rateSearch") > 0.0);
+    c.receive(&[0x91, 0x71, 0x00]);
+    assert_eq!(get(&reg, "[Channel2]", "rateSearch"), 0.0);
+
+    // SOUND COLOR FX: D-ECHO, PITCH, NOISE, FILTER.
+    for (note, preset) in [(0x00, 3.0), (0x01, 6.0), (0x02, 4.0), (0x0B, 1.0)] {
+        c.receive(&[0x96, note, 0x7F]);
+        c.receive(&[0x96, note, 0x00]);
+        assert_eq!(
+            get(&reg, "[QuickEffectRack1_[Channel4]]", "loaded_chain_preset"),
+            preset,
+            "color fx note {note:#x}"
+        );
+    }
+
+    // BEAT FX SELECT on PITCH.
+    c.receive(&[0x94, 0x29, 0x7F]);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit5_Effect1]", "loaded_effect"),
+        14.0
+    );
+
+    // DECK SELECT: a press flips the side to deck 3 and back.
+    let deck3 = reg.free("[Controller]", "deck3");
+    c.receive(&[0x92, 0x72, 0x7F]);
+    c.receive(&[0x92, 0x72, 0x00]);
+    assert_eq!(deck3.get(), 1.0);
+    settle(&mut c, 300);
+    c.receive(&[0x92, 0x72, 0x7F]);
+    assert_eq!(deck3.get(), 0.0);
+
+    // The jog display on deck 1's channel: playhead, minutes, BPM.
+    reg.get("[Channel1]", "track_loaded").unwrap().set(1.0);
+    reg.get("[Channel1]", "duration").unwrap().set(180.0);
+    reg.get("[Channel1]", "bpm").unwrap().set(128.0);
+    reg.get("[Channel1]", "playposition")
+        .unwrap()
+        .set(61.5 / 180.0);
+    // settle counts from now, so run past the last pass's timer.
+    settle(&mut c, 600);
+    let out = c.take_output();
+    assert!(
+        out.iter()
+            .any(|m| m[0] == 0xB0 && (m[1] == 0x14 || m[1] == 0x34) && m[2] > 0),
+        "playhead moved: {out:x?}"
+    );
+    assert!(
+        out.iter().any(|m| m[..] == [0x90, 0x42, 0x01]),
+        "minutes shown: {out:x?}"
+    );
+    // 1280 tenths: MSB 10, LSB 0.
+    assert!(
+        out.iter().any(|m| m[..] == [0xB0, 0x15, 10])
+            && out.iter().any(|m| m[..] == [0xB0, 0x35, 0]),
+        "BPM shown: {out:x?}"
+    );
+    assert!(
+        !out.iter().any(|m| m[0] == 0x9F || m[0] == 0xBF),
+        "no FLX10 display messages: {out:x?}"
     );
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
@@ -2996,6 +3299,259 @@ fn hercules_mix_ultra_neural_mix_and_pads() {
     c.receive(&[0xB1, 0x0A, 0x01]);
     c.receive(&[0x91, 0x08, 0x00]);
     c.receive(&[0xB0, 0x01, 0x01]);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// Reloop Mixtour and Mixtour Pro (notes from djay Pro's built-in mappings):
+/// every message runs cleanly.
+#[test]
+fn reloop_mappings_take_every_message_cleanly() {
+    for c in opendj_controllers::support::all() {
+        let Some(file) = c.file.filter(|_| c.name.starts_with("Reloop")) else {
+            continue;
+        };
+        let (_reg, mut ctl) = load(&file);
+        settle(&mut ctl, 50);
+        every_message_runs_cleanly(&file, &mut ctl);
+        ctl.shutdown();
+    }
+}
+
+/// Mixtour: the C-mode notes play hot cues, FX makes FILTER drive the
+/// deck's effect unit too, and the VU meters reach the controller.
+#[test]
+fn reloop_mixtour_hot_cues_fx_and_meters() {
+    let (reg, mut c) = load("Reloop Mixtour.midi.xml");
+    settle(&mut c, 50);
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    // With no track loaded, check the pads reach their controls.
+    let fires = |c: &mut Controller, group: &str, key: &str, s: u8, n: u8| {
+        let ctl = reg.get(group, key).unwrap();
+        let before = ctl.version();
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+        assert_ne!(ctl.version(), before, "{group} {key}");
+    };
+    fires(&mut c, "[Channel2]", "hotcue_2_activate", 0x91, 0x0E);
+    fires(&mut c, "[Channel2]", "hotcue_2_clear", 0x91, 0x4D);
+    // FILTER alone moves the filter, not the effects.
+    c.receive(&[0xB0, 0x04, 0x7F]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit1]", "super1"), 0.0);
+    press(&mut c, 0x90, 0x01);
+    assert_eq!(
+        get(&reg, "[EffectRack1_EffectUnit1]", "group_[Channel1]_enable"),
+        1.0
+    );
+    c.receive(&[0xB0, 0x04, 0x00]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit1]", "super1"), 1.0);
+    assert_eq!(get(&reg, "[QuickEffectRack1_[Channel1]]", "super1"), 0.0);
+    c.take_output();
+    reg.get("[Channel1]", "vu_meter").unwrap().set(1.0);
+    settle(&mut c, 20);
+    assert!(c.take_output().contains(&vec![0x90, 0x11, 77]));
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// Mixtour Pro: MODE + a pad picks the pad mode per deck, the pads follow
+/// it (hot cues, auto loops, stems), STEMS EQ turns the EQ knobs into stem
+/// volumes, and the pads start in hot cue mode's colour.
+#[test]
+fn reloop_mixtour_pro_pad_modes_and_stems_eq() {
+    let (reg, mut c) = load("Reloop Mixtour Pro.midi.xml");
+    // Hot cue mode's dimmed colour on every pad at start.
+    let out = c.take_output();
+    assert!(out.contains(&vec![0x94, 0x14, 48]), "{out:?}");
+    settle(&mut c, 50);
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    let fires = |c: &mut Controller, group: &str, key: &str, s: u8, n: u8| {
+        let ctl = reg.get(group, key).unwrap();
+        let before = ctl.version();
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+        ctl.version() != before
+    };
+    // Hot cue mode by default.
+    assert!(fires(&mut c, "[Channel3]", "hotcue_3_activate", 0x96, 0x16));
+    assert!(fires(&mut c, "[Channel3]", "hotcue_3_clear", 0x96, 0x1E));
+    // MODE + pad 5: auto loop, on deck 3 only.
+    press(&mut c, 0x96, 0x04);
+    assert!(fires(&mut c, "[Channel3]", "beatloop_1_toggle", 0x96, 0x16));
+    assert!(!fires(
+        &mut c,
+        "[Channel3]",
+        "hotcue_3_activate",
+        0x96,
+        0x16
+    ));
+    assert!(fires(&mut c, "[Channel1]", "hotcue_3_activate", 0x94, 0x16));
+    // MODE + pad 8: stems; pad 2 mutes the bass, pad 8 plays the vocals alone.
+    press(&mut c, 0x95, 0x07);
+    press(&mut c, 0x95, 0x15);
+    assert_eq!(get(&reg, "[Channel2_Stem2]", "mute"), 1.0);
+    press(&mut c, 0x95, 0x1B);
+    let mutes = [1, 2, 3, 4].map(|s| get(&reg, &format!("[Channel2_Stem{s}]"), "mute"));
+    assert_eq!(mutes, [1.0, 1.0, 1.0, 0.0]);
+    // STEMS EQ: LOW sets the drums instead of the EQ.
+    c.receive(&[0xB1, 0x19, 0x00]);
+    let low = get(&reg, "[EqualizerRack1_[Channel2]_Effect1]", "parameter1");
+    c.receive(&[0xB1, 0x19, 0x7F]);
+    assert_ne!(
+        get(&reg, "[EqualizerRack1_[Channel2]_Effect1]", "parameter1"),
+        low
+    );
+    c.receive(&[0xB1, 0x19, 0x00]);
+    press(&mut c, 0x95, 0x24);
+    c.receive(&[0xB1, 0x19, 0x00]);
+    assert_eq!(get(&reg, "[Channel2_Stem1]", "volume"), 0.0);
+    c.receive(&[0xB1, 0x19, 0x7F]);
+    assert!(get(&reg, "[Channel2_Stem1]", "volume") > 0.0);
+    assert_eq!(
+        get(&reg, "[EqualizerRack1_[Channel2]_Effect1]", "parameter1"),
+        low
+    );
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+}
+
+/// The Reloop mappings built from djay Pro's control lists: a pad mode
+/// button changes what the pads do (Ready and Buddy number their modes in
+/// order, the Mixon 8 Pro by the button's note), the pads light in their
+/// mode's colour, STEMS turns the Buddy's knobs into stem levels and the
+/// Mixon FX sections follow the deck last used on their side.
+#[test]
+fn reloop_djay_mappings_pad_modes_stems_and_fx() {
+    let press = |c: &mut Controller, s: u8, n: u8| {
+        c.receive(&[s, n, 0x7F]);
+        c.receive(&[s, n, 0x00]);
+    };
+    let fires =
+        |reg: &ControlRegistry, c: &mut Controller, group: &str, key: &str, s: u8, n: u8| {
+            let ctl = reg.get(group, key).unwrap();
+            let before = ctl.version();
+            c.receive(&[s, n, 0x7F]);
+            c.receive(&[s, n, 0x00]);
+            ctl.version() != before
+        };
+
+    // Ready: hot cues first, in hot cue mode's dimmed colour.
+    let (reg, mut c) = load("Reloop Ready.midi.xml");
+    let out = c.take_output();
+    assert!(out.contains(&vec![0x94, 0x14, 48]), "{out:?}");
+    settle(&mut c, 50);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel1]",
+        "hotcue_1_activate",
+        0x94,
+        0x14
+    ));
+    // AUTO LOOP: pad 3 is a 1-beat loop, on deck 1 only.
+    press(&mut c, 0x94, 0x05);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel1]",
+        "beatloop_1_toggle",
+        0x94,
+        0x16
+    ));
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel2]",
+        "hotcue_3_activate",
+        0x95,
+        0x16
+    ));
+    // ROLL: pad 1 rolls 1/16 of a beat while held.
+    press(&mut c, 0x94, 0x08);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel1]",
+        "beatlooproll_0.0625_activate",
+        0x94,
+        0x14
+    ));
+    press(&mut c, 0x90, 0x00);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+
+    // Buddy: STEMS makes FILTER the drums' level.
+    let (reg, mut c) = load("Reloop Buddy.midi.xml");
+    settle(&mut c, 50);
+    press(&mut c, 0x90, 0x23);
+    c.receive(&[0xB0, 0x1A, 0x00]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "volume"), 0.0);
+    press(&mut c, 0x90, 0x23);
+    c.receive(&[0xB0, 0x1A, 0x7F]);
+    assert_eq!(get(&reg, "[Channel1_Stem1]", "volume"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+
+    // Mixon 8 Pro: PITCH PLAY (note 0x0F) makes the pads play the hot cue
+    // at other keys; STEMS (note 0x24) mutes stems.
+    let (reg, mut c) = load("Reloop Mixon 8 Pro.midi.xml");
+    settle(&mut c, 50);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel3]",
+        "hotcue_2_activate",
+        0x96,
+        0x15
+    ));
+    press(&mut c, 0x96, 0x0F);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel3]",
+        "keyboard_2_activate",
+        0x96,
+        0x15
+    ));
+    press(&mut c, 0x96, 0x24);
+    press(&mut c, 0x96, 0x15);
+    assert_eq!(get(&reg, "[Channel3_Stem2]", "mute"), 1.0);
+    // The left FX section works on deck 1 or 3, whichever was used last.
+    c.receive(&[0xB0, 0x1C, 0x40]);
+    c.receive(&[0xB8, 0x00, 0x00]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit1]", "mix"), 0.0);
+    c.receive(&[0xB2, 0x1C, 0x40]);
+    c.receive(&[0xB8, 0x00, 0x00]);
+    assert_eq!(get(&reg, "[EffectRack1_EffectUnit3]", "mix"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+    c.shutdown();
+
+    // Mixon 4: each pad mode sends its own notes.
+    let (reg, mut c) = load("Reloop Mixon 4.midi.xml");
+    settle(&mut c, 50);
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel2]",
+        "hotcue_1_activate",
+        0x91,
+        0x00
+    ));
+    assert!(fires(
+        &reg,
+        &mut c,
+        "[Channel2]",
+        "keyboard_1_activate",
+        0x91,
+        0x30
+    ));
     assert_eq!(c.errors(), Vec::<String>::new());
     c.shutdown();
 }

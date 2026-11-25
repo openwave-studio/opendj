@@ -28,7 +28,7 @@
 //    padChannel      the pads' first MIDI channel, 0-based (deck 1).
 //    colorFx         {CC or note: Color FX number} for the SOUND COLOR FX
 //                    buttons (1 Filter, 2 Space, 3 Dub Echo, 4 Noise,
-//                    5 Crush); colorFxStatus is their status byte.
+//                    5 Crush, 6 Pitch); colorFxStatus is their status byte.
 //    beatFxEffects   {CC or note: loaded_effect} for the Beat FX selector.
 //    beatFxStatus    the status byte of the BEAT FX ON/OFF light.
 //    beatFxOnNumber  the CC or note of the BEAT FX ON/OFF light.

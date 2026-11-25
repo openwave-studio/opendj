@@ -1,0 +1,749 @@
+{
+  "file": "Pioneer-DJM-S11.midi.xml",
+  "parts": {
+    "back": {
+      "SHIFT": [
+        "Next panel"
+      ],
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "back-2": {
+      "SHIFT": [
+        "Next panel"
+      ],
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "FX1-1 held": [
+        "FX 1 Effect 1 previous"
+      ],
+      "FX1-2 held": [
+        "FX 1 Effect 2 previous"
+      ],
+      "FX1-3 held": [
+        "FX 1 Effect 3 previous"
+      ],
+      "FX2-1 held": [
+        "FX 2 Effect 1 previous"
+      ],
+      "FX2-2 held": [
+        "FX 2 Effect 2 previous"
+      ],
+      "FX2-3 held": [
+        "FX 2 Effect 3 previous"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "fx1-1": {
+      "SHIFT": [
+        "FX 1 Effect 1 knob"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "fx1-1-on": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "fx1-2": {
+      "SHIFT": [
+        "FX 1 Effect 2 knob"
+      ],
+      "normal": [
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "fx1-2-on": {
+      "normal": [
+        "FX 1 Effect 2 on"
+      ]
+    },
+    "fx1-3": {
+      "SHIFT": [
+        "FX 1 Effect 3 knob"
+      ],
+      "normal": [
+        "FX 1 Effect 3 knob"
+      ]
+    },
+    "fx1-3-on": {
+      "normal": [
+        "FX 1 Effect 3 on"
+      ]
+    },
+    "fx2-1": {
+      "SHIFT": [
+        "FX 2 Effect 1 knob"
+      ],
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "fx2-2": {
+      "SHIFT": [
+        "FX 2 Effect 2 knob"
+      ],
+      "normal": [
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "fx2-3": {
+      "SHIFT": [
+        "FX 2 Effect 3 knob"
+      ],
+      "normal": [
+        "FX 2 Effect 3 knob"
+      ]
+    },
+    "l-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fx-lever": {
+      "FX1-1": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 1 on"
+      ],
+      "FX1-2": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 2 on"
+      ],
+      "FX1-3": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 3 on"
+      ],
+      "FX2-1": [
+        "FX 2 Assign to Deck 1",
+        "FX 2 Effect 1 on"
+      ],
+      "FX2-2": [
+        "FX 2 Assign to Deck 1",
+        "FX 2 Effect 2 on"
+      ],
+      "FX2-3": [
+        "FX 2 Assign to Deck 1",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "l-load": {
+      "Deck 3": [
+        "Load selected track"
+      ],
+      "SHIFT": [
+        "Add to Automix"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-loop-double": {
+      "SHIFT": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-loop-half": {
+      "SHIFT": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-loop4": {
+      "Deck 3": [
+        "Loop 4 beats"
+      ],
+      "Deck 3, SHIFT": [
+        "Reloop / exit"
+      ],
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "l-master-tempo": {
+      "Deck 3": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-mode-hot-cue": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "l-mode-roll": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "l-mode-sampler": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "l-mode-saved-loop": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "l-pad1": {
+      "HOT CUE": [
+        "Hot cue 1"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "ROLL": [
+        "Loop roll 1/16 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/16 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "l-pad2": {
+      "HOT CUE": [
+        "Hot cue 2"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "ROLL": [
+        "Loop roll 1/8 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/8 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "l-pad3": {
+      "HOT CUE": [
+        "Hot cue 3"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "ROLL": [
+        "Loop roll 1/4 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/4 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "l-pad4": {
+      "HOT CUE": [
+        "Hot cue 4"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "ROLL": [
+        "Loop roll 1/2 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/2 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "l-pad5": {
+      "HOT CUE": [
+        "Hot cue 5"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "ROLL": [
+        "Loop roll 1 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "l-pad6": {
+      "HOT CUE": [
+        "Hot cue 6"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "ROLL": [
+        "Loop roll 2 beats"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 2 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "l-pad7": {
+      "HOT CUE": [
+        "Hot cue 7"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "ROLL": [
+        "Loop roll 4 beats"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 4 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "l-pad8": {
+      "HOT CUE": [
+        "Hot cue 8"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "ROLL": [
+        "Loop roll 8 beats"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 8 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    },
+    "l-pitch-bend": {
+      "Deck 3": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-pitch-bend-2": {
+      "Deck 3": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-play-pause": {
+      "Deck 3": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "Deck 3": [
+        "Sync"
+      ],
+      "Deck 3, SHIFT": [
+        "Sync leader"
+      ],
+      "SHIFT": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fx-lever": {
+      "FX1-1": [
+        "FX 1 Assign to Deck 2",
+        "FX 1 Effect 1 on"
+      ],
+      "FX1-2": [
+        "FX 1 Assign to Deck 2",
+        "FX 1 Effect 2 on"
+      ],
+      "FX1-3": [
+        "FX 1 Assign to Deck 2",
+        "FX 1 Effect 3 on"
+      ],
+      "FX2-1": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 1 on"
+      ],
+      "FX2-2": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 2 on"
+      ],
+      "FX2-3": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 3 on"
+      ]
+    },
+    "r-load": {
+      "Deck 4": [
+        "Load selected track"
+      ],
+      "SHIFT": [
+        "Add to Automix"
+      ],
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-loop-double": {
+      "SHIFT": [
+        "Loop out"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-loop-half": {
+      "SHIFT": [
+        "Loop in"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-loop4": {
+      "Deck 4": [
+        "Loop 4 beats"
+      ],
+      "Deck 4, SHIFT": [
+        "Reloop / exit"
+      ],
+      "SHIFT": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-master-tempo": {
+      "Deck 4": [
+        "Key lock"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-mode-hot-cue": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "r-mode-roll": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "r-mode-sampler": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "r-mode-saved-loop": {
+      "SHIFT": [
+        "pad mode"
+      ],
+      "normal": [
+        "pad mode"
+      ]
+    },
+    "r-pad1": {
+      "HOT CUE": [
+        "Hot cue 1"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "ROLL": [
+        "Loop roll 1/16 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/16 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 1 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 1 Stop at cue"
+      ]
+    },
+    "r-pad2": {
+      "HOT CUE": [
+        "Hot cue 2"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "ROLL": [
+        "Loop roll 1/8 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/8 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 2 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 2 Stop at cue"
+      ]
+    },
+    "r-pad3": {
+      "HOT CUE": [
+        "Hot cue 3"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "ROLL": [
+        "Loop roll 1/4 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/4 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 3 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 3 Stop at cue"
+      ]
+    },
+    "r-pad4": {
+      "HOT CUE": [
+        "Hot cue 4"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "ROLL": [
+        "Loop roll 1/2 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1/2 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 4 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 4 Stop at cue"
+      ]
+    },
+    "r-pad5": {
+      "HOT CUE": [
+        "Hot cue 5"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "ROLL": [
+        "Loop roll 1 beat"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 1 beat"
+      ],
+      "SAMPLER": [
+        "Sampler 5 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 5 Stop at cue"
+      ]
+    },
+    "r-pad6": {
+      "HOT CUE": [
+        "Hot cue 6"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "ROLL": [
+        "Loop roll 2 beats"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 2 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 6 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 6 Stop at cue"
+      ]
+    },
+    "r-pad7": {
+      "HOT CUE": [
+        "Hot cue 7"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "ROLL": [
+        "Loop roll 4 beats"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 4 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 7 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 7 Stop at cue"
+      ]
+    },
+    "r-pad8": {
+      "HOT CUE": [
+        "Hot cue 8"
+      ],
+      "HOT CUE, SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "ROLL": [
+        "Loop roll 8 beats"
+      ],
+      "ROLL, SHIFT": [
+        "Loop roll 8 beats"
+      ],
+      "SAMPLER": [
+        "Sampler 8 Play from start"
+      ],
+      "SAMPLER, SHIFT": [
+        "Sampler 8 Stop at cue"
+      ]
+    },
+    "r-pitch-bend": {
+      "Deck 4": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-pitch-bend-2": {
+      "Deck 4": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-play-pause": {
+      "Deck 4": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "Deck 4": [
+        "Sync"
+      ],
+      "Deck 4, SHIFT": [
+        "Sync leader"
+      ],
+      "SHIFT": [
+        "Sync leader"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "sampler-volume": {
+      "normal": [
+        "Sampler 1 Channel fader",
+        "Sampler 2 Channel fader",
+        "Sampler 3 Channel fader",
+        "Sampler 4 Channel fader",
+        "Sampler 5 Channel fader",
+        "Sampler 6 Channel fader",
+        "Sampler 7 Channel fader",
+        "Sampler 8 Channel fader",
+        "Sampler 9 Channel fader",
+        "Sampler 10 Channel fader",
+        "Sampler 11 Channel fader",
+        "Sampler 12 Channel fader",
+        "Sampler 13 Channel fader",
+        "Sampler 14 Channel fader",
+        "Sampler 15 Channel fader",
+        "Sampler 16 Channel fader"
+      ]
+    }
+  }
+}

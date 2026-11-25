@@ -1,0 +1,680 @@
+{
+  "file": "Denon-SC-Live-4.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "Turn": [
+        "Scroll list"
+      ]
+    },
+    "ch1cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch1fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch1hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch1level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch1low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch1mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch1sweep": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch1thru": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch2cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch2fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch2hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch2level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch2low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch2mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch2sweep": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch2thru": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch3cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch3fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch3hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch3level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch3low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch3mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch3sweep": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch3thru": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "ch4cue": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "ch4fader": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "ch4hi": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "ch4level": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "ch4low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "ch4mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "ch4sweep": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "ch4thru": {
+      "normal": [
+        "Crossfader side"
+      ]
+    },
+    "cuemix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "fwd": {
+      "normal": [
+        "Next panel"
+      ]
+    },
+    "fxamount": {
+      "normal": [
+        "FX 1 Wet / dry",
+        "FX 2 Wet / dry"
+      ]
+    },
+    "fxassign": {
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Assign to Deck 2",
+        "FX 1 Assign to Deck 3",
+        "FX 1 Assign to Deck 4",
+        "FX 1 Assign to Master",
+        "FX 2 Assign to Deck 1",
+        "FX 2 Assign to Deck 2",
+        "FX 2 Assign to Deck 3",
+        "FX 2 Assign to Deck 4",
+        "FX 2 Assign to Master"
+      ]
+    },
+    "fxon": {
+      "normal": [
+        "FX 1 Effect 1 on"
+      ]
+    },
+    "fxselect": {
+      "Press": [
+        "Select push input"
+      ],
+      "Turn": [
+        "FX 1 Effect 2 choose"
+      ]
+    },
+    "fxtime": {
+      "Press": [
+        "Time push input"
+      ],
+      "Turn": [
+        "FX 1 Effect 2 parameter 1"
+      ]
+    },
+    "lautoloop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "Turn (size; SHIFT moves)": [
+        "Loop size 2"
+      ]
+    },
+    "lbend+": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "lbend-": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "lcensor": {
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "lcue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "ldeck": {
+      "normal": [
+        "Left"
+      ]
+    },
+    "lhotcue": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "lighting": {
+      "normal": [
+        "Lighting button"
+      ]
+    },
+    "lin": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "ljog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Input wheel msb"
+      ],
+      "Turn (fine)": [
+        "Jog nudge"
+      ]
+    },
+    "ljumpb": {
+      "normal": [
+        "Beat jump back"
+      ]
+    },
+    "ljumpf": {
+      "normal": [
+        "Beat jump forward"
+      ]
+    },
+    "lkeysync": {
+      "Key lock": [
+        "Key lock"
+      ]
+    },
+    "lloop": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "load1": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "load2": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "lout": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "lpad1": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad2": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad3": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad4": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad5": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad6": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad7": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lpad8": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "lparl": {
+      "normal": [
+        "Param left button"
+      ]
+    },
+    "lparr": {
+      "normal": [
+        "Param right button"
+      ]
+    },
+    "lpitch": {
+      "Fine": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "lplay": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "lroll": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "lshift": {
+      "normal": [
+        "Shift state"
+      ]
+    },
+    "lskipb": {
+      "normal": [
+        "Folders or tracks",
+        "Scroll list",
+        "Load selected track"
+      ]
+    },
+    "lskipf": {
+      "normal": [
+        "Folders or tracks",
+        "Scroll list",
+        "Load selected track"
+      ]
+    },
+    "lslicer": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "lslip": {
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "lsync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "lvinyl": {
+      "normal": [
+        "Vinyl button"
+      ]
+    },
+    "mainvol": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "menu": {
+      "normal": [
+        "Show effectrack"
+      ]
+    },
+    "mic2aux": {
+      "normal": [
+        "Input select"
+      ]
+    },
+    "rautoloop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "Turn (size; SHIFT moves)": [
+        "Loop size 2"
+      ]
+    },
+    "rbend+": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "rbend-": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "rcensor": {
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "rcue": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "rdeck": {
+      "normal": [
+        "Right"
+      ]
+    },
+    "rhotcue": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "rin": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "rjog": {
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Turn": [
+        "Input wheel msb"
+      ],
+      "Turn (fine)": [
+        "Jog nudge"
+      ]
+    },
+    "rjumpb": {
+      "normal": [
+        "Beat jump back"
+      ]
+    },
+    "rjumpf": {
+      "normal": [
+        "Beat jump forward"
+      ]
+    },
+    "rkeysync": {
+      "Key lock": [
+        "Key lock"
+      ]
+    },
+    "rloop": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "rout": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "rpad1": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad2": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad3": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad4": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad5": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad6": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad7": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rpad8": {
+      "normal": [
+        "Performance pad"
+      ]
+    },
+    "rparl": {
+      "normal": [
+        "Param left button"
+      ]
+    },
+    "rparr": {
+      "normal": [
+        "Param right button"
+      ]
+    },
+    "rpitch": {
+      "Fine": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "rplay": {
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "rroll": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "rshift": {
+      "normal": [
+        "Shift state"
+      ]
+    },
+    "rskipb": {
+      "normal": [
+        "Folders or tracks",
+        "Scroll list",
+        "Load selected track"
+      ]
+    },
+    "rskipf": {
+      "normal": [
+        "Folders or tracks",
+        "Scroll list",
+        "Load selected track"
+      ]
+    },
+    "rslicer": {
+      "normal": [
+        "Pad mode button pressed"
+      ]
+    },
+    "rslip": {
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "rsync": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "rvinyl": {
+      "normal": [
+        "Vinyl button"
+      ]
+    },
+    "secho": {
+      "normal": [
+        "Filter on",
+        "Loaded chain preset"
+      ]
+    },
+    "sfilter": {
+      "normal": [
+        "Filter on",
+        "Loaded chain preset"
+      ]
+    },
+    "snoise": {
+      "normal": [
+        "Filter on",
+        "Loaded chain preset"
+      ]
+    },
+    "split": {
+      "normal": [
+        "Split cue"
+      ]
+    },
+    "swash": {
+      "normal": [
+        "Filter on",
+        "Loaded chain preset"
+      ]
+    },
+    "talk1": {
+      "normal": [
+        "Mic 1 Talk over"
+      ]
+    },
+    "talk2": {
+      "normal": [
+        "Button input"
+      ]
+    },
+    "view": {
+      "normal": [
+        "Big browser"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

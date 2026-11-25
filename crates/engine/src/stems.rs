@@ -16,7 +16,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex, Once, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 
 use crate::background::{self, Task};
 
@@ -93,6 +93,8 @@ pub struct Stems {
     /// as the original minus what is turned down (see [`Stems::mix`]).
     separated: bool,
     chunks: Box<[OnceLock<Box<[StemFrame]>>]>,
+    /// How many frames there are expected to be.
+    frames: usize,
     decoded: AtomicUsize,
     complete: AtomicBool,
     /// Better stems that replace these once they are there.
@@ -109,6 +111,7 @@ impl Stems {
             chunks: (0..expected_frames / CHUNK + 2)
                 .map(|_| OnceLock::new())
                 .collect(),
+            frames: expected_frames,
             decoded: AtomicUsize::new(0),
             complete: AtomicBool::new(false),
             upgrade: OnceLock::new(),
@@ -153,12 +156,54 @@ impl Stems {
         }
     }
 
-    /// Sets the better stems that replace these once they are complete.
-    /// False if there already are some, or they don't fit.
+    /// Sets the better stems that replace these: each stretch of them
+    /// plays as soon as it is there (see [`Stems::mix_blend`]), and they
+    /// are [`Stems::current`] once complete. False if there already are
+    /// some, or they don't fit.
     pub fn set_upgrade(&self, stems: Arc<Stems>) -> bool {
         stems.sample_rate == self.sample_rate
             && stems.count() == self.count()
             && self.upgrade.set(stems).is_ok()
+    }
+
+    /// The better stems set with [`Stems::set_upgrade`], however far along.
+    pub fn upgrade(&self) -> Option<&Arc<Stems>> {
+        self.upgrade.get()
+    }
+
+    /// Fills the chunks still missing from `from`, which are the same
+    /// stems complete (decoded from the cache once a separation that was
+    /// filling these is done), and marks these complete.
+    pub(crate) fn fill_missing(&self, from: &Stems) {
+        if from.sample_rate != self.sample_rate || from.count() != self.count() {
+            return;
+        }
+        for (k, chunk) in from.chunks.iter().enumerate() {
+            if let Some(c) = chunk.get() {
+                if self.chunks.get(k).is_some_and(|s| s.get().is_none()) {
+                    self.fill(k, c.clone());
+                }
+            }
+        }
+        self.finish();
+    }
+
+    /// Whether frame `i` is there.
+    #[inline]
+    pub(crate) fn has(&self, i: usize) -> bool {
+        self.frame_at(i).is_some()
+    }
+
+    /// Whether the frames from `margin` before `i` to `margin` after are
+    /// there (the end of the track counts as there).
+    pub(crate) fn has_around(&self, i: usize, margin: usize) -> bool {
+        if self.is_complete() {
+            return true;
+        }
+        // Past the end of the track there is nothing to wait for.
+        let to = (i + margin).min(self.frames.saturating_sub(1));
+        let from = i.saturating_sub(margin).min(to);
+        (from / CHUNK..=to / CHUNK).all(|k| self.chunks.get(k).is_some_and(|c| c.get().is_some()))
     }
 
     /// Stems that are already decoded: `frames[i][k]` is stem k's frame i.
@@ -294,16 +339,14 @@ impl Stems {
         gains: &[f32; MAX_STEMS],
         original: impl FnOnce() -> [f32; 2],
     ) -> [f32; 2] {
-        match self.ready_upgrade() {
-            Some(up) => up.mix_blend(None, 0.0, i, gains, original),
-            None => self.mix_blend(None, 0.0, i, gains, original),
-        }
+        self.mix_blend(self.ready_upgrade(), 1.0, i, gains, original)
     }
 
-    /// The better stems that take over from these, once they are complete.
+    /// The better stems that take over from these where they are there,
+    /// once any are.
     #[inline]
     pub(crate) fn ready_upgrade(&self) -> Option<&Stems> {
-        self.upgrade.get().filter(|u| u.is_complete()).map(|u| &**u)
+        self.upgrade.get().filter(|u| u.decoded() > 0).map(|u| &**u)
     }
 
     #[inline]
@@ -323,7 +366,8 @@ impl Stems {
     /// `up`), so the switch to high-quality stems is a short crossfade
     /// rather than a click where a stem is muted. Both separated (as they
     /// always are when one upgrades the other), the blend is of the stems
-    /// themselves, under one read of the original.
+    /// themselves, under one read of the original. Where `up` isn't there
+    /// yet, these play.
     #[inline]
     pub(crate) fn mix_blend(
         &self,
@@ -334,8 +378,8 @@ impl Stems {
         original: impl FnOnce() -> [f32; 2],
     ) -> [f32; 2] {
         let (up, w) = match up {
-            Some(u) if w >= 1.0 => return u.mix_blend(None, 0.0, i, gains, original),
-            Some(u) if w > 0.0 => (Some(u), w),
+            Some(u) if w >= 1.0 && u.has(i) => return u.mix_blend(None, 0.0, i, gains, original),
+            Some(u) if w > 0.0 => (Some(u), w.min(1.0)),
             _ => (None, 0.0),
         };
         if self.separated {
@@ -408,13 +452,13 @@ impl Stems {
             }
             [out[0] / 32_768.0, out[1] / 32_768.0]
         };
-        match up {
+        match up.filter(|u| w > 0.0 && u.has(i)) {
             Some(u) if w >= 1.0 => sum(u.frame_at(i)),
-            Some(u) if w > 0.0 => {
+            Some(u) => {
                 let (a, b) = (sum(self.frame_at(i)), sum(u.frame_at(i)));
                 [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w]
             }
-            _ => sum(self.frame_at(i)),
+            None => sum(self.frame_at(i)),
         }
     }
 
@@ -532,7 +576,9 @@ impl Input {
 pub enum StemSource {
     /// An NI STEM file: audio streams 1 to 4 of the file itself.
     NiStem(PathBuf),
-    /// One file per stem, in [`default_info`]'s order.
+    /// One file per stem, in [`default_info`]'s order. The Other stem's
+    /// may be missing: it is then what the others leave of the track (see
+    /// [`Decode::with_original`]).
     Files(Vec<PathBuf>),
 }
 
@@ -544,8 +590,11 @@ pub fn find(path: &Path) -> Option<StemSource> {
     }
     let dir = crate::cache::stems_dir(path)?;
     let files = separated_files(&dir);
-    (files.iter().all(|f| f.is_file()) && !is_stale(&dir, &files[0]))
-        .then_some(StemSource::Files(files))
+    let kept = files
+        .iter()
+        .enumerate()
+        .all(|(k, f)| k == OTHER || f.is_file());
+    (kept && !is_stale(&dir, &files[0])).then_some(StemSource::Files(files))
 }
 
 /// The file that marks a separation as lined up with its track at any
@@ -588,7 +637,12 @@ pub fn is_ni_stem(path: &Path) -> bool {
     name.ends_with(".stem.mp4") || name.ends_with(".stem.m4a")
 }
 
-/// The four files a separation into `dir` leaves.
+/// Where the Other stem is in [`separated_files`]. Separations from v1.0
+/// don't keep it: it is the track less the other three, so leaving it out
+/// saves a quarter of the space.
+pub(crate) const OTHER: usize = 2;
+
+/// The four files a separation into `dir` leaves (or three, see [`OTHER`]).
 fn separated_files(dir: &Path) -> Vec<PathBuf> {
     ["drums", "bass", "other", "vocals"]
         .iter()
@@ -600,6 +654,12 @@ fn separated_files(dir: &Path) -> Vec<PathBuf> {
 pub struct Decode {
     stems: Arc<Stems>,
     inputs: Vec<Input>,
+    /// The stem each input is (by index into a frame).
+    places: Vec<usize>,
+    /// Whether the Other stem is made from the track (see
+    /// [`Decode::with_original`]), with the track once given.
+    derive: bool,
+    original: Option<Arc<crate::track::Audio>>,
     /// Splits the first stem, drums, into kick and hi-hats (see
     /// [`split_drums`]).
     split: Option<crate::dsp::Lr4>,
@@ -640,18 +700,25 @@ impl Decode {
             StemSource::Files(files) => {
                 let inputs = files
                     .iter()
-                    .map(|f| Input::open(f, 0))
+                    .enumerate()
+                    .filter(|(k, f)| *k != OTHER || f.is_file())
+                    .map(|(_, f)| Input::open(f, 0))
                     .collect::<Result<Vec<_>, _>>()?;
                 (inputs, default_info())
             }
         };
+        let derive = matches!(source, StemSource::Files(f) if f.len() == FILE_STEMS)
+            && inputs.len() == FILE_STEMS - 1;
+        let places = (0..FILE_STEMS)
+            .filter(|&k| !(derive && k == OTHER))
+            .collect();
         let rate = inputs[0].rate;
         if rate == 0 || inputs.iter().any(|i| i.rate != rate) {
             return Err("stems have different or unknown sample rates".into());
         }
         let expected = inputs.iter().filter_map(|i| i.frames).max().unwrap_or(0) as usize;
         let mut info = info;
-        info.truncate(inputs.len());
+        info.truncate(inputs.len() + usize::from(derive));
         let split =
             split_drums(&mut info).then(|| crate::dsp::Lr4::lowpass(rate as f64, KICK_SPLIT_HZ));
         let mut stems = Stems::new(info, rate, expected.max(CHUNK));
@@ -659,8 +726,19 @@ impl Decode {
         Ok(Decode {
             stems: Arc::new(stems),
             inputs,
+            places,
+            derive,
+            original: None,
             split,
         })
+    }
+
+    /// The track the stems are of, which a separation that didn't keep
+    /// its Other stem ([`OTHER`]) needs: Other is then the track less the
+    /// other stems, so all of them still add up to it.
+    pub fn with_original(mut self, audio: Arc<crate::track::Audio>) -> Self {
+        self.original = Some(audio);
+        self
     }
 
     pub fn stems(&self) -> &Arc<Stems> {
@@ -670,7 +748,11 @@ impl Decode {
     /// Decodes to the end; stops early (with an error) if `keep_going`
     /// returns false.
     pub fn run(mut self, mut keep_going: impl FnMut() -> bool) -> Result<Arc<Stems>, String> {
+        if self.derive && self.original.is_none() {
+            return Err("these stems need their track".into());
+        }
         let stems = self.stems.clone();
+        let mut at = 0usize;
         let mut buf: Vec<StemFrame> = Vec::with_capacity(CHUNK);
         let mut chunk = 0;
         let mut publish = |buf: &mut Vec<StemFrame>| {
@@ -703,9 +785,27 @@ impl Decode {
                     break;
                 }
                 let mut frame = [[0i16; 2]; MAX_STEMS];
-                for (k, i) in self.inputs.iter_mut().enumerate() {
-                    frame[k] = i.queue.pop_front().unwrap_or_default();
+                for (k, i) in self.places.iter().zip(self.inputs.iter_mut()) {
+                    frame[*k] = i.queue.pop_front().unwrap_or_default();
                 }
+                if let Some(track) = self.original.as_ref().filter(|_| self.derive) {
+                    // The track may still be decoding as it loads.
+                    while !track.is_complete() && track.decoded() <= at {
+                        if !keep_going() {
+                            return Err("stem decoding cancelled".into());
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(2));
+                    }
+                    let orig = track.frame(at);
+                    frame[OTHER] = std::array::from_fn(|c| {
+                        let rest: f32 = (0..FILE_STEMS)
+                            .filter(|&k| k != OTHER)
+                            .map(|k| f32::from(frame[k][c]) / 32_768.0)
+                            .sum();
+                        to_i16(orig[c] - rest)
+                    });
+                }
+                at += 1;
                 if let Some(low) = &mut self.split {
                     let drums = frame[0].map(|v| v as f32 / 32_768.0);
                     let (kick, hats) = split(low, drums);
@@ -852,8 +952,13 @@ fn forget_job(path: &Path) {
 
 type Done = Box<dyn FnOnce(Result<StemSource, String>) + Send>;
 
+/// The track's audio on the decks that have it, each with its play
+/// position (a frame), the deck to start from first; asked as its
+/// separation starts (see [`crate::separation::separate_hq_watched`]).
+pub type Live = Box<dyn Fn() -> Vec<(Arc<crate::track::Audio>, usize)> + Send>;
+
 /// Separations waiting, in the order they will run.
-static QUEUE: Mutex<VecDeque<(PathBuf, Done)>> = Mutex::new(VecDeque::new());
+static QUEUE: Mutex<VecDeque<(PathBuf, Live, Done)>> = Mutex::new(VecDeque::new());
 static ADDED: Condvar = Condvar::new();
 /// The separation running and how far it is (0 to 1).
 static RUNNING: Mutex<Option<(PathBuf, f32)>> = Mutex::new(None);
@@ -864,24 +969,21 @@ static STOPS: AtomicU64 = AtomicU64::new(0);
 /// Separates the file at `path` into high-quality stems in the background
 /// (see [`crate::separation::separate_hq`]), leaving FLAC files in the
 /// cache where [`find`] looks. One runs at a time (each takes the GPU or
-/// every core); the rest wait their turn. `done` is called with the result
-/// when it finishes, unless it was stopped.
-pub fn separate(path: &Path, done: impl FnOnce(Result<StemSource, String>) + Send + 'static) {
+/// every core); the rest wait their turn. A deck with the track (`live`)
+/// gets its stems a stretch at a time from where it plays. `done` is
+/// called with the result when it finishes, unless it was stopped.
+pub fn separate(
+    path: &Path,
+    live: impl Fn() -> Vec<(Arc<crate::track::Audio>, usize)> + Send + 'static,
+    done: impl FnOnce(Result<StemSource, String>) + Send + 'static,
+) {
     if matches!(
         separation(path),
         Some(Separation::Running | Separation::Waiting)
     ) {
         return;
     }
-    static WORKER: Once = Once::new();
-    let mut started = Ok(());
-    WORKER.call_once(|| {
-        started = std::thread::Builder::new()
-            .name("stem-separation".into())
-            .spawn(separate_queued)
-            .map(|_| ());
-    });
-    if let Err(e) = started {
+    if let Err(e) = start_worker() {
         set_job(path, Separation::Failed(e.to_string()));
         return;
     }
@@ -889,7 +991,38 @@ pub fn separate(path: &Path, done: impl FnOnce(Result<StemSource, String>) + Sen
     QUEUE
         .lock()
         .unwrap()
-        .push_back((path.to_owned(), Box::new(done)));
+        .push_back((path.to_owned(), Box::new(live), Box::new(done)));
+    ADDED.notify_one();
+}
+
+/// Starts the separation thread, once.
+fn start_worker() -> Result<(), String> {
+    static WORKER: OnceLock<Result<(), String>> = OnceLock::new();
+    WORKER
+        .get_or_init(|| {
+            std::thread::Builder::new()
+                .name("stem-separation".into())
+                .spawn(separate_queued)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        })
+        .clone()
+}
+
+/// Set by [`warm_up_when_idle`] until the separation thread has done it.
+static WARM_UP: AtomicBool = AtomicBool::new(false);
+
+/// Gets HTDemucs ready on the GPU ([`crate::separation::warm_up`]) on the
+/// separation thread, once nothing is waiting there and high-quality
+/// stems aren't paused, so the first stems a DJ asks for start seconds
+/// sooner. For a while after the app starts, when the model has been
+/// downloaded before.
+pub fn warm_up_when_idle() {
+    if crate::separation::model(crate::separation::HTDEMUCS).is_none() || start_worker().is_err() {
+        return;
+    }
+    WARM_UP.store(true, Ordering::Relaxed);
+    let _q = QUEUE.lock().unwrap_or_else(|e| e.into_inner());
     ADDED.notify_one();
 }
 
@@ -897,11 +1030,17 @@ pub fn separate(path: &Path, done: impl FnOnce(Result<StemSource, String>) + Sen
 /// model's chunks while the DJ has HQ stems paused.
 fn separate_queued() {
     loop {
-        let (path, done) = {
+        let (path, live, done) = {
             let mut q = QUEUE.lock().unwrap_or_else(|e| e.into_inner());
             loop {
                 if let Some(next) = q.pop_front() {
                     break next;
+                }
+                if !background::held(Task::Stems) && WARM_UP.swap(false, Ordering::Relaxed) {
+                    drop(q);
+                    crate::separation::warm_up();
+                    q = QUEUE.lock().unwrap_or_else(|e| e.into_inner());
+                    continue;
                 }
                 q = ADDED.wait(q).unwrap_or_else(|e| e.into_inner());
             }
@@ -920,7 +1059,10 @@ fn separate_queued() {
             }
             background::wait_while_held(Task::Stems, keep_going);
         };
-        let result = crate::separation::separate_hq_watched(&path, &mut progress, &keep_going);
+        let live = live();
+        let result =
+            crate::separation::separate_hq_watched(&path, &live, &mut progress, &keep_going);
+        drop(live);
         *RUNNING.lock().unwrap() = None;
         if !keep_going() {
             forget_job(&path);
@@ -948,14 +1090,14 @@ pub fn separations_waiting() -> Vec<PathBuf> {
         .lock()
         .unwrap()
         .iter()
-        .map(|(p, _)| p.clone())
+        .map(|(p, _, _)| p.clone())
         .collect()
 }
 
 /// Moves a waiting file to the front of the queue.
 pub fn separate_next(path: &Path) {
     let mut q = QUEUE.lock().unwrap();
-    if let Some(at) = q.iter().position(|(p, _)| p == path) {
+    if let Some(at) = q.iter().position(|(p, _, _)| p == path) {
         if let Some(job) = q.remove(at) {
             q.push_front(job);
         }
@@ -965,7 +1107,7 @@ pub fn separate_next(path: &Path) {
 /// Stops the separation running and drops those waiting.
 pub fn stop_separations() {
     STOPS.fetch_add(1, Ordering::Relaxed);
-    let dropped: Vec<PathBuf> = QUEUE.lock().unwrap().drain(..).map(|(p, _)| p).collect();
+    let dropped: Vec<PathBuf> = QUEUE.lock().unwrap().drain(..).map(|(p, _, _)| p).collect();
     for p in dropped {
         forget_job(&p);
     }
@@ -1327,6 +1469,78 @@ mod tests {
         mark_aligned(&dir);
         assert!(!is_stale(&dir, &file));
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn other_is_what_the_kept_stems_leave_of_the_track() {
+        let dir = std::env::temp_dir().join(format!("opendj-three-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // Drums 0.1, bass 0.2 and vocals 0.4 (left; negative right); no
+        // Other file. The track is 0.9 on the left and -0.7 on the right.
+        let files: Vec<PathBuf> = (0..4)
+            .map(|k| {
+                let p = dir.join(format!("{k}.wav"));
+                if k != OTHER {
+                    let v = ([0.1, 0.2, 0.0, 0.4][k] * 32_768.0f32) as i16;
+                    let samples: Vec<i16> = (0..100_000).flat_map(|_| [v, -v]).collect();
+                    write_wav(&p, 44_100, 2, &samples);
+                }
+                p
+            })
+            .collect();
+        let source = StemSource::Files(files);
+        let track = Arc::new(crate::track::Audio::from_frames(
+            44_100,
+            vec![[0.9, -0.7]; 100_000],
+        ));
+        assert!(Decode::open(&source).unwrap().run(|| true).is_err());
+        let d = Decode::open(&source).unwrap().with_original(track);
+        assert_eq!(d.stems().count(), 5);
+        let stems = d.run(|| true).unwrap();
+        // Muting all but Other leaves the track less the rest.
+        let all_but = |i| -stems.mix(i, &[1.0, 1.0, 0.0, 1.0, 1.0], || [0.0; 2])[0];
+        assert!((all_but(20_000) - 0.2).abs() < 1e-3, "{}", all_but(20_000));
+        // All muted: nothing left of the track.
+        let none = stems.mix(20_000, &[0.0; 5], || [0.9, -0.7]);
+        assert!(none[0].abs() < 1e-3 && none[1].abs() < 1e-3, "{none:?}");
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn better_stems_play_where_they_are_there() {
+        let info = default_info();
+        let n = 3 * CHUNK;
+        let layer = |v: i16, chunks: &[usize]| {
+            let s = Arc::new(Stems::separated(info.clone(), 44_100, n, Quality::Fast));
+            for &k in chunks {
+                s.fill(k, vec![[[v; 2]; MAX_STEMS]; CHUNK].into_boxed_slice());
+            }
+            s
+        };
+        let fast = layer(1000, &[0, 1, 2]);
+        fast.finish();
+        let up = layer(2000, &[1]);
+        assert!(fast.set_upgrade(up.clone()));
+        let mut g = [1.0; MAX_STEMS];
+        g[0] = 0.0;
+        let cut = |i: usize| -fast.mix(i, &g, || [0.0; 2])[0] * 32_768.0;
+        // Only the stems made on load at first and last, the better ones
+        // in between.
+        assert!((cut(10) - 1000.0).abs() < 0.5, "{}", cut(10));
+        assert!(
+            (cut(CHUNK + 10) - 2000.0).abs() < 0.5,
+            "{}",
+            cut(CHUNK + 10)
+        );
+        assert!((cut(2 * CHUNK + 10) - 1000.0).abs() < 0.5);
+        assert!(up.has_around(CHUNK + CHUNK / 2, 100));
+        assert!(!up.has_around(CHUNK + 50, 100));
+        assert!(fast.current().quality == Quality::Fast);
+        // Completed from the cache, they are the stems that play.
+        up.fill_missing(&layer(2000, &[0, 1, 2]));
+        assert!(up.is_complete() && up.has_around(0, CHUNK));
+        assert!((cut(10) - 2000.0).abs() < 0.5);
+        assert!(std::ptr::eq(fast.current(), &*up));
     }
 
     #[test]

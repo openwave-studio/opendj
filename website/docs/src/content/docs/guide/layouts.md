@@ -163,49 +163,39 @@ ticked) and **Score**. Pick other columns from the header's menu as
 in any list; In Prep keeps its own set. Load a track and work through it:
 
 - The large waveform shares the zoom of every other layout (see
-  [Waveform zoom](decks.md#waveform-zoom)); **−** and **+** above the hot cues
-  zoom out and in, with the step between them. While the grid is unlocked, dragging the waveform slides the
+  [Waveform zoom](decks.md#waveform-zoom)). While the grid is unlocked, dragging the waveform slides the
   audio under the grid, so you can line the beat lines up with the kicks by
   hand; one drag is one **Undo**. With the grid locked, dragging moves through
   the track as on the other layouts.
-- **Beat grid** has the grid tools from the deck's grid menu: **Bar 1 here**,
-  **Beat here**, **Tap**, **Click** (a metronome on every beat), move the grid
-  earlier or later, tempo **−** and **+**, **½** and **×2**, tempo sections,
-  **Undo** and **Detected** (back to the detected grid). **Lock** keeps the
-  grid from being changed.
-- **CUE** and play, jumps of 1, 4 and 8 bars, a loop, and the deck's
-  headphone cue and level.
-- Eight hot cue pads with their names and times: click an empty pad to set
-  it, a set one to jump there, Shift-click to clear it.
-- The side panel's **Cues** tab lists the track's hot cues, memory cues and
-  saved loops in track order. Type a name, click the dot for the next color,
-  click a time to jump there, or click the number to move the cue to another
-  pad (the cue on that pad takes its place) or make it a memory cue.
-  **+ Memory cue** (or **C**) adds one at the playhead; while a loop plays it
-  saves the loop instead. Outside Prep the tab follows deck 1 or deck 2.
-- The side panel's **Checklist** tab lists what makes the track ready. The
-  app ticks its own lines when the track has them: **Grid checked** (locked
-  or edited), **4 hot cues**, **Genre**, **Rating** and **Cover**; tick one
-  by hand when the track is fine without it. Add your own lines, such as
-  "Vocals checked", in Settings › Collection › Stages (or **Edit checklist
-  lines…** at the bottom of the tab), where you can also turn the app's
-  lines off. Tick a line with a click or **Option+1**–**9**. Below the lines,
-  give the track your own score from 1 to 10; it shows in the Score column
-  and doesn't count towards ready.
-- **Play Ready, next** lights up once every line is ticked (the count is
-  beside it). It works before that too, for a track that is fine as it is.
-  It locks the grid, moves the track to Play Ready and loads
-  the next track In Prep. Cmd-Z (Ctrl-Z) takes the stage change back.
-
-A strip under the waveform lists the quick review keys, with how long this
-track has taken and your average per track sent to Play Ready from Prep.
+- On the left, deck 1's side of the [grid editor](music.md#grid-editor)
+  (Type, Reset, BPM, Downbeat, Anchor and Grid), as in 2-Deck. Point at a
+  button to see what it does and its key.
+- **CUE** and play, beat jumps of 4, 8, 16 and 32 beats either way, a loop,
+  and a thin level fader for the deck at the right.
+- On the right, pads under four tabs:
+  - **Hot Cues**: eight pads with their names and times. Click an empty pad
+    to set it, a set one to jump there, Shift-click to clear it.
+  - **Loops**: the track's saved loops in track order. Set a loop (IN and
+    OUT, or the loop button), then click an empty pad to save it; click a
+    saved one to jump there and play it looping, Shift-click to remove it.
+  - **Automix**: **Mix in** and **Mix out**, where Automix brings the track
+    in and starts mixing out of it. Click one to set it at the play line,
+    click it again to jump there, Shift-click to clear it.
+  - **Memory**: memory cues, markers on no pad that Pioneer players step
+    through (they go to the stick with [USB export](usb-export.md)). Click an
+    empty pad (or press **C**) to add one at the play line, a set one to
+    jump there, Shift-click to remove it.
+- **Enter** (Play Ready, next) locks the grid, moves the track to Play
+  Ready and loads the next track In Prep.
+  Cmd-Z (Ctrl-Z) takes the stage change back.
 
 Keys in Prep: **Enter** Play Ready, next; **Tab** and **Shift-Tab** next and
 previous phrase (8 bars at a time when the track has no phrases); **←** and
-**→** four bars; **Option+1**–**9** tick a checklist line; **1**–**8** set or jump to a hot cue
+**→** four bars; **1**–**8** set or jump to a hot cue
 (Shift clears it); **B** Bar 1 here; **T** tap; **M** the click; **[** and **]**
-move the grid; **−** and **=** tempo; **L** lock; **C** memory cue. Space plays and pauses, as
-everywhere.
+move the grid; **−** and **=** tempo; **L** lock; **C** or **Shift+T** memory cue. As in
+rekordbox, **Z** plays and pauses, **A** is CUE, and **D**, **F** and **G** set the
+loop in and out and turn it on and off. Space plays and pauses, as everywhere.
 
 ## Crossfader assignment
 
