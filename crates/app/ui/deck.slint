@@ -6533,10 +6533,7 @@ component NoteFxTile inherits Rectangle {
                 }
             }
         }
-        Rectangle {
-            vertical-stretch: 1;
-            @children
-        }
+        @children
     }
 }
 
@@ -6615,8 +6612,7 @@ component NoteFxRow inherits HorizontalLayout {
         toggled => { Controls.set-value(scale-mode-index, scale-mode == 0 ? 1 : 0); }
         opened => { scale-menu.show(); }
         ScaleKeys {
-            width: parent.width;
-            height: parent.height;
+            vertical-stretch: 1;
             mask: scale-mode == 0 ? 0 : scale-mask;
             root-note: scale-now == 0 ? -1 : Math.mod(scale-now - 1, 12);
         }
@@ -6630,6 +6626,7 @@ component NoteFxRow inherits HorizontalLayout {
         toggled => { Controls.set-value(chord-index, chord == 0 ? last-chord : 0); }
         opened => { chord-menu.show(); }
         HorizontalLayout {
+            vertical-stretch: 1;
             spacing: 3px;
             for shape[i] in ["Triad", "7th", "Power", "Mine"]: Rectangle {
                 property <bool> picked: chord == i + 1;
@@ -6652,8 +6649,7 @@ component NoteFxRow inherits HorizontalLayout {
         toggled => { Controls.toggle(arp-index); }
         opened => { arp-menu.show(); }
         Rectangle {
-            width: parent.width;
-            height: parent.height;
+            vertical-stretch: 1;
             for h[i] in shapes[clamp(arp-mode, 0, 4)]: Rectangle {
                 x: i * parent.width / 8;
                 y: parent.height * (1 - h);
@@ -7310,6 +7306,8 @@ component InstrumentRack inherits Rectangle {
     property <int> octave: Controls.value(octave-index, Controls.tick);
     property <float> left: Controls.value(Controls.resolve(group, "vu_meter_left"), Controls.tick);
     property <float> right: Controls.value(Controls.resolve(group, "vu_meter_right"), Controls.tick);
+    // A short deck (a small window) packs its rows tighter.
+    property <bool> short: root.height < 260px;
     // One panel on the instrument's color, framed by a thin line in it
     // with a soft glow.
     border-radius: 8px;
@@ -7331,11 +7329,11 @@ component InstrumentRack inherits Rectangle {
         // PLAY or SEQ and the knob page on the left, the scope in the
         // middle of the deck, the level on the right.
         HorizontalLayout {
-            height: 60px;
+            height: root.short ? 48px : 60px;
             spacing: 10px;
             VerticalLayout {
                 width: 150px;
-                spacing: 6px;
+                spacing: 4px;
                 alignment: start;
                 RackViewSwitch { width: parent.width; }
                 if !root.steps && root.count > 8: KnobPageStepper {
@@ -7381,21 +7379,20 @@ component InstrumentRack inherits Rectangle {
         // The eight macros: the knob page, bigger.
         if !root.steps: HorizontalLayout {
             vertical-stretch: 1;
-            min-height: 80px;
             alignment: space-around;
             for k in root.on-page: VerticalLayout {
                 alignment: center;
-                ParamKnob { index: root.page * 8 + k; count: root.count; tint: root.hue; knob-size: 50px; }
+                ParamKnob { index: root.page * 8 + k; count: root.count; tint: root.hue; knob-size: root.short ? 38px : 50px; }
             }
         }
         // The step sequencer in the same place.
         if root.steps: SeqPanel {
             vertical-stretch: 1;
-            min-height: 100px;
+            min-height: root.short ? 70px : 100px;
             hue: root.hue;
         }
         HorizontalLayout {
-            height: 76px;
+            height: root.short ? 58px : 76px;
             spacing: 8px;
             // The octave keys and pads play in.
             VerticalLayout {
