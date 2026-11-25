@@ -3,12 +3,10 @@
 //! stores the new value for the other side to show and sends the matching
 //! command to the audio thread.
 
-use std::sync::atomic::{
-    AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering,
-};
+use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use crate::clip::{Clip, Io, Note, Sound, Track, MAX_TRACKS, SCENES};
+use crate::clip::{Clip, DeviceInfo, Io, Note, Sound, Track, MAX_TRACKS, SCENES};
 use crate::devices::Settings;
 use crate::engine::{Command, Monitor, Program, Quantize, Routing};
 use crate::scale::Key;
@@ -48,12 +46,12 @@ pub fn pan_text(pan: f32) -> String {
 }
 
 /// What doesn't change while the studio runs: each track's look and sound.
+/// (Its devices do: see [`Controls::devices`].)
 #[derive(Clone, Debug)]
 pub struct TrackInfo {
     pub name: String,
     pub color: u32,
     pub sound: Sound,
-    pub devices: Vec<crate::clip::DeviceInfo>,
     /// A Drum Rack's pads that play (note and name), lowest note first.
     pub pads: Vec<(u8, String)>,
 }
@@ -66,14 +64,19 @@ impl TrackInfo {
     pub fn audio(&self) -> bool {
         self.sound == Sound::Audio
     }
+}
 
-    /// Whether an External Instrument plays it: hardware out over MIDI,
-    /// its sound back in from the sound card.
-    pub fn external(&self) -> bool {
-        self.devices
-            .iter()
-            .any(|d| matches!(d.builtin, Some(Settings::External(_))))
-    }
+/// Whether a device plays the track's notes (an instrument plug-in or an
+/// External Instrument) rather than working on its sound.
+pub fn is_instrument(d: &DeviceInfo) -> bool {
+    d.plugin.as_ref().is_some_and(|p| p.instrument)
+        || matches!(d.builtin, Some(Settings::External(_)))
+}
+
+/// The first place in a chain an audio effect can go: after its
+/// instruments (and the MIDI effects before them).
+pub fn first_effect_place(chain: &[DeviceInfo]) -> usize {
+    chain.iter().rposition(is_instrument).map_or(0, |i| i + 1)
 }
 
 /// Which of the track's controls a mixer value is.
@@ -124,12 +127,12 @@ pub struct Controls {
     quantize: AtomicU8,
     /// The key the pads play in and stage clips are written in.
     key: Mutex<Key>,
-    /// Each track's devices switched on, by place in its chain.
-    devices_on: Vec<Vec<AtomicBool>>,
     /// Each track's inputs and outputs.
     io: Mutex<Vec<Io>>,
-    /// Each track's built-in devices' settings now, by place in its chain.
-    builtin: Mutex<Vec<Vec<Option<Settings>>>>,
+    /// Each track's devices in chain order, as they are now: switched on or
+    /// not, and a built-in device's settings. Edits are sent to the audio
+    /// thread while this is locked, so they reach it in the order made.
+    chains: Mutex<Vec<Vec<DeviceInfo>>>,
     /// Goes up on every change, so a screen can tell when to redraw.
     version: AtomicU64,
 }
@@ -148,7 +151,6 @@ impl Controls {
                 name: t.name.clone(),
                 color: t.color.or(colors.get(i).copied()).unwrap_or(0xb69cff),
                 sound: t.sound,
-                devices: t.devices.clone(),
                 pads: t.kit.as_ref().map_or(Vec::new(), |k| {
                     let mut pads: Vec<(u8, String)> = k
                         .pads
@@ -185,16 +187,8 @@ impl Controls {
             selected_scene: AtomicI32::new(-1),
             quantize: AtomicU8::new(0),
             key: Mutex::new(Key::default()),
-            devices_on: set
-                .iter()
-                .map(|t| t.devices.iter().map(|d| AtomicBool::new(d.on)).collect())
-                .collect(),
             io: Mutex::new(set.iter().map(|t| t.io.clone()).collect()),
-            builtin: Mutex::new(
-                set.iter()
-                    .map(|t| t.devices.iter().map(|d| d.builtin.clone()).collect())
-                    .collect(),
-            ),
+            chains: Mutex::new(set.iter().map(|t| t.devices.clone()).collect()),
             version: AtomicU64::new(1),
         }
     }
@@ -403,48 +397,89 @@ impl Controls {
 
     // --------------------------------------------------------- devices
 
+    /// A track's devices in chain order, as they are now.
+    pub fn devices(&self, track: usize) -> Vec<DeviceInfo> {
+        self.chains
+            .lock()
+            .ok()
+            .and_then(|c| c.get(track).cloned())
+            .unwrap_or_default()
+    }
+
+    /// Whether an External Instrument plays the track: hardware out over
+    /// MIDI, its sound back in from the sound card.
+    pub fn external(&self, track: usize) -> bool {
+        self.devices(track)
+            .iter()
+            .any(|d| matches!(d.builtin, Some(Settings::External(_))))
+    }
+
     pub fn device_on(&self, track: usize, device: usize) -> bool {
-        self.devices_on
-            .get(track)
-            .and_then(|t| t.get(device))
-            .is_some_and(|d| d.load(Ordering::Relaxed))
+        self.chains
+            .lock()
+            .ok()
+            .and_then(|c| c.get(track)?.get(device).map(|d| d.on))
+            .unwrap_or(false)
     }
 
     /// A built-in device's settings as they are now.
     pub fn builtin(&self, track: usize, device: usize) -> Option<Settings> {
-        self.builtin.lock().ok()?.get(track)?.get(device)?.clone()
+        self.chains
+            .lock()
+            .ok()?
+            .get(track)?
+            .get(device)?
+            .builtin
+            .clone()
     }
 
     /// Changes one setting of a built-in device (see `Settings::params`).
     pub fn set_device_param(&self, track: usize, device: usize, index: usize, value: f32) {
-        let Ok(mut all) = self.builtin.lock() else {
+        let Ok(mut all) = self.chains.lock() else {
             return;
         };
         let Some(s) = all
             .get_mut(track)
             .and_then(|t| t.get_mut(device))
-            .and_then(|d| d.as_mut())
+            .and_then(|d| d.builtin.as_mut())
         else {
             return;
         };
         s.set(index, value);
-        drop(all);
         self.send(Command::DeviceParam {
             track,
             device,
             index,
             value,
         });
+        drop(all);
         self.bump();
     }
 
     /// Switches a device in a track's chain on or off.
     pub fn set_device_on(&self, track: usize, device: usize, on: bool) {
-        if let Some(d) = self.devices_on.get(track).and_then(|t| t.get(device)) {
-            d.store(on, Ordering::Relaxed);
+        let Ok(mut all) = self.chains.lock() else {
+            return;
+        };
+        if let Some(d) = all.get_mut(track).and_then(|t| t.get_mut(device)) {
+            d.on = on;
             self.send(Command::Bypass { track, device, on });
+            drop(all);
             self.bump();
         }
+    }
+
+    /// Edits the chains: `f` changes the lists and sends the matching
+    /// commands while they are locked (see [`ChainEdit`]).
+    pub fn edit_chains<R>(&self, f: impl FnOnce(&mut ChainEdit) -> R) -> Option<R> {
+        let mut all = self.chains.lock().ok()?;
+        let r = f(&mut ChainEdit {
+            chains: &mut all,
+            controls: self,
+        });
+        drop(all);
+        self.bump();
+        Some(r)
     }
 
     // ------------------------------------------------------------- key
@@ -647,6 +682,71 @@ impl Controls {
     pub fn param_name(&self, track: usize, index: usize) -> &'static str {
         let drums = self.tracks.get(track).is_some_and(|t| t.drums());
         sound::params(drums)[index.min(PARAMS - 1)]
+    }
+}
+
+/// The chains, locked for an edit: each change goes to the list and to the
+/// audio thread together.
+pub struct ChainEdit<'a> {
+    chains: &'a mut Vec<Vec<DeviceInfo>>,
+    controls: &'a Controls,
+}
+
+impl ChainEdit<'_> {
+    pub fn chain(&self, track: usize) -> &[DeviceInfo] {
+        self.chains.get(track).map_or(&[], |c| c.as_slice())
+    }
+
+    /// Puts `device` in `track`'s chain at `at` (or its end); `slot` is
+    /// what plays it, None for a plug-in that is still starting. Returns
+    /// where it went.
+    pub fn insert(
+        &mut self,
+        track: usize,
+        at: usize,
+        device: DeviceInfo,
+        slot: Option<Box<crate::engine::PluginSlot>>,
+    ) -> Option<usize> {
+        let chain = self.chains.get_mut(track)?;
+        let at = at.min(chain.len());
+        chain.insert(at, device);
+        self.controls.send(Command::Insert { track, at, slot });
+        Some(at)
+    }
+
+    /// Takes the device at `at` out of `track`'s chain.
+    pub fn remove(&mut self, track: usize, at: usize) -> Option<DeviceInfo> {
+        let chain = self.chains.get_mut(track)?;
+        if at >= chain.len() {
+            return None;
+        }
+        let d = chain.remove(at);
+        self.controls.send(Command::Remove { track, at });
+        Some(d)
+    }
+
+    /// Moves a device: to another place in its chain, or to `to_track`'s
+    /// chain at `to`. `to` counts places once the device has left.
+    pub fn move_device(&mut self, track: usize, from: usize, to_track: usize, to: usize) -> bool {
+        if to_track >= self.chains.len() || from >= self.chain(track).len() {
+            return false;
+        }
+        let d = self.chains[track].remove(from);
+        let to = to.min(self.chains[to_track].len());
+        self.chains[to_track].insert(to, d);
+        if to_track == track {
+            if to != from {
+                self.controls.send(Command::Move { track, from, to });
+            }
+        } else {
+            self.controls.send(Command::Transfer {
+                from_track: track,
+                from,
+                to_track,
+                to,
+            });
+        }
+        true
     }
 }
 

@@ -145,6 +145,35 @@ pub enum Command {
         track: usize,
         slot: Box<PluginSlot>,
     },
+    /// A device goes into a track's chain at `at`; the devices from there
+    /// on move one place right. `slot` is None for a device that doesn't
+    /// play yet (a plug-in still starting, which comes later with
+    /// [`Command::Attach`] at `at`).
+    Insert {
+        track: usize,
+        at: usize,
+        slot: Option<Box<PluginSlot>>,
+    },
+    /// The device at `at` leaves the track's chain.
+    Remove {
+        track: usize,
+        at: usize,
+    },
+    /// A device moves along its chain: it ends up at `to`, the others
+    /// keep their order.
+    Move {
+        track: usize,
+        from: usize,
+        to: usize,
+    },
+    /// A device moves to another track's chain, at `to` there. Its sound
+    /// (and a plug-in's helper) goes with it.
+    Transfer {
+        from_track: usize,
+        from: usize,
+        to_track: usize,
+        to: usize,
+    },
     /// Switches a track's device (by its place in the chain) on or off.
     Bypass {
         track: usize,
@@ -231,6 +260,11 @@ impl PluginSlot {
         }
     }
 
+    /// One of the studio's own devices, at `device` in the chain.
+    pub fn device(device: usize, on: bool, d: crate::devices::Device) -> PluginSlot {
+        PluginSlot::builtin(device, on, d)
+    }
+
     fn builtin(device: usize, on: bool, d: crate::devices::Device) -> PluginSlot {
         PluginSlot {
             device,
@@ -240,6 +274,40 @@ impl PluginSlot {
         }
     }
 }
+
+/// What the audio thread is done with, on its way back to the UI thread
+/// to be dropped there.
+pub enum Trash {
+    Program(Box<Program>),
+    Device(Box<PluginSlot>),
+}
+
+/// A chain edit, waiting for its track to fade out.
+enum Edit {
+    Insert {
+        track: usize,
+        at: usize,
+        slot: Option<Box<PluginSlot>>,
+    },
+    Remove {
+        track: usize,
+        at: usize,
+    },
+    Move {
+        track: usize,
+        from: usize,
+        to: usize,
+    },
+    Transfer {
+        from_track: usize,
+        from: usize,
+        to_track: usize,
+        to: usize,
+    },
+}
+
+/// Chain edits that can wait for one block.
+const MAX_EDITS: usize = 32;
 
 /// Plug-ins a track can hold.
 const MAX_SLOTS: usize = 16;
@@ -275,7 +343,7 @@ pub struct Monitor {
 }
 
 impl Monitor {
-    fn new() -> Monitor {
+    pub(crate) fn new() -> Monitor {
         Monitor {
             beat: AtomicU64::new(0),
             tempo: AtomicU64::new(0),
@@ -462,7 +530,53 @@ struct Column {
     events_end: Option<f64>,
 }
 
+/// A track's bit in the engine's masks.
+fn bit(track: usize) -> u32 {
+    1u32.checked_shl(track as u32).unwrap_or(0)
+}
+
+/// Where a device at `d` ends up when the one at `from` moves to `to`.
+fn moved(d: usize, from: usize, to: usize) -> usize {
+    if d == from {
+        to
+    } else if from < to && d > from && d <= to {
+        d - 1
+    } else if to < from && d >= to && d < from {
+        d + 1
+    } else {
+        d
+    }
+}
+
 impl Column {
+    /// Puts a device in the chain at `at` (the places after it already
+    /// moved along); hands it back when the track is full.
+    // Boxed as they arrive, so taking one in never frees on this thread.
+    #[allow(clippy::vec_box)]
+    fn put(&mut self, at: usize, mut slot: Box<PluginSlot>) -> Option<Box<PluginSlot>> {
+        if self.slots.len() >= MAX_SLOTS {
+            return Some(slot);
+        }
+        slot.device = at;
+        let i = self.slots.partition_point(|s| s.device < at);
+        self.slots.insert(i, slot);
+        None
+    }
+
+    /// Takes the device at `at` out of the chain; the ones after it move
+    /// back one place.
+    fn take(&mut self, at: usize) -> Option<Box<PluginSlot>> {
+        let taken = self
+            .slots
+            .iter()
+            .position(|s| s.device == at)
+            .map(|i| self.slots.remove(i));
+        for s in self.slots.iter_mut().filter(|s| s.device > at) {
+            s.device -= 1;
+        }
+        taken
+    }
+
     /// How early the track's notes go out: its External Instruments'
     /// hardware latency, in ms.
     fn ahead_ms(&self) -> f32 {
@@ -587,8 +701,15 @@ pub struct Engine {
     main_gain: f32,
     monitor: Arc<Monitor>,
     rate: f64,
-    /// Programs replaced, on their way back to the UI thread to be dropped.
-    trash: rtrb::Producer<Box<Program>>,
+    /// Programs and devices done with, on their way back to the UI thread
+    /// to be dropped.
+    trash: rtrb::Producer<Trash>,
+    /// Chain edits that land at the end of this block, while their tracks
+    /// fade out; the tracks fade back in over the next one.
+    edits: Vec<Edit>,
+    /// Tracks fading out for an edit (by bit), and fading back in.
+    fade_out: u32,
+    fade_in: u32,
     log: Option<Vec<Logged>>,
     /// This block's sound card input, interleaved.
     input: Vec<f32>,
@@ -611,7 +732,7 @@ impl Engine {
         tracks: &[Track],
         rate: f64,
         monitor: Arc<Monitor>,
-        trash: rtrb::Producer<Box<Program>>,
+        trash: rtrb::Producer<Trash>,
     ) -> Engine {
         let columns = tracks
             .iter()
@@ -659,11 +780,8 @@ impl Engine {
                     slots
                 },
                 midi: Vec::with_capacity(MAX_MIDI),
-                planar: if t.devices.iter().any(|d| d.plugin.is_some()) {
-                    vec![0.0; 4 * MAX_BLOCK]
-                } else {
-                    Vec::new()
-                },
+                // Any track can take a plug-in later.
+                planar: vec![0.0; 4 * MAX_BLOCK],
                 routing: Routing::from(&t.io),
                 events_end: None,
                 rng: 0x9E37_79B9 ^ (i as u32 + 1).wrapping_mul(0x85EB_CA6B),
@@ -693,6 +811,9 @@ impl Engine {
             monitor,
             rate,
             trash,
+            edits: Vec::with_capacity(MAX_EDITS),
+            fade_out: 0,
+            fade_in: 0,
             log: None,
             input: Vec::new(),
             in_channels: 0,
@@ -872,7 +993,7 @@ impl Engine {
                     }
                 }
                 // Dropped on the UI thread; if its queue is full, here.
-                let _ = self.trash.push(old);
+                let _ = self.trash.push(Trash::Program(old));
                 None
             }
             Command::Attach { track, slot } => {
@@ -882,6 +1003,32 @@ impl Engine {
                         c.slots.insert(at, slot);
                     }
                 }
+                None
+            }
+            Command::Insert { track, at, slot } => {
+                self.edit(Edit::Insert { track, at, slot });
+                None
+            }
+            Command::Remove { track, at } => {
+                self.edit(Edit::Remove { track, at });
+                None
+            }
+            Command::Move { track, from, to } => {
+                self.edit(Edit::Move { track, from, to });
+                None
+            }
+            Command::Transfer {
+                from_track,
+                from,
+                to_track,
+                to,
+            } => {
+                self.edit(Edit::Transfer {
+                    from_track,
+                    from,
+                    to_track,
+                    to,
+                });
                 None
             }
             Command::Bypass { track, device, on } => {
@@ -1143,6 +1290,7 @@ impl Engine {
             }
             self.listen(t, frames);
             self.run_plugins(t, frames, transport, deadline);
+            self.fade_for_edit(t, frames);
             let gain = self.columns[t].gain;
             let [pl, pr] = self.columns[t].pan;
             let mut peak = 0.0f32;
@@ -1176,6 +1324,14 @@ impl Engine {
             // Positive floats order like their bits.
             self.monitor.peaks[t].fetch_max(peak.to_bits(), Ordering::Relaxed);
         }
+        // Chain edits land between blocks, while their tracks are silent.
+        self.fade_in = self.fade_out;
+        self.fade_out = 0;
+        let mut edits = std::mem::take(&mut self.edits);
+        for e in edits.drain(..) {
+            self.apply(e);
+        }
+        self.edits = edits;
         let gain = MASTER * self.main_gain;
         let mut peak = 0.0f32;
         for o in out.iter_mut() {
@@ -1232,6 +1388,106 @@ impl Engine {
 
     /// Runs the track's sound through its plug-ins, in chain order: an
     /// instrument replaces it with what it plays, an effect processes it.
+    /// Queues a chain edit: its tracks fade out over the rest of this
+    /// block, it lands, and they fade back in, so moving a device doesn't
+    /// click.
+    fn edit(&mut self, e: Edit) {
+        let bits = match &e {
+            Edit::Insert { track, .. } | Edit::Remove { track, .. } | Edit::Move { track, .. } => {
+                bit(*track)
+            }
+            Edit::Transfer {
+                from_track,
+                to_track,
+                ..
+            } => bit(*from_track) | bit(*to_track),
+        };
+        if self.edits.len() < MAX_EDITS {
+            self.fade_out |= bits;
+            self.edits.push(e);
+        } else {
+            self.apply(e);
+        }
+    }
+
+    /// Fades track `t`'s sound out at the end of the block before a chain
+    /// edit, and in at the start of the one after.
+    fn fade_for_edit(&mut self, t: usize, frames: usize) {
+        let b = bit(t);
+        let n = FADE.min(frames);
+        if n == 0 {
+            return;
+        }
+        let scratch = &mut self.scratch[..frames];
+        if self.fade_in & b != 0 {
+            for (k, s) in scratch[..n].iter_mut().enumerate() {
+                let g = k as f32 / n as f32;
+                s[0] *= g;
+                s[1] *= g;
+            }
+        }
+        if self.fade_out & b != 0 {
+            for (k, s) in scratch[frames - n..].iter_mut().enumerate() {
+                let g = 1.0 - (k + 1) as f32 / n as f32;
+                s[0] *= g;
+                s[1] *= g;
+            }
+        }
+    }
+
+    /// Makes a chain edit: the devices keep their places in the chain as
+    /// numbers, so the ones after an insert or a removal move along.
+    fn apply(&mut self, e: Edit) {
+        match e {
+            Edit::Insert { track, at, slot } => {
+                let left = match self.columns.get_mut(track) {
+                    Some(c) => {
+                        for s in c.slots.iter_mut().filter(|s| s.device >= at) {
+                            s.device += 1;
+                        }
+                        slot.and_then(|slot| c.put(at, slot))
+                    }
+                    None => slot,
+                };
+                if let Some(s) = left {
+                    let _ = self.trash.push(Trash::Device(s));
+                }
+            }
+            Edit::Remove { track, at } => {
+                if let Some(s) = self.columns.get_mut(track).and_then(|c| c.take(at)) {
+                    let _ = self.trash.push(Trash::Device(s));
+                }
+            }
+            Edit::Move { track, from, to } => {
+                if let Some(c) = self.columns.get_mut(track) {
+                    for s in c.slots.iter_mut() {
+                        s.device = moved(s.device, from, to);
+                    }
+                    // Sorting in place, without a buffer.
+                    c.slots.sort_unstable_by_key(|s| s.device);
+                }
+            }
+            Edit::Transfer {
+                from_track,
+                from,
+                to_track,
+                to,
+            } => {
+                if to_track >= self.columns.len() {
+                    return;
+                }
+                let taken = self.columns.get_mut(from_track).and_then(|c| c.take(from));
+                let c = &mut self.columns[to_track];
+                for s in c.slots.iter_mut().filter(|s| s.device >= to) {
+                    s.device += 1;
+                }
+                if let Some(s) = taken.and_then(|slot| c.put(to, slot)) {
+                    let _ = self.trash.push(Trash::Device(s));
+                }
+            }
+        }
+    }
+
     fn run_plugins(&mut self, t: usize, frames: usize, transport: Transport, deadline: Instant) {
         // What the plug-ins send (a sequencer's notes) goes to the track's
         // MIDI To port, on its channel.
@@ -1625,7 +1881,7 @@ pub struct Studio {
 /// The UI's ends of the queues.
 pub struct Remote {
     pub commands: rtrb::Producer<Command>,
-    pub trash: rtrb::Consumer<Box<Program>>,
+    pub trash: rtrb::Consumer<Trash>,
     pub monitor: Arc<Monitor>,
     /// Notes for the tracks' MIDI To ports.
     pub midi_out: rtrb::Consumer<MidiOut>,
@@ -2365,5 +2621,143 @@ mod tests {
             .ok();
         studio.process(&mut out);
         assert!(out.iter().all(|f| f[0].abs() < 1e-6));
+    }
+
+    fn builtin(name: &str, on: bool, s: crate::devices::Settings) -> crate::clip::DeviceInfo {
+        crate::clip::DeviceInfo {
+            name: name.into(),
+            kind: "Built-in".into(),
+            on,
+            plugin: None,
+            builtin: Some(s),
+        }
+    }
+
+    fn utility(gain: f32) -> crate::devices::Settings {
+        crate::devices::Settings::Utility(crate::devices::UtilitySettings {
+            gain,
+            ..Default::default()
+        })
+    }
+
+    /// Each track's devices as the audio thread holds them: place and on.
+    fn chain(s: &Studio, track: usize) -> Vec<(usize, bool)> {
+        s.engine.columns[track]
+            .slots
+            .iter()
+            .map(|d| (d.device, d.on))
+            .collect()
+    }
+
+    #[test]
+    fn chain_edits_move_the_devices_along() {
+        let mut set = one_note_set();
+        set.push(Track::new("Two", Sound::Bass, vec![None; SCENES]));
+        set[0].devices = vec![
+            builtin("A", true, utility(1.0)),
+            builtin("B", false, utility(1.0)),
+            builtin("C", true, utility(1.0)),
+        ];
+        let (mut s, mut r) = Studio::new(&set, RATE, 120.0);
+        // A device still starting takes a place: B and C move along.
+        r.commands
+            .push(Command::Insert {
+                track: 0,
+                at: 1,
+                slot: None,
+            })
+            .ok();
+        run(&mut s, 1);
+        assert_eq!(chain(&s, 0), [(0, true), (2, false), (3, true)]);
+        // A goes last.
+        r.commands
+            .push(Command::Move {
+                track: 0,
+                from: 0,
+                to: 3,
+            })
+            .ok();
+        run(&mut s, 1);
+        assert_eq!(chain(&s, 0), [(1, false), (2, true), (3, true)]);
+        // B goes to the other track.
+        r.commands
+            .push(Command::Transfer {
+                from_track: 0,
+                from: 1,
+                to_track: 1,
+                to: 0,
+            })
+            .ok();
+        run(&mut s, 1);
+        assert_eq!(chain(&s, 0), [(1, true), (2, true)]);
+        assert_eq!(chain(&s, 1), [(0, false)]);
+        // Removing one hands it back to be dropped off the audio thread.
+        r.commands.push(Command::Remove { track: 0, at: 1 }).ok();
+        run(&mut s, 1);
+        assert_eq!(chain(&s, 0), [(1, true)]);
+        assert!(matches!(r.trash.pop(), Ok(Trash::Device(_))));
+        // A built-in device dropped in plays at once.
+        let slot = PluginSlot::device(0, true, crate::devices::Device::new(&utility(1.0), RATE));
+        r.commands
+            .push(Command::Insert {
+                track: 1,
+                at: 0,
+                slot: Some(Box::new(slot)),
+            })
+            .ok();
+        run(&mut s, 1);
+        assert_eq!(chain(&s, 1), [(0, true), (1, false)]);
+    }
+
+    /// Moving a device fades its track out and back in around the change,
+    /// so a steady sound doesn't jump.
+    #[test]
+    fn a_chain_edit_does_not_click() {
+        let mut set = one_note_set();
+        set[0].io.audio_in = Some((0, false));
+        set[0].devices = vec![
+            builtin(
+                "External Instrument",
+                true,
+                crate::devices::Settings::External(Default::default()),
+            ),
+            builtin("Quiet", true, utility(0.25)),
+            builtin("Loud", true, utility(2.0)),
+        ];
+        let (mut s, mut r) = Studio::new(&set, RATE, 120.0);
+        let (mut tx, rx) = rtrb::RingBuffer::new(BLOCK * 8);
+        s.set_input(rx, 1);
+        let mut out = vec![[0.0; 2]; BLOCK];
+        let mut last: Option<f32> = None;
+        let mut jump = 0.0f32;
+        let mut quietest = f32::MAX;
+        for block in 0..12 {
+            for _ in 0..BLOCK {
+                tx.push(0.3).ok();
+            }
+            if block == 6 {
+                r.commands
+                    .push(Command::Move {
+                        track: 0,
+                        from: 2,
+                        to: 1,
+                    })
+                    .ok();
+            }
+            s.process(&mut out);
+            if block >= 3 {
+                for f in &out {
+                    if let Some(l) = last {
+                        jump = jump.max((f[0] - l).abs());
+                    }
+                    last = Some(f[0]);
+                    quietest = quietest.min(f[0].abs());
+                }
+            }
+        }
+        // It went quiet for the change and came back.
+        assert!(quietest < 1e-3, "faded out: {quietest}");
+        assert!(last.unwrap().abs() > 0.05, "back: {last:?}");
+        assert!(jump < 0.01, "biggest step {jump}");
     }
 }

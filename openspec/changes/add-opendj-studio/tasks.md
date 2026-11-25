@@ -46,6 +46,10 @@
 - [x] 2.32 Plug-ins' MIDI out passed back from the helper (CLAP and VST3), to a track's MIDI To
 - [ ] 2.34 MIDI out from Audio Units and Pd patches
 - [ ] 2.33 Play a hardware synth through an External Instrument on macOS
+- [x] 2.35 Devices dragged from the browser onto a track or a place in its device bar, moved along the chain or to another track, copied with Option, removed with ×; effects stay after the instrument and an instrument replaces the track's; edits fade so they don't click (design.md, Device chains)
+- [ ] 2.36 Built-in synths and plug-ins dragged from the browser; dropping on empty space makes a track
+- [ ] 2.37 Audio Effect and Instrument Racks: branches, zones and macros (design.md, Racks)
+- [ ] 2.38 Drag, reorder and copy devices on macOS
 
 ## 3. Clip editing
 

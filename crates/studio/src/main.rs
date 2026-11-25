@@ -600,6 +600,51 @@ fn ui(
             p.toggle_window(t as usize, d as usize);
         });
     }
+    // Devices: the browser's, dragged onto tracks; a track's, moved,
+    // copied or removed.
+    let (instruments, effects, all) = browser_devices();
+    window.set_browser_instruments(ModelRc::new(VecModel::from(instruments)));
+    window.set_browser_effects(ModelRc::new(VecModel::from(effects)));
+    window.set_browser_all(ModelRc::new(VecModel::from(all)));
+    {
+        let p = plugins.clone();
+        window.on_remove_device(move |t, d| {
+            p.remove(t as usize, d as usize);
+        });
+    }
+    {
+        let (p, c, w) = (plugins.clone(), controls.clone(), window.as_weak());
+        let (a, ch) = (audio.clone(), chosen.clone());
+        window.global::<Drag>().on_dropped(move || {
+            let Some(w) = w.upgrade() else { return };
+            let d = w.global::<Drag>();
+            let to_track = d.get_to_track();
+            let Ok(to_track) = usize::try_from(to_track) else {
+                return;
+            };
+            let from = if d.get_from_track() >= 0 {
+                plugins::From::Chain(
+                    d.get_from_track() as usize,
+                    d.get_from_device().max(0) as usize,
+                )
+            } else {
+                plugins::From::Browser(d.get_item().max(1) as usize - 1)
+            };
+            let place = usize::try_from(d.get_to_place()).ok();
+            let dropped = plugins::Dropped {
+                from,
+                to_track,
+                place,
+                copy: d.get_copy(),
+            };
+            if let Some(external) = p.drop_device(dropped) {
+                c.select_track(to_track);
+                if external {
+                    a.borrow_mut().want_input(&ch.borrow());
+                }
+            }
+        });
+    }
 
     // Settings: the Audio page.
     let audio_status = Rc::new(RefCell::new(audio.borrow().status.clone()));
@@ -787,7 +832,6 @@ fn ui(
     result
 }
 
-/// A track's row for the window, from the shared controls.
 /// Puts `new` in `old`'s model when it has as many rows, so the lists on
 /// screen keep their items (a knob being dragged stays under the pointer).
 fn reuse<T: Clone + PartialEq + 'static>(old: Option<&ModelRc<T>>, new: Vec<T>) -> ModelRc<T> {
@@ -912,6 +956,38 @@ fn device_row(
     row
 }
 
+/// The browser's lists of the studio's own devices: instruments, audio
+/// effects, and All (headings between). The built-in sounds can't be
+/// dragged yet.
+fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
+    let item = |name: &str, kind: i32, detail: &str, id: i32| BrowserItem {
+        name: name.into(),
+        kind,
+        detail: detail.into(),
+        id,
+    };
+    let mut instruments: Vec<BrowserItem> = ["Drum Kit", "Bass Synth", "Pad Synth", "Lead Synth"]
+        .into_iter()
+        .map(|n| item(n, 0, "built in", 0))
+        .collect();
+    let mut effects = Vec::new();
+    for (i, (name, s)) in devices::catalog().into_iter().enumerate() {
+        if s.is_instrument() {
+            instruments.push(item(name, 0, "hardware synth", i as i32 + 1));
+        } else {
+            effects.push(item(name, 1, "", i as i32 + 1));
+        }
+    }
+    let mut all = vec![item("Instruments", 3, "", 0)];
+    all.extend(instruments.iter().cloned());
+    all.push(item("Audio Effects", 3, "", 0));
+    all.extend(effects.iter().cloned());
+    all.push(item("MIDI Effects", 3, "", 0));
+    all.push(item("Arpeggiator", 2, "soon", 0));
+    all.push(item("Plug-ins", 3, "", 0));
+    (instruments, effects, all)
+}
+
 fn track_row(
     c: &Controls,
     plugins: &plugins::Plugins,
@@ -919,6 +995,7 @@ fn track_row(
     old: Option<&TrackData>,
 ) -> TrackData {
     let info = &c.tracks[t];
+    let devices = c.devices(t);
     let params: Vec<ParamData> = (0..sound::PARAMS)
         .map(|i| ParamData {
             name: c.param_name(t, i).into(),
@@ -981,18 +1058,20 @@ fn track_row(
         .into(),
         drums: info.drums(),
         audio: info.audio(),
-        external: info.external(),
+        external: devices
+            .iter()
+            .any(|d| matches!(d.builtin, Some(devices::Settings::External(_)))),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
         input: io.input_text(info.audio()).into(),
         chain: reuse(
             old.map(|o| &o.chain),
-            info.devices
+            devices
                 .iter()
                 .enumerate()
                 .map(|(i, d)| {
                     let state = plugins.state(t, i);
                     let running = state == Some(plugins::State::Running);
-                    let builtin = c.builtin(t, i);
+                    let builtin = d.builtin.clone();
                     let note = match &state {
                         Some(plugins::State::Running) => {
                             if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
@@ -1015,7 +1094,8 @@ fn track_row(
                             name: d.name.as_str().into(),
                             kind: d.kind.as_str().into(),
                             note: note.into(),
-                            on: c.device_on(t, i),
+                            on: d.on,
+                            instrument: control::is_instrument(d),
                             can_open: running,
                             ..DeviceData::default()
                         },
@@ -1025,8 +1105,7 @@ fn track_row(
                 })
                 .collect(),
         ),
-        plugin_instrument: info
-            .devices
+        plugin_instrument: devices
             .iter()
             .any(|d| d.plugin.as_ref().is_some_and(|p| p.instrument)),
         level: 0.0,

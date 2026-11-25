@@ -73,6 +73,8 @@ export struct DeviceData {
     on: bool,
     // A plug-in, running: its window can open.
     can-open: bool,
+    // Plays the track's notes (an instrument), rather than its sound.
+    instrument: bool,
     // The studio's own device: its panel shows these.
     builtin: bool,
     eq: bool,
@@ -141,6 +143,105 @@ struct BrowserItem {
     // 0 instrument, 1 audio effect, 2 MIDI effect, 3 folder, 4 clip.
     kind: int,
     detail: string,
+    // A device that can be dragged onto a track: its place in the studio's
+    // list of devices, plus one (0 for an item that can't be dragged yet).
+    id: int,
+}
+
+// A device being dragged: from the browser or a track's device bar, to a
+// track's column or a place in the device bar. Each drop target sets `to-*`
+// while the pointer is over it, as `owner`.
+export global Drag {
+    in-out property <bool> active;
+    // Where the pointer is, in the window.
+    in-out property <length> x;
+    in-out property <length> y;
+    in-out property <string> label;
+    // 0 instrument, 1 audio effect.
+    in-out property <int> kind;
+    // From the browser: the item's id (see BrowserItem).
+    in-out property <int> item;
+    // From a device bar: the track and the device's place in its chain.
+    in-out property <int> from-track: -1;
+    in-out property <int> from-device: -1;
+    // Option (Alt) held when it was let go: a copy.
+    in-out property <bool> copy;
+    in-out property <int> owner: -1;
+    in-out property <int> to-track: -1;
+    // A place in the chain, -1 for after the last device.
+    in-out property <int> to-place: -1;
+    callback dropped();
+
+    public function start-from-browser(name: string, kind: int, item: int) {
+        self.label = name;
+        self.kind = kind;
+        self.item = item;
+        self.from-track = -1;
+        self.from-device = -1;
+        self.active = true;
+    }
+
+    public function start-from-chain(name: string, kind: int, track: int, device: int) {
+        self.label = name;
+        self.kind = kind;
+        self.item = 0;
+        self.from-track = track;
+        self.from-device = device;
+        self.active = true;
+    }
+
+    public function finish(copy: bool) {
+        if self.active && self.to-track >= 0 {
+            self.copy = copy;
+            self.dropped();
+        }
+        self.active = false;
+        self.owner = -1;
+        self.to-track = -1;
+        self.to-place = -1;
+    }
+
+    // A target under the pointer (`over`) takes the drop, and lets go of
+    // it when the pointer leaves.
+    public function target(id: int, over: bool, track: int, place: int) {
+        if over {
+            self.owner = id;
+            self.to-track = track;
+            self.to-place = place;
+        } else if self.owner == id {
+            self.owner = -1;
+            self.to-track = -1;
+            self.to-place = -1;
+        }
+    }
+}
+
+// A press that turns into a drag once the pointer has moved a few pixels.
+component DragSource inherits TouchArea {
+    in property <bool> enabled-drag: true;
+    property <length> px;
+    property <length> py;
+    callback begin();
+    pointer-event(e) => {
+        if e.kind == PointerEventKind.down {
+            self.px = self.mouse-x;
+            self.py = self.mouse-y;
+        }
+        if e.kind == PointerEventKind.up && Drag.active {
+            Drag.finish(e.modifiers.alt);
+        }
+    }
+    moved => {
+        if self.pressed && self.enabled-drag {
+            if !Drag.active && abs(self.mouse-x - self.px) + abs(self.mouse-y - self.py) > 5px {
+                self.begin();
+            }
+            if Drag.active {
+                Drag.x = self.absolute-position.x + self.mouse-x;
+                Drag.y = self.absolute-position.y + self.mouse-y;
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------- controls
@@ -742,18 +843,15 @@ component NavHeading inherits Text {
 component Browser inherits Rectangle {
     in-out property <int> category: 3;
     in-out property <int> picked: -1;
+    // The studio's devices, from the app: instruments, audio effects, and
+    // the All list.
+    in property <[BrowserItem]> instruments;
+    in property <[BrowserItem]> effects;
+    in property <[BrowserItem]> all;
     property <[string]> categories: [
         "Favorites", "Effects", "Instruments",
         "All", "Sounds", "Drums", "Instruments", "Audio Effects", "MIDI Effects", "Plug-ins", "Clips", "Samples",
         "User Library", "Current Project",
-    ];
-    property <[BrowserItem]> instruments: [
-        { name: "Drum Kit", kind: 0, detail: "6 kits" },
-        { name: "Bass Synth", kind: 0 },
-        { name: "Pad Synth", kind: 0 },
-        { name: "Lead Synth", kind: 0 },
-        { name: "Sampler", kind: 0, detail: "soon" },
-        { name: "Plug-in instrument", kind: 0, detail: "soon" },
     ];
     property <[BrowserItem]> kits: [
         { name: "Analog", kind: 0, detail: "kit" },
@@ -767,24 +865,6 @@ component Browser inherits Rectangle {
         { name: "Bass · Mono saw", kind: 0, detail: "preset" },
         { name: "Pad · Warm chords", kind: 0, detail: "preset" },
         { name: "Lead · Pluck", kind: 0, detail: "preset" },
-    ];
-    property <[BrowserItem]> effects: [
-        { name: "EQ", kind: 1 },
-        { name: "Filter", kind: 1 },
-        { name: "Ladder", kind: 1 },
-        { name: "Drive", kind: 1 },
-        { name: "Bitcrusher", kind: 1 },
-        { name: "Echo", kind: 1 },
-        { name: "Tape Echo", kind: 1 },
-        { name: "Filter Echo", kind: 1 },
-        { name: "Reverb", kind: 1 },
-        { name: "Hall", kind: 1 },
-        { name: "Chorus", kind: 1 },
-        { name: "Flanger", kind: 1 },
-        { name: "Phaser", kind: 1 },
-        { name: "Gate", kind: 1 },
-        { name: "Ducker", kind: 1 },
-        { name: "Pd rack", kind: 1, detail: "experimental" },
     ];
     property <[BrowserItem]> midi-effects: [
         { name: "Arpeggiator", kind: 2 },
@@ -813,25 +893,7 @@ component Browser inherits Rectangle {
         : category == 8 ? midi-effects
         : category == 9 ? plugins
         : category == 10 ? clips
-        : category == 3 ? [
-            { name: "Instruments", kind: 3 },
-            { name: "Drum Kit", kind: 0, detail: "6 kits" },
-            { name: "Bass Synth", kind: 0 },
-            { name: "Pad Synth", kind: 0 },
-            { name: "Lead Synth", kind: 0 },
-            { name: "Effects", kind: 3 },
-            { name: "EQ", kind: 1 },
-            { name: "Filter", kind: 1 },
-            { name: "Drive", kind: 1 },
-            { name: "Echo", kind: 1 },
-            { name: "Reverb", kind: 1 },
-            { name: "Chorus", kind: 1 },
-            { name: "Pd rack", kind: 1, detail: "experimental" },
-            { name: "MIDI Effects", kind: 3 },
-            { name: "Arpeggiator", kind: 2 },
-            { name: "Scale", kind: 2 },
-            { name: "Plug-ins", kind: 3 },
-        ]
+        : category == 3 ? all
         : empty;
     background: Theme.panel;
 
@@ -904,6 +966,8 @@ component Browser inherits Rectangle {
                 Rectangle { height: 1px; background: Theme.line; }
                 Flickable {
                     vertical-stretch: 1;
+                    // A press starts a drag, not a scroll.
+                    mouse-drag-pan-enabled: false;
                     content-height: max(self.height, items.length * 22px);
                     for item[i] in items: Rectangle {
                         y: i * 22px;
@@ -932,7 +996,11 @@ component Browser inherits Rectangle {
                                 vertical-alignment: center;
                             }
                         }
-                        row := TouchArea { clicked => { picked = i; } }
+                        row := DragSource {
+                            enabled-drag: item.id > 0;
+                            clicked => { picked = i; }
+                            begin => { Drag.start-from-browser(item.name, item.kind, item.id); }
+                        }
                     }
                 }
                 if items.length == 0: Text {
@@ -971,6 +1039,29 @@ component Device inherits Rectangle {
     background: Theme.panel-2;
     border-width: 1px;
     border-color: selected ? tint : Theme.line;
+    // Dragged by its title bar, when it is in a track's chain.
+    in property <int> track: -1;
+    in property <int> index: -1;
+    in property <int> kind: 1;
+    // Its place in the chain before it (as a drop target) and after it.
+    in property <int> place-before: -1;
+    in property <int> place-after: -1;
+    callback removed();
+    property <bool> over: Drag.active && self.place-before >= 0
+        && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width + 3px
+        && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
+    property <bool> left-half: Drag.x < self.absolute-position.x + self.width / 2;
+    property <int> drop-place: !over ? -1 : left-half ? place-before : place-after;
+    changed drop-place => {
+        Drag.target(2000 + self.index, self.drop-place >= 0, self.track, self.drop-place);
+    }
+    // Where it would land: a line on that side.
+    if over && Drag.owner == 2000 + root.index: Rectangle {
+        x: root.left-half ? -4px : root.width + 1px;
+        width: 3px;
+        height: root.height;
+        background: Theme.accent;
+    }
     Rectangle {
         y: 0;
         height: 24px;
@@ -998,9 +1089,19 @@ component Device inherits Rectangle {
                 vertical-alignment: center;
                 horizontal-stretch: 1;
                 overflow: elide;
-                TouchArea { clicked => { root.opened(); } }
+                DragSource {
+                    enabled-drag: root.track >= 0 && root.index >= 0;
+                    clicked => { root.opened(); }
+                    begin => { Drag.start-from-chain(root.title, root.kind, root.track, root.index); }
+                }
             }
-            Text { text: "×"; color: Theme.faint; font-size: 13px; vertical-alignment: center; }
+            if root.index >= 0: Text {
+                text: "×";
+                color: remove-area.has-hover ? Theme.text : Theme.faint;
+                font-size: 13px;
+                vertical-alignment: center;
+                remove-area := TouchArea { clicked => { root.removed(); } }
+            }
         }
     }
     Rectangle {
@@ -1571,6 +1672,12 @@ export component AppWindow inherits Window {
     // (0 output, 1 input, 2 sample rate, 3 buffer) and its option.
     callback settings-opened();
     callback settings-pick(int, int);
+    // A device's × was clicked (track, place in its chain).
+    callback remove-device(int, int);
+    // The browser's devices.
+    in property <[BrowserItem]> browser-instruments;
+    in property <[BrowserItem]> browser-effects;
+    in property <[BrowserItem]> browser-all;
 
     property <TrackData> track: tracks[selected-track];
     property <bool> has-clip: selected-scene >= 0
@@ -1645,7 +1752,12 @@ export component AppWindow inherits Window {
 
         HorizontalLayout {
             vertical-stretch: 1;
-            Browser { width: 310px; }
+            Browser {
+                width: 310px;
+                instruments: root.browser-instruments;
+                effects: root.browser-effects;
+                all: root.browser-all;
+            }
             Rectangle { width: 1px; background: Theme.line; }
 
             VerticalLayout {
@@ -1677,11 +1789,18 @@ export component AppWindow inherits Window {
                     width: session.ret-x - session.gap;
                     height: session.height;
                     content-width: max(self.width, session.tracks-end + 160px);
+                    mouse-drag-pan-enabled: false;
                     for t[i] in tracks: Rectangle {
                         x: i * (session.col-w + session.gap);
                         width: session.col-w;
                         height: session.height;
                         background: Theme.panel.with-alpha(0.5);
+                        // A device dropped on the column goes to the end of
+                        // the track's chain.
+                        property <bool> drop-over: Drag.active
+                            && Drag.x >= self.absolute-position.x && Drag.x < self.absolute-position.x + self.width
+                            && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + session.mixer-y;
+                        changed drop-over => { Drag.target(1000 + i, self.drop-over, i, -1); }
                         // Header.
                         Rectangle {
                             y: 0;
@@ -1732,6 +1851,13 @@ export component AppWindow inherits Window {
                         if i == selected-track: Rectangle {
                             border-width: 1px;
                             border-color: t.color;
+                        }
+                        if drop-over && Drag.owner == 1000 + i: Rectangle {
+                            y: 0;
+                            height: session.mixer-y;
+                            border-width: 2px;
+                            border-color: Theme.accent;
+                            background: Theme.accent.with-alpha(0.08);
                         }
                         if session.io > 0: IoSection {
                             y: session.io-y;
@@ -1911,6 +2037,7 @@ export component AppWindow inherits Window {
                     // Scrolls sideways when the chain is wider than the window.
                     Flickable {
                     content-width: max(self.width, 1270px);
+                    mouse-drag-pan-enabled: false;
                     HorizontalLayout {
                         width: max(parent.width, 1270px);
                         padding: 8px;
@@ -1992,7 +2119,13 @@ export component AppWindow inherits Window {
                             width: d.builtin ? d.panel-width * 1px : 150px;
                             title: d.name;
                             on: d.on;
-                            tint: d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
+                            track: selected-track;
+                            index: i;
+                            kind: d.instrument ? 0 : 1;
+                            place-before: i;
+                            place-after: i + 1;
+                            removed => { root.remove-device(selected-track, i); }
+                            tint: d.instrument ? track.color : d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
                             toggled(v) => { root.toggle-device(selected-track, i, v); }
                             opened => { root.open-device(selected-track, i); }
                             if d.builtin && !d.eq: KnobPanel {
@@ -2022,38 +2155,17 @@ export component AppWindow inherits Window {
                                 }
                             }
                         }
-                        if track.chain.length == 0: Device {
-                            width: 250px;
-                            title: "EQ";
-                            tint: Theme.effect;
-                            HorizontalLayout {
-                                padding: 8px;
-                                spacing: 2px;
-                                alignment: center;
-                                Knob { free: true; label: "Low"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
-                                Knob { free: true; label: "Mid"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
-                                Knob { free: true; label: "High"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
-                                Knob { free: true; label: "Output"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
-                            }
-                        }
-                        if track.chain.length == 0: Device {
-                            width: 230px;
-                            title: "Echo";
-                            tint: Theme.effect;
-                            HorizontalLayout {
-                                padding: 8px;
-                                spacing: 2px;
-                                alignment: center;
-                                Knob { free: true; label: "Time"; display: "1/8"; value: 0.4; size: 36px; tint: Theme.effect; }
-                                Knob { free: true; label: "Feedback"; display: "35%"; value: 0.35; size: 36px; tint: Theme.effect; }
-                                Knob { free: true; label: "Dry/Wet"; display: "20%"; value: 0.2; size: 36px; tint: Theme.effect; }
-                            }
-                        }
-                        Rectangle {
+                        end-place := Rectangle {
                             width: 130px;
                             border-radius: 3px;
-                            border-width: 1px;
-                            border-color: Theme.line;
+                            border-width: self.hot ? 2px : 1px;
+                            border-color: self.hot ? Theme.accent : Theme.line;
+                            background: self.hot ? Theme.accent.with-alpha(0.08) : transparent;
+                            property <bool> over: Drag.active
+                                && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width
+                                && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
+                            property <bool> hot: self.over && Drag.owner == 3000;
+                            changed over => { Drag.target(3000, self.over, selected-track, track.chain.length); }
                             Text {
                                 text: "+\nDrop an effect here";
                                 color: Theme.faint;
@@ -2082,12 +2194,30 @@ export component AppWindow inherits Window {
                     horizontal-stretch: 1;
                 }
                 Text {
-                    text: tracks.length + " tracks · " + scenes + " scenes · sends, returns and effects are a preview";
+                    text: tracks.length + " tracks · " + scenes + " scenes · sends and returns are a preview";
                     color: Theme.faint;
                     font-size: 11px;
                     vertical-alignment: center;
                 }
             }
+        }
+    }
+
+    // The device being dragged.
+    if Drag.active: Rectangle {
+        x: Drag.x + 12px;
+        y: Drag.y + 6px;
+        width: ghost.preferred-width + 20px;
+        height: 24px;
+        border-radius: 3px;
+        background: Drag.kind == 0 ? Theme.accent : Theme.effect;
+        drop-shadow-blur: 8px;
+        drop-shadow-color: #00000080;
+        ghost := Text {
+            text: Drag.label;
+            color: #101112;
+            font-size: 12px;
+            font-weight: 700;
         }
     }
 

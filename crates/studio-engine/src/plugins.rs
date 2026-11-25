@@ -9,12 +9,32 @@ use std::time::Duration;
 
 use opendj_plugin_host::{Descriptor, Helper, Plugin};
 
-use crate::clip::{PluginFormat, PluginRef, Track};
+use crate::clip::{DeviceInfo, PluginFormat, PluginRef, Track};
 use crate::control::Controls;
 use crate::engine::{Command, PluginSlot, MAX_BLOCK};
 
 /// How long scanning one plug-in file may take.
 const SCAN_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// Where a dragged device came from.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum From {
+    /// The browser: a place in `devices::catalog()`.
+    Browser(usize),
+    /// A track's chain: the track and the device's place.
+    Chain(usize, usize),
+}
+
+/// A device let go over a track.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Dropped {
+    pub from: From,
+    pub to_track: usize,
+    /// A place in the chain (before the device there); None for its end.
+    pub place: Option<usize>,
+    /// Option held: a device from a chain is copied rather than moved.
+    pub copy: bool,
+}
 
 /// What became of a device's plug-in, as the device row shows it.
 #[derive(Clone, Debug, PartialEq)]
@@ -38,6 +58,8 @@ impl State {
 }
 
 struct Entry {
+    /// Stays the same while the device moves about.
+    id: u64,
     track: usize,
     device: usize,
     name: String,
@@ -46,9 +68,43 @@ struct Entry {
 }
 
 /// The plug-ins of a set.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Plugins {
-    entries: Arc<Mutex<Vec<Entry>>>,
+    entries: Arc<Mutex<Book>>,
+    controls: Arc<Controls>,
+    helper: Option<PathBuf>,
+    rate: u32,
+}
+
+#[derive(Default)]
+struct Book {
+    entries: Vec<Entry>,
+    next_id: u64,
+}
+
+impl Book {
+    fn add(&mut self, track: usize, device: usize, name: &str, state: State) -> u64 {
+        self.next_id += 1;
+        self.entries.push(Entry {
+            id: self.next_id,
+            track,
+            device,
+            name: name.into(),
+            state,
+            helper: None,
+        });
+        self.next_id
+    }
+
+    fn shift(&mut self, track: usize, from: usize, by: isize) {
+        for e in self
+            .entries
+            .iter_mut()
+            .filter(|e| e.track == track && e.device >= from)
+        {
+            e.device = e.device.saturating_add_signed(by);
+        }
+    }
 }
 
 /// The helper binary, next to the studio's own.
@@ -63,77 +119,238 @@ impl Plugins {
     /// Starts every plug-in in `tracks`, each on its own thread; they reach
     /// the audio thread as they come up.
     pub fn start(tracks: &[Track], rate: u32, controls: Arc<Controls>) -> Plugins {
-        let plugins = Plugins::default();
-        let helper = helper_path();
+        let plugins = Plugins {
+            entries: Arc::default(),
+            controls,
+            helper: helper_path(),
+            rate,
+        };
         let mut jobs = Vec::new();
         {
-            let mut entries = plugins.entries.lock().expect("fresh lock");
+            let mut book = plugins.entries.lock().expect("fresh lock");
             for (t, track) in tracks.iter().enumerate() {
                 for (d, device) in track.devices.iter().enumerate() {
                     let Some(p) = &device.plugin else { continue };
-                    let state = if helper.is_none() {
-                        State::Failed(
-                            "Build the plug-in helper: cargo build --release -p opendj-plugin-host"
-                                .into(),
-                        )
-                    } else {
-                        State::Loading
-                    };
-                    entries.push(Entry {
-                        track: t,
-                        device: d,
-                        name: p.name.clone(),
-                        state,
-                        helper: None,
-                    });
-                    jobs.push((t, d, p.clone(), device.on));
+                    let id = book.add(t, d, &p.name, plugins.first_state());
+                    jobs.push((id, p.clone()));
                 }
             }
         }
-        let Some(helper) = helper else {
-            return plugins;
-        };
-        for (t, d, p, on) in jobs {
-            let (plugins2, helper, controls) = (plugins.clone(), helper.clone(), controls.clone());
-            let _ = std::thread::Builder::new()
-                .name(format!("plugin {}", p.name))
-                .spawn(move || {
-                    let state = match run(&helper, &p, rate) {
-                        Ok((conn, h)) => {
-                            controls.send(Command::Attach {
-                                track: t,
-                                slot: Box::new(PluginSlot::new(d, p.instrument, on, conn)),
-                            });
-                            plugins2.set(t, d, State::Running, Some(h));
-                            controls.bump();
-                            return;
-                        }
-                        Err(e) => e,
-                    };
-                    eprintln!("{}: {}", p.name, state.text());
-                    plugins2.set(t, d, state, None);
-                    controls.bump();
-                });
+        for (id, p) in jobs {
+            plugins.launch(id, p);
         }
         plugins
     }
 
-    fn set(&self, track: usize, device: usize, state: State, helper: Option<Helper>) {
-        if let Ok(mut entries) = self.entries.lock() {
-            if let Some(e) = entries
-                .iter_mut()
-                .find(|e| e.track == track && e.device == device)
-            {
-                e.state = state;
-                e.helper = helper;
+    /// Puts a dropped device in its track's chain. An effect goes where it was
+    /// let go, but never before the track's instrument; an instrument takes
+    /// the place of the one the track has (a track plays one). Returns whether
+    /// an External Instrument came in, or None when nothing changed.
+    pub fn drop_device(&self, d: Dropped) -> Option<bool> {
+        let (c, p) = (&*self.controls, self);
+        let track = c.tracks.get(d.to_track)?;
+        let (device, moving) = match d.from {
+            From::Browser(i) => {
+                let (name, s) = crate::devices::catalog().into_iter().nth(i)?;
+                (
+                    DeviceInfo {
+                        name: name.into(),
+                        kind: "Built-in".into(),
+                        on: true,
+                        plugin: None,
+                        builtin: Some(s),
+                    },
+                    None,
+                )
+            }
+            From::Chain(t, at) => (c.devices(t).get(at)?.clone(), (!d.copy).then_some((t, at))),
+        };
+        let instrument = crate::control::is_instrument(&device);
+        // An audio track plays recordings: no instrument there.
+        if instrument && track.audio() {
+            return None;
+        }
+        let external = matches!(device.builtin, Some(crate::devices::Settings::External(_)));
+        // The chain as it will be once the device has left its place.
+        let mut chain = c.devices(d.to_track);
+        let mut place = d.place.unwrap_or(chain.len());
+        if let Some((t, at)) = moving {
+            if t == d.to_track {
+                chain.remove(at);
+                if place > at {
+                    place -= 1;
+                }
             }
         }
+        if instrument {
+            // Takes the place of the track's instruments.
+            let first = chain.iter().position(crate::control::is_instrument);
+            let olds: Vec<usize> = chain
+                .iter()
+                .enumerate()
+                .filter(|(_, x)| crate::control::is_instrument(x))
+                .map(|(i, _)| i)
+                .collect();
+            if moving.is_some_and(|(t, _)| t == d.to_track) {
+                // An instrument moved along its own chain stays where it is.
+                return None;
+            }
+            for &i in olds.iter().rev() {
+                p.remove(d.to_track, i);
+            }
+            place = first.unwrap_or(0);
+        } else {
+            place = place.max(crate::control::first_effect_place(&chain));
+        }
+        match moving {
+            Some((t, at)) => {
+                if !p.move_device(t, at, d.to_track, place) {
+                    return None;
+                }
+            }
+            None => {
+                p.insert(d.to_track, place, device)?;
+            }
+        }
+        Some(external)
+    }
+
+    fn first_state(&self) -> State {
+        if self.helper.is_none() {
+            State::Failed(
+                "Build the plug-in helper: cargo build --release -p opendj-plugin-host".into(),
+            )
+        } else {
+            State::Loading
+        }
+    }
+
+    /// Starts entry `id`'s plug-in on its own thread. It joins the chain
+    /// wherever the device is by the time it's up, or is let go if the
+    /// device was removed meanwhile.
+    fn launch(&self, id: u64, p: PluginRef) {
+        let Some(helper) = self.helper.clone() else {
+            return;
+        };
+        let (plugins, rate) = (self.clone(), self.rate);
+        let _ = std::thread::Builder::new()
+            .name(format!("plugin {}", p.name))
+            .spawn(move || {
+                let result = run(&helper, &p, rate);
+                let Ok(mut book) = plugins.entries.lock() else {
+                    return;
+                };
+                let Some(e) = book.entries.iter_mut().find(|e| e.id == id) else {
+                    // Removed while it started: its helper stops as it drops.
+                    return;
+                };
+                match result {
+                    Ok((conn, h)) => {
+                        let on = plugins.controls.device_on(e.track, e.device);
+                        plugins.controls.send(Command::Attach {
+                            track: e.track,
+                            slot: Box::new(PluginSlot::new(e.device, p.instrument, on, conn)),
+                        });
+                        e.state = State::Running;
+                        e.helper = Some(h);
+                    }
+                    Err(state) => {
+                        eprintln!("{}: {}", p.name, state.text());
+                        e.state = state;
+                    }
+                }
+                drop(book);
+                plugins.controls.bump();
+            });
+    }
+
+    /// Puts a device in `track`'s chain at `at` (clamped to its end): a
+    /// built-in one plays at once, a plug-in starts a helper with the sound
+    /// it carries. Returns where it went.
+    pub fn insert(&self, track: usize, at: usize, device: DeviceInfo) -> Option<usize> {
+        let mut book = self.entries.lock().ok()?;
+        let slot = device.builtin.as_ref().map(|b| {
+            Box::new(PluginSlot::device(
+                at,
+                device.on,
+                crate::devices::Device::new(b, self.rate as f64),
+            ))
+        });
+        let plugin = device.plugin.clone();
+        let at = self
+            .controls
+            .edit_chains(|c| c.insert(track, at, device, slot))
+            .flatten()?;
+        book.shift(track, at, 1);
+        if let Some(p) = plugin {
+            let id = book.add(track, at, &p.name, self.first_state());
+            drop(book);
+            self.launch(id, p);
+        }
+        Some(at)
+    }
+
+    /// Takes the device at `at` out of `track`'s chain; a plug-in's helper
+    /// stops.
+    pub fn remove(&self, track: usize, at: usize) -> Option<DeviceInfo> {
+        let mut book = self.entries.lock().ok()?;
+        let d = self
+            .controls
+            .edit_chains(|c| c.remove(track, at))
+            .flatten()?;
+        let gone: Vec<Entry> = {
+            let (gone, keep) = std::mem::take(&mut book.entries)
+                .into_iter()
+                .partition(|e| e.track == track && e.device == at);
+            book.entries = keep;
+            gone
+        };
+        book.shift(track, at + 1, -1);
+        drop(book);
+        drop(gone);
+        Some(d)
+    }
+
+    /// Moves a device along its chain or to another track's (`to` counts
+    /// places once it has left); its plug-in goes with it.
+    pub fn move_device(&self, track: usize, from: usize, to_track: usize, to: usize) -> bool {
+        let Ok(mut book) = self.entries.lock() else {
+            return false;
+        };
+        let to = to.min(
+            self.controls
+                .devices(to_track)
+                .len()
+                .saturating_sub(usize::from(to_track == track)),
+        );
+        if !self
+            .controls
+            .edit_chains(|c| c.move_device(track, from, to_track, to))
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        let moving = book
+            .entries
+            .iter()
+            .position(|e| e.track == track && e.device == from);
+        if let Some(i) = moving {
+            book.entries[i].device = usize::MAX;
+        }
+        book.shift(track, from + 1, -1);
+        book.shift(to_track, to, 1);
+        if let Some(i) = moving {
+            book.entries[i].track = to_track;
+            book.entries[i].device = to;
+        }
+        true
     }
 
     /// The state of a device's plug-in; None when it has none.
     pub fn state(&self, track: usize, device: usize) -> Option<State> {
-        let mut entries = self.entries.lock().ok()?;
-        let e = entries
+        let mut book = self.entries.lock().ok()?;
+        let e = book
+            .entries
             .iter_mut()
             .find(|e| e.track == track && e.device == device)?;
         if let Some(h) = &e.helper {
@@ -147,10 +364,11 @@ impl Plugins {
     /// Opens (or closes) a device's plug-in window. False when there is no
     /// running plug-in to show.
     pub fn toggle_window(&self, track: usize, device: usize) -> bool {
-        let Ok(entries) = self.entries.lock() else {
+        let Ok(book) = self.entries.lock() else {
             return false;
         };
-        match entries
+        match book
+            .entries
             .iter()
             .find(|e| e.track == track && e.device == device)
             .and_then(|e| e.helper.as_ref())
@@ -353,5 +571,81 @@ mod tests {
     fn names_match_loosely() {
         assert_eq!(squash("Stage-73 V2"), squash("Stage73 V2"));
         assert_eq!(squash("TONE3000"), "tone3000");
+    }
+
+    fn names(p: &Plugins, track: usize) -> Vec<String> {
+        p.controls
+            .devices(track)
+            .into_iter()
+            .map(|d| d.name)
+            .collect()
+    }
+
+    fn catalog_place(name: &str) -> usize {
+        crate::devices::catalog()
+            .iter()
+            .position(|(n, _)| *n == name)
+            .expect("in the catalog")
+    }
+
+    #[test]
+    fn dropped_devices_keep_to_their_zones() {
+        use crate::clip::{Sound, SCENES};
+        let device = |name: &str| {
+            let (_, s) = crate::devices::catalog()
+                .into_iter()
+                .nth(catalog_place(name))
+                .unwrap();
+            DeviceInfo {
+                name: name.into(),
+                kind: "Built-in".into(),
+                on: true,
+                plugin: None,
+                builtin: Some(s),
+            }
+        };
+        let mut synth = Track::new("Synth", Sound::Lead, vec![None; SCENES]);
+        synth.devices = vec![device("External Instrument"), device("Utility")];
+        let set = vec![synth, Track::new("Mic", Sound::Audio, vec![None; SCENES])];
+        let (tx, mut rx) = rtrb::RingBuffer::new(256);
+        let controls = Arc::new(Controls::new(
+            &set,
+            &[0, 0],
+            tx,
+            Arc::new(crate::engine::Monitor::new()),
+        ));
+        let p = Plugins::start(&set, 48_000, controls);
+        let drop = |from, to_track, place: Option<usize>, copy| {
+            p.drop_device(Dropped {
+                from,
+                to_track,
+                place,
+                copy,
+            })
+        };
+        // An effect let go before the instrument lands after it.
+        let delay = From::Browser(catalog_place("Delay"));
+        assert_eq!(drop(delay, 0, Some(0), false), Some(false));
+        assert_eq!(names(&p, 0), ["External Instrument", "Delay", "Utility"]);
+        // Utility moves before Delay.
+        assert_eq!(drop(From::Chain(0, 2), 0, Some(1), false), Some(false));
+        assert_eq!(names(&p, 0), ["External Instrument", "Utility", "Delay"]);
+        // An instrument takes the place of the track's.
+        let external = From::Browser(catalog_place("External Instrument"));
+        assert_eq!(drop(external, 0, None, false), Some(true));
+        assert_eq!(names(&p, 0), ["External Instrument", "Utility", "Delay"]);
+        // Option-drag copies Delay to the other track; a move takes Utility.
+        assert!(drop(From::Chain(0, 2), 1, None, true).is_some());
+        assert!(drop(From::Chain(0, 1), 1, Some(0), false).is_some());
+        assert_eq!(names(&p, 0), ["External Instrument", "Delay"]);
+        assert_eq!(names(&p, 1), ["Utility", "Delay"]);
+        // An audio track takes no instrument.
+        assert_eq!(drop(external, 1, None, false), None);
+        // Every edit reached the audio thread's queue.
+        let mut sent = 0;
+        while rx.pop().is_ok() {
+            sent += 1;
+        }
+        assert!(sent >= 6, "{sent} commands");
     }
 }
