@@ -110,6 +110,11 @@ struct Shared {
     /// The HID controllers plugged in, by port name: the name of the
     /// mapping Automatic picks for each.
     hid_ports: Mutex<HashMap<String, String>>,
+    /// The MIDI ports of keyboards whose knobs and buttons run over HID
+    /// (`keys="midi"`): only their keys, strips and pedals play, as the
+    /// controllers their knobs also send there would turn the instrument's
+    /// parameters in its own way, besides the mapping's.
+    keys_only: Mutex<Vec<String>>,
     /// Why a device couldn't be opened, by port name.
     problems: Mutex<HashMap<String, String>>,
 }
@@ -470,6 +475,34 @@ fn hid_ports<'a>(
     out
 }
 
+/// The MIDI ports of `found` keyboards whose mapping says their keys play
+/// over MIDI (`keys="midi"`).
+fn keys_only(
+    midi_ports: &[String],
+    found: &[(String, hid::DeviceInfo, &hid::HidMapping)],
+) -> Vec<String> {
+    midi_ports
+        .iter()
+        .filter(|p| {
+            found.iter().any(|(_, d, m)| {
+                m.2.iter().any(|product| product.keys)
+                    && !d.product.is_empty()
+                    && (**p == d.product || device_key(p) == device_key(&d.product))
+            })
+        })
+        .cloned()
+        .collect()
+}
+
+/// Controllers a keyboard's keys side still plays when its knobs run over
+/// HID: mod wheel, breath, expression, sustain, sostenuto and soft pedals.
+const KEYS_ONLY_CONTROLLERS: [u8; 6] = [1, 2, 11, 64, 66, 67];
+
+/// Whether `data` from a keys-only port (see [`Shared::keys_only`]) plays.
+fn keys_only_plays(data: [u8; 3]) -> bool {
+    data[0] & 0xF0 != 0xB0 || KEYS_ONLY_CONTROLLERS.contains(&data[1])
+}
+
 /// The HID mapping file `port` should run, given the choices: the one
 /// matched, or another HID mapping picked by file name; none when off.
 fn pick_hid_mapping(
@@ -634,6 +667,7 @@ fn watch_devices(
                         .map(|(p, _, m)| (p.clone(), pick_hid_mapping(p, &m.1, &dir, &choices))),
                 );
             }
+            *shared.keys_only.lock().unwrap() = keys_only(&ports, &found);
             *shared.hid_ports.lock().unwrap() = found
                 .iter()
                 .map(|(p, _, m)| (p.clone(), m.0.clone()))
@@ -912,6 +946,12 @@ fn run_keyboard(
             let Some(data) = channel_message(msg) else {
                 return;
             };
+            if data[0] & 0xF0 == 0xB0
+                && !keys_only_plays(data)
+                && shared_in.keys_only.lock().unwrap().contains(&name)
+            {
+                return;
+            }
             let note_on = data[0] & 0xF0 == 0x90 && data[2] > 0;
             // Pinned to a deck without the instrument: nothing reaches it,
             // but note offs still do so no note is left hanging.
@@ -1459,6 +1499,18 @@ mod tests {
             None,
             false
         ));
+        // Its knobs also send controllers over MIDI: only the keys, strips
+        // and pedals play from there.
+        let ports = vec!["KOMPLETE KONTROL M32".to_string(), "Other Keys".to_string()];
+        assert_eq!(
+            keys_only(&ports, &found),
+            vec!["KOMPLETE KONTROL M32".to_string()]
+        );
+        assert!(keys_only_plays([0x90, 60, 100]));
+        assert!(keys_only_plays([0xE0, 0, 64]));
+        assert!(keys_only_plays([0xB0, 1, 64]));
+        assert!(keys_only_plays([0xB0, 64, 127]));
+        assert!(!keys_only_plays([0xB0, 14, 64]));
     }
 
     #[test]
