@@ -33,9 +33,10 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 - **Komplete Kontrol M32** (Beta) drives the instrument deck: knobs, transport, presets, ARP and SCALE, and its screen.
 - An instrument's notes are no longer sent twice after a late block, which could leave a note hanging.
 
-**openDJ Studio (early preview, from source)**
+**openDJ Studio and Session (preview)**
 
 - First steps of openDJ Studio, a clip-launching music app built on openDJ's engine: a Session grid of looping MIDI clips launched on the bar, in time over Ableton Link. It isn't in the downloads yet. Build it with `cargo run --profile fast --bin opendj-studio`.
+- **Session** (preview), in openDJ itself: **File › Open Live Set…** opens an Ableton Live set, and its clips launch from the Jam source in time with your decks, on a Session channel of their own in the mixer. Plug-in tracks stay silent for now.
 
 **Stems**
 
@@ -48,7 +49,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 **Library and analysis**
 
 - **Background panel**: a ring at the bottom right fills while analysis, HQ stems, lyrics, sound checks or covers run. Click it to pause, stop or pick what goes next, and choose what happens while a deck plays: slow down, pause or keep going.
-- Analysis runs several tracks side by side while no deck plays.
+- Analysis runs several tracks side by side while no deck plays, and while a deck plays it saves finished tracks a few at a time, so the waveforms don't stutter.
 - **Lyrics** are looked up when tracks are analysed, for files that have none.
 - **BROWSE knob**: Shift+press goes straight to the rail, and turning through the rail no longer stalls.
 - On narrow windows, only one of the lists panel and side panel opens over the track list at a time.
