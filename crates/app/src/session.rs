@@ -201,6 +201,12 @@ fn color(rgb: u32) -> Color {
     Color::from_rgb_u8((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
 }
 
+/// Whether dark text reads better than white on `rgb`.
+fn light(rgb: u32) -> bool {
+    let [r, g, b] = [rgb >> 16, rgb >> 8, rgb].map(|c| f32::from((c & 0xff) as u8) / 255.0);
+    0.299 * r + 0.587 * g + 0.114 * b > 0.6
+}
+
 /// Starts `opened` on the Session channel, in place of what played there.
 fn start(app: &AppWindow, opened: Opened, rate: f64) {
     let Some((engine, registry)) = ENGINE.with(|e| e.borrow().clone()) else {
@@ -220,6 +226,7 @@ fn start(app: &AppWindow, opened: Opened, rate: f64) {
         .map(|(i, t)| SessionTrack {
             name: t.name.clone().into(),
             color: color(t.color.unwrap_or_else(|| als::color(i))),
+            light: light(t.color.unwrap_or_else(|| als::color(i))),
             progress: -1.0,
             peak: 0.0,
         })

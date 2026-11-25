@@ -8,6 +8,8 @@ import { SwitchPill } from "pills.slint";
 export struct SessionTrack {
     name: string,
     color: color,
+    // A pale colour, where a playing clip's text goes dark.
+    light: bool,
     // How far through its clip it is (0..1), -1 when stopped.
     progress: float,
     // Its level after the fader, 0..1.
@@ -46,6 +48,10 @@ export global SessionUi {
 component ClipCell inherits Rectangle {
     in property <SessionSlot> slot;
     in property <color> tint;
+    in property <bool> light;
+    // On a playing clip's full colour the text is black or white whatever
+    // the theme; on the faint ones it follows the theme.
+    property <color> ink: playing ? (light ? #000000 : #ffffff) : Theme.text;
     in property <float> progress;
     callback clicked();
     property <bool> queued: slot.state == 2;
@@ -55,7 +61,7 @@ component ClipCell inherits Rectangle {
         ? (ta.has-hover ? Theme.n-262629 : Theme.n-1c1c1f)
         : tint.with-alpha(playing ? 0.9 : ta.has-hover ? 0.55 : 0.4);
     border-width: playing ? 1px : 0px;
-    border-color: Theme.n-ffffff.with-alpha(0.7);
+    border-color: ink.with-alpha(0.7);
     clip: true;
     if slot.state != 0: HorizontalLayout {
         padding-left: 6px;
@@ -63,13 +69,13 @@ component ClipCell inherits Rectangle {
         spacing: 5px;
         Text {
             text: playing ? "▶" : queued ? "▷" : "▷";
-            color: playing ? Theme.n-ffffff : Theme.n-ffffff.with-alpha(queued ? (mod(animation-tick(), 400ms) < 200ms ? 1.0 : 0.3) : 0.6);
+            color: playing ? ink : Theme.n-ffffff.with-alpha(queued ? (mod(animation-tick(), 400ms) < 200ms ? 1.0 : 0.3) : 0.6);
             font-size: 10px;
             vertical-alignment: center;
         }
         Text {
             text: slot.name;
-            color: Theme.n-ffffff;
+            color: ink;
             font-size: 11px;
             vertical-alignment: center;
             overflow: elide;
@@ -82,7 +88,7 @@ component ClipCell inherits Rectangle {
         y: parent.height - 3px;
         height: 3px;
         width: parent.width * clamp(progress, 0, 1);
-        background: Theme.n-ffffff.with-alpha(0.8);
+        background: ink.with-alpha(0.8);
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -203,6 +209,7 @@ export component SessionGrid inherits Rectangle {
                     height: cell-height;
                     slot: SessionUi.slots[s * count + t];
                     tint: track.color;
+                    light: track.light;
                     progress: track.progress;
                     clicked => { SessionUi.launch(t, s); }
                 }
