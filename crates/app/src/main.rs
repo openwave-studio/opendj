@@ -3300,7 +3300,24 @@ impl Gpu {
                 Some(t) if show_phrases || show_flags => self.phrases(d, t),
                 _ => Vec::new(),
             };
-            self.beat_count(app, d, track, play_seconds, speed != 0.0, &phrases);
+            // The phase meter: this deck against the leading deck.
+            let fader = |x: usize| {
+                let h = &decks.0[x];
+                crate::speed(&h.rate, &h.rate_range, &h.rate_dir)
+            };
+            let phase = match (tracks[d].as_ref(), leader) {
+                (Some(_), Some(l)) if l == d => PhaseMeter::Master,
+                (Some(t), Some(l)) => tracks[l]
+                    .as_ref()
+                    .and_then(|r| {
+                        beat_counter::phase((t, play_seconds, fader(d)), (r, clocks[l].0, fader(l)))
+                    })
+                    .map_or(PhaseMeter::None, |p| {
+                        PhaseMeter::Follower(p, decks.0[d].rate_dir.get() < 0.0)
+                    }),
+                _ => PhaseMeter::None,
+            };
+            self.beat_count(app, d, track, play_seconds, speed != 0.0, &phrases, phase);
             let flags = if show_flags {
                 phrases.clone()
             } else {
@@ -3453,9 +3470,69 @@ impl Gpu {
     }
 }
 
+/// What a deck's phase meter shows.
+enum PhaseMeter {
+    /// Nothing to compare with: a muted line.
+    None,
+    /// The deck the others are compared with: a muted line marked MASTER.
+    Master,
+    /// Against the leading deck, and whether its tempo fader speeds up
+    /// going down (so the tempo guide's arrow points down for faster).
+    Follower(beat_counter::Phase, bool),
+}
+
+impl PhaseMeter {
+    fn fill(&self, c: &mut BeatCount) {
+        match *self {
+            PhaseMeter::None => c.phase = 0,
+            PhaseMeter::Master => c.phase = 1,
+            PhaseMeter::Follower(p, down_faster) => {
+                c.phase = 2;
+                c.phase_fine = p.fine as f32;
+                let ms = p.ms.round() as i64;
+                c.phase_text = if p.beats != 0 {
+                    format!(
+                        "{:+} {}",
+                        p.beats,
+                        if p.beats.abs() == 1 { "BEAT" } else { "BEATS" }
+                    )
+                } else {
+                    format!(
+                        "{}{} ms",
+                        if ms > 0 {
+                            "+"
+                        } else if ms < 0 {
+                            "−"
+                        } else {
+                            ""
+                        },
+                        ms.abs()
+                    )
+                }
+                .replace('-', "−")
+                .into();
+                c.phase_tone = if p.beats != 0 || ms.abs() >= 35 {
+                    2
+                } else if ms.abs() >= 10 {
+                    1
+                } else {
+                    0
+                };
+                // Up lights when the fader must go up.
+                c.tempo_arrow = match (p.tempo, down_faster) {
+                    (0, _) => 0,
+                    (t, true) => -t as i32,
+                    (t, false) => t as i32,
+                };
+            }
+        }
+    }
+}
+
 impl Gpu {
     /// Updates deck `d`'s beat counter from the same smoothed position the
     /// waveforms are drawn at, so its squares change on the beat.
+    #[allow(clippy::too_many_arguments)]
     fn beat_count(
         &mut self,
         app: &AppWindow,
@@ -3464,6 +3541,7 @@ impl Gpu {
         seconds: f64,
         playing: bool,
         drawn: &Phrases,
+        phase: PhaseMeter,
     ) {
         let global = app.global::<BeatCounter>();
         let mode = global.get_mode();
@@ -3481,7 +3559,7 @@ impl Gpu {
             }
             _ => None,
         };
-        let shown = match count {
+        let mut shown = match count {
             None => BeatCount::default(),
             Some(c) => BeatCount {
                 shown: true,
@@ -3496,8 +3574,10 @@ impl Gpu {
                     .map_or(slint::Color::from_rgb_u8(0x9e, 0x9e, 0xa3), |k| {
                         slint::Color::from_argb_encoded(0xff00_0000 | beat_counter::kind_color(k))
                     }),
+                ..Default::default()
             },
         };
+        phase.fill(&mut shown);
         let model = global.get_decks();
         if model.row_data(d).as_ref() != Some(&shown) {
             model.set_row_data(d, shown);

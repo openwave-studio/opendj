@@ -40,6 +40,8 @@ export global Theme {
     // A switch pill's border while on, and its text while off.
     out property <color> pill-on-border: root.light ? #c9bdf2 : #3a3346;
     out property <color> pill-off-text: root.light ? #8e8c96 : #6f6d78;
+    // The chosen part of a stacked switch (the mixer's knob mode).
+    out property <color> pill-on-fill: root.light ? #e6dfff : #4a4060;
     // Section titles.
     out property <color> section-title: root.light ? #4a4852 : #d9d6e4;
     // A fader's cap (top and bottom of its shading) and its edge: graphite,
@@ -161,6 +163,10 @@ export global Theme {
     out property <color> loop: root.lilac;
     out property <color> key: root.light ? #6a4bd4 : #8e7cff;
     out property <color> danger: root.light ? #d70015 : #ff453a;
+    // The phase meter: beats tight (within 10 ms), close (35 ms), off.
+    out property <color> phase-tight: root.c-30d158;
+    out property <color> phase-close: root.c-ffd60a;
+    out property <color> phase-off: root.c-ff9f0a;
     out property <color> well: root.light ? #eceaf1 : #0d0d0e;
     out property <length> radius: 6px;
     // Pads and their page tabs: crisp, only slightly rounded.

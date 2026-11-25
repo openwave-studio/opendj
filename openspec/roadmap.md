@@ -102,6 +102,10 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-instrument-sequencer](changes/add-instrument-sequencer/proposal.md) (a Pigments-style step sequencer in the instrument deck when its keyboard is hidden: pitch, octave, velocity, gate and chance lanes with their own lengths, accent and slide, slots A-D, on the mix's beat and in key; issue #819, a user request, 2026-11-16; moved from v1.x 2026-11-17 to build it now; patterns in presets (2.3) moved to v0.9 2026-11-17)
 - [add-list-moves](changes/add-list-moves/proposal.md) (moving tracks and lists: tree drop line before, into and after with free list order, folders opening on hover, Move to…; the Sidelist shows any playlist or crate; ⌥-drag moves; a note with Undo; a user request, 2026-11-16)
 
+## v0.9.5 · Mixing by ear
+
+- [add-phase-meter](changes/add-phase-meter/proposal.md) (a phase meter and tempo guide per deck in 2-Deck: an EARLY/LATE line with ms against the master deck, whole beats off, tempo arrows, and the beat counter moved to a strip under the overview; from a club-mode and CDJ comparison, a user request, issue #1096, 2026-11-25)
+
 ## v1.0 · Ready for any DJ switching over
 
 - [add-layout-customization](changes/add-layout-customization/proposal.md)
