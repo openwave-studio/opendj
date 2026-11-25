@@ -57,6 +57,9 @@
 ## 5. Shared transport
 
 - [ ] 5.1 Link, MIDI clock and transport split out of `opendj-engine` into a crate both apps use
+- [x] 5.2 The Studio engine in its own crate with no sound card or UI (`opendj-studio-engine`), able to follow a leader's beat and tempo
+- [ ] 5.3 openDJ's Session deck: a Studio set on a fifth deck (its own mixer channel, labelled Session), on its own real-time thread a block ahead, following openDJ's master tempo
+- [ ] 5.4 Recording MIDI and audio (a deck or the master) into clips, and capturing the last bars, from the Session deck
 
 ## 6. Arrangement
 

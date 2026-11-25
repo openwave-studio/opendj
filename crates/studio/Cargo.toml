@@ -11,9 +11,10 @@ name = "opendj-studio"
 path = "src/main.rs"
 
 [dependencies]
+# Tracks, clips, devices and Live sets: everything but the sound card and UI.
+opendj-studio-engine = { path = "../studio-engine" }
 # The Groove Box kits and samples. Without Whisper, which the studio
-# doesn't need. openDJ never depends on this crate, so it can move to its
-# own repository.
+# doesn't need.
 opendj-engine = { path = "../engine", default-features = false }
 # Runs plug-ins in helper processes (the client side only).
 opendj-plugin-host = { path = "../plugin-host", default-features = false }
@@ -27,13 +28,8 @@ slint = { version = "=1.18.1", features = ["renderer-software"] }
 # from source, so nothing to install), drawn by Slint's software renderer.
 midir = "0.11"
 rusb = { version = "0.9", features = ["vendored"] }
-# Reading Ableton Live sets (.als: gzipped XML).
-flate2 = "1"
-roxmltree = "0.21"
 # The studio's settings (studio.json beside openDJ's settings.json).
 serde_json = "1"
-# Hybrid Reverb's convolution (already in the workspace for stems).
-realfft = "3.5"
 # The Push screen preview (`--push-preview`).
 png = "0.18"
 

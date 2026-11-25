@@ -1516,6 +1516,16 @@ fn soft_clip(x: f32) -> f32 {
     }
 }
 
+/// A leader's clock for one block: see [`Studio::process_following`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Lead {
+    /// The beat the block's first frame is heard on (bar 1 = beat 0, four
+    /// beats a bar, as Link's quantum).
+    pub beat: f64,
+    /// Beats per minute over the block.
+    pub tempo: f64,
+}
+
 /// The engine with its clock and command queue: what the audio callback
 /// (or the offline check) runs.
 pub struct Studio {
@@ -1627,9 +1637,37 @@ impl Studio {
         }
     }
 
+    /// Renders `out` following a leader's clock (openDJ's master, for the
+    /// Session deck) instead of the studio's own or Link: `lead` is the
+    /// beat `out`'s first frame is heard on, and the tempo over it. The
+    /// tempo commands the studio gets change nothing while it follows.
+    pub fn process_following(&mut self, out: &mut [[f32; 2]], lead: Lead) {
+        out.fill([0.0; 2]);
+        let per_frame = lead.tempo / 60.0 / self.rate;
+        let mut beat = lead.beat;
+        for chunk in out.chunks_mut(MAX_BLOCK) {
+            let end = beat + chunk.len() as f64 * per_frame;
+            self.block_led(
+                chunk,
+                Some(Span {
+                    start: beat,
+                    end,
+                    tempo: lead.tempo,
+                }),
+            );
+            beat = end;
+        }
+    }
+
     fn block(&mut self, out: &mut [[f32; 2]]) {
+        self.block_led(out, None);
+    }
+
+    /// One block, on `lead`'s beats when given, else Link's or our own.
+    fn block_led(&mut self, out: &mut [[f32; 2]], lead: Option<Span>) {
         let frames = out.len();
-        let linked = self.link.as_mut().and_then(|l| l.begin(frames));
+        let led = lead.is_some();
+        let linked = lead.or_else(|| self.link.as_mut().and_then(|l| l.begin(frames)));
         // Commands land at the start of the block.
         let now = match &linked {
             Some(s) => s.start,
@@ -1646,6 +1684,7 @@ impl Studio {
                     }
                 }
                 Some(ClockChange::Stop) => {}
+                Some(ClockChange::Tempo(_)) if led => {}
                 Some(ClockChange::Tempo(bpm)) => {
                     let bpm = bpm.clamp(40.0, 250.0);
                     self.clock.set_tempo(bpm);
@@ -1765,6 +1804,36 @@ mod tests {
             .collect();
         let bar = (4.0 * frames_per_beat(120.0)) as u64;
         assert_eq!(&ons[..3], &[0, bar, 2 * bar]);
+    }
+
+    #[test]
+    fn following_a_leader_launches_on_its_bar() {
+        let (mut s, mut r) = Studio::new(&one_note_set(), RATE, 120.0);
+        s.engine.keep_log(64);
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        // The leader is on beat 1.5 at 126 BPM; the studio's own 120 and a
+        // tempo command are ignored.
+        r.commands.push(Command::Tempo(90.0)).ok();
+        let tempo = 126.0;
+        let mut beat = 1.5;
+        let mut out = vec![[0.0; 2]; BLOCK];
+        for _ in 0..(8.0 * frames_per_beat(tempo)) as usize / BLOCK {
+            s.process_following(&mut out, Lead { beat, tempo });
+            beat += BLOCK as f64 * tempo / 60.0 / RATE;
+        }
+        let ons: Vec<u64> = s
+            .engine
+            .log()
+            .iter()
+            .filter(|e| e.on)
+            .map(|e| e.frame)
+            .collect();
+        // Bar 2 (beat 4) is 2.5 beats in, then a bar later.
+        let fpb = frames_per_beat(tempo);
+        for (got, want) in ons.iter().zip([2.5 * fpb, 6.5 * fpb]) {
+            assert!(got.abs_diff(want.round() as u64) <= 1, "{ons:?}");
+        }
+        assert_eq!(ons.len(), 2, "{ons:?}");
     }
 
     #[test]

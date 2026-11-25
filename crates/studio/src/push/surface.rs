@@ -18,7 +18,7 @@ mod sequencer;
 mod view;
 
 pub use mode::{Menu, Mode};
-pub use sequencer::{DRUM_NAMES, RESOLUTIONS};
+pub use sequencer::RESOLUTIONS;
 pub use view::View;
 
 /// Ableton's SysEx header for Push 2.

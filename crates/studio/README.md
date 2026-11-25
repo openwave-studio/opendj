@@ -39,6 +39,14 @@ Shift with them jumps by eight.
 
 ## How it's built
 
+The engine is its own crate, `crates/studio-engine` (`opendj-studio-engine`),
+with no sound card, MIDI port or UI, so openDJ can play a set as its Session
+deck. `Studio::process_following` renders on a leader's beat and tempo
+(openDJ's master) instead of the studio's own clock or Link. This crate adds
+the sound card (`audio.rs`), MIDI ports (`midi.rs`), Push (`push/`), the
+settings and the window. The modules below are in the engine crate unless
+they're under `src/push/` or named as the app's.
+
 - `clip.rs`: clips and the demo set (the model, no sample rate).
 - `engine.rs`: the audio thread's side. The model is compiled into an
   immutable `Program` that arrives over a wait-free queue (the old one goes
@@ -70,7 +78,7 @@ Shift with them jumps by eight.
 The design follows a review of Suhina, transit, maolan and Ardour
 (`notes/daw-architecture-review.md` in the project files).
 
-openDJ never depends on this crate, so it can move to its own repository.
+openDJ never depends on this app crate, only on `opendj-studio-engine`.
 
 ## Inputs and outputs
 
@@ -137,5 +145,5 @@ Code: `src/push/` (`surface.rs` for the controls and lights, with
 `surface/view.rs` for what the pads do and `surface/mode.rs` for the
 encoders and the buttons by the screen; `display.rs`
 and `ui/push.slint` for the screen, drawn by Slint's software renderer),
-`src/steps.rs` for stage clips, `src/scale.rs` for scales and layouts; the protocol is Ableton's Push 2 MIDI and Display
+the engine's `steps.rs` for stage clips and `scale.rs` for scales and layouts; the protocol is Ableton's Push 2 MIDI and Display
 Interface Manual.

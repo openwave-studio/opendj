@@ -15,12 +15,12 @@ openDJ Studio is a separate app in this workspace that reuses those crates.
 - **MIDI clips first**: looping note clips play built-in sounds (openDJ's Groove Box kits and a small synth), then plugin instruments through `opendj-plugin-host`.
 - **Audio clips next**: clips warped to the tempo from openDJ's library, with its beatgrids and stems.
 - **Later**: piano roll and recording into slots, save and open sets, a shared transport crate split out of `opendj-engine`, an Arrangement timeline, automation, export.
-- **One-way dependency**: the studio uses openDJ crates; openDJ never uses the studio, so the studio can move to its own repository.
+- **Shared engine**: the studio's engine is its own crate with no sound card or UI (`opendj-studio-engine`). The Studio app is for production (arrangement, editing, deep device editing, saving). openDJ plays a set on a Session deck for performance: the clip grid, mixer, devices, MIDI effects, controllers and recording into clips, but no arrangement or clip editing. openDJ never uses the Studio app crate.
 
 ## Out of scope
 
 - Forking another DAW; code from permissively licensed ones may be borrowed with notices.
-- Running inside openDJ as a mode (decided: a separate app).
+- The full Studio app inside openDJ: openDJ gets the Session deck only.
 
 ## Capabilities
 

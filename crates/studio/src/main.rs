@@ -8,25 +8,19 @@
 //! offline and prints launch timing and CPU figures; `--render out.wav`
 //! writes 32 bars of the demo set going through its scenes.
 //!
-//! openDJ never depends on this crate: it can move to its own repository.
+//! The engine is in `opendj-studio-engine`, so openDJ can play a set too;
+//! this crate adds the sound card, MIDI ports, Push and the window.
 
-mod als;
+// The engine's modules, under their old paths.
+pub use opendj_studio_engine::{
+    als, clip, control, conv, devices, engine, fx, link, plugins, scale, sound, steps,
+};
+
 mod audio;
 mod check;
-mod clip;
-mod control;
-mod conv;
-mod devices;
-mod engine;
-mod fx;
-mod link;
 mod midi;
-mod plugins;
 mod push;
-mod scale;
 mod settings;
-mod sound;
-mod steps;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;

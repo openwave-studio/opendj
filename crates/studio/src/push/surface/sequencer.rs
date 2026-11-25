@@ -27,19 +27,6 @@ pub const RESOLUTIONS: [(f64, &str); 8] = [
     (1.0 / 12.0, "1/32t"),
 ];
 
-/// The built-in kit's sounds, in drum pad order.
-pub const DRUM_NAMES: [&str; 9] = [
-    "Kick",
-    "Snare",
-    "Closed hat",
-    "Open hat",
-    "Clap",
-    "Rim",
-    "Cowbell",
-    "Crash",
-    "Ride",
-];
-
 /// Steps on the pads at once.
 pub const STEPS: usize = 32;
 /// Pad bits of the step rows (the top four).

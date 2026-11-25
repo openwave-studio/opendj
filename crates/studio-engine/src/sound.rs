@@ -12,6 +12,19 @@ use opendj_engine::kits;
 use opendj_engine::sampler::Sample;
 
 /// A track's instrument.
+/// The built-in kit's sounds, in drum pad order.
+pub const DRUM_NAMES: [&str; 9] = [
+    "Kick",
+    "Snare",
+    "Closed hat",
+    "Open hat",
+    "Clap",
+    "Rim",
+    "Cowbell",
+    "Crash",
+    "Ride",
+];
+
 pub enum Instrument {
     Drums(Box<Drums>),
     /// A Drum Rack from a set, its own samples on its pads.

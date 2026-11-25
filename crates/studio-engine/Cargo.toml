@@ -1,0 +1,18 @@
+[package]
+name = "opendj-studio-engine"
+description = "openDJ Studio's engine: tracks, clips, scenes, devices and Live sets, with no audio device or UI, for the Studio app and openDJ's Session deck"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# The Groove Box kits and samples, and the filters. Without Whisper.
+opendj-engine = { path = "../engine", default-features = false }
+# Runs plug-ins in helper processes (the client side only).
+opendj-plugin-host = { path = "../plugin-host", default-features = false }
+rtrb = "0.4"
+rusty_link = "0.4"
+flate2 = "1"
+roxmltree = "0.21"
+realfft = "3.5"

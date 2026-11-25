@@ -8291,19 +8291,30 @@ name = "opendj-studio"
 version = "1.0.0-dev"
 dependencies = [
  "cpal",
- "flate2",
  "midir",
  "opendj-engine",
  "opendj-plugin-host",
+ "opendj-studio-engine",
  "png 0.18.1",
- "realfft",
- "roxmltree",
  "rtrb",
  "rusb",
  "rusty_link",
  "serde_json",
  "slint",
  "slint-build",
+]
+
+[[package]]
+name = "opendj-studio-engine"
+version = "1.0.0-dev"
+dependencies = [
+ "flate2",
+ "opendj-engine",
+ "opendj-plugin-host",
+ "realfft",
+ "roxmltree",
+ "rtrb",
+ "rusty_link",
 ]
 
 [[package]]

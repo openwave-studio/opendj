@@ -212,7 +212,7 @@ impl Controls {
                 .iter()
                 .find(|(n, _)| *n == note)
                 .map_or_else(|| "Empty".into(), |(_, name)| name.clone()),
-            _ => crate::push::surface::DRUM_NAMES
+            _ => crate::sound::DRUM_NAMES
                 .get(i)
                 .copied()
                 .unwrap_or("Pad")
