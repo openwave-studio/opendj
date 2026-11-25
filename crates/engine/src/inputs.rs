@@ -1,5 +1,7 @@
 //! The microphone and auxiliary inputs, Mixxx's `[Microphone]` and
-//! `[Auxiliary1]` to `[Auxiliary8]`, and the instrument, `[Instrument1]`.
+//! `[Auxiliary1]` to `[Auxiliary8]`, the instrument, `[Instrument1]`, and
+//! the Session, `[Session1]`: openDJ Studio's clip launcher, which the app
+//! plugs in as a [`SessionSource`].
 //! The microphone and auxiliaries take
 //! audio from an input device (see [`crate::output`]), the instrument from an
 //! instrument plugin playing the notes it is sent (see
@@ -26,7 +28,7 @@ use crate::controls::alias;
 use crate::dsp::Isolator;
 use crate::effects::EffectRack;
 
-pub const NUM_INPUTS: usize = 10;
+pub const NUM_INPUTS: usize = 11;
 pub const MICROPHONE: usize = 0;
 pub const AUXILIARY: usize = 1;
 /// The instrument plugin, joining the music as the auxiliary inputs do.
@@ -42,6 +44,10 @@ pub const AUXILIARY_6: usize = 7;
 pub const AUXILIARY_7: usize = 8;
 pub const AUXILIARY_8: usize = 9;
 pub const NUM_AUXILIARIES: usize = 8;
+/// The Session (openDJ Studio's clips, see [`SessionSource`]): a channel of
+/// its own that joins the music, as a deck does. Last, so the others keep
+/// their numbers.
+pub const SESSION: usize = 10;
 /// The auxiliary inputs, in order.
 pub const AUXILIARIES: [usize; NUM_AUXILIARIES] = [
     AUXILIARY,
@@ -56,8 +62,20 @@ pub const AUXILIARIES: [usize; NUM_AUXILIARIES] = [
 
 /// `[ChannelN],live_input` for the Mixer: the deck plays the auxiliary
 /// channels, the Mixer's strips, summed (see [`Routing::Mixer`]). After the
-/// inputs' own values, 1 + each input.
-pub const MIXER: usize = NUM_INPUTS + 1;
+/// inputs' own values, 1 + each input, as it was before the Session came:
+/// saved decks and mappings keep it. No deck plays the Session yet.
+pub const MIXER: usize = 11;
+const _: () = assert!(MIXER == SESSION + 1);
+
+/// The Session's sound: openDJ Studio's engine, which the app runs on a
+/// real-time thread of its own (`opendj-studio-engine`), so a heavy set
+/// never makes the decks wait. Called on the audio thread once a buffer;
+/// it must not block, lock or allocate.
+pub trait SessionSource: Send {
+    /// Fills `out` with the buffer about to be heard: silence when the
+    /// Session has nothing ready.
+    fn render(&mut self, out: &mut [[f32; 2]]);
+}
 
 /// The device an auxiliary input's route names when the strip plays the
 /// Mixer deck's own Groove Box instead of an interface's channels.
@@ -98,6 +116,7 @@ pub const fn input_group(input: usize) -> &'static str {
         "[Auxiliary6]",
         "[Auxiliary7]",
         "[Auxiliary8]",
+        "[Session1]",
     ][input]
 }
 
@@ -436,6 +455,8 @@ pub(crate) struct Input {
     /// The master deck's key, for Auto.
     master_key: Option<crate::key::Key>,
     feed: Option<InputFeed>,
+    /// The Session's sound (see [`SessionSource`]); only for [`SESSION`].
+    source: Option<Box<dyn SessionSource>>,
     /// It plays the Mixer deck's Groove Box (see [`GROOVE_BOX`]) instead of
     /// a device.
     groove: bool,
@@ -534,6 +555,7 @@ impl Input {
                 Vec::new()
             },
             feed: None,
+            source: None,
             groove: false,
             groove_block: vec![[0.0; 2]; 4096],
             groove_got: 0,
@@ -595,6 +617,16 @@ impl Input {
     /// The master deck's key now, which scale mode Auto plays in.
     pub(crate) fn set_master_key(&mut self, key: Option<crate::key::Key>) {
         self.master_key = key;
+    }
+
+    /// Plays the Session from `source` from now on, or nothing. Returns the
+    /// old source, to be dropped off the audio thread.
+    pub(crate) fn set_source(
+        &mut self,
+        source: Option<Box<dyn SessionSource>>,
+    ) -> Option<Box<dyn SessionSource>> {
+        self.c.configured.set_bool(source.is_some());
+        std::mem::replace(&mut self.source, source)
     }
 
     /// Plays from `feed` from now on, or from nothing. Returns the old feed,
@@ -699,6 +731,9 @@ impl Input {
             let playing = fx.finish_instrument(buf);
             self.c.configured.set_bool(fx.has_instrument());
             playing
+        } else if let Some(source) = &mut self.source {
+            source.render(buf);
+            true
         } else if self.groove {
             // Silent while no deck plays the Mixer to render it.
             let got = std::mem::take(&mut self.groove_got).min(frames);

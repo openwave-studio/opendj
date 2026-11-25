@@ -16,5 +16,6 @@ pub mod fx;
 pub mod link;
 pub mod plugins;
 pub mod scale;
+pub mod session;
 pub mod sound;
 pub mod steps;

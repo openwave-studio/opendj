@@ -177,6 +177,7 @@ pub struct AudioEngine {
     spectrum_feed: Mutex<Option<recorder::Feed>>,
     /// Picks the outputs MIDI clock goes to.
     midi_clock: midi_clock::MidiClock,
+    beat_clock: Arc<midi_clock::BeatClock>,
 }
 
 /// The master output, for broadcasting: a copy of what the speakers get,
@@ -271,8 +272,9 @@ impl AudioEngine {
             NUM_DECKS,
             rate,
         );
+        let beat_clock = engine.beat_clock();
         let midi_clock = midi_clock::start(
-            engine.beat_clock(),
+            beat_clock.clone(),
             engine.clock_in(),
             engine.link_handle(),
             &registry,
@@ -311,12 +313,29 @@ impl AudioEngine {
             broadcast_feed: Mutex::new(broadcast_feed),
             spectrum_feed: Mutex::new(spectrum_feed),
             midi_clock,
+            beat_clock,
         }
     }
 
     /// MIDI clock out: which outputs it sends to.
     pub fn midi_clock(&self) -> midi_clock::MidiClock {
         self.midi_clock.clone()
+    }
+
+    /// The master deck's beat and tempo as each buffer is heard (tempo 0
+    /// while no deck plays), for the Session to follow.
+    pub fn beat_clock(&self) -> Arc<midi_clock::BeatClock> {
+        self.beat_clock.clone()
+    }
+
+    /// Plays the Session (openDJ Studio's clips) from `source` on its own
+    /// channel, `[Session1]`, or nothing. Returns the source it played
+    /// before.
+    pub fn set_session(
+        &self,
+        source: Option<Box<dyn inputs::SessionSource>>,
+    ) -> Option<Box<dyn inputs::SessionSource>> {
+        self.output.borrow().set_session(source)
     }
 
     /// The master output for broadcasting; there is only one, so later

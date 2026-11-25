@@ -398,10 +398,10 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            // Dark to light: deep red #C8372D, amber #F0A830, ice blue #B4E4FF.
-            low: [0.784, 0.216, 0.176, 1.0],
-            mid: [0.941, 0.659, 0.188, 1.0],
-            high: [0.706, 0.894, 1.0, 1.0],
+            // Dark to light: deep red, amber, ice blue (RGB's first palette).
+            low: RGB_PALETTES[0][0],
+            mid: RGB_PALETTES[0][1],
+            high: RGB_PALETTES[0][2],
             background: [0.05, 0.05, 0.055, 1.0],
         }
     }
@@ -425,7 +425,27 @@ pub const BAND_PALETTES: [[[f32; 4]; 3]; 2] = [
     [rgb(0xB69CFF), rgb(0x22C7E0), rgb(0xF4FBFF)],
 ];
 
+/// The palettes RGB ([`Style::Rgb`]) comes in, as low, mid and high: deep
+/// red, amber and ice blue (the default, dark to light); and red, green and
+/// blue, the classic additive look.
+pub const RGB_PALETTES: [[[f32; 4]; 3]; 2] = [
+    [rgb(0xC8372D), rgb(0xF0A830), rgb(0xB4E4FF)],
+    [rgb(0xE8322A), rgb(0x3CD25A), rgb(0x3C82FF)],
+];
+
 impl Palette {
+    /// The default background with one of [`RGB_PALETTES`] (the first if
+    /// out of range).
+    pub fn rgb(index: usize) -> Self {
+        let [low, mid, high] = RGB_PALETTES[if index < RGB_PALETTES.len() { index } else { 0 }];
+        Self {
+            low,
+            mid,
+            high,
+            ..Self::default()
+        }
+    }
+
     /// The default background with one of [`BAND_PALETTES`] (the first if
     /// out of range).
     pub fn bands(index: usize) -> Self {

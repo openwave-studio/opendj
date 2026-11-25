@@ -1153,6 +1153,15 @@ impl Outputs {
     }
 
     /// Whether the system refused the audio thread real-time priority.
+    /// The Session plays from `source`, or nothing; the old one comes back,
+    /// to be dropped here rather than on the audio thread.
+    pub(crate) fn set_session(
+        &self,
+        source: Option<Box<dyn crate::inputs::SessionSource>>,
+    ) -> Option<Box<dyn crate::inputs::SessionSource>> {
+        self.engine.lock().ok()?.set_session(source)
+    }
+
     pub(crate) fn realtime_denied(&self) -> bool {
         self.health.realtime_denied.load(Ordering::Relaxed)
     }

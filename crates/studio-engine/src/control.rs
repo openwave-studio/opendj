@@ -66,6 +66,14 @@ impl TrackInfo {
     pub fn audio(&self) -> bool {
         self.sound == Sound::Audio
     }
+
+    /// Whether an External Instrument plays it: hardware out over MIDI,
+    /// its sound back in from the sound card.
+    pub fn external(&self) -> bool {
+        self.devices
+            .iter()
+            .any(|d| matches!(d.builtin, Some(Settings::External(_))))
+    }
 }
 
 /// Which of the track's controls a mixer value is.

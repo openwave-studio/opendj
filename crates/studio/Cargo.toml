@@ -1,0 +1,40 @@
+[package]
+name = "opendj-studio"
+description = "openDJ Studio: a clip-launching DAW on openDJ's engine (test app)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "opendj-studio"
+path = "src/main.rs"
+
+[dependencies]
+# Tracks, clips, devices and Live sets: everything but the sound card and UI.
+opendj-studio-engine = { path = "../studio-engine" }
+# The Groove Box kits and samples. Without Whisper, which the studio
+# doesn't need.
+opendj-engine = { path = "../engine", default-features = false }
+# Runs plug-ins in helper processes (the client side only).
+opendj-plugin-host = { path = "../plugin-host", default-features = false }
+cpal = "0.18"
+rtrb = "0.4"
+rusty_link = "0.4"
+# The Push screen uses Slint's software renderer on its own thread, which
+# leans on Slint keeping its platform per thread: pinned until checked again.
+slint = { version = "=1.18.1", features = ["renderer-software"] }
+# Ableton Push 2: MIDI on its User port, the screen over USB (libusb built
+# from source, so nothing to install), drawn by Slint's software renderer.
+midir = "0.11"
+rusb = { version = "0.9", features = ["vendored"] }
+# The studio's settings (studio.json beside openDJ's settings.json).
+serde_json = "1"
+# The Push screen preview (`--push-preview`).
+png = "0.18"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+cpal = { version = "0.18", features = ["realtime"] }
+
+[build-dependencies]
+slint-build = "~1.18"

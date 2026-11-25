@@ -3,7 +3,7 @@
 //! on purpose, so the isolation can be tested without third-party plugins.
 
 use crate::client::Transport;
-use crate::shm::{Midi, CHANNELS};
+use crate::shm::{Midi, CHANNELS, MAX_EVENTS};
 
 /// One loaded effect, inside the helper, on its audio thread.
 pub trait Effect: Send {
@@ -15,6 +15,12 @@ pub trait Effect: Send {
         transport: &Transport,
         events: &[Midi],
     );
+
+    /// The MIDI the plug-in sent during the last [`Effect::process`] (a
+    /// sequencer's notes, controllers), at frames of that block.
+    fn midi_out(&self) -> &[Midi] {
+        &[]
+    }
 }
 
 /// The part of a plugin that must stay on the helper's main thread
@@ -303,12 +309,13 @@ pub fn page_names(params: &[u32], pages: &[(String, Vec<u32>)]) -> Vec<String> {
 }
 
 /// Ids of the test effects.
-pub const TEST_EFFECTS: [&str; 5] = [
+pub const TEST_EFFECTS: [&str; 6] = [
     "test-gain",
     "test-crash",
     "test-hang",
     "test-slow",
     "test-synth",
+    "test-arp",
 ];
 
 /// Loads `plugin`, or says why not.
@@ -354,6 +361,7 @@ pub fn load(
             "test-hang" => Ok(test(Box::new(Hang), id, "Hang", 1.0, 0.0)),
             "test-slow" => Ok(test(Box::new(Slow), id, "Milliseconds", 100.0, 0.0)),
             "test-synth" => Ok(test(Box::<Synth>::default(), id, "Volume", 1.0, 1.0)),
+            "test-arp" => Ok(test(Box::<Arp>::default(), id, "Octaves", 1.0, 1.0)),
             _ => Err(format!("unknown effect {id:?}")),
         },
         #[cfg(feature = "formats")]
@@ -457,6 +465,44 @@ impl Effect for Slow {
             std::thread::sleep(std::time::Duration::from_secs_f32(params[0] / 1000.0));
         }
         Gain.process(input, output, &[1.0], t, &[]);
+    }
+}
+
+/// A MIDI effect for tests: passes the audio and sends back every note it
+/// is sent, parameter 0 octaves up, at the same frame.
+struct Arp {
+    sent: Vec<Midi>,
+}
+
+impl Default for Arp {
+    fn default() -> Self {
+        Arp {
+            sent: Vec::with_capacity(MAX_EVENTS),
+        }
+    }
+}
+
+impl Effect for Arp {
+    fn process(
+        &mut self,
+        input: [&[f32]; CHANNELS],
+        output: [&mut [f32]; CHANNELS],
+        params: &[f32],
+        t: &Transport,
+        events: &[Midi],
+    ) {
+        self.sent.clear();
+        let up = (params[0].round() as u8).saturating_mul(12);
+        for e in events.iter().take(MAX_EVENTS) {
+            let mut m = *e;
+            m.data[1] = m.data[1].saturating_add(up).min(127);
+            self.sent.push(m);
+        }
+        Gain.process(input, output, &[1.0], t, &[]);
+    }
+
+    fn midi_out(&self) -> &[Midi] {
+        &self.sent
     }
 }
 

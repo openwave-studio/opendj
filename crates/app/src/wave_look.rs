@@ -8,12 +8,14 @@
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use opendj_waveform::{Palette, Style, BAND_PALETTES};
+use opendj_waveform::{Palette, Style, BAND_PALETTES, RGB_PALETTES};
 
 use crate::settings;
 
 pub const COLOR_KEY: &str = "waveform_color";
 pub const PALETTE_KEY: &str = "waveform_palette";
+/// RGB's palette: 0 Red-Amber (the default), 1 Red-Green-Blue.
+pub const RGB_PALETTE_KEY: &str = "waveform_rgb_palette";
 /// Full or Half, for the large waveforms and the overviews alike (the key
 /// keeps its first name, from when only the overview could be half).
 pub const HALF_KEY: &str = "waveform_overview_half";
@@ -39,9 +41,6 @@ const VOCALS_LYRICS: u32 = 2;
 pub const PHRASES_LABELS: [&str; 4] = ["Off", "Overview", "Waveform", "Both"];
 const PHRASE_BAR_KEY: &str = "phrases_visible";
 const PHRASE_FLAGS_KEY: &str = "phrase_flags_visible";
-/// BPM labels, in the waveforms button's drop-down: the large waveforms'
-/// tempo labels where the tempo changes (on at first).
-pub const TEMPO_LABELS_KEY: &str = "tempo_labels_visible";
 
 /// The color schemes, in the drop-down's order.
 pub const COLOR_LABELS: [&str; 3] = ["RGB", "3-Band", "Stems"];
@@ -57,12 +56,12 @@ pub const NEEDLE_AT: [f32; 2] = [0.5, 0.25];
 
 static COLOR: AtomicU32 = AtomicU32::new(0);
 static PALETTE: AtomicU32 = AtomicU32::new(0);
+static RGB_PALETTE: AtomicU32 = AtomicU32::new(0);
 static HALF: AtomicU32 = AtomicU32::new(0);
 static NEEDLE: AtomicU32 = AtomicU32::new(0);
 static VERSION: AtomicU32 = AtomicU32::new(1);
 static GAIN: AtomicU32 = AtomicU32::new(1);
 static VOCALS: AtomicU32 = AtomicU32::new(VOCALS_LYRICS);
-static TEMPO_LABELS: AtomicU32 = AtomicU32::new(1);
 
 /// Reads the saved choices; called once at start.
 pub fn load() {
@@ -70,14 +69,11 @@ pub fn load() {
     let saved = settings::number(COLOR_KEY, 0.0).max(0.0) as u32;
     COLOR.store(color_from_saved(saved) as u32, Ordering::Relaxed);
     PALETTE.store(read(PALETTE_KEY, PALETTE_LABELS.len()), Ordering::Relaxed);
+    RGB_PALETTE.store(read(RGB_PALETTE_KEY, RGB_PALETTES.len()), Ordering::Relaxed);
     HALF.store(read(HALF_KEY, SHAPE_LABELS.len()), Ordering::Relaxed);
     NEEDLE.store(read(NEEDLE_KEY, NEEDLE_AT.len()), Ordering::Relaxed);
     GAIN.store(settings::flag(GAIN_KEY, true) as u32, Ordering::Relaxed);
     VOCALS.store(saved_vocals(), Ordering::Relaxed);
-    TEMPO_LABELS.store(
-        settings::flag(TEMPO_LABELS_KEY, true) as u32,
-        Ordering::Relaxed,
-    );
     crate::browser::set_wave_lyrics(vocals() == VOCALS_LYRICS as usize);
     VERSION.fetch_add(1, Ordering::Relaxed);
 }
@@ -128,6 +124,10 @@ pub fn choose_palette(index: usize) {
     pick(&PALETTE, PALETTE_KEY, index, PALETTE_LABELS.len());
 }
 
+pub fn choose_rgb_palette(index: usize) {
+    pick(&RGB_PALETTE, RGB_PALETTE_KEY, index, RGB_PALETTES.len());
+}
+
 pub fn choose_half(index: usize) {
     pick(&HALF, HALF_KEY, index, SHAPE_LABELS.len());
 }
@@ -164,9 +164,11 @@ pub fn show_vocals() -> bool {
     VOCALS.load(Ordering::Relaxed) == VOCALS_BAR
 }
 
-/// Whether the large waveforms label the tempo where it changes.
+/// Whether the large waveforms label the tempo where it changes: always,
+/// as only a grid whose tempo moves (Flexible, or with tempo sections)
+/// has labels to show.
 pub fn tempo_labels() -> bool {
-    TEMPO_LABELS.load(Ordering::Relaxed) == 1
+    true
 }
 
 /// Which of [`PHRASES_LABELS`] the overviews' phrase bar and the large
@@ -225,6 +227,8 @@ pub fn install(app: &crate::AppWindow) {
     let a = after.clone();
     ui.on_pick_palette(move |i| a(&|| choose_palette(i.max(0) as usize)));
     let a = after.clone();
+    ui.on_pick_rgb_palette(move |i| a(&|| choose_rgb_palette(i.max(0) as usize)));
+    let a = after.clone();
     ui.on_pick_half(move |half| a(&|| choose_half(half as usize)));
     let a = after.clone();
     ui.on_pick_needle_left(move |left| a(&|| choose_needle(left as usize)));
@@ -249,22 +253,12 @@ pub fn install(app: &crate::AppWindow) {
             app.window().request_redraw();
         }
     });
-    // BPM labels on the large waveforms.
-    ui.set_tempo_labels(tempo_labels());
-    let weak = app.as_weak();
-    ui.on_pick_tempo_labels(move |on| {
-        TEMPO_LABELS.store(on as u32, Ordering::Relaxed);
-        settings::set(TEMPO_LABELS_KEY, serde_json::json!(on));
-        if let Some(app) = weak.upgrade() {
-            app.global::<crate::WaveLook>().set_tempo_labels(on);
-            app.window().request_redraw();
-        }
-    });
 }
 
 fn show(ui: &crate::WaveLook) {
     ui.set_color(color() as i32);
     ui.set_palette(palette_index() as i32);
+    ui.set_rgb_palette(RGB_PALETTE.load(Ordering::Relaxed) as i32);
     ui.set_half(half());
     ui.set_needle(needle());
     ui.set_vocals(vocals() as i32);
@@ -284,11 +278,11 @@ pub fn style() -> Style {
     }
 }
 
-/// The band colours: RGB keeps its deep red, amber and ice blue; 3-Band uses the
-/// palette picked.
+/// The band colours: RGB and 3-Band use the palette picked for each.
 pub fn palette() -> Palette {
     match style() {
         Style::Bands => Palette::bands(palette_index()),
+        Style::Rgb => Palette::rgb(RGB_PALETTE.load(Ordering::Relaxed) as usize),
         _ => Palette::default(),
     }
 }
@@ -306,6 +300,10 @@ mod tests {
         COLOR.store(0, Ordering::Relaxed);
         assert_eq!(style(), Style::Rgb);
         assert_eq!(palette(), Palette::default());
+        RGB_PALETTE.store(1, Ordering::Relaxed);
+        assert_eq!(palette(), Palette::rgb(1));
+        assert_ne!(palette(), Palette::default());
+        RGB_PALETTE.store(0, Ordering::Relaxed);
     }
 
     #[test]
