@@ -803,6 +803,7 @@ component PhaseLine inherits HorizontalLayout {
     in property <color> tone;
     property <bool> live: count.phase == 2;
     spacing: 5px;
+    horizontal-stretch: 0;
     Text { text: "EARLY"; color: live ? Theme.text-dim : Theme.n-48484c; font-size: 8px; font-weight: 700; vertical-alignment: center; }
     Rectangle {
         width: 110px;
@@ -858,10 +859,10 @@ component BeatStrip inherits Rectangle {
         spacing: 8px;
         // Left deck: phase outside (left), counter by the mixer (right).
         if !mirrored && loaded: PhaseLine { count: count; tone: tone; }
-        if !mirrored && loaded: Text { width: 52px; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; vertical-alignment: center; }
+        if !mirrored && loaded: Text { min-width: 44px; horizontal-stretch: 0; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; vertical-alignment: center; }
         if !mirrored && loaded: TempoArrows { arrow: count.phase == 2 ? count.tempo-arrow : 0; }
         if mirrored && counter: HorizontalLayout {
-            alignment: center;
+            horizontal-stretch: 0;
             spacing: 3px;
             for i in 4: VerticalLayout {
                 alignment: center;
@@ -880,7 +881,7 @@ component BeatStrip inherits Rectangle {
         if !mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 10px; font-weight: 600; vertical-alignment: center; }
         if !mirrored && phrases: Text { text: count.label; color: Theme.text; font-size: 11px; font-weight: 600; vertical-alignment: center; }
         if !mirrored && counter: HorizontalLayout {
-            alignment: center;
+            horizontal-stretch: 0;
             spacing: 3px;
             for i in 4: VerticalLayout {
                 alignment: center;
@@ -895,7 +896,7 @@ component BeatStrip inherits Rectangle {
         }
         // Right deck: the same, mirrored.
         if mirrored && loaded: TempoArrows { arrow: count.phase == 2 ? count.tempo-arrow : 0; }
-        if mirrored && loaded: Text { width: 52px; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center; }
+        if mirrored && loaded: Text { min-width: 44px; horizontal-stretch: 0; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center; }
         if mirrored && loaded: PhaseLine { count: count; tone: tone; }
     }
 }

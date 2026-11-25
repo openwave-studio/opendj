@@ -3526,6 +3526,7 @@ impl PhaseMeter {
 impl Gpu {
     /// Updates deck `d`'s beat counter from the same smoothed position the
     /// waveforms are drawn at, so its squares change on the beat.
+    #[allow(clippy::too_many_arguments)]
     fn beat_count(
         &mut self,
         app: &AppWindow,
