@@ -172,6 +172,73 @@ pub fn count(t: &Track, seconds: f64, phrases: &[(f64, PhraseKind)]) -> Option<C
     })
 }
 
+/// Tempo within this many BPM of the reference counts as matched: the tempo
+/// guide's arrows go dark.
+pub const TEMPO_MATCHED_BPM: f64 = 0.05;
+
+/// One deck against its reference deck (the sync leader, else another
+/// playing deck), for the phase meter and the tempo guide.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Phase {
+    /// How far this deck's beat is from the reference's nearest one, in
+    /// beats, -0.5 to 0.5; above 0 it lands late (after the reference's).
+    pub fine: f64,
+    /// The same in milliseconds at this deck's tempo.
+    pub ms: f64,
+    /// Whole beats this deck's bar lands late on the reference's, -1 to 2
+    /// (0 on the same beat of the bar; 2 is half a bar either way).
+    pub beats: i64,
+    /// Which way this deck's tempo must go to match: 1 faster, -1 slower,
+    /// 0 matched.
+    pub tempo: i8,
+}
+
+/// The tempo `t` plays at around `seconds`, at speed 1, from its grid.
+fn bpm_at(t: &Track, seconds: f64) -> f64 {
+    (t.beat_at(seconds + 0.25) - t.beat_at(seconds - 0.25)) * 120.0
+}
+
+/// Deck `f` (track, position in seconds and playing speed from its tempo
+/// fader) against reference `r`. Half and double tempo compare beat for
+/// beat at the matching multiple. `None` without a tempo on either.
+pub fn phase(f: (&Track, f64, f64), r: (&Track, f64, f64)) -> Option<Phase> {
+    let (ft, fs, fspeed) = f;
+    let (rt, rs, rspeed) = r;
+    if ft.bpm <= 0.0 || rt.bpm <= 0.0 {
+        return None;
+    }
+    let f_bpm = bpm_at(ft, fs) * fspeed;
+    let r_bpm = bpm_at(rt, rs) * rspeed;
+    if f_bpm <= 0.0 || r_bpm <= 0.0 {
+        return None;
+    }
+    // 2 when this deck runs at double the reference's tempo, 0.5 at half.
+    let scale = 2f64.powf((f_bpm / r_bpm).log2().round().clamp(-1.0, 1.0));
+    let f_beat = ft.beat_at(fs) - first_bar_beat(ft);
+    let r_beat = (rt.beat_at(rs) - first_bar_beat(rt)) * scale;
+    let d = f_beat - r_beat;
+    let whole = d.round();
+    // Further on in its beats than the reference means this deck's beats
+    // land early, so early counts below 0 and late above.
+    let fine = whole - d;
+    let late = (-(whole as i64)).rem_euclid(4);
+    let beats = if late > 2 { late - 4 } else { late };
+    let diff = f_bpm - r_bpm * scale;
+    let tempo = if diff.abs() < TEMPO_MATCHED_BPM {
+        0
+    } else if diff < 0.0 {
+        1
+    } else {
+        -1
+    };
+    Some(Phase {
+        fine,
+        ms: fine * 60_000.0 / f_bpm,
+        beats,
+        tempo,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,5 +323,55 @@ mod tests {
         let mut t = track(0.0);
         t.bpm = 0.0;
         assert_eq!(count(&t, 1.0, &[]), None);
+    }
+
+    #[test]
+    fn phase_in_time_on_the_same_beat() {
+        let t = track(0.0);
+        let p = phase((&t, 10.0, 1.0), (&t, 10.0, 1.0)).unwrap();
+        assert!(p.fine.abs() < 1e-9 && p.beats == 0 && p.tempo == 0);
+    }
+
+    #[test]
+    fn phase_late_by_18_ms() {
+        // At 120 BPM a beat is 500 ms; playing 18 ms behind the reference.
+        let t = track(0.0);
+        let p = phase((&t, 10.0 - 0.018, 1.0), (&t, 10.0, 1.0)).unwrap();
+        assert!((p.ms - 18.0).abs() < 0.5, "{p:?}");
+        assert_eq!(p.beats, 0);
+    }
+
+    #[test]
+    fn phase_early_reads_below_zero() {
+        let t = track(0.0);
+        let p = phase((&t, 10.03, 1.0), (&t, 10.0, 1.0)).unwrap();
+        assert!((p.ms + 30.0).abs() < 0.5, "{p:?}");
+    }
+
+    #[test]
+    fn downbeat_on_the_reference_second_beat_is_one_beat_late() {
+        // This deck is at its downbeat (8 s = beat 16) while the reference
+        // is on its second beat (beat 17).
+        let t = track(0.0);
+        let p = phase((&t, 8.0, 1.0), (&t, 8.5, 1.0)).unwrap();
+        assert_eq!(p.beats, 1);
+        let p = phase((&t, 8.5, 1.0), (&t, 8.0, 1.0)).unwrap();
+        assert_eq!(p.beats, -1);
+    }
+
+    #[test]
+    fn tempo_direction_and_half_time() {
+        let t = track(0.0);
+        // Slower than the reference: faster needed.
+        assert_eq!(phase((&t, 10.0, 0.99), (&t, 10.0, 1.0)).unwrap().tempo, 1);
+        assert_eq!(phase((&t, 10.0, 1.01), (&t, 10.0, 1.0)).unwrap().tempo, -1);
+        // Within 0.05 BPM: matched.
+        assert_eq!(phase((&t, 10.0, 1.0002), (&t, 10.0, 1.0)).unwrap().tempo, 0);
+        // A 60 BPM track against 120 is matched at half time.
+        let mut half = track(0.0);
+        half.bpm = 60.0;
+        let p = phase((&half, 10.0, 1.0), (&t, 10.0, 1.0)).unwrap();
+        assert_eq!(p.tempo, 0);
+        assert!(p.fine.abs() < 1e-9 && p.beats == 0, "{p:?}");
     }
 }
