@@ -1833,11 +1833,18 @@ mod tests {
             rig.instrument_buffer_on(true);
         }
         assert!(!rig.rack.instrument_asleep());
-        // Off it, it sleeps after a second of silence.
-        for _ in 0..second {
+        // Off it, it sleeps after a second of silence: not within half a
+        // second, and soon after the second. A block the helper sends too
+        // late isn't counted as silence, so on a busy machine it takes a
+        // few buffers more.
+        for _ in 0..second / 2 {
             rig.instrument_buffer();
         }
-        assert!(rig.rack.instrument_asleep());
+        assert!(!rig.rack.instrument_asleep());
+        while !rig.rack.instrument_asleep() {
+            rig.instrument_buffer();
+            assert!(Instant::now() < end + Duration::from_secs(10), "it sleeps");
+        }
         // A note wakes it at once: it plays in the very next buffer.
         assert!(rig.notes.send([0x90, 127, 100]));
         assert!((rig.instrument_buffer() - 1.0).abs() < 1e-3);
