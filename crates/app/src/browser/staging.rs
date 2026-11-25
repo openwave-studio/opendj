@@ -439,16 +439,22 @@ impl Browser {
     /// keep the UI busy.
     pub fn poll_analysis(&mut self) {
         let finished = self.analysis.take();
-        let done = self
+        let due = self
             .analysis_shown
             .due(finished, self.analysis.progress().is_none());
-        if !done.is_empty() {
+        // While a deck plays, a few at a time so no tick runs over a frame.
+        let playing = opendj_engine::background::playing();
+        let done = self.analysis_shown.slice(due, playing);
+        let changed = !done.is_empty();
+        if changed {
             for t in &done {
                 self.learn_background(t);
             }
             let done: Vec<Option<Arc<Track>>> =
                 done.into_iter().map(|t| Some(Arc::new(t))).collect();
             self.learn_analysis(&done);
+        }
+        if self.analysis_shown.tree_due(changed, playing) {
             self.refresh_tree();
         }
         for (id, data) in self.analysis.take_covers() {
