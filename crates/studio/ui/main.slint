@@ -1095,12 +1095,12 @@ component Device inherits Rectangle {
                     begin => { Drag.start-from-chain(root.title, root.kind, root.track, root.index); }
                 }
             }
-            Text {
+            if root.index >= 0: Text {
                 text: "×";
-                color: remove-area.has-hover && root.index >= 0 ? Theme.text : Theme.faint;
+                color: remove-area.has-hover ? Theme.text : Theme.faint;
                 font-size: 13px;
                 vertical-alignment: center;
-                remove-area := TouchArea { clicked => { if root.index >= 0 { root.removed(); } } }
+                remove-area := TouchArea { clicked => { root.removed(); } }
             }
         }
     }
