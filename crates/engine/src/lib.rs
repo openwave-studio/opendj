@@ -105,8 +105,9 @@ pub mod remix {
 }
 pub use gridfit::GridMode;
 pub use output::{
-    channel_names, deck_outputs_split, default_output_device, input_devices, output_devices,
-    AudioSetup, InputRole, InputRoute, OutputDevice, Role, Route, BUFFER_SIZES, SAMPLE_RATES,
+    channel_names, deck_outputs_split, default_output_device, devices_generation, devices_scanning,
+    input_devices, is_asio, output_devices, rescan_devices, scan_devices, AudioSetup, DeviceScan,
+    InputRole, InputRoute, OutputDevice, Role, Route, BUFFER_SIZES, SAMPLE_RATES,
 };
 pub use recorder::{RecordFormat, RecordSettings, Recorder};
 pub use synth::sample_library;

@@ -1,0 +1,445 @@
+{
+  "file": "Reloop RP-8000 MK2.midi.xml",
+  "parts": {
+    "browse": {
+      "Back": [
+        "Previous panel"
+      ],
+      "Load deck 1": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Load deck 2": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Load deck 3": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Load deck 4": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "mode1": {
+      "Deck 2": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Reloop rp8000 mk2 input"
+      ]
+    },
+    "mode2": {
+      "Deck 2": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Reloop rp8000 mk2 input"
+      ]
+    },
+    "mode3": {
+      "Deck 2": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Reloop rp8000 mk2 input"
+      ]
+    },
+    "mode4": {
+      "Deck 2": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 2 User": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3 User": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4 User": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "User": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Reloop rp8000 mk2 input"
+      ]
+    },
+    "pad1": {
+      "Deck 2": [
+        "Keyboard pad 5"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 5"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 5"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 5"
+      ]
+    },
+    "pad2": {
+      "Deck 2": [
+        "Keyboard pad 6"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 6"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 6"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 6"
+      ]
+    },
+    "pad3": {
+      "Deck 2": [
+        "Keyboard pad 7"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 7"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 7"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 7"
+      ]
+    },
+    "pad4": {
+      "Deck 2": [
+        "Keyboard pad 8"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 8"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 8"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 8"
+      ]
+    },
+    "pad5": {
+      "Deck 2": [
+        "Keyboard pad 1"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 1"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 1"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 1"
+      ]
+    },
+    "pad6": {
+      "Deck 2": [
+        "Keyboard pad 2"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 2"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 2"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 2"
+      ]
+    },
+    "pad7": {
+      "Deck 2": [
+        "Keyboard pad 3"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 3"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 3"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 3"
+      ]
+    },
+    "pad8": {
+      "Deck 2": [
+        "Keyboard pad 4"
+      ],
+      "Deck 2 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 2 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 3": [
+        "Keyboard pad 4"
+      ],
+      "Deck 3 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 3 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "Deck 4": [
+        "Keyboard pad 4"
+      ],
+      "Deck 4 SHIFT": [
+        "Hotcue focus"
+      ],
+      "Deck 4 Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Stems": [
+        "Reloop rp8000 mk2 input"
+      ],
+      "normal": [
+        "Keyboard pad 4"
+      ]
+    }
+  }
+}

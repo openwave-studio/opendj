@@ -1,0 +1,1049 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxMIDIPreset mixxxVersion="2.4" schemaVersion="1">
+    <info>
+        <name>Reloop Buddy</name>
+        <author>openDJ</author>
+        <description>openDJ's own mapping, from the control list djay Pro's mapping uses.</description>
+    </info>
+    <controller id="Reloop Buddy">
+        <scriptfiles>
+            <file functionprefix="" filename="Reloop-djay-scripts.js"/>
+            <file functionprefix="ReloopBuddy" filename="Reloop-Buddy-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Main level</description>
+                <status>0xBE</status>
+                <midino>0x0A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Headphones mix</description>
+                <status>0xBE</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Headphones level</description>
+                <status>0xBE</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Crossfader</description>
+                <status>0xBE</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1 volume</description>
+                <status>0xB0</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2 volume</description>
+                <status>0xB1</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Effect 1 on/off</description>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Effect 1 on/off</description>
+                <status>0x99</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Effects dry/wet</description>
+                <status>0xB8</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Effect 1 amount down</description>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Effect 1 amount up</description>
+                <status>0x99</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Effect 1: previous</description>
+                <status>0x98</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Effect 1: next</description>
+                <status>0x98</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Effect 1: previous</description>
+                <status>0x99</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Effect 1: next</description>
+                <status>0x99</status>
+                <midino>0x0C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Filter | Drums level</description>
+                <status>0xB0</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: EQ low | Instruments level</description>
+                <status>0xB0</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: EQ high | Vocals level</description>
+                <status>0xB0</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Filter | Drums level</description>
+                <status>0xB1</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: EQ low | Instruments level</description>
+                <status>0xB1</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: EQ high | Vocals level</description>
+                <status>0xB1</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1 headphones cue</description>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Stems EQ (knobs set stem levels)</description>
+                <status>0x90</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2 headphones cue</description>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Stems EQ (knobs set stem levels)</description>
+                <status>0x91</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Load the selected track to deck 1</description>
+                <status>0x9E</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Load the selected track to deck 2</description>
+                <status>0x9E</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Browse the list</description>
+                <status>0xBE</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Browse the sidebar</description>
+                <status>0xBE</status>
+                <midino>0x78</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Open the selected list</description>
+                <status>0x9E</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Back</description>
+                <status>0x9E</status>
+                <midino>0x7B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Tempo</description>
+                <status>0xB0</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Loop size</description>
+                <status>0xB4</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Loop on/off</description>
+                <status>0x94</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Jog</description>
+                <status>0xB0</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Jog touch</description>
+                <status>0x90</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Jog: search</description>
+                <status>0xB0</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Play/pause</description>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Play/pause</description>
+                <status>0x90</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Cue</description>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Cue</description>
+                <status>0x90</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Sync</description>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Sync</description>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 1 | Loop 1/16 beats | Effect 1 on/off | Sampler 1 play | ...</description>
+                <status>0x94</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 2 | Loop 1/8 beats | Effect 2 on/off | Sampler 2 play | ...</description>
+                <status>0x94</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 3 | Loop 1/4 beats | Effect 3 on/off | Sampler 3 play | ...</description>
+                <status>0x94</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 4 | Loop 1/2 beats | Effects on the deck | Sampler 4 play | ...</description>
+                <status>0x94</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 5 | Loop 1 beat | Next effect | Sampler 5 play | ...</description>
+                <status>0x94</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 6 | Loop 2 beats | Next effect | Sampler 6 play | ...</description>
+                <status>0x94</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 7 | Loop 4 beats | Next effect | Sampler 7 play | ...</description>
+                <status>0x94</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Hot cue 8 | Loop 8 beats | Pad FX 8 | Sampler 8 play | ...</description>
+                <status>0x94</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 1 | Loop 1/4 beats | Effect 1 on/off | Sampler 1 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 2 | Loop 1/2 beats | Effect 2 on/off | Sampler 2 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 3 | Loop 1 beat | Effect 3 on/off | Sampler 3 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 4 | Loop 2 beats | Effects on the deck | Sampler 4 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 5 | Loop 4 beats | Next effect | Sampler 5 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 6 | Loop 8 beats | Next effect | Sampler 6 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 7 | Loop 16 beats | Next effect | Sampler 7 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 1: Delete hot cue 8 | Loop 32 beats | Pad FX 8 | Sampler 8 stop | ...</description>
+                <status>0x94</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Loop size</description>
+                <status>0xB5</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Tempo</description>
+                <status>0xB1</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Loop on/off</description>
+                <status>0x95</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Jog</description>
+                <status>0xB1</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Jog touch</description>
+                <status>0x91</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Jog: search</description>
+                <status>0xB1</status>
+                <midino>0x2B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Play/pause</description>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Play/pause</description>
+                <status>0x91</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Cue</description>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Cue</description>
+                <status>0x91</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Sync</description>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Sync</description>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 1 | Loop 1/16 beats | Effect 1 on/off | Sampler 1 play | ...</description>
+                <status>0x95</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 2 | Loop 1/8 beats | Effect 2 on/off | Sampler 2 play | ...</description>
+                <status>0x95</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 3 | Loop 1/4 beats | Effect 3 on/off | Sampler 3 play | ...</description>
+                <status>0x95</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 4 | Loop 1/2 beats | Effects on the deck | Sampler 4 play | ...</description>
+                <status>0x95</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 5 | Loop 1 beat | Next effect | Sampler 5 play | ...</description>
+                <status>0x95</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 6 | Loop 2 beats | Next effect | Sampler 6 play | ...</description>
+                <status>0x95</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 7 | Loop 4 beats | Next effect | Sampler 7 play | ...</description>
+                <status>0x95</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Hot cue 8 | Loop 8 beats | Pad FX 8 | Sampler 8 play | ...</description>
+                <status>0x95</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 1 | Loop 1/4 beats | Effect 1 on/off | Sampler 1 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 2 | Loop 1/2 beats | Effect 2 on/off | Sampler 2 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 3 | Loop 1 beat | Effect 3 on/off | Sampler 3 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 4 | Loop 2 beats | Effects on the deck | Sampler 4 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 5 | Loop 4 beats | Next effect | Sampler 5 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 6 | Loop 8 beats | Next effect | Sampler 6 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 7 | Loop 16 beats | Next effect | Sampler 7 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Deck 2: Delete hot cue 8 | Loop 32 beats | Pad FX 8 | Sampler 8 stop | ...</description>
+                <status>0x95</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x94</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x94</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: instant f x</description>
+                <status>0x94</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x94</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x94</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x94</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x94</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: looper</description>
+                <status>0x94</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x95</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x95</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: instant f x</description>
+                <status>0x95</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x95</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x95</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x95</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x95</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopBuddy.input</key>
+                <description>Pad mode: looper</description>
+                <status>0x95</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs>
+
+        </outputs>
+    </controller>
+</MixxxMIDIPreset>

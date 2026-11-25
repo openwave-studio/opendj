@@ -1,0 +1,377 @@
+// The grid editor: a bar of beat grid tools in four groups (BPM,
+// Downbeat, Anchor, Grid) with Reset at the outer edge. 2-Deck shows one
+// side per deck in the FX bar's place, 4-Deck the side of the deck being
+// edited, and Prep one side under its waveform. The waveform pencil's
+// popover shows and hides it.
+import { Theme } from "theme.slint";
+import { Controls, HoverTip } from "controls.slint";
+import { DeckInfo } from "deck.slint";
+import { ListRow, PillCaret, SectionTitle, TitledList } from "pills.slint";
+
+// Whether the bar shows, and the deck it was opened from (the one side
+// 4-Deck shows).
+export global GridEditorUi {
+    in-out property <bool> shown;
+    in-out property <string> group: "[Channel1]";
+}
+
+// The icons are 14 px tall and drawn on whole pixels, so their edges stay
+// crisp: 1 px beat lines, 2 px bars and a 5 by 8 triangle centred on them.
+
+// A small solid triangle pointing left (`dir` -1) or right (1).
+// A line with a triangle pointing away from it: move that line a step
+// earlier (`dir` -1) or later (1). One drawing for every nudge button,
+// so they all match.
+component StepIcon inherits Image {
+    in property <int> dir;
+    width: 14px;
+    height: 14px;
+    source: dir < 0 ? @image-url("icons/step-back.svg") : @image-url("icons/step-forward.svg");
+    colorize: Theme.text;
+}
+
+// Bar 1 as a lit bar and three plain beats; with `dir` -1 or 1 an arrow
+// shows bar 1 moving a beat that way.
+export component DownbeatIcon inherits Rectangle {
+    in property <int> dir;
+    in property <bool> lit: true;
+    width: dir == 0 ? 15px : 14px;
+    height: 14px;
+    if dir == 0: Rectangle { x: 0; width: 2px; background: lit ? Theme.accent : Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 6px; width: 1px; background: Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 10px; width: 1px; background: Theme.n-58585d; }
+    if dir == 0: Rectangle { x: 14px; width: 1px; background: Theme.n-58585d; }
+    if dir != 0: StepIcon { dir: dir; colorize: lit ? Theme.accent : Theme.n-58585d; }
+}
+
+// An anchor: a pin, crossed out with `remove`; with `move` -1 or 1, its
+// line with an arrow moving it.
+component AnchorIcon inherits Rectangle {
+    in property <bool> remove;
+    in property <int> move;
+    width: move == 0 ? 10px : 14px;
+    height: 14px;
+    if move == 0: Rectangle { x: 2px; y: 0; width: 6px; height: 6px; border-radius: 3px; background: Theme.text; }
+    if move == 0: Rectangle { x: 4px; y: 6px; width: 2px; height: 8px; background: Theme.accent; }
+    if remove: Path {
+        width: 10px;
+        height: 14px;
+        viewbox-width: 10;
+        viewbox-height: 14;
+        commands: "M 1 13 L 9 1";
+        stroke: Theme.f-ff6b6b;
+        stroke-width: 1.5px;
+        fill: transparent;
+    }
+    if move != 0: StepIcon { dir: move; }
+}
+
+// |1|: the grid's first beat.
+component GridOneIcon inherits Rectangle {
+    width: 13px;
+    height: 14px;
+    Rectangle { x: 0; width: 1px; background: Theme.text-dim; }
+    Text { text: "1"; color: Theme.text; font-size: 10px; horizontal-alignment: center; vertical-alignment: center; }
+    Rectangle { x: 12px; width: 1px; background: Theme.text-dim; }
+}
+
+// A thin beat line with an arrow: the whole grid nudged that way.
+component NudgeIcon inherits Rectangle {
+    in property <int> dir;
+    width: 14px;
+    height: 14px;
+    StepIcon { dir: dir; }
+}
+
+// One press of a grid control (`key` on `group`), or `clicked` without a
+// key; its label and icon are the children.
+component GridCell inherits Rectangle {
+    in property <string> group;
+    in property <string> key;
+    in property <bool> enabled: true;
+    // What it does and its key, shown on hover.
+    in property <string> tip;
+    property <bool> tip-mine;
+    callback clicked();
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+    // Cells in a row share it equally, whatever they hold, so the lines
+    // between them fall in the same place on both rows.
+    min-width: 0px;
+    preferred-width: 0px;
+    // Every row the same height, whatever a cell holds, so the rows line
+    // up across the bar.
+    min-height: 26px;
+    preferred-height: 0px;
+    // The icons inside have a fixed height; without this the cell would
+    // take it as its own largest.
+    max-height: 10000px;
+    background: !enabled ? transparent : ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : transparent;
+    // Centred on a whole pixel, so icons stay sharp.
+    HorizontalLayout {
+        x: round((root.width - self.preferred-width) / 1px / 2) * 1px;
+        width: self.preferred-width;
+        spacing: 6px;
+        @children
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => {
+            if key != "" {
+                Controls.set-value(Controls.resolve(group, key), 1);
+                Controls.set-value(Controls.resolve(group, key), 0);
+            }
+            root.clicked();
+        }
+        changed has-hover => {
+            if !self.has-hover && tip-mine {
+                tip-mine = false;
+                HoverTip.shown = false;
+            }
+        }
+    }
+    Timer {
+        interval: 600ms;
+        running: tip != "" && ta.has-hover && !tip-mine;
+        triggered => {
+            tip-mine = true;
+            HoverTip.title = "";
+            HoverTip.body = tip;
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
+        }
+    }
+}
+
+component CellText inherits Text {
+    font-size: 13px;
+    color: Theme.text;
+    vertical-alignment: center;
+}
+
+component VLine inherits Rectangle {
+    width: 1px;
+    background: Theme.n-2c2c31;
+}
+
+component HLine inherits Rectangle {
+    height: 1px;
+    background: Theme.n-2c2c31;
+}
+
+// A group: its name over two rows of cells (`top` and `bottom` children
+// are laid out by the caller).
+component GroupHead inherits Rectangle {
+    in property <string> title;
+    // A thin band, a shade lighter than the cells under it.
+    height: 17px;
+    background: Theme.pill-hover;
+    Text {
+        text: root.title.to-uppercase();
+        font-family: Theme.title-font;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.6px;
+        color: Theme.text-dim;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// The grid type, picked from a titled list under its cell: Auto, Fixed or
+// Flexible (the engine's beats_mode 0, 1 and 2).
+component GridType inherits VerticalLayout {
+    in property <string> group;
+    in property <bool> enabled;
+    vertical-stretch: 1;
+    preferred-height: 0px;
+    property <int> mode-index: Controls.resolve(group, "beats_mode");
+    property <int> mode: Controls.value(mode-index, Controls.tick);
+    GridCell {
+        enabled: root.enabled;
+        tip: "The grid type: Auto follows the music's tempo where it drifts, Fixed keeps one tempo, Flexible keeps every anchor";
+        clicked => { type-menu.show(); }
+        CellText { text: mode == 1 ? "Fixed" : mode == 2 ? "Flex" : "Auto"; }
+        PillCaret { y: (parent.height - 4px) / 2; }
+        type-menu := PopupWindow {
+            y: parent.height + 2px;
+            width: 150px;
+            close-policy: close-on-click-outside;
+            TitledList {
+                title: "Grid type";
+                for item in [{ text: "Auto", id: 0 }, { text: "Fixed", id: 1 }, { text: "Flexible", id: 2 }]: row := ListRow {
+                    selected: mode == item.id;
+                    clicked => {
+                        Controls.set-value(mode-index, item.id);
+                        type-menu.close();
+                    }
+                    Text { x: 10px; text: item.text; color: row.ink; font-size: 12px; vertical-alignment: center; }
+                }
+            }
+        }
+    }
+}
+
+// The outer column: the grid type over Reset.
+component OuterColumn inherits VerticalLayout {
+    in property <string> group;
+    in property <bool> live;
+    // About two fifths of a group, as Reset is beside djay-style groups.
+    horizontal-stretch: 0.45;
+    min-width: 56px;
+    preferred-width: 0px;
+    GroupHead { title: "Grid type"; }
+    HLine { }
+    GridType { group: group; enabled: live; }
+    HLine { }
+    GridCell {
+        group: group;
+        key: "beats_reset";
+        enabled: live;
+        tip: "Put back the grid analysis found";
+        CellText { text: "Reset"; color: live ? Theme.f-ff6b6b : Theme.n-48484c; }
+    }
+}
+
+// One deck's side of the bar: Reset at the outer edge (`reset-left` for
+// the left deck), then BPM, Downbeat, Anchor and Grid. Dimmed with nothing
+// loaded or the grid locked.
+export component GridEditorSide inherits HorizontalLayout {
+    in property <string> group;
+    in property <DeckInfo> info;
+    in property <bool> reset-left: true;
+    property <bool> locked: Controls.value(Controls.resolve(group, "bpmlock"), Controls.tick) > 0;
+    property <bool> live: info.loaded && !locked;
+    spacing: 0px;
+    if reset-left: OuterColumn { group: group; live: live; }
+    if reset-left: VLine { }
+    // BPM
+    VerticalLayout {
+        horizontal-stretch: 1;
+        min-width: 0px;
+        preferred-width: 0px;
+        opacity: info.loaded ? 1 : 0.45;
+        GroupHead { title: "BPM"; }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            Text {
+                horizontal-stretch: 1;
+                min-width: 0px;
+                preferred-width: 0px;
+                min-height: 26px;
+                preferred-height: 0px;
+                text: info.loaded ? info.bpm : "--";
+                color: Theme.text;
+                font-size: 13px;
+                font-family: "Inter Tabular";
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            VLine { }
+            GridCell { group: group; key: "bpm_tap"; enabled: live; tip: "Tap along to set the tempo  (T)"; CellText { text: "Tap"; } }
+        }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            GridCell { group: group; key: "beats_scale_half"; enabled: live; tip: "Half the tempo"; CellText { text: "½"; } }
+            VLine { }
+            GridCell { group: group; key: "beats_scale_double"; enabled: live; tip: "Double the tempo"; CellText { text: "×2"; } }
+        }
+    }
+    VLine { }
+    // Downbeat
+    VerticalLayout {
+        horizontal-stretch: 1;
+        min-width: 0px;
+        preferred-width: 0px;
+        opacity: live ? 1 : 0.45;
+        GroupHead { title: "Downbeat"; }
+        HLine { }
+        GridCell { group: group; key: "beats_downbeat_here"; enabled: live; tip: "Make the beat at the play line bar 1  (B)"; CellText { text: "Set"; } DownbeatIcon { y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            GridCell { group: group; key: "beats_downbeat_earlier"; enabled: live; tip: "Bar 1 a beat earlier"; DownbeatIcon { dir: -1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+            VLine { }
+            GridCell { group: group; key: "beats_downbeat_later"; enabled: live; tip: "Bar 1 a beat later"; DownbeatIcon { dir: 1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+        }
+    }
+    VLine { }
+    // Anchor: a tempo change where the music speeds up or slows down.
+    VerticalLayout {
+        horizontal-stretch: 1;
+        min-width: 0px;
+        preferred-width: 0px;
+        opacity: live ? 1 : 0.45;
+        GroupHead { title: "Anchor"; }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            GridCell { group: group; key: "beats_section_add"; enabled: live; tip: "Add an anchor here, where the tempo changes"; CellText { text: "Add"; } AnchorIcon { y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+            VLine { }
+            GridCell { group: group; key: "beats_section_remove"; enabled: live && info.grid-sections > 1; tip: "Remove the anchor here"; AnchorIcon { remove: true; opacity: info.grid-sections > 1 ? 1 : 0.4; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+        }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            GridCell { group: group; key: "beats_anchor_earlier"; enabled: live; tip: "Move the nearest anchor earlier"; AnchorIcon { move: -1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+            VLine { }
+            GridCell { group: group; key: "beats_anchor_later"; enabled: live; tip: "Move the nearest anchor later"; AnchorIcon { move: 1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+        }
+    }
+    VLine { }
+    // Grid: a beat at the play line, and the whole grid nudged.
+    VerticalLayout {
+        horizontal-stretch: 1;
+        min-width: 0px;
+        preferred-width: 0px;
+        opacity: live ? 1 : 0.45;
+        GroupHead { title: "Grid"; }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            GridCell { group: group; key: "beats_translate_curpos"; enabled: live; tip: "Put a beat at the play line"; CellText { text: "Set"; } GridOneIcon { y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+            VLine { }
+            GridCell { group: group; key: "beats_clear"; enabled: live; tip: "No grid, for a track with no steady beat (Undo or Reset brings it back)"; CellText { text: "Clear"; } }
+        }
+        HLine { }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            GridCell { group: group; key: "beats_translate_earlier"; enabled: live; tip: "Nudge the grid earlier  ([)"; NudgeIcon { dir: -1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+            VLine { }
+            GridCell { group: group; key: "beats_translate_later"; enabled: live; tip: "Nudge the grid later  (])"; NudgeIcon { dir: 1; y: round((parent.height - self.height) / 1px / 2) * 1px; } }
+        }
+    }
+    if !reset-left: VLine { }
+    if !reset-left: OuterColumn { group: group; live: live; }
+}
+
+// "Grid Editor" between the two sides.
+// As wide as the 2-Deck mixer under it, so each side lines up with its deck.
+component GridEditorName inherits Rectangle {
+    width: 254px;
+    SectionTitle { title: "Grid Editor"; horizontal-alignment: center; }
+}
+
+// The bar in the FX bar's place: deck 1 and deck 2 either side of its
+// name, or (`one`) only the deck it was opened from.
+export component GridEditorBar inherits Rectangle {
+    in property <[DeckInfo]> decks;
+    in property <bool> one;
+    property <int> d: GridEditorUi.group == "[Channel2]" ? 1 : GridEditorUi.group == "[Channel3]" ? 2 : GridEditorUi.group == "[Channel4]" ? 3 : 0;
+    background: Theme.pill;
+    HorizontalLayout {
+        if !one: GridEditorSide { group: "[Channel1]"; info: decks[0]; horizontal-stretch: 1; }
+        if !one: VLine { }
+        if !one: GridEditorName { }
+        if !one: VLine { }
+        if !one: GridEditorSide { group: "[Channel2]"; info: decks[1]; reset-left: false; horizontal-stretch: 1; }
+        if one: GridEditorName { }
+        if one: VLine { }
+        if one: GridEditorSide { group: GridEditorUi.group; info: decks[d]; reset-left: false; horizontal-stretch: 1; }
+    }
+}

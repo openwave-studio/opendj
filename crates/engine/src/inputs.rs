@@ -277,6 +277,24 @@ impl InputControls {
                 reg.create(g, &format!("parameter{k}"), 0.0, 0.0, 1.0, Behavior::Linear);
             }
             reg.indicator(g, "num_parameters", INSTRUMENT_PARAMETERS as f64);
+            // The page of eight knobs the instrument deck shows, from 0: a
+            // keyboard's knobs turn the same ones (the app keeps the two in
+            // step).
+            let pages = INSTRUMENT_PARAMETERS.div_ceil(8) as f64;
+            reg.create(g, "knob_page", 0.0, 0.0, pages - 1.0, Behavior::Free);
+            // A controller asks the app for the next or previous preset of
+            // what plays (set to 1), a preset by its place in
+            // `[Instrument1],presets` (1 = first), or an instrument by its
+            // place in the instrument list (1 = first); the app does it and
+            // sets the control back to 0.
+            for key in [
+                "preset_next",
+                "preset_prev",
+                "preset_load",
+                "instrument_load",
+            ] {
+                reg.create(g, key, 0.0, 0.0, 1000.0, Behavior::Free);
+            }
             // Scale mode (see `crate::scale`): Auto by default.
             reg.create(g, "scale_mode", 1.0, 0.0, 2.0, Behavior::Free);
             reg.create(g, "scale_root", 0.0, 0.0, 11.0, Behavior::Free);

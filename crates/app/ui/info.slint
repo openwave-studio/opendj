@@ -4,6 +4,7 @@
 import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { HoverTip } from "controls.slint";
 import { CrateIcon } from "crate_icon.slint";
+import { MenuTitle } from "pills.slint";
 
 // A tag in a tag field, and how many of the tracks shown have it.
 export struct TagChip {
@@ -270,14 +271,14 @@ component ValueLine inherits Rectangle {
     callback clicked();
     height: 26px;
     border-radius: 4px;
-    background: ta.has-hover ? Theme.selection : transparent;
+    background: ta.has-hover ? Theme.n-38373d : transparent;
     HorizontalLayout {
         padding-left: 10px;
         padding-right: 10px;
         Text {
             horizontal-stretch: 1;
             text: root.text;
-            color: ta.has-hover ? Theme.on-selection : dim ? Theme.text-dim : Theme.text;
+            color: ta.has-hover ? Theme.menu-hover-text : dim ? Theme.text-dim : Theme.menu-current-text;
             font-size: 13px;
             font-italic: dim;
             vertical-alignment: center;
@@ -1190,14 +1191,15 @@ export component InfoPanel inherits Rectangle {
                     }
                     VerticalLayout {
                         padding: 6px;
+                        MenuTitle { text: "Show"; }
                         for s[i] in ["Selected track", "Deck A", "Deck B"]: Rectangle {
                             height: 26px;
-                            border-radius: 4px;
-                            background: sta.has-hover ? Theme.n-38373d : transparent;
+                            background: sta.has-hover ? Theme.n-38373d : i == TrackInfo.subject ? Theme.n-313036 : transparent;
+                            border-radius: 6px;
                             Text {
                                 x: 10px;
                                 text: s;
-                                color: i == TrackInfo.subject ? Theme.lilac-text : Theme.text;
+                                color: sta.has-hover ? Theme.menu-hover-text : Theme.menu-current-text;
                                 font-size: 13px;
                                 vertical-alignment: center;
                             }

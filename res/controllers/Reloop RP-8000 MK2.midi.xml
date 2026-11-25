@@ -1,0 +1,1399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxMIDIPreset mixxxVersion="2.4" schemaVersion="1">
+    <info>
+        <name>Reloop RP-8000MK2</name>
+        <author>openDJ</author>
+        <description>openDJ's own mapping, from the control list djay Pro's mapping uses.</description>
+    </info>
+    <controller id="RP8000mk2">
+        <scriptfiles>
+            <file functionprefix="" filename="Reloop-djay-scripts.js"/>
+            <file functionprefix="ReloopRP8000MK2" filename="Reloop-RP-8000-MK2-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 1 | Pitch play 5 | Loop 32 beats | Loop roll 1/16 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 2 | Pitch play 6 | Loop 16 beats | Loop roll 1/8 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 3 | Pitch play 7 | Loop 8 beats | Loop roll 1/4 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 4 | Pitch play 8 | Loop 4 beats | Loop roll 1/2 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 5 | Pitch play 1 | Loop 2 beats | Loop roll 1 beat | ...</description>
+                <status>0x95</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 6 | Pitch play 2 | Loop 1 beat | Loop roll 2 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 7 | Pitch play 3 | Loop 1/2 beats | Loop roll 4 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Hot cue 8 | Pitch play 4 | Loop 1/4 beats | Loop roll 8 beats | ...</description>
+                <status>0x95</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 1 | Pitch play: hot cue 1 | Sampler 1 stop</description>
+                <status>0x95</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 2 | Pitch play: hot cue 2 | Sampler 2 stop</description>
+                <status>0x95</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 3 | Pitch play: hot cue 3 | Sampler 3 stop</description>
+                <status>0x95</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 4 | Pitch play: hot cue 4 | Sampler 4 stop</description>
+                <status>0x95</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 5 | Pitch play: hot cue 5 | Sampler 5 stop</description>
+                <status>0x95</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 6 | Pitch play: hot cue 6 | Sampler 6 stop</description>
+                <status>0x95</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 7 | Pitch play: hot cue 7 | Sampler 7 stop</description>
+                <status>0x95</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Delete hot cue 8 | Pitch play: hot cue 8 | Sampler 8 stop</description>
+                <status>0x95</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 1 on/off</description>
+                <status>0x95</status>
+                <midino>0x5D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 2 on/off</description>
+                <status>0x95</status>
+                <midino>0x5E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 3 on/off</description>
+                <status>0x95</status>
+                <midino>0x5F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 4 on/off</description>
+                <status>0x95</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 1 alone</description>
+                <status>0x95</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 2 alone</description>
+                <status>0x95</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 3 alone</description>
+                <status>0x95</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 1: Stem 4 alone</description>
+                <status>0x95</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 1 | Pitch play 5 | Loop 32 beats | Loop roll 1/16 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 2 | Pitch play 6 | Loop 16 beats | Loop roll 1/8 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 3 | Pitch play 7 | Loop 8 beats | Loop roll 1/4 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 4 | Pitch play 8 | Loop 4 beats | Loop roll 1/2 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 5 | Pitch play 1 | Loop 2 beats | Loop roll 1 beat | ...</description>
+                <status>0x96</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 6 | Pitch play 2 | Loop 1 beat | Loop roll 2 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 7 | Pitch play 3 | Loop 1/2 beats | Loop roll 4 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Hot cue 8 | Pitch play 4 | Loop 1/4 beats | Loop roll 8 beats | ...</description>
+                <status>0x96</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 1 | Pitch play: hot cue 1 | Sampler 1 stop</description>
+                <status>0x96</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 2 | Pitch play: hot cue 2 | Sampler 2 stop</description>
+                <status>0x96</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 3 | Pitch play: hot cue 3 | Sampler 3 stop</description>
+                <status>0x96</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 4 | Pitch play: hot cue 4 | Sampler 4 stop</description>
+                <status>0x96</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 5 | Pitch play: hot cue 5 | Sampler 5 stop</description>
+                <status>0x96</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 6 | Pitch play: hot cue 6 | Sampler 6 stop</description>
+                <status>0x96</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 7 | Pitch play: hot cue 7 | Sampler 7 stop</description>
+                <status>0x96</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Delete hot cue 8 | Pitch play: hot cue 8 | Sampler 8 stop</description>
+                <status>0x96</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 1 on/off</description>
+                <status>0x96</status>
+                <midino>0x5D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 2 on/off</description>
+                <status>0x96</status>
+                <midino>0x5E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 3 on/off</description>
+                <status>0x96</status>
+                <midino>0x5F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 4 on/off</description>
+                <status>0x96</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 1 alone</description>
+                <status>0x96</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 2 alone</description>
+                <status>0x96</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 3 alone</description>
+                <status>0x96</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 2: Stem 4 alone</description>
+                <status>0x96</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 1 | Pitch play 5 | Loop 32 beats | Loop roll 1/16 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 2 | Pitch play 6 | Loop 16 beats | Loop roll 1/8 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 3 | Pitch play 7 | Loop 8 beats | Loop roll 1/4 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 4 | Pitch play 8 | Loop 4 beats | Loop roll 1/2 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 5 | Pitch play 1 | Loop 2 beats | Loop roll 1 beat | ...</description>
+                <status>0x97</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 6 | Pitch play 2 | Loop 1 beat | Loop roll 2 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 7 | Pitch play 3 | Loop 1/2 beats | Loop roll 4 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 8 | Pitch play 4 | Loop 1/4 beats | Loop roll 8 beats | ...</description>
+                <status>0x97</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 1 | Pitch play: hot cue 1 | Sampler 1 stop</description>
+                <status>0x97</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 2 | Pitch play: hot cue 2 | Sampler 2 stop</description>
+                <status>0x97</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 3 | Pitch play: hot cue 3 | Sampler 3 stop</description>
+                <status>0x97</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 4 | Pitch play: hot cue 4 | Sampler 4 stop</description>
+                <status>0x97</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 5 | Pitch play: hot cue 5 | Sampler 5 stop</description>
+                <status>0x97</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 6 | Pitch play: hot cue 6 | Sampler 6 stop</description>
+                <status>0x97</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 7 | Pitch play: hot cue 7 | Sampler 7 stop</description>
+                <status>0x97</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 8 | Pitch play: hot cue 8 | Sampler 8 stop</description>
+                <status>0x97</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 1 on/off</description>
+                <status>0x97</status>
+                <midino>0x5D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 2 on/off</description>
+                <status>0x97</status>
+                <midino>0x5E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 3 on/off</description>
+                <status>0x97</status>
+                <midino>0x5F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 4 on/off</description>
+                <status>0x97</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 1 alone</description>
+                <status>0x97</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 2 alone</description>
+                <status>0x97</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 3 alone</description>
+                <status>0x97</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 3: Stem 4 alone</description>
+                <status>0x97</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 1 | Pitch play 5 | Loop 32 beats | Loop roll 1/16 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 2 | Pitch play 6 | Loop 16 beats | Loop roll 1/8 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 3 | Pitch play 7 | Loop 8 beats | Loop roll 1/4 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 4 | Pitch play 8 | Loop 4 beats | Loop roll 1/2 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 5 | Pitch play 1 | Loop 2 beats | Loop roll 1 beat | ...</description>
+                <status>0x98</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 6 | Pitch play 2 | Loop 1 beat | Loop roll 2 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 7 | Pitch play 3 | Loop 1/2 beats | Loop roll 4 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Hot cue 8 | Pitch play 4 | Loop 1/4 beats | Loop roll 8 beats | ...</description>
+                <status>0x98</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 1 | Pitch play: hot cue 1 | Sampler 1 stop</description>
+                <status>0x98</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 2 | Pitch play: hot cue 2 | Sampler 2 stop</description>
+                <status>0x98</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 3 | Pitch play: hot cue 3 | Sampler 3 stop</description>
+                <status>0x98</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 4 | Pitch play: hot cue 4 | Sampler 4 stop</description>
+                <status>0x98</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 5 | Pitch play: hot cue 5 | Sampler 5 stop</description>
+                <status>0x98</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 6 | Pitch play: hot cue 6 | Sampler 6 stop</description>
+                <status>0x98</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 7 | Pitch play: hot cue 7 | Sampler 7 stop</description>
+                <status>0x98</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Delete hot cue 8 | Pitch play: hot cue 8 | Sampler 8 stop</description>
+                <status>0x98</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 1 on/off</description>
+                <status>0x98</status>
+                <midino>0x5D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 2 on/off</description>
+                <status>0x98</status>
+                <midino>0x5E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 3 on/off</description>
+                <status>0x98</status>
+                <midino>0x5F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 4 on/off</description>
+                <status>0x98</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 1 alone</description>
+                <status>0x98</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 2 alone</description>
+                <status>0x98</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 3 alone</description>
+                <status>0x98</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Deck 4: Stem 4 alone</description>
+                <status>0x98</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Browse the list</description>
+                <status>0xBF</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Load the selected track to deck 1</description>
+                <status>0x9F</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Load the selected track to deck 2</description>
+                <status>0x9F</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Load the selected track to deck 3</description>
+                <status>0x9F</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Load the selected track to deck 4</description>
+                <status>0x9F</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Back</description>
+                <status>0x9F</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x95</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: saved loop</description>
+                <status>0x95</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x95</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: pitch play</description>
+                <status>0x95</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x95</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x95</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x95</status>
+                <midino>0x7D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: user1</description>
+                <status>0x95</status>
+                <midino>0x7E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x95</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: saved loop</description>
+                <status>0x96</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x96</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: pitch play</description>
+                <status>0x96</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x96</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x96</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x96</status>
+                <midino>0x7D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: user1</description>
+                <status>0x96</status>
+                <midino>0x7E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x96</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: saved loop</description>
+                <status>0x97</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x97</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: pitch play</description>
+                <status>0x97</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x97</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x97</status>
+                <midino>0x7D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: user1</description>
+                <status>0x97</status>
+                <midino>0x7E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x97</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: hot cue</description>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: saved loop</description>
+                <status>0x98</status>
+                <midino>0x0D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: sampler</description>
+                <status>0x98</status>
+                <midino>0x0B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: pitch play</description>
+                <status>0x98</status>
+                <midino>0x0F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: auto loop</description>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: bounce loop</description>
+                <status>0x98</status>
+                <midino>0x08</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: unmixer</description>
+                <status>0x98</status>
+                <midino>0x7D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: user1</description>
+                <status>0x98</status>
+                <midino>0x7E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopRP8000MK2.input</key>
+                <description>Pad mode: slicer</description>
+                <status>0x98</status>
+                <midino>0x09</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs>
+
+        </outputs>
+    </controller>
+</MixxxMIDIPreset>

@@ -1,8 +1,9 @@
 //! A plugin's own display (a Pd patch's Lua displays) inside openDJ: the
 //! helper draws it into a shared file (`opendj_plugin_host::display`), and
 //! openDJ shows that picture, sending clicks and drags back. The
-//! instrument deck shows its instrument's display under its DISPLAY tab;
-//! an FX slot's opens in a panel from the slot's VIEW button.
+//! browser's plugin panel shows an instrument's display at its own shape
+//! (the deck's OPEN opens it); an FX slot's opens in a panel from the
+//! slot's VIEW button.
 
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
@@ -11,7 +12,7 @@ use std::time::Duration;
 
 use opendj_engine::plugins::plugin_display::{Display, Mouse};
 use opendj_engine::{effect_group, AudioEngine, EFFECTS_PER_UNIT, NUM_EFFECT_UNITS};
-use slint::{ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer};
+use slint::{Color, ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer};
 
 use crate::{AppWindow, FxDisplay, InstrumentsUi};
 
@@ -57,7 +58,7 @@ impl Viewer {
 
     /// Shows the display in an area `w` by `h` logical pixels (0 hides it),
     /// and returns a new picture once the helper drew one.
-    fn frame(&mut self, w: f32, h: f32, scale: f32) -> Option<Image> {
+    fn frame(&mut self, w: f32, h: f32, scale: f32) -> Option<(Image, Color)> {
         let Viewer { open, seq, pixels } = self;
         let (_, d) = open.as_ref()?;
         d.set_view(
@@ -70,7 +71,7 @@ impl Viewer {
         let (fw, fh, new) = d.read_frame(pixels)?;
         *seq = new;
         let buffer = SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(pixels, fw, fh);
-        Some(Image::from_rgba8(buffer))
+        Some((Image::from_rgba8(buffer), edge(pixels, fw)))
     }
 
     fn hide(&self) {
@@ -168,21 +169,25 @@ fn show_instrument(app: &AppWindow, engine: &AudioEngine, viewer: &mut Viewer, s
     }
     if !ui.get_has_display() {
         ui.set_has_display(true);
-        // An instrument with no knobs of its own opens on its display.
+        // An instrument with no knobs of its own opens on its display in
+        // the browser's plugin panel.
         if engine.instrument_parameters().is_empty() {
-            ui.set_display_on(true);
+            ui.set_panel_open(true);
         }
     }
     if let Some(aspect) = viewer.aspect() {
         ui.set_display_aspect(aspect);
     }
-    if !ui.get_display_on() {
+    // Drawn for the browser's plugin panel, which sets the area's size.
+    let in_panel = ui.get_panel_shown() && !ui.get_panel_controls();
+    if !in_panel {
         viewer.hide();
         return;
     }
     let (w, h) = (ui.get_display_area_width(), ui.get_display_area_height());
-    if let Some(image) = viewer.frame(w, h, scale) {
+    if let Some((image, edge)) = viewer.frame(w, h, scale) {
         ui.set_display(image);
+        ui.set_display_edge(edge);
     }
 }
 
@@ -235,7 +240,18 @@ fn show_fx(app: &AppWindow, state: &mut State, scale: f32) {
         ui.set_aspect(aspect);
     }
     let (w, h) = (ui.get_area_width(), ui.get_area_height());
-    if let Some(image) = state.fx.frame(w, h, scale) {
+    if let Some((image, edge)) = state.fx.frame(w, h, scale) {
         ui.set_display(image);
+        ui.set_edge(edge);
+    }
+}
+
+/// The colour at the middle of a picture's top row, which fills the area
+/// around it where its shape leaves room, so the picture looks whole.
+fn edge(pixels: &[u8], width: u32) -> Color {
+    let at = (width as usize / 2) * 4;
+    match pixels.get(at..at + 4) {
+        Some(&[r, g, b, 255]) => Color::from_rgb_u8(r, g, b),
+        _ => Color::from_argb_u8(0, 0, 0, 0),
     }
 }

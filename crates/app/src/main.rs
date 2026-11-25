@@ -52,6 +52,7 @@ mod controller_editor;
 mod cover_scan;
 mod coverart;
 mod diagnostics;
+mod dupe_scan;
 mod file_drop;
 mod files;
 mod graphics;
@@ -119,6 +120,7 @@ mod transport;
 mod tree_navigation;
 mod tutorials;
 mod ui_font;
+mod ui_load;
 mod ui_scale;
 mod update;
 mod vocal_pass;
@@ -130,7 +132,9 @@ mod waveform_zoom;
 mod waves;
 
 /// Fills the master and headphone output menus and switches devices when
-/// one is picked. The menus list the devices present when they open.
+/// one is picked. The menus list the devices as last scanned (see
+/// [`opendj_engine::scan_devices`]): opening one loads no driver, and
+/// looks at the system's own devices again in the background.
 /// The settings page's output table: shows the routes in use and applies
 /// changes to them.
 fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
@@ -304,6 +308,11 @@ fn install_audio_settings(app: &AppWindow, engine: Rc<AudioEngine>) {
             *devices.borrow_mut() = output_devices();
             *default_device.borrow_mut() = default_output_device();
             show();
+            // A device menu opening (or Settings › Audio): the system's
+            // devices are looked at again in the background, so one plugged
+            // in since start-up shows up moments later. No ASIO driver is
+            // loaded, and a scan moments ago isn't repeated.
+            opendj_engine::rescan_devices(opendj_engine::DeviceScan::System);
         }
     });
     let change = {
@@ -672,6 +681,14 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     unsafe {
         windows_sys::Win32::Media::timeBeginPeriod(1);
     }
+    // The audio devices, found while the window gets ready and before any
+    // output opens: listing ASIO devices loads each installed driver in
+    // turn, which takes a while and can cut off a Windows Audio stream
+    // already playing through the same interface. Settings and the menus
+    // read what this finds.
+    let device_scan = std::thread::Builder::new()
+        .name("opendj-device-scan".into())
+        .spawn(|| opendj_engine::scan_devices(opendj_engine::DeviceScan::All));
     // A restore picked in Settings goes in before anything reads the
     // settings or opens the library.
     let restored =
@@ -698,6 +715,11 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let ui_family = ui_font::install();
 
     let registry = ControlRegistry::new();
+    // Not found yet (or the thread didn't start), the device lists are
+    // scanned the first time they are read instead.
+    if let Ok(scan) = device_scan {
+        let _ = scan.join();
+    }
     let engine = Rc::new(AudioEngine::start(
         registry.clone(),
         &settings::audio_setup(),
@@ -832,6 +854,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     mixer_picker::install(&app, engine.clone());
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());
+    let _knob_page = instrument_knobs::follow_page(&app, &registry);
+    let _preset_keys = presets::follow_controllers(&app);
     instrument_seq::install(&app, registry.clone());
     let groove_keeper = RefCell::new(groove_box::Keeper::new(&registry));
     // The Mixer's channels as they were left, saved again as they change.
@@ -1535,6 +1559,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     });
                 }
                 (slint::RenderingState::BeforeRendering, _) => {
+                    ui_load::render_start();
                     let mut gpu = gpu.borrow_mut();
                     let (Some(app), Some(gpu)) = (app_weak.upgrade(), gpu.as_mut()) else {
                         return;
@@ -1550,9 +1575,18 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         ..
                     } = gpu;
                     let scale = app.window().scale_factor();
-                    frame_stats.frame(start, start.elapsed(), *moving, scale, frame_timer, clocks);
+                    frame_stats.frame(
+                        start,
+                        start.elapsed(),
+                        *moving,
+                        scale,
+                        frame_timer,
+                        clocks,
+                        ui_load::take_report,
+                    );
                 }
                 (slint::RenderingState::AfterRendering, _) => {
+                    ui_load::render_end();
                     // The first frame is on screen: these graphics work here.
                     graphics.drew();
                     // While a deck moves, draw again as soon as the display
@@ -1707,6 +1741,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 let Some(app) = app_weak.upgrade() else {
                     return;
                 };
+                ui_load::tick_start();
                 // The skin reads controls through `tick`; moving it makes
                 // every one of them look again, so only when one changed.
                 for (h, frames) in &pad_requests {
@@ -1827,6 +1862,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     }
                 }
                 browser.borrow_mut().poll_controllers(&app);
+                ui_load::lap("browser.poll_controllers");
                 // A recording that just stopped shows in Mixed Sets.
                 let (finished, files) = finished_recorder.finished();
                 if finished != recordings_seen.get() {
@@ -1834,9 +1870,13 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     browser.borrow_mut().add_recordings(&files);
                 }
                 browser.borrow_mut().poll_mix_export(&app);
+                ui_load::lap("browser.poll_mix_export");
                 browser.borrow_mut().poll_mixed_set(&app);
+                ui_load::lap("browser.poll_mixed_set");
                 browser.borrow_mut().poll_streams();
+                ui_load::lap("browser.poll_streams");
                 browser.borrow_mut().poll_stores(&app);
+                ui_load::lap("browser.poll_stores");
                 for track in sources.borrow_mut().poll() {
                     browser.borrow_mut().add_imported(track);
                 }
@@ -1854,24 +1894,45 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     browser.borrow().preview_download(action);
                 }
                 browser.borrow_mut().poll_art();
+                ui_load::lap("browser.poll_art");
                 browser.borrow_mut().poll_waves();
+                ui_load::lap("browser.poll_waves");
                 browser.borrow_mut().poll_analysis();
+                ui_load::lap("browser.poll_analysis");
                 browser.borrow_mut().poll_tasks();
+                ui_load::lap("browser.poll_tasks");
                 browser.borrow_mut().poll_usb_export();
+                ui_load::lap("browser.poll_usb_export");
                 browser.borrow_mut().poll_playlist_files();
+                ui_load::lap("browser.poll_playlist_files");
                 browser.borrow_mut().poll_stem_files();
+                ui_load::lap("browser.poll_stem_files");
                 browser.borrow_mut().poll_inbox_albums();
+                ui_load::lap("browser.poll_inbox_albums");
                 browser.borrow_mut().poll_rekordbox_xml();
+                ui_load::lap("browser.poll_rekordbox_xml");
                 browser.borrow_mut().poll_covers();
+                ui_load::lap("browser.poll_covers");
                 browser.borrow_mut().poll_sounds();
+                ui_load::lap("browser.poll_sounds");
+                browser.borrow_mut().poll_dupe_files();
+                ui_load::lap("browser.poll_dupe_files");
                 browser.borrow_mut().poll_located();
+                ui_load::lap("browser.poll_located");
                 browser.borrow_mut().poll_cleanup();
+                ui_load::lap("browser.poll_cleanup");
                 browser.borrow_mut().poll_files();
+                ui_load::lap("browser.poll_files");
                 sampler.borrow_mut().poll();
+                ui_load::lap("sampler.poll");
                 prefs.borrow_mut().poll();
+                ui_load::lap("prefs.poll");
                 tour.borrow_mut().poll();
+                ui_load::lap("tour.poll");
                 controller_editor.borrow_mut().poll();
+                ui_load::lap("controller_editor.poll");
                 map_mode.borrow_mut().poll();
+                ui_load::lap("map_mode.poll");
                 prep_click
                     .borrow_mut()
                     .tick(app.get_layout() == PREP_LAYOUT);
@@ -2004,6 +2065,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 if controls_changed || moved || loaded_changed {
                     app.window().request_redraw();
                 }
+                ui_load::tick_end();
             },
         );
     }

@@ -1,0 +1,302 @@
+{
+  "file": "Reloop Digital Jockey 2 Controller Edition.midi.xml",
+  "parts": {
+    "c-encoder-1": {
+      "normal": [
+        "Up"
+      ]
+    },
+    "c-fader-1": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "c-fader-2": {
+      "normal": [
+        "Head volume"
+      ]
+    },
+    "c-fader-3": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "c-knob-1": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-button-1": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "l-button-2": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-button-3": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-encoder-1": {
+      "normal": [
+        "Loop plus minus channel1"
+      ]
+    },
+    "l-fader-1": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-2": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-jog": {
+      "Jog Wheel 1": [
+        "Jog wheel1"
+      ],
+      "Jog Wheel 1 Hold": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Scratch1"
+      ]
+    },
+    "l-knob-1": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-2": {
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "l-knob-3": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "l-knob-4": {
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "l-pad-1": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-pad-10": {
+      "normal": [
+        "Filter mid kill"
+      ]
+    },
+    "l-pad-11": {
+      "normal": [
+        "Filter low kill"
+      ]
+    },
+    "l-pad-12": {
+      "normal": [
+        "Cue play button1"
+      ]
+    },
+    "l-pad-13": {
+      "normal": [
+        "Cue button1"
+      ]
+    },
+    "l-pad-14": {
+      "normal": [
+        "Play button1"
+      ]
+    },
+    "l-pad-15": {
+      "normal": [
+        "Search1"
+      ]
+    },
+    "l-pad-16": {
+      "normal": [
+        "Cue play button2"
+      ]
+    },
+    "l-pad-2": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-pad-3": {
+      "normal": [
+        "Flanger"
+      ]
+    },
+    "l-pad-4": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-pad-5": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-pad-6": {
+      "normal": [
+        "Beat loop"
+      ]
+    },
+    "l-pad-7": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-pad-8": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-pad-9": {
+      "normal": [
+        "Filter high kill"
+      ]
+    },
+    "r-button-1": {
+      "normal": [
+        "Sync once"
+      ]
+    },
+    "r-button-2": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-button-3": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-encoder-1": {
+      "normal": [
+        "Loop plus minus channel2"
+      ]
+    },
+    "r-fader-1": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-2": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-jog": {
+      "Jog Wheel 2": [
+        "Jog wheel2"
+      ],
+      "Jog Wheel 2 Hold": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Scratch2"
+      ]
+    },
+    "r-knob-1": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-2": {
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "r-knob-3": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "r-knob-4": {
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "r-pad-1": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-pad-10": {
+      "normal": [
+        "Filter mid kill"
+      ]
+    },
+    "r-pad-11": {
+      "normal": [
+        "Filter low kill"
+      ]
+    },
+    "r-pad-12": {
+      "normal": [
+        "Cue button2"
+      ]
+    },
+    "r-pad-13": {
+      "normal": [
+        "Play button2"
+      ]
+    },
+    "r-pad-14": {
+      "normal": [
+        "Search2"
+      ]
+    },
+    "r-pad-2": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-pad-3": {
+      "normal": [
+        "Flanger"
+      ]
+    },
+    "r-pad-4": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-pad-5": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-pad-6": {
+      "normal": [
+        "Beat loop"
+      ]
+    },
+    "r-pad-7": {
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-pad-8": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-pad-9": {
+      "normal": [
+        "Filter high kill"
+      ]
+    }
+  }
+}

@@ -72,9 +72,9 @@ export component ZoomBar inherits Rectangle {
         width: 6px;
         height: track-height + 6px;
         border-radius: 3px;
-        background: active ? #d4d4d8 : #b8b8bec0;
+        background: active ? Theme.f-d4d4d8 : Theme.f-b8b8bec0;
         drop-shadow-blur: 4px;
-        drop-shadow-color: #00000080;
+        drop-shadow-color: Theme.f-00000080;
     }
     // The marker.
     Rectangle {
@@ -85,7 +85,7 @@ export component ZoomBar inherits Rectangle {
         border-radius: 7px;
         background: Theme.accent;
         border-width: 2px;
-        border-color: #ffffff;
+        border-color: Theme.f-ffffff;
     }
     bar := TouchArea {
         mouse-cursor: bar.pressed ? MouseCursor.grabbing : MouseCursor.grab;

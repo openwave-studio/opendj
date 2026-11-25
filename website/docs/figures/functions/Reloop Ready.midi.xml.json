@@ -1,0 +1,563 @@
+{
+  "file": "Reloop Ready.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Scroll playlists"
+      ],
+      "SHIFT press": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "hplevel": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "hpmix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fx1": {
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 1 on",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-fx2": {
+      "SHIFT": [
+        "FX 1 Effect 2 next"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 2 on",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-fx3": {
+      "SHIFT": [
+        "FX 1 Effect 3 next"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 3 on",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-fxlevel": {
+      "Tap": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "l-jumpb": {
+      "Pitch play": [
+        "Reloop ready input"
+      ],
+      "normal": [
+        "Beat jump back"
+      ]
+    },
+    "l-jumpf": {
+      "Pitch play": [
+        "Reloop ready input"
+      ],
+      "normal": [
+        "Beat jump forward"
+      ]
+    },
+    "l-key": {
+      "SHIFT": [
+        "Match key"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Reloop ready input"
+      ]
+    },
+    "l-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 knob",
+        "FX 1 Effect 2 knob",
+        "FX 1 Effect 3 knob"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-pad1": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 1",
+        "Slicer on"
+      ]
+    },
+    "l-pad2": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 2",
+        "Slicer on"
+      ]
+    },
+    "l-pad3": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 3",
+        "Slicer on"
+      ]
+    },
+    "l-pad4": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 4",
+        "Slicer on"
+      ]
+    },
+    "l-pad5": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 5",
+        "Slicer on"
+      ]
+    },
+    "l-pad6": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 6",
+        "Slicer on"
+      ]
+    },
+    "l-pad7": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 7",
+        "Slicer on"
+      ]
+    },
+    "l-pad8": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 8",
+        "Slicer on"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-slip": {
+      "SHIFT": [
+        "Reloop ready input"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "main": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fx1": {
+      "SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 1 on",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-fx2": {
+      "SHIFT": [
+        "FX 2 Effect 2 next"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 2 on",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-fx3": {
+      "SHIFT": [
+        "FX 2 Effect 3 next"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 3 on",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-fxlevel": {
+      "Tap": [
+        "Tap tempo"
+      ],
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "r-jumpb": {
+      "Pitch play": [
+        "Reloop ready input"
+      ],
+      "normal": [
+        "Beat jump back"
+      ]
+    },
+    "r-jumpf": {
+      "Pitch play": [
+        "Reloop ready input"
+      ],
+      "normal": [
+        "Beat jump forward"
+      ]
+    },
+    "r-key": {
+      "SHIFT": [
+        "Match key"
+      ],
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Reloop ready input"
+      ]
+    },
+    "r-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "SHIFT": [
+        "FX 2 Effect 1 knob",
+        "FX 2 Effect 2 knob",
+        "FX 2 Effect 3 knob"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-pad1": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 1",
+        "Slicer on"
+      ]
+    },
+    "r-pad2": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 2",
+        "Slicer on"
+      ]
+    },
+    "r-pad3": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 3",
+        "Slicer on"
+      ]
+    },
+    "r-pad4": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 4",
+        "Slicer on"
+      ]
+    },
+    "r-pad5": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 5",
+        "Slicer on"
+      ]
+    },
+    "r-pad6": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 6",
+        "Slicer on"
+      ]
+    },
+    "r-pad7": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 7",
+        "Slicer on"
+      ]
+    },
+    "r-pad8": {
+      "MODE": [
+        "Reloop ready input"
+      ],
+      "SHIFT": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "normal": [
+        "Slicer beat 8",
+        "Slicer on"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Reverse"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-slip": {
+      "SHIFT": [
+        "Reloop ready input"
+      ],
+      "normal": [
+        "Slip mode"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

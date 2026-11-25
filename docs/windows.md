@@ -56,6 +56,14 @@ ASIO driver for the lowest latency with a DJ controller or audio interface
 that ships one; the buffer size is usually set in the driver's own control
 panel. ASIO4ALL works for devices without an ASIO driver.
 
+openDJ looks for devices once, at start-up. Listing ASIO drivers loads each
+installed one in turn, which takes a few seconds when several are installed
+for hardware that isn't plugged in, and can briefly interrupt a Windows
+Audio stream on the same interface. So opening Settings > Audio looks again
+only for Windows Audio devices; press **Refresh devices** there for an ASIO
+device plugged in after openDJ started. While a deck plays, Refresh devices
+asks for a second press first.
+
 The build downloads Steinberg's ASIO SDK (GPLv3) through cpal's `asio`
 feature, which also needs LLVM (libclang) for bindgen; the GitHub Windows
 runners have it. Built copies of openDJ were already GPL-3.0 because of

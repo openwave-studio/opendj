@@ -1,0 +1,2411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MixxxMIDIPreset mixxxVersion="2.4" schemaVersion="1">
+    <info>
+        <name>Reloop Mixtour Pro</name>
+        <author>openDJ</author>
+        <description>Reloop Mixtour Pro, written for openDJ from the MIDI notes djay Pro's built-in mapping uses. Four decks, eight pad modes and STEMS EQ.</description>
+    </info>
+    <controller id="Reloop Mixtour Pro">
+        <scriptfiles>
+            <file functionprefix="ReloopMixtourPro" filename="Reloop-Mixtour-Pro-scripts.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Library]</group>
+                <key>ReloopMixtourPro.browse</key>
+                <description>BROWSE: turn to move through the list</description>
+                <status>0xBF</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Playlist]</group>
+                <key>ReloopMixtourPro.browseShift</key>
+                <description>SHIFT + BROWSE: turn to move through the sidebar</description>
+                <status>0xBF</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>GoToItem</key>
+                <description>BROWSE press: open the folder or load the track</description>
+                <status>0x9F</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Library]</group>
+                <key>MoveFocusBackward</key>
+                <description>SHIFT + BROWSE press: back</description>
+                <status>0x9F</status>
+                <midino>0x07</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>crossfader</key>
+                <description>Crossfader</description>
+                <status>0xBF</status>
+                <midino>0x08</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>headMix</key>
+                <description>CUE MIX: cue or main in the headphones</description>
+                <status>0xBF</status>
+                <midino>0x0D</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopMixtourPro.dryWet</key>
+                <description>FX DRY/WET: every deck's effects</description>
+                <status>0xBF</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopMixtourPro.amountDown</key>
+                <description>FX left arrow: less of the effects</description>
+                <status>0x9F</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>ReloopMixtourPro.amountUp</key>
+                <description>FX right arrow: more of the effects</description>
+                <status>0x9F</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>play</key>
+                <description>PLAY, deck 1</description>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>cue_default</key>
+                <description>CUE, deck 1</description>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <description>SYNC, deck 1</description>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.inOutEx</key>
+                <description>IN-OUT-EX: loop in, loop out, out of the loop, deck 1</description>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.autoLoop</key>
+                <description>SHIFT + IN-OUT-EX: auto loop on or off, deck 1</description>
+                <status>0x90</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>sync_key</key>
+                <description>SHIFT + SYNC: match the key, deck 1</description>
+                <status>0x90</status>
+                <midino>0x29</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>rate_temp_up</key>
+                <description>SHIFT + PLAY: bend the tempo up, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>rate_temp_down</key>
+                <description>SHIFT + CUE: bend the tempo down, deck 1</description>
+                <status>0x90</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>pitch_down</key>
+                <description>MODE + CUE: key down a semitone, deck 1</description>
+                <status>0x90</status>
+                <midino>0x27</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>pitch_up</key>
+                <description>MODE + PLAY: key up a semitone, deck 1</description>
+                <status>0x90</status>
+                <midino>0x28</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>loop_halve</key>
+                <description>MODE + IN-OUT-EX: halve the loop, deck 1</description>
+                <status>0x90</status>
+                <midino>0x2A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>loop_double</key>
+                <description>MODE + SYNC: double the loop, deck 1</description>
+                <status>0x90</status>
+                <midino>0x2B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <description>Headphone cue, deck 1</description>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>volume</key>
+                <description>Volume fader, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x1C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>pregain</key>
+                <description>GAIN, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x16</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>HIGH (vocals with STEMS EQ), deck 1</description>
+                <status>0xB0</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>MID (melody with STEMS EQ), deck 1</description>
+                <status>0xB0</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel1]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>LOW (drums with STEMS EQ), deck 1</description>
+                <status>0xB0</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <description>FILTER, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x1A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.seek</key>
+                <description>MODE + BROWSE: move through the track a beat at a time, deck 1</description>
+                <status>0xB0</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>LoadSelectedTrack</key>
+                <description>LOAD, deck 1</description>
+                <status>0x94</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.stemsEqButton</key>
+                <description>STEMS EQ: the EQ knobs set stem volumes, deck 1</description>
+                <status>0x94</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 1: HOT CUE pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 2: BOUNCE LOOP pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 3: PITCH CUE pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 4: INSTANT FX pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 5: AUTO LOOP pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 6: SAMPLER pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 7: SAVED LOOPS pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 8: NEURAL MIX pad mode, deck 1</description>
+                <status>0x94</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 1, deck 1</description>
+                <status>0x94</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 1, deck 1</description>
+                <status>0x94</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 2, deck 1</description>
+                <status>0x94</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 2, deck 1</description>
+                <status>0x94</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 3, deck 1</description>
+                <status>0x94</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 3, deck 1</description>
+                <status>0x94</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 4, deck 1</description>
+                <status>0x94</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 4, deck 1</description>
+                <status>0x94</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 5, deck 1</description>
+                <status>0x94</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 5, deck 1</description>
+                <status>0x94</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 6, deck 1</description>
+                <status>0x94</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 6, deck 1</description>
+                <status>0x94</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 7, deck 1</description>
+                <status>0x94</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 7, deck 1</description>
+                <status>0x94</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 8, deck 1</description>
+                <status>0x94</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 8, deck 1</description>
+                <status>0x94</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.paddle</key>
+                <description>FX paddle: effects on (up) or on while held (down), deck 1</description>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>ReloopMixtourPro.backspin</key>
+                <description>SHIFT + FX paddle: backspin, deck 1</description>
+                <status>0x98</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>super1</key>
+                <description>FX amount, deck 1</description>
+                <status>0x98</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>prev_effect</key>
+                <description>SHIFT + FX left arrow: previous effect, deck 1</description>
+                <status>0x98</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>next_effect</key>
+                <description>SHIFT + FX right arrow: next effect, deck 1</description>
+                <status>0x98</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>play</key>
+                <description>PLAY, deck 2</description>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>cue_default</key>
+                <description>CUE, deck 2</description>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <description>SYNC, deck 2</description>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.inOutEx</key>
+                <description>IN-OUT-EX: loop in, loop out, out of the loop, deck 2</description>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.autoLoop</key>
+                <description>SHIFT + IN-OUT-EX: auto loop on or off, deck 2</description>
+                <status>0x91</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>sync_key</key>
+                <description>SHIFT + SYNC: match the key, deck 2</description>
+                <status>0x91</status>
+                <midino>0x29</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>rate_temp_up</key>
+                <description>SHIFT + PLAY: bend the tempo up, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>rate_temp_down</key>
+                <description>SHIFT + CUE: bend the tempo down, deck 2</description>
+                <status>0x91</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>pitch_down</key>
+                <description>MODE + CUE: key down a semitone, deck 2</description>
+                <status>0x91</status>
+                <midino>0x27</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>pitch_up</key>
+                <description>MODE + PLAY: key up a semitone, deck 2</description>
+                <status>0x91</status>
+                <midino>0x28</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>loop_halve</key>
+                <description>MODE + IN-OUT-EX: halve the loop, deck 2</description>
+                <status>0x91</status>
+                <midino>0x2A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>loop_double</key>
+                <description>MODE + SYNC: double the loop, deck 2</description>
+                <status>0x91</status>
+                <midino>0x2B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <description>Headphone cue, deck 2</description>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>volume</key>
+                <description>Volume fader, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x1C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>pregain</key>
+                <description>GAIN, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x16</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>HIGH (vocals with STEMS EQ), deck 2</description>
+                <status>0xB1</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>MID (melody with STEMS EQ), deck 2</description>
+                <status>0xB1</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel2]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>LOW (drums with STEMS EQ), deck 2</description>
+                <status>0xB1</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <description>FILTER, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x1A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.seek</key>
+                <description>MODE + BROWSE: move through the track a beat at a time, deck 2</description>
+                <status>0xB1</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>LoadSelectedTrack</key>
+                <description>LOAD, deck 2</description>
+                <status>0x95</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.stemsEqButton</key>
+                <description>STEMS EQ: the EQ knobs set stem volumes, deck 2</description>
+                <status>0x95</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 1: HOT CUE pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 2: BOUNCE LOOP pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 3: PITCH CUE pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 4: INSTANT FX pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 5: AUTO LOOP pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 6: SAMPLER pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 7: SAVED LOOPS pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 8: NEURAL MIX pad mode, deck 2</description>
+                <status>0x95</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 1, deck 2</description>
+                <status>0x95</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 1, deck 2</description>
+                <status>0x95</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 2, deck 2</description>
+                <status>0x95</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 2, deck 2</description>
+                <status>0x95</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 3, deck 2</description>
+                <status>0x95</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 3, deck 2</description>
+                <status>0x95</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 4, deck 2</description>
+                <status>0x95</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 4, deck 2</description>
+                <status>0x95</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 5, deck 2</description>
+                <status>0x95</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 5, deck 2</description>
+                <status>0x95</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 6, deck 2</description>
+                <status>0x95</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 6, deck 2</description>
+                <status>0x95</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 7, deck 2</description>
+                <status>0x95</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 7, deck 2</description>
+                <status>0x95</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 8, deck 2</description>
+                <status>0x95</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 8, deck 2</description>
+                <status>0x95</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.paddle</key>
+                <description>FX paddle: effects on (up) or on while held (down), deck 2</description>
+                <status>0x99</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>ReloopMixtourPro.backspin</key>
+                <description>SHIFT + FX paddle: backspin, deck 2</description>
+                <status>0x99</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>super1</key>
+                <description>FX amount, deck 2</description>
+                <status>0x99</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>prev_effect</key>
+                <description>SHIFT + FX left arrow: previous effect, deck 2</description>
+                <status>0x99</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit2_Effect1]</group>
+                <key>next_effect</key>
+                <description>SHIFT + FX right arrow: next effect, deck 2</description>
+                <status>0x99</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>play</key>
+                <description>PLAY, deck 3</description>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>cue_default</key>
+                <description>CUE, deck 3</description>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>sync_enabled</key>
+                <description>SYNC, deck 3</description>
+                <status>0x92</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.inOutEx</key>
+                <description>IN-OUT-EX: loop in, loop out, out of the loop, deck 3</description>
+                <status>0x92</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.autoLoop</key>
+                <description>SHIFT + IN-OUT-EX: auto loop on or off, deck 3</description>
+                <status>0x92</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>sync_key</key>
+                <description>SHIFT + SYNC: match the key, deck 3</description>
+                <status>0x92</status>
+                <midino>0x29</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>rate_temp_up</key>
+                <description>SHIFT + PLAY: bend the tempo up, deck 3</description>
+                <status>0x92</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>rate_temp_down</key>
+                <description>SHIFT + CUE: bend the tempo down, deck 3</description>
+                <status>0x92</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>pitch_down</key>
+                <description>MODE + CUE: key down a semitone, deck 3</description>
+                <status>0x92</status>
+                <midino>0x27</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>pitch_up</key>
+                <description>MODE + PLAY: key up a semitone, deck 3</description>
+                <status>0x92</status>
+                <midino>0x28</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>loop_halve</key>
+                <description>MODE + IN-OUT-EX: halve the loop, deck 3</description>
+                <status>0x92</status>
+                <midino>0x2A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>loop_double</key>
+                <description>MODE + SYNC: double the loop, deck 3</description>
+                <status>0x92</status>
+                <midino>0x2B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>pfl</key>
+                <description>Headphone cue, deck 3</description>
+                <status>0x92</status>
+                <midino>0x1B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>volume</key>
+                <description>Volume fader, deck 3</description>
+                <status>0xB2</status>
+                <midino>0x1C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>pregain</key>
+                <description>GAIN, deck 3</description>
+                <status>0xB2</status>
+                <midino>0x16</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>HIGH (vocals with STEMS EQ), deck 3</description>
+                <status>0xB2</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>MID (melody with STEMS EQ), deck 3</description>
+                <status>0xB2</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel3]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>LOW (drums with STEMS EQ), deck 3</description>
+                <status>0xB2</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel3]]</group>
+                <key>super1</key>
+                <description>FILTER, deck 3</description>
+                <status>0xB2</status>
+                <midino>0x1A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.seek</key>
+                <description>MODE + BROWSE: move through the track a beat at a time, deck 3</description>
+                <status>0xB2</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>LoadSelectedTrack</key>
+                <description>LOAD, deck 3</description>
+                <status>0x96</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.stemsEqButton</key>
+                <description>STEMS EQ: the EQ knobs set stem volumes, deck 3</description>
+                <status>0x96</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 1: HOT CUE pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 2: BOUNCE LOOP pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 3: PITCH CUE pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 4: INSTANT FX pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 5: AUTO LOOP pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 6: SAMPLER pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 7: SAVED LOOPS pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 8: NEURAL MIX pad mode, deck 3</description>
+                <status>0x96</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 1, deck 3</description>
+                <status>0x96</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 1, deck 3</description>
+                <status>0x96</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 2, deck 3</description>
+                <status>0x96</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 2, deck 3</description>
+                <status>0x96</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 3, deck 3</description>
+                <status>0x96</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 3, deck 3</description>
+                <status>0x96</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 4, deck 3</description>
+                <status>0x96</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 4, deck 3</description>
+                <status>0x96</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 5, deck 3</description>
+                <status>0x96</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 5, deck 3</description>
+                <status>0x96</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 6, deck 3</description>
+                <status>0x96</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 6, deck 3</description>
+                <status>0x96</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 7, deck 3</description>
+                <status>0x96</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 7, deck 3</description>
+                <status>0x96</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 8, deck 3</description>
+                <status>0x96</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 8, deck 3</description>
+                <status>0x96</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.paddle</key>
+                <description>FX paddle: effects on (up) or on while held (down), deck 3</description>
+                <status>0x9A</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>ReloopMixtourPro.backspin</key>
+                <description>SHIFT + FX paddle: backspin, deck 3</description>
+                <status>0x9A</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit3]</group>
+                <key>super1</key>
+                <description>FX amount, deck 3</description>
+                <status>0x9A</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit3_Effect1]</group>
+                <key>prev_effect</key>
+                <description>SHIFT + FX left arrow: previous effect, deck 3</description>
+                <status>0x9A</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit3_Effect1]</group>
+                <key>next_effect</key>
+                <description>SHIFT + FX right arrow: next effect, deck 3</description>
+                <status>0x9A</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>play</key>
+                <description>PLAY, deck 4</description>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>cue_default</key>
+                <description>CUE, deck 4</description>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>sync_enabled</key>
+                <description>SYNC, deck 4</description>
+                <status>0x93</status>
+                <midino>0x02</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.inOutEx</key>
+                <description>IN-OUT-EX: loop in, loop out, out of the loop, deck 4</description>
+                <status>0x93</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.autoLoop</key>
+                <description>SHIFT + IN-OUT-EX: auto loop on or off, deck 4</description>
+                <status>0x93</status>
+                <midino>0x40</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>sync_key</key>
+                <description>SHIFT + SYNC: match the key, deck 4</description>
+                <status>0x93</status>
+                <midino>0x29</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>rate_temp_up</key>
+                <description>SHIFT + PLAY: bend the tempo up, deck 4</description>
+                <status>0x93</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>rate_temp_down</key>
+                <description>SHIFT + CUE: bend the tempo down, deck 4</description>
+                <status>0x93</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>pitch_down</key>
+                <description>MODE + CUE: key down a semitone, deck 4</description>
+                <status>0x93</status>
+                <midino>0x27</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>pitch_up</key>
+                <description>MODE + PLAY: key up a semitone, deck 4</description>
+                <status>0x93</status>
+                <midino>0x28</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>loop_halve</key>
+                <description>MODE + IN-OUT-EX: halve the loop, deck 4</description>
+                <status>0x93</status>
+                <midino>0x2A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>loop_double</key>
+                <description>MODE + SYNC: double the loop, deck 4</description>
+                <status>0x93</status>
+                <midino>0x2B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>pfl</key>
+                <description>Headphone cue, deck 4</description>
+                <status>0x93</status>
+                <midino>0x1B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>volume</key>
+                <description>Volume fader, deck 4</description>
+                <status>0xB3</status>
+                <midino>0x1C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>pregain</key>
+                <description>GAIN, deck 4</description>
+                <status>0xB3</status>
+                <midino>0x16</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>HIGH (vocals with STEMS EQ), deck 4</description>
+                <status>0xB3</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>MID (melody with STEMS EQ), deck 4</description>
+                <status>0xB3</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EqualizerRack1_[Channel4]_Effect1]</group>
+                <key>ReloopMixtourPro.eqKnob</key>
+                <description>LOW (drums with STEMS EQ), deck 4</description>
+                <status>0xB3</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel4]]</group>
+                <key>super1</key>
+                <description>FILTER, deck 4</description>
+                <status>0xB3</status>
+                <midino>0x1A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.seek</key>
+                <description>MODE + BROWSE: move through the track a beat at a time, deck 4</description>
+                <status>0xB3</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>LoadSelectedTrack</key>
+                <description>LOAD, deck 4</description>
+                <status>0x97</status>
+                <midino>0x0A</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.stemsEqButton</key>
+                <description>STEMS EQ: the EQ knobs set stem volumes, deck 4</description>
+                <status>0x97</status>
+                <midino>0x24</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 1: HOT CUE pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 2: BOUNCE LOOP pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x01</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 3: PITCH CUE pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x02</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 4: INSTANT FX pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x03</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 5: AUTO LOOP pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x04</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 6: SAMPLER pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 7: SAVED LOOPS pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x06</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.padMode</key>
+                <description>MODE + pad 8: NEURAL MIX pad mode, deck 4</description>
+                <status>0x97</status>
+                <midino>0x07</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 1, deck 4</description>
+                <status>0x97</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 1, deck 4</description>
+                <status>0x97</status>
+                <midino>0x1C</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 2, deck 4</description>
+                <status>0x97</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 2, deck 4</description>
+                <status>0x97</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 3, deck 4</description>
+                <status>0x97</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 3, deck 4</description>
+                <status>0x97</status>
+                <midino>0x1E</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 4, deck 4</description>
+                <status>0x97</status>
+                <midino>0x17</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 4, deck 4</description>
+                <status>0x97</status>
+                <midino>0x1F</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 5, deck 4</description>
+                <status>0x97</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 5, deck 4</description>
+                <status>0x97</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 6, deck 4</description>
+                <status>0x97</status>
+                <midino>0x19</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 6, deck 4</description>
+                <status>0x97</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 7, deck 4</description>
+                <status>0x97</status>
+                <midino>0x1A</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 7, deck 4</description>
+                <status>0x97</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>Pad 8, deck 4</description>
+                <status>0x97</status>
+                <midino>0x1B</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.pad</key>
+                <description>SHIFT + pad 8, deck 4</description>
+                <status>0x97</status>
+                <midino>0x23</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.paddle</key>
+                <description>FX paddle: effects on (up) or on while held (down), deck 4</description>
+                <status>0x9B</status>
+                <midino>0x05</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>ReloopMixtourPro.backspin</key>
+                <description>SHIFT + FX paddle: backspin, deck 4</description>
+                <status>0x9B</status>
+                <midino>0x00</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit4]</group>
+                <key>super1</key>
+                <description>FX amount, deck 4</description>
+                <status>0x9B</status>
+                <midino>0x03</midino>
+                <options>
+                    <soft-takeover/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit4_Effect1]</group>
+                <key>prev_effect</key>
+                <description>SHIFT + FX left arrow: previous effect, deck 4</description>
+                <status>0x9B</status>
+                <midino>0x0B</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit4_Effect1]</group>
+                <key>next_effect</key>
+                <description>SHIFT + FX right arrow: next effect, deck 4</description>
+                <status>0x9B</status>
+                <midino>0x0C</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+        </controls>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <description>PLAY LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x00</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>cue_indicator</key>
+                <description>CUE LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x01</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <description>SYNC LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x02</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>loop_enabled</key>
+                <description>IN-OUT-EX LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x03</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>pfl</key>
+                <description>Headphone cue LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x90</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>group_[Channel1]_enable</key>
+                <description>FX paddle LED, deck 1</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x98</status>
+                <midino>0x05</midino>
+                <on>0x07</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <description>PLAY LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x00</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>cue_indicator</key>
+                <description>CUE LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x01</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <description>SYNC LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x02</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>loop_enabled</key>
+                <description>IN-OUT-EX LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x03</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>pfl</key>
+                <description>Headphone cue LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x91</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit2]</group>
+                <key>group_[Channel2]_enable</key>
+                <description>FX paddle LED, deck 2</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x99</status>
+                <midino>0x05</midino>
+                <on>0x07</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>play_indicator</key>
+                <description>PLAY LED, deck 3</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x92</status>
+                <midino>0x00</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>cue_indicator</key>
+                <description>CUE LED, deck 3</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x92</status>
+                <midino>0x01</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>sync_enabled</key>
+                <description>SYNC LED, deck 3</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x92</status>
+                <midino>0x02</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>loop_enabled</key>
+                <description>IN-OUT-EX LED, deck 3</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x92</status>
+                <midino>0x03</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>pfl</key>
+                <description>Headphone cue LED, deck 3</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x92</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit3]</group>
+                <key>group_[Channel3]_enable</key>
+                <description>FX paddle LED, deck 3</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x9A</status>
+                <midino>0x05</midino>
+                <on>0x07</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>play_indicator</key>
+                <description>PLAY LED, deck 4</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x93</status>
+                <midino>0x00</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>cue_indicator</key>
+                <description>CUE LED, deck 4</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x93</status>
+                <midino>0x01</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>sync_enabled</key>
+                <description>SYNC LED, deck 4</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x93</status>
+                <midino>0x02</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>loop_enabled</key>
+                <description>IN-OUT-EX LED, deck 4</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x93</status>
+                <midino>0x03</midino>
+                <on>0x06</on>
+                <off>0x02</off>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>pfl</key>
+                <description>Headphone cue LED, deck 4</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x93</status>
+                <midino>0x1B</midino>
+                <on>0x7F</on>
+                <off>0x01</off>
+            </output>
+            <output>
+                <group>[EffectRack1_EffectUnit4]</group>
+                <key>group_[Channel4]_enable</key>
+                <description>FX paddle LED, deck 4</description>
+                <minimum>0.5</minimum>
+                <maximum>1</maximum>
+                <status>0x9B</status>
+                <midino>0x05</midino>
+                <on>0x07</on>
+                <off>0x01</off>
+            </output>
+        </outputs>
+    </controller>
+</MixxxMIDIPreset>

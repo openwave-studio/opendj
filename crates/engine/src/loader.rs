@@ -486,7 +486,14 @@ fn edit_grid(
             after
         }
     };
-    t.set_grid(grid);
+    if grid.is_empty() {
+        // Cleared: no grid and no tempo, until Undo or Reset.
+        t.grid = grid;
+        t.bpm = 0.0;
+        t.first_beat = 0.0;
+    } else {
+        t.set_grid(grid);
+    }
     t.info.fixed_grid = true;
     t.info.grid_from = "user".into();
     t.info.grid_unsure = false;

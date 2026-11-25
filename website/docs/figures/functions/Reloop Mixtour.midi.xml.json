@@ -1,0 +1,265 @@
+{
+  "file": "Reloop Mixtour.midi.xml",
+  "parts": {
+    "back": {
+      "normal": [
+        "Previous panel"
+      ]
+    },
+    "browse": {
+      "Left T held": [
+        "Jump 1 beat back"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "Right T held": [
+        "Jump 1 beat back"
+      ],
+      "SHIFT": [
+        "Scroll playlists"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "cuemix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-b1": {
+      "C mode": [
+        "Hot cue 1"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "SHIFT": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "l-b2": {
+      "C mode": [
+        "Hot cue 2"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "SHIFT": [
+        "Double loop"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-b3": {
+      "C mode": [
+        "Hot cue 3"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-b4": {
+      "C mode": [
+        "Hot cue 4"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-filter": {
+      "SHIFT": [
+        "FX 1 Super knob"
+      ],
+      "normal": [
+        "Filter",
+        "FX 1 Super knob"
+      ]
+    },
+    "l-fx": {
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "phones": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "r-b1": {
+      "C mode": [
+        "Hot cue 1"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "SHIFT": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Loop (current size)"
+      ]
+    },
+    "r-b2": {
+      "C mode": [
+        "Hot cue 2"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "SHIFT": [
+        "Double loop"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-b3": {
+      "C mode": [
+        "Hot cue 3"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-b4": {
+      "C mode": [
+        "Hot cue 4"
+      ],
+      "C mode SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-filter": {
+      "SHIFT": [
+        "FX 2 Super knob"
+      ],
+      "normal": [
+        "Filter",
+        "FX 2 Super knob"
+      ]
+    },
+    "r-fx": {
+      "SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Load selected track"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

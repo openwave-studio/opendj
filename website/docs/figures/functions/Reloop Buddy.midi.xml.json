@@ -1,0 +1,423 @@
+{
+  "file": "Reloop Buddy.midi.xml",
+  "parts": {
+    "browse": {
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Scroll playlists"
+      ],
+      "SHIFT press": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "fxknob": {
+      "normal": [
+        "FX 1 Wet / dry",
+        "FX 2 Wet / dry"
+      ]
+    },
+    "fxnext": {
+      "Deck 2 SHIFT": [
+        "FX 2 Effect 1 next"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 next"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob",
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "fxprev": {
+      "Deck 2 SHIFT": [
+        "FX 2 Effect 1 previous"
+      ],
+      "SHIFT": [
+        "FX 1 Effect 1 previous"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob",
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "hplevel": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "hpmix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Stem 1 volume"
+      ]
+    },
+    "l-fx": {
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Effect 1 on",
+        "FX 1 Unit on"
+      ]
+    },
+    "l-high": {
+      "normal": [
+        "Stem 4 volume"
+      ]
+    },
+    "l-jog": {
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Stem 2 volume",
+        "Stem 3 volume"
+      ]
+    },
+    "l-pad1": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad2": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad3": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad4": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad5": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad6": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad7": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pad8": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "l-pfl": {
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "main": {
+      "normal": [
+        "Main level"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Stem 1 volume"
+      ]
+    },
+    "r-fx": {
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Effect 1 on",
+        "FX 2 Unit on"
+      ]
+    },
+    "r-high": {
+      "normal": [
+        "Stem 4 volume"
+      ]
+    },
+    "r-jog": {
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Stem 2 volume",
+        "Stem 3 volume"
+      ]
+    },
+    "r-pad1": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad2": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad3": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad4": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad5": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad6": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad7": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pad8": {
+      "MODE": [
+        "Reloop buddy input"
+      ],
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Reloop buddy input"
+      ]
+    },
+    "r-pfl": {
+      "SHIFT": [
+        "Reloop buddy input"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vol": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

@@ -135,6 +135,12 @@
         getCoverArt(group, size) {
             return new Uint8Array(native.cover(String(group), Number(size) || 240));
         },
+        // openDJ: words the app shares for screens, such as
+        // getText("[Instrument1]", "name"); empty when there are none (see
+        // crates/controllers/src/texts.rs for the keys).
+        getText(group, key) {
+            return String(native.text(String(group), String(key)));
+        },
         stopTimer(id) {
             if (timers.delete(id)) {
                 native.timerStop(id);

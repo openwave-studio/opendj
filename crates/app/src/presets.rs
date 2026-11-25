@@ -848,6 +848,152 @@ pub fn install(
     show(app);
 }
 
+/// The deck playing the instrument plugin, if one does.
+fn instrument_deck(ctx: &Ctx) -> Option<usize> {
+    (0..opendj_engine::NUM_DECKS)
+        .find(|d| ctx.value(&format!("[Channel{}]", d + 1), "live_input") == 3.0)
+}
+
+/// Where an instrument picked on a controller plays: the deck already
+/// playing one, else the first deck with nothing loaded and not playing.
+fn deck_for_instrument(ctx: &Ctx) -> Option<usize> {
+    instrument_deck(ctx).or_else(|| {
+        (0..opendj_engine::NUM_DECKS).find(|d| {
+            let g = format!("[Channel{}]", d + 1);
+            ctx.value(&g, "track_loaded") == 0.0
+                && ctx.value(&g, "play") == 0.0
+                && ctx.value(&groove_group(*d), "enabled") == 0.0
+                && ctx.value(&g, "live_input") == 0.0
+        })
+    })
+}
+
+/// The instrument deck's presets, in the order PRESET ▲/▼ step through
+/// them.
+fn instrument_presets(ctx: &Ctx) -> Vec<Preset> {
+    let Some((key, _)) = instrument_deck(ctx).and_then(|d| ctx.instrument(d)) else {
+        return Vec::new();
+    };
+    all().into_iter().filter(|p| p.instrument == key).collect()
+}
+
+/// Lets controllers with a keyboard (see `crates/controllers/src/texts.rs`)
+/// step through and load presets and instruments, and gives their screens
+/// the names: `[Instrument1],preset_next`, `preset_prev`, `preset_load` and
+/// `instrument_load` are acted on and set back to 0.
+pub fn follow_controllers(app: &AppWindow) -> slint::Timer {
+    use opendj_controllers::texts::set_text;
+    let timer = slint::Timer::default();
+    let weak = app.as_weak();
+    let mut shown: Vec<(String, String)> = Vec::new();
+    let mut tick = 0u32;
+    timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_millis(50),
+        move || {
+            let Some(ctx) = ctx() else {
+                return;
+            };
+            let take = |key: &str| {
+                let v = ctx.value(INSTRUMENT, key).round();
+                if v != 0.0 {
+                    ctx.set(INSTRUMENT, key, 0.0);
+                }
+                v as i64
+            };
+            let (next, prev) = (take("preset_next"), take("preset_prev"));
+            let (load, instrument) = (take("preset_load"), take("instrument_load"));
+            let mut acted = false;
+            let result = if next > 0 || prev > 0 {
+                acted = true;
+                instrument_deck(&ctx)
+                    .ok_or_else(|| "no deck plays an instrument".to_string())
+                    .and_then(|d| ctx.step(d, if next > 0 { 1 } else { -1 }))
+            } else if load > 0 {
+                acted = true;
+                let presets = instrument_presets(&ctx);
+                match (instrument_deck(&ctx), presets.get(load as usize - 1)) {
+                    (Some(d), Some(p)) => ctx.load(d, p),
+                    _ => Err("that preset is gone".into()),
+                }
+            } else if instrument > 0 {
+                acted = true;
+                let count = STATE.with_borrow(|s| s.plugins.len()) as i64;
+                match deck_for_instrument(&ctx) {
+                    _ if instrument > count => Err("that instrument is gone".into()),
+                    Some(d) => {
+                        ctx.set(INSTRUMENT, "instrument", instrument as f64);
+                        ctx.set(&format!("[Channel{}]", d + 1), "live_input", 3.0);
+                        Ok(())
+                    }
+                    None => Err("every deck is busy: free one for the instrument".into()),
+                }
+            } else {
+                Ok(())
+            };
+            if let Err(e) = result {
+                ctx.engine.alert(format!("Preset: {e}."));
+            }
+            if acted {
+                if let Some(app) = weak.upgrade() {
+                    show(&app);
+                    crate::instruments::presets_changed(&app);
+                }
+            }
+            // The names, a few times a second.
+            tick = tick.wrapping_add(1);
+            if !acted && !tick.is_multiple_of(5) {
+                return;
+            }
+            let deck = instrument_deck(&ctx);
+            let name = deck
+                .and_then(|d| ctx.instrument(d))
+                .map(|(_, n)| n)
+                .unwrap_or_default();
+            let preset = deck
+                .and_then(|d| ctx.current(d))
+                .map(|p| p.name)
+                .unwrap_or_default();
+            let mut texts = vec![
+                ("name".to_string(), name),
+                ("preset".to_string(), preset),
+                (
+                    "instruments".to_string(),
+                    STATE.with_borrow(|s| {
+                        s.plugins
+                            .iter()
+                            .map(|p| p.name.as_str())
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    }),
+                ),
+                (
+                    "presets".to_string(),
+                    instrument_presets(&ctx)
+                        .iter()
+                        .map(|p| p.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join("\n"),
+                ),
+            ];
+            let params = ctx.engine.instrument_parameters();
+            for k in 0..opendj_engine::inputs::INSTRUMENT_PARAMETERS {
+                texts.push((
+                    format!("parameter{}_name", k + 1),
+                    params.get(k).cloned().unwrap_or_default(),
+                ));
+            }
+            if texts != shown {
+                for (key, text) in &texts {
+                    set_text(INSTRUMENT, key, text);
+                }
+                shown = texts;
+            }
+        },
+    );
+    timer
+}
+
 /// Shows the Groove Box's presets in its menu.
 fn show_list(app: &AppWindow) {
     let items: Vec<PresetItem> = all()

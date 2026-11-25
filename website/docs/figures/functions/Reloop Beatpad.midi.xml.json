@@ -1,0 +1,980 @@
+{
+  "file": "Reloop Beatpad.midi.xml",
+  "parts": {
+    "c-button-1": {
+      "normal": [
+        "Open or close folder"
+      ]
+    },
+    "c-button-2": {
+      "normal": [
+        "Load into a stopped deck"
+      ]
+    },
+    "c-encoder-1": {
+      "normal": [
+        "Next playlist",
+        "Previous playlist"
+      ]
+    },
+    "c-encoder-2": {
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "c-fader-1": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "c-knob-1": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "c-knob-2": {
+      "normal": [
+        "Headphone level"
+      ]
+    },
+    "c-pad-1": {
+      "normal": [
+        "Inbound sysex"
+      ]
+    },
+    "c-pad-2": {
+      "normal": [
+        "S rec btn"
+      ]
+    },
+    "c-pad-3": {
+      "normal": [
+        "Rec btn"
+      ]
+    },
+    "l-button-1": {
+      "normal": [
+        "Jump 1 beat back"
+      ]
+    },
+    "l-button-2": {
+      "normal": [
+        "Jump 1 beat forward"
+      ]
+    },
+    "l-button-3": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-button-4": {
+      "normal": [
+        "Reset key"
+      ]
+    },
+    "l-button-5": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-button-6": {
+      "normal": [
+        "Tempo up"
+      ]
+    },
+    "l-button-7": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-button-8": {
+      "normal": [
+        "Stop at cue"
+      ]
+    },
+    "l-encoder-1": {
+      "normal": [
+        "Loop size knob"
+      ]
+    },
+    "l-encoder-2": {
+      "normal": [
+        "S fxselect knob"
+      ]
+    },
+    "l-encoder-3": {
+      "normal": [
+        "FX 4 Wet / dry"
+      ]
+    },
+    "l-encoder-4": {
+      "normal": [
+        "Loop size knob"
+      ]
+    },
+    "l-encoder-5": {
+      "normal": [
+        "Fxselect knob"
+      ]
+    },
+    "l-encoder-6": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-encoder-7": {
+      "normal": [
+        "FX 4 Super knob"
+      ]
+    },
+    "l-fader-1": {
+      "normal": [
+        "Key shift"
+      ]
+    },
+    "l-fader-2": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-3": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-4": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-jog": {
+      "Jog Scratch Btn": [
+        "Jog scratch btn"
+      ],
+      "Jog Seek Btn": [
+        "Jog seek btn"
+      ],
+      "Wheel Bend": [
+        "Jog nudge"
+      ],
+      "Wheel Bend Touch": [
+        "Wheel bend touch"
+      ],
+      "Wheel Scratch": [
+        "Jog nudge"
+      ],
+      "Wheel Scratch 2": [
+        "Jog nudge"
+      ],
+      "Wheel Scratch Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Wheel Seek": [
+        "Jump 16 beats back"
+      ],
+      "Wheel Seek Touch": [
+        "Wheel seek touch"
+      ],
+      "normal": [
+        "Scratch (platter touch)",
+        "Crossfader"
+      ]
+    },
+    "l-knob-1": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-2": {
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "l-knob-3": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "l-knob-4": {
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "l-knob-5": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-6": {
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "l-knob-7": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "l-knob-8": {
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "l-pad-1": {
+      "normal": [
+        "S loop size btn"
+      ]
+    },
+    "l-pad-10": {
+      "normal": [
+        "Loop roll 1/8 beat",
+        "Loop roll 2 beats"
+      ]
+    },
+    "l-pad-11": {
+      "normal": [
+        "Loop roll 1/4 beat",
+        "Loop roll 4 beats"
+      ]
+    },
+    "l-pad-12": {
+      "normal": [
+        "Loop roll 1/2 beat",
+        "Loop roll 8 beats"
+      ]
+    },
+    "l-pad-13": {
+      "normal": [
+        "Loop roll 1 beat",
+        "Loop roll 16 beats"
+      ]
+    },
+    "l-pad-14": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "l-pad-15": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "l-pad-16": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "l-pad-17": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "l-pad-18": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "l-pad-19": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "l-pad-2": {
+      "normal": [
+        "Cue btn"
+      ]
+    },
+    "l-pad-20": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "l-pad-21": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "l-pad-22": {
+      "normal": [
+        "Shift btn"
+      ]
+    },
+    "l-pad-23": {
+      "normal": [
+        "Jump to start"
+      ]
+    },
+    "l-pad-24": {
+      "normal": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-pad-25": {
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "l-pad-26": {
+      "normal": [
+        "Spfl btn"
+      ]
+    },
+    "l-pad-27": {
+      "normal": [
+        "S fxselect push"
+      ]
+    },
+    "l-pad-28": {
+      "normal": [
+        "Loop roll 16 beats"
+      ]
+    },
+    "l-pad-29": {
+      "normal": [
+        "Loop roll 16 beats"
+      ]
+    },
+    "l-pad-3": {
+      "normal": [
+        "Bounce btn"
+      ]
+    },
+    "l-pad-30": {
+      "normal": [
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-pad-31": {
+      "normal": [
+        "Cue btn"
+      ]
+    },
+    "l-pad-32": {
+      "normal": [
+        "Bounce btn"
+      ]
+    },
+    "l-pad-33": {
+      "normal": [
+        "Instant fxbtn"
+      ]
+    },
+    "l-pad-34": {
+      "normal": [
+        "Sampler btn"
+      ]
+    },
+    "l-pad-35": {
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad-36": {
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad-37": {
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad-38": {
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad-39": {
+      "normal": [
+        "Loop roll 1/8 beat"
+      ]
+    },
+    "l-pad-4": {
+      "normal": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-pad-40": {
+      "normal": [
+        "Loop roll 1/4 beat"
+      ]
+    },
+    "l-pad-41": {
+      "normal": [
+        "Loop roll 1/2 beat"
+      ]
+    },
+    "l-pad-42": {
+      "normal": [
+        "Loop roll 1 beat"
+      ]
+    },
+    "l-pad-43": {
+      "normal": [
+        "FX 1 Assign to Deck 1",
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-pad-44": {
+      "normal": [
+        "FX 2 Assign to Deck 1",
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-pad-45": {
+      "normal": [
+        "FX 3 Assign to Deck 1",
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-pad-46": {
+      "normal": [
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-pad-47": {
+      "normal": [
+        "Sampler 1 Play from start"
+      ]
+    },
+    "l-pad-48": {
+      "normal": [
+        "Sampler 2 Play from start"
+      ]
+    },
+    "l-pad-49": {
+      "normal": [
+        "Sampler 3 Play from start"
+      ]
+    },
+    "l-pad-5": {
+      "normal": [
+        "Sampler btn"
+      ]
+    },
+    "l-pad-50": {
+      "normal": [
+        "Sampler 4 Play from start"
+      ]
+    },
+    "l-pad-51": {
+      "normal": [
+        "Sync btn"
+      ]
+    },
+    "l-pad-52": {
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "l-pad-53": {
+      "normal": [
+        "Play btn"
+      ]
+    },
+    "l-pad-54": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-pad-55": {
+      "normal": [
+        "Load btn"
+      ]
+    },
+    "l-pad-56": {
+      "normal": [
+        "FX 4 Assign to Deck 1"
+      ]
+    },
+    "l-pad-57": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "l-pad-6": {
+      "normal": [
+        "Clear hot cue 1"
+      ]
+    },
+    "l-pad-7": {
+      "normal": [
+        "Clear hot cue 2"
+      ]
+    },
+    "l-pad-8": {
+      "normal": [
+        "Clear hot cue 3"
+      ]
+    },
+    "l-pad-9": {
+      "normal": [
+        "Clear hot cue 4"
+      ]
+    },
+    "r-button-1": {
+      "normal": [
+        "Jump 1 beat back"
+      ]
+    },
+    "r-button-2": {
+      "normal": [
+        "Jump 1 beat forward"
+      ]
+    },
+    "r-button-3": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-button-4": {
+      "normal": [
+        "Reset key"
+      ]
+    },
+    "r-button-5": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-button-6": {
+      "normal": [
+        "Tempo up"
+      ]
+    },
+    "r-button-7": {
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-button-8": {
+      "normal": [
+        "Stop at cue"
+      ]
+    },
+    "r-encoder-1": {
+      "normal": [
+        "Loop size knob"
+      ]
+    },
+    "r-encoder-2": {
+      "normal": [
+        "S fxselect knob"
+      ]
+    },
+    "r-encoder-3": {
+      "normal": [
+        "FX 4 Wet / dry"
+      ]
+    },
+    "r-encoder-4": {
+      "normal": [
+        "Loop size knob"
+      ]
+    },
+    "r-encoder-5": {
+      "normal": [
+        "Fxselect knob"
+      ]
+    },
+    "r-encoder-6": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-encoder-7": {
+      "normal": [
+        "FX 4 Super knob"
+      ]
+    },
+    "r-fader-1": {
+      "normal": [
+        "Key shift"
+      ]
+    },
+    "r-fader-2": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-3": {
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-4": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-jog": {
+      "Jog Scratch Btn": [
+        "Jog scratch btn"
+      ],
+      "Jog Seek Btn": [
+        "Jog seek btn"
+      ],
+      "Wheel Bend": [
+        "Jog nudge"
+      ],
+      "Wheel Bend Touch": [
+        "Wheel bend touch"
+      ],
+      "Wheel Scratch": [
+        "Jog nudge"
+      ],
+      "Wheel Scratch 2": [
+        "Jog nudge"
+      ],
+      "Wheel Scratch Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Wheel Seek": [
+        "Jump 16 beats back"
+      ],
+      "Wheel Seek Touch": [
+        "Wheel seek touch"
+      ],
+      "normal": [
+        "Scratch (platter touch)",
+        "Crossfader"
+      ]
+    },
+    "r-knob-1": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-2": {
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "r-knob-3": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "r-knob-4": {
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "r-knob-5": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-6": {
+      "normal": [
+        "Filter high"
+      ]
+    },
+    "r-knob-7": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "r-knob-8": {
+      "normal": [
+        "Filter low"
+      ]
+    },
+    "r-pad-1": {
+      "normal": [
+        "S loop size btn"
+      ]
+    },
+    "r-pad-10": {
+      "normal": [
+        "Loop roll 1/8 beat",
+        "Loop roll 2 beats"
+      ]
+    },
+    "r-pad-11": {
+      "normal": [
+        "Loop roll 1/4 beat",
+        "Loop roll 4 beats"
+      ]
+    },
+    "r-pad-12": {
+      "normal": [
+        "Loop roll 1/2 beat",
+        "Loop roll 8 beats"
+      ]
+    },
+    "r-pad-13": {
+      "normal": [
+        "Loop roll 1 beat",
+        "Loop roll 16 beats"
+      ]
+    },
+    "r-pad-14": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "r-pad-15": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "r-pad-16": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "r-pad-17": {
+      "normal": [
+        "S instant fxpad"
+      ]
+    },
+    "r-pad-18": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "r-pad-19": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "r-pad-2": {
+      "normal": [
+        "Cue btn"
+      ]
+    },
+    "r-pad-20": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "r-pad-21": {
+      "normal": [
+        "S sampler pad"
+      ]
+    },
+    "r-pad-22": {
+      "normal": [
+        "Shift btn"
+      ]
+    },
+    "r-pad-23": {
+      "normal": [
+        "Jump to start"
+      ]
+    },
+    "r-pad-24": {
+      "normal": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-pad-25": {
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "r-pad-26": {
+      "normal": [
+        "Spfl btn"
+      ]
+    },
+    "r-pad-27": {
+      "normal": [
+        "S fxselect push"
+      ]
+    },
+    "r-pad-28": {
+      "normal": [
+        "Loop roll 16 beats"
+      ]
+    },
+    "r-pad-29": {
+      "normal": [
+        "Loop roll 16 beats"
+      ]
+    },
+    "r-pad-3": {
+      "normal": [
+        "Bounce btn"
+      ]
+    },
+    "r-pad-30": {
+      "normal": [
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-pad-31": {
+      "normal": [
+        "Cue btn"
+      ]
+    },
+    "r-pad-32": {
+      "normal": [
+        "Bounce btn"
+      ]
+    },
+    "r-pad-33": {
+      "normal": [
+        "Instant fxbtn"
+      ]
+    },
+    "r-pad-34": {
+      "normal": [
+        "Sampler btn"
+      ]
+    },
+    "r-pad-35": {
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad-36": {
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad-37": {
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad-38": {
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad-39": {
+      "normal": [
+        "Loop roll 1/8 beat"
+      ]
+    },
+    "r-pad-4": {
+      "normal": [
+        "Scratch",
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-pad-40": {
+      "normal": [
+        "Loop roll 1/4 beat"
+      ]
+    },
+    "r-pad-41": {
+      "normal": [
+        "Loop roll 1/2 beat"
+      ]
+    },
+    "r-pad-42": {
+      "normal": [
+        "Loop roll 1 beat"
+      ]
+    },
+    "r-pad-43": {
+      "normal": [
+        "FX 1 Assign to Deck 2",
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-pad-44": {
+      "normal": [
+        "FX 2 Assign to Deck 2",
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-pad-45": {
+      "normal": [
+        "FX 3 Assign to Deck 2",
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-pad-46": {
+      "normal": [
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-pad-47": {
+      "normal": [
+        "Sampler 1 Play from start"
+      ]
+    },
+    "r-pad-48": {
+      "normal": [
+        "Sampler 2 Play from start"
+      ]
+    },
+    "r-pad-49": {
+      "normal": [
+        "Sampler 3 Play from start"
+      ]
+    },
+    "r-pad-5": {
+      "normal": [
+        "Sampler btn"
+      ]
+    },
+    "r-pad-50": {
+      "normal": [
+        "Sampler 4 Play from start"
+      ]
+    },
+    "r-pad-51": {
+      "normal": [
+        "Sync btn"
+      ]
+    },
+    "r-pad-52": {
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "r-pad-53": {
+      "normal": [
+        "Play btn"
+      ]
+    },
+    "r-pad-54": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-pad-55": {
+      "normal": [
+        "Load btn"
+      ]
+    },
+    "r-pad-56": {
+      "normal": [
+        "FX 4 Assign to Deck 2"
+      ]
+    },
+    "r-pad-57": {
+      "normal": [
+        "Filter mid"
+      ]
+    },
+    "r-pad-6": {
+      "normal": [
+        "Clear hot cue 1"
+      ]
+    },
+    "r-pad-7": {
+      "normal": [
+        "Clear hot cue 2"
+      ]
+    },
+    "r-pad-8": {
+      "normal": [
+        "Clear hot cue 3"
+      ]
+    },
+    "r-pad-9": {
+      "normal": [
+        "Clear hot cue 4"
+      ]
+    }
+  }
+}

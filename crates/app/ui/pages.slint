@@ -67,7 +67,7 @@ export global PageUi {
     // A mix's four covers, shown 2x2 with its name on a bar.
     in property <[image]> covers;
     in property <string> initials;
-    in property <color> tint: #5b3fd1;
+    in property <color> tint: Theme.f-5b3fd1;
     in property <[PageTrack]> tracks;
     in property <[PageAlbum]> albums;
     // Somewhere to go back to (another page), rather than the list.
@@ -99,7 +99,7 @@ component CoverArt inherits Rectangle {
     in property <bool> bar;
     in property <string> name;
     clip: true;
-    background: @linear-gradient(135deg, tint 0%, tint.darker(0.6) 60%, #101012 100%);
+    background: @linear-gradient(135deg, tint 0%, tint.darker(0.6) 60%, Theme.f-101012 100%);
     if covers.length >= 4: Rectangle {
         for c[i] in [0, 1, 2, 3]: Image {
             x: mod(i, 2) * root.width / 2;
@@ -119,7 +119,7 @@ component CoverArt inherits Rectangle {
     if !has-cover: Text {
         width: root.width - 20px;
         text: root.label;
-        color: #ffffffe0;
+        color: Theme.f-ffffffe0;
         font-size: root.label-size;
         font-weight: root.label-weight;
         wrap: word-wrap;
@@ -131,7 +131,7 @@ component CoverArt inherits Rectangle {
         y: root.height - self.height - root.height * 0.08;
         width: root.width * 0.9;
         height: max(20px, root.height * 0.15);
-        background: root.tint.mix(#ffffff, 0.3);
+        background: root.tint.mix(Theme.f-ffffff, 0.3);
         Rectangle {
             x: 0;
             width: max(3px, root.width * 0.025);
@@ -141,7 +141,7 @@ component CoverArt inherits Rectangle {
             x: max(3px, root.width * 0.025) + parent.height * 0.3;
             width: parent.width - self.x - 6px;
             text: root.name;
-            color: #111114;
+            color: Theme.f-111114;
             font-size: max(11px, parent.height * 0.5);
             font-weight: 700;
             vertical-alignment: center;
@@ -160,7 +160,7 @@ component PageButton inherits Rectangle {
     background: primary ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent) : ta.has-hover ? Theme.n-ffffff24 : Theme.n-ffffff14;
     t := Text {
         text: root.text;
-        color: primary ? #151329 : Theme.text;
+        color: primary ? Theme.f-151329 : Theme.text;
         font-size: 14px;
         font-weight: 700;
     }

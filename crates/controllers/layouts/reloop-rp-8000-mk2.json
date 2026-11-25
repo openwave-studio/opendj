@@ -1,0 +1,21 @@
+{
+ "file": "Reloop RP-8000 MK2.midi.xml",
+ "width": 837,
+ "height": 661,
+ "panels": [[0, 0, 837, 661, 24]],
+ "controls": [
+  {"id": "pad1", "label": "PAD 1", "kind": "pad", "round": false, "x": 22, "y": 146, "w": 32, "h": 32, "midi": ["95 14", "SHIFT|95 1C", "Stems|95 5D", "Deck 2|96 14", "Deck 2 SHIFT|96 1C", "Deck 2 Stems|96 5D", "Deck 3|97 14", "Deck 3 SHIFT|97 1C", "Deck 3 Stems|97 5D", "Deck 4|98 14", "Deck 4 SHIFT|98 1C", "Deck 4 Stems|98 5D"]},
+  {"id": "pad2", "label": "PAD 2", "kind": "pad", "round": false, "x": 22, "y": 190, "w": 32, "h": 32, "midi": ["95 15", "SHIFT|95 1D", "Stems|95 5E", "Deck 2|96 15", "Deck 2 SHIFT|96 1D", "Deck 2 Stems|96 5E", "Deck 3|97 15", "Deck 3 SHIFT|97 1D", "Deck 3 Stems|97 5E", "Deck 4|98 15", "Deck 4 SHIFT|98 1D", "Deck 4 Stems|98 5E"]},
+  {"id": "pad3", "label": "PAD 3", "kind": "pad", "round": false, "x": 22, "y": 234, "w": 32, "h": 32, "midi": ["95 16", "SHIFT|95 1E", "Stems|95 5F", "Deck 2|96 16", "Deck 2 SHIFT|96 1E", "Deck 2 Stems|96 5F", "Deck 3|97 16", "Deck 3 SHIFT|97 1E", "Deck 3 Stems|97 5F", "Deck 4|98 16", "Deck 4 SHIFT|98 1E", "Deck 4 Stems|98 5F"]},
+  {"id": "pad4", "label": "PAD 4", "kind": "pad", "round": false, "x": 22, "y": 278, "w": 32, "h": 32, "midi": ["95 17", "SHIFT|95 1F", "Stems|95 60", "Deck 2|96 17", "Deck 2 SHIFT|96 1F", "Deck 2 Stems|96 60", "Deck 3|97 17", "Deck 3 SHIFT|97 1F", "Deck 3 Stems|97 60", "Deck 4|98 17", "Deck 4 SHIFT|98 1F", "Deck 4 Stems|98 60"]},
+  {"id": "pad5", "label": "PAD 5", "kind": "pad", "round": false, "x": 22, "y": 321, "w": 32, "h": 32, "midi": ["95 18", "SHIFT|95 20", "Stems|95 61", "Deck 2|96 18", "Deck 2 SHIFT|96 20", "Deck 2 Stems|96 61", "Deck 3|97 18", "Deck 3 SHIFT|97 20", "Deck 3 Stems|97 61", "Deck 4|98 18", "Deck 4 SHIFT|98 20", "Deck 4 Stems|98 61"]},
+  {"id": "pad6", "label": "PAD 6", "kind": "pad", "round": false, "x": 22, "y": 365, "w": 32, "h": 32, "midi": ["95 19", "SHIFT|95 21", "Stems|95 62", "Deck 2|96 19", "Deck 2 SHIFT|96 21", "Deck 2 Stems|96 62", "Deck 3|97 19", "Deck 3 SHIFT|97 21", "Deck 3 Stems|97 62", "Deck 4|98 19", "Deck 4 SHIFT|98 21", "Deck 4 Stems|98 62"]},
+  {"id": "pad7", "label": "PAD 7", "kind": "pad", "round": false, "x": 22, "y": 409, "w": 32, "h": 32, "midi": ["95 1A", "SHIFT|95 22", "Stems|95 63", "Deck 2|96 1A", "Deck 2 SHIFT|96 22", "Deck 2 Stems|96 63", "Deck 3|97 1A", "Deck 3 SHIFT|97 22", "Deck 3 Stems|97 63", "Deck 4|98 1A", "Deck 4 SHIFT|98 22", "Deck 4 Stems|98 63"]},
+  {"id": "pad8", "label": "PAD 8", "kind": "pad", "round": false, "x": 22, "y": 453, "w": 32, "h": 32, "midi": ["95 1B", "SHIFT|95 23", "Stems|95 64", "Deck 2|96 1B", "Deck 2 SHIFT|96 23", "Deck 2 Stems|96 64", "Deck 3|97 1B", "Deck 3 SHIFT|97 23", "Deck 3 Stems|97 64", "Deck 4|98 1B", "Deck 4 SHIFT|98 23", "Deck 4 Stems|98 64"]},
+  {"id": "mode1", "label": "HOT CUE \u00b7 SAVED LOOP", "kind": "button", "round": false, "x": 23, "y": 29, "w": 29, "h": 22, "midi": ["95 00", "SHIFT|95 0D", "Deck 2|96 00", "Deck 2 SHIFT|96 0D", "Deck 3|97 00", "Deck 3 SHIFT|97 0D", "Deck 4|98 00", "Deck 4 SHIFT|98 0D"]},
+  {"id": "mode2", "label": "LOOP \u00b7 BOUNCE LOOP", "kind": "button", "round": false, "x": 63, "y": 29, "w": 29, "h": 22, "midi": ["95 05", "SHIFT|95 08", "Deck 2|96 05", "Deck 2 SHIFT|96 08", "Deck 3|97 05", "Deck 3 SHIFT|97 08", "Deck 4|98 05", "Deck 4 SHIFT|98 08"]},
+  {"id": "mode3", "label": "SAMPLER \u00b7 PITCH PLAY", "kind": "button", "round": false, "x": 23, "y": 58, "w": 29, "h": 22, "midi": ["95 0B", "SHIFT|95 0F", "Deck 2|96 0B", "Deck 2 SHIFT|96 0F", "Deck 3|97 0B", "Deck 3 SHIFT|97 0F", "Deck 4|98 0B", "Deck 4 SHIFT|98 0F"]},
+  {"id": "mode4", "label": "SLICER \u00b7 STEMS", "kind": "button", "round": false, "x": 63, "y": 58, "w": 29, "h": 22, "midi": ["95 09", "SHIFT|95 7D", "User|95 7E", "Deck 2|96 09", "Deck 2 SHIFT|96 7D", "Deck 2 User|96 7E", "Deck 3|97 09", "Deck 3 SHIFT|97 7D", "Deck 3 User|97 7E", "Deck 4|98 09", "Deck 4 SHIFT|98 7D", "Deck 4 User|98 7E"]},
+  {"id": "browse", "label": "BROWSE \u00b7 LOAD", "kind": "encoder", "round": true, "x": 67, "y": 497, "w": 36, "h": 36, "midi": ["BF 00", "Back|9F 07", "Load deck 1|9F 02", "Load deck 2|9F 03", "Load deck 3|9F 04", "Load deck 4|9F 05"]}
+ ]
+}

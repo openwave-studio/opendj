@@ -18,7 +18,7 @@
 ## 4. Mixer and menus
 
 - [x] 4.1 Mixer: centre-out EQ arcs in band colours, EQ / Sculpt / Stems switch pill, round headphone cue, FX assign switch pills, new fader caps for channel, tempo and crossfader
-- [ ] 4.2 Titled menus everywhere
+- [x] 4.2 Titled menus everywhere
 
 ## 5. Panels and Settings
 

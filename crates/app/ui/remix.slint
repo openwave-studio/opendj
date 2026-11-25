@@ -114,7 +114,7 @@ export component RemixSource inherits HorizontalLayout {
         close-policy: close-on-click-outside;
         TitledList {
             title: "Play";
-            for name[i] in root.names: ListRow {
+            for name[i] in root.names: ink-row := ListRow {
                 visible: i != root.deck;
                 height: self.visible ? 26px : 0px;
                 selected: i + 1 == root.source;
@@ -125,7 +125,7 @@ export component RemixSource inherits HorizontalLayout {
                 Text {
                     x: 10px;
                     text: name;
-                    color: i + 1 == root.source ? Theme.lilac-text : Theme.text;
+                    color: ink-row.ink;
                     font-size: 13px;
                     vertical-alignment: center;
                 }
@@ -175,7 +175,7 @@ export component RemixEffectPill inherits HorizontalLayout {
         close-policy: close-on-click-outside;
         TitledList {
             title: root.title;
-            for name[i] in root.names: ListRow {
+            for name[i] in root.names: ink-row := ListRow {
                 selected: i == root.current;
                 clicked => {
                     Controls.set-value(root.index, i);
@@ -184,7 +184,7 @@ export component RemixEffectPill inherits HorizontalLayout {
                 Text {
                     x: 10px;
                     text: name;
-                    color: i == root.current ? Theme.lilac-text : Theme.text;
+                    color: ink-row.ink;
                     font-size: 13px;
                     vertical-alignment: center;
                 }

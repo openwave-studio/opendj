@@ -104,6 +104,7 @@ fn an_export_reads_back_in_both_formats() {
         t.album = "Clicks".into();
         t.key = "Am".into();
         t.info.hotcues = (0..10).map(|n| hotcue(n, 0.5 + n as f64 * 0.5)).collect();
+        t.info.added = 1_709_251_200; // 2024-03-01
         tracks.push(t);
     }
     let mut gone = scan::read_track(99, &music.path().join("gone.wav"));
@@ -168,6 +169,9 @@ fn an_export_reads_back_in_both_formats() {
     );
     assert_eq!(contents[2].artist_id, one.artist_id);
     assert_eq!(one.hot_cue_auto_load, "ON");
+    // String 15, which players show as DATE ADDED, and string 10.
+    assert_eq!(one.analysis_date, "2024-03-01");
+    assert_eq!(one.date_added, "2024-03-01");
     let playlists = pdb.get_playlists().unwrap();
     let friday = playlists.iter().find(|p| p.name == "Friday").unwrap();
     let gigs = playlists.iter().find(|p| p.name == "Gigs").unwrap();
