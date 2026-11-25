@@ -156,6 +156,76 @@ impl Param {
     }
 }
 
+/// The studio's own devices a track can take from the browser, by the
+/// name Live gives them, with fresh settings. Instruments first.
+pub fn catalog() -> Vec<(&'static str, Settings)> {
+    // EQ Eight's bands spread out, each off until it's used.
+    let freqs = [30.0, 80.0, 200.0, 500.0, 1000.0, 2500.0, 6000.0, 12000.0];
+    let mut bands = [Band::default(); 8];
+    for (b, f) in bands.iter_mut().zip(freqs) {
+        b.freq = f;
+    }
+    bands[0].shape = Shape::LowCut48;
+    bands[7].shape = Shape::HighCut48;
+    vec![
+        (
+            "External Instrument",
+            Settings::External(ExternalSettings::default()),
+        ),
+        ("Utility", Settings::Utility(UtilitySettings::default())),
+        (
+            "EQ Eight",
+            Settings::Eq8(Eq8Settings {
+                bands,
+                gain_db: 0.0,
+                scale: 1.0,
+            }),
+        ),
+        (
+            "Compressor",
+            Settings::Compressor(CompressorSettings {
+                threshold: 0.25,
+                ratio: 4.0,
+                attack_ms: 10.0,
+                release_ms: 100.0,
+                makeup_db: 0.0,
+                knee_db: 6.0,
+                dry_wet: 1.0,
+            }),
+        ),
+        ("Delay", Settings::Delay(fx::DelaySettings::default())),
+        (
+            "Echo",
+            Settings::Delay(fx::DelaySettings {
+                echo: true,
+                ..Default::default()
+            }),
+        ),
+        ("Reverb", Settings::Reverb(fx::ReverbSettings::default())),
+        (
+            "Hybrid Reverb",
+            Settings::Reverb(fx::ReverbSettings {
+                hybrid: true,
+                routing: 2,
+                ..Default::default()
+            }),
+        ),
+        ("Gate", Settings::Gate(fx::GateSettings::default())),
+        (
+            "Overdrive",
+            Settings::Overdrive(fx::OverdriveSettings::default()),
+        ),
+        ("Roar", Settings::Roar(fx::RoarSettings::default())),
+    ]
+}
+
+impl Settings {
+    /// Plays the track's notes, rather than working on its sound.
+    pub fn is_instrument(&self) -> bool {
+        matches!(self, Settings::External(_))
+    }
+}
+
 /// A device's settings, as a set saves them (Live's own units).
 #[derive(Clone, Debug, PartialEq)]
 pub enum Settings {

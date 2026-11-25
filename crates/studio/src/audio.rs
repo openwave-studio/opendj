@@ -176,6 +176,15 @@ impl Audio {
 
     /// Moves the studio to the devices `settings` name. The sample rate
     /// stays as the set opened with.
+    /// Opens the sound card input too, if it isn't yet (an External
+    /// Instrument was added).
+    pub fn want_input(&mut self, settings: &AudioSettings) {
+        if !self.wants_input {
+            self.wants_input = true;
+            self.open(settings);
+        }
+    }
+
     pub fn open(&mut self, settings: &AudioSettings) {
         // Stop the streams first: the callbacks then let go of the studio.
         self.output = None;
