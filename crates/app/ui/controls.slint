@@ -159,7 +159,18 @@ export component ControlKnob inherits Rectangle {
     // What the label says under the pointer: 0 nothing new, 1 the gain in
     // dB (EQs, volumes), 2 the filter's side and amount.
     in property <int> readout: 0;
+    // The mixer's labels: condensed capitals, and the value stays in the
+    // label for a second after any turn (mouse or controller).
+    in property <bool> caps: false;
+    property <bool> recent;
+    property <int> recent-age;
     property <float> raw: Controls.value(index, Controls.tick);
+    changed raw => {
+        if caps && readout != 0 {
+            recent-age = 0;
+            recent = true;
+        }
+    }
     property <float> db: raw < 0.001 ? -999 : 20 * log(raw, 10);
     property <string> readout-text: readout == 1
         ? (raw < 0.001 ? "−∞ dB" : abs(db) < 0.05 ? "0 dB" : (db > 0 ? "+" : "") + round(db * 10) / 10 + " dB")
@@ -313,8 +324,23 @@ export component ControlKnob inherits Rectangle {
         x: (parent.width - self.width) / 2;
         width: 80px;
         // The value while the pointer is over it, in the arc's color.
-        text: readout != 0 && lit ? readout-text : label;
-        color: readout != 0 && lit ? (thin ? root.arc-color : Theme.text) : Theme.n-6e6e73;
+        property <bool> show-value: readout != 0 && (lit || recent);
+        text: show-value ? readout-text : caps ? label.to-uppercase() : label;
+        color: show-value ? (thin ? root.arc-color : Theme.text) : Theme.n-6e6e73;
+        font-family: caps && !show-value ? Theme.title-font : "";
+        font-size: caps ? 10px : 9px;
+        letter-spacing: caps && !show-value ? 0.9px : 0.5px;
+    }
+    // Ten 100 ms steps after the last change, the label comes back.
+    Timer {
+        interval: 100ms;
+        running: recent;
+        triggered => {
+            recent-age += 1;
+            if recent-age >= 10 {
+                recent = false;
+            }
+        }
     }
 
     touch := TouchArea {
@@ -851,6 +877,59 @@ export component VuMeter inherits Rectangle {
         border-radius: 1px;
         background: level < at ? Theme.n-2c2c2f : (at > 0.9 ? Theme.f-ff453a : (at > 0.72 ? Theme.f-ffd60a : Theme.f-30d158));
     }
+}
+
+// One column of the mixer's meter: rounded pill cells, as many as fit, and
+// a peak-hold cell that stays lit for a second, then falls.
+component PillMeterColumn inherits Rectangle {
+    in property <string> group;
+    in property <string> key;
+    property <length> cell: 3px;
+    property <length> gap: 2px;
+    property <int> segments: max(1, floor((self.height + gap) / (cell + gap)));
+    property <int> index: Controls.resolve(group, key);
+    property <float> level: Controls.value(index, Controls.tick);
+    property <float> peak;
+    property <int> peak-age;
+    property <int> peak-cell: min(segments - 1, floor(peak * segments));
+    changed level => {
+        if level >= peak {
+            peak = level;
+            peak-age = 0;
+        }
+    }
+    width: 8px;
+    for i in segments: Rectangle {
+        // Cell 0 is the quietest, at the bottom.
+        property <float> at: (i + 0.5) / segments;
+        property <bool> on: level >= at || (peak > 0.02 && i == peak-cell);
+        x: 0px;
+        y: root.height - (i + 1) * cell - i * gap;
+        width: root.width;
+        height: cell;
+        border-radius: cell / 2;
+        background: !on ? Theme.n-2c2c2f : (at > 0.9 ? Theme.f-ff453a : (at > 0.72 || (i == peak-cell && level < at) ? Theme.f-ffd60a : Theme.f-30d158));
+    }
+    // Held ten 100 ms steps, then the peak drops back towards the level.
+    Timer {
+        interval: 100ms;
+        running: root.peak > root.level + 0.001;
+        triggered => {
+            root.peak-age += 1;
+            if root.peak-age >= 10 {
+                root.peak = max(root.level, root.peak - 0.04);
+            }
+        }
+    }
+}
+
+// The 2-Deck mixer's stereo meter, beside its channel fader: two columns of
+// pill cells with peak hold.
+export component PillMeter inherits HorizontalLayout {
+    in property <string> group;
+    spacing: 3px;
+    PillMeterColumn { group: group; key: "VuMeterL"; }
+    PillMeterColumn { group: group; key: "VuMeterR"; }
 }
 
 // A stereo meter: left and right side by side.

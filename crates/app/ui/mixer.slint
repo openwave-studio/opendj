@@ -4,7 +4,7 @@
 // Dark knobs with white pointers, ticked faders.
 import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
-import { Caption, Controls, ControlButton, ControlFader, ControlKnob, Crossfader, CueHeadphones, StereoMeter, VuMeter } from "controls.slint";
+import { Caption, Controls, ControlButton, ControlFader, ControlKnob, Crossfader, CueHeadphones, PillMeter, StereoMeter, VuMeter } from "controls.slint";
 import { EffectList } from "deck.slint";
 import { ListRow, MenuTitle, PillCaret, SwitchPill, TitledList } from "pills.slint";
 
@@ -444,10 +444,11 @@ export component Knob inherits HorizontalLayout {
     in property <length> size: 30px;
     in property <string> tour-id;
     in property <int> readout: 0;
+    in property <bool> caps: false;
     // A right click on it, for a knob with a menu of its own.
     callback right-clicked();
     alignment: center;
-    ControlKnob { right-clicked => { root.right-clicked(); } group: group; key: key; label: label; bipolar: true; origin: origin; look: look; arc-color: arc-color; size: size; tint: tint; tour-id: tour-id; readout: readout; }
+    ControlKnob { right-clicked => { root.right-clicked(); } group: group; key: key; label: label; bipolar: true; origin: origin; look: look; arc-color: arc-color; size: size; tint: tint; tour-id: tour-id; readout: readout; caps: caps; }
 }
 
 // One of the four knobs down a side of the mixer (`place` 0 is the top), as
@@ -459,6 +460,8 @@ export component SideKnob inherits Rectangle {
     // The filter knob's Color FX list opens leftwards on the right-hand
     // deck.
     in property <bool> cfx-menu-left: deck == 1;
+    // Condensed capital labels (the 2-Deck mixer).
+    in property <bool> caps: false;
     property <string> ch: "[Channel" + (deck + 1) + "]";
     property <string> eq: "[EqualizerRack1_" + ch + "_Effect1]";
     property <string> sculpt: "[Sculpt_" + ch + "]";
@@ -476,11 +479,12 @@ export component SideKnob inherits Rectangle {
         alignment: center;
         if mode == 0: Knob {
             size: size;
+            caps: caps;
             group: place == 3 ? "[QuickEffectRack1_" + ch + "]" : eq;
             key: ["parameter3", "parameter2", "parameter1", "super1"][place];
             tour-id: self.group + "," + self.key;
             // The filter knob plays the chosen Color FX, and says which.
-            label: place == 3 ? (cfx >= 1 && cfx <= EffectList.color-fx.length ? EffectList.color-fx[cfx - 1] : "Filter") : ["High", "Mid", "Low"][place];
+            label: place == 3 ? (cfx >= 1 && cfx <= EffectList.color-fx.length ? EffectList.color-fx[cfx - 1] : "Filter") : caps ? ["Hi", "Mid", "Low"][place] : ["High", "Mid", "Low"][place];
             // Arc knobs from the centre, each band in its waveform colour;
             // the label shows the value under the pointer.
             look: 4;
@@ -495,6 +499,7 @@ export component SideKnob inherits Rectangle {
         }
         if mode == 1: Knob {
             size: size;
+            caps: caps;
             group: stem;
             key: "volume";
             label: ["Hi-hat", "Vocal", "Kick", "Bass"][place];
@@ -505,6 +510,7 @@ export component SideKnob inherits Rectangle {
         }
         if mode == 2: Knob {
             size: size;
+            caps: caps;
             group: sculpt;
             key: ["lpf", "freq", "gain", "hpf"][place];
             label: ["LPF", "Freq", "Cut/Boost", "HPF"][place];
@@ -540,19 +546,68 @@ export component ModeMenu inherits Rectangle {
     }
 }
 
-// A channel down the middle of the mixer: gain (smaller than the EQs, as
-// on most mixers), the fader, and headphone cue under it.
+// The knob mode as a stacked switch over the middle of the 2-Deck mixer:
+// EQ, STEMS and SCULPT all in view, one press each.
+component ModeStack inherits Rectangle {
+    width: 58px;
+    height: 3 * 18px + 4px;
+    border-radius: 7px;
+    background: Theme.pill;
+    for name[i] in MixerMode.names: Rectangle {
+        property <bool> on: MixerMode.mode == i;
+        x: 2px;
+        y: 2px + i * 18px;
+        width: parent.width - 4px;
+        height: 18px;
+        border-radius: 5px;
+        background: on ? Theme.pill-on-fill : ta.has-hover ? Theme.pill-hover : transparent;
+        border-width: on ? 1px : 0px;
+        border-color: Theme.lilac;
+        Text {
+            text: name.to-uppercase();
+            font-family: Theme.title-font;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            color: on ? Theme.text : ta.has-hover ? Theme.lilac-text : Theme.pill-off-text;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+        ta := TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                MixerMode.mode = i;
+                // Controllers' EQ knobs follow the mode.
+                Controls.set-value(Controls.resolve("[Mixer]", "knob_mode"), i);
+            }
+        }
+    }
+}
+
+// A channel's fader with its meter on the inside (towards the middle),
+// running the fader's whole travel, and headphone cue under the fader.
 component Channel inherits VerticalLayout {
     in property <string> group;
     in property <color> tint;
+    // The meter on the fader's left (deck 2) instead of its right.
+    in property <bool> meter-left: false;
     spacing: 6px;
-    Knob { group: group; key: "pregain"; label: "Gain"; size: 28px; look: 4; readout: 1; arc-color: Theme.accent; }
     HorizontalLayout {
-        alignment: center;
         vertical-stretch: 1;
+        spacing: 3px;
+        // The fader's travel stops half a cap (8 px) from each end.
+        if meter-left: VerticalLayout { padding-top: 8px; padding-bottom: 8px; PillMeter { group: group; } }
         ControlFader { group: group; key: "volume"; tint: tint; ticks: 11; width: 36px; look: 1; tour-id: group + ",volume"; }
+        if !meter-left: VerticalLayout { padding-top: 8px; padding-bottom: 8px; PillMeter { group: group; } }
     }
-    HorizontalLayout { alignment: center; CueHeadphones { group: group; tint: tint; tour-id: group + ",pfl"; } }
+    HorizontalLayout {
+        alignment: meter-left ? end : start;
+        Rectangle {
+            width: 36px;
+            height: 26px;
+            HorizontalLayout { alignment: center; CueHeadphones { group: group; tint: tint; tour-id: group + ",pfl"; } }
+        }
+    }
 }
 
 // The four knobs down one side, spread over the mixer's height.
@@ -560,36 +615,39 @@ component SideColumn inherits VerticalLayout {
     in property <int> deck;
     width: 48px;
     alignment: space-around;
-    for place in 4: SideKnob { deck: deck; place: place; }
+    for place in 4: SideKnob { deck: deck; place: place; caps: true; }
 }
 
-// The channels: four knobs down the outsides (EQ, stems or
-// sculpt; see MixerMode), and between them gain, the channel faders with
-// the meters between them, and headphone cue.
+// The channels: four knobs down the outsides (EQ, stems or sculpt; see
+// MixerMode); between them the gain knobs either side of the mode switch,
+// then each channel fader with its meter beside it, and headphone cue.
 component ChannelGrid inherits HorizontalLayout {
     SideColumn { deck: 0; }
-    HorizontalLayout {
+    VerticalLayout {
         horizontal-stretch: 1;
-        // Faders close in on the meters; what room is left goes on the
-        // outside, by the knobs.
-        alignment: center;
-        spacing: 2px;
-        Channel { group: "[Channel1]"; tint: Theme.deck1; }
-        // The knob mode menu over the meters, which are level with the
-        // faders: below the gain knobs, above the cue buttons.
-        VerticalLayout {
-            padding-bottom: 34px;
-            ModeMenu { width: 48px; }
-            HorizontalLayout {
-                alignment: center;
-                spacing: 4px;
-                padding-top: 8px;
-                vertical-stretch: 1;
-                StereoMeter { group: "[Channel1]"; }
-                StereoMeter { group: "[Channel2]"; }
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 6px;
+        HorizontalLayout {
+            alignment: space-between;
+            VerticalLayout {
+                width: 36px;
+                alignment: start;
+                Knob { group: "[Channel1]"; key: "pregain"; label: "Gain"; size: 28px; look: 4; readout: 1; caps: true; arc-color: Theme.accent; }
+            }
+            ModeStack { }
+            VerticalLayout {
+                width: 36px;
+                alignment: start;
+                Knob { group: "[Channel2]"; key: "pregain"; label: "Gain"; size: 28px; look: 4; readout: 1; caps: true; arc-color: Theme.accent; }
             }
         }
-        Channel { group: "[Channel2]"; tint: Theme.deck2; }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            alignment: space-between;
+            Channel { group: "[Channel1]"; tint: Theme.deck1; }
+            Channel { group: "[Channel2]"; tint: Theme.deck2; meter-left: true; }
+        }
     }
     SideColumn { deck: 1; }
 }
