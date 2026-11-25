@@ -30,6 +30,10 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 - **Komplete Kontrol M32** (Beta) drives the instrument deck: knobs, transport, presets, ARP and SCALE, and its screen.
 - An instrument's notes are no longer sent twice after a late block, which could leave a note hanging.
 
+**openDJ Studio (early preview, from source)**
+
+- First steps of openDJ Studio, a clip-launching music app built on openDJ's engine: a Session grid of looping MIDI clips launched on the bar, in time over Ableton Link. It isn't in the downloads yet. Build it with `cargo run --profile fast --bin opendj-studio`.
+
 **Stems**
 
 - **HQ stems from the play position**: on a loaded track the stems around the playhead are ready first, then the rest.
