@@ -1,0 +1,2112 @@
+import { PushScreen, PushTrack, PushKnob, PushMenu } from "push.slint";
+export { PushScreen, PushTrack, PushKnob, PushMenu }
+// openDJ Studio: a browser on the left, the Session grid with its mixer in
+// the middle, returns A and B and Main on the right, and the selected
+// track's devices along the bottom.
+
+export global Theme {
+    out property <color> bg: #101112;
+    out property <color> panel: #161819;
+    out property <color> panel-2: #1b1d1f;
+    out property <color> slot: #1e2022;
+    out property <color> slot-hover: #26292b;
+    out property <color> line: #2a2d30;
+    out property <color> text: #e8e8ea;
+    out property <color> dim: #8b8d91;
+    out property <color> faint: #55585c;
+    out property <color> accent: #B69CFF;
+    out property <color> accent-dark: #8C72D9;
+    out property <color> select: #4A4A4D;
+    out property <color> playing: #7ee08a;
+    out property <color> queued: #ffd166;
+    out property <color> effect: #ff9f5a;
+    out property <color> midi-fx: #ffd166;
+    out property <color> return-a: #8C72D9;
+    out property <color> return-b: #5d8cc9;
+    out property <length> radius: 3px;
+}
+
+// Slot states, as the audio thread reports them.
+export enum SlotState { empty, stopped, queued, playing, stopping }
+
+export struct SlotData {
+    name: string,
+    color: color,
+    state: SlotState,
+    // Loop length in beats; 0 for an empty slot.
+    beats: float,
+}
+
+export struct ParamData {
+    name: string,
+    value: float,
+    text: string,
+}
+
+// A knob or switch on a built-in device's panel; `index` is its setting.
+export struct KnobData {
+    index: int,
+    name: string,
+    // The knob's position, 0..1 (a list's place for a switch).
+    value: float,
+    text: string,
+    bipolar: bool,
+    // An on/off switch (else a list that steps on a click).
+    toggle: bool,
+    on: bool,
+}
+
+// An EQ Eight band on its graph: place across and down, 0..1.
+export struct DotData {
+    band: int,
+    x: float,
+    y: float,
+    on: bool,
+    gain: bool,
+}
+
+// A device a set lists: a plug-in, or one of the studio's own with its panel.
+export struct DeviceData {
+    name: string,
+    kind: string,
+    note: string,
+    on: bool,
+    // A plug-in, running: its window can open.
+    can-open: bool,
+    // The studio's own device: its panel shows these.
+    builtin: bool,
+    eq: bool,
+    params: [KnobData],
+    knobs: [KnobData],
+    switches: [KnobData],
+    cols: int,
+    rows: int,
+    // Its response, as path commands in a 300 x 100 box, and where 0 dB is.
+    curve: string,
+    zero: float,
+    dots: [DotData],
+    panel-width: float,
+}
+
+export struct TrackData {
+    name: string,
+    color: color,
+    // How far through its clip the track is, 0..1; -1 when stopped.
+    progress: float,
+    // A stop is waiting for the next launch point.
+    stopping: bool,
+    // The instrument on the track, as the device row titles it.
+    device: string,
+    drums: bool,
+    // An audio track: recordings, no instrument.
+    audio: bool,
+    // A MIDI track an External Instrument plays: it has an audio input too.
+    external: bool,
+    kind: string,
+    // Where it listens (an audio input, or a MIDI controller), in words.
+    input: string,
+    // The I/O section, as Live's: the pickers' texts.
+    audio-from: string,
+    in-channel: string,
+    midi-from: string,
+    midi-channel: string,
+    // 0 In, 1 Auto, 2 Off.
+    monitor: int,
+    armed: bool,
+    audio-to: string,
+    // Shown when the sound goes to Ext. Out.
+    out-channel: string,
+    midi-to: string,
+    // Shown when notes go out over MIDI.
+    midi-to-channel: string,
+    // The devices a set lists for it.
+    chain: [DeviceData],
+    // A plug-in plays its notes (the built-in sound isn't shown).
+    plugin-instrument: bool,
+    // Meter, 0..1 on a dB scale.
+    level: float,
+    // Fader position 0..1 (0 dB at 60/66) and as text.
+    volume: float,
+    volume-text: string,
+    pan: float,
+    pan-text: string,
+    send-a: float,
+    send-b: float,
+    // The instrument's knobs.
+    params: [ParamData],
+}
+
+struct BrowserItem {
+    name: string,
+    // 0 instrument, 1 audio effect, 2 MIDI effect, 3 folder, 4 clip.
+    kind: int,
+    detail: string,
+}
+
+// ---------------------------------------------------------------- controls
+
+component Pill inherits Rectangle {
+    in property <string> label;
+    in property <bool> on;
+    in property <bool> enabled: true;
+    callback clicked;
+    height: 24px;
+    min-width: 28px;
+    border-radius: 3px;
+    background: on ? Theme.accent : (ta.has-hover ? Theme.slot-hover : Theme.slot);
+    opacity: enabled ? 1 : 0.4;
+    HorizontalLayout {
+        padding-left: 9px;
+        padding-right: 9px;
+        Text {
+            text: label;
+            color: on ? #101112 : Theme.text;
+            font-size: 12px;
+            font-weight: 600;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component Readout inherits Rectangle {
+    in property <string> title;
+    in property <string> value;
+    in property <length> value-width: 56px;
+    HorizontalLayout {
+        spacing: 6px;
+        if title != "": Text {
+            text: title;
+            color: Theme.dim;
+            font-size: 11px;
+            vertical-alignment: center;
+        }
+        Text {
+            text: value;
+            color: Theme.text;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: value-width;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// A rotary knob: drag up and down. The arc runs from 7 to 5 o'clock.
+// Its value comes from the model; a `free` knob (not connected yet) keeps
+// its own.
+component Knob inherits Rectangle {
+    in property <string> label;
+    in property <string> display;
+    in property <float> value: 0.5;
+    in property <bool> free;
+    in property <bool> bipolar;
+    in property <length> size: 30px;
+    in property <color> tint: Theme.accent;
+    callback changed(float);
+    property <float> local;
+    property <float> shown: free ? local : value;
+    property <float> start-value;
+    property <angle> a0: 135deg;
+    property <angle> a1: 135deg + 270deg * shown;
+    init => { local = value; }
+    property <angle> centre: 270deg;
+    width: max(size, 48px);
+    height: (label != "" ? 14px : 0px) + size + (display != "" ? 14px : 0px);
+    if label != "": Text {
+        y: 0;
+        height: 14px;
+        width: parent.width;
+        text: label;
+        color: Theme.dim;
+        font-size: 10px;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    Path {
+        x: (parent.width - size) / 2;
+        y: label != "" ? 14px : 0px;
+        width: size;
+        height: size;
+        viewbox-width: 36;
+        viewbox-height: 36;
+        stroke: Theme.line;
+        stroke-width: 3px;
+        commands: "M " + (18 + 14 * cos(135deg)) + " " + (18 + 14 * sin(135deg))
+            + " A 14 14 0 1 1 " + (18 + 14 * cos(45deg)) + " " + (18 + 14 * sin(45deg));
+    }
+    // The value arc, from the start (or the top for a bipolar knob).
+    property <angle> from: bipolar ? centre : a0;
+    property <angle> lo: a1 < from ? a1 : from;
+    property <angle> hi: a1 < from ? from : a1;
+    if hi - lo > 2deg: Path {
+        x: (parent.width - size) / 2;
+        y: label != "" ? 14px : 0px;
+        width: size;
+        height: size;
+        viewbox-width: 36;
+        viewbox-height: 36;
+        stroke: tint;
+        stroke-width: 3px;
+        commands: "M " + (18 + 14 * cos(lo)) + " " + (18 + 14 * sin(lo))
+            + " A 14 14 0 " + (hi - lo > 180deg ? 1 : 0) + " 1 "
+            + (18 + 14 * cos(hi)) + " " + (18 + 14 * sin(hi));
+    }
+    // Pointer.
+    Path {
+        x: (parent.width - size) / 2;
+        y: label != "" ? 14px : 0px;
+        width: size;
+        height: size;
+        viewbox-width: 36;
+        viewbox-height: 36;
+        stroke: Theme.text;
+        stroke-width: 2px;
+        commands: "M " + (18 + 5 * cos(a1)) + " " + (18 + 5 * sin(a1))
+            + " L " + (18 + 11 * cos(a1)) + " " + (18 + 11 * sin(a1));
+    }
+    function set(v: float) {
+        local = max(0, min(1, v));
+        changed(local);
+    }
+    if display != "": Text {
+        y: parent.height - 14px;
+        height: 14px;
+        width: parent.width;
+        text: display;
+        color: Theme.text;
+        font-size: 10px;
+        horizontal-alignment: center;
+    }
+    TouchArea {
+        mouse-cursor: ns-resize;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down {
+                root.start-value = root.shown;
+            }
+        }
+        moved => {
+            root.set(root.start-value + (self.pressed-y - self.mouse-y) / 160px);
+        }
+        double-clicked => {
+            if root.bipolar {
+                root.set(0.5);
+            }
+        }
+    }
+}
+
+// A vertical fader. 0..1 maps to -inf..+6 dB; 0 dB sits at 60/66.
+component Fader inherits Rectangle {
+    in property <float> value: 60 / 66;
+    in property <bool> free;
+    callback changed(float);
+    property <float> local;
+    property <float> shown: free ? local : value;
+    property <float> start-value;
+    init => { local = value; }
+    function set(v: float) {
+        local = max(0, min(1, v));
+        changed(local);
+    }
+    property <length> thumb: 12px;
+    width: 18px;
+    Rectangle {
+        x: (parent.width - 4px) / 2;
+        width: 4px;
+        border-radius: 2px;
+        background: #0b0c0d;
+    }
+    // 0 dB mark.
+    Rectangle {
+        x: 0;
+        y: (1 - 60 / 66) * (parent.height - thumb) + thumb / 2;
+        width: 3px;
+        height: 1px;
+        background: Theme.faint;
+    }
+    Rectangle {
+        y: (1 - shown) * (parent.height - thumb);
+        height: thumb;
+        border-radius: 2px;
+        background: ta.pressed ? Theme.text : #c9cacd;
+        Rectangle { height: 1px; width: parent.width - 4px; background: #101112; }
+    }
+    ta := TouchArea {
+        mouse-cursor: ns-resize;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down {
+                root.start-value = root.shown;
+            }
+        }
+        moved => {
+            root.set(root.start-value + (self.pressed-y - self.mouse-y) / (root.height - root.thumb));
+        }
+        double-clicked => {
+            root.set(60 / 66);
+        }
+    }
+}
+
+component Meter inherits Rectangle {
+    in property <float> level;
+    width: 4px;
+    background: #0b0c0d;
+    clip: true;
+    Rectangle {
+        background: @linear-gradient(0deg, #4fc36a 0%, #7ee08a 65%, #ffd166 88%, #ff6b6b 100%);
+    }
+    Rectangle {
+        y: 0;
+        height: parent.height * (1 - max(0, min(1, level)));
+        background: #0b0c0d;
+    }
+}
+
+component SmallButton inherits Rectangle {
+    in property <string> label;
+    in property <bool> on;
+    in property <color> on-color: Theme.accent;
+    callback clicked;
+    width: 22px;
+    height: 18px;
+    border-radius: 2px;
+    background: on ? on-color : (ta.has-hover ? Theme.slot-hover : Theme.slot);
+    Text {
+        text: label;
+        color: on ? #101112 : Theme.text;
+        font-size: 10px;
+        font-weight: 600;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A drop-down: the current choice, and a list to pick from.
+component Picker inherits Rectangle {
+    in property <string> text;
+    in property <[string]> options;
+    in property <length> text-size: 10px;
+    callback picked(int);
+    height: 18px;
+    border-radius: 2px;
+    background: ta.has-hover ? Theme.slot-hover : Theme.slot;
+    HorizontalLayout {
+        padding-left: 5px;
+        padding-right: 4px;
+        spacing: 2px;
+        Text {
+            text: root.text;
+            color: Theme.text;
+            font-size: root.text-size;
+            overflow: elide;
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+        }
+        Text { text: "▾"; color: Theme.dim; font-size: 9px; vertical-alignment: center; }
+    }
+    ta := TouchArea { clicked => { popup.show(); } }
+    popup := PopupWindow {
+        x: 0;
+        y: root.height;
+        width: max(root.width, 170px);
+        Rectangle {
+            background: Theme.panel-2;
+            border-width: 1px;
+            border-color: Theme.line;
+            VerticalLayout {
+                padding: 2px;
+                for o[i] in root.options: Rectangle {
+                    height: 20px;
+                    background: oa.has-hover ? Theme.select : transparent;
+                    Text {
+                        x: 6px;
+                        width: parent.width - 12px;
+                        text: o;
+                        color: o == root.text ? Theme.accent : Theme.text;
+                        font-size: 11px;
+                        overflow: elide;
+                    }
+                    oa := TouchArea { clicked => { root.picked(i); } }
+                }
+            }
+        }
+    }
+}
+
+component IoLabel inherits Text {
+    color: Theme.dim;
+    font-size: 9px;
+    height: 11px;
+}
+
+// A track's I/O section, as Live's: where it listens, when it monitors and
+// where its sound (and, for a MIDI track, its notes) go.
+component IoSection inherits Rectangle {
+    in property <TrackData> t;
+    in property <[string]> in-channels;
+    in property <[string]> out-channels;
+    in property <[string]> midi-froms;
+    in property <[string]> midi-tos;
+    // Which picker (see AppWindow.io-pick) and the option picked.
+    callback picked(int, int);
+    callback monitor(int);
+    VerticalLayout {
+        padding: 4px;
+        spacing: 2px;
+        IoLabel { text: t.audio ? "Audio From" : "MIDI From"; }
+        if t.audio: Picker {
+            text: t.audio-from;
+            options: ["Ext. In", "No Input"];
+            picked(i) => { root.picked(0, i); }
+        }
+        if t.audio: Picker {
+            text: t.in-channel == "" ? "—" : t.in-channel;
+            options: root.in-channels;
+            picked(i) => { root.picked(1, i); }
+        }
+        if !t.audio: Picker {
+            text: t.midi-from;
+            options: root.midi-froms;
+            picked(i) => { root.picked(4, i); }
+        }
+        if !t.audio: Picker {
+            text: t.midi-channel;
+            options: ["All Channels", "Ch. 1", "Ch. 2", "Ch. 3", "Ch. 4", "Ch. 5", "Ch. 6", "Ch. 7", "Ch. 8",
+                "Ch. 9", "Ch. 10", "Ch. 11", "Ch. 12", "Ch. 13", "Ch. 14", "Ch. 15", "Ch. 16"];
+            picked(i) => { root.picked(5, i); }
+        }
+        if t.external: IoLabel { text: "Audio From"; }
+        if t.external: Picker {
+            text: t.in-channel == "" ? "—" : t.in-channel;
+            options: root.in-channels;
+            picked(i) => { root.picked(1, i); }
+        }
+        IoLabel { text: "Monitor"; }
+        HorizontalLayout {
+            spacing: 2px;
+            height: 18px;
+            for m[i] in ["In", "Auto", "Off"]: Rectangle {
+                horizontal-stretch: 1;
+                border-radius: 2px;
+                background: t.monitor == i ? (i == 2 ? Theme.select : Theme.queued) : (ma.has-hover ? Theme.slot-hover : Theme.slot);
+                Text {
+                    text: m;
+                    color: t.monitor == i && i != 2 ? #101112 : Theme.text;
+                    font-size: 10px;
+                    font-weight: 600;
+                }
+                ma := TouchArea { clicked => { root.monitor(i); } }
+            }
+        }
+        IoLabel { text: "Audio To"; }
+        HorizontalLayout {
+            spacing: 2px;
+            Picker {
+                text: t.audio-to;
+                options: ["Main", "Ext. Out", "Sends Only"];
+                picked(i) => { root.picked(2, i); }
+            }
+            if t.out-channel != "": Picker {
+                width: 42px;
+                text: t.out-channel;
+                options: root.out-channels;
+                picked(i) => { root.picked(3, i); }
+            }
+        }
+        if !t.audio: IoLabel { text: "MIDI To"; }
+        if !t.audio: HorizontalLayout {
+            spacing: 2px;
+            Picker {
+                text: t.midi-to;
+                options: root.midi-tos;
+                picked(i) => { root.picked(6, i); }
+            }
+            if t.midi-to-channel != "": Picker {
+                width: 42px;
+                text: t.midi-to-channel;
+                options: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"];
+                picked(i) => { root.picked(7, i); }
+            }
+        }
+    }
+}
+
+// A mixer strip: sends, pan, fader with meter, activator, solo and arm.
+// Values come from the model; `free` strips (returns, not connected yet)
+// keep their own.
+component Strip inherits Rectangle {
+    in property <color> tint;
+    in property <string> number;
+    in property <float> level;
+    in property <bool> sends: true;
+    in property <bool> arm: true;
+    in property <bool> free;
+    in property <float> volume: 60 / 66;
+    in property <float> pan: 0.5;
+    in property <string> pan-text: "C";
+    in property <float> send-a;
+    in property <float> send-b;
+    in property <bool> armed;
+    // Which control (0 volume, 1 pan, 2 send A, 3 send B) and its value.
+    callback changed(int, float);
+    callback arm-toggled();
+    property <float> fader: free ? local-volume : volume;
+    property <float> local-volume: 60 / 66;
+    property <bool> active: true;
+    property <bool> solo;
+    background: tint.with-alpha(0.10);
+    VerticalLayout {
+        padding: 4px;
+        spacing: 2px;
+        HorizontalLayout {
+            alignment: center;
+            spacing: -14px;
+            height: 44px;
+            if sends: Knob {
+                label: "A";
+                size: 24px;
+                tint: Theme.return-a;
+                value: root.send-a;
+                changed(v) => { root.changed(2, v); }
+            }
+            if sends: Knob {
+                label: "B";
+                size: 24px;
+                tint: Theme.return-b;
+                value: root.send-b;
+                changed(v) => { root.changed(3, v); }
+            }
+        }
+        HorizontalLayout {
+            alignment: center;
+            Knob {
+                size: 24px;
+                bipolar: true;
+                free: root.free;
+                value: root.pan;
+                display: root.free ? "" : root.pan-text;
+                label: "Pan";
+                changed(v) => { root.changed(1, v); }
+            }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 6px;
+            vertical-stretch: 1;
+            Text {
+                width: 30px;
+                text: fader <= 0.001 ? "-inf" : (round((6 - (1 - fader) * 66) * 10) / 10);
+                color: Theme.dim;
+                font-size: 10px;
+                horizontal-alignment: right;
+                vertical-alignment: top;
+            }
+            Fader {
+                value: root.fader;
+                free: root.free;
+                changed(v) => {
+                    root.local-volume = v;
+                    root.changed(0, v);
+                }
+            }
+            Meter { level: root.level; }
+            Meter { level: root.level; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 3px;
+            height: 20px;
+            Rectangle {
+                width: 26px;
+                height: 18px;
+                border-radius: 2px;
+                background: active ? Theme.accent : Theme.slot;
+                Text { text: number; color: active ? #101112 : Theme.dim; font-size: 10px; font-weight: 700; }
+                TouchArea { clicked => { root.active = !root.active; } }
+            }
+            SmallButton { label: "S"; on: solo; on-color: Theme.return-b; clicked => { root.solo = !root.solo; } }
+            if arm: SmallButton { label: "●"; on: armed; on-color: #ff6b6b; clicked => { root.arm-toggled(); } }
+        }
+    }
+}
+
+component ClipSlot inherits Rectangle {
+    in property <SlotData> data;
+    in property <bool> blink;
+    in property <float> progress: -1;
+    in property <bool> selected;
+    callback launch;
+    background: data.state == SlotState.empty
+        ? (ta.has-hover ? Theme.slot-hover : Theme.slot)
+        : (data.state == SlotState.playing ? data.color : data.color.with-alpha(ta.has-hover ? 0.5 : 0.34));
+    border-width: data.state == SlotState.queued ? 1px : (selected ? 1px : 0px);
+    border-color: data.state == SlotState.queued
+        ? (blink ? Theme.queued : Theme.queued.with-alpha(0.25))
+        : Theme.text;
+    clip: true;
+    if data.state == SlotState.playing && progress >= 0: Rectangle {
+        x: 0;
+        y: parent.height - 2px;
+        height: 2px;
+        width: parent.width * progress;
+        background: #101112aa;
+    }
+    if data.state == SlotState.empty: Rectangle {
+        x: 6px;
+        width: 6px;
+        height: 6px;
+        border-width: 1px;
+        border-color: Theme.faint;
+    }
+    if data.state != SlotState.empty: HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 6px;
+        spacing: 5px;
+        Text {
+            text: data.state == SlotState.playing ? "▶" : "▷";
+            color: data.state == SlotState.playing ? #101112 : Theme.text;
+            font-size: 10px;
+            vertical-alignment: center;
+            width: 10px;
+        }
+        Text {
+            text: data.name;
+            color: data.state == SlotState.playing ? #101112 : Theme.text;
+            font-size: 11px;
+            font-weight: data.state == SlotState.playing ? 700 : 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    ta := TouchArea {
+        clicked => { root.launch(); }
+    }
+}
+
+// An outlined square, coloured by what a browser item is.
+component KindIcon inherits Rectangle {
+    in property <int> kind;
+    width: 10px;
+    height: 10px;
+    border-width: 1.5px;
+    border-radius: kind == 3 ? 1px : 2px;
+    border-color: kind == 0 ? Theme.accent : (kind == 1 ? Theme.effect : (kind == 2 ? Theme.midi-fx : (kind == 4 ? Theme.playing : Theme.dim)));
+    if kind != 3: Rectangle {
+        width: 4px;
+        height: 4px;
+        background: parent.border-color;
+    }
+}
+
+// --------------------------------------------------------------- browser
+
+component NavItem inherits Rectangle {
+    in property <string> label;
+    in property <bool> selected;
+    in property <color> dot: transparent;
+    in property <bool> indent;
+    callback clicked;
+    height: 21px;
+    background: selected ? Theme.select : (ta.has-hover ? Theme.slot : transparent);
+    border-radius: 2px;
+    HorizontalLayout {
+        padding-left: indent ? 18px : 8px;
+        spacing: 6px;
+        if dot != transparent: VerticalLayout {
+            alignment: center;
+            Rectangle { width: 7px; height: 7px; border-radius: 1px; background: dot; }
+        }
+        Text {
+            text: label;
+            color: selected ? Theme.text : #c4c5c8;
+            font-size: 12px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+component NavHeading inherits Text {
+    color: Theme.faint;
+    font-size: 11px;
+    font-weight: 600;
+    height: 24px;
+    vertical-alignment: bottom;
+}
+
+component Browser inherits Rectangle {
+    in-out property <int> category: 3;
+    in-out property <int> picked: -1;
+    property <[string]> categories: [
+        "Favorites", "Effects", "Instruments",
+        "All", "Sounds", "Drums", "Instruments", "Audio Effects", "MIDI Effects", "Plug-ins", "Clips", "Samples",
+        "User Library", "Current Project",
+    ];
+    property <[BrowserItem]> instruments: [
+        { name: "Drum Kit", kind: 0, detail: "6 kits" },
+        { name: "Bass Synth", kind: 0 },
+        { name: "Pad Synth", kind: 0 },
+        { name: "Lead Synth", kind: 0 },
+        { name: "Sampler", kind: 0, detail: "soon" },
+        { name: "Plug-in instrument", kind: 0, detail: "soon" },
+    ];
+    property <[BrowserItem]> kits: [
+        { name: "Analog", kind: 0, detail: "kit" },
+        { name: "Synthetic", kind: 0, detail: "kit" },
+        { name: "Boom", kind: 0, detail: "kit" },
+        { name: "Punch", kind: 0, detail: "kit" },
+        { name: "Tin", kind: 0, detail: "kit" },
+        { name: "Dub", kind: 0, detail: "kit" },
+    ];
+    property <[BrowserItem]> sounds: [
+        { name: "Bass · Mono saw", kind: 0, detail: "preset" },
+        { name: "Pad · Warm chords", kind: 0, detail: "preset" },
+        { name: "Lead · Pluck", kind: 0, detail: "preset" },
+    ];
+    property <[BrowserItem]> effects: [
+        { name: "EQ", kind: 1 },
+        { name: "Filter", kind: 1 },
+        { name: "Ladder", kind: 1 },
+        { name: "Drive", kind: 1 },
+        { name: "Bitcrusher", kind: 1 },
+        { name: "Echo", kind: 1 },
+        { name: "Tape Echo", kind: 1 },
+        { name: "Filter Echo", kind: 1 },
+        { name: "Reverb", kind: 1 },
+        { name: "Hall", kind: 1 },
+        { name: "Chorus", kind: 1 },
+        { name: "Flanger", kind: 1 },
+        { name: "Phaser", kind: 1 },
+        { name: "Gate", kind: 1 },
+        { name: "Ducker", kind: 1 },
+        { name: "Pd rack", kind: 1, detail: "experimental" },
+    ];
+    property <[BrowserItem]> midi-effects: [
+        { name: "Arpeggiator", kind: 2 },
+        { name: "Scale", kind: 2 },
+        { name: "Chord", kind: 2 },
+        { name: "Pitch", kind: 2 },
+    ];
+    property <[BrowserItem]> plugins: [
+        { name: "CLAP", kind: 3 },
+        { name: "VST3", kind: 3 },
+        { name: "Audio Units", kind: 3 },
+    ];
+    property <[BrowserItem]> clips: [
+        { name: "Demo set", kind: 3 },
+        { name: "Four on the floor", kind: 4, detail: "1 bar" },
+        { name: "Broken beat", kind: 4, detail: "2 bars" },
+        { name: "Am bassline", kind: 4, detail: "2 bars" },
+        { name: "Am chords", kind: 4, detail: "4 bars" },
+    ];
+    property <[BrowserItem]> empty: [];
+    property <[BrowserItem]> items:
+        category == 1 || category == 7 ? effects
+        : category == 2 || category == 6 ? instruments
+        : category == 4 ? sounds
+        : category == 5 ? kits
+        : category == 8 ? midi-effects
+        : category == 9 ? plugins
+        : category == 10 ? clips
+        : category == 3 ? [
+            { name: "Instruments", kind: 3 },
+            { name: "Drum Kit", kind: 0, detail: "6 kits" },
+            { name: "Bass Synth", kind: 0 },
+            { name: "Pad Synth", kind: 0 },
+            { name: "Lead Synth", kind: 0 },
+            { name: "Effects", kind: 3 },
+            { name: "EQ", kind: 1 },
+            { name: "Filter", kind: 1 },
+            { name: "Drive", kind: 1 },
+            { name: "Echo", kind: 1 },
+            { name: "Reverb", kind: 1 },
+            { name: "Chorus", kind: 1 },
+            { name: "Pd rack", kind: 1, detail: "experimental" },
+            { name: "MIDI Effects", kind: 3 },
+            { name: "Arpeggiator", kind: 2 },
+            { name: "Scale", kind: 2 },
+            { name: "Plug-ins", kind: 3 },
+        ]
+        : empty;
+    background: Theme.panel;
+
+    VerticalLayout {
+        padding: 8px;
+        spacing: 8px;
+        // Search.
+        Rectangle {
+            height: 26px;
+            border-radius: 3px;
+            background: Theme.bg;
+            border-width: 1px;
+            border-color: search.has-focus ? Theme.accent-dark : Theme.line;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                spacing: 6px;
+                Text { text: "⌕"; color: Theme.dim; vertical-alignment: center; }
+                search := TextInput {
+                    color: Theme.text;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    single-line: true;
+                }
+            }
+            if search.text == "": Text {
+                x: 26px;
+                text: "Search";
+                color: Theme.faint;
+                font-size: 12px;
+            }
+        }
+        HorizontalLayout {
+            spacing: 6px;
+            vertical-stretch: 1;
+            // Categories.
+            VerticalLayout {
+                width: 118px;
+                spacing: 0px;
+                NavHeading { text: "Collections"; }
+                NavItem { label: categories[0]; dot: #ff6b6b; selected: category == 0; clicked => { category = 0; } }
+                NavItem { label: categories[1]; dot: Theme.effect; selected: category == 1; clicked => { category = 1; } }
+                NavItem { label: categories[2]; dot: Theme.accent; selected: category == 2; clicked => { category = 2; } }
+                NavHeading { text: "Library"; }
+                for i in 9: NavItem {
+                    label: categories[3 + i];
+                    selected: category == 3 + i;
+                    clicked => { category = 3 + i; }
+                }
+                NavHeading { text: "Places"; }
+                NavItem { label: categories[12]; selected: category == 12; clicked => { category = 12; } }
+                NavItem { label: categories[13]; selected: category == 13; clicked => { category = 13; } }
+                NavItem { label: "+ Add folder"; clicked => { } }
+                Rectangle { vertical-stretch: 1; }
+            }
+            Rectangle { width: 1px; background: Theme.line; }
+            // Items.
+            VerticalLayout {
+                horizontal-stretch: 1;
+                Rectangle {
+                    height: 22px;
+                    Text {
+                        x: 4px;
+                        text: "Name";
+                        color: Theme.dim;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.line; }
+                Flickable {
+                    vertical-stretch: 1;
+                    content-height: max(self.height, items.length * 22px);
+                    for item[i] in items: Rectangle {
+                        y: i * 22px;
+                        height: 22px;
+                        width: parent.width;
+                        background: picked == i ? Theme.select : (row.has-hover ? Theme.slot : transparent);
+                        border-radius: 2px;
+                        HorizontalLayout {
+                            padding-left: item.kind == 3 ? 4px : 14px;
+                            padding-right: 6px;
+                            spacing: 6px;
+                            if item.kind == 3: Text { text: "›"; color: Theme.dim; font-size: 12px; vertical-alignment: center; width: 8px; }
+                            VerticalLayout { alignment: center; KindIcon { kind: item.kind; } }
+                            Text {
+                                text: item.name;
+                                color: Theme.text;
+                                font-size: 12px;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                            }
+                            if item.detail != "": Text {
+                                text: item.detail;
+                                color: Theme.faint;
+                                font-size: 10px;
+                                vertical-alignment: center;
+                            }
+                        }
+                        row := TouchArea { clicked => { picked = i; } }
+                    }
+                }
+                if items.length == 0: Text {
+                    text: category == 11 ? "Add a folder to see its samples" : "Nothing here yet";
+                    color: Theme.faint;
+                    font-size: 11px;
+                    vertical-alignment: top;
+                    wrap: word-wrap;
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.line; }
+        Text {
+            text: "Select a sample or MIDI file to preview";
+            color: Theme.faint;
+            font-size: 11px;
+            height: 18px;
+            vertical-alignment: center;
+        }
+    }
+}
+
+// ---------------------------------------------------------------- devices
+
+// A device's frame: a title bar with an on switch, and its controls.
+component Device inherits Rectangle {
+    in property <string> title;
+    in property <color> tint: Theme.accent;
+    in property <bool> selected;
+    in-out property <bool> on: true;
+    // The on/off square was clicked; `on` already changed.
+    callback toggled(bool);
+    // The title was clicked.
+    callback opened();
+    border-radius: 3px;
+    background: Theme.panel-2;
+    border-width: 1px;
+    border-color: selected ? tint : Theme.line;
+    Rectangle {
+        y: 0;
+        height: 24px;
+        HorizontalLayout {
+            padding-left: 8px;
+            padding-right: 8px;
+            spacing: 7px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 2px;
+                    background: on ? tint : transparent;
+                    border-width: 1px;
+                    border-color: tint;
+                    TouchArea { clicked => { root.on = !root.on; root.toggled(root.on); } }
+                }
+            }
+            Text {
+                text: title;
+                color: on ? Theme.text : Theme.dim;
+                font-size: 12px;
+                font-weight: 600;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+                overflow: elide;
+                TouchArea { clicked => { root.opened(); } }
+            }
+            Text { text: "×"; color: Theme.faint; font-size: 13px; vertical-alignment: center; }
+        }
+    }
+    Rectangle {
+        y: 24px;
+        height: parent.height - 24px;
+        opacity: on ? 1 : 0.45;
+        @children
+    }
+}
+
+
+// A built-in device's on/off switch, or a list that steps on a click.
+component SwitchPill inherits Rectangle {
+    in property <KnobData> k;
+    in property <color> tint;
+    callback clicked();
+    height: 20px;
+    border-radius: 3px;
+    background: k.toggle && k.on ? tint : Theme.bg;
+    border-width: 1px;
+    border-color: k.toggle && k.on ? tint : Theme.line;
+    Text {
+        x: 6px;
+        width: parent.width - 12px;
+        text: k.toggle ? k.name : k.text + " ▸";
+        color: k.toggle && k.on ? Theme.bg : Theme.text;
+        font-size: 10px;
+        font-weight: k.toggle && k.on ? 700 : 400;
+        horizontal-alignment: k.toggle ? center : left;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A device's frequency response on a log scale, 10 Hz to 22 kHz.
+component Graph inherits Rectangle {
+    in property <string> curve;
+    in property <float> zero;
+    in property <color> tint;
+    border-radius: 2px;
+    background: Theme.bg;
+    clip: true;
+    // 100 Hz, 1 kHz and 10 kHz.
+    for f in [0.299, 0.598, 0.898]: Rectangle {
+        x: parent.width * f;
+        width: 1px;
+        background: Theme.line;
+    }
+    Rectangle {
+        y: parent.height * zero / 100;
+        height: 1px;
+        background: Theme.line;
+    }
+    Text { x: parent.width * 0.299 + 3px; y: parent.height - 13px; text: "100"; color: Theme.faint; font-size: 9px; }
+    Text { x: parent.width * 0.598 + 3px; y: parent.height - 13px; text: "1k"; color: Theme.faint; font-size: 9px; }
+    Text { x: parent.width * 0.898 + 3px; y: parent.height - 13px; text: "10k"; color: Theme.faint; font-size: 9px; }
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 300;
+        viewbox-height: 100;
+        commands: curve;
+        stroke: tint;
+        stroke-width: 1.5px;
+    }
+    @children
+}
+
+// One of the studio's own devices: its switches, knobs and graph.
+component KnobPanel inherits HorizontalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    callback param(int, float);
+    callback click(int);
+    padding: 8px;
+    spacing: 8px;
+    if d.switches.length > 0: VerticalLayout {
+        width: 88px;
+        spacing: 3px;
+        alignment: center;
+        for k in d.switches: SwitchPill {
+            k: k;
+            tint: root.tint;
+            clicked => { root.click(k.index); }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        Rectangle {
+            width: d.cols * 58px;
+            height: d.rows * 58px;
+            for k[i] in d.knobs: Knob {
+                x: mod(i, d.cols) * 58px;
+                y: floor(i / d.cols) * 58px;
+                width: 58px;
+                size: 28px;
+                label: k.name;
+                display: k.text;
+                value: k.value;
+                bipolar: k.bipolar;
+                tint: root.tint;
+                changed(v) => { root.param(k.index, v); }
+            }
+        }
+    }
+    if d.curve != "": Graph {
+        width: 180px;
+        curve: d.curve;
+        zero: d.zero;
+        tint: root.tint;
+    }
+}
+
+// EQ Eight as Live lays it out: the selected band's knobs, the curve with a
+// dot per band to drag, the bands below it, and the output.
+component Eq8Panel inherits HorizontalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    in-out property <int> band: 0;
+    callback param(int, float);
+    callback click(int);
+    callback drag(int, float, float);
+    padding: 6px;
+    spacing: 6px;
+    VerticalLayout {
+        width: 56px;
+        alignment: center;
+        for j in 3: Knob {
+            width: 56px;
+            size: 26px;
+            label: d.params[band * 5 + 2 + j].name;
+            display: d.params[band * 5 + 2 + j].text;
+            value: d.params[band * 5 + 2 + j].value;
+            bipolar: d.params[band * 5 + 2 + j].bipolar;
+            tint: root.tint;
+            changed(v) => { root.param(band * 5 + 2 + j, v); }
+        }
+    }
+    VerticalLayout {
+        spacing: 4px;
+        graph := Graph {
+            vertical-stretch: 1;
+            curve: d.curve;
+            zero: d.zero;
+            tint: root.tint;
+            for dot in d.dots: Rectangle {
+                property <float> sx;
+                property <float> sy;
+                visible: dot.on;
+                x: parent.width * dot.x - 7px;
+                y: parent.height * dot.y - 7px;
+                width: 14px;
+                height: 14px;
+                border-radius: 7px;
+                background: dot.band == root.band ? root.tint : Theme.bg;
+                border-width: 1.5px;
+                border-color: root.tint;
+                Text {
+                    text: dot.band + 1;
+                    color: dot.band == root.band ? Theme.bg : root.tint;
+                    font-size: 9px;
+                    font-weight: 700;
+                }
+                TouchArea {
+                    mouse-cursor: move;
+                    pointer-event(e) => {
+                        if e.kind == PointerEventKind.down {
+                            root.band = dot.band;
+                            parent.sx = dot.x;
+                            parent.sy = dot.y;
+                        }
+                    }
+                    moved => {
+                        root.drag(dot.band,
+                            parent.sx + (self.mouse-x - self.pressed-x) / graph.width,
+                            parent.sy + (self.mouse-y - self.pressed-y) / graph.height);
+                    }
+                }
+            }
+        }
+        HorizontalLayout {
+            height: 36px;
+            spacing: 3px;
+            for b in 8: VerticalLayout {
+                spacing: 2px;
+                Rectangle {
+                    height: 16px;
+                    border-radius: 2px;
+                    background: b == root.band ? Theme.select : Theme.bg;
+                    Text {
+                        text: d.params[b * 5 + 1].text;
+                        color: d.params[b * 5].on ? Theme.text : Theme.faint;
+                        font-size: 8px;
+                        overflow: elide;
+                    }
+                    TouchArea { clicked => { root.band = b; } }
+                }
+                HorizontalLayout {
+                    spacing: 3px;
+                    alignment: center;
+                    Rectangle {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 2px;
+                        background: d.params[b * 5].on ? root.tint : transparent;
+                        border-width: 1px;
+                        border-color: root.tint;
+                        TouchArea { clicked => { root.click(b * 5); } }
+                    }
+                    Text {
+                        text: b + 1;
+                        color: b == root.band ? Theme.text : Theme.dim;
+                        font-size: 10px;
+                        vertical-alignment: center;
+                        TouchArea { clicked => { root.band = b; } }
+                    }
+                }
+            }
+        }
+    }
+    VerticalLayout {
+        width: 64px;
+        spacing: 4px;
+        alignment: center;
+        Text { text: "Shape"; color: Theme.dim; font-size: 10px; horizontal-alignment: center; }
+        SwitchPill {
+            k: d.params[band * 5 + 1];
+            tint: root.tint;
+            clicked => { root.click(band * 5 + 1); }
+        }
+        for j in 2: Knob {
+            width: 64px;
+            size: 26px;
+            label: d.params[40 + j].name;
+            display: d.params[40 + j].text;
+            value: d.params[40 + j].value;
+            bipolar: d.params[40 + j].bipolar;
+            tint: root.tint;
+            changed(v) => { root.param(40 + j, v); }
+        }
+    }
+}
+
+component Field inherits VerticalLayout {
+    in property <string> label;
+    in property <string> value;
+    spacing: 2px;
+    Text { text: label; color: Theme.dim; font-size: 10px; }
+    Rectangle {
+        height: 20px;
+        border-radius: 2px;
+        background: Theme.bg;
+        Text {
+            x: parent.width - self.width - 6px;
+            text: value;
+            color: Theme.text;
+            font-size: 11px;
+            font-family: "monospace";
+        }
+    }
+}
+
+// The selected clip: name, length and loop.
+component ClipPanel inherits Rectangle {
+    in property <SlotData> data;
+    in property <bool> has-clip;
+    property <bool> loop: true;
+    border-radius: 3px;
+    background: Theme.panel-2;
+    border-width: 1px;
+    border-color: Theme.line;
+    if !has-clip: Text {
+        text: "Select a clip";
+        color: Theme.faint;
+        font-size: 12px;
+    }
+    if has-clip: VerticalLayout {
+        padding: 8px;
+        spacing: 6px;
+        HorizontalLayout {
+            spacing: 6px;
+            height: 18px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle { width: 10px; height: 10px; border-radius: 2px; background: data.color; }
+            }
+            Text {
+                text: data.name;
+                color: Theme.text;
+                font-size: 12px;
+                font-weight: 600;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            Text {
+                text: data.beats + " beats";
+                color: Theme.dim;
+                font-size: 10px;
+                vertical-alignment: center;
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Field { label: "Start"; value: "1.1.1"; }
+            Field { label: "End"; value: (floor(data.beats / 4) + 1) + "." + (mod(data.beats, 4) + 1) + ".1"; }
+        }
+        Rectangle {
+            height: 22px;
+            border-radius: 2px;
+            background: loop ? #d9d9dc : Theme.slot;
+            Text { text: "Loop"; color: loop ? #101112 : Theme.text; font-size: 11px; font-weight: 600; }
+            TouchArea { clicked => { root.loop = !root.loop; } }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Field { label: "Signature"; value: "4 / 4"; }
+            Field { label: "Groove"; value: "None"; }
+        }
+        Rectangle { vertical-stretch: 1; }
+    }
+}
+
+// An instrument's eight knobs in two rows, as Push's encoders turn them.
+component ParamKnobs inherits VerticalLayout {
+    in property <[ParamData]> params;
+    in property <color> tint;
+    callback changed(int, float);
+    spacing: 8px;
+    alignment: center;
+    for row in 2: HorizontalLayout {
+        spacing: 4px;
+        for col in 4: Knob {
+            label: params[row * 4 + col].name;
+            display: params[row * 4 + col].text;
+            value: params[row * 4 + col].value;
+            tint: root.tint;
+            width: 62px;
+            changed(v) => { root.changed(row * 4 + col, v); }
+        }
+    }
+}
+
+component DrumPad inherits Rectangle {
+    in property <string> label;
+    in property <int> pitch;
+    in property <color> tint;
+    callback note(int, float);
+    border-radius: 2px;
+    background: ta.pressed ? tint : tint.with-alpha(ta.has-hover ? 0.32 : 0.2);
+    Text { text: label; color: Theme.text; font-size: 10px; }
+    ta := TouchArea {
+        pointer-event(e) => {
+            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                root.note(root.pitch, 0.9);
+            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                root.note(root.pitch, 0);
+            }
+        }
+    }
+}
+
+// One setting: its name on the left, its menu on the right.
+component SettingRow inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> text;
+    in property <[string]> options;
+    callback picked(int);
+    spacing: 12px;
+    height: 28px;
+    Text { width: 120px; text: root.label; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+    Picker {
+        height: 26px;
+        text-size: 12px;
+        text: root.text;
+        options: root.options;
+        picked(i) => { root.picked(i); }
+    }
+}
+
+// Settings, as openDJ's: pages on the left (Audio for now), the page's
+// settings on the right. A click outside closes it.
+component SettingsPanel inherits Rectangle {
+    in property <[string]> out-devices;
+    in property <[string]> in-devices;
+    in property <[string]> rates;
+    in property <[string]> buffers;
+    in property <string> out-choice;
+    in property <string> in-choice;
+    in property <string> rate-choice;
+    in property <string> buffer-choice;
+    in property <string> info;
+    in property <string> rate-note;
+    // 0 output, 1 input, 2 sample rate, 3 buffer; the option picked.
+    callback picked(int, int);
+    callback close();
+    background: #000000a0;
+    TouchArea { clicked => { root.close(); } }
+    Rectangle {
+        width: min(760px, root.width - 96px);
+        height: min(440px, root.height - 96px);
+        border-radius: 10px;
+        background: Theme.panel;
+        border-width: 1px;
+        border-color: Theme.line;
+        clip: true;
+        // Clicks inside stay inside.
+        TouchArea { }
+        HorizontalLayout {
+            Rectangle {
+                width: 190px;
+                background: Theme.bg;
+                VerticalLayout {
+                    padding: 14px;
+                    padding-top: 18px;
+                    spacing: 4px;
+                    alignment: start;
+                    Text { text: "Settings"; color: Theme.text; font-size: 18px; font-weight: 700; }
+                    Rectangle { height: 10px; }
+                    Rectangle {
+                        height: 32px;
+                        border-radius: 6px;
+                        background: Theme.select;
+                        Text { x: 10px; text: "Audio"; color: Theme.accent; font-size: 13px; font-weight: 600; }
+                    }
+                }
+            }
+            VerticalLayout {
+                padding: 22px;
+                spacing: 10px;
+                alignment: start;
+                HorizontalLayout {
+                    Text { text: "Audio"; color: Theme.text; font-size: 18px; font-weight: 700; horizontal-stretch: 1; }
+                    Rectangle {
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 12px;
+                        background: xa.has-hover ? Theme.slot-hover : transparent;
+                        Text { text: "✕"; color: Theme.dim; font-size: 12px; }
+                        xa := TouchArea { clicked => { root.close(); } }
+                    }
+                }
+                Text { text: "OUTPUT"; color: Theme.dim; font-size: 10px; font-weight: 700; }
+                SettingRow {
+                    label: "Device";
+                    text: root.out-choice;
+                    options: root.out-devices;
+                    picked(i) => { root.picked(0, i); }
+                }
+                SettingRow {
+                    label: "Sample rate";
+                    text: root.rate-choice;
+                    options: root.rates;
+                    picked(i) => { root.picked(2, i); }
+                }
+                SettingRow {
+                    label: "Buffer";
+                    text: root.buffer-choice;
+                    options: root.buffers;
+                    picked(i) => { root.picked(3, i); }
+                }
+                if root.rate-note != "": Text { text: root.rate-note; color: Theme.queued; font-size: 11px; }
+                Rectangle { height: 6px; }
+                Text { text: "INPUT"; color: Theme.dim; font-size: 10px; font-weight: 700; }
+                SettingRow {
+                    label: "Device";
+                    text: root.in-choice;
+                    options: root.in-devices;
+                    picked(i) => { root.picked(1, i); }
+                }
+                Text {
+                    text: "Tracks pick their input channels and output pairs in their I/O section.";
+                    color: Theme.dim;
+                    font-size: 11px;
+                    wrap: word-wrap;
+                }
+                Rectangle { height: 6px; }
+                Text { text: root.info; color: Theme.text; font-size: 12px; wrap: word-wrap; }
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "openDJ Studio";
+    preferred-width: 1440px;
+    preferred-height: 900px;
+    min-width: 1280px;
+    min-height: 760px;
+    background: Theme.bg;
+    default-font-size: 12px;
+
+    in property <[TrackData]> tracks;
+    // Scene-major: slot (scene s, track t) is at s * tracks.length + t.
+    in property <[SlotData]> slots;
+    in property <int> scenes: 8;
+    in property <bool> playing;
+    in property <string> tempo: "124.0";
+    in property <string> position: "1.1";
+    in property <bool> link;
+    in property <int> peers;
+    in property <string> quantize: "1 Bar";
+    in property <string> load: "0%";
+    in property <string> status;
+    in property <bool> blink;
+    in property <float> main-level;
+    // Set from the shared controls: the window and Push both select.
+    in property <int> selected-track: 0;
+    in property <int> selected-scene: -1;
+    in property <float> main-volume: 60 / 66;
+    in property <string> return-a: "A Return";
+    in property <string> return-b: "B Return";
+    in property <color> return-a-color: Theme.return-a;
+    in property <color> return-b-color: Theme.return-b;
+    // The I/O pickers' lists: input channels ("1", …, "1/2", …), output
+    // pairs, MIDI inputs ("All Ins", ports, "No Input") and outputs ("No
+    // Output", ports).
+    in property <[string]> in-channels: ["1", "2", "1/2"];
+    in property <[string]> out-channels: ["1/2"];
+    in property <[string]> midi-froms: ["All Ins", "No Input"];
+    in property <[string]> midi-tos: ["No Output"];
+    in-out property <bool> io-shown: true;
+    // Settings: open, and the Audio page's lists and choices.
+    in-out property <bool> settings-open;
+    in property <[string]> out-devices;
+    in property <[string]> in-devices;
+    in property <[string]> rates;
+    in property <[string]> buffers;
+    in property <string> out-choice;
+    in property <string> in-choice;
+    in property <string> rate-choice;
+    in property <string> buffer-choice;
+    in property <string> audio-info;
+    in property <string> rate-note;
+
+    callback launch-clip(int, int);   // track, scene
+    callback launch-scene(int);
+    callback stop-track(int);
+    callback stop-all();
+    callback toggle-play();
+    callback tempo-step(float);
+    callback toggle-link();
+    callback next-quantize();
+    callback select(int, int);         // track, scene (-1 for none)
+    // Track, control (0 volume, 1 pan, 2 send A, 3 send B), value 0..1.
+    callback mix(int, int, float);
+    callback main-volume-changed(float);
+    // Track, instrument knob, value 0..1.
+    callback param(int, int, float);
+    // Track, pitch, velocity (0 ends the note).
+    callback play-note(int, int, float);
+    // A device in the chain: switch it on or off, open its window.
+    callback toggle-device(int, int, bool);
+    callback open-device(int, int);
+    // A built-in device's setting (track, device, setting): a knob moved
+    // (0..1), a switch clicked, or an EQ Eight band dragged (band, x, y).
+    callback device-param(int, int, int, float);
+    callback device-click(int, int, int);
+    callback device-drag(int, int, int, float, float);
+    // Track, picker (0 Audio From, 1 its channel, 2 Audio To, 3 its pair,
+    // 4 MIDI From, 5 its channel, 6 MIDI To, 7 its channel), option.
+    callback io-pick(int, int, int);
+    // Track, 0 In, 1 Auto, 2 Off.
+    callback set-monitor(int, int);
+    callback toggle-arm(int);
+    // Settings opened (the device lists are read again); a setting picked
+    // (0 output, 1 input, 2 sample rate, 3 buffer) and its option.
+    callback settings-opened();
+    callback settings-pick(int, int);
+
+    property <TrackData> track: tracks[selected-track];
+    property <bool> has-clip: selected-scene >= 0
+        && slots[selected-scene * tracks.length + selected-track].state != SlotState.empty;
+
+    VerticalLayout {
+        // ------------------------------------------------------- top bar
+        Rectangle {
+            height: 40px;
+            background: Theme.panel;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 10px;
+                Text {
+                    text: "openDJ Studio";
+                    color: Theme.accent;
+                    font-size: 14px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+                Rectangle { width: 12px; }
+                VerticalLayout { alignment: center; Pill { label: "−"; clicked => { root.tempo-step(-1); } } }
+                Readout { title: "BPM"; value: root.tempo; value-width: 44px; }
+                VerticalLayout { alignment: center; Pill { label: "+"; clicked => { root.tempo-step(1); } } }
+                VerticalLayout { alignment: center; Pill { label: "4 / 4"; } }
+                VerticalLayout {
+                    alignment: center;
+                    Pill { label: "Launch " + root.quantize; clicked => { root.next-quantize(); } }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Pill {
+                        label: root.link ? "LINK · " + root.peers : "LINK";
+                        on: root.link;
+                        clicked => { root.toggle-link(); }
+                    }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                VerticalLayout {
+                    alignment: center;
+                    Pill { label: "▶"; on: root.playing; clicked => { if !root.playing { root.toggle-play(); } } }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Pill { label: "■"; clicked => { if root.playing { root.toggle-play(); } } }
+                }
+                VerticalLayout { alignment: center; Pill { label: "●"; enabled: false; } }
+                Readout { title: ""; value: root.position; value-width: 52px; }
+                Rectangle { horizontal-stretch: 1; }
+                Readout { title: "CPU"; value: root.load; value-width: 36px; }
+                VerticalLayout {
+                    alignment: center;
+                    Pill { label: "I/O"; on: root.io-shown; clicked => { root.io-shown = !root.io-shown; } }
+                }
+                VerticalLayout { alignment: center; Pill { label: "Session"; on: true; } }
+                VerticalLayout {
+                    alignment: center;
+                    Pill {
+                        label: "⚙";
+                        on: root.settings-open;
+                        clicked => {
+                            root.settings-opened();
+                            root.settings-open = true;
+                        }
+                    }
+                }
+                VerticalLayout { alignment: center; Pill { label: "Arrangement"; enabled: false; } }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.line; }
+
+        HorizontalLayout {
+            vertical-stretch: 1;
+            Browser { width: 310px; }
+            Rectangle { width: 1px; background: Theme.line; }
+
+            VerticalLayout {
+                horizontal-stretch: 1;
+                // ------------------------------------------- session view
+                session := Rectangle {
+                    vertical-stretch: 1;
+                    background: Theme.bg;
+                    property <length> col-w: 128px;
+                    property <length> ret: 104px;
+                    property <length> main: 104px;
+                    property <length> gap: 2px;
+                    property <length> head: 24px;
+                    property <length> row-h: 22px;
+                    property <length> mixer: 186px;
+                    property <length> stop-y: head + gap + scenes * (row-h + gap);
+                    property <length> ret-x: self.width - main - 2 * (ret + gap) - gap;
+                    property <length> main-x: self.width - main;
+                    property <length> mixer-y: self.height - mixer;
+                    // The I/O section, above the mixer, when shown and there's room.
+                    property <length> io: root.io-shown && self.height - mixer - stop-y - row-h - gap >= 172px ? 172px : 0px;
+                    property <length> io-y: mixer-y - io;
+                    property <length> tracks-end: tracks.length * (col-w + gap);
+
+                    // Tracks, scrolling sideways when there are more than fit.
+                    Flickable {
+                    x: 0;
+                    y: 0;
+                    width: session.ret-x - session.gap;
+                    height: session.height;
+                    content-width: max(self.width, session.tracks-end + 160px);
+                    for t[i] in tracks: Rectangle {
+                        x: i * (session.col-w + session.gap);
+                        width: session.col-w;
+                        height: session.height;
+                        background: Theme.panel.with-alpha(0.5);
+                        // Header.
+                        Rectangle {
+                            y: 0;
+                            height: session.head;
+                            background: i == selected-track ? t.color : t.color.with-alpha(0.8);
+                            HorizontalLayout {
+                                padding-left: 6px;
+                                padding-right: 6px;
+                                spacing: 5px;
+                                Text {
+                                    text: (i + 1) + " " + t.name;
+                                    color: #101112;
+                                    font-size: 12px;
+                                    font-weight: 700;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                    horizontal-stretch: 1;
+                                }
+                                Text { text: t.kind; color: #10111299; font-size: 9px; font-weight: 700; vertical-alignment: center; }
+                            }
+                            TouchArea { clicked => { root.select(i, selected-scene); } }
+                        }
+                        // Clip slots.
+                        for s in scenes: ClipSlot {
+                            y: session.head + session.gap + s * (session.row-h + session.gap);
+                            height: session.row-h;
+                            data: slots[s * tracks.length + i];
+                            blink: root.blink;
+                            progress: t.progress;
+                            selected: i == selected-track && s == selected-scene;
+                            launch => { root.launch-clip(i, s); }
+                        }
+                        // Stop button.
+                        Rectangle {
+                            y: session.stop-y;
+                            height: session.row-h;
+                            background: stop.has-hover ? Theme.slot-hover : Theme.slot;
+                            border-width: t.stopping ? 1px : 0px;
+                            border-color: root.blink ? Theme.queued : Theme.queued.with-alpha(0.25);
+                            Rectangle {
+                                width: 8px;
+                                height: 8px;
+                                background: t.progress >= 0 ? Theme.text : Theme.faint;
+                            }
+                            stop := TouchArea { clicked => { root.stop-track(i); } }
+                        }
+                        // Selection outline.
+                        if i == selected-track: Rectangle {
+                            border-width: 1px;
+                            border-color: t.color;
+                        }
+                        if session.io > 0: IoSection {
+                            y: session.io-y;
+                            height: session.io;
+                            t: t;
+                            in-channels: root.in-channels;
+                            out-channels: root.out-channels;
+                            midi-froms: root.midi-froms;
+                            midi-tos: root.midi-tos;
+                            picked(which, k) => { root.io-pick(i, which, k); }
+                            monitor(m) => { root.set-monitor(i, m); }
+                        }
+                        // Mixer strip.
+                        Strip {
+                            y: session.mixer-y;
+                            height: session.mixer;
+                            tint: t.color;
+                            number: i + 1;
+                            level: t.level;
+                            armed: t.armed;
+                            arm-toggled => { root.toggle-arm(i); }
+                            volume: t.volume;
+                            pan: t.pan;
+                            pan-text: t.pan-text;
+                            send-a: t.send-a;
+                            send-b: t.send-b;
+                            changed(which, v) => { root.mix(i, which, v); }
+                        }
+                        Rectangle {
+                            y: session.mixer-y;
+                            height: 1px;
+                            background: t.color;
+                        }
+                    }
+
+                    // Drop area for new tracks.
+                    Rectangle {
+                        x: session.tracks-end + 10px;
+                        y: session.head + session.gap;
+                        width: max(0px, session.ret-x - session.tracks-end - 20px);
+                        height: session.io-y - session.head - 2 * session.gap;
+                        if self.width > 130px: VerticalLayout {
+                            alignment: start;
+                            spacing: 4px;
+                            for label in ["+ MIDI track", "+ Audio track", "+ Return track"]: HorizontalLayout {
+                                alignment: start;
+                                Rectangle {
+                                    width: 110px;
+                                    height: 22px;
+                                    border-radius: 2px;
+                                    background: add.has-hover ? Theme.slot-hover : Theme.slot;
+                                    Text { x: 8px; text: label; color: Theme.dim; font-size: 11px; }
+                                    add := TouchArea { }
+                                }
+                            }
+                        }
+                        if self.width > 200px: Text {
+                            text: "Drop files or devices to add a track";
+                            color: Theme.faint;
+                            font-size: 12px;
+                        }
+                    }
+
+                    }
+
+                    // Returns A and B.
+                    for r[i] in [
+                        { name: root.return-a, color: root.return-a-color, letter: "A" },
+                        { name: root.return-b, color: root.return-b-color, letter: "B" },
+                    ]: Rectangle {
+                        x: session.ret-x + i * (session.ret + session.gap);
+                        width: session.ret;
+                        height: session.height;
+                        background: r.color.with-alpha(0.06);
+                        Rectangle {
+                            y: 0;
+                            height: session.head;
+                            background: r.color;
+                            Text {
+                                x: 6px;
+                                text: r.name;
+                                color: #101112;
+                                font-size: 12px;
+                                font-weight: 700;
+                            }
+                        }
+                        Strip {
+                            y: session.mixer-y;
+                            height: session.mixer;
+                            tint: r.color;
+                            number: r.letter;
+                            sends: false;
+                            arm: false;
+                            free: true;
+                            level: 0;
+                        }
+                        Rectangle { y: session.mixer-y; height: 1px; background: r.color; }
+                    }
+
+                    // Main: scene launch buttons and the main fader.
+                    Rectangle {
+                        x: session.main-x;
+                        width: session.main;
+                        height: session.height;
+                        background: Theme.panel;
+                        Rectangle {
+                            y: 0;
+                            height: session.head;
+                            background: Theme.select;
+                            Text {
+                                x: 6px;
+                                text: "Main";
+                                color: Theme.text;
+                                font-size: 12px;
+                                font-weight: 700;
+                            }
+                        }
+                        for s in scenes: Rectangle {
+                            y: session.head + session.gap + s * (session.row-h + session.gap);
+                            height: session.row-h;
+                            background: sa.has-hover ? Theme.slot-hover : Theme.slot;
+                            HorizontalLayout {
+                                padding-left: 6px;
+                                padding-right: 6px;
+                                spacing: 6px;
+                                Text { text: "▶"; color: Theme.dim; font-size: 10px; vertical-alignment: center; width: 10px; }
+                                Text {
+                                    text: s + 1;
+                                    color: Theme.text;
+                                    font-size: 11px;
+                                    font-weight: 600;
+                                    vertical-alignment: center;
+                                    horizontal-stretch: 1;
+                                }
+                            }
+                            sa := TouchArea { clicked => { root.launch-scene(s); } }
+                        }
+                        Rectangle {
+                            y: session.stop-y;
+                            height: session.row-h;
+                            background: stop-all.has-hover ? Theme.slot-hover : Theme.slot;
+                            HorizontalLayout {
+                                padding-left: 6px;
+                                spacing: 6px;
+                                VerticalLayout {
+                                    alignment: center;
+                                    Rectangle { width: 8px; height: 8px; background: Theme.text; }
+                                }
+                                Text { text: "Stop all"; color: Theme.text; font-size: 11px; vertical-alignment: center; }
+                            }
+                            stop-all := TouchArea { clicked => { root.stop-all(); } }
+                        }
+                        Strip {
+                            y: session.mixer-y;
+                            height: session.mixer;
+                            tint: Theme.accent;
+                            number: "M";
+                            sends: false;
+                            arm: false;
+                            level: root.main-level;
+                            volume: root.main-volume;
+                            changed(which, v) => {
+                                if which == 0 {
+                                    root.main-volume-changed(v);
+                                }
+                            }
+                        }
+                        Rectangle { y: session.mixer-y; height: 1px; background: Theme.select; }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.line; }
+
+                // ------------------------------------------- device row
+                Rectangle {
+                    height: 214px;
+                    background: Theme.panel;
+                    // Scrolls sideways when the chain is wider than the window.
+                    Flickable {
+                    content-width: max(self.width, 1270px);
+                    HorizontalLayout {
+                        width: max(parent.width, 1270px);
+                        padding: 8px;
+                        spacing: 6px;
+                        alignment: start;
+                        ClipPanel {
+                            width: 200px;
+                            has-clip: root.has-clip;
+                            data: root.has-clip ? slots[selected-scene * tracks.length + selected-track] : { name: "", beats: 0 };
+                        }
+                        if track.audio: Device {
+                            width: 180px;
+                            title: "Audio In";
+                            tint: track.color;
+                            selected: true;
+                            VerticalLayout {
+                                padding: 10px;
+                                spacing: 6px;
+                                Text { text: track.input == "" ? "No input" : track.input; color: Theme.text; font-size: 13px; font-weight: 600; }
+                                Text { text: track.audio-from == "No Input" ? "Recordings play from the clips." : (track.monitor == 0 ? "Plays what comes in; its clips are quiet (Monitor In)." : track.monitor == 1 ? "Plays what comes in when armed and no clip plays (Monitor Auto)." : "Plays its clips only (Monitor Off)."); color: Theme.dim; font-size: 11px; wrap: word-wrap; }
+                            }
+                        }
+                        if track.drums: Device {
+                            width: 480px;
+                            title: track.device;
+                            tint: track.color;
+                            selected: true;
+                            HorizontalLayout {
+                                padding: 8px;
+                                spacing: 10px;
+                                // Laid out as Push plays them in Note mode.
+                                GridLayout {
+                                    spacing: 3px;
+                                    width: 190px;
+                                    Row {
+                                        DrumPad { label: "Ride"; pitch: 51; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        Rectangle { }
+                                        Rectangle { }
+                                        Rectangle { }
+                                    }
+                                    Row {
+                                        DrumPad { label: "Clap"; pitch: 39; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        DrumPad { label: "Rim"; pitch: 37; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        DrumPad { label: "Cowbell"; pitch: 56; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        DrumPad { label: "Crash"; pitch: 49; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                    }
+                                    Row {
+                                        DrumPad { label: "Kick"; pitch: 36; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        DrumPad { label: "Snare"; pitch: 38; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        DrumPad { label: "Closed hat"; pitch: 42; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                        DrumPad { label: "Open hat"; pitch: 46; tint: track.color; note(p, v) => { root.play-note(selected-track, p, v); } }
+                                    }
+                                }
+                                ParamKnobs {
+                                    params: track.params;
+                                    tint: track.color;
+                                    changed(i, v) => { root.param(selected-track, i, v); }
+                                }
+                            }
+                        }
+                        if !track.drums && !track.audio && !track.plugin-instrument: Device {
+                            width: 300px;
+                            title: track.device;
+                            tint: track.color;
+                            selected: true;
+                            HorizontalLayout {
+                                padding: 8px;
+                                alignment: center;
+                                ParamKnobs {
+                                    params: track.params;
+                                    tint: track.color;
+                                    changed(i, v) => { root.param(selected-track, i, v); }
+                                }
+                            }
+                        }
+                        // A set's own devices: plug-ins run, Live's own are
+                        // listed until they have built-in matches.
+                        for d[i] in track.chain: Device {
+                            width: d.builtin ? d.panel-width * 1px : 150px;
+                            title: d.name;
+                            on: d.on;
+                            tint: d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
+                            toggled(v) => { root.toggle-device(selected-track, i, v); }
+                            opened => { root.open-device(selected-track, i); }
+                            if d.builtin && !d.eq: KnobPanel {
+                                d: d;
+                                tint: Theme.effect;
+                                param(k, v) => { root.device-param(selected-track, i, k, v); }
+                                click(k) => { root.device-click(selected-track, i, k); }
+                            }
+                            if d.eq: Eq8Panel {
+                                d: d;
+                                tint: Theme.effect;
+                                param(k, v) => { root.device-param(selected-track, i, k, v); }
+                                click(k) => { root.device-click(selected-track, i, k); }
+                                drag(b, x, y) => { root.device-drag(selected-track, i, b, x, y); }
+                            }
+                            if !d.builtin: VerticalLayout {
+                                padding: 10px;
+                                spacing: 6px;
+                                Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
+                                Text { text: d.note; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
+                                if d.can-open: Rectangle {
+                                    height: 22px;
+                                    border-radius: 3px;
+                                    background: open-area.has-hover ? Theme.line : Theme.bg;
+                                    Text { text: "Open window"; color: Theme.text; font-size: 11px; }
+                                    open-area := TouchArea { clicked => { root.open-device(selected-track, i); } }
+                                }
+                            }
+                        }
+                        if track.chain.length == 0: Device {
+                            width: 250px;
+                            title: "EQ";
+                            tint: Theme.effect;
+                            HorizontalLayout {
+                                padding: 8px;
+                                spacing: 2px;
+                                alignment: center;
+                                Knob { free: true; label: "Low"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
+                                Knob { free: true; label: "Mid"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
+                                Knob { free: true; label: "High"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
+                                Knob { free: true; label: "Output"; display: "0 dB"; bipolar: true; size: 36px; tint: Theme.effect; }
+                            }
+                        }
+                        if track.chain.length == 0: Device {
+                            width: 230px;
+                            title: "Echo";
+                            tint: Theme.effect;
+                            HorizontalLayout {
+                                padding: 8px;
+                                spacing: 2px;
+                                alignment: center;
+                                Knob { free: true; label: "Time"; display: "1/8"; value: 0.4; size: 36px; tint: Theme.effect; }
+                                Knob { free: true; label: "Feedback"; display: "35%"; value: 0.35; size: 36px; tint: Theme.effect; }
+                                Knob { free: true; label: "Dry/Wet"; display: "20%"; value: 0.2; size: 36px; tint: Theme.effect; }
+                            }
+                        }
+                        Rectangle {
+                            width: 130px;
+                            border-radius: 3px;
+                            border-width: 1px;
+                            border-color: Theme.line;
+                            Text {
+                                text: "+\nDrop an effect here";
+                                color: Theme.faint;
+                                font-size: 11px;
+                                horizontal-alignment: center;
+                            }
+                        }
+                    }
+    }
+                }
+            }
+        }
+
+        // ------------------------------------------------------- status
+        Rectangle {
+            height: 22px;
+            background: Theme.panel;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                Text {
+                    text: root.status;
+                    color: Theme.dim;
+                    font-size: 11px;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: tracks.length + " tracks · " + scenes + " scenes · sends, returns and effects are a preview";
+                    color: Theme.faint;
+                    font-size: 11px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+
+    if root.settings-open: SettingsPanel {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        out-devices: root.out-devices;
+        in-devices: root.in-devices;
+        rates: root.rates;
+        buffers: root.buffers;
+        out-choice: root.out-choice;
+        in-choice: root.in-choice;
+        rate-choice: root.rate-choice;
+        buffer-choice: root.buffer-choice;
+        info: root.audio-info;
+        rate-note: root.rate-note;
+        picked(field, i) => { root.settings-pick(field, i); }
+        close => { root.settings-open = false; }
+    }
+}

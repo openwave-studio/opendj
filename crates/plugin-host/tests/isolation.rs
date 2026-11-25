@@ -208,6 +208,36 @@ fn an_instrument_plays_the_notes_it_is_sent() {
     assert!(l.iter().all(|&v| v == 1.0));
 }
 
+#[test]
+fn what_a_plugin_sends_comes_back() {
+    use opendj_plugin_host::Midi;
+    let (mut conn, _helper) = start("test-arp");
+    let silent = vec![0.0f32; FRAMES];
+    let (mut l, mut r) = (vec![0.0; FRAMES], vec![0.0; FRAMES]);
+    let sent = [Midi::note_on(10, 2, 60, 100), Midi::note_off(200, 2, 60)];
+    let out = conn.process_events(
+        [&silent, &silent],
+        [&mut l, &mut r],
+        Default::default(),
+        &sent,
+        DEADLINE,
+    );
+    assert_eq!(out, Outcome::Wet);
+    assert_eq!(
+        conn.midi_out(),
+        [Midi::note_on(10, 2, 72, 100), Midi::note_off(200, 2, 72)]
+    );
+    // A block with nothing sent sends nothing back.
+    conn.process_events(
+        [&silent, &silent],
+        [&mut l, &mut r],
+        Default::default(),
+        &[],
+        DEADLINE,
+    );
+    assert!(conn.midi_out().is_empty());
+}
+
 /// A plugin that hangs while the helper exits, after it has answered, must
 /// not stall the scan: the answer is kept and the helper is stopped.
 #[cfg(unix)]

@@ -536,6 +536,44 @@ impl Events {
     }
 }
 
+impl Events {
+    /// The plug-in's notes as MIDI, into `out` (which has room made up
+    /// front).
+    fn midi(&self, out: &mut Vec<Midi>) {
+        let byte = |v: f32| ((v * 127.0).round() as u8).clamp(1, 127);
+        for e in self.list.borrow().iter() {
+            if out.len() == out.capacity() {
+                break;
+            }
+            let frame = e.sampleOffset.max(0) as u32;
+            // SAFETY: the type says which field the plug-in filled.
+            let m = unsafe {
+                match e.r#type as u32 {
+                    t if t == EventTypes_::kNoteOnEvent as u32 => {
+                        let n = e.__field0.noteOn;
+                        Midi::note_on(
+                            frame,
+                            n.channel.clamp(0, 15) as u8,
+                            n.pitch.clamp(0, 127) as u8,
+                            byte(n.velocity),
+                        )
+                    }
+                    t if t == EventTypes_::kNoteOffEvent as u32 => {
+                        let n = e.__field0.noteOff;
+                        Midi::note_off(
+                            frame,
+                            n.channel.clamp(0, 15) as u8,
+                            n.pitch.clamp(0, 127) as u8,
+                        )
+                    }
+                    _ => continue,
+                }
+            };
+            out.push(m);
+        }
+    }
+}
+
 impl IEventListTrait for Events {
     unsafe fn getEventCount(&self) -> i32 {
         self.list.borrow().len() as i32
@@ -549,9 +587,15 @@ impl IEventListTrait for Events {
             _ => kInvalidArgument,
         }
     }
-    unsafe fn addEvent(&self, _e: *mut Event) -> tresult {
-        // Output events from the plugin: openDJ doesn't take them.
-        kResultFalse
+    unsafe fn addEvent(&self, e: *mut Event) -> tresult {
+        // The plug-in's own events (its outputEvents list): kept while
+        // there's room made up front, so nothing allocates.
+        let mut list = self.list.borrow_mut();
+        if e.is_null() || list.len() == list.capacity() {
+            return kResultFalse;
+        }
+        list.push(*e);
+        kResultOk
     }
 }
 
@@ -1061,6 +1105,10 @@ pub fn load(
         if component.getBusCount(event, inp) >= 1 {
             component.activateBus(event, inp, 0, 1);
         }
+        // A sequencer or arpeggiator sends notes on its event output.
+        if component.getBusCount(event, out) >= 1 {
+            component.activateBus(event, out, 0, 1);
+        }
         if processor.canProcessSampleSize(SymbolicSampleSizes_::kSample32 as i32) != kResultTrue {
             return Err(format!("{name} can't process 32-bit audio"));
         }
@@ -1119,6 +1167,8 @@ pub fn load(
             edits: edits.clone(),
             out_changes: ComWrapper::new(Changes::new(64)),
             events: ComWrapper::new(Events::new()),
+            out_events: ComWrapper::new(Events::new()),
+            midi_out: Vec::with_capacity(MAX_EVENTS),
             has_input,
             ids: params.iter().map(|(id, _)| *id).collect(),
             sent: params.iter().map(|(_, p)| p.value as f32).collect(),
@@ -1165,6 +1215,9 @@ struct Vst3Effect {
     changes: ComWrapper<Changes>,
     out_changes: ComWrapper<Changes>,
     events: ComWrapper<Events>,
+    /// What the plug-in sends (its event output bus), and the same as MIDI.
+    out_events: ComWrapper<Events>,
+    midi_out: Vec<Midi>,
     /// Edits from the plugin's editor, for the processor.
     edits: Edits,
     /// False for an instrument.
@@ -1179,6 +1232,10 @@ struct Vst3Effect {
 unsafe impl Send for Vst3Effect {}
 
 impl Effect for Vst3Effect {
+    fn midi_out(&self) -> &[Midi] {
+        &self.midi_out
+    }
+
     fn process(
         &mut self,
         input: [&[f32]; CHANNELS],
@@ -1212,6 +1269,7 @@ impl Effect for Vst3Effect {
             }
             self.out_changes.clear();
             self.events.set(notes);
+            self.out_events.set(&[]);
             for (ch, data) in input.iter().enumerate() {
                 self.input[ch][..frames].copy_from_slice(data);
             }
@@ -1273,12 +1331,16 @@ impl Effect for Vst3Effect {
                     .unwrap()
                     .as_ptr(),
                 inputEvents: self.events.as_com_ref::<IEventList>().unwrap().as_ptr(),
-                outputEvents: ptr::null_mut(),
+                outputEvents: self.out_events.as_com_ref::<IEventList>().unwrap().as_ptr(),
                 processContext: &mut ctx,
             };
             p.process(&mut data) == kResultOk
         };
         self.steady += frames as i64;
+        self.midi_out.clear();
+        if ok {
+            self.out_events.midi(&mut self.midi_out);
+        }
         for (ch, o) in output.into_iter().enumerate() {
             if ok {
                 o.copy_from_slice(&self.output[ch][..frames]);

@@ -208,6 +208,15 @@ fn read_track(
         track.volume = number(c, "Mixer/Volume/Manual").map(fader);
         track.pan = number(c, "Mixer/Pan/Manual").map_or(0.5, |p| ((p + 1.0) / 2.0) as f32);
         track.io = io(c, audio);
+        // An External Instrument plays the track through its own routing.
+        let ext = track.devices.iter().find_map(|d| match &d.builtin {
+            Some(crate::devices::Settings::External(e)) if d.on => Some(e.clone()),
+            _ => None,
+        });
+        if let Some(e) = ext {
+            track.io.midi_to = e.midi_to.or(track.io.midi_to.take());
+            track.io.audio_in = e.audio_in.or(track.io.audio_in);
+        }
         if let Some(slots) = at(c, "MainSequencer/ClipSlotList") {
             for (s, slot) in slots.children().filter(Node::is_element).enumerate() {
                 let Some(clip) = slot
@@ -429,6 +438,7 @@ fn device(d: Node) -> DeviceInfo {
         "DrumBuss" => "Drum Buss",
         "OriginalSimpler" => "Simpler",
         "MultiSampler" => "Sampler",
+        "ProxyInstrumentDevice" => "External Instrument",
         other => other,
     };
     DeviceInfo {
@@ -451,6 +461,7 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
     let num = |p: &str| number(d, &format!("{p}/Manual")).map(|v| v as f32);
     let flag = |p: &str| value(d, &format!("{p}/Manual")) == Some("true");
     Some(match d.tag_name().name() {
+        "ProxyInstrumentDevice" => Settings::External(external(d)),
         "StereoGain" => Settings::Utility(UtilitySettings {
             gain: num("Gain").unwrap_or(1.0),
             width: num("StereoWidth").unwrap_or(1.0),
@@ -915,6 +926,36 @@ fn io(c: Node, audio: bool) -> Io {
     }
 }
 
+/// An External Instrument's routing and latency. Its routings are kept as
+/// targets like a track's ("MidiOut/External.Dev:…/0", "AudioIn/External/
+/// M0"), whatever the element holding them is called, and its latency is
+/// the first setting named for it, in ms.
+fn external(d: Node) -> crate::devices::ExternalSettings {
+    let targets = || {
+        d.descendants()
+            .filter_map(|n| n.attribute("Value"))
+            .filter(|v| v.starts_with("MidiOut/") || v.starts_with("AudioIn/"))
+    };
+    let latency = d
+        .descendants()
+        .find(|n| n.tag_name().name().contains("Latency"))
+        .and_then(|n| {
+            child(n, "Manual")
+                .and_then(|m| m.attribute("Value"))
+                .or(n.attribute("Value"))
+        })
+        .and_then(|v| v.parse::<f32>().ok())
+        .unwrap_or(0.0);
+    crate::devices::ExternalSettings {
+        midi_to: targets().find_map(midi_to),
+        audio_in: targets().find_map(audio_in),
+        latency_ms: latency.clamp(0.0, crate::devices::MAX_LATENCY_MS),
+        gain_db: number(d, "Gain/Manual")
+            .filter(|g| *g > 0.0)
+            .map_or(0.0, |g| 20.0 * (g as f32).log10()),
+    }
+}
+
 /// "AudioIn/External/M0" is input 1, "S2" the pair 5/6.
 fn audio_in(target: &str) -> Option<(u16, bool)> {
     let rest = target.strip_prefix("AudioIn/External/")?;
@@ -1212,6 +1253,36 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn external_instrument() {
+        let xml = r#"<Ableton><LiveSet><Tracks><MidiTrack Id="1">
+          <Name><EffectiveName Value="Moog" /></Name>
+          <DeviceChain>
+            <MidiOutputRouting><Target Value="MidiOut/None" /></MidiOutputRouting>
+            <AudioInputRouting><Target Value="AudioIn/None" /></AudioInputRouting>
+            <DeviceChain><Devices>
+              <ProxyInstrumentDevice Id="0">
+                <On><Manual Value="true" /></On>
+                <MidiOutputTarget><Target Value="MidiOut/External.Dev:Moog Messenger{1}/2" /></MidiOutputTarget>
+                <AudioInputTarget><Target Value="AudioIn/External/S1" /></AudioInputTarget>
+                <HardwareLatency><Manual Value="12.5" /></HardwareLatency>
+              </ProxyInstrumentDevice>
+            </Devices></DeviceChain>
+          </DeviceChain>
+        </MidiTrack></Tracks></LiveSet></Ableton>"#;
+        let set = parse(xml, Path::new("/sets")).unwrap();
+        let t = &set.tracks[0];
+        let Some(crate::devices::Settings::External(e)) = &t.devices[0].builtin else {
+            panic!("no External Instrument: {:?}", t.devices);
+        };
+        assert_eq!(t.devices[0].name, "External Instrument");
+        assert_eq!(e.latency_ms, 12.5);
+        assert_eq!(e.audio_in, Some((2, true)));
+        assert_eq!(t.io.midi_to, e.midi_to);
+        assert!(t.io.midi_to.is_some());
+        assert_eq!(t.io.audio_in, Some((2, true)));
+    }
 
     #[test]
     fn routings() {
