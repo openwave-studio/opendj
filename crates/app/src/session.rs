@@ -15,7 +15,8 @@ use std::time::Duration;
 use opendj_control::ControlRegistry;
 use opendj_engine::AudioEngine;
 use opendj_studio_engine::als;
-use opendj_studio_engine::clip::{Track, SCENES};
+use opendj_studio_engine::clip::{Sound, Track, SCENES};
+use opendj_studio_engine::control::{fader_gain, pan_text, UNITY};
 use opendj_studio_engine::engine::{Command, Remote, SlotState, Studio};
 use opendj_studio_engine::session::{self, SessionThread};
 use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
@@ -49,6 +50,31 @@ struct Running {
 impl Running {
     fn send(&mut self, cmd: Command) {
         let _ = self.remote.commands.push(cmd);
+    }
+
+    /// Changes a track's strip, then sends every track's gain: a solo
+    /// silences the tracks without one.
+    fn strip(&mut self, track: i32, change: impl FnOnce(&mut SessionTrack)) {
+        let Some(mut lane) = usize::try_from(track)
+            .ok()
+            .and_then(|t| self.lanes.row_data(t))
+        else {
+            return;
+        };
+        change(&mut lane);
+        lane.pan_text = pan_text(lane.pan).into();
+        self.lanes.set_row_data(track as usize, lane);
+        let soloing = self.lanes.iter().any(|l| l.solo);
+        for t in 0..self.tracks {
+            let Some(l) = self.lanes.row_data(t) else {
+                continue;
+            };
+            let heard = !l.mute && (l.solo || !soloing);
+            self.send(Command::Volume {
+                track: t,
+                gain: if heard { fader_gain(l.volume) } else { 0.0 },
+            });
+        }
     }
 }
 
@@ -85,6 +111,31 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, registry: Arc<ControlRe
     ui.on_stop(|track| with_running(|r| r.send(Command::Stop(track as usize))));
     ui.on_scene(|scene| with_running(|r| r.send(Command::Scene(scene as usize))));
     ui.on_stop_all(|| with_running(|r| r.send(Command::StopAll)));
+    ui.on_set_volume(|track, position| {
+        with_running(|r| r.strip(track, |l| l.volume = position.clamp(0.0, 1.0)))
+    });
+    let weak = app.as_weak();
+    ui.on_set_main_volume(move |position| {
+        let position = position.clamp(0.0, 1.0);
+        with_running(|r| r.send(Command::MainVolume(fader_gain(position))));
+        if let Some(app) = weak.upgrade() {
+            app.global::<SessionUi>().set_main_volume(position);
+        }
+    });
+    ui.on_set_pan(|track, pan| {
+        with_running(|r| {
+            let pan = pan.clamp(0.0, 1.0);
+            // Snaps to the centre near it.
+            let pan = if (pan - 0.5).abs() < 0.03 { 0.5 } else { pan };
+            r.strip(track, |l| l.pan = pan);
+            r.send(Command::Pan {
+                track: track as usize,
+                pan,
+            });
+        })
+    });
+    ui.on_toggle_mute(|track| with_running(|r| r.strip(track, |l| l.mute = !l.mute)));
+    ui.on_toggle_solo(|track| with_running(|r| r.strip(track, |l| l.solo = !l.solo)));
 }
 
 fn with_running(f: impl FnOnce(&mut Running)) {
@@ -201,10 +252,15 @@ fn color(rgb: u32) -> Color {
     Color::from_rgb_u8((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8)
 }
 
-/// Whether dark text reads better than white on `rgb`.
-fn light(rgb: u32) -> bool {
-    let [r, g, b] = [rgb >> 16, rgb >> 8, rgb].map(|c| f32::from((c & 0xff) as u8) / 255.0);
-    0.299 * r + 0.587 * g + 0.114 * b > 0.6
+/// A meter's next height (0..1 over -60..+6 dB) from its last height and
+/// the peak since: jumps up, falls back about 20 dB a second (as Studio's).
+fn meter(last: f32, peak: f32) -> f32 {
+    let now = if peak > 0.0 {
+        ((20.0 * peak.log10() + 60.0) / 66.0).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    now.max(last - 0.01)
 }
 
 /// Starts `opened` on the Session channel, in place of what played there.
@@ -226,9 +282,20 @@ fn start(app: &AppWindow, opened: Opened, rate: f64) {
         .map(|(i, t)| SessionTrack {
             name: t.name.clone().into(),
             color: color(t.color.unwrap_or_else(|| als::color(i))),
-            light: light(t.color.unwrap_or_else(|| als::color(i))),
             progress: -1.0,
-            peak: 0.0,
+            kind: if t.sound == Sound::Audio {
+                "AUDIO"
+            } else {
+                "MIDI"
+            }
+            .into(),
+            stopping: false,
+            level: 0.0,
+            volume: t.volume.unwrap_or(UNITY),
+            pan: t.pan,
+            pan_text: pan_text(t.pan).into(),
+            mute: false,
+            solo: false,
         })
         .collect();
     let mut slots = Vec::with_capacity(scenes * tracks.len());
@@ -264,6 +331,8 @@ fn start(app: &AppWindow, opened: Opened, rate: f64) {
     ui.set_name(name.into());
     ui.set_note(note.into());
     ui.set_scenes(scenes as i32);
+    ui.set_main_volume(UNITY);
+    ui.set_main_level(0.0);
     ui.set_tracks(ModelRc::from(lanes.clone()));
     ui.set_slots(ModelRc::from(slots.clone()));
     ui.set_open(true);
@@ -317,16 +386,22 @@ fn tick(app: &AppWindow) {
                 continue;
             };
             let progress = m.progress(t);
-            let peak = m.take_peak(t).min(1.0);
-            // Falls back slowly, as the decks' meters do.
-            let peak = peak.max(lane.peak * 0.85);
-            if (lane.progress - progress).abs() > 0.002 || (lane.peak - peak).abs() > 0.01 {
+            let level = meter(lane.level, m.take_peak(t));
+            let stopping = m.stopping(t);
+            if (lane.progress - progress).abs() > 0.002
+                || (lane.level - level).abs() > 0.002
+                || lane.stopping != stopping
+            {
                 lane.progress = progress;
-                lane.peak = peak;
+                lane.level = level;
+                lane.stopping = stopping;
                 r.lanes.set_row_data(t, lane);
             }
         }
-        app.global::<SessionUi>().set_playing(m.playing());
+        let ui = app.global::<SessionUi>();
+        ui.set_playing(m.playing());
+        ui.set_blink(m.beat().rem_euclid(1.0) < 0.5);
+        ui.set_main_level(meter(ui.get_main_level(), m.take_main_peak()));
     });
 }
 

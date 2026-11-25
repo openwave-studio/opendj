@@ -14,7 +14,7 @@
 - [ ] 2.2 The selected track's devices along the bottom
 - [ ] 2.3 The Jam tree on the left (Instruments, Presets, Effects), hideable; the rail's Library switches it to a compact track list
 - [ ] 2.4 The Session bar above the footer in other views
-- [ ] 2.5 The grid takes the browser area and both side panels, left rail kept, with track faders
+- [x] 2.5 The grid takes the browser area and the right side panel, left rail kept, with a mixer strip per track (pan, fader, meters, activator, solo) and Main (scenes, Stop all, main fader), as openDJ Studio lays them out
 
 ## 3. Adding to the Session
 
