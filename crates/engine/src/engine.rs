@@ -171,6 +171,10 @@ struct HotcueLaunch {
 struct PendingHotcue {
     launch: HotcueLaunch,
     at: f64,
+    /// `play` and `cue_default` versions when it was queued: a pause, play or
+    /// CUE press while it waits cancels it.
+    play: u32,
+    cue: u32,
 }
 
 /// Left and right gains for balance `pan` (-1 left, 1 right): the side
@@ -699,6 +703,11 @@ impl Deck {
         // Where the track is before this buffer's jumps: a slip that starts
         // now runs on from here.
         let unslipped = self.pos;
+        if self.pending_hotcue.is_some_and(|pending| {
+            pending.play != self.c.play.version() || pending.cue != self.c.cue_default.version()
+        }) {
+            self.pending_hotcue = None;
+        }
         if self
             .pending_hotcue
             .is_some_and(|pending| pending.at <= self.clock + 1e-9)
@@ -3047,7 +3056,12 @@ impl Engine {
             let d = &mut self.decks[i];
             d.pending_hotcue = None;
             if let Some(at) = pending_at {
-                d.pending_hotcue = Some(PendingHotcue { launch, at });
+                d.pending_hotcue = Some(PendingHotcue {
+                    launch,
+                    at,
+                    play: d.c.play.version(),
+                    cue: d.c.cue_default.version(),
+                });
             } else {
                 d.launch_hotcue(launch);
             }
@@ -6537,6 +6551,44 @@ mod tests {
         run(&mut engine, 0.3);
         assert!(engine.decks[1].pending_hotcue.is_none());
         assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn pausing_or_cue_cancels_a_waiting_hot_cue() {
+        for control in ["play", "cue_default"] {
+            let (reg, mut engine, mut input) = setup();
+            let leader = short_track(120.0, 30.0);
+            let follower = short_track(120.0, 30.0);
+            load(&mut input, 0, leader.clone());
+            load(&mut input, 1, follower.clone());
+            run(&mut engine, 0.02);
+            let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+            for d in ["[Channel1]", "[Channel2]"] {
+                c(d, "play").set_bool(true);
+            }
+            c("[Channel2]", "sync_enabled").set_bool(true);
+            c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+            c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+            c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+            run(&mut engine, 0.37);
+
+            press(&reg, "[Channel2]", "hotcue_1_activate");
+            run(&mut engine, 0.01);
+            assert!(engine.decks[1].pending_hotcue.is_some(), "{control}");
+
+            // Pause, or CUE on a playing deck (which stops it at the cue).
+            if control == "play" {
+                c("[Channel2]", "play").set_bool(false);
+            } else {
+                press(&reg, "[Channel2]", "cue_default");
+            }
+            run(&mut engine, 0.3);
+            assert!(engine.decks[1].pending_hotcue.is_none(), "{control}");
+            assert!(!c("[Channel2]", "play").get_bool(), "{control}");
+            let beat = follower.beat_at(engine.decks[1].seconds());
+            assert!((beat - 8.0).abs() > 0.5, "{control} launched: beat {beat}");
+        }
     }
 
     /// A controller's delete is pressed and let go between two blocks; it
