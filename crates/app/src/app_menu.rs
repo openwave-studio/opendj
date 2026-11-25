@@ -56,6 +56,8 @@ pub enum Action {
     ShowLogs,
     /// Looks for a new version when openDJ starts; a tick.
     CheckForUpdates,
+    /// Opens the phone remote's panel.
+    Remote,
 }
 
 /// The tour's parts and the tutorials, in Help's order.
@@ -83,7 +85,7 @@ const UPDATE_CHECK: &str = "update_check";
 const USER_GUIDE: &str = "https://opendj.app/docs";
 
 impl Action {
-    const ALL: [Action; 34] = [
+    const ALL: [Action; 35] = [
         Action::Settings,
         Action::Quit,
         Action::Undo,
@@ -118,6 +120,8 @@ impl Action {
         Action::SuggestFeature,
         Action::ShowLogs,
         Action::CheckForUpdates,
+        // Last, so the other items keep their numbers.
+        Action::Remote,
     ];
 
     /// Its number, as the ☰ menu and the macOS menu items carry it.
@@ -155,6 +159,7 @@ impl Action {
                 | Action::ShowLogs
                 | Action::CheckForUpdates
                 | Action::RecordMix
+                | Action::Remote
                 | Action::MiniPlayer
                 | Action::KaraokeScreen
                 | Action::ZoomIn
@@ -196,6 +201,13 @@ pub const MENUS: &[Menu] = &[
             Entry::Item {
                 action: Action::RecordMix,
                 title: "Record Mix",
+                key: None,
+            },
+            // The phone remote: its pill shows in the top bar only while
+            // it is on.
+            Entry::Item {
+                action: Action::Remote,
+                title: "Remote…",
                 key: None,
             },
             Entry::Separator,
@@ -645,6 +657,10 @@ pub fn run(app: &AppWindow, action: Action) {
             let on = !crate::settings::flag(UPDATE_CHECK, true);
             crate::settings::set(UPDATE_CHECK, serde_json::json!(on));
             set_checked(action, on);
+        }
+        Action::Remote => {
+            let remote = app.global::<crate::RemoteUi>();
+            remote.set_open_requests(remote.get_open_requests() + 1);
         }
         Action::RecordMix => {
             let controls = app.global::<crate::Controls>();

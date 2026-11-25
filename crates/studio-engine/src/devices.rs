@@ -167,6 +167,51 @@ pub enum Settings {
     Gate(fx::GateSettings),
     Overdrive(fx::OverdriveSettings),
     Roar(fx::RoarSettings),
+    External(ExternalSettings),
+}
+
+/// Live's External Instrument: the track's notes go out to a hardware
+/// synth, and its sound comes back in from an input, moved earlier by the
+/// hardware's latency so it lands on the beat.
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct ExternalSettings {
+    /// The MIDI output and channel (0..16) the notes go to.
+    pub midi_to: Option<(String, u8)>,
+    /// The input the synth comes back on: first channel (0-based) and
+    /// whether it is a stereo pair.
+    pub audio_in: Option<(u16, bool)>,
+    /// How late the synth's sound comes back, in ms: the notes go out this
+    /// much early.
+    pub latency_ms: f32,
+    pub gain_db: f32,
+}
+
+/// The longest hardware latency the External Instrument takes, in ms.
+pub const MAX_LATENCY_MS: f32 = 200.0;
+
+impl ExternalSettings {
+    /// Its routing shows in the track's I/O section, which edits it.
+    pub fn summary(&self) -> String {
+        format!(
+            "{:.1} ms hardware latency · {:+.1} dB",
+            self.latency_ms, self.gain_db
+        )
+    }
+
+    fn params(&self) -> Vec<Param> {
+        vec![
+            Param::knob("Gain", self.gain_db, -36.0, 36.0, Unit::Db).bipolar(),
+            Param::knob("Latency", self.latency_ms, 0.0, MAX_LATENCY_MS, Unit::Ms),
+        ]
+    }
+
+    fn set(&mut self, i: usize, v: f32) {
+        match i {
+            0 => self.gain_db = v.clamp(-36.0, 36.0),
+            1 => self.latency_ms = v.clamp(0.0, MAX_LATENCY_MS),
+            _ => {}
+        }
+    }
 }
 
 impl Settings {
@@ -202,6 +247,7 @@ impl Settings {
             Settings::Gate(g) => g.summary(),
             Settings::Overdrive(o) => o.summary(),
             Settings::Roar(r) => r.summary(),
+            Settings::External(e) => e.summary(),
         }
     }
 
@@ -217,6 +263,7 @@ impl Settings {
             Settings::Gate(g) => g.params(),
             Settings::Overdrive(o) => o.params(),
             Settings::Roar(r) => r.params(),
+            Settings::External(e) => e.params(),
         }
     }
 
@@ -245,6 +292,7 @@ impl Settings {
             Settings::Gate(g) => g.set(i, v),
             Settings::Overdrive(o) => o.set(i, v),
             Settings::Roar(r) => r.set(i, v),
+            Settings::External(e) => e.set(i, v),
         }
     }
 }
@@ -597,6 +645,9 @@ pub enum Device {
     Gate(fx::Gate),
     Overdrive(Box<fx::Overdrive>),
     Roar(Box<fx::Roar>),
+    /// The input comes in before the chain runs (the engine adds it), so
+    /// this only sets its level and holds the latency.
+    External(ExternalSettings),
 }
 
 impl Device {
@@ -610,6 +661,7 @@ impl Device {
             Settings::Gate(g) => Device::Gate(fx::Gate::new(g, rate)),
             Settings::Overdrive(o) => Device::Overdrive(Box::new(fx::Overdrive::new(o, rate))),
             Settings::Roar(r) => Device::Roar(Box::new(fx::Roar::new(r, rate))),
+            Settings::External(e) => Device::External(e.clone()),
         }
     }
 
@@ -631,6 +683,15 @@ impl Device {
             Device::Gate(g) => g.set(i, v),
             Device::Overdrive(o) => o.set(i, v),
             Device::Roar(r) => r.set(i, v),
+            Device::External(e) => e.set(i, v),
+        }
+    }
+
+    /// An External Instrument's hardware latency, in ms.
+    pub fn latency_ms(&self) -> Option<f32> {
+        match self {
+            Device::External(e) => Some(e.latency_ms),
+            _ => None,
         }
     }
 
@@ -645,6 +706,13 @@ impl Device {
             Device::Gate(g) => g.process(buf),
             Device::Overdrive(o) => o.process(buf),
             Device::Roar(r) => r.process(buf),
+            Device::External(e) => {
+                let g = from_db(e.gain_db);
+                for f in buf.iter_mut() {
+                    f[0] *= g;
+                    f[1] *= g;
+                }
+            }
         }
     }
 }
@@ -966,6 +1034,7 @@ mod tests {
             Settings::Gate(fx::GateSettings::default()),
             Settings::Overdrive(fx::OverdriveSettings::default()),
             Settings::Roar(fx::RoarSettings::default()),
+            Settings::External(ExternalSettings::default()),
         ];
         for s in all {
             let params = s.params();

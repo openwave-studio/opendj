@@ -6,6 +6,8 @@
 // one while the library would get too little room.
 import { Theme } from "theme.slint";
 import { WaveLook } from "wave_look.slint";
+import { WaveZoom } from "zoom.slint";
+import { Switch } from "controls.slint";
 
 export global WaveHeight {
     // Each layout's step, by layout number (0 2-Deck, 1 Player,
@@ -36,24 +38,139 @@ export global WaveHeight {
     }
 }
 
-// A few choices side by side, the chosen one lit; `swatches` puts three
-// small colour blocks before each choice's name (3-Band's palettes).
+// A title at the left of a row, all the same width so the controls line up.
+component RowTitle inherits Text {
+    width: 64px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: Theme.text-dim;
+    vertical-alignment: center;
+}
+
+// A slider over `steps` steps, its value at the right. It follows the
+// pointer (`changed` with `slide`) and settles on the nearest step when
+// let go; arrow keys move a step and a double-click goes back to the
+// default. Steps above `fits` are dimmer.
+component WaveSlider inherits HorizontalLayout {
+    in property <int> steps: 10;
+    in property <int> default-level: 1;
+    in property <int> fits: 1000;
+    // Where it is now, possibly between steps.
+    in property <float> shown: 1;
+    in property <string> readout;
+    out property <float> slide;
+    out property <bool> sliding;
+    property <float> at-level: sliding ? slide : shown;
+    callback changed();
+    callback settled(step: int);
+    callback stepped(by: int);
+    callback reset();
+    spacing: 10px;
+    track := Rectangle {
+        height: 28px;
+        horizontal-stretch: 1;
+        property <length> span: self.width - 16px;
+        property <float> at: (at-level - 1) / (steps - 1);
+        Rectangle { x: 8px; y: 12px; width: track.span; height: 4px; border-radius: 2px; background: Theme.panel-raised.brighter(0.3); }
+        Rectangle { x: 8px; y: 12px; width: track.span * track.at; height: 4px; border-radius: 2px; background: Theme.accent; }
+        for i in steps: Rectangle {
+            x: 8px + track.span * i / (steps - 1) - 1px;
+            y: 20px;
+            width: 2px;
+            height: i + 1 == default-level ? 6px : 4px;
+            background: i + 1 > fits ? Theme.text-dim.with-alpha(0.25) : i + 1 == default-level ? Theme.text-dim : Theme.text-dim.with-alpha(0.55);
+        }
+        Rectangle {
+            x: 8px + track.span * track.at - 8px;
+            y: 6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            background: Theme.text;
+            border-width: 2px;
+            border-color: Theme.accent;
+            drop-shadow-blur: 4px;
+            drop-shadow-color: Theme.s-000000c0;
+        }
+        keys := FocusScope {
+            key-pressed(e) => {
+                if e.text == Key.RightArrow || e.text == Key.UpArrow {
+                    root.stepped(1);
+                    return accept;
+                }
+                if e.text == Key.LeftArrow || e.text == Key.DownArrow {
+                    root.stepped(-1);
+                    return accept;
+                }
+                reject
+            }
+        }
+        TouchArea {
+            mouse-cursor: pointer;
+            pure function level-at(x: length) -> float {
+                1 + clamp((x - 8px) / max(track.span, 1px), 0, 1) * (steps - 1)
+            }
+            double-clicked => { root.reset(); }
+            pointer-event(e) => {
+                if e.button != PointerEventButton.left {
+                    return;
+                }
+                if e.kind == PointerEventKind.down {
+                    keys.focus();
+                    root.slide = level-at(self.mouse-x);
+                    root.sliding = true;
+                    root.changed();
+                } else if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) && root.sliding {
+                    root.sliding = false;
+                    root.settled(round(root.slide));
+                }
+            }
+            moved => {
+                if self.pressed && root.sliding {
+                    root.slide = level-at(self.mouse-x);
+                    root.changed();
+                }
+            }
+        }
+    }
+    Rectangle {
+        width: 44px;
+        height: 24px;
+        y: 2px;
+        border-radius: 6px;
+        background: Theme.panel-raised.brighter(0.2);
+        Text {
+            text: root.readout;
+            color: Theme.text;
+            font-family: "Inter Tabular";
+            font-size: 12px;
+            font-weight: 700;
+        }
+    }
+}
+
+// Choices side by side, the chosen one lit; a click picks one.
 component WaveSegments inherits Rectangle {
     in property <[string]> choices;
     in property <int> chosen;
+    // Small color swatches before each choice's name, if any.
     in property <[[color]]> swatches;
     callback picked(index: int);
-    height: 28px;
+    height: 26px;
+    horizontal-stretch: 1;
     border-radius: 8px;
-    background: Theme.panel-raised.brighter(0.12);
+    background: Theme.pill;
     HorizontalLayout {
         padding: 2px;
         spacing: 2px;
         for c[i] in choices: Rectangle {
             property <bool> on: i == chosen;
             horizontal-stretch: 1;
+            min-width: 0px;
+            preferred-width: 0px;
             border-radius: 6px;
-            background: on ? Theme.accent.with-alpha(0.25) : sta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
+            background: on ? Theme.accent.with-alpha(0.25) : sta.has-hover ? Theme.pill-hover : transparent;
             border-width: 1px;
             border-color: on ? Theme.accent : transparent;
             HorizontalLayout {
@@ -62,16 +179,17 @@ component WaveSegments inherits Rectangle {
                 if i < swatches.length: HorizontalLayout {
                     alignment: center;
                     spacing: 1px;
-                    padding-top: 8px;
-                    padding-bottom: 8px;
+                    padding-top: 7px;
+                    padding-bottom: 7px;
                     for sw in swatches[i]: Rectangle { width: 5px; border-radius: 1px; background: sw; }
                 }
                 Text {
                     text: c;
                     color: on ? Theme.text : Theme.text-dim;
                     font-size: 12px;
-                    font-weight: on ? 700 : 500;
+                    font-weight: on ? 600 : 500;
                     vertical-alignment: center;
+                    overflow: elide;
                 }
             }
             sta := TouchArea {
@@ -82,255 +200,189 @@ component WaveSegments inherits Rectangle {
     }
 }
 
-component WaveLabel inherits Text {
-    color: Theme.text-dim;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.6px;
-    vertical-alignment: center;
-}
-
-// An ⓘ beside a name: a click shows what it means.
-component WaveInfo inherits Rectangle {
+// A choice that is on or off by itself, lit while on.
+component WaveChip inherits Rectangle {
     in property <string> text;
-    width: 14px;
-    height: 14px;
-    border-radius: 7px;
+    in property <bool> on;
+    callback toggled(on: bool);
+    height: 26px;
+    horizontal-stretch: 1;
+    min-width: 0px;
+    preferred-width: 0px;
+    border-radius: 8px;
     border-width: 1px;
-    border-color: ita.has-hover ? Theme.text : Theme.text-dim;
+    border-color: on ? Theme.accent : Theme.n-2c2c31;
+    background: on ? Theme.accent.with-alpha(0.14) : cta.has-hover ? Theme.pill-hover : Theme.pill;
     Text {
-        text: "i";
-        color: ita.has-hover ? Theme.text : Theme.text-dim;
-        font-size: 10px;
-        font-weight: 700;
-        horizontal-alignment: center;
+        text: root.text;
+        color: on ? Theme.text : Theme.text-dim;
+        font-size: 12px;
+        font-weight: on ? 600 : 500;
         vertical-alignment: center;
     }
-    ita := TouchArea {
+    cta := TouchArea {
         mouse-cursor: pointer;
-        clicked => { tip.show(); }
-    }
-    tip := PopupWindow {
-        x: 0;
-        y: root.height + 6px;
-        width: 240px;
-        Rectangle {
-            background: Theme.panel-raised;
-            border-radius: 8px;
-            border-width: 1px;
-            border-color: Theme.border;
-            drop-shadow-blur: 10px;
-            drop-shadow-color: Theme.s-000000c0;
-        }
-        VerticalLayout {
-            padding: 10px;
-            Text { text: root.text; color: Theme.text; font-size: 12px; wrap: word-wrap; }
-        }
+        clicked => { root.toggled(!root.on); }
     }
 }
 
-// A section's name, and what its choices mean behind an ⓘ.
-component WaveHeading inherits HorizontalLayout {
-    in property <string> text;
-    in property <string> hint;
-    spacing: 6px;
-    WaveLabel { text: root.text; }
-    VerticalLayout {
-        alignment: center;
-        WaveInfo { text: root.hint; }
-    }
-    Rectangle { horizontal-stretch: 1; }
+// A row: its title at the left, its control filling the rest.
+component WaveRow inherits HorizontalLayout {
+    in property <string> title;
+    height: 30px;
+    spacing: 8px;
+    RowTitle { text: root.title; }
+    @children
 }
 
-// The waveforms button's drop-down: the height as a slider, then how the
-// waveforms look (type, color, needle, vocals and phrases). Dragging the slider resizes the waveforms as it moves
-// and settles on the nearest of the ten steps when let go; arrow keys
-// move a step. `fits` is the highest step the window has room for now; a
+// The waveforms button's drop-down: the height and zoom as sliders, then
+// how the waveforms look, each a title with its choices side by side, and
+// lyrics as a switch. No lists to open: every choice is one click. Dragging the height slider resizes the waveforms
+// as it moves and settles on the nearest of the ten steps when let go;
+// arrow keys move a step. `fits` is the highest step the window has room for now; a
 // higher one can still be chosen and shows once there is room.
 export component WaveHeightList inherits VerticalLayout {
     in property <int> fits: 10;
     // A choice was made (the window shows the waveforms if hidden).
     callback picked();
     padding: 12px;
-    padding-top: 10px;
-    spacing: 8px;
-    property <float> shown-level: WaveHeight.sliding ? WaveHeight.slide : WaveHeight.level;
-    HorizontalLayout {
-        WaveLabel { text: "WAVEFORM HEIGHT"; }
+    padding-top: 8px;
+    spacing: 6px;
+    WaveRow {
+        title: "HEIGHT";
+        WaveSlider {
+            steps: WaveHeight.steps;
+            default-level: WaveHeight.default-level;
+            fits: root.fits;
+            shown: WaveHeight.level;
+            readout: round(self.sliding ? self.slide : WaveHeight.level);
+            changed => {
+                WaveHeight.slide = self.slide;
+                WaveHeight.sliding = true;
+            }
+            settled(step) => {
+                WaveHeight.sliding = false;
+                WaveHeight.pick(step);
+                root.picked();
+            }
+            stepped(by) => {
+                WaveHeight.step(by);
+                root.picked();
+            }
+            reset => {
+                WaveHeight.reset();
+                root.picked();
+            }
+        }
+    }
+    WaveRow {
+        title: "ZOOM";
+        WaveSlider {
+            steps: WaveZoom.steps;
+            default-level: WaveZoom.default-level;
+            shown: WaveZoom.position;
+            readout: WaveZoom.percent(self.sliding ? round(self.slide) : WaveZoom.level);
+            changed => { WaveZoom.seek(self.slide); }
+            settled(step) => { WaveZoom.set-level(step); }
+            stepped(by) => { WaveZoom.step(by); }
+            reset => { WaveZoom.reset(); }
+        }
+    }
+    Rectangle { height: 1px; background: Theme.border; }
+    WaveRow {
+        title: "SIZE";
+        WaveSegments {
+            choices: ["Full", "Half"];
+            chosen: WaveLook.half ? 1 : 0;
+            picked(i) => {
+                WaveLook.pick-half(i == 1);
+                root.picked();
+            }
+        }
+    }
+    WaveRow {
+        title: "STYLE";
+        WaveSegments {
+            choices: ["RGB", "3-Band", "Stems"];
+            chosen: WaveLook.color;
+            picked(i) => {
+                WaveLook.pick-color(i);
+                root.picked();
+            }
+        }
+    }
+    // RGB's palette, only with RGB.
+    if WaveLook.color == 0: WaveRow {
+        title: "COLOR";
+        WaveSegments {
+            choices: ["Red-Amber", "Red-Green-Blue"];
+            swatches: [[Theme.f-c8372d, Theme.f-f0a830, Theme.f-b4e4ff], [Theme.f-e8322a, Theme.f-3cd25a, Theme.f-3c82ff]];
+            chosen: WaveLook.rgb-palette;
+            picked(i) => {
+                WaveLook.pick-rgb-palette(i);
+                root.picked();
+            }
+        }
+    }
+    // The 3-Band palette, only with 3-Band.
+    if WaveLook.color == 1: WaveRow {
+        title: "COLOR";
+        WaveSegments {
+            choices: ["Blue-Orange", "Lilac-Cyan"];
+            swatches: [[Theme.f-0050e0, Theme.f-f8a000, Theme.f-f0e8d0], [Theme.f-b69cff, Theme.f-22c7e0, Theme.f-f4fbff]];
+            chosen: WaveLook.palette;
+            picked(i) => {
+                WaveLook.pick-palette(i);
+                root.picked();
+            }
+        }
+    }
+    WaveRow {
+        title: "NEEDLE";
+        WaveSegments {
+            choices: ["Center", "Left"];
+            chosen: WaveLook.needle < 0.5 ? 1 : 0;
+            picked(i) => {
+                WaveLook.pick-needle-left(i == 1);
+                root.picked();
+            }
+        }
+    }
+    // Phrases as two toggles: the bar on the overviews, the flags on the
+    // large waveforms (both lit is Both, neither is Off).
+    WaveRow {
+        title: "PHRASES";
+        spacing: 8px;
+        WaveChip {
+            text: "Overview";
+            on: mod(WaveLook.phrases, 2) == 1;
+            toggled(on) => {
+                WaveLook.pick-phrases((on ? 1 : 0) + (WaveLook.phrases >= 2 ? 2 : 0));
+                root.picked();
+            }
+        }
+        WaveChip {
+            text: "Waveform";
+            on: WaveLook.phrases >= 2;
+            toggled(on) => {
+                WaveLook.pick-phrases(mod(WaveLook.phrases, 2) + (on ? 2 : 0));
+                root.picked();
+            }
+        }
+    }
+    // The track's timed lyrics along the bottom of the large waveforms.
+    WaveRow {
+        title: "LYRICS";
         Rectangle { horizontal-stretch: 1; }
-        if WaveHeight.level != WaveHeight.default-level && !WaveHeight.sliding: Text {
-            text: "Reset";
-            color: reset-ta.has-hover ? Theme.text : Theme.text-dim;
-            font-size: 11px;
-            vertical-alignment: center;
-            reset-ta := TouchArea {
-                mouse-cursor: pointer;
-                clicked => {
-                    WaveHeight.reset();
-                    picked();
+        VerticalLayout {
+            alignment: center;
+            Switch {
+                on: WaveLook.vocals == 2;
+                toggled(on) => {
+                    WaveLook.pick-vocals(on ? 2 : 0);
+                    root.picked();
                 }
             }
-        }
-    }
-    HorizontalLayout {
-        spacing: 10px;
-        track := Rectangle {
-            height: 28px;
-            horizontal-stretch: 1;
-            property <length> span: self.width - 16px;
-            property <float> at: (shown-level - 1) / (WaveHeight.steps - 1);
-            // The rail, lit up to the knob.
-            Rectangle { x: 8px; y: 12px; width: track.span; height: 4px; border-radius: 2px; background: Theme.panel-raised.brighter(0.3); }
-            Rectangle { x: 8px; y: 12px; width: track.span * track.at; height: 4px; border-radius: 2px; background: Theme.accent; }
-            // A tick at each step, the default one taller; steps that don't
-            // fit now are dimmer.
-            for i in WaveHeight.steps: Rectangle {
-                x: 8px + track.span * i / (WaveHeight.steps - 1) - 1px;
-                y: 20px;
-                width: 2px;
-                height: i + 1 == WaveHeight.default-level ? 6px : 4px;
-                background: i + 1 > fits ? Theme.text-dim.with-alpha(0.25) : i + 1 == WaveHeight.default-level ? Theme.text-dim : Theme.text-dim.with-alpha(0.55);
-            }
-            Rectangle {
-                x: 8px + track.span * track.at - 8px;
-                y: 6px;
-                width: 16px;
-                height: 16px;
-                border-radius: 8px;
-                background: Theme.text;
-                border-width: 2px;
-                border-color: Theme.accent;
-                drop-shadow-blur: 4px;
-                drop-shadow-color: Theme.s-000000c0;
-            }
-            keys := FocusScope {
-                key-pressed(e) => {
-                    if e.text == Key.RightArrow || e.text == Key.UpArrow {
-                        WaveHeight.step(1);
-                        picked();
-                        return accept;
-                    }
-                    if e.text == Key.LeftArrow || e.text == Key.DownArrow {
-                        WaveHeight.step(-1);
-                        picked();
-                        return accept;
-                    }
-                    reject
-                }
-            }
-            slide-ta := TouchArea {
-                mouse-cursor: pointer;
-                pure function level-at(x: length) -> float {
-                    1 + clamp((x - 8px) / max(track.span, 1px), 0, 1) * (WaveHeight.steps - 1)
-                }
-                pointer-event(e) => {
-                    if e.button != PointerEventButton.left {
-                        return;
-                    }
-                    if e.kind == PointerEventKind.down {
-                        keys.focus();
-                        WaveHeight.slide = level-at(self.mouse-x);
-                        WaveHeight.sliding = true;
-                    } else if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) && WaveHeight.sliding {
-                        let step = round(WaveHeight.slide);
-                        WaveHeight.sliding = false;
-                        WaveHeight.pick(step);
-                        picked();
-                    }
-                }
-                moved => {
-                    if self.pressed && WaveHeight.sliding {
-                        WaveHeight.slide = level-at(self.mouse-x);
-                    }
-                }
-            }
-        }
-        Rectangle {
-            width: 26px;
-            height: 24px;
-            y: 2px;
-            border-radius: 6px;
-            background: Theme.panel-raised.brighter(0.2);
-            Text {
-                text: round(shown-level);
-                color: Theme.text;
-                font-family: "Inter Tabular";
-                font-size: 12px;
-                font-weight: 700;
-            }
-        }
-    }
-    Rectangle { height: 2px; }
-    WaveLabel { text: "TYPE"; }
-    WaveSegments {
-        choices: ["Full", "Half"];
-        chosen: WaveLook.half ? 1 : 0;
-        picked(i) => {
-            WaveLook.pick-half(i == 1);
-            root.picked();
-        }
-    }
-    WaveLabel { text: "COLOR"; }
-    WaveSegments {
-        choices: ["RGB", "3-Band", "Stems"];
-        chosen: WaveLook.color;
-        picked(i) => {
-            WaveLook.pick-color(i);
-            root.picked();
-        }
-    }
-    if WaveLook.color == 1: WaveSegments {
-        choices: ["Blue-Orange", "Lilac-Cyan"];
-        swatches: [[Theme.f-0050e0, Theme.f-f8a000, Theme.f-f0e8d0], [Theme.f-b69cff, Theme.f-22c7e0, Theme.f-f4fbff]];
-        chosen: WaveLook.palette;
-        picked(i) => {
-            WaveLook.pick-palette(i);
-            root.picked();
-        }
-    }
-    WaveLabel { text: "NEEDLE"; }
-    WaveSegments {
-        choices: ["Center", "Left"];
-        chosen: WaveLook.needle < 0.5 ? 1 : 0;
-        picked(i) => {
-            WaveLook.pick-needle-left(i == 1);
-            root.picked();
-        }
-    }
-    WaveHeading {
-        text: "VOCALS";
-        hint: "Along the bottom of the large waveforms: a cyan bar where someone sings, or the track's timed lyrics.";
-    }
-    WaveSegments {
-        choices: ["Off", "Bar", "Lyrics"];
-        chosen: WaveLook.vocals;
-        picked(i) => {
-            WaveLook.pick-vocals(i);
-            root.picked();
-        }
-    }
-    WaveHeading {
-        text: "PHRASES";
-        hint: "Intro, build, drop and the rest: a colored bar along the bottom of the overviews, and a line with its name at each start on the large waveforms.";
-    }
-    WaveSegments {
-        choices: ["Off", "Overview", "Waveform", "Both"];
-        chosen: WaveLook.phrases;
-        picked(i) => {
-            WaveLook.pick-phrases(i);
-            root.picked();
-        }
-    }
-    WaveHeading {
-        text: "BPM LABELS";
-        hint: "The tempo on the large waveforms where it changes, in a gray tab, or after the phrase name when it changes at a phrase. Every grid marker shows while editing the grid.";
-    }
-    WaveSegments {
-        choices: ["Off", "On"];
-        chosen: WaveLook.tempo-labels ? 1 : 0;
-        picked(i) => {
-            WaveLook.pick-tempo-labels(i == 1);
-            root.picked();
         }
     }
 }

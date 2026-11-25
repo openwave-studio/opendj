@@ -802,12 +802,12 @@ component OnAirButton inherits Rectangle {
     property <int> status: Controls.value(Controls.resolve("[Shoutcast]", "status"), Controls.tick);
     property <float> seconds: Controls.value(Controls.resolve("[Broadcast]", "on_air_seconds"), Controls.tick);
     property <color> light: status == 2 ? Theme.f-e5484d : status == 3 ? Theme.n-7a7a80 : Theme.f-f5a524;
-    background: ta.pressed ? Theme.control-pressed : on ? Theme.f-e5484d.with-alpha(0.16) : ta.has-hover ? Theme.n-2e2e32 : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : on ? Theme.f-e5484d.with-alpha(0.16) : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? light : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? light : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 12px;
@@ -1160,10 +1160,12 @@ component LayoutChooser inherits Rectangle {
 component LayoutPill inherits Rectangle {
     in-out property <int> layout;
     callback changed-to(layout: int);
-    background: ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
-    height: 36px;
-    y: 8px;
+    border-width: 1px;
+    border-color: ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 12px;
@@ -1240,12 +1242,12 @@ component WaveformsButton inherits Rectangle {
     // The highest step the window has room for now.
     in property <int> fits: 10;
     callback changed-to(on: bool);
-    background: on ? Theme.accent.with-alpha(0.18) : Theme.panel-raised;
+    background: on ? Theme.accent.with-alpha(0.18) : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? Theme.accent : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? Theme.accent : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     clip: true;
     HorizontalLayout {
@@ -1254,17 +1256,7 @@ component WaveformsButton inherits Rectangle {
             HorizontalLayout {
                 padding-left: 12px;
                 padding-right: 10px;
-                // A small waveform.
-                Path {
-                    width: 16px;
-                    height: 12px;
-                    y: (parent.height - self.height) / 2;
-                    viewbox-width: 16;
-                    viewbox-height: 12;
-                    stroke: on ? Theme.accent : Theme.text-dim;
-                    stroke-width: 1.5px;
-                    commands: "M 1 5 L 1 7 M 4 3 L 4 9 M 7 0.5 L 7 11.5 M 10 2 L 10 10 M 13 4 L 13 8 M 15.5 5.5 L 15.5 6.5";
-                }
+                Text { text: "Wave"; color: on ? Theme.lilac-text : Theme.pill-off-text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
             }
             ta := TouchArea {
                 mouse-cursor: pointer;
@@ -1295,7 +1287,7 @@ component WaveformsButton inherits Rectangle {
     sizes := PopupWindow {
         x: 0px;
         y: root.height + 6px;
-        width: 300px;
+        width: 340px;
         close-policy: close-on-click-outside;
         Rectangle {
             background: Theme.pill-list;
@@ -1327,17 +1319,17 @@ component FxButton inherits Rectangle {
     callback unfold();
     property <bool> lit: on && !folded;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: lit ? Theme.accent : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: lit ? Theme.accent : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 11px;
         padding-right: 11px;
-        Text { text: "FX"; color: lit ? Theme.lilac-text : Theme.text-dim; font-size: 14px; font-weight: 700; font-italic: true; vertical-alignment: center; }
+        Text { text: "FX"; color: lit ? Theme.lilac-text : Theme.pill-off-text; font-size: 13px; font-weight: 700; font-italic: true; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -1363,12 +1355,12 @@ component PadsButton inherits Rectangle {
     callback unfold();
     property <bool> lit: on && !folded;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : lit ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: lit ? Theme.accent : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: lit ? Theme.accent : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 11px;
@@ -1406,12 +1398,12 @@ component PadsButton inherits Rectangle {
 component JogsButton inherits Rectangle {
     in-out property <bool> on;
     callback changed-to(on: bool);
-    background: ta.pressed ? Theme.control-pressed : on ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : on ? Theme.accent.with-alpha(0.18) : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
     border-width: 1px;
-    border-color: on ? Theme.accent : transparent;
-    height: 36px;
-    y: 8px;
+    border-color: on ? Theme.accent : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
     HorizontalLayout {
         padding-left: 11px;
@@ -1449,32 +1441,32 @@ component JogsButton inherits Rectangle {
 // output levels, Link and MIDI clock; LINK and CLOCK show while they are
 // on.
 component MasterPill inherits Rectangle {
-    in property <string> clock;
     property <bool> link: Controls.value(Controls.resolve("[Link]", "enabled"), Controls.tick) > 0;
     property <bool> midi-clock: Controls.value(Controls.resolve("[MidiClock]", "enabled"), Controls.tick) > 0;
     function open() {
         AudioSettings.refresh();
         panel.show();
     }
-    // No frame: the knob, meters and clock stand on the bar.
-    height: 44px;
-    y: 4px;
+    // One pill: the master knob, the left and right meters, then a ▾ that
+    // opens the Master panel (as a right-click on the knob does).
+    background: Theme.pill;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: arrow.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
     horizontal-stretch: 0;
-    ta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { open(); }
-    }
+    clip: true;
     HorizontalLayout {
         padding-left: 4px;
-        padding-right: 4px;
-        spacing: 8px;
+        spacing: 10px;
         VerticalLayout {
             alignment: center;
             ControlKnob {
                 group: "[Master]";
                 key: "gain";
                 label: "";
-                size: 34px;
+                size: 26px;
                 look: 4;
                 arc-color: Theme.accent;
                 right-clicked => { open(); }
@@ -1482,23 +1474,50 @@ component MasterPill inherits Rectangle {
         }
         VerticalLayout {
             alignment: center;
-            HorizontalLayout {
-                spacing: 2px;
-                VuMeter { group: "[Master]"; key: "VuMeterL"; width: 4px; height: 34px; segments: 14; }
-                VuMeter { group: "[Master]"; key: "VuMeterR"; width: 4px; height: 34px; segments: 14; }
-            }
+            spacing: 3px;
+            VuMeter { group: "[Master]"; key: "VuMeterL"; vertical: false; width: 76px; height: 4px; segments: 26; }
+            VuMeter { group: "[Master]"; key: "VuMeterR"; vertical: false; width: 76px; height: 4px; segments: 26; }
         }
         if link: Text { text: "LINK"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
         if midi-clock: Text { text: "CLOCK"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
-        VerticalLayout {
-            alignment: center;
-            spacing: 0px;
-            Text { text: clock; color: ta.has-hover ? Theme.n-ffffff : Theme.text; font-size: 14px; font-weight: 500; font-family: "Inter Tabular"; }
+        Rectangle {
+            width: 26px;
+            background: arrow.pressed ? Theme.control-pressed : arrow.has-hover ? Theme.n-ffffff10 : transparent;
+            Rectangle { x: 0; width: 1px; background: Theme.n-2c2c31; }
+            Path {
+                width: 8px;
+                height: 5px;
+                commands: "M 0 0 L 4 4 L 8 0";
+                stroke: arrow.has-hover ? Theme.text : Theme.text-dim;
+                stroke-width: 1.4px;
+                fill: transparent;
+            }
+            arrow := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { open(); }
+            }
         }
     }
     panel := MasterPanel {
         x: root.width - 300px;
         y: root.height + 4px;
+    }
+}
+
+// The time of day, in its own pill.
+component ClockPill inherits Rectangle {
+    in property <string> clock;
+    background: Theme.pill;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: Theme.n-2c2c31;
+    height: 32px;
+    y: 10px;
+    horizontal-stretch: 0;
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        Text { text: clock; color: Theme.text; font-size: 13px; font-weight: 500; font-family: "Inter Tabular"; vertical-alignment: center; }
     }
 }
 
@@ -2213,7 +2232,8 @@ export component AppWindow inherits Window {
                     // shows it too.
                     if BroadcastState.shown || Controls.value(Controls.resolve("[Shoutcast]", "enabled"), Controls.tick) > 0: OnAirButton { }
                     if !player || recording: RecordButton { }
-                    if !player: MasterPill { clock: clock; }
+                    if !player: MasterPill { }
+                    if !player: ClockPill { clock: clock; }
                 }
             }
 

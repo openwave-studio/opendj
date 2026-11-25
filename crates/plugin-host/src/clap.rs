@@ -911,6 +911,7 @@ pub fn load(
         out_layout,
         events: EventBuffer::with_capacity(MAX_PARAMS + MAX_EVENTS + 4),
         out_events: EventBuffer::with_capacity(64),
+        midi_out: Vec::with_capacity(MAX_EVENTS),
         ids: params.iter().map(|(id, _)| *id).collect(),
         sent: params.iter().map(|(_, p)| p.value as f32).collect(),
         steady: 0,
@@ -948,6 +949,8 @@ struct ClapEffect {
     out_layout: Vec<usize>,
     events: EventBuffer,
     out_events: EventBuffer,
+    /// What the plug-in sent in the last block, as MIDI.
+    midi_out: Vec<Midi>,
     ids: Vec<ClapId>,
     /// The values last sent to the plugin.
     sent: Vec<f32>,
@@ -980,7 +983,47 @@ fn transport_event(t: &Transport) -> TransportEvent {
     }
 }
 
+impl ClapEffect {
+    /// The plug-in's note and MIDI events from the last block, as MIDI 1.
+    fn collect_midi_out(&mut self) {
+        use clack_host::events::spaces::CoreEventSpace;
+        let byte = |v: f64| ((v * 127.0).round() as u8).clamp(1, 127);
+        let ch = |c: i16| c.clamp(0, 15) as u8;
+        for e in self.out_events.iter() {
+            if self.midi_out.len() == MAX_EVENTS {
+                break;
+            }
+            let frame = e.header().time();
+            let m = match e.as_core_event() {
+                Some(CoreEventSpace::NoteOn(n)) => {
+                    let p = n.pckn();
+                    Midi::note_on(
+                        frame,
+                        ch(p.raw_channel()),
+                        p.raw_key().clamp(0, 127) as u8,
+                        byte(n.velocity()),
+                    )
+                }
+                Some(CoreEventSpace::NoteOff(n)) => {
+                    let p = n.pckn();
+                    Midi::note_off(frame, ch(p.raw_channel()), p.raw_key().clamp(0, 127) as u8)
+                }
+                Some(CoreEventSpace::Midi(m)) => Midi {
+                    frame,
+                    data: m.data(),
+                },
+                _ => continue,
+            };
+            self.midi_out.push(m);
+        }
+    }
+}
+
 impl Effect for ClapEffect {
+    fn midi_out(&self) -> &[Midi] {
+        &self.midi_out
+    }
+
     fn process(
         &mut self,
         input: [&[f32]; CHANNELS],
@@ -1072,6 +1115,10 @@ impl Effect for ClapEffect {
             Err(_) => false,
         };
         self.steady += frames as u64;
+        self.midi_out.clear();
+        if ok {
+            self.collect_midi_out();
+        }
         for (ch, o) in output.into_iter().enumerate() {
             if ok {
                 o.copy_from_slice(&self.output[ch][..frames]);

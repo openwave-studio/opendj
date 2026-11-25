@@ -26,6 +26,7 @@ use crate::gridfit::GridMode;
 use crate::groove::{pick_source, GrooveBox};
 use crate::inputs::{
     Ducker, Input, InputFeed, Routing, AUXILIARIES, INSTRUMENT, MICROPHONE, MIXER, NUM_INPUTS,
+    SESSION,
 };
 use crate::key::{self, Key};
 use crate::keyshift::{transpose_factor, KeyShifter, MAX_RATE};
@@ -2310,6 +2311,15 @@ impl Engine {
         self.inputs[input].set_feed(feed)
     }
 
+    /// The Session plays from `source`, or nothing. Returns the old one, to
+    /// be dropped off the audio thread.
+    pub(crate) fn set_session(
+        &mut self,
+        source: Option<Box<dyn crate::inputs::SessionSource>>,
+    ) -> Option<Box<dyn crate::inputs::SessionSource>> {
+        self.inputs[SESSION].set_source(source)
+    }
+
     /// Input `input` plays the Mixer deck's Groove Box, or not.
     pub(crate) fn set_input_groove(&mut self, input: usize, on: bool) {
         self.inputs[input].set_groove(on);
@@ -4074,8 +4084,9 @@ impl Engine {
                 Routing::Deck
             } else if strips[i] {
                 Routing::Mixer { any_solo }
-            } else if i == MICROPHONE {
-                // The mic talks over the music with MIC, Mixer or not.
+            } else if i == MICROPHONE || i == SESSION {
+                // The mic talks over the music with MIC, Mixer or not; the
+                // Session is a channel of its own.
                 Routing::Main
             } else {
                 Routing::Off
@@ -4413,8 +4424,9 @@ impl Engine {
             } else {
                 self.ducker.next(duck, mic.live && gm > 0.0, m)
             };
-            // The auxiliary inputs and the instrument play with the music.
-            for input in std::iter::once(INSTRUMENT).chain(AUXILIARIES) {
+            // The auxiliary inputs, the instrument and the Session play
+            // with the music.
+            for input in [INSTRUMENT, SESSION].into_iter().chain(AUXILIARIES) {
                 let inp = &self.inputs[input];
                 let a = inp.buf[f];
                 // A Mixer strip is in its deck's sound instead.
@@ -8939,6 +8951,39 @@ mod tests {
         inst("mixer").set_bool(true);
         run(&mut engine, 0.05);
         assert!(engine.inputs[INSTRUMENT].in_mixer);
+    }
+
+    #[test]
+    fn the_session_plays_on_its_own_channel() {
+        use crate::inputs::{SessionSource, MIXER};
+        struct Steady;
+        impl SessionSource for Steady {
+            fn render(&mut self, out: &mut [[f32; 2]]) {
+                out.fill([0.25; 2]);
+            }
+        }
+        let (reg, mut engine, _input) = setup();
+        let ses = |k: &str| reg.get("[Session1]", k).unwrap();
+        assert!(!ses("input_configured").get_bool());
+        assert!(engine.set_session(Some(Box::new(Steady))).is_none());
+        assert!(ses("input_configured").get_bool());
+        // Off until the channel is turned on, as the aux inputs are.
+        assert!(run(&mut engine, 0.2) < 1e-4);
+        ses("main_mix").set_bool(true);
+        run(&mut engine, 0.05);
+        assert!(run(&mut engine, 0.2) > 0.1, "the Session is heard");
+        // A deck playing the Mixer doesn't take it: it has its own channel.
+        reg.get("[Channel1]", "live_input")
+            .unwrap()
+            .set(MIXER as f64);
+        run(&mut engine, 0.05);
+        assert!(run(&mut engine, 0.2) > 0.1);
+        // Its fader turns it down.
+        ses("volume").set(0.0);
+        run(&mut engine, 0.1);
+        assert!(run(&mut engine, 0.2) < 1e-4);
+        assert!(engine.set_session(None).is_some());
+        assert!(!ses("input_configured").get_bool());
     }
 
     #[test]

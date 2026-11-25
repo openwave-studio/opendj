@@ -16,3 +16,6 @@ rusty_link = "0.4"
 flate2 = "1"
 roxmltree = "0.21"
 realfft = "3.5"
+# The Session's own real-time thread in openDJ (already in the tree through
+# cpal).
+audio_thread_priority = { version = "0.35", default-features = false }

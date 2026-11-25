@@ -6658,6 +6658,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "libusb1-sys"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da050ade7ac4ff1ba5379af847a10a10a8e284181e060105bf8d86960ce9ce0f"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
 name = "linebender_resource_handle"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8275,9 +8287,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "opendj-studio"
+version = "1.0.0-dev"
+dependencies = [
+ "cpal",
+ "midir",
+ "opendj-engine",
+ "opendj-plugin-host",
+ "opendj-studio-engine",
+ "png 0.18.1",
+ "rtrb",
+ "rusb",
+ "rusty_link",
+ "serde_json",
+ "slint",
+ "slint-build",
+]
+
+[[package]]
 name = "opendj-studio-engine"
 version = "1.0.0-dev"
 dependencies = [
+ "audio_thread_priority",
  "flate2",
  "opendj-engine",
  "opendj-plugin-host",
@@ -9950,6 +9981,16 @@ dependencies = [
  "realfft",
  "visibility",
  "windowfunctions",
+]
+
+[[package]]
+name = "rusb"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab9f9ff05b63a786553a4c02943b74b34a988448671001e9a27e2f0565cc05a4"
+dependencies = [
+ "libc",
+ "libusb1-sys",
 ]
 
 [[package]]

@@ -1,7 +1,9 @@
 //! A taller top bar on macOS: the hidden title bar is made as
 //! tall as the app's own bar, and the traffic lights are centred in it.
 //! AppKit puts them back on a resize or a trip to full screen, so this is
-//! applied again after every window event.
+//! applied again after every window event. The title bar is kept only as
+//! wide as the traffic lights, so it doesn't take drags from the app's own
+//! controls under it.
 
 use objc2::rc::Retained;
 use objc2_app_kit::{NSView, NSWindowButton};
@@ -49,6 +51,11 @@ pub fn center_traffic_lights(window: &Window, height: f64) {
     };
     let mut frame = container.frame();
     frame.size.height = height;
+    // Only as wide as the buttons: AppKit moves the window on any drag
+    // in the title bar, so across the whole width it took drags meant for
+    // the app's controls (the master knob). The rest of the app's bar
+    // moves the window by itself (`drag-window` in main.slint).
+    frame.size.width = LEFT + STEP * 3.0 + 8.0;
     frame.origin.y = ns_window.frame().size.height - height;
     container.setFrame(frame);
     let button_height = close.frame().size.height;
