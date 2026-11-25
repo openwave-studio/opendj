@@ -37,7 +37,9 @@ pub mod import;
 pub mod inputs;
 pub mod key;
 pub mod keynet;
-mod keyshift;
+/// Time-stretching a source to any speed and key (Signalsmith Stretch);
+/// openDJ Studio's audio clips play through it too.
+pub mod keyshift;
 pub mod kits;
 pub mod latch;
 pub mod link;

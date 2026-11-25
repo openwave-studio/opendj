@@ -136,8 +136,9 @@ impl Sample {
         Audio::from_frames(self.rate as u32, frames)
     }
 
+    /// Frame `i` as floats, silence past the end.
     #[inline]
-    pub(crate) fn frame(&self, i: usize) -> [f32; 2] {
+    pub fn frame(&self, i: usize) -> [f32; 2] {
         let f = |v: i16| v as f32 * (1.0 / i16::MAX as f32);
         self.frames.get(i).map_or([0.0; 2], |&[l, r]| [f(l), f(r)])
     }

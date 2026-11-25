@@ -96,12 +96,23 @@ export component ScrollView {
     preferred-height: 100%;
     preferred-width: 100%;
 
+    // A view that grows, or content that narrows, can leave it scrolled
+    // past the end: a list stuck partway to the side with no bar to
+    // scroll it back. Keep the sideways scroll within what there is.
+    // (Lists reload their rows and restore their own vertical scroll, so
+    // that one is left alone.)
+    function keep-in-range() {
+        flickable.content-x = max(0px, min(flickable.content-x, flickable.content-width - flickable.width));
+    }
+
     flickable := Flickable {
         mouse-drag-pan-enabled: false;
         width: gutter ? parent.width - 12px : parent.width;
         // The horizontal bar's strip. Whether it shows depends only on the
         // widths, so taking it from the height can't loop.
         height: horizontal-bar.visible ? parent.height - 12px : parent.height;
+        changed width => { root.keep-in-range(); }
+        changed content-width => { root.keep-in-range(); }
         @children
     }
 
