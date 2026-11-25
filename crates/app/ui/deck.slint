@@ -559,52 +559,84 @@ component DeckCover inherits TouchArea {
 }
 
 // The key as a stepper pill, with the master badge under it.
-// A one-letter switch under a deck's key, lilac while on; its tip names
-// it on hover.
-component AutoLetter inherits Rectangle {
+// One of the automatic helpers in the deck options panel: its name and a
+// switch. While hovered, the panel shows what it does under the list.
+component DeckOptionRow inherits Rectangle {
     in property <string> id;
-    in property <string> text;
+    in property <string> title;
+    in property <string> tip;
     in property <bool> on;
-    in property <length> size: 15px;
-    in property <string> tip-title;
-    in property <string> tip-body;
-    property <bool> tip-mine;
-    width: size;
-    height: size;
-    border-radius: min(5px, size / 2.5);
-    border-width: 1px;
-    border-color: on ? Theme.n-6e58a8 : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
-    background: on ? Theme.accent.with-alpha(0.12) : Theme.pill;
-    Text {
-        text: root.text;
-        color: on ? Theme.lilac-text : ta.has-hover ? Theme.text : Theme.pill-off-text;
-        font-size: size >= 15px ? 9px : 7px;
-        font-weight: 600;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-    }
+    out property <bool> hovered: ta.has-hover;
+    height: 32px;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.pill-hover : transparent;
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => { DeckAuto.toggle(root.id, !root.on); }
-        changed has-hover => {
-            if !self.has-hover && tip-mine {
-                tip-mine = false;
-                HoverTip.shown = false;
-            }
+    }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 6px;
+        spacing: 8px;
+        Text { text: root.title; color: Theme.text; font-size: 13px; font-weight: 500; vertical-alignment: center; horizontal-stretch: 1; }
+        VerticalLayout {
+            alignment: center;
+            Switch { on: root.on; toggled(v) => { DeckAuto.toggle(root.id, v); } }
         }
     }
-    Timer {
-        interval: 600ms;
-        running: ta.has-hover && !tip-mine;
-        triggered => {
-            tip-mine = true;
-            HoverTip.title = root.tip-title;
-            HoverTip.body = root.tip-body;
-            // Under the letter, so it never shows at another control's spot.
-            HoverTip.right-aligned = false;
-            HoverTip.x = root.absolute-position.x;
-            HoverTip.y = root.absolute-position.y + root.height + 6px;
-            HoverTip.shown = true;
+}
+
+// A bolt for the deck options pill.
+component BoltIcon inherits Path {
+    in property <color> tint;
+    viewbox-width: 16;
+    viewbox-height: 16;
+    commands: "M 9.5 1.5 L 3.5 9 L 7.5 9 L 6.5 14.5 L 12.5 7 L 8.5 7 Z";
+    stroke: tint;
+    stroke-width: 1.4px;
+    fill: transparent;
+}
+
+// The bolt pill next to Master: lilac while any automatic helper is on; a
+// press opens the deck options panel with a switch for each.
+component DeckOptionsButton inherits Rectangle {
+    in property <length> size: 20px;
+    property <bool> any: DeckAuto.bpm || DeckAuto.key || DeckAuto.sync || DeckAuto.pitch;
+    width: size * 1.6;
+    height: size;
+    border-radius: min(6px, size / 2.5);
+    border-width: 1px;
+    border-color: any ? Theme.n-6e58a8 : ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    background: any ? Theme.accent.with-alpha(0.12) : Theme.pill;
+    BoltIcon {
+        width: size * 0.7;
+        height: size * 0.7;
+        tint: any ? Theme.lilac-text : ta.has-hover ? Theme.text : Theme.pill-off-text;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { panel.show(); }
+    }
+    panel := PopupWindow {
+        x: (root.width - 210px) / 2;
+        y: root.height + 4px;
+        width: 210px;
+        close-policy: close-on-click-outside;
+        TitledList {
+            title: "Deck options";
+            r1 := DeckOptionRow { id: "bpm_match_on_load"; title: "Match BPM"; on: DeckAuto.bpm; tip: "A track loaded while another deck plays takes its tempo, without syncing."; }
+            r2 := DeckOptionRow { id: "key_match_on_load"; title: "Match Key"; on: DeckAuto.key; tip: "A track loaded while another deck plays is shifted to mix with its key."; }
+            r3 := DeckOptionRow { id: "sync_on_play"; title: "Sync on Play"; on: DeckAuto.sync; tip: "PLAY lines the beats up with the other deck once."; }
+            r4 := DeckOptionRow { id: "keylock_default"; title: "Key Lock"; on: DeckAuto.pitch; tip: "Decks start with key lock on, so tempo changes keep the key."; }
+            // What the hovered helper does.
+            property <string> hint: r1.hovered ? r1.tip : r2.hovered ? r2.tip : r3.hovered ? r3.tip : r4.hovered ? r4.tip : "";
+            if hint != "": HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                padding-top: 4px;
+                padding-bottom: 2px;
+                Text { text: hint; color: Theme.text-dim; font-size: 11px; wrap: word-wrap; }
+            }
         }
     }
 }
@@ -659,20 +691,16 @@ component KeyBox inherits VerticalLayout {
           }
         }
     }
-    // Under the key: M the sync master, then the automatic helpers, all
-    // decks alike (Settings › Decks): B match tempo on load, K match key on
-    // load, S sync on play, P key lock on at start. Kept out of sight (but
-    // their room kept) on an empty deck.
+    // Under the key: Master (the sync master) and the deck options pill
+    // for the automatic helpers, all decks alike (Settings › Decks). Kept
+    // out of sight (but their room kept) on an empty deck.
     HorizontalLayout {
         alignment: center;
-        spacing: compact ? 2px : 3px;
+        spacing: compact ? 3px : 4px;
         visible: info.loaded;
-        property <length> side: compact ? 12px : 15px;
-        MasterBadge { group: group; letter: true; font-size: compact ? 7px : 8px; height: parent.side; }
-        AutoLetter { id: "bpm_match_on_load"; text: "B"; on: DeckAuto.bpm; size: parent.side; tip-title: "Match tempo on load"; tip-body: "A track loaded while another deck plays\ntakes its tempo, without syncing."; }
-        AutoLetter { id: "key_match_on_load"; text: "K"; on: DeckAuto.key; size: parent.side; tip-title: "Match key on load"; tip-body: "A track loaded while another deck plays\nis shifted to mix with its key."; }
-        AutoLetter { id: "sync_on_play"; text: "S"; on: DeckAuto.sync; size: parent.side; tip-title: "Sync on play"; tip-body: "PLAY lines the beats up with\nthe other deck once."; }
-        AutoLetter { id: "keylock_default"; text: "P"; on: DeckAuto.pitch; size: parent.side; tip-title: "Key lock on"; tip-body: "Decks start with key lock on,\nso tempo changes keep the key."; }
+        property <length> side: compact ? 14px : 19px;
+        MasterBadge { group: group; font-size: compact ? 7px : 9px; height: parent.side; }
+        DeckOptionsButton { size: parent.side; }
     }
     // Key shifts with the key each gives, matching, and how keys show.
     menu := PopupWindow {
