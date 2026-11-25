@@ -1861,6 +1861,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         browser.borrow_mut().show_in_prep();
                     }
                 }
+                ui_load::lap("start of tick");
                 browser.borrow_mut().poll_controllers(&app);
                 ui_load::lap("browser.poll_controllers");
                 // A recording that just stopped shows in Mixed Sets.
@@ -1936,6 +1937,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 prep_click
                     .borrow_mut()
                     .tick(app.get_layout() == PREP_LAYOUT);
+                ui_load::lap("prep_click.tick");
                 if let Some(c) = &controllers {
                     let names: Vec<String> = c.connected().into_iter().map(|c| c.port).collect();
                     let status = if names.is_empty() {
@@ -1952,8 +1954,10 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         settings.set_controllers(status.into());
                     }
                 }
+                ui_load::lap("controllers status");
                 let tracks = loaded.read().unwrap().clone();
                 put_back.borrow_mut().tick(&app, &tracks);
+                ui_load::lap("put_back.tick");
                 let camelot = app.global::<KeyNotation>().get_camelot();
                 let mut b = browser.borrow_mut();
                 b.set_camelot(camelot);
@@ -1966,12 +1970,18 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     &app,
                     std::array::from_fn(|d| tracks[d].as_ref().map(|t| t.id)),
                 );
+                ui_load::lap("browser.set_loaded");
                 b.learn_deck_phrases(&tracks);
+                ui_load::lap("browser.learn_deck_phrases");
                 b.learn_analysis(&tracks);
+                ui_load::lap("browser.learn_analysis");
                 let fetches = b.deck_fetches();
                 b.show_row_fetches();
+                ui_load::lap("browser.show_row_fetches");
                 b.poll_prep();
+                ui_load::lap("browser.poll_prep");
                 b.keep(&tracks, 0.016);
+                ui_load::lap("browser.keep");
                 let mut host = browser::AutomixHost {
                     browser: &mut b,
                     engine: &engine,
@@ -1992,7 +2002,9 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 if host.browser.take_keep_going_automix() {
                     automix.borrow_mut().set_enabled(true);
                 }
+                ui_load::lap("keep_going");
                 automix.borrow_mut().tick(&mut host, &tracks, dt.min(0.1));
+                ui_load::lap("automix.tick");
                 remote.borrow_mut().tick(
                     &app,
                     &mut automix.borrow_mut(),
@@ -2003,9 +2015,11 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                 quick
                     .borrow_mut()
                     .tick(&app, &mut automix.borrow_mut(), &mut b, &tracks);
+                ui_load::lap("remote + quick");
                 automix.borrow().show(&app, &tracks);
                 let automix_spans = automix.borrow().spans(&tracks);
                 drop(b);
+                ui_load::lap("automix.show");
                 // Row by row and only when it differs: a whole new model
                 // would make everything on the decks lay out and draw again.
                 for (d, track) in tracks.iter().enumerate() {
@@ -2042,6 +2056,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         deck_rows.set_row_data(d, info);
                     }
                 }
+                ui_load::lap("deck rows");
                 let clock = wall_clock::format(chrono::Local::now().time(), twenty_four_hour);
                 if app.get_clock() != clock.as_str() {
                     app.set_clock(clock.into());
