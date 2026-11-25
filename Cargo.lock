@@ -8276,7 +8276,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-studio-engine"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "flate2",
  "opendj-engine",
