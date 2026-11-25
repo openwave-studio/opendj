@@ -33,7 +33,48 @@ fn path() -> Option<PathBuf> {
 }
 
 pub fn load() -> Value {
-    path().map_or_else(|| json!({}), |p| load_from(&p))
+    path().map_or_else(|| json!({}), |p| cached(&p))
+}
+
+/// The file as last read, with the size and change time it had then.
+struct Cached {
+    path: PathBuf,
+    stamp: Option<(std::time::SystemTime, u64)>,
+    value: Value,
+}
+
+static CACHE: std::sync::Mutex<Option<Cached>> = std::sync::Mutex::new(None);
+
+/// The file's change time and size, which tell whether it changed since it
+/// was last read.
+fn stamp(path: &std::path::Path) -> Option<(std::time::SystemTime, u64)> {
+    let m = std::fs::metadata(path).ok()?;
+    Some((m.modified().ok()?, m.len()))
+}
+
+/// The settings in `path`, read again only when the file has changed: UI
+/// timers ask for settings many times a second, and reading and parsing
+/// the file each time cost the main thread frames.
+fn cached(path: &std::path::Path) -> Value {
+    let now = stamp(path);
+    let mut cache = CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(c) = cache.as_ref() {
+        if c.path == path && now.is_some() && c.stamp == now {
+            return c.value.clone();
+        }
+    }
+    let value = load_from(path);
+    *cache = Some(Cached {
+        path: path.to_path_buf(),
+        stamp: now,
+        value: value.clone(),
+    });
+    value
+}
+
+/// Forgets the settings read, so the next load reads the file.
+pub fn forget() {
+    *CACHE.lock().unwrap_or_else(|e| e.into_inner()) = None;
 }
 
 /// The settings saved in the file at `path`; empty if there are none.
@@ -1367,7 +1408,9 @@ fn save(change: impl FnOnce(&mut Value)) {
     let mut v = load();
     change(&mut v);
     let _ = std::fs::create_dir_all(path.parent().unwrap());
-    let _ = std::fs::write(path, v.to_string());
+    let _ = std::fs::write(&path, v.to_string());
+    // A write within the file system's time step can keep the old stamp.
+    forget();
 }
 
 /// A track's key as the user wants keys written. Keys that can't be read
@@ -1468,4 +1511,28 @@ pub fn set_prep_review(seconds: f64, tracks: u64) {
         v["prep_review_seconds"] = json!(seconds);
         v["prep_review_tracks"] = json!(tracks);
     });
+}
+
+#[cfg(test)]
+mod cache_tests {
+    use super::*;
+
+    #[test]
+    fn settings_are_read_again_once_the_file_changes() {
+        let dir =
+            std::env::temp_dir().join(format!("opendj-settings-cache-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        std::fs::write(&path, r#"{"a":1}"#).unwrap();
+        assert_eq!(cached(&path)["a"], 1);
+        // Read from memory while the file stays as it was.
+        assert_eq!(cached(&path)["a"], 1);
+        // Another program (or a restored backup) changes the file.
+        std::fs::write(&path, r#"{"a":22}"#).unwrap();
+        assert_eq!(cached(&path)["a"], 22);
+        // A missing file reads as empty, never as the old settings.
+        std::fs::remove_file(&path).unwrap();
+        assert_eq!(cached(&path), json!({}));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
