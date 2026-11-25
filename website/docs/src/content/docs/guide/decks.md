@@ -42,8 +42,10 @@ cover has **Unload deck** too, and <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> 
 
 ### Waveform look
 
-Click the arrow on the right of the waveforms button in the top bar. Under
-the height slider, these set how the waveforms look:
+Click the arrow on the right of the waveforms button in the top bar. At the
+top are two sliders: the waveforms' **height** and their **zoom** (how many
+seconds show across them). Under them, each of these is a drop-down that
+sets how the waveforms look:
 
 - **Type**: **Full** (the default) mirrors the waveforms about their middle;
   **Half** grows them from the bottom edge, as on rekordbox. It applies to
@@ -52,8 +54,8 @@ the height slider, these set how the waveforms look:
   - **RGB** (the default): one shape, red where the bass is loudest, amber
     for the mids and blue for the highs.
   - **3-Band**: the bass, mids and highs stacked in their own colors, the
-    bass widest, as on rekordbox. A second row picks **Blue-Orange**
-    (rekordbox's colors) or **Lilac-Cyan**.
+    bass widest, as on rekordbox. A **Palette** drop-down under it picks
+    **Blue-Orange** (rekordbox's colors) or **Lilac-Cyan**.
   - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
     color of its stem pad, the loudest at the back, so you can see where
     the vocals come in or the bass drops out. A track shows RGB until its
@@ -73,6 +75,9 @@ the height slider, these set how the waveforms look:
 - **Phrases**: the colored phrase bar along the bottom of the overviews
   (**Overview**), the phrase flags on the large waveforms (**Waveform**),
   **Both** (the default) or neither (**Off**).
+
+Last, a switch turns **BPM labels** on or off: the tempo on the large
+waveforms where it changes.
 
 The changes show straight away and the menu stays open, so you can try them
 out.
