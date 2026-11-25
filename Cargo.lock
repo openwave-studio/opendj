@@ -8032,7 +8032,7 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
 name = "opendj"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -8080,7 +8080,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-broadcast"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "base64 0.22.1",
  "mp3lame-encoder",
@@ -8096,11 +8096,11 @@ dependencies = [
 
 [[package]]
 name = "opendj-control"
-version = "1.0.0-dev"
+version = "0.9.5"
 
 [[package]]
 name = "opendj-controllers"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "base64 0.22.1",
  "hidapi",
@@ -8115,7 +8115,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-engine"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "alac-encoder",
  "beat-this",
@@ -8146,7 +8146,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-export"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -8169,7 +8169,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-karaoke-render"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "image",
  "slint",
@@ -8177,7 +8177,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-library"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "opendj-engine",
  "regex",
@@ -8187,7 +8187,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-osc"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "opendj-control",
  "rosc",
@@ -8203,7 +8203,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-plugin-host"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "ab_glyph",
  "block2 0.6.2",
@@ -8225,7 +8225,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-plugins"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "chrono",
  "md5",
@@ -8243,7 +8243,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-remote"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "getrandom 0.4.3",
  "if-addrs",
@@ -8255,14 +8255,14 @@ dependencies = [
 
 [[package]]
 name = "opendj-script"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "opendj-control",
 ]
 
 [[package]]
 name = "opendj-separation"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "burn",
  "burn-ndarray 0.22.1",
@@ -8276,7 +8276,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-tablet"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "objc2 0.6.5",
  "objc2-avf-audio",
@@ -8292,7 +8292,7 @@ dependencies = [
 
 [[package]]
 name = "opendj-test-clap"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "clack-extensions",
  "clack-plugin",
@@ -8300,14 +8300,14 @@ dependencies = [
 
 [[package]]
 name = "opendj-test-vst3"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "vst3",
 ]
 
 [[package]]
 name = "opendj-waveform"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "ab_glyph",
  "bytemuck",
@@ -8583,7 +8583,7 @@ dependencies = [
 
 [[package]]
 name = "phrase-bench"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "opendj-engine",
  "opendj-library",
@@ -10881,7 +10881,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stem-bench"
-version = "1.0.0-dev"
+version = "0.9.5"
 dependencies = [
  "hound",
  "opendj-engine",
