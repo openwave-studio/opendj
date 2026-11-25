@@ -1370,7 +1370,8 @@ impl Deck {
 }
 
 /// What a deck plays from: a track's audio, or the mix of its stems.
-pub(crate) trait Frames {
+/// Stereo frames a player reads: decoded audio, or a mix of stems.
+pub trait Frames {
     /// Frame `i`, or silence where there is none.
     fn frame(&self, i: usize) -> [f32; 2];
     /// Frame `k`, which may be before the start.

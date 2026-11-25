@@ -8275,6 +8275,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "opendj-studio-engine"
+version = "1.0.0-dev"
+dependencies = [
+ "flate2",
+ "opendj-engine",
+ "opendj-plugin-host",
+ "realfft",
+ "roxmltree",
+ "rtrb",
+ "rusty_link",
+]
+
+[[package]]
 name = "opendj-tablet"
 version = "1.0.0-dev"
 dependencies = [
