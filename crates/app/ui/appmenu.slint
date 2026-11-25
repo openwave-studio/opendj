@@ -156,11 +156,13 @@ component AppMenuPanel inherits PopupWindow {
 
 // ☰, at the left of the top bar.
 export component AppMenuButton inherits Rectangle {
-    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.n-3a3a3d : Theme.panel-raised;
+    background: ta.pressed ? Theme.control-pressed : ta.has-hover ? Theme.pill-hover : Theme.pill;
     border-radius: 10px;
-    height: 36px;
+    border-width: 1px;
+    border-color: ta.has-hover ? Theme.n-48484c : Theme.n-2c2c31;
+    height: 32px;
     width: 40px;
-    y: 8px;
+    y: 10px;
     horizontal-stretch: 0;
     Path {
         width: 16px;

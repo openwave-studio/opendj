@@ -61,6 +61,7 @@ impl Decoder {
     /// Reads the headers of `source`, the bytes of `path`.
     fn open_source(path: &Path, source: Box<dyn MediaSource>) -> Result<Decoder, String> {
         let err = |e: Error| format!("{}: {e}", path.display());
+        let source = pad_short_aiff(source).map_err(|e| format!("{}: {e}", path.display()))?;
         let mss = MediaSourceStream::new(source, MediaSourceStreamOptions::default());
         let mut hint = Hint::new();
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
@@ -242,6 +243,84 @@ impl Decoder {
     }
 }
 
+/// AIFF files whose last chunk has an odd length often leave out the pad
+/// byte the FORM length counts (some taggers write them like that), and
+/// Symphonia then fails with an unexpected end of file. If an AIFF source is
+/// shorter than its FORM header says, this reads the missing tail as zeros.
+fn pad_short_aiff(mut source: Box<dyn MediaSource>) -> std::io::Result<Box<dyn MediaSource>> {
+    use std::io::{Read, Seek, SeekFrom};
+    let Some(real) = source.byte_len() else {
+        return Ok(source);
+    };
+    if real < 12 || !source.is_seekable() {
+        return Ok(source);
+    }
+    let mut head = [0u8; 12];
+    source.read_exact(&mut head)?;
+    source.seek(SeekFrom::Start(0))?;
+    let total = 8 + u64::from(u32::from_be_bytes([head[4], head[5], head[6], head[7]]));
+    let aiff = &head[..4] == b"FORM" && matches!(&head[8..], b"AIFF" | b"AIFC");
+    if !aiff || total <= real {
+        return Ok(source);
+    }
+    Ok(Box::new(ZeroTail {
+        inner: source,
+        real,
+        total,
+        pos: 0,
+    }))
+}
+
+/// A source that goes on past its real end with zeros up to `total` bytes.
+struct ZeroTail {
+    inner: Box<dyn MediaSource>,
+    real: u64,
+    total: u64,
+    pos: u64,
+}
+
+impl std::io::Read for ZeroTail {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let n = if self.pos < self.real {
+            let want = buf.len().min((self.real - self.pos) as usize);
+            self.inner.read(&mut buf[..want])?
+        } else {
+            let n = buf.len().min(self.total.saturating_sub(self.pos) as usize);
+            buf[..n].fill(0);
+            n
+        };
+        self.pos += n as u64;
+        Ok(n)
+    }
+}
+
+impl std::io::Seek for ZeroTail {
+    fn seek(&mut self, to: std::io::SeekFrom) -> std::io::Result<u64> {
+        use std::io::SeekFrom;
+        let pos = match to {
+            SeekFrom::Start(p) => Some(p),
+            SeekFrom::End(d) => self.total.checked_add_signed(d),
+            SeekFrom::Current(d) => self.pos.checked_add_signed(d),
+        }
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "seek before start")
+        })?;
+        self.inner.seek(SeekFrom::Start(pos.min(self.real)))?;
+        self.pos = pos;
+        Ok(pos)
+    }
+}
+
+impl MediaSource for ZeroTail {
+    fn is_seekable(&self) -> bool {
+        true
+    }
+
+    fn byte_len(&self) -> Option<u64> {
+        Some(self.total)
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -285,6 +364,60 @@ pub(crate) mod tests {
         let f = audio.frame(100);
         assert_eq!(f[0], f[1]);
         assert!((f[0] - samples[100] as f32 / 32_768.0).abs() < 1e-3);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// Writes a 16-bit stereo AIFF with a trailing odd-length ID3 chunk whose
+    /// pad byte is left out, like files some taggers write.
+    fn write_aiff_missing_pad(path: &Path, rate: u32, frames: &[[i16; 2]]) {
+        let mut comm = Vec::new();
+        comm.extend_from_slice(&2u16.to_be_bytes());
+        comm.extend_from_slice(&(frames.len() as u32).to_be_bytes());
+        comm.extend_from_slice(&16u16.to_be_bytes());
+        // Sample rate as an 80-bit extended float.
+        let exp = 31 - rate.leading_zeros();
+        comm.extend_from_slice(&((16_383 + exp) as u16).to_be_bytes());
+        comm.extend_from_slice(&((u64::from(rate)) << (63 - exp)).to_be_bytes());
+        let mut ssnd = vec![0u8; 8];
+        for f in frames {
+            ssnd.extend_from_slice(&f[0].to_be_bytes());
+            ssnd.extend_from_slice(&f[1].to_be_bytes());
+        }
+        // An ID3v2.4 tag with one TIT2 frame, 23 bytes long in all.
+        let mut id3 = b"ID3\x04\x00\x00\x00\x00\x00\x0d".to_vec();
+        id3.extend_from_slice(b"TIT2\x00\x00\x00\x03\x00\x00\x03Hi");
+        assert_eq!(id3.len() % 2, 1);
+        let mut body = b"AIFF".to_vec();
+        for (tag, data) in [(b"COMM", &comm), (b"SSND", &ssnd), (b"ID3 ", &id3)] {
+            body.extend_from_slice(tag);
+            body.extend_from_slice(&(data.len() as u32).to_be_bytes());
+            body.extend_from_slice(data);
+        }
+        // The FORM length counts the pad byte, which isn't written.
+        let mut f = File::create(path).unwrap();
+        f.write_all(b"FORM").unwrap();
+        f.write_all(&(body.len() as u32 + 1).to_be_bytes()).unwrap();
+        f.write_all(&body).unwrap();
+    }
+
+    #[test]
+    fn decodes_aiff_missing_last_pad_byte() {
+        let dir = std::env::temp_dir().join(format!("opendj-aiff-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("short.aiff");
+        let frames: Vec<[i16; 2]> = (0..44_100)
+            .map(|i| {
+                let v = ((i as f32 / 30.0).sin() * 16_000.0) as i16;
+                [v, -v]
+            })
+            .collect();
+        write_aiff_missing_pad(&path, 44_100, &frames);
+        let audio = decode(&path).unwrap();
+        assert_eq!(audio.sample_rate, 44_100);
+        assert_eq!(audio.len(), 44_100);
+        let f = audio.frame(1_000);
+        assert_eq!(f[0], frames[1_000][0] as f32 / 32_768.0);
+        assert_eq!(f[1], frames[1_000][1] as f32 / 32_768.0);
         std::fs::remove_dir_all(&dir).unwrap();
     }
 

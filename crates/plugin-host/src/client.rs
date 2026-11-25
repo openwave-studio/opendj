@@ -116,6 +116,8 @@ pub struct Connection {
     gone: bool,
     missed_in_row: u32,
     health: Arc<Health>,
+    /// The MIDI the plug-in sent in the last block that came back.
+    midi_out: Vec<Midi>,
 }
 
 /// What the audio thread last saw, for the control thread to act on.
@@ -505,6 +507,7 @@ pub fn spawn(opts: &Options) -> io::Result<(Connection, Helper)> {
         gone: false,
         missed_in_row: 0,
         health: helper.health.clone(),
+        midi_out: Vec::with_capacity(MAX_EVENTS),
     };
     Ok((conn, helper))
 }
@@ -616,6 +619,7 @@ impl Connection {
     }
 
     fn collect_until(&mut self, output: &mut [&mut [f32]; CHANNELS], end: Instant) -> Outcome {
+        self.midi_out.clear();
         if self.gone {
             self.awaiting = false;
             return Outcome::Gone;
@@ -634,6 +638,12 @@ impl Connection {
                 for (ch, data) in output.iter_mut().enumerate() {
                     self.shm.read(true, ch, data);
                 }
+                let n = (h.out_events_len.load(Ordering::Relaxed) as usize).min(MAX_EVENTS);
+                self.midi_out.extend(
+                    h.out_events[..n]
+                        .iter()
+                        .map(|e| Midi::unpack(e.load(Ordering::Relaxed))),
+                );
                 if self.missed_in_row != 0 {
                     self.missed_in_row = 0;
                     self.health.missed_in_row.store(0, Ordering::Relaxed);
@@ -663,6 +673,12 @@ impl Connection {
         if index < MAX_PARAMS {
             shm::store_f32(&self.shm.header().params[index], value);
         }
+    }
+
+    /// The MIDI the plug-in sent during the last block that came back
+    /// (notes from a sequencer, controllers), at frames of that block.
+    pub fn midi_out(&self) -> &[Midi] {
+        &self.midi_out
     }
 
     /// Blocks in a row that came back dry because the helper was late or busy.

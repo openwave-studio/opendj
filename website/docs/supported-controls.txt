@@ -1521,6 +1521,7 @@
 [EffectRack1_EffectUnit10],group_[Instrument1]_enable
 [EffectRack1_EffectUnit10],group_[Master]_enable
 [EffectRack1_EffectUnit10],group_[Microphone]_enable
+[EffectRack1_EffectUnit10],group_[Session1]_enable
 [EffectRack1_EffectUnit10],loaded_chain_preset
 [EffectRack1_EffectUnit10],mix
 [EffectRack1_EffectUnit10],mix_mode
@@ -1619,6 +1620,7 @@
 [EffectRack1_EffectUnit1],group_[Instrument1]_enable
 [EffectRack1_EffectUnit1],group_[Master]_enable
 [EffectRack1_EffectUnit1],group_[Microphone]_enable
+[EffectRack1_EffectUnit1],group_[Session1]_enable
 [EffectRack1_EffectUnit1],loaded_chain_preset
 [EffectRack1_EffectUnit1],mix
 [EffectRack1_EffectUnit1],mix_mode
@@ -1717,6 +1719,7 @@
 [EffectRack1_EffectUnit2],group_[Instrument1]_enable
 [EffectRack1_EffectUnit2],group_[Master]_enable
 [EffectRack1_EffectUnit2],group_[Microphone]_enable
+[EffectRack1_EffectUnit2],group_[Session1]_enable
 [EffectRack1_EffectUnit2],loaded_chain_preset
 [EffectRack1_EffectUnit2],mix
 [EffectRack1_EffectUnit2],mix_mode
@@ -1815,6 +1818,7 @@
 [EffectRack1_EffectUnit3],group_[Instrument1]_enable
 [EffectRack1_EffectUnit3],group_[Master]_enable
 [EffectRack1_EffectUnit3],group_[Microphone]_enable
+[EffectRack1_EffectUnit3],group_[Session1]_enable
 [EffectRack1_EffectUnit3],loaded_chain_preset
 [EffectRack1_EffectUnit3],mix
 [EffectRack1_EffectUnit3],mix_mode
@@ -1913,6 +1917,7 @@
 [EffectRack1_EffectUnit4],group_[Instrument1]_enable
 [EffectRack1_EffectUnit4],group_[Master]_enable
 [EffectRack1_EffectUnit4],group_[Microphone]_enable
+[EffectRack1_EffectUnit4],group_[Session1]_enable
 [EffectRack1_EffectUnit4],loaded_chain_preset
 [EffectRack1_EffectUnit4],mix
 [EffectRack1_EffectUnit4],mix_mode
@@ -2011,6 +2016,7 @@
 [EffectRack1_EffectUnit5],group_[Instrument1]_enable
 [EffectRack1_EffectUnit5],group_[Master]_enable
 [EffectRack1_EffectUnit5],group_[Microphone]_enable
+[EffectRack1_EffectUnit5],group_[Session1]_enable
 [EffectRack1_EffectUnit5],loaded_chain_preset
 [EffectRack1_EffectUnit5],mix
 [EffectRack1_EffectUnit5],mix_mode
@@ -2110,6 +2116,7 @@
 [EffectRack1_EffectUnit6],group_[Instrument1]_enable
 [EffectRack1_EffectUnit6],group_[Master]_enable
 [EffectRack1_EffectUnit6],group_[Microphone]_enable
+[EffectRack1_EffectUnit6],group_[Session1]_enable
 [EffectRack1_EffectUnit6],loaded_chain_preset
 [EffectRack1_EffectUnit6],mix
 [EffectRack1_EffectUnit6],mix_mode
@@ -2208,6 +2215,7 @@
 [EffectRack1_EffectUnit7],group_[Instrument1]_enable
 [EffectRack1_EffectUnit7],group_[Master]_enable
 [EffectRack1_EffectUnit7],group_[Microphone]_enable
+[EffectRack1_EffectUnit7],group_[Session1]_enable
 [EffectRack1_EffectUnit7],loaded_chain_preset
 [EffectRack1_EffectUnit7],mix
 [EffectRack1_EffectUnit7],mix_mode
@@ -2306,6 +2314,7 @@
 [EffectRack1_EffectUnit8],group_[Instrument1]_enable
 [EffectRack1_EffectUnit8],group_[Master]_enable
 [EffectRack1_EffectUnit8],group_[Microphone]_enable
+[EffectRack1_EffectUnit8],group_[Session1]_enable
 [EffectRack1_EffectUnit8],loaded_chain_preset
 [EffectRack1_EffectUnit8],mix
 [EffectRack1_EffectUnit8],mix_mode
@@ -2404,6 +2413,7 @@
 [EffectRack1_EffectUnit9],group_[Instrument1]_enable
 [EffectRack1_EffectUnit9],group_[Master]_enable
 [EffectRack1_EffectUnit9],group_[Microphone]_enable
+[EffectRack1_EffectUnit9],group_[Session1]_enable
 [EffectRack1_EffectUnit9],loaded_chain_preset
 [EffectRack1_EffectUnit9],mix
 [EffectRack1_EffectUnit9],mix_mode
@@ -2591,6 +2601,14 @@
 [EqualizerRack1_[Microphone]_Effect1],parameter1
 [EqualizerRack1_[Microphone]_Effect1],parameter2
 [EqualizerRack1_[Microphone]_Effect1],parameter3
+[EqualizerRack1_[Session1]_Effect1],button_parameter1
+[EqualizerRack1_[Session1]_Effect1],button_parameter2
+[EqualizerRack1_[Session1]_Effect1],button_parameter3
+[EqualizerRack1_[Session1]_Effect1],num_button_parameters
+[EqualizerRack1_[Session1]_Effect1],num_parameters
+[EqualizerRack1_[Session1]_Effect1],parameter1
+[EqualizerRack1_[Session1]_Effect1],parameter2
+[EqualizerRack1_[Session1]_Effect1],parameter3
 [Flanger],lfoDelay
 [Flanger],lfoDepth
 [Flanger],lfoPeriod
@@ -5030,6 +5048,23 @@
 [Sculpt_[Channel4]],gain
 [Sculpt_[Channel4]],hpf
 [Sculpt_[Channel4]],lpf
+[Session1],PeakIndicator
+[Session1],VuMeter
+[Session1],VuMeterL
+[Session1],VuMeterR
+[Session1],enabled
+[Session1],input_configured
+[Session1],main_mix
+[Session1],master
+[Session1],mute
+[Session1],orientation
+[Session1],peak_indicator
+[Session1],pfl
+[Session1],pregain
+[Session1],volume
+[Session1],vu_meter
+[Session1],vu_meter_left
+[Session1],vu_meter_right
 [Shoutcast],enabled
 [Shoutcast],status
 [Skin],waveform_height

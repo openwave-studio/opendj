@@ -23,7 +23,8 @@ const MAX_STEER: f64 = 0.5;
 /// The stretcher's block interval in seconds (`presetDefault`'s).
 const INTERVAL_SECONDS: f64 = 0.03;
 
-pub(crate) struct KeyShifter {
+/// Plays a source at any speed and key.
+pub struct KeyShifter {
     stretch: Stretch,
     /// Interleaved stereo scratch buffers, sized ahead of time.
     input: Vec<f32>,
@@ -51,7 +52,7 @@ pub(crate) struct KeyShifter {
 }
 
 impl KeyShifter {
-    pub(crate) fn new(sample_rate: f64) -> Self {
+    pub fn new(sample_rate: f64) -> Self {
         let stretch = Stretch::preset_default_split(2, sample_rate as u32);
         Self {
             // Room for a jump's seed (see `render`) or a buffer at top speed.
@@ -70,12 +71,12 @@ impl KeyShifter {
     }
 
     /// Forgets the audio in flight; the next render starts afresh.
-    pub(crate) fn stop(&mut self) {
+    pub fn stop(&mut self) {
         self.active = false;
     }
 
     /// Whether the stretcher holds audio continuing from the last buffer.
-    pub(crate) fn is_active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         self.active
     }
 
@@ -113,7 +114,7 @@ impl KeyShifter {
     /// `ratio` is source frames per output frame at normal speed; `looping`
     /// is the active loop in source frames.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn render<F: Frames + ?Sized>(
+    pub fn render<F: Frames + ?Sized>(
         &mut self,
         audio: &F,
         pos: f64,

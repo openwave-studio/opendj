@@ -1,0 +1,306 @@
+// Push 2's screen: 960 x 160 pixels, drawn by Slint's software renderer on
+// the Push thread and sent over USB. Eight columns line up with the eight
+// encoders and the buttons over and under the screen.
+
+export struct PushTrack {
+    name: string,
+    color: color,
+    selected: bool,
+    // 0..1 through the playing clip; -1 when stopped.
+    progress: float,
+    stopping: bool,
+}
+
+export struct PushKnob {
+    name: string,
+    text: string,
+    value: float,
+    bipolar: bool,
+    color: color,
+}
+
+// A button over or under the screen with a job of its own in this mode.
+export struct PushMenu {
+    label: string,
+    on: bool,
+}
+
+global PushTheme {
+    out property <color> bg: #0c0d0e;
+    out property <color> text: #ecedef;
+    out property <color> dim: #8b8d91;
+    out property <color> faint: #2a2d30;
+    out property <color> accent: #B69CFF;
+    out property <color> red: #ff5a4a;
+}
+
+// An arc from 7 to 5 o'clock, filled up to `value` (or from 12 o'clock
+// for a bipolar knob). The shown value glides to the real one.
+component Arc inherits Rectangle {
+    in property <float> value;
+    in property <bool> bipolar;
+    in property <color> tint;
+    in property <length> stroke: 4px;
+    property <float> shown: value;
+    animate shown { duration: 140ms; easing: ease-out; }
+    property <angle> a1: 135deg + 270deg * max(0, min(1, shown));
+    property <angle> from: bipolar ? 270deg : 135deg;
+    property <angle> lo: a1 < from ? a1 : from;
+    property <angle> hi: a1 < from ? from : a1;
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 40;
+        viewbox-height: 40;
+        stroke: PushTheme.faint;
+        stroke-width: root.stroke;
+        commands: "M " + (20 + 16 * cos(135deg)) + " " + (20 + 16 * sin(135deg))
+            + " A 16 16 0 1 1 " + (20 + 16 * cos(45deg)) + " " + (20 + 16 * sin(45deg));
+    }
+    if hi - lo > 1.5deg: Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 40;
+        viewbox-height: 40;
+        stroke: root.tint;
+        stroke-width: root.stroke;
+        commands: "M " + (20 + 16 * cos(lo)) + " " + (20 + 16 * sin(lo))
+            + " A 16 16 0 " + (hi - lo > 180deg ? 1 : 0) + " 1 "
+            + (20 + 16 * cos(hi)) + " " + (20 + 16 * sin(hi));
+    }
+    // The pointer.
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 40;
+        viewbox-height: 40;
+        stroke: PushTheme.text;
+        stroke-width: 2px;
+        commands: "M " + (20 + 7 * cos(a1)) + " " + (20 + 7 * sin(a1))
+            + " L " + (20 + 13 * cos(a1)) + " " + (20 + 13 * sin(a1));
+    }
+}
+
+// One encoder's column: name, knob, value. Touching the encoder lifts it.
+component KnobCell inherits Rectangle {
+    in property <PushKnob> knob;
+    in property <bool> touched;
+    property <float> lift: touched ? 1 : 0;
+    animate lift { duration: 120ms; easing: ease-out; }
+    border-radius: 6px;
+    background: knob.color.with-alpha(0.14 * lift);
+    border-width: 1px;
+    border-color: knob.color.with-alpha(0.6 * lift);
+    if knob.name != "": Text {
+        y: 6px;
+        width: parent.width;
+        text: knob.name;
+        color: root.touched ? PushTheme.text : PushTheme.dim;
+        font-size: 13px;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    if knob.name != "": Arc {
+        x: (parent.width - self.width) / 2;
+        y: 26px - 3px * lift;
+        width: 50px + 10px * lift;
+        height: self.width;
+        value: knob.value;
+        bipolar: knob.bipolar;
+        tint: knob.color;
+        stroke: 4px;
+    }
+    if knob.name != "": Text {
+        y: parent.height - 26px;
+        width: parent.width;
+        text: knob.text;
+        color: PushTheme.text;
+        font-size: 15px + 2px * lift;
+        font-weight: 600;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+// A track's tab over its lower button: filled when selected, with a ring
+// showing how far through its clip it is.
+component TrackTab inherits Rectangle {
+    in property <PushTrack> track;
+    in property <float> beat;
+    property <float> fill: track.selected ? 1 : 0;
+    animate fill { duration: 160ms; easing: ease-out; }
+    border-radius: 5px;
+    background: track.color.with-alpha(fill);
+    border-width: 1.5px;
+    border-color: track.color.with-alpha(0.55 + 0.45 * fill);
+    property <color> ink: fill > 0.5 ? #0c0d0e : track.color;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 6px;
+        alignment: center;
+        if track.progress >= 0: Rectangle {
+            width: 14px;
+            Arc {
+                y: (parent.height - 14px) / 2;
+                width: 14px;
+                height: 14px;
+                value: track.progress;
+                tint: track.stopping && mod(beat * 2, 1) < 0.5 ? PushTheme.red : root.ink;
+                stroke: 6px;
+            }
+        }
+        Text {
+            text: track.name;
+            color: root.ink;
+            font-size: 14px;
+            font-weight: 700;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+}
+
+component MenuCell inherits Rectangle {
+    in property <PushMenu> item;
+    border-radius: 4px;
+    background: item.on ? PushTheme.accent : transparent;
+    border-width: item.on ? 0 : 1px;
+    border-color: PushTheme.faint;
+    Text {
+        text: item.label;
+        color: item.on ? #0c0d0e : PushTheme.text;
+        font-size: 13px;
+        font-weight: 600;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+}
+
+export component PushScreen inherits Window {
+    width: 960px;
+    height: 160px;
+    background: PushTheme.bg;
+
+    in property <[PushTrack]> tracks;
+    in property <[PushKnob]> knobs;
+    in property <int> touched: -1;
+    in property <string> heading;
+    in property <string> tempo;
+    in property <string> position;
+    in property <bool> playing;
+    in property <float> beat;
+    // A short message over the knobs (a page or mode change).
+    in property <string> toast;
+    in property <bool> toast-visible;
+    // Labels for the buttons over and under the screen, when the mode gives
+    // them jobs of their own; empty otherwise.
+    in property <[PushMenu]> upper-menu;
+    in property <[PushMenu]> lower-menu;
+    property <bool> menus: upper-menu.length > 0;
+
+    property <length> col-w: 120px;
+
+    // Over the upper buttons: Stop for each playing track.
+    for t[i] in tracks: Rectangle {
+        x: i * col-w + 10px;
+        y: 4px;
+        width: col-w - 20px;
+        height: 16px;
+        border-radius: 3px;
+        visible: t.progress >= 0 && !root.menus;
+        background: t.stopping && mod(beat * 2, 1) < 0.5 ? PushTheme.red : PushTheme.red.with-alpha(0.22);
+        Text {
+            text: "STOP";
+            color: t.stopping && mod(beat * 2, 1) < 0.5 ? #0c0d0e : PushTheme.red;
+            font-size: 10px;
+            font-weight: 700;
+        }
+    }
+    // Where we are, top right.
+    HorizontalLayout {
+        visible: !root.menus;
+        width: self.preferred-width;
+        x: parent.width - self.width - 10px;
+        y: 2px;
+        height: 20px;
+        spacing: 12px;
+        Text { text: root.heading; color: PushTheme.accent; font-size: 12px; font-weight: 600; vertical-alignment: center; }
+        Text { text: root.tempo; color: PushTheme.text; font-size: 12px; vertical-alignment: center; }
+        Text {
+            text: root.position;
+            color: root.playing ? PushTheme.text : PushTheme.dim;
+            font-size: 12px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+        Rectangle {
+            width: 8px;
+            Rectangle {
+                y: (parent.height - 8px) / 2;
+                height: 8px;
+                border-radius: 4px;
+                background: PushTheme.accent;
+                opacity: root.playing ? 1 - 0.8 * mod(root.beat, 1) : 0.2;
+            }
+        }
+    }
+    Rectangle { y: 24px; height: 1px; background: PushTheme.faint; }
+
+    // Knobs.
+    for k[i] in knobs: KnobCell {
+        x: i * col-w + 3px;
+        y: 27px;
+        width: col-w - 6px;
+        height: 102px;
+        knob: k;
+        touched: i == root.touched;
+    }
+
+    // Toast.
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 60px;
+        width: toast-text.preferred-width + 40px;
+        height: 36px;
+        border-radius: 18px;
+        background: #1b1d1f;
+        border-width: 1px;
+        border-color: PushTheme.accent;
+        opacity: root.toast-visible ? 1 : 0;
+        animate opacity { duration: 180ms; }
+        toast-text := Text {
+            text: root.toast;
+            color: PushTheme.text;
+            font-size: 17px;
+            font-weight: 700;
+        }
+    }
+
+    Rectangle { y: 131px; height: 1px; background: PushTheme.faint; }
+    // Over the lower buttons: the tracks.
+    for m[i] in upper-menu: MenuCell {
+        x: i * col-w + 6px;
+        y: 2px;
+        width: col-w - 12px;
+        height: 20px;
+        item: m;
+    }
+    for m[i] in lower-menu: MenuCell {
+        x: i * col-w + 6px;
+        y: 134px;
+        width: col-w - 12px;
+        height: 24px;
+        item: m;
+    }
+    for t[i] in tracks: TrackTab {
+        visible: !root.menus;
+        x: i * col-w + 6px;
+        y: 134px;
+        width: col-w - 12px;
+        height: 24px;
+        track: t;
+        beat: root.beat;
+    }
+}

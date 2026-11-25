@@ -9,11 +9,13 @@ down. Your phone opens a page openDJ serves, so there's no app to install.
 ## Pair your phone
 
 1. Make sure your phone and the computer are on the same Wi-Fi.
-2. Click the phone button in the top bar and switch the remote on.
+2. Choose **File › Remote…** (the ☰ menu on Windows and Linux) and switch
+   the remote on.
 3. Scan the QR code with your phone's camera and open the link.
 
-That's it: the phone shows the remote, and REMOTE turns green while a phone
-is connected. Next time, just open the same page again (add it to your home
+That's it: the phone shows the remote. While the remote is on, a **Remote**
+pill shows in the top bar, left of **Mic**; it turns green while a phone is
+connected, and a click on it opens the panel again. Next time, just open the same page again (add it to your home
 screen to make that one tap); the phone stays paired.
 
 The QR code works once, for two minutes; a fresh one appears each time you

@@ -102,6 +102,7 @@ mod sampler;
 mod scrobble;
 mod settings;
 mod shortcuts;
+mod single_instance;
 mod sleep_timer;
 mod smooth;
 mod sound_scan;
@@ -659,6 +660,11 @@ fn fit_to_screen(app: &AppWindow) {
 fn main() {
     if std::env::args().nth(1).as_deref() == Some("--list-controls") {
         list_controls();
+        return;
+    }
+    // Before the log opens: a second openDJ would start a new log over the
+    // running one's, then fight it for the audio interface.
+    if !single_instance::check() {
         return;
     }
     diagnostics::install();
