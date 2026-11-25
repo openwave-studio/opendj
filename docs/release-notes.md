@@ -7,6 +7,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 - **Pads**: the pad pages are four tabs again, one over each column of pads. Shift-click a tab for its partner page, and right-click it to pick what it shows. The page's setting (Quantize, Bank, Match, Roll) sits under the pads.
 - **2-Deck**: the loop controls sit under the pads (IN, OUT, then the length), and Play and CUE stay under the jog.
 - **Grid editor bar** under both decks in 2-Deck: grid type, BPM with Tap, ½ and ×2, downbeat, anchors and grid nudges, plus a new **Clear** for the grid. Prep uses the same bar. The Cues and Checklist tabs are gone.
+- Under each deck's key, a **Master** pill and a ⚡ pill replace the B, K, S and P letters. The ⚡ pill opens **Deck options**: Match BPM, Match Key, Sync on Play and Key Lock on load.
 - **Play** starts and pauses on the press of the button, not when you let go, so a track starts right on the beat.
 - **Pitch Color FX**: pick **Pitch** from the filter knob's menu, and the COLOR knob shifts the deck up to an octave down or up while keeping the tempo. PITCH buttons on the DDJ-FLX10, DDJ-1000, XDJ-R1, XDJ-RR, DDJ-RX/RZ/RZX/SZ and DDJ-800 pick it.
 - A hot cue or cue jump out of a playing loop now ends the loop.
