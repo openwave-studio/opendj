@@ -18,6 +18,9 @@ opendj-control = { path = "../control" }
 opendj-controllers = { path = "../controllers" }
 opendj-script = { path = "../script" }
 opendj-engine = { path = "../engine" }
+# The Session: openDJ Studio's clips on a channel of their own, without
+# Ableton Link (it follows the master deck).
+opendj-studio-engine = { path = "../studio-engine", default-features = false }
 rtrb = "0.4"
 opendj-library = { version = "1.0.0-dev", path = "../library" }
 opendj-export = { path = "../export" }

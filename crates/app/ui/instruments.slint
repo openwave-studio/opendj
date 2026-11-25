@@ -7,6 +7,7 @@ import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 // stopped one, makes it a track deck again.
 
 import { Theme } from "theme.slint";
+import { SessionHint } from "session.slint";
 import { Controls } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { SwitchPill } from "pills.slint";
@@ -1054,5 +1055,7 @@ export component JamHint inherits Rectangle {
                 clicked => { InstrumentsUi.open-panel(); }
             }
         }
+        // Or a Live set's clips, on the Session channel.
+        SessionHint {}
     }
 }
