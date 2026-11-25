@@ -3330,24 +3330,22 @@ export component PlayButton inherits Rectangle {
     property <bool> censoring;
     touch := TouchArea {
         mouse-cursor: pointer;
+        // Play and pause on the press, as on a CDJ: waiting for the release
+        // started the track late by however long the click took.
         pointer-event(e) => {
             if e.button != PointerEventButton.left && e.kind != PointerEventKind.cancel {
                 return;
             }
-            if e.kind == PointerEventKind.down && e.modifiers.shift && playing {
-                censoring = true;
-                Controls.set-value(censor-index, 1);
+            if e.kind == PointerEventKind.down {
+                if e.modifiers.shift && playing {
+                    censoring = true;
+                    Controls.set-value(censor-index, 1);
+                } else {
+                    Controls.set-value(index, playing ? 0 : 1);
+                }
             } else if (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) && censoring {
-                Controls.set-value(censor-index, 0);
-                // No click follows a cancel to clear it.
-                censoring = e.kind == PointerEventKind.up;
-            }
-        }
-        clicked => {
-            if censoring {
                 censoring = false;
-            } else {
-                Controls.set-value(index, playing ? 0 : 1);
+                Controls.set-value(censor-index, 0);
             }
         }
     }
