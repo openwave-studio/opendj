@@ -69,6 +69,9 @@ they're under `src/push/` or named as the app's.
 - `devices.rs` also has Live's External Instrument: the track's notes go
   to its MIDI To port its hardware latency early (the engine reads its
   clips that far ahead), and its sound comes in from its Audio From input.
+- A plug-in instrument on a track with a MIDI To port takes the clips'
+  notes, and what it sends (a CLAP or VST3 sequencer's notes, through the
+  helper's shared memory) goes out that port.
 - `fx.rs`: Live's Delay, Echo, Reverb, Gate and Overdrive, and
   Hybrid Reverb (the set's room from Live's app through `conv.rs`, blended with a plate) and Roar (shapers and
   filters in series, no feedback or modulation).

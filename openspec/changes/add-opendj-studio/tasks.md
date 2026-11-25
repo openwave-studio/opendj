@@ -43,7 +43,8 @@
 - [x] 2.29 Hybrid Reverb's convolution: the set's room from Live's app, blended with the plate in its routing
 - [ ] 2.30 Chord and Scale MIDI effects, and a Wavetable instrument read from the set
 - [x] 2.31 External Instrument: a MIDI track's notes out to a hardware synth and its sound back from an input, sent early by the hardware's latency, read from the set
-- [ ] 2.32 Plug-ins' MIDI out passed back from the helper, to a track's MIDI To
+- [x] 2.32 Plug-ins' MIDI out passed back from the helper (CLAP and VST3), to a track's MIDI To
+- [ ] 2.34 MIDI out from Audio Units and Pd patches
 - [ ] 2.33 Play a hardware synth through an External Instrument on macOS
 
 ## 3. Clip editing

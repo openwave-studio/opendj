@@ -1013,8 +1013,11 @@ impl Engine {
             let plugin = self.columns[t].plugin_instrument()
                 || routing.midi_out
                 || self.columns[t].external();
+            // A plug-in instrument takes the clips' notes even on a track with
+            // a MIDI To port, which then gets what the plug-in sends.
+            let to_port = routing.midi_out && !self.columns[t].plugin_instrument();
             // Notes to hardware go out early by its latency.
-            let ahead = if routing.midi_out {
+            let ahead = if to_port {
                 self.columns[t].ahead_ms() as f64 / 1000.0 * span.tempo / 60.0
             } else {
                 0.0
@@ -1050,7 +1053,7 @@ impl Engine {
                     done = at;
                 }
                 let col = &mut self.columns[t];
-                if routing.midi_out {
+                if to_port {
                     let data = match e.kind {
                         Kind::On(p, v) => Some([0x90, p, ((v * 127.0).round() as u8).max(1)]),
                         Kind::Off(p) => Some([0x80, p, 0]),
@@ -1079,7 +1082,7 @@ impl Engine {
                     }
                 }
                 match e.kind {
-                    Kind::On(..) | Kind::Off(_) if routing.midi_out => {}
+                    Kind::On(..) | Kind::Off(_) if to_port => {}
                     Kind::On(p, v) => col.instrument.note_on(p, v),
                     Kind::Off(p) => col.instrument.note_off(p),
                     Kind::AllOff => col.instrument.all_off(),
@@ -1230,6 +1233,13 @@ impl Engine {
     /// Runs the track's sound through its plug-ins, in chain order: an
     /// instrument replaces it with what it plays, an effect processes it.
     fn run_plugins(&mut self, t: usize, frames: usize, transport: Transport, deadline: Instant) {
+        // What the plug-ins send (a sequencer's notes) goes to the track's
+        // MIDI To port, on its channel.
+        let mut sends = if self.columns[t].routing.midi_out {
+            self.midi_out.as_mut()
+        } else {
+            None
+        };
         let Column {
             slots,
             midi,
@@ -1281,6 +1291,12 @@ impl Engine {
                 events,
                 left.max(Duration::from_micros(300)),
             );
+            if let (true, Some(q)) = (slot.on, sends.as_mut()) {
+                for m in conn.midi_out() {
+                    let data = [m.data[0] & 0xF0, m.data[1], m.data[2]];
+                    let _ = q.push(MidiOut { track: t, data });
+                }
+            }
             if slot.instrument && !slot.on {
                 // Off: the track is quiet, as in Live.
                 scratch.fill([0.0; 2]);
@@ -1293,10 +1309,6 @@ impl Engine {
         midi.clear();
     }
 
-    /// Collects `track`'s note events in [`lo`, `hi`) into `self.events`,
-    /// switching clips at a pending launch point.
-    /// Returns the switch, if there was one: its beat and the clip that
-    /// played before it.
     /// The beats a track's events come from this block, `lo..hi`, joined
     /// onto where its last block's ended, so no note plays twice or goes
     /// missing when an External Instrument's latency or the tempo moves
@@ -1315,6 +1327,10 @@ impl Engine {
     /// `ahead`: how far `lo..hi` runs ahead of the clock. A clip that
     /// starts at once still starts on the clock's beat, its first notes
     /// going out as soon as they can.
+    /// Collects `track`'s note events in [`lo`, `hi`) into `self.events`,
+    /// switching clips at a pending launch point.
+    /// Returns the switch, if there was one: its beat and the clip that
+    /// played before it.
     fn track_events(
         &mut self,
         t: usize,
@@ -2243,6 +2259,49 @@ mod tests {
             Box::new(PluginSlot::new(device, instrument, true, conn)),
             helper,
         )
+    }
+
+    #[test]
+    fn what_a_plugin_sends_goes_to_the_midi_to_port() {
+        let mut set = one_note_set();
+        set[0].io.midi_to = Some(("Synth".into(), 0));
+        set[0].devices = vec![crate::clip::DeviceInfo {
+            name: "Arp".into(),
+            kind: "Test".into(),
+            on: true,
+            plugin: Some(crate::clip::PluginRef {
+                name: "Arp".into(),
+                vendor: String::new(),
+                format: crate::clip::PluginFormat::Named,
+                instrument: true,
+                state: None,
+            }),
+            builtin: None,
+        }];
+        let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        // Sends back each note it's sent, an octave up.
+        let (arp, _h) = slot("test-arp", 0, true);
+        r.commands
+            .push(Command::Attach {
+                track: 0,
+                slot: arp,
+            })
+            .ok();
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let mut sent = Vec::new();
+        for _ in 0..40 {
+            studio.process(&mut out);
+            sent.extend(std::iter::from_fn(|| r.midi_out.pop().ok()));
+        }
+        // The clip's key 60 reached the plug-in, not the port; what came
+        // back (72) went out.
+        let keys: Vec<u8> = sent
+            .iter()
+            .filter(|m| m.data[0] & 0xF0 == 0x90)
+            .map(|m| m.data[1])
+            .collect();
+        assert_eq!(keys, [72], "{sent:?}");
     }
 
     #[test]
