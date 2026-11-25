@@ -10,14 +10,16 @@
 //! vocals on, each track also gets its vocal pass (see
 //! [`opendj_engine::vocals`]), so the decks have it at once.
 //!
-//! Both threads run at low priority, so the UI and the audio come first,
-//! and while a deck plays the analysis takes one core and rests between
-//! tracks (see [`opendj_engine::background`]). The DJ can pause it between
-//! tracks and move a waiting track to the front, from the Background panel.
+//! The threads run at low priority, so the UI and the audio come first.
+//! While nothing plays, a few tracks are analysed side by side (see
+//! [`workers`]); as soon as a deck plays, the extra workers stop taking
+//! tracks and the first one takes one core and rests between tracks (see
+//! [`opendj_engine::background`]). The DJ can pause it between tracks and
+//! move a waiting track to the front, from the Background panel.
 
 use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -55,6 +57,12 @@ impl Waiting {
         self.added.notify_one();
     }
 
+    /// Hands a request back to the front of the queue, for another worker.
+    fn put_back(&self, r: Request) {
+        self.requests.lock().unwrap().push_front(r);
+        self.added.notify_one();
+    }
+
     /// The next request, waiting for one.
     fn next(&self) -> Request {
         let mut q = self.requests.lock().unwrap();
@@ -76,8 +84,10 @@ pub struct AnalysisQueue {
     lyrics: Receiver<usize>,
     /// Ids sent and not yet back, so a track isn't queued twice.
     queued: HashSet<usize>,
-    /// The id of the track being analysed now, or [`IDLE`].
-    running: Arc<AtomicUsize>,
+    /// The id of the track each worker is analysing now, or [`IDLE`].
+    running: Arc<[AtomicUsize]>,
+    /// Moves on each time a worker starts or finishes a track.
+    changes: Arc<AtomicUsize>,
     generation: Arc<AtomicU64>,
     /// How long the last tracks took on average, in milliseconds (0 until
     /// one is done), for the time left.
@@ -93,10 +103,10 @@ impl AnalysisQueue {
         let waiting = Arc::new(Waiting::default());
         let rx = waiting.clone();
         let (tx, done) = channel();
-        let running = Arc::new(AtomicUsize::new(IDLE));
+        let running: Arc<[AtomicUsize]> = (0..workers()).map(|_| AtomicUsize::new(IDLE)).collect();
+        let changes = Arc::new(AtomicUsize::new(0));
         let generation = Arc::new(AtomicU64::new(0));
         let took = Arc::new(AtomicU64::new(0));
-        let (now, current, average) = (running.clone(), generation.clone(), took.clone());
         let (lookups, wanted) = channel::<(usize, coverart::Wanted)>();
         let (found, covers) = channel();
         std::thread::Builder::new()
@@ -145,73 +155,23 @@ impl AnalysisQueue {
                 }
             })
             .expect("spawn lyrics lookup thread");
-        std::thread::Builder::new()
-            .name("background-analysis".into())
-            .spawn(move || {
-                background::lower_priority();
-                loop {
-                    let r = rx.next();
-                    // Paused: the track waits its turn here.
-                    background::wait_while_held(Task::Analyze, || {
-                        r.generation == current.load(Ordering::Relaxed)
-                    });
-                    if r.generation != current.load(Ordering::Relaxed) {
-                        continue;
-                    }
-                    now.store(r.track.id, Ordering::Relaxed);
-                    let started = Instant::now();
-                    let result = analyse_file(&r.track, r.fresh);
-                    // Show vocals: the vocal pass too, kept for the decks.
-                    if let (Ok(_), Source::File(path)) = (&result, &r.track.source) {
-                        if crate::wave_look::show_vocals() {
-                            let keep_going = || {
-                                crate::wave_look::show_vocals()
-                                    && r.generation == current.load(Ordering::Relaxed)
-                            };
-                            if let Err(e) = vocals::analyse(path, None, keep_going) {
-                                eprintln!("no vocals for {}: {e}", r.track.title);
-                            }
-                        }
-                    }
-                    let worked = started.elapsed();
-                    let ms = worked.as_millis() as u64;
-                    let before = average.load(Ordering::Relaxed);
-                    average.store(
-                        if before == 0 {
-                            ms
-                        } else {
-                            (before * 3 + ms) / 4
-                        },
-                        Ordering::Relaxed,
-                    );
-                    rest(worked, &current, r.generation);
-                    now.store(IDLE, Ordering::Relaxed);
-                    let t = match result {
-                        Ok(t) => {
-                            if r.cover {
-                                if let Some(w) = wanted_cover(&t) {
-                                    let _ = lookups.send((t.id, w));
-                                }
-                                if lrclib::on_analyze() {
-                                    if let Some((path, q)) = wanted_lyrics(&t) {
-                                        let _ = lyric_lookups.send((t.id, path, q));
-                                    }
-                                }
-                            }
-                            t
-                        }
-                        // Sent back as it was, so it leaves the queue.
-                        Err(e) => {
-                            eprintln!("can't analyse {}: {e}", r.track.title);
-                            (*r.track).clone()
-                        }
-                    };
-                    if tx.send(t).is_err() {
-                        break;
-                    }
-                }
-            })
-            .expect("spawn background analysis thread");
+        for slot in 0..running.len() {
+            let worker = Worker {
+                slot,
+                waiting: rx.clone(),
+                running: running.clone(),
+                changes: changes.clone(),
+                generation: generation.clone(),
+                took: took.clone(),
+                done: tx.clone(),
+                covers: lookups.clone(),
+                lyrics: lyric_lookups.clone(),
+            };
+            std::thread::Builder::new()
+                .name(format!("background-analysis-{}", slot + 1))
+                .spawn(move || worker.run())
+                .expect("spawn background analysis thread");
+        }
         Self {
             waiting,
             done,
@@ -219,6 +179,7 @@ impl AnalysisQueue {
             lyrics,
             queued: HashSet::new(),
             running,
+            changes,
             generation,
             took,
             total: 0,
@@ -310,7 +271,7 @@ impl AnalysisQueue {
     pub fn state(&self, id: usize) -> i32 {
         if !self.queued.contains(&id) {
             0
-        } else if self.running.load(Ordering::Relaxed) == id {
+        } else if self.running.iter().any(|r| r.load(Ordering::Relaxed) == id) {
             2
         } else {
             1
@@ -322,7 +283,7 @@ impl AnalysisQueue {
         (
             self.queued.len(),
             self.finished,
-            self.running.load(Ordering::Relaxed),
+            self.changes.load(Ordering::Relaxed),
         )
     }
 
@@ -331,10 +292,13 @@ impl AnalysisQueue {
         self.queued.len()
     }
 
-    /// The track being analysed now, if one is.
+    /// The track being analysed now, if one is (the first worker's, when
+    /// several are busy).
     pub fn current(&self) -> Option<usize> {
-        let id = self.running.load(Ordering::Relaxed);
-        (id != IDLE && self.queued.contains(&id)).then_some(id)
+        self.running
+            .iter()
+            .map(|r| r.load(Ordering::Relaxed))
+            .find(|&id| id != IDLE && self.queued.contains(&id))
     }
 
     /// The first `n` tracks waiting, in the order they will be analysed.
@@ -364,8 +328,13 @@ impl AnalysisQueue {
     /// About how long the tracks left will take, once one has been timed.
     pub fn time_left(&self) -> Option<Duration> {
         let ms = self.took.load(Ordering::Relaxed);
+        let side_by_side = if background::slow_down() {
+            1
+        } else {
+            self.running.len() as u64
+        };
         (ms > 0 && !self.queued.is_empty())
-            .then(|| Duration::from_millis(ms * self.queued.len() as u64))
+            .then(|| Duration::from_millis(ms * self.queued.len() as u64 / side_by_side))
     }
 
     /// The track being analysed, counting from 1, and how many there are
@@ -389,6 +358,114 @@ fn rest(worked: Duration, generation: &AtomicU64, sent: u64) {
         && Instant::now() < until
     {
         std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
+/// How many tracks are analysed side by side while nothing plays: a
+/// quarter of the cores, between 1 and 3. Each holds a decoded track (about
+/// 100 MB for five minutes), and Beat This! runs one track at a time, so
+/// more would mostly wait.
+fn workers() -> usize {
+    std::thread::available_parallelism()
+        .map_or(1, |n| n.get() / 4)
+        .clamp(1, 3)
+}
+
+/// One analysis thread. The first always runs (gently while a deck plays);
+/// the others only take tracks while nothing plays.
+struct Worker {
+    slot: usize,
+    waiting: Arc<Waiting>,
+    running: Arc<[AtomicUsize]>,
+    changes: Arc<AtomicUsize>,
+    generation: Arc<AtomicU64>,
+    took: Arc<AtomicU64>,
+    done: Sender<Track>,
+    covers: Sender<(usize, coverart::Wanted)>,
+    lyrics: Sender<(usize, std::path::PathBuf, lrclib::Query)>,
+}
+
+impl Worker {
+    /// Whether this worker should leave tracks to the first one now.
+    fn stand_aside(&self) -> bool {
+        self.slot > 0 && background::slow_down()
+    }
+
+    fn run(self) {
+        background::lower_priority();
+        let current = &self.generation;
+        loop {
+            while self.stand_aside() {
+                std::thread::sleep(Duration::from_millis(200));
+            }
+            let r = self.waiting.next();
+            // A deck started while this one waited for a track: the first
+            // worker takes it.
+            if self.stand_aside() {
+                self.waiting.put_back(r);
+                continue;
+            }
+            // Paused: the track waits its turn here.
+            background::wait_while_held(Task::Analyze, || {
+                r.generation == current.load(Ordering::Relaxed)
+            });
+            if r.generation != current.load(Ordering::Relaxed) {
+                continue;
+            }
+            self.running[self.slot].store(r.track.id, Ordering::Relaxed);
+            self.changes.fetch_add(1, Ordering::Relaxed);
+            let started = Instant::now();
+            let result = analyse_file(&r.track, r.fresh);
+            // Show vocals: the vocal pass too, kept for the decks.
+            if let (Ok(_), Source::File(path)) = (&result, &r.track.source) {
+                if crate::wave_look::show_vocals() {
+                    let keep_going = || {
+                        crate::wave_look::show_vocals()
+                            && r.generation == current.load(Ordering::Relaxed)
+                    };
+                    if let Err(e) = vocals::analyse(path, None, keep_going) {
+                        eprintln!("no vocals for {}: {e}", r.track.title);
+                    }
+                }
+            }
+            let worked = started.elapsed();
+            let ms = worked.as_millis() as u64;
+            let before = self.took.load(Ordering::Relaxed);
+            self.took.store(
+                if before == 0 {
+                    ms
+                } else {
+                    (before * 3 + ms) / 4
+                },
+                Ordering::Relaxed,
+            );
+            rest(worked, current, r.generation);
+            self.running[self.slot].store(IDLE, Ordering::Relaxed);
+            self.changes.fetch_add(1, Ordering::Relaxed);
+            let t = match result {
+                Ok(t) => {
+                    if r.cover {
+                        if let Some(w) = wanted_cover(&t) {
+                            let _ = self.covers.send((t.id, w));
+                        }
+                        if lrclib::on_analyze() {
+                            if let Some((path, q)) = wanted_lyrics(&t) {
+                                let _ = self.lyrics.send((t.id, path, q));
+                            }
+                        }
+                    }
+                    t
+                }
+                // Sent back as it was, so it leaves the queue.
+                Err(e) => {
+                    eprintln!("can't analyse {}: {e}", r.track.title);
+                    (*r.track).clone()
+                }
+            };
+            if self.done.send(t).is_err() {
+                break;
+            }
+        }
     }
 }
 
