@@ -67,6 +67,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 - Audio devices are scanned once at start-up, so Settings and device menus no longer lag or cut the sound. **Refresh devices** in Settings › Audio scans again.
 - A missing master device falls back to the system default, and openDJ moves back when it returns. Looking for a lost device no longer freezes the window.
 - Key-locked decks play on without a skip through loop controls and Key Lock toggles.
+- Starting openDJ while it already runs brings the open window forward instead of opening a second copy that fights it for the audio interface and controllers.
 
 **Fixes**
 
