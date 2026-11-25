@@ -100,6 +100,8 @@ export struct TrackData {
     drums: bool,
     // An audio track: recordings, no instrument.
     audio: bool,
+    // A MIDI track an External Instrument plays: it has an audio input too.
+    external: bool,
     kind: string,
     // Where it listens (an audio input, or a MIDI controller), in words.
     input: string,
@@ -476,6 +478,12 @@ component IoSection inherits Rectangle {
             options: ["All Channels", "Ch. 1", "Ch. 2", "Ch. 3", "Ch. 4", "Ch. 5", "Ch. 6", "Ch. 7", "Ch. 8",
                 "Ch. 9", "Ch. 10", "Ch. 11", "Ch. 12", "Ch. 13", "Ch. 14", "Ch. 15", "Ch. 16"];
             picked(i) => { root.picked(5, i); }
+        }
+        if t.external: IoLabel { text: "Audio From"; }
+        if t.external: Picker {
+            text: t.in-channel == "" ? "—" : t.in-channel;
+            options: root.in-channels;
+            picked(i) => { root.picked(1, i); }
         }
         IoLabel { text: "Monitor"; }
         HorizontalLayout {

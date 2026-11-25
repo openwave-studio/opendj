@@ -66,6 +66,9 @@ they're under `src/push/` or named as the app's.
 - Each built-in device lists its settings (`Settings::params`) for its
   panel in the device row; a change reaches the running device with
   `Command::DeviceParam` and retunes it in place.
+- `devices.rs` also has Live's External Instrument: the track's notes go
+  to its MIDI To port its hardware latency early (the engine reads its
+  clips that far ahead), and its sound comes in from its Audio From input.
 - `fx.rs`: Live's Delay, Echo, Reverb, Gate and Overdrive, and
   Hybrid Reverb (the set's room from Live's app through `conv.rs`, blended with a plate) and Roar (shapers and
   filters in series, no feedback or modulation).

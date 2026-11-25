@@ -203,9 +203,14 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
     let link = link_clock.handle();
     link_clock.set_latency(chosen.buffer as f64 / rate);
     studio.link = Some(link_clock);
-    // The sound card input is for audio tracks: a set without them (the
-    // demo) never asks for the microphone.
-    let wants_input = set.iter().any(|t| t.sound == clip::Sound::Audio);
+    // The sound card input is for audio tracks and External Instruments: a
+    // set without them (the demo) never asks for the microphone.
+    let wants_input = set.iter().any(|t| {
+        t.sound == clip::Sound::Audio
+            || t.devices
+                .iter()
+                .any(|d| matches!(d.builtin, Some(devices::Settings::External(_))))
+    });
     let audio = audio::Audio::start(studio, &chosen, wants_input);
     ui(set, &returns, audio, chosen, remote, link, note)
 }
@@ -976,6 +981,7 @@ fn track_row(
         .into(),
         drums: info.drums(),
         audio: info.audio(),
+        external: info.external(),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
         input: io.input_text(info.audio()).into(),
         chain: reuse(

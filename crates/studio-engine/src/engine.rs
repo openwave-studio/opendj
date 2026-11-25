@@ -457,9 +457,33 @@ struct Column {
     /// Left and right in, left and right out, for the plug-ins.
     planar: Vec<f32>,
     routing: Routing,
+    /// Where the last block's events ended, in beats (ahead of the clock
+    /// for an External Instrument), while playing.
+    events_end: Option<f64>,
 }
 
 impl Column {
+    /// How early the track's notes go out: its External Instruments'
+    /// hardware latency, in ms.
+    fn ahead_ms(&self) -> f32 {
+        self.slots
+            .iter()
+            .filter(|s| s.on)
+            .filter_map(|s| match &s.kind {
+                SlotKind::Builtin(d) => d.latency_ms(),
+                SlotKind::Plugin(_) => None,
+            })
+            .sum()
+    }
+
+    /// Whether an External Instrument plays the track: its sound comes in
+    /// from the sound card.
+    fn external(&self) -> bool {
+        self.slots
+            .iter()
+            .any(|s| matches!(&s.kind, SlotKind::Builtin(d) if d.latency_ms().is_some()))
+    }
+
     /// Whether a plug-in plays the track's notes (the built-in sound is
     /// then quiet).
     fn plugin_instrument(&self) -> bool {
@@ -641,6 +665,7 @@ impl Engine {
                     Vec::new()
                 },
                 routing: Routing::from(&t.io),
+                events_end: None,
                 rng: 0x9E37_79B9 ^ (i as u32 + 1).wrapping_mul(0x85EB_CA6B),
                 instrument: match t.sound {
                     // A set's Drum Rack plays its own samples when they loaded.
@@ -983,12 +1008,26 @@ impl Engine {
         self.ext.fill(0.0);
         for t in 0..self.columns.len() {
             let routing = self.columns[t].routing;
-            // Notes going out over MIDI leave the track's own sound quiet.
-            let plugin = self.columns[t].plugin_instrument() || routing.midi_out;
+            // Notes going out over MIDI leave the track's own sound quiet,
+            // and so does an External Instrument without a MIDI out.
+            let plugin = self.columns[t].plugin_instrument()
+                || routing.midi_out
+                || self.columns[t].external();
+            // Notes to hardware go out early by its latency.
+            let ahead = if routing.midi_out {
+                self.columns[t].ahead_ms() as f64 / 1000.0 * span.tempo / 60.0
+            } else {
+                0.0
+            };
             let mut switch = None;
+            let mut from = start;
             if self.playing {
                 self.events.clear();
-                switch = self.track_events(t, start, end);
+                let (lo, hi) = self.window(t, start + ahead, end + ahead);
+                if ahead > 0.0 {
+                    from = lo;
+                }
+                switch = self.track_events(t, lo, hi, ahead);
                 self.events.sort_unstable_by(|a, b| {
                     a.beat
                         .total_cmp(&b.beat)
@@ -996,13 +1035,14 @@ impl Engine {
                 });
             } else {
                 self.events.clear();
+                self.columns[t].events_end = None;
             }
             let scratch = &mut self.scratch[..frames];
             scratch.fill([0.0; 2]);
             let mut done = 0;
             for i in 0..self.events.len() {
                 let e = self.events[i];
-                let at = (((e.beat - start) / beats_per_frame).round() as usize).min(frames);
+                let at = (((e.beat - from) / beats_per_frame).round() as usize).min(frames);
                 if at > done {
                     if !plugin {
                         self.columns[t].instrument.render(&mut scratch[done..at]);
@@ -1149,15 +1189,18 @@ impl Engine {
 
     /// Adds what comes in to an audio track that is listening: with Monitor
     /// on In always (its clips then quiet), on Auto when it is armed and
-    /// plays no clip.
+    /// plays no clip. A track an External Instrument plays always listens.
     fn listen(&mut self, t: usize, frames: usize) {
         let c = &self.columns[t];
-        if c.stretch.is_none() {
+        let external = c.external();
+        if c.stretch.is_none() && !external {
             return;
         }
         let r = c.routing;
         let clip = self.playing && c.playing.is_some();
         let listening = match r.monitor {
+            // An External Instrument's sound is always what comes in.
+            _ if external => true,
             Monitoring::In => true,
             Monitoring::Auto => r.armed && !clip,
             Monitoring::Off => false,
@@ -1254,12 +1297,36 @@ impl Engine {
     /// switching clips at a pending launch point.
     /// Returns the switch, if there was one: its beat and the clip that
     /// played before it.
-    fn track_events(&mut self, t: usize, lo: f64, hi: f64) -> Option<(f64, Option<(usize, f64)>)> {
+    /// The beats a track's events come from this block, `lo..hi`, joined
+    /// onto where its last block's ended, so no note plays twice or goes
+    /// missing when an External Instrument's latency or the tempo moves
+    /// the window. A jump of the clock starts afresh.
+    fn window(&mut self, t: usize, lo: f64, hi: f64) -> (f64, f64) {
+        let c = &mut self.columns[t];
+        let lo = match c.events_end {
+            Some(e) if (lo - e).abs() < 0.25 => e,
+            _ => lo,
+        };
+        let hi = hi.max(lo);
+        c.events_end = Some(hi);
+        (lo, hi)
+    }
+
+    /// `ahead`: how far `lo..hi` runs ahead of the clock. A clip that
+    /// starts at once still starts on the clock's beat, its first notes
+    /// going out as soon as they can.
+    fn track_events(
+        &mut self,
+        t: usize,
+        lo: f64,
+        hi: f64,
+        ahead: f64,
+    ) -> Option<(f64, Option<(usize, f64)>)> {
         let mut from = lo;
         let mut switch = None;
         if let Some(p) = self.columns[t].pending {
             if p.at < hi {
-                let at = p.at.max(lo);
+                let at = p.at.max(lo - ahead);
                 self.clip_events(t, from, at);
                 // Every sounding note ends on the switch.
                 let c = &mut self.columns[t];
@@ -1804,6 +1871,58 @@ mod tests {
             .collect();
         let bar = (4.0 * frames_per_beat(120.0)) as u64;
         assert_eq!(&ons[..3], &[0, bar, 2 * bar]);
+    }
+
+    /// An External Instrument's notes go out its latency early, and its
+    /// sound comes in from the sound card in place of the built-in one.
+    #[test]
+    fn external_instrument_sends_early_and_plays_its_input() {
+        let mut set = one_note_set();
+        set[0].io.midi_to = Some(("Synth".into(), 0));
+        set[0].io.audio_in = Some((0, false));
+        set[0].devices = vec![crate::clip::DeviceInfo {
+            name: "External Instrument".into(),
+            kind: "Live".into(),
+            on: true,
+            plugin: None,
+            builtin: Some(crate::devices::Settings::External(
+                crate::devices::ExternalSettings {
+                    latency_ms: 100.0,
+                    ..Default::default()
+                },
+            )),
+        }];
+        let (mut s, mut r) = Studio::new(&set, RATE, 120.0);
+        s.engine.keep_log(64);
+        let (mut tx, rx) = rtrb::RingBuffer::new(BLOCK * 8);
+        s.set_input(rx, 1);
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        let mut out = vec![[0.0; 2]; BLOCK];
+        let mut loud = 0.0f32;
+        for _ in 0..(9.0 * frames_per_beat(120.0)) as usize / BLOCK {
+            for _ in 0..BLOCK {
+                tx.push(0.25).ok();
+            }
+            s.process(&mut out);
+            loud = loud.max(r.monitor.take_peak(0));
+        }
+        let ons: Vec<u64> = s
+            .engine
+            .log()
+            .iter()
+            .filter(|e| e.on)
+            .map(|e| e.frame)
+            .collect();
+        // The first note starts at once; the next ones a bar later, less
+        // 100 ms (0.2 beats at 120).
+        let fpb = frames_per_beat(120.0);
+        assert_eq!(ons[0], 0, "{ons:?}");
+        for (got, want) in ons[1..].iter().zip([3.8 * fpb, 7.8 * fpb]) {
+            assert!(got.abs_diff(want as u64) <= BLOCK as u64, "{ons:?}");
+        }
+        assert_eq!(ons.len(), 3, "{ons:?}");
+        // The input sounds through the track.
+        assert!(loud > 0.1, "peak {loud}");
     }
 
     #[test]
