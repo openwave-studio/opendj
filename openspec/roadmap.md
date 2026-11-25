@@ -161,6 +161,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-cue-sequence-recording](changes/add-cue-sequence-recording/proposal.md) (moved from v0.6 on 2026-11-06)
 - [add-fx-pre-post-and-headphone](changes/add-fx-pre-post-and-headphone/proposal.md) (moved from v0.6 on 2026-11-06)
 - [add-groove-box-2](changes/add-groove-box-2/proposal.md) (Groove Box 2.0: a bar timeline in the waveform strip with chains, step accents, chance, nudge and rolls, per-row length, 8 rows with a knob per sound, fills, a melodic row in the leading deck's key, recording from pads, sounds from the mix and Replace drums; takes over the Later tasks of add-groove-box)
+- [add-session-view](changes/add-session-view/proposal.md) (openDJ Studio's Session inside openDJ: a channel of its own on its own real-time thread, in time with the decks; clip grid in the browser area, Session bar, tracks and deck loops into clips, recording, Push/Launchpad; a user request, 2026-11-25)
 - [add-windows-support](changes/add-windows-support/proposal.md) (a Windows preview shipped in v0.4.0; code signing waits: SignPath Foundation turned the application down, 2026-10-29, see docs/windows.md)
 
 ## Much later (no change yet)

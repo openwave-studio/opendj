@@ -95,7 +95,9 @@ pub struct BeatClock {
 }
 
 impl BeatClock {
-    pub(crate) fn publish(&self, heard_at: i64, beat: f64, tempo: f64) {
+    /// Writes a buffer's beat and tempo. The engine's audio thread does,
+    /// once a buffer; tests stand in for it.
+    pub fn publish(&self, heard_at: i64, beat: f64, tempo: f64) {
         let s = self.seq.load(Ordering::Relaxed);
         self.seq.store(s.wrapping_add(1), Ordering::Relaxed);
         fence(Ordering::Release);
