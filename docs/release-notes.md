@@ -81,6 +81,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 - Collection Health no longer hangs on a large imported library.
 - The plugin helper no longer crashes on exit on macOS, CLAP plugins with extra ports (Cardinal, Vital) play, and synths play before their window is opened.
 - Settings are kept in memory instead of being read from disk many times a second.
+- A track list scrolled sideways no longer stays stuck with its first columns cut off when the window or panels resize.
 
 ## Install
 
