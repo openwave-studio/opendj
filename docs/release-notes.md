@@ -12,6 +12,14 @@ openDJ 0.9.5 is a test release on the way to 1.0. The instrument deck is simpler
 - A hot cue or cue jump out of a playing loop now ends the loop.
 - The top bar shows the new 1.0 logo.
 
+**Top bar and WAVE menu**
+
+- Every top bar button is the same 32 px pill. The clock has its own pill, and **Master** is one pill with the knob, two wider meters and a ▾ that opens the Master panel.
+- **Remote** moves to **File › Remote…**. Its pill shows only while the phone remote is on, and turns green when a phone connects.
+- A compact **WAVE** panel: height and zoom sliders, one row each for size, style, color and needle, and Phrases and Lyrics switches. BPM labels always show.
+- **RGB** waveforms come in Red-Amber or Red-Green-Blue.
+- On macOS, dragging the master knob no longer moves the window.
+
 **Instruments and Jam**
 
 - **Instrument deck**: a thin colored frame, the preset on the centre line, and a **PLAY | SEQ** switch between eight bigger knobs and the step sequencer, with a ‹ page › turner under it. A scope sits over the knobs: **OSC | FREQ** switches wave and spectrum, **PRE | POST** the instrument alone or after its effects.
