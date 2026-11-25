@@ -77,7 +77,8 @@ pub struct Controllers {
     shared: Arc<Shared>,
     mappings: Vec<(String, PathBuf)>,
     stop: Arc<AtomicBool>,
-    thread: Option<JoinHandle<()>>,
+    /// The device thread, until [`Controllers::shut_down`].
+    thread: Mutex<Option<JoinHandle<()>>>,
 }
 
 /// Where notes from MIDI keyboards go: the instrument plugin. Called on the
@@ -156,7 +157,7 @@ impl Controllers {
             shared,
             mappings,
             stop,
-            thread: Some(thread),
+            thread: Mutex::new(Some(thread)),
         }
     }
 
@@ -328,12 +329,45 @@ fn monitor(port: &str, msg: &[u8]) {
     }
 }
 
-impl Drop for Controllers {
-    fn drop(&mut self) {
+impl Controllers {
+    /// Disconnects every device and waits for their threads: each mapping
+    /// runs its shutdown (lights off) and its MIDI ports close while the
+    /// threads are alive. For quitting, when the app may still hold the
+    /// controllers; dropping them does the same.
+    pub fn shut_down(&self) {
         self.stop.store(true, Ordering::Relaxed);
-        if let Some(t) = self.thread.take() {
+        let thread = self.thread.lock().unwrap().take();
+        if let Some(t) = thread {
             let _ = t.join();
         }
+    }
+
+    /// As [`Controllers::shut_down`], waiting at most `limit`; whether the
+    /// threads finished. The device thread asks the system for its MIDI
+    /// ports every second, and a MIDI service that stops answering (seen
+    /// with Windows MIDI Services) holds it inside that call for good: it
+    /// is then left behind rather than waited for.
+    pub fn shut_down_within(&self, limit: Duration) -> bool {
+        self.stop.store(true, Ordering::Relaxed);
+        let Some(thread) = self.thread.lock().unwrap().take() else {
+            return true;
+        };
+        let until = Instant::now() + limit;
+        while !thread.is_finished() && Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if thread.is_finished() {
+            let _ = thread.join();
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Drop for Controllers {
+    fn drop(&mut self) {
+        self.shut_down();
     }
 }
 

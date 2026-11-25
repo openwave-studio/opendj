@@ -474,6 +474,21 @@ impl AudioEngine {
         }
     }
 
+    /// Closes the audio devices and the MIDI clock's ports for quitting,
+    /// while every thread is still alive: the engine itself is often still
+    /// held by the window's handlers when the app returns, and dropping its
+    /// streams at the very end of the process panics or hangs. Afterwards
+    /// nothing plays and no device opens again. Whether every thread it
+    /// waited on finished: one stuck in a driver is left behind.
+    pub fn close_devices(&self) -> bool {
+        // The sound first, then the clock's MIDI ports.
+        let outputs = self.output.borrow_mut().close();
+        let clock = self
+            .midi_clock
+            .shut_down_within(std::time::Duration::from_secs(2));
+        outputs && clock
+    }
+
     /// Where notes for the Instrument input go in, from any thread.
     pub fn note_input(&self) -> Arc<Mutex<NoteInput>> {
         self.notes.clone()

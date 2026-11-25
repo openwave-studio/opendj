@@ -102,6 +102,7 @@ mod sampler;
 mod scrobble;
 mod settings;
 mod shortcuts;
+mod shutdown;
 mod single_instance;
 mod sleep_timer;
 mod smooth;
@@ -1747,6 +1748,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         .collect();
     let finished_recorder = recorder.clone();
     let quitting_engine = engine.clone();
+    let quitting_controllers = controllers.clone();
     {
         let app_weak = app.as_weak();
         timer.start(
@@ -2134,14 +2136,38 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     ui_scale::install(&app, first_run);
     fit_to_screen(&app);
     app.run()?;
-    // Keeps each plugin's sound (tweaks made in its window) for next time:
-    // the engine isn't always dropped on the way out.
-    quitting_engine.shut_down_plugins();
+    // The window's handlers still hold the engine and the controllers, so
+    // nothing here is dropped until the very end of the process, when
+    // Windows has already ended the other threads: a driver let go of then
+    // panics or hangs, leaving openDJ running without a window and holding
+    // its audio and MIDI devices. So each is let go of now, in order.
+    let quit = shutdown::Shutdown::start();
+    // Keeps each plugin's sound (tweaks made in its window) for next time.
+    quit.step("saving plugin sounds", || {
+        quitting_engine.shut_down_plugins()
+    });
     // Finishes the files, with the cue sheet, if the DJ quits mid-recording.
-    recorder.stop();
+    quit.step("finishing the recording", || recorder.stop());
     if let Some(b) = &broadcast {
-        b.shut_down();
+        quit.step("ending the broadcast", || b.shut_down());
     }
+    // The sound stops first, so the room goes quiet as soon as Quit is
+    // confirmed, whatever follows.
+    quit.step("closing audio devices", || {
+        if !quitting_engine.close_devices() {
+            quit.abandon("an audio or MIDI clock thread, stuck in a driver");
+        }
+    });
+    // The mappings turn their lights off. The device thread can be stuck
+    // asking a MIDI service that stopped answering, so it gets 2 s.
+    if let Some(c) = &quitting_controllers {
+        quit.step("disconnecting controllers", || {
+            if !c.shut_down_within(Duration::from_secs(2)) {
+                quit.abandon("the controller thread, stuck in a MIDI or USB call");
+            }
+        });
+    }
+    quit.finish();
     Ok(())
 }
 

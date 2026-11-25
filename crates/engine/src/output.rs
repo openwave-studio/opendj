@@ -681,6 +681,8 @@ pub(crate) struct Outputs {
     fell_back: Option<String>,
     /// When the outputs were last opened.
     opened_at: Instant,
+    /// Closed for quitting (see [`Outputs::close`]): nothing opens again.
+    closed: bool,
 }
 
 impl Outputs {
@@ -709,13 +711,43 @@ impl Outputs {
             lost_reported: false,
             fell_back: None,
             opened_at: Instant::now(),
+            closed: false,
         };
         o.configure(setup);
         o
     }
 
+    /// Closes every output and input stream and stops the stand-in timer,
+    /// for good: the app is quitting. Dropping a stream joins its audio
+    /// thread and unloads its driver, which only works while that thread
+    /// is still alive. Left to the end of the process, Windows has already
+    /// ended the thread: the join panics, or a driver waits on it and the
+    /// process never ends. Whether every thread it started has finished:
+    /// a look for a lost device (see [`Outputs::look_for`]) still loading
+    /// drivers after 2 s is left behind.
+    pub(crate) fn close(&mut self) -> bool {
+        self.closed = true;
+        self.streams.clear();
+        self.inputs.clear();
+        self.drop_watched();
+        self.timer = None;
+        self.levels.clear();
+        // After the sound has stopped: this can wait.
+        let looked = self.looking.take().is_none_or(|rx| {
+            !matches!(
+                rx.recv_timeout(Duration::from_secs(2)),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+            )
+        });
+        devices::set_asio_held(false);
+        looked
+    }
+
     /// Opens the devices `setup` names, closing the ones in use.
     pub(crate) fn configure(&mut self, setup: &AudioSetup) {
+        if self.closed {
+            return;
+        }
         self.configure_outputs(setup);
         self.configure_inputs(setup);
     }
@@ -723,6 +755,9 @@ impl Outputs {
     /// Opens the input devices `setup` names, closing the ones in use, and
     /// leaves the outputs as they are.
     pub(crate) fn configure_inputs(&mut self, setup: &AudioSetup) {
+        if self.closed {
+            return;
+        }
         let _asio = setup
             .inputs
             .iter()
@@ -827,6 +862,9 @@ impl Outputs {
     /// default) while the input picker shows it, opening it for that if no
     /// input uses it; `None` closes it again.
     pub(crate) fn watch_input(&mut self, device: Option<&str>) {
+        if self.closed {
+            return;
+        }
         let Some(device) = device else {
             self.drop_watched();
             self.publish_asio_held();
@@ -970,6 +1008,9 @@ impl Outputs {
     /// once the clock device is there again. Call it every so often; it says
     /// what happened, for the person at the decks.
     pub(crate) fn recover(&mut self) -> Option<String> {
+        if self.closed {
+            return None;
+        }
         if !self.health.lost.load(Ordering::Acquire) {
             return self.recover_inputs();
         }
