@@ -8068,6 +8068,7 @@ dependencies = [
  "opendj-plugins",
  "opendj-remote",
  "opendj-script",
+ "opendj-studio-engine",
  "opendj-waveform",
  "read-fonts",
  "rfd",

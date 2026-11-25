@@ -7,6 +7,7 @@ import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { HoverTip } from "controls.slint";
 import { SourceUi, SearchesPanel, SourceResults, SourceSetup } from "sources.slint";
 import { InstrumentsPanel } from "plugin_panel.slint";
+import { SessionUi } from "session.slint";
 import { InstrumentsUi } from "instruments.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { CueList } from "cues.slint";
@@ -7936,6 +7937,15 @@ export component Browser inherits HorizontalLayout {
     // Asked for from a deck: the Jam source comes up.
     property <int> panel-request: InstrumentsUi.panel-request;
     changed panel-request => {
+        if source != 12 {
+            source = 12;
+            lists-for = 12;
+            select-source(12);
+        }
+    }
+    // A Live set opened: the Jam source comes up, with its clips.
+    property <int> session-request: SessionUi.show-request;
+    changed session-request => {
         if source != 12 {
             source = 12;
             lists-for = 12;

@@ -13,7 +13,26 @@ pub mod conv;
 pub mod devices;
 pub mod engine;
 pub mod fx;
+#[cfg(feature = "link")]
 pub mod link;
+/// Without Ableton Link (openDJ's Session): a clock that can't exist, so
+/// the engine's Link paths compile away.
+#[cfg(not(feature = "link"))]
+pub mod link {
+    use crate::engine::Span;
+
+    pub enum LinkClock {}
+
+    impl LinkClock {
+        pub fn begin(&mut self, _frames: usize) -> Option<Span> {
+            match *self {}
+        }
+
+        pub fn set_tempo(&mut self, _bpm: f64) {
+            match *self {}
+        }
+    }
+}
 pub mod plugins;
 pub mod scale;
 pub mod session;

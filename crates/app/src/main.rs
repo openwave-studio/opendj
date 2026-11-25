@@ -100,6 +100,7 @@ mod remote;
 mod room_eq;
 mod sampler;
 mod scrobble;
+mod session;
 mod settings;
 mod shortcuts;
 mod shutdown;
@@ -858,6 +859,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     // saved again as it changes.
     groove_box::install(&app);
     instruments::install(&app);
+    session::install(&app, engine.clone(), registry.clone());
     mixer_picker::install(&app, engine.clone());
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());

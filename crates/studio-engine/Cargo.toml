@@ -6,13 +6,19 @@ edition.workspace = true
 license.workspace = true
 publish = false
 
+[features]
+default = ["link"]
+link = ["dep:rusty_link"]
+
 [dependencies]
 # The Groove Box kits and samples, and the filters. Without Whisper.
 opendj-engine = { path = "../engine", default-features = false }
 # Runs plug-ins in helper processes (the client side only).
 opendj-plugin-host = { path = "../plugin-host", default-features = false }
 rtrb = "0.4"
-rusty_link = "0.4"
+# Ableton Link (cmake and bindgen at build time): the Studio app wants it;
+# openDJ's Session follows the master deck instead and leaves it out.
+rusty_link = { version = "0.4", optional = true }
 flate2 = "1"
 roxmltree = "0.21"
 realfft = "3.5"
