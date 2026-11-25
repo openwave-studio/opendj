@@ -35,12 +35,12 @@ use opendj_control::ControlRegistry;
 use opendj_controllers::routing::{self, DeckChoice};
 use opendj_controllers::{is_system_port, own, Controllers, MappingChoice, Port};
 use opendj_engine::inputs::{DEFAULT_DUCK_STRENGTH, DUCK_AUTO};
-use opendj_engine::GridMode;
 use opendj_engine::{
     analysis, beatthis, cache, channel_names, deck_group, deck_outputs_split, engine,
     input_devices, key, meter, separation, AudioSetup, InputRole, InputRoute, RecordFormat,
     Recorder, BUFFER_SIZES, DEFAULT_AUTO_GAIN_TARGET, NUM_DECKS, SAMPLE_RATES, XFADER_CUT_IN,
 };
+use opendj_engine::{DeviceScan, GridMode};
 use opendj_library::query;
 use opendj_plugins::source::DOWNLOAD_FOLDER;
 use opendj_plugins::{LibraryImport, Plugin, SettingKind};
@@ -618,6 +618,14 @@ pub struct Prefs {
     /// Opens the inputs again with the saved audio settings, and tells
     /// each input's state (see [`opendj_engine::AudioEngine::input_status`]).
     inputs: InputHooks,
+    /// The device lists last shown (see [`opendj_engine::devices_generation`]):
+    /// when a scan changes them, Settings › Audio is filled again.
+    devices_shown: u64,
+    /// Refresh devices was pressed while a deck played and waits for a
+    /// second press (see `refresh_devices_item`).
+    refresh_pending: bool,
+    /// A device scan was under way when Settings › Audio was last filled.
+    devices_scanning: bool,
     /// The inputs table's rows last shown, and what each row's menus
     /// offered: the devices ("" for None), and the first channel of each
     /// choice and whether it is mono.
@@ -732,6 +740,9 @@ impl Prefs {
             plugin_changed,
             audio_changed,
             inputs,
+            devices_shown: opendj_engine::devices_generation(),
+            devices_scanning: false,
+            refresh_pending: false,
             input_menus: Vec::new(),
             aux_added: 0,
             wizard: None,
@@ -959,6 +970,18 @@ impl Prefs {
         if self.audio_plugins.borrow_mut().poll() && g.get_open() && g.get_page() == AUDIO_PLUGINS {
             self.refresh();
         }
+        // A device scan finished: the output menus and table, and the
+        // inputs on Settings › Audio, show what it found.
+        let devices = opendj_engine::devices_generation();
+        let scanning = opendj_engine::devices_scanning();
+        if devices != self.devices_shown || scanning != self.devices_scanning {
+            self.devices_shown = devices;
+            self.devices_scanning = scanning;
+            app.global::<AudioSettings>().invoke_refresh();
+            if g.get_open() && g.get_page() == AUDIO {
+                self.refresh();
+            }
+        }
         // The controller list follows what is plugged in.
         if g.get_open() && g.get_page() == CONTROLLERS && g.get_query().is_empty() {
             let ports = self
@@ -1089,8 +1112,18 @@ impl Prefs {
     /// A page was opened or the search changed.
     fn shown(&mut self) {
         if let Some(app) = self.app.upgrade() {
+            // The devices as last scanned: no driver is loaded for this.
             app.global::<AudioSettings>().invoke_refresh();
+            // Devices plugged in since show up: Windows Audio's are looked
+            // at again, on a thread of its own, and the rows follow (see
+            // `poll`). ASIO drivers are left alone until Refresh devices:
+            // loading them takes seconds and can interrupt the sound.
+            let g = app.global::<Preferences>();
+            if g.get_open() && g.get_page() == AUDIO {
+                opendj_engine::rescan_devices(DeviceScan::System);
+            }
         }
+        self.refresh_pending = false;
         self.storage_pending = None;
         self.storage_note.clear();
         self.sources_note.clear();
@@ -1293,6 +1326,7 @@ impl Prefs {
                         )
                     });
                     items.extend(deck_output_items());
+                    items.push(self.refresh_devices_item());
                     items.extend([item("inputs", HEADING, "INPUTS", ""), self.inputs_item()]);
                 }
                 if shows(1) {
@@ -2045,6 +2079,38 @@ impl Prefs {
                 ),
             )
         }
+    }
+
+    /// Refresh devices, under the outputs. On Windows it loads each ASIO
+    /// driver in turn, which stops a Windows Audio stream on the same
+    /// interface for a moment, so while a deck plays it asks first.
+    fn refresh_devices_item(&self) -> PrefItem {
+        let (action, detail) = if opendj_engine::devices_scanning() {
+            ("Refresh", "Looking for audio devices…")
+        } else if self.refresh_pending {
+            (
+                "Refresh anyway",
+                "A deck is playing, and loading ASIO drivers can stop the sound. Press again.",
+            )
+        } else if cfg!(windows) {
+            (
+                "Refresh",
+                "Finds devices plugged in later. Loading ASIO drivers can stop the sound.",
+            )
+        } else {
+            ("Refresh", "Finds devices plugged in after openDJ started.")
+        };
+        PrefItem {
+            action: action.into(),
+            ..item("audio_devices_refresh", BUTTON, "Refresh devices", detail)
+        }
+    }
+
+    /// Whether any deck is playing.
+    fn decks_playing(&self) -> bool {
+        (0..NUM_DECKS)
+            .filter_map(|d| self.registry.get(&deck_group(d), "play"))
+            .any(|c| c.get() > 0.5)
     }
 
     /// How the audio keeps up, from the engine's `[App],audio_latency_*`
@@ -3411,6 +3477,17 @@ impl Prefs {
             return;
         }
         if self.broadcast_pressed(id) || self.backup_pressed(id) {
+            return;
+        }
+        if id == "audio_devices_refresh" {
+            // A first press while a deck plays only warns (see
+            // `refresh_devices_item`); a second one goes on.
+            let ask = cfg!(windows) && !self.refresh_pending && self.decks_playing();
+            self.refresh_pending = ask;
+            if !ask {
+                opendj_engine::rescan_devices(DeviceScan::All);
+            }
+            self.refresh();
             return;
         }
         if id == "controllers_refresh" {

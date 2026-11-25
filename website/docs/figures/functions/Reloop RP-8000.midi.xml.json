@@ -1,0 +1,999 @@
+{
+  "file": "Reloop RP-8000.midi.xml",
+  "parts": {
+    "browse": {
+      "Back": [
+        "Previous panel"
+      ],
+      "Deck 2": [
+        "Scroll list"
+      ],
+      "Deck 2 Back": [
+        "Previous panel"
+      ],
+      "Deck 2 Press": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Scroll list"
+      ],
+      "Deck 3": [
+        "Scroll list"
+      ],
+      "Deck 3 Back": [
+        "Previous panel"
+      ],
+      "Deck 3 Press": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Scroll list"
+      ],
+      "Deck 4": [
+        "Scroll list"
+      ],
+      "Deck 4 Back": [
+        "Previous panel"
+      ],
+      "Deck 4 Press": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Scroll list"
+      ],
+      "Press": [
+        "Reloop rp8000 input"
+      ],
+      "SHIFT": [
+        "Scroll list"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "mode1": {
+      "Deck 2": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 input"
+      ],
+      "normal": [
+        "Reloop rp8000 input"
+      ]
+    },
+    "mode2": {
+      "Deck 2": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "normal": [
+        "Reloop rp8000 input"
+      ]
+    },
+    "mode3": {
+      "Deck 2": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 input"
+      ],
+      "normal": [
+        "Reloop rp8000 input"
+      ]
+    },
+    "mode4": {
+      "Deck 2": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 2 SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 3 SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4": [
+        "Reloop rp8000 input"
+      ],
+      "Deck 4 SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "SHIFT": [
+        "Reloop rp8000 input"
+      ],
+      "normal": [
+        "Reloop rp8000 input"
+      ]
+    },
+    "pad1": {
+      "Deck 2": [
+        "Hot cue 1"
+      ],
+      "Deck 2 Loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 1"
+      ],
+      "Deck 3 Loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 1"
+      ],
+      "Deck 4 Loop": [
+        "Loop 32 beats"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 1/16 beat"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Loop": [
+        "Loop 32 beats"
+      ],
+      "Loop roll": [
+        "Loop roll 1/16 beat"
+      ],
+      "SHIFT": [
+        "Clear hot cue 1"
+      ],
+      "Sampler": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "pad2": {
+      "Deck 2": [
+        "Hot cue 2"
+      ],
+      "Deck 2 Loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 2"
+      ],
+      "Deck 3 Loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 2"
+      ],
+      "Deck 4 Loop": [
+        "Loop 16 beats"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 1/8 beat"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Loop": [
+        "Loop 16 beats"
+      ],
+      "Loop roll": [
+        "Loop roll 1/8 beat"
+      ],
+      "SHIFT": [
+        "Clear hot cue 2"
+      ],
+      "Sampler": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "pad3": {
+      "Deck 2": [
+        "Hot cue 3"
+      ],
+      "Deck 2 Loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 3"
+      ],
+      "Deck 3 Loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 3"
+      ],
+      "Deck 4 Loop": [
+        "Loop 8 beats"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 1/4 beat"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Loop": [
+        "Loop 8 beats"
+      ],
+      "Loop roll": [
+        "Loop roll 1/4 beat"
+      ],
+      "SHIFT": [
+        "Clear hot cue 3"
+      ],
+      "Sampler": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "pad4": {
+      "Deck 2": [
+        "Hot cue 4"
+      ],
+      "Deck 2 Loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 4"
+      ],
+      "Deck 3 Loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 4"
+      ],
+      "Deck 4 Loop": [
+        "Loop 4 beats"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 1/2 beat"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "Loop": [
+        "Loop 4 beats"
+      ],
+      "Loop roll": [
+        "Loop roll 1/2 beat"
+      ],
+      "SHIFT": [
+        "Clear hot cue 4"
+      ],
+      "Sampler": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 1 mute",
+        "Stem 2 mute",
+        "Stem 3 mute",
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "pad5": {
+      "Deck 2": [
+        "Hot cue 5"
+      ],
+      "Deck 2 Loop": [
+        "Loop 2 beats"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 1 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 5"
+      ],
+      "Deck 3 Loop": [
+        "Loop 2 beats"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 1 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 5"
+      ],
+      "Deck 4 Loop": [
+        "Loop 2 beats"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 1 beat"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 1 mute"
+      ],
+      "Loop": [
+        "Loop 2 beats"
+      ],
+      "Loop roll": [
+        "Loop roll 1 beat"
+      ],
+      "SHIFT": [
+        "Clear hot cue 5"
+      ],
+      "Sampler": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 1 mute"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "pad6": {
+      "Deck 2": [
+        "Hot cue 6"
+      ],
+      "Deck 2 Loop": [
+        "Loop 1 beat"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 2 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 6"
+      ],
+      "Deck 3 Loop": [
+        "Loop 1 beat"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 2 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 6"
+      ],
+      "Deck 4 Loop": [
+        "Loop 1 beat"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 2 beats"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 2 mute"
+      ],
+      "Loop": [
+        "Loop 1 beat"
+      ],
+      "Loop roll": [
+        "Loop roll 2 beats"
+      ],
+      "SHIFT": [
+        "Clear hot cue 6"
+      ],
+      "Sampler": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 2 mute"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "pad7": {
+      "Deck 2": [
+        "Hot cue 7"
+      ],
+      "Deck 2 Loop": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 3 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 7"
+      ],
+      "Deck 3 Loop": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 3 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 7"
+      ],
+      "Deck 4 Loop": [
+        "Loop 1/2 beat"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 4 beats"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 3 mute"
+      ],
+      "Loop": [
+        "Loop 1/2 beat"
+      ],
+      "Loop roll": [
+        "Loop roll 4 beats"
+      ],
+      "SHIFT": [
+        "Clear hot cue 7"
+      ],
+      "Sampler": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 3 mute"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "pad8": {
+      "Deck 2": [
+        "Hot cue 8"
+      ],
+      "Deck 2 Loop": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 2 Loop roll": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 2 SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 2 Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 2 Sampler stop": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Deck 2 Slicer": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "Deck 2 Stems": [
+        "Stem 4 mute"
+      ],
+      "Deck 3": [
+        "Hot cue 8"
+      ],
+      "Deck 3 Loop": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 3 Loop roll": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 3 SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 3 Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 3 Sampler stop": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Deck 3 Slicer": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "Deck 3 Stems": [
+        "Stem 4 mute"
+      ],
+      "Deck 4": [
+        "Hot cue 8"
+      ],
+      "Deck 4 Loop": [
+        "Loop 1/4 beat"
+      ],
+      "Deck 4 Loop roll": [
+        "Loop roll 8 beats"
+      ],
+      "Deck 4 SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Deck 4 Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Deck 4 Sampler stop": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Deck 4 Slicer": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "Deck 4 Stems": [
+        "Stem 4 mute"
+      ],
+      "Loop": [
+        "Loop 1/4 beat"
+      ],
+      "Loop roll": [
+        "Loop roll 8 beats"
+      ],
+      "SHIFT": [
+        "Clear hot cue 8"
+      ],
+      "Sampler": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler stop": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Slicer": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "Stems": [
+        "Stem 4 mute"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    }
+  }
+}

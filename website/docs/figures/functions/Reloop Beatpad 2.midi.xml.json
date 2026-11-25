@@ -1,0 +1,871 @@
+{
+  "file": "Reloop Beatpad 2.midi.xml",
+  "parts": {
+    "browse": {
+      "Pane": [
+        "Next panel"
+      ],
+      "Pane 2": [
+        "Next panel"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "SHIFT": [
+        "Scroll playlists"
+      ],
+      "SHIFT press": [
+        "Previous panel"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "hpmix": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-b1": {
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-b2": {
+      "Cue": [
+        "Cue"
+      ],
+      "SHIFT": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Jump to start"
+      ]
+    },
+    "l-b3": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Jump to start"
+      ]
+    },
+    "l-b4": {
+      "SHIFT": [
+        "Reloop beatpad2 input"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-bendm": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-bendp": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "l-fx": {
+      "SHIFT": [
+        "FX 1 Wet / dry"
+      ],
+      "normal": [
+        "FX 1 Effect 1 knob",
+        "FX 1 Effect 2 knob"
+      ]
+    },
+    "l-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-jog": {
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "l-key": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Reloop beatpad2 input"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-match": {
+      "normal": [
+        "Match key"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-mode1": {
+      "SHIFT": [
+        "Reloop beatpad2 input"
+      ],
+      "normal": [
+        "Reloop beatpad2 input"
+      ]
+    },
+    "l-mode2": {
+      "SHIFT": [
+        "Reloop beatpad2 input"
+      ],
+      "normal": [
+        "Reloop beatpad2 input"
+      ]
+    },
+    "l-mode3": {
+      "SHIFT": [
+        "Reloop beatpad2 input"
+      ],
+      "normal": [
+        "Reloop beatpad2 input"
+      ]
+    },
+    "l-mode4": {
+      "SHIFT": [
+        "Reloop beatpad2 input"
+      ],
+      "normal": [
+        "Reloop beatpad2 input"
+      ]
+    },
+    "l-pad1": {
+      "Delete hot cue 1": [
+        "Clear hot cue 1"
+      ],
+      "Effect 1 on/off": [
+        "FX 1 Effect 1 on"
+      ],
+      "Loop 1/16 beats": [
+        "Loop 1/16 beat"
+      ],
+      "Loop 16 beats": [
+        "Loop 16 beats"
+      ],
+      "Loop roll 1/16 beats": [
+        "Loop roll 1/16 beat"
+      ],
+      "Sampler 1 play": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler 1 stop": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 1 Channel fader"
+      ],
+      "Slice 1": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "Slice 1 2": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "Delete hot cue 2": [
+        "Clear hot cue 2"
+      ],
+      "Effect 2 on/off": [
+        "FX 1 Effect 2 on"
+      ],
+      "Loop 1/8 beats": [
+        "Loop 1/8 beat"
+      ],
+      "Loop 32 beats": [
+        "Loop 32 beats"
+      ],
+      "Loop roll 1/8 beats": [
+        "Loop roll 1/8 beat"
+      ],
+      "Sampler 2 play": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler 2 stop": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 2 Channel fader"
+      ],
+      "Slice 2": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "Slice 2 2": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "Delete hot cue 3": [
+        "Clear hot cue 3"
+      ],
+      "Effect 3 on/off": [
+        "FX 1 Effect 3 on"
+      ],
+      "Loop 1/4 beats": [
+        "Loop 1/4 beat"
+      ],
+      "Loop roll 1/4 beats": [
+        "Loop roll 1/4 beat"
+      ],
+      "Sampler 3 play": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler 3 stop": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 3 Channel fader"
+      ],
+      "Slice 3": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "Slice 3 2": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "Delete hot cue 4": [
+        "Clear hot cue 4"
+      ],
+      "Effects on the deck": [
+        "FX 1 Assign to Deck 1",
+        "FX 1 Unit on"
+      ],
+      "Loop 1/2 beats": [
+        "Loop 1/2 beat"
+      ],
+      "Loop roll 1/2 beats": [
+        "Loop roll 1/2 beat"
+      ],
+      "Sampler 4 play": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler 4 stop": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 4 Channel fader"
+      ],
+      "Slice 4": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "Slice 4 2": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad5": {
+      "Delete hot cue 5": [
+        "Clear hot cue 5"
+      ],
+      "Loop 1 beat": [
+        "Loop 1 beat"
+      ],
+      "Loop roll 1 beat": [
+        "Loop roll 1 beat"
+      ],
+      "Next effect": [
+        "FX 1 Effect 1 next"
+      ],
+      "Sampler 5 play": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler 5 stop": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 5 Channel fader"
+      ],
+      "Slice 5": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "Slice 5 2": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "l-pad6": {
+      "Delete hot cue 6": [
+        "Clear hot cue 6"
+      ],
+      "Loop 2 beats": [
+        "Loop 2 beats"
+      ],
+      "Loop roll 2 beats": [
+        "Loop roll 2 beats"
+      ],
+      "Next effect": [
+        "FX 1 Effect 2 next"
+      ],
+      "Sampler 6 play": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler 6 stop": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 6 Channel fader"
+      ],
+      "Slice 6": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "Slice 6 2": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "l-pad7": {
+      "Delete hot cue 7": [
+        "Clear hot cue 7"
+      ],
+      "Loop 4 beats": [
+        "Loop 4 beats"
+      ],
+      "Loop roll 4 beats": [
+        "Loop roll 4 beats"
+      ],
+      "Next effect": [
+        "FX 1 Effect 3 next"
+      ],
+      "Sampler 7 play": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler 7 stop": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 7 Channel fader"
+      ],
+      "Slice 7": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "Slice 7 2": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "l-pad8": {
+      "Delete hot cue 8": [
+        "Clear hot cue 8"
+      ],
+      "Loop 8 beats": [
+        "Loop 8 beats"
+      ],
+      "Loop roll 8 beats": [
+        "Loop roll 8 beats"
+      ],
+      "Pad FX 8": [
+        "Reloop beatpad2 input"
+      ],
+      "Sampler 8 play": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler 8 stop": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 8 Channel fader"
+      ],
+      "Slice 8": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "Slice 8 2": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "l-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-vol": {
+      "Fine": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-b1": {
+      "SHIFT": [
+        "Move grid to playhead"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-b2": {
+      "Cue": [
+        "Cue"
+      ],
+      "SHIFT": [
+        "Slip mode"
+      ],
+      "normal": [
+        "Jump to start"
+      ]
+    },
+    "r-b3": {
+      "SHIFT": [
+        "Jump to start"
+      ],
+      "normal": [
+        "Jump to start"
+      ]
+    },
+    "r-b4": {
+      "SHIFT": [
+        "Reloop beatpad2 input"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-bendm": {
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-bendp": {
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-filter": {
+      "normal": [
+        "Filter"
+      ]
+    },
+    "r-fx": {
+      "SHIFT": [
+        "FX 2 Wet / dry"
+      ],
+      "normal": [
+        "FX 2 Effect 1 knob",
+        "FX 2 Effect 2 knob"
+      ]
+    },
+    "r-gain": {
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-high": {
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-jog": {
+      "SHIFT": [
+        "Jog nudge"
+      ],
+      "Touch": [
+        "Scratch (platter touch)"
+      ],
+      "normal": [
+        "Jog nudge"
+      ]
+    },
+    "r-key": {
+      "normal": [
+        "Key lock"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Reloop beatpad2 input"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-match": {
+      "normal": [
+        "Match key"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-pad1": {
+      "Delete hot cue 1": [
+        "Clear hot cue 1"
+      ],
+      "Effect 1 on/off": [
+        "FX 2 Effect 1 on"
+      ],
+      "Loop 1/16 beats": [
+        "Loop 1/16 beat"
+      ],
+      "Loop 16 beats": [
+        "Loop 16 beats"
+      ],
+      "Loop roll 1/16 beats": [
+        "Loop roll 1/16 beat"
+      ],
+      "Sampler 1 play": [
+        "Sampler 1 Play from start"
+      ],
+      "Sampler 1 stop": [
+        "Sampler 1 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 1 Channel fader"
+      ],
+      "Slice 1": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "Slice 1 2": [
+        "Slicer beat 1",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "Delete hot cue 2": [
+        "Clear hot cue 2"
+      ],
+      "Effect 2 on/off": [
+        "FX 2 Effect 2 on"
+      ],
+      "Loop 1/8 beats": [
+        "Loop 1/8 beat"
+      ],
+      "Loop 32 beats": [
+        "Loop 32 beats"
+      ],
+      "Loop roll 1/8 beats": [
+        "Loop roll 1/8 beat"
+      ],
+      "Sampler 2 play": [
+        "Sampler 2 Play from start"
+      ],
+      "Sampler 2 stop": [
+        "Sampler 2 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 2 Channel fader"
+      ],
+      "Slice 2": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "Slice 2 2": [
+        "Slicer beat 2",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "Delete hot cue 3": [
+        "Clear hot cue 3"
+      ],
+      "Effect 3 on/off": [
+        "FX 2 Effect 3 on"
+      ],
+      "Loop 1/4 beats": [
+        "Loop 1/4 beat"
+      ],
+      "Loop roll 1/4 beats": [
+        "Loop roll 1/4 beat"
+      ],
+      "Sampler 3 play": [
+        "Sampler 3 Play from start"
+      ],
+      "Sampler 3 stop": [
+        "Sampler 3 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 3 Channel fader"
+      ],
+      "Slice 3": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "Slice 3 2": [
+        "Slicer beat 3",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "Delete hot cue 4": [
+        "Clear hot cue 4"
+      ],
+      "Effects on the deck": [
+        "FX 2 Assign to Deck 2",
+        "FX 2 Unit on"
+      ],
+      "Loop 1/2 beats": [
+        "Loop 1/2 beat"
+      ],
+      "Loop roll 1/2 beats": [
+        "Loop roll 1/2 beat"
+      ],
+      "Sampler 4 play": [
+        "Sampler 4 Play from start"
+      ],
+      "Sampler 4 stop": [
+        "Sampler 4 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 4 Channel fader"
+      ],
+      "Slice 4": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "Slice 4 2": [
+        "Slicer beat 4",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad5": {
+      "Delete hot cue 5": [
+        "Clear hot cue 5"
+      ],
+      "Loop 1 beat": [
+        "Loop 1 beat"
+      ],
+      "Loop roll 1 beat": [
+        "Loop roll 1 beat"
+      ],
+      "Next effect": [
+        "FX 2 Effect 1 next"
+      ],
+      "Sampler 5 play": [
+        "Sampler 5 Play from start"
+      ],
+      "Sampler 5 stop": [
+        "Sampler 5 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 5 Channel fader"
+      ],
+      "Slice 5": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "Slice 5 2": [
+        "Slicer beat 5",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 5"
+      ]
+    },
+    "r-pad6": {
+      "Delete hot cue 6": [
+        "Clear hot cue 6"
+      ],
+      "Loop 2 beats": [
+        "Loop 2 beats"
+      ],
+      "Loop roll 2 beats": [
+        "Loop roll 2 beats"
+      ],
+      "Next effect": [
+        "FX 2 Effect 2 next"
+      ],
+      "Sampler 6 play": [
+        "Sampler 6 Play from start"
+      ],
+      "Sampler 6 stop": [
+        "Sampler 6 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 6 Channel fader"
+      ],
+      "Slice 6": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "Slice 6 2": [
+        "Slicer beat 6",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 6"
+      ]
+    },
+    "r-pad7": {
+      "Delete hot cue 7": [
+        "Clear hot cue 7"
+      ],
+      "Loop 4 beats": [
+        "Loop 4 beats"
+      ],
+      "Loop roll 4 beats": [
+        "Loop roll 4 beats"
+      ],
+      "Next effect": [
+        "FX 2 Effect 3 next"
+      ],
+      "Sampler 7 play": [
+        "Sampler 7 Play from start"
+      ],
+      "Sampler 7 stop": [
+        "Sampler 7 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 7 Channel fader"
+      ],
+      "Slice 7": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "Slice 7 2": [
+        "Slicer beat 7",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 7"
+      ]
+    },
+    "r-pad8": {
+      "Delete hot cue 8": [
+        "Clear hot cue 8"
+      ],
+      "Loop 8 beats": [
+        "Loop 8 beats"
+      ],
+      "Loop roll 8 beats": [
+        "Loop roll 8 beats"
+      ],
+      "Pad FX 8": [
+        "Reloop beatpad2 input"
+      ],
+      "Sampler 8 play": [
+        "Sampler 8 Play from start"
+      ],
+      "Sampler 8 stop": [
+        "Sampler 8 Stop at cue"
+      ],
+      "Sampler level": [
+        "Sampler 8 Channel fader"
+      ],
+      "Slice 8": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "Slice 8 2": [
+        "Slicer beat 8",
+        "Slicer on"
+      ],
+      "normal": [
+        "Hot cue 8"
+      ]
+    },
+    "r-pfl": {
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-vol": {
+      "Fine": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

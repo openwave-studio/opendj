@@ -91,6 +91,8 @@ pub struct FrameTimer {
 
 /// Frames counted before the interval is known.
 const FIRST_FRAMES: usize = 24;
+/// How far the frame interval may be tuned from the display's refresh.
+const NEAR_REFRESH: f64 = 0.01;
 
 impl FrameTimer {
     /// The refresh rate of the display the window is on, in Hz, if the
@@ -108,8 +110,33 @@ impl FrameTimer {
     }
 
     /// Sets the display's refresh rate, as `wants_refresh_rate` asks.
+    ///
+    /// The refresh interval is the frame interval: a frame that misses a
+    /// refresh shows one or more refreshes later, never in between. Learnt
+    /// from the frames alone, a busy machine that misses more than every
+    /// other refresh made the interval two refreshes long (or somewhere
+    /// between), and every frame that did come on time was then taken as
+    /// off the pattern, at its drawing time: positions a few milliseconds
+    /// off each frame, a sideways shake on the waveforms and the jog marker.
     pub fn set_refresh_rate(&mut self, hz: Option<f64>) {
-        self.refresh = hz.filter(|&h| h > 0.0).map(|h| 1.0 / h);
+        self.refresh = hz.filter(|&h| (20.0..=500.0).contains(&h)).map(|h| 1.0 / h);
+        if let Some(r) = self.refresh {
+            if self
+                .frame
+                .is_none_or(|f| (f / r - 1.0).abs() > NEAR_REFRESH)
+            {
+                (self.frame, self.missed) = (Some(r), 0);
+                self.first.clear();
+            }
+        }
+    }
+
+    /// Keeps a fine-tuned interval within [`NEAR_REFRESH`] of the
+    /// display's refresh, when known.
+    fn near_refresh(&self, f: f64) -> f64 {
+        self.refresh.map_or(f, |r| {
+            f.clamp(r * (1.0 - NEAR_REFRESH), r * (1.0 + NEAR_REFRESH))
+        })
     }
 
     /// The time to draw a frame drawn at `now` for.
@@ -125,13 +152,13 @@ impl FrameTimer {
                     self.missed += 1;
                     self.off_pattern += 1;
                     if self.missed >= FIRST_FRAMES as u32 {
-                        (self.frame, self.missed) = (None, 0);
+                        (self.frame, self.missed) = (self.refresh, 0);
                         self.first.clear();
                     }
                     now
                 } else {
                     self.missed = self.missed.saturating_sub(1);
-                    self.frame = Some(f + 0.01 * error / n);
+                    self.frame = Some(self.near_refresh(f + 0.01 * error / n));
                     shift(last, n * f + 0.15 * error)
                 }
             }
@@ -144,15 +171,13 @@ impl FrameTimer {
                     // Their whole span over how many intervals it holds: one
                     // frame drawn late makes the next early, so their errors
                     // cancel. A skipped frame counts as more, in medians.
+                    // (When most frames skip one, the median is two
+                    // intervals: why the display's refresh comes first.)
                     let mut sorted = self.first.clone();
                     sorted.sort_by(f64::total_cmp);
-                    let median = sorted[sorted.len() / 2];
+                    let unit = sorted[sorted.len() / 2];
                     let span: f64 = self.first.iter().sum();
-                    let count: f64 = self
-                        .first
-                        .iter()
-                        .map(|d| (d / median).round().max(1.0))
-                        .sum();
+                    let count: f64 = self.first.iter().map(|d| (d / unit).round().max(1.0)).sum();
                     self.frame = Some(span / count);
                 }
                 now
@@ -183,6 +208,8 @@ const REPORT_EVERY: Duration = Duration::from_secs(10);
 
 impl FrameStats {
     /// A frame started drawing at `start` and took `took`, while `moving`.
+    /// `more` adds to the log line (where the UI thread's time went).
+    #[allow(clippy::too_many_arguments)]
     pub fn frame(
         &mut self,
         start: Instant,
@@ -191,6 +218,7 @@ impl FrameStats {
         scale: f32,
         timer: &mut FrameTimer,
         clocks: &mut [SmoothClock],
+        more: impl FnOnce() -> String,
     ) {
         if !moving {
             *self = Self::default();
@@ -221,7 +249,7 @@ impl FrameStats {
         }
         eprintln!(
             "waveform frames at {scale}x: {} in {:.1} s, interval {:.2} ms, late {} (longest {:.1} ms), \
-             off pattern {}, display {}, drawing {:.2} ms avg {:.1} ms max, position jumps {}, eased up to {:.1} ms",
+             off pattern {}, display {}, drawing {:.2} ms avg {:.1} ms max, position jumps {}, eased up to {:.1} ms, {}",
             self.frames,
             elapsed.as_secs_f64(),
             timer.frame.unwrap_or(0.0) * 1e3,
@@ -235,6 +263,7 @@ impl FrameStats {
             self.draw_longest * 1e3,
             snaps,
             worst * 1e3,
+            more(),
         );
         timer.off_pattern = 0;
         *self = Self {
@@ -366,6 +395,55 @@ mod tests {
             let step = w[1] - w[0];
             assert!((step - vsync).abs() < 0.0005, "frame {i}: step {step}");
         }
+    }
+
+    #[test]
+    fn frame_times_keep_to_the_refresh_when_most_frames_skip_one() {
+        // A 60 Hz display on a busy machine: two frames in three skip a
+        // refresh, one in fifty a few, each drawn 0.5-6 ms before it
+        // shows. Learnt from these frames alone the interval came out two
+        // refreshes long, and the frames that came on time were each a
+        // quarter-frame off: a sideways shake.
+        let mut seed = 11u64;
+        let mut random = move || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let vsync = 1.0 / 60.0;
+        let mut timer = FrameTimer::default();
+        timer.set_refresh_rate(Some(60.0));
+        let start = Instant::now();
+        let (mut refresh, mut last_gap, mut worst) = (3u64, None::<f64>, 0.0f64);
+        for i in 0..3000 {
+            let r = random();
+            refresh += if r < 0.02 {
+                6
+            } else if r < 0.67 {
+                2
+            } else {
+                1
+            };
+            let shown = refresh as f64 * vsync;
+            let t = shown - 0.0005 - random() * 0.0055;
+            let at = signed_secs(timer.next(start + Duration::from_secs_f64(t)), start);
+            let gap = at - shown;
+            if let (true, Some(last)) = (i > 60, last_gap) {
+                worst = worst.max((gap - last).abs());
+            }
+            last_gap = Some(gap);
+        }
+        assert!(
+            worst < 0.001,
+            "{} ms off from one frame to the next",
+            worst * 1e3
+        );
+        let f = timer.frame.expect("an interval");
+        assert!(
+            (f - vsync).abs() < vsync * NEAR_REFRESH * 1.01,
+            "interval {f}"
+        );
     }
 
     #[test]

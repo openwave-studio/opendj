@@ -107,8 +107,11 @@ pub fn write(dir: &Path, model: &Model) -> Result<(), Error> {
         row.title = t.title.clone();
         row.comment = t.comment.clone();
         row.mix_name = t.mix_name.clone();
+        // Players show and sort string 15 as DATE ADDED; rbox calls it
+        // `analysis_date`, after crate-digger. rekordbox writes the date
+        // added in string 10 (`date_added`) too.
         row.date_added = t.date_added.clone();
-        row.analysis_date = model.date.clone();
+        row.analysis_date = t.date_added.clone();
         row.analysis_path = t.anlz_path.clone();
         row.isrc = valid_isrc(&t.isrc);
         // Players load hot cues with the track only when this says "ON"

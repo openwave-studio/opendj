@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="2.4.0" schemaVersion="1">
+    <info>
+        <name>Native Instruments Komplete Kontrol M32</name>
+        <author>openDJ</author>
+        <description>Plays openDJ's instrument deck: the keys play it over the keyboard's MIDI port; the knobs turn its macros, the transport runs its sequencer, and the 4-D encoder browses instruments and presets, with the screen.</description>
+        <devices>
+            <product protocol="hid" vendor_id="0x17cc" product_id="0x1860" keys="midi" />
+        </devices>
+    </info>
+    <controller id="KompleteKontrolM32">
+        <scriptfiles>
+            <file filename="Keyboard-Instrument.js" functionprefix="" />
+            <file filename="Native-Instruments-Komplete-Kontrol-M32.js" functionprefix="KompleteKontrolM32" />
+        </scriptfiles>
+    </controller>
+</MixxxControllerPreset>

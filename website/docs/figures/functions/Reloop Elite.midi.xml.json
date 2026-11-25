@@ -1,0 +1,416 @@
+{
+  "file": "Reloop Elite.midi.xml",
+  "parts": {
+    "browse": {
+      "Back": [
+        "Previous panel"
+      ],
+      "Press": [
+        "Open or load item"
+      ],
+      "Sidebar": [
+        "Scroll playlists"
+      ],
+      "normal": [
+        "Scroll list"
+      ]
+    },
+    "fx1": {
+      "normal": [
+        "FX 1 Effect 1 next",
+        "FX 2 Effect 1 next"
+      ]
+    },
+    "fx2": {
+      "normal": [
+        "FX 1 Effect 2 next",
+        "FX 2 Effect 2 next"
+      ]
+    },
+    "fx3": {
+      "normal": [
+        "FX 1 Effect 3 next",
+        "FX 2 Effect 3 next"
+      ]
+    },
+    "l-amount": {
+      "normal": [
+        "FX 1 Effect 1 knob"
+      ]
+    },
+    "l-high": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-load": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-loopout": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-match": {
+      "normal": [
+        "Match key"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode1": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode2": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode3": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode4": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode5": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode6": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode7": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-mode8": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "l-pad1": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 1 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 1"
+      ]
+    },
+    "l-pad2": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 2 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 2"
+      ]
+    },
+    "l-pad3": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 3 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 3"
+      ]
+    },
+    "l-pad4": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 4 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 4"
+      ]
+    },
+    "l-pad5": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 5 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 5"
+      ]
+    },
+    "l-pad6": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 6 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 6"
+      ]
+    },
+    "l-pad7": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 7 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 7"
+      ]
+    },
+    "l-pad8": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 8 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 8"
+      ]
+    },
+    "l-tap": {
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "l-wet": {
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "r-amount": {
+      "normal": [
+        "FX 2 Effect 1 knob"
+      ]
+    },
+    "r-high": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-load": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-loop": {
+      "Press": [
+        "Loop (current size)"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-loopout": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-match": {
+      "normal": [
+        "Match key"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode1": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode2": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode3": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode4": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode5": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode6": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode7": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-mode8": {
+      "normal": [
+        "Reloop elite input"
+      ]
+    },
+    "r-pad1": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 1 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 1"
+      ]
+    },
+    "r-pad2": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 2 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 2"
+      ]
+    },
+    "r-pad3": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 3 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 3"
+      ]
+    },
+    "r-pad4": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 4 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 4"
+      ]
+    },
+    "r-pad5": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 5 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 5"
+      ]
+    },
+    "r-pad6": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 6 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 6"
+      ]
+    },
+    "r-pad7": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 7 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 7"
+      ]
+    },
+    "r-pad8": {
+      "SHIFT": [
+        "Hotcue focus"
+      ],
+      "Sampler level": [
+        "Sampler 8 Channel fader"
+      ],
+      "normal": [
+        "Keyboard pad 8"
+      ]
+    },
+    "r-tap": {
+      "normal": [
+        "Tap tempo"
+      ]
+    },
+    "r-wet": {
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "sampler": {
+      "normal": [
+        "Sampler 1 Channel fader",
+        "Sampler 2 Channel fader",
+        "Sampler 3 Channel fader",
+        "Sampler 4 Channel fader",
+        "Sampler 5 Channel fader",
+        "Sampler 6 Channel fader",
+        "Sampler 7 Channel fader",
+        "Sampler 8 Channel fader"
+      ]
+    },
+    "xfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    }
+  }
+}

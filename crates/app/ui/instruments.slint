@@ -9,6 +9,7 @@ import { BrowserFocus, BrowserPane } from "browser_focus.slint";
 import { Theme } from "theme.slint";
 import { Controls } from "controls.slint";
 import { ScrollView } from "scroll.slint";
+import { SwitchPill } from "pills.slint";
 
 // One thing to drag onto a deck: a row of the list.
 // A choice in a Mixer strip's input picker.
@@ -72,20 +73,34 @@ export struct LiveItem {
     format: string,
     // Shown in orange in place of `maker`: what's missing ("No input picked").
     problem: string,
+    // The colour square in the Jam column: 0 synths, 1 drums, 2 keys and
+    // samplers, 3 tools, 4 Pd patches, 5 inputs.
+    tint: int,
+    // Starred with ☆ on its row.
+    starred: bool,
 }
 
-// A line of the tree on the left.
-export struct InstrumentNode {
+// A value in one of the Jam column's filter menus, with how many rows have
+// it given everything else picked.
+export struct JamChip {
     name: string,
-    depth: int,
-    // 0 no children, 1 closed, 2 open.
-    children: int,
-    // The icon: 0 a folder, 1 the Groove Box, 2 a plugin, 3 the microphone,
-    // 4 the inputs, 5 a maker, 6 everything, 7 presets, 8 recently played,
-    // 9 the Looper.
-    kind: int,
-    // How many instruments it holds; -1 to show none.
     count: int,
+    on: bool,
+}
+
+// A line of chips, as the app breaks them to fit the column.
+export struct JamLine {
+    chips: [JamChip],
+}
+
+// One filter menu: open (one at a time), its picks for its header when
+// closed, and every value in lines.
+export struct JamFacet {
+    name: string,
+    open: bool,
+    picked: int,
+    picks: [JamChip],
+    lines: [JamLine],
 }
 
 export struct PresetItem {
@@ -149,30 +164,31 @@ export struct ParamMatch {
 }
 
 export global InstrumentsUi {
-    // The tree, the line selected in it and the rows it lists, set by the app.
-    in property <[InstrumentNode]> nodes;
-    in property <int> current-node;
+    // The Jam column, set by the app: the side shown (0 presets,
+    // 1 instruments), the rows it leaves, the filter menus, starred only,
+    // the count ("48 presets") and whether anything is picked.
+    in property <int> view;
     in property <[LiveItem]> rows;
     in-out property <int> current-item: -1;
+    in property <[JamFacet]> facets;
+    in property <bool> starred-only;
+    in property <string> count-text;
+    in property <bool> filtered;
     // Text for an empty list, and the Settings page that fills it: 7 Plugins,
     // 0 Audio, -1 none.
     in property <string> empty-text;
     in property <int> empty-page: -1;
     in property <int> empty-tab;
-    callback select-node(index: int);
-    callback toggle-node(index: int);
-    callback navigate-node(direction: int);
+    callback set-view(view: int);
     callback search(text: string);
-    // The tag chips over the list, on or off, in PresetUi.tag-names' order:
-    // with any on, the list shows the presets with all of them.
-    in property <[bool]> chips;
-    callback toggle-chip(tag: int);
-    // The column the list is sorted by: -1 as listed, 0 name, 1 type,
-    // 2 maker or input, 3 format; and which way. Set by the app.
-    in property <int> sort-column: -1;
-    in property <bool> sort-descending;
-    // Sorts by `column`, or the other way if it already is.
-    callback sort-by(column: int);
+    callback toggle-starred-only();
+    // Opens menu `facet` (closing the open one), or closes it.
+    callback toggle-facet(facet: int);
+    // Picks `value` in menu `facet`, or takes it off.
+    callback toggle-value(facet: int, value: string);
+    callback clear-filters();
+    // Stars the item (kind and index as `drop`), or takes its star off.
+    callback toggle-star(kind: int, index: int);
     // Item `item` (see `drop`) went onto a deck: Recently played lists it.
     callback played(item: int);
     // True while an item is being dragged, so every deck shows it takes drops.
@@ -225,6 +241,24 @@ export global InstrumentsUi {
     in-out property <length> display-area-width;
     in-out property <length> display-area-height;
     callback display-mouse(x: length, y: length, kind: int);
+    // The plugin panel in the browser area (plugin_panel.slint): asked
+    // for, actually on screen (the Jam source shows it), and showing the
+    // sliders rather than the display. `open-panel` also brings the Jam
+    // source up (`panel-request` tells the browser).
+    in-out property <bool> panel-open;
+    in-out property <bool> panel-shown;
+    in-out property <bool> panel-controls;
+    in-out property <int> panel-request;
+    public function open-panel() {
+        panel-open = true;
+        panel-request += 1;
+    }
+    // The deck the instrument plays on, from 0; -1 while on none.
+    public pure function instrument-deck() -> int {
+        live(0) == 3 ? 0 : live(1) == 3 ? 1 : live(2) == 3 ? 2 : live(3) == 3 ? 3 : -1
+    }
+    // Each ticked instrument plugin's name, in the picker's order.
+    in property <[string]> plugin-names;
     // What the instrument plays, set by the app while a deck shows it: the
     // notes held (`held[n]` is MIDI note 36 + n, C2 up) and its scope as
     // path commands in a 128 by 32 box.
@@ -607,202 +641,39 @@ export component LiveIcon inherits Rectangle {
     }
 }
 
-// The tree's icons: the LiveIcon drawings, plus a folder for the rest.
-component NodeIcon inherits Rectangle {
-    in property <int> kind;
-    in property <color> tint;
-    width: 18px;
-    height: 18px;
-    if kind == 1 || kind == 2 || kind == 3 || kind == 4 || kind == 9 || kind == 10: LiveIcon {
-        kind: kind == 9 ? 6 : kind == 10 ? 8 : kind;
-        tint: tint;
-        size: 18px;
+// A value to pick in the Jam column's filter menus.
+component JamChipButton inherits Rectangle {
+    in property <JamChip> chip;
+    callback clicked();
+    height: 22px;
+    min-width: label.preferred-width + 16px;
+    border-radius: 4px;
+    background: chip.on ? Theme.accent : jcta.has-hover ? Theme.n-3a3a3d : Theme.control;
+    label := Text {
+        text: chip.name;
+        color: chip.on ? Theme.on-selection : chip.count > 0 ? Theme.text : Theme.text-dim;
+        font-size: 11px;
+        font-weight: chip.on ? 600 : 400;
     }
-    if kind == 0 || kind == 5 || kind == 6 || kind == 7 || kind == 8: Path {
-        width: parent.width;
-        height: parent.height;
-        viewbox-width: 18;
-        viewbox-height: 18;
-        stroke: tint;
-        stroke-width: 1.3px;
-        stroke-line-join: round;
-        fill: transparent;
-        commands: kind == 6 ? "M 3 4 L 15 4 L 15 14 L 3 14 Z M 6 4 L 6 10 M 9 4 L 9 10 M 12 4 L 12 10"
-            // A preset: three sliders.
-            : kind == 7 ? "M 4 3 L 4 15 M 9 3 L 9 15 M 14 3 L 14 15 M 2.5 11 L 5.5 11 M 7.5 6 L 10.5 6 M 12.5 9 L 15.5 9"
-            // Recently played: a clock.
-            : kind == 8 ? "M 9 2.5 A 6.5 6.5 0 1 1 8.99 2.5 Z M 9 5 L 9 9 L 12 11"
-            : "M 2.5 5 L 7 5 L 8.5 6.5 L 15.5 6.5 L 15.5 14 L 2.5 14 Z";
-    }
+    jcta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-// The tree on the left: everything, the Groove Box, plugins by maker, inputs.
-component InstrumentTree inherits Rectangle {
-    property <int> navigation-request: BrowserFocus.request;
-    changed navigation-request => { focus-pending = true; }
-    property <bool> focus-pending;
-    Timer {
-        interval: 1ms;
-        running: root.focus-pending;
-        triggered => {
-            root.focus-pending = false;
-            if root.visible && BrowserFocus.pane == BrowserPane.folders { tree-keys.focus(); }
-        }
-    }
-
-    background: Theme.browser;
-    width: 270px;
-
-    property <int> navigation-current: InstrumentsUi.current-node;
-    property <[InstrumentNode]> navigation-nodes: InstrumentsUi.nodes;
-    property <bool> reveal-pending: false;
-    changed navigation-current => { reveal-pending = true; }
-
-    function reveal-current() {
-        if navigation-current < 0 || navigation-current >= navigation-nodes.length { return; }
-        let top = navigation-current * 34px;
-        let bottom = top + 34px;
-        let view-top = -jam-scroll.content-y;
-        if top < view-top {
-            jam-scroll.content-y = -top;
-        } else if bottom > view-top + jam-scroll.visible-height {
-            jam-scroll.content-y = -(bottom - jam-scroll.visible-height);
-        }
-        jam-scroll.content-y = min(0px, max(
-            min(0px, jam-scroll.visible-height - jam-scroll.content-height),
-            jam-scroll.content-y
-        ));
-    }
-
-    Timer {
-        interval: 16ms;
-        running: root.reveal-pending;
-        triggered => {
-            root.reveal-pending = false;
-            root.reveal-current();
-        }
-    }
-
-    VerticalLayout {
-        padding: 8px;
-        spacing: 6px;
-        Text { text: "Jam"; color: Theme.text; font-size: 15px; font-weight: 600; height: 30px; vertical-alignment: center; x: 4px; }
-        tree-keys := FocusScope {
-            min-height: 50px;
-            vertical-stretch: 1;
-            focus-on-click: false;
-            changed has-focus => { if self.has-focus { BrowserFocus.pane = BrowserPane.folders; } }
-            key-pressed(e) => {
-                if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
-                if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
-                    return reject;
-                }
-                if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
-                else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
-                else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
-                else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
-                else { return reject; }
-                root.reveal-pending = true;
-                accept
-            }
-            jam-scroll := ScrollView {
-                width: parent.width;
-                height: parent.height;
-                gutter: true;
-                VerticalLayout {
-                    alignment: start;
-                    for n[i] in InstrumentsUi.nodes: Rectangle {
-                        height: 34px;
-                        border-radius: Theme.radius;
-                        background: i == InstrumentsUi.current-node ? (tree-keys.has-focus ? Theme.selection : Theme.selection-idle) : ta.has-hover ? Theme.n-232326 : transparent;
-                        ta := TouchArea {
-                            clicked => { tree-keys.focus(); InstrumentsUi.select-node(i); }
-                            double-clicked => { tree-keys.focus(); InstrumentsUi.toggle-node(i); }
-                        }
-                        HorizontalLayout {
-                            padding-left: 4px + n.depth * 16px;
-                            padding-right: 8px;
-                            spacing: 8px;
-                            Rectangle {
-                                width: 12px;
-                                if n.children > 0: Path {
-                                    width: 10px;
-                                    height: 10px;
-                                    viewbox-width: 10;
-                                    viewbox-height: 10;
-                                    stroke: Theme.text-dim;
-                                    stroke-width: 1.6px;
-                                    stroke-line-cap: round;
-                                    fill: transparent;
-                                    commands: n.children == 2 ? "M 2 3.5 L 5 6.5 L 8 3.5" : "M 3.5 2 L 6.5 5 L 3.5 8";
-                                }
-                                TouchArea { clicked => { tree-keys.focus(); InstrumentsUi.toggle-node(i); } }
-                            }
-                            VerticalLayout {
-                                alignment: center;
-                                NodeIcon { kind: n.kind; tint: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.accent; }
-                            }
-                            Text {
-                                text: n.name;
-                                color: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.text;
-                                font-size: 15px;
-                                vertical-alignment: center;
-                                overflow: elide;
-                                horizontal-stretch: 1;
-                            }
-                            if n.count >= 0: Text {
-                                text: n.count;
-                                color: i == InstrumentsUi.current-node ? Theme.on-row-selection : Theme.text-dim;
-                                font-size: 13px;
-                                vertical-alignment: center;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-}
-
-// A column heading.
-component Heading inherits Text {
-    color: Theme.text-dim;
-    font-size: 11px;
-    font-weight: 600;
-    vertical-alignment: center;
-    overflow: elide;
-}
-
-// A column heading to sort by: a click sorts, another the other way.
-component SortHeading inherits Rectangle {
-    in property <string> text;
-    in property <int> column;
-    property <bool> on: InstrumentsUi.sort-column == column;
-    HorizontalLayout {
-        spacing: 4px;
-        Heading { text: root.text; color: on ? Theme.text : Theme.text-dim; }
-        if on: Heading { text: InstrumentsUi.sort-descending ? "▼" : "▲"; color: Theme.lilac-text; font-size: 9px; }
-        Rectangle { horizontal-stretch: 1; }
-    }
-    TouchArea { mouse-cursor: pointer; clicked => { InstrumentsUi.sort-by(column); } }
-}
-
-// One row of the list, laid out like a track row.
-component InstrumentRow inherits Rectangle {
+// A row of the Jam column: a colour square for what plays, the name, the
+// instrument (or maker) dimmed, the decks it is on and its star.
+component JamRow inherits Rectangle {
     in property <LiveItem> item;
     in property <int> line;
     in property <bool> selected;
     in property <bool> focused;
-    in property <length> type-width;
-    in property <length> maker-width;
-    in property <length> format-width;
     callback select();
     callback load();
     property <string> decks: InstrumentsUi.decks-of(item.kind, item.index);
-    height: 32px;
+    property <color> ink: selected ? Theme.on-row-selection : Theme.text;
+    property <color> dim: selected ? Theme.on-row-selection.with-alpha(0.7) : Theme.text-dim;
+    height: 24px;
+    border-radius: 4px;
     background: selected ? (focused ? Theme.selection : Theme.selection-idle) : Math.mod(line, 2) == 0 ? Theme.row : Theme.row-alt;
-    drag := DragArea {
+    DragArea {
         data: InstrumentsUi.payload(item.kind, item.index);
         allow-copy: true;
         changed dragging => { InstrumentsUi.dragging = self.dragging; }
@@ -813,44 +684,324 @@ component InstrumentRow inherits Rectangle {
         }
     }
     HorizontalLayout {
-        padding-left: 10px;
-        padding-right: 10px;
-        spacing: 10px;
+        padding-left: 6px;
+        padding-right: 4px;
+        spacing: 7px;
         VerticalLayout {
             alignment: center;
             Rectangle {
-                width: 24px;
-                height: 24px;
-                border-radius: 4px;
-                background: Theme.n-000000;
-                if item.kind != 5: LiveIcon { kind: item.kind; size: 20px; tint: Theme.accent; }
-                if item.kind == 5: NodeIcon { kind: 7; tint: Theme.accent; }
+                width: 10px;
+                height: 10px;
+                border-radius: 2px;
+                background: item.tint == 1 ? Theme.stage-inbox
+                    : item.tint == 2 ? Theme.stage-prep
+                    : item.tint == 3 ? Theme.automix
+                    : item.tint == 4 ? Theme.text-dim
+                    : item.tint == 5 ? Theme.stage-ready
+                    : Theme.lilac;
             }
         }
-        Text { text: item.name; color: selected ? Theme.on-row-selection : Theme.text; font-size: 13px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
-        Text { width: type-width; text: item.type; color: selected ? Theme.on-row-selection : Theme.text-dim; font-size: 13px; vertical-alignment: center; overflow: elide; }
-        Text {
-            width: maker-width;
-            text: item.problem != "" ? item.problem : item.maker;
-            color: item.problem != "" ? Theme.c-ff9f0a : selected ? Theme.on-row-selection : Theme.text-dim;
-            font-size: 13px;
-            vertical-alignment: center;
-            overflow: elide;
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: 5px;
+            name := Text { text: item.name; color: ink; font-size: 12.5px; vertical-alignment: center; overflow: elide; max-width: self.preferred-width; }
+            Text {
+                text: item.problem != "" ? item.problem : item.maker;
+                color: item.problem != "" ? Theme.c-ff9f0a : dim;
+                font-size: 11px;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
         }
-        Text { width: format-width; text: item.format; color: selected ? Theme.on-row-selection : Theme.text-dim; font-size: 13px; vertical-alignment: center; overflow: elide; }
-        Text {
-            width: 64px;
-            text: decks == "" ? "" : (decks.character-count > 1 ? "Decks " : "Deck ") + decks;
-            color: selected ? Theme.on-row-selection : Theme.lilac-text;
-            font-size: 12px;
-            font-weight: 600;
-            vertical-alignment: center;
-            overflow: elide;
+        if decks != "": VerticalLayout {
+            alignment: center;
+            Rectangle {
+                height: 16px;
+                width: deck-label.preferred-width + 10px;
+                border-radius: 4px;
+                background: selected ? Theme.on-row-selection : Theme.lilac;
+                deck-label := Text { text: decks; color: Theme.on-selection; font-size: 10px; font-weight: 700; }
+            }
+        }
+        Rectangle {
+            width: 16px;
+            star := Text {
+                text: item.starred ? "★" : "☆";
+                color: item.starred ? (selected ? Theme.on-row-selection : Theme.lilac-text) : dim;
+                opacity: item.starred || star-ta.has-hover || selected ? 1 : 0.45;
+                font-size: 12px;
+            }
+            star-ta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { InstrumentsUi.toggle-star(item.kind, item.index); }
+            }
         }
     }
 }
 
-// The list on the right: the selected node's instruments, like tracks.
+// The Jam column on the left: search, star, Instruments | Presets, the
+// filter menus as chips and the rows they leave.
+export component JamColumn inherits Rectangle {
+    // How many decks are shown, for double-click.
+    in property <int> decks;
+    property <int> navigation-request: BrowserFocus.request;
+    changed navigation-request => { focus-pending = true; }
+    property <bool> focus-pending;
+    Timer {
+        interval: 1ms;
+        running: root.focus-pending;
+        triggered => {
+            root.focus-pending = false;
+            if root.visible && BrowserFocus.pane == BrowserPane.folders { column-keys.focus(); }
+        }
+    }
+    property <int> current <=> InstrumentsUi.current-item;
+    changed current => {
+        if current >= 0 {
+            if current * 24px + rows-scroll.content-y < 0 { rows-scroll.content-y = -current * 24px; }
+            else if (current + 1) * 24px + rows-scroll.content-y > rows-scroll.visible-height {
+                rows-scroll.content-y = rows-scroll.visible-height - (current + 1) * 24px;
+            }
+        }
+    }
+    property <string> query;
+    changed query => { InstrumentsUi.search(query); }
+
+    background: Theme.browser;
+    width: 250px;
+
+    column-keys := FocusScope {
+        focus-on-click: false;
+        changed has-focus => { if self.has-focus { BrowserFocus.pane = BrowserPane.folders; } }
+        key-pressed(e) => {
+            if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
+            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift {
+                return reject;
+            }
+            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
+            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
+            else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
+            else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
+            else if e.text == Key.Return && current >= 0 && current < InstrumentsUi.rows.length && InstrumentsUi.free-deck(decks) >= 0 {
+                InstrumentsUi.drop(InstrumentsUi.free-deck(decks), InstrumentsUi.rows[current].kind * 1000 + InstrumentsUi.rows[current].index);
+            }
+            else { return reject; }
+            accept
+        }
+    }
+
+    VerticalLayout {
+        padding: 8px;
+        spacing: 6px;
+        // Search and the star.
+        HorizontalLayout {
+            height: 28px;
+            spacing: 6px;
+            Rectangle {
+                horizontal-stretch: 1;
+                border-radius: Theme.radius;
+                background: Theme.panel;
+                border-width: 1px;
+                border-color: search.has-focus ? Theme.accent : Theme.border;
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    search := TextInput {
+                        text <=> query;
+                        color: Theme.text;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        single-line: true;
+                        key-pressed(e) => {
+                            if e.text == Key.Escape { query = ""; column-keys.focus(); return accept; }
+                            if e.text == Key.DownArrow { column-keys.focus(); BrowserFocus.navigate(1, 1); return accept; }
+                            reject
+                        }
+                    }
+                }
+                if query == "": Text {
+                    x: 8px;
+                    text: InstrumentsUi.view == 0 ? "Search presets" : "Search instruments";
+                    color: Theme.text-dim;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                }
+            }
+            Rectangle {
+                width: 28px;
+                border-radius: Theme.radius;
+                background: InstrumentsUi.starred-only ? Theme.accent : star-ta.has-hover ? Theme.n-232326 : Theme.panel;
+                border-width: 1px;
+                border-color: InstrumentsUi.starred-only ? Theme.accent : Theme.border;
+                Text {
+                    text: InstrumentsUi.starred-only ? "★" : "☆";
+                    color: InstrumentsUi.starred-only ? Theme.on-selection : Theme.lilac-text;
+                    font-size: 13px;
+                }
+                star-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { InstrumentsUi.toggle-starred-only(); }
+                }
+            }
+        }
+        // Instruments | Presets, as two buttons.
+        HorizontalLayout {
+            height: 28px;
+            spacing: 6px;
+            for v in [1, 0]: Rectangle {
+                horizontal-stretch: 1;
+                border-radius: Theme.radius;
+                background: InstrumentsUi.view == v ? Theme.control-pressed : view-ta.has-hover ? Theme.n-232326 : Theme.panel;
+                border-width: 1px;
+                border-color: InstrumentsUi.view == v ? Theme.accent : Theme.border;
+                Text {
+                    text: v == 1 ? "Instruments" : "Presets";
+                    color: InstrumentsUi.view == v ? Theme.text : Theme.text-dim;
+                    font-size: 12px;
+                    font-weight: InstrumentsUi.view == v ? 600 : 500;
+                }
+                view-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { column-keys.focus(); InstrumentsUi.set-view(v); }
+                }
+            }
+        }
+        // The filter menus: one open at a time; a closed one shows its picks.
+        VerticalLayout {
+            vertical-stretch: 0;
+            for facet[f] in InstrumentsUi.facets: VerticalLayout {
+                vertical-stretch: 0;
+                Rectangle {
+                    height: 1px;
+                    background: f == 0 ? transparent : Theme.separator;
+                }
+                Rectangle {
+                    height: 28px;
+                    HorizontalLayout {
+                        padding-left: 4px;
+                        padding-right: 4px;
+                        spacing: 4px;
+                        alignment: stretch;
+                        Text {
+                            text: facet.name;
+                            color: Theme.text;
+                            font-size: 12.5px;
+                            font-weight: 500;
+                            vertical-alignment: center;
+                        }
+                        if !facet.open: HorizontalLayout {
+                            horizontal-stretch: 1;
+                            spacing: 3px;
+                            padding-left: 4px;
+                            alignment: start;
+                            for chip in facet.picks: VerticalLayout {
+                                alignment: center;
+                                JamChipButton {
+                                    chip: chip;
+                                    clicked => { InstrumentsUi.toggle-value(f, chip.name); }
+                                }
+                            }
+                        }
+                        if facet.open: Rectangle { horizontal-stretch: 1; }
+                        VerticalLayout {
+                            alignment: center;
+                            Path {
+                                width: 10px;
+                                height: 10px;
+                                viewbox-width: 10;
+                                viewbox-height: 10;
+                                stroke: facet.open ? Theme.text : Theme.text-dim;
+                                stroke-width: 1.6px;
+                                stroke-line-cap: round;
+                                fill: transparent;
+                                commands: facet.open ? "M 2 6.5 L 5 3.5 L 8 6.5" : "M 2 3.5 L 5 6.5 L 8 3.5";
+                            }
+                        }
+                    }
+                    TouchArea {
+                        z: -1;
+                        mouse-cursor: pointer;
+                        clicked => { InstrumentsUi.toggle-facet(f); }
+                    }
+                }
+                if facet.open: ScrollView {
+                    height: min(facet.lines.length * 25px + 6px, 132px);
+                    VerticalLayout {
+                        padding-left: 4px;
+                        padding-bottom: 6px;
+                        spacing: 3px;
+                        alignment: start;
+                        for line in facet.lines: HorizontalLayout {
+                            spacing: 4px;
+                            alignment: start;
+                            for chip in line.chips: JamChipButton {
+                                chip: chip;
+                                clicked => { InstrumentsUi.toggle-value(f, chip.name); }
+                            }
+                        }
+                        if facet.lines.length == 0: Text {
+                            text: "Nothing to pick here yet.";
+                            color: Theme.text-dim;
+                            font-size: 11px;
+                        }
+                    }
+                }
+            }
+            Rectangle { height: 1px; background: Theme.separator; }
+        }
+        // The count, and Clear all while anything is picked.
+        HorizontalLayout {
+            height: 16px;
+            padding-left: 4px;
+            padding-right: 4px;
+            Text { text: InstrumentsUi.count-text; color: Theme.text-dim; font-size: 11px; vertical-alignment: center; horizontal-stretch: 1; }
+            if InstrumentsUi.filtered: Text {
+                text: "Clear all";
+                color: Theme.lilac-text;
+                font-size: 11px;
+                vertical-alignment: center;
+                TouchArea { mouse-cursor: pointer; clicked => { InstrumentsUi.clear-filters(); } }
+            }
+        }
+        rows-scroll := ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                alignment: start;
+                for it[i] in InstrumentsUi.rows: JamRow {
+                    item: it;
+                    line: i;
+                    selected: i == current;
+                    focused: column-keys.has-focus;
+                    select => { column-keys.focus(); current = i; }
+                    load => {
+                        column-keys.focus();
+                        current = i;
+                        if InstrumentsUi.free-deck(decks) >= 0 {
+                            InstrumentsUi.drop(InstrumentsUi.free-deck(decks), it.kind * 1000 + it.index);
+                        }
+                    }
+                }
+                if InstrumentsUi.empty-text != "": Rectangle {
+                    height: 64px;
+                    Text {
+                        width: parent.width - 16px;
+                        text: InstrumentsUi.empty-text;
+                        color: InstrumentsUi.empty-page >= 0 ? Theme.lilac-text : Theme.text-dim;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                    }
+                    if InstrumentsUi.empty-page >= 0: TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { InstrumentsUi.open-settings(InstrumentsUi.empty-page, InstrumentsUi.empty-tab); }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // A tag to switch on or off: a chip over the list, or in a preset's tags.
 export component TagChip inherits Rectangle {
     in property <string> text;
@@ -866,182 +1017,36 @@ export component TagChip inherits Rectangle {
     tcta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-// A row of tag chips: tags `from` to `to` (not included) of PresetUi.tag-names.
-component TagRow inherits HorizontalLayout {
-    in property <string> title;
-    in property <int> from;
-    in property <int> to;
-    padding-left: 8px;
-    padding-right: 8px;
-    padding-top: 2px;
-    padding-bottom: 2px;
-    spacing: 4px;
-    height: 26px;
-    alignment: start;
-    Text { text: title; width: 74px; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; }
-    for k in max(0, to - from): TagChip {
-        text: PresetUi.tag-names[from + k];
-        on: from + k < InstrumentsUi.chips.length && InstrumentsUi.chips[from + k];
-        clicked => { InstrumentsUi.toggle-chip(from + k); }
-    }
-}
-
-component InstrumentList inherits Rectangle {
-    property <int> navigation-request: BrowserFocus.request;
-    changed navigation-request => { focus-pending = true; }
-    property <bool> focus-pending;
-    Timer {
-        interval: 1ms;
-        running: root.focus-pending;
-        triggered => {
-            root.focus-pending = false;
-            if root.visible && BrowserFocus.pane == BrowserPane.content { item-keys.focus(); }
-        }
-    }
-    item-keys := FocusScope {
-        focus-on-click: false;
-        changed has-focus => {
-            if self.has-focus { BrowserFocus.pane = BrowserPane.content; }
-        }
-        key-pressed(e) => {
-            if !e.modifiers.control && !e.modifiers.meta && !e.modifiers.alt && BrowserFocus.tab-key(e.text, e.modifiers.shift) { return accept; }
-            if e.modifiers.control || e.modifiers.meta || e.modifiers.alt || e.modifiers.shift { return reject; }
-            if e.text == Key.UpArrow { BrowserFocus.navigate(0, 1); }
-            else if e.text == Key.DownArrow { BrowserFocus.navigate(1, 1); }
-            else if e.text == Key.LeftArrow && !BrowserFocus.prep { BrowserFocus.navigate(2, 1); }
-            else if e.text == Key.RightArrow && !BrowserFocus.prep { BrowserFocus.navigate(3, 1); }
-            else { return reject; }
-            accept
-        }
-    }
-    Timer {
-        interval: 1ms;
-        running: item-keys.has-focus && BrowserFocus.pane == BrowserPane.content
-            && (root.current < 0 || root.current >= InstrumentsUi.rows.length) && InstrumentsUi.rows.length > 0;
-        triggered => { root.current = 0; }
-    }
-    changed current => {
-        if current >= 0 {
-            if current * 32px + items-scroll.content-y < 0 { items-scroll.content-y = -current * 32px; }
-            else if (current + 1) * 32px + items-scroll.content-y > items-scroll.visible-height {
-                items-scroll.content-y = items-scroll.visible-height - (current + 1) * 32px;
-            }
-        }
-    }
-
-    // How many decks are shown, for double-click.
-    in property <int> decks;
-    property <int> current <=> InstrumentsUi.current-item;
-    property <length> type-width: 110px;
-    property <length> maker-width: 200px;
-    property <length> format-width: 70px;
-    property <string> query;
-    changed query => { InstrumentsUi.search(query); }
-    property <int> node: InstrumentsUi.current-node;
-    changed node => { current = -1; }
+// Right of the column while no plugin panel shows: a hint, and a way
+// back to the panel while an instrument plays.
+export component JamHint inherits Rectangle {
     background: Theme.browser;
     VerticalLayout {
-        // Search, as over the track list.
-        Rectangle {
-            height: 44px;
-            HorizontalLayout {
-                padding: 8px;
-                spacing: 8px;
-                Rectangle {
-                    min-width: 200px;
-                    max-width: 420px;
-                    horizontal-stretch: 1;
-                    border-radius: Theme.radius;
-                    background: Theme.panel;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    HorizontalLayout {
-                        padding-left: 10px;
-                        padding-right: 10px;
-                        search := TextInput {
-                            text <=> query;
-                            color: Theme.text;
-                            font-size: 13px;
-                            vertical-alignment: center;
-                            single-line: true;
-                        }
-                    }
-                    if query == "": Text { x: 10px; text: "Search instruments"; color: Theme.text-dim; font-size: 13px; vertical-alignment: center; }
-                }
-                // Takes the rest of the row, so the box's max-width doesn't
-                // cap the whole list's width.
-                Rectangle { horizontal-stretch: 1; }
-            }
-        }
-        // Tag chips: narrow the list to presets with every tag picked.
-        TagRow { title: "TYPE"; from: 0; to: PresetUi.type-count; }
-        TagRow { title: "CHARACTER"; from: PresetUi.type-count; to: PresetUi.tag-names.length; }
-        // Column headings.
-        Rectangle {
-            height: 28px;
-            HorizontalLayout {
-                padding-left: 10px;
-                padding-right: 10px;
-                spacing: 10px;
-                Rectangle { width: 24px; }
-                SortHeading { text: "NAME"; column: 0; horizontal-stretch: 1; }
-                SortHeading { width: type-width; text: "TYPE"; column: 1; }
-                SortHeading { width: maker-width; text: "MAKER / INPUT"; column: 2; }
-                SortHeading { width: format-width; text: "FORMAT"; column: 3; }
-                Heading { width: 64px; text: "DECK"; }
-            }
-            Rectangle { y: parent.height - 1px; height: 1px; background: Theme.separator; }
-        }
-        items-scroll := ScrollView {
-            VerticalLayout {
-                alignment: start;
-                for it[i] in InstrumentsUi.rows: InstrumentRow {
-                    item: it;
-                    line: i;
-                    selected: i == current;
-                    focused: item-keys.has-focus;
-                    type-width: type-width;
-                    maker-width: maker-width;
-                    format-width: format-width;
-                    select => { item-keys.focus(); current = i; }
-                    load => {
-                        item-keys.focus();
-                        current = i;
-                        if InstrumentsUi.free-deck(decks) >= 0 {
-                            InstrumentsUi.drop(InstrumentsUi.free-deck(decks), it.kind * 1000 + it.index);
-                        }
-                    }
-                }
-                if InstrumentsUi.empty-text != "": Rectangle {
-                    height: 64px;
-                    Text {
-                        text: InstrumentsUi.empty-text;
-                        color: InstrumentsUi.empty-page >= 0 ? Theme.lilac-text : Theme.text-dim;
-                        font-size: 13px;
-                    }
-                    if InstrumentsUi.empty-page >= 0: TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => { InstrumentsUi.open-settings(InstrumentsUi.empty-page, InstrumentsUi.empty-tab); }
-                    }
-                }
-            }
+        alignment: center;
+        spacing: 6px;
+        Text {
+            text: "Pick a preset or instrument";
+            color: Theme.text-dim;
+            font-size: 14px;
+            font-weight: 600;
+            horizontal-alignment: center;
         }
         Text {
-            height: 30px;
-            x: 10px;
-            text: "Drag onto a deck, or double-click to load on a free deck. It plays through that deck's channel; drop a track on the deck to go back.";
+            text: "Drag it onto a deck, or double-click to load it on a free deck.";
             color: Theme.text-dim;
-            font-size: 11px;
-            vertical-alignment: center;
-            overflow: elide;
+            font-size: 12px;
+            horizontal-alignment: center;
+        }
+        // The instrument on a deck: back to its plugin panel.
+        if InstrumentsUi.instrument-deck() >= 0: HorizontalLayout {
+            alignment: center;
+            padding-top: 6px;
+            SwitchPill {
+                text: "SHOW PLUGIN";
+                font-size: 11px;
+                on: false;
+                clicked => { InstrumentsUi.open-panel(); }
+            }
         }
     }
-}
-
-// The source's page: the tree and the list, in the browser's place.
-export component InstrumentsPanel inherits HorizontalLayout {
-    in property <int> decks: 2;
-    InstrumentTree {}
-    Rectangle { width: 1px; background: Theme.separator; }
-    InstrumentList { decks: decks; horizontal-stretch: 1; }
 }

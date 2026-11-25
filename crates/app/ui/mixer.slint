@@ -6,7 +6,7 @@ import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { TourMark } from "tourmark.slint";
 import { Caption, Controls, ControlButton, ControlFader, ControlKnob, Crossfader, CueHeadphones, StereoMeter, VuMeter } from "controls.slint";
 import { EffectList } from "deck.slint";
-import { ListRow, PillCaret, SwitchPill, TitledList } from "pills.slint";
+import { ListRow, MenuTitle, PillCaret, SwitchPill, TitledList } from "pills.slint";
 
 // One output route in the settings table.
 export struct OutputRow {
@@ -95,6 +95,8 @@ export component MenuField inherits Rectangle {
     in property <[string]> choices;
     in property <int> chosen;
     in property <length> menu-width: 220px;
+    // The menu's title, naming what is chosen.
+    in property <string> title;
     callback opening();
     callback picked(index: int);
     height: 26px;
@@ -122,9 +124,10 @@ export component MenuField inherits Rectangle {
         x: 0px;
         y: root.height + 2px;
         width: menu-width;
-        height: min(choices.length * 28px, 392px) + 12px;
+        height: min(choices.length * 28px, 392px) + 12px + head;
         close-policy: close-on-click-outside;
-        // The titled list's look (pills.slint), without a title.
+        property <length> head: root.title != "" ? 26px : 0px;
+        // The titled list's look (pills.slint).
         Rectangle {
             background: Theme.pill-list;
             border-radius: 9px;
@@ -133,11 +136,17 @@ export component MenuField inherits Rectangle {
             drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
         }
-        Flickable {
+        if root.title != "": MenuTitle {
             x: 6px;
             y: 6px;
             width: parent.width - 12px;
-            height: parent.height - 12px;
+            text: root.title;
+        }
+        Flickable {
+            x: 6px;
+            y: 6px + head;
+            width: parent.width - 12px;
+            height: parent.height - 12px - head;
             content-height: choices.length * 28px;
             // Opens with the chosen item in view.
             content-y: max(min(0px, self.height / 2 - (chosen + 0.5) * 28px), self.height - self.content-height);
@@ -147,7 +156,7 @@ export component MenuField inherits Rectangle {
                     height: 28px;
                     border-radius: 6px;
                     background: ita.has-hover ? Theme.n-38373d : i == chosen ? Theme.n-313036 : transparent;
-                    Text { x: 10px; width: parent.width - 20px; text: c; color: i == chosen ? Theme.lilac-text : Theme.text; font-size: 12px; overflow: elide; }
+                    Text { x: 10px; width: parent.width - 20px; text: c; color: ita.has-hover ? Theme.menu-hover-text : Theme.menu-current-text; font-size: 12px; overflow: elide; }
                     ita := TouchArea {
                         clicked => {
                             root.picked(i);
@@ -193,6 +202,7 @@ export component OutputsTable inherits VerticalLayout {
         HorizontalLayout {
             spacing: 3px;
             MenuField {
+                title: "Output";
                 width: roomy ? 120px : 78px;
                 text: ["Master", "Phones", "Booth", "Deck 1", "Deck 2", "Deck 3", "Deck 4", "Sampler"][row.role];
                 choices: ["Master", "Headphones", "Booth", "Deck 1", "Deck 2", "Deck 3", "Deck 4", "Sampler"];
@@ -201,6 +211,7 @@ export component OutputsTable inherits VerticalLayout {
                 picked(i) => { AudioSettings.set-role(r, i); }
             }
             MenuField {
+                title: "Device";
                 horizontal-stretch: 1;
                 text: row.device-name;
                 choices: AudioSettings.devices;
@@ -210,6 +221,7 @@ export component OutputsTable inherits VerticalLayout {
                 picked(i) => { AudioSettings.set-device(r, i); }
             }
             if !row.single: MenuField {
+                title: "Channels";
                 width: roomy ? 90px : 62px;
                 text: row.pairs[row.pair];
                 choices: row.pairs;
@@ -220,6 +232,7 @@ export component OutputsTable inherits VerticalLayout {
             if row.single: Rectangle { width: roomy ? 90px : 62px; }
             // The whole setup's sample rate and buffer, on the first row.
             if roomy && r == 0: MenuField {
+                title: "Sample rate";
                 width: 110px;
                 text: AudioSettings.rates[AudioSettings.rate];
                 choices: AudioSettings.rates;
@@ -228,6 +241,7 @@ export component OutputsTable inherits VerticalLayout {
                 picked(i) => { AudioSettings.set-rate(i); }
             }
             if roomy && r == 0: MenuField {
+                title: "Buffer";
                 width: 150px;
                 text: AudioSettings.buffers[AudioSettings.buffer];
                 choices: AudioSettings.buffers;
@@ -271,6 +285,7 @@ export component ExternalOutputsTable inherits VerticalLayout {
             spacing: 3px;
             Text { text: row.name; width: 120px; color: Theme.text; font-size: 12px; vertical-alignment: center; }
             MenuField {
+                title: "Device";
                 horizontal-stretch: 1;
                 text: row.device-name;
                 choices: AudioSettings.fixed-devices;
@@ -280,6 +295,7 @@ export component ExternalOutputsTable inherits VerticalLayout {
                 picked(i) => { AudioSettings.set-fixed-device(r, i); }
             }
             if !row.single: MenuField {
+                title: "Channels";
                 width: 90px;
                 text: row.pairs[row.pair];
                 choices: row.pairs;
@@ -290,6 +306,7 @@ export component ExternalOutputsTable inherits VerticalLayout {
             if row.single: Rectangle { width: 90px; }
             // The whole setup's sample rate and buffer, on the first row.
             if r == 0: MenuField {
+                title: "Sample rate";
                 width: 110px;
                 text: AudioSettings.rates[AudioSettings.rate];
                 choices: AudioSettings.rates;
@@ -298,6 +315,7 @@ export component ExternalOutputsTable inherits VerticalLayout {
                 picked(i) => { AudioSettings.set-rate(i); }
             }
             if r == 0: MenuField {
+                title: "Buffer";
                 width: 150px;
                 text: AudioSettings.buffers[AudioSettings.buffer];
                 choices: AudioSettings.buffers;
@@ -331,6 +349,7 @@ export component InputsTable inherits VerticalLayout {
                 Text { x: 8px; text: row.name; color: Theme.text; font-size: 12px; vertical-alignment: center; height: parent.height; }
             }
             MenuField {
+                title: "Device";
                 horizontal-stretch: 1;
                 text: row.devices[row.device];
                 choices: row.devices;
@@ -339,6 +358,7 @@ export component InputsTable inherits VerticalLayout {
                 picked(i) => { InputSettings.set-device(r, i); }
             }
             MenuField {
+                title: "Channels";
                 width: 110px;
                 text: row.channels[row.channel];
                 choices: row.channels;
@@ -394,7 +414,7 @@ component ColorFxMenu inherits Rectangle {
                     Controls.set-value(index, i + 1);
                     menu.close();
                 }
-                Text { x: 8px; text: name; color: Theme.text; font-size: 12px; font-weight: parent.selected ? 700 : 500; vertical-alignment: center; height: parent.height; }
+                Text { x: 8px; text: name; color: parent.ink; font-size: 12px; font-weight: parent.selected ? 700 : 500; vertical-alignment: center; height: parent.height; }
             }
         }
     }

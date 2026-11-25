@@ -1604,7 +1604,7 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>ReloopBeatpad.InstantFXBtnk</key>
+                <key>ReloopBeatpad.InstantFXBtn</key>
                 <description>SHIFT_INSTANTFX 1</description>
                 <status>0x90</status>
                 <midino>0x0A</midino>

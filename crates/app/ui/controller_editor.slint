@@ -238,7 +238,7 @@ component EditBox inherits Rectangle {
     background: Theme.well;
     border-radius: Theme.radius;
     border-width: 1px;
-    border-color: wrong ? #ff9f0a : ti.has-focus ? Theme.lilac : Theme.border;
+    border-color: wrong ? Theme.f-ff9f0a : ti.has-focus ? Theme.lilac : Theme.border;
     if root.text == "": Text { x: 8px; text: root.placeholder; color: Theme.n-5f5f65; font-size: 12px; vertical-alignment: center; height: parent.height; }
     ti := TextInput {
         x: 8px;
@@ -573,7 +573,7 @@ component DialogButton inherits Rectangle {
     bl := HorizontalLayout {
         padding-left: 14px;
         padding-right: 14px;
-        Text { text: root.text; color: primary ? #000000 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+        Text { text: root.text; color: primary ? Theme.f-000000 : Theme.text; font-size: 12px; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -640,6 +640,7 @@ component RowEditor inherits Rectangle {
         if ControllerEditor.edit-enabled: EditField {
             label: "Does";
             MenuField {
+                title: "Does";
                 width: 200px;
                 menu-width: 240px;
                 text: ControllerEditor.does-modes[ControllerEditor.edit-does];
@@ -666,6 +667,7 @@ component RowEditor inherits Rectangle {
         if ControllerEditor.edit-enabled && ControllerEditor.edit-does == 1: EditField {
             label: "Acts on";
             MenuField {
+                title: "Acts on";
                 width: 200px;
                 text: ControllerEditor.whens[ControllerEditor.edit-when];
                 choices: ControllerEditor.whens;
@@ -709,6 +711,7 @@ component RowEditor inherits Rectangle {
                 }
             }
             if ControllerEditor.edit-targets.length > 1: MenuField {
+                title: "Change";
                 width: 130px;
                 menu-width: 170px;
                 text: ControllerEditor.edit-target-name;
@@ -763,6 +766,7 @@ component RowEditor inherits Rectangle {
                 label: "Acts on";
                 hint: "Long press, tap and double press let one button do more than one thing.";
                 MenuField {
+                    title: "Acts on";
                     width: 200px;
                     text: ControllerEditor.whens[ControllerEditor.edit-when];
                     choices: ControllerEditor.whens;
@@ -775,6 +779,7 @@ component RowEditor inherits Rectangle {
                 label: "Button";
                 hint: "Leave it as the function does it unless a button sticks or needs holding.";
                 MenuField {
+                    title: "Button";
                     width: 200px;
                     text: ControllerEditor.button-modes[ControllerEditor.edit-buttons];
                     choices: ControllerEditor.button-modes;
@@ -787,6 +792,7 @@ component RowEditor inherits Rectangle {
                 label: "Knob type";
                 hint: "Pick an endless type for a knob that turns round and round.";
                 MenuField {
+                    title: "Knob type";
                     width: 200px;
                     menu-width: 240px;
                     text: ControllerEditor.encoder-modes[ControllerEditor.edit-encoder];
@@ -950,6 +956,7 @@ export component ControllerEditorOverlay inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: "Controller";
                         width: 250px;
                         menu-width: 320px;
                         text: ControllerEditor.name;
@@ -963,6 +970,7 @@ export component ControllerEditorOverlay inherits Rectangle {
                 VerticalLayout {
                     alignment: center;
                     MenuField {
+                        title: "Mapping";
                         width: 220px;
                         menu-width: 260px;
                         text: ControllerEditor.version-name;
@@ -1145,6 +1153,7 @@ export component ControllerEditorOverlay inherits Rectangle {
                                     VerticalLayout {
                                         alignment: center;
                                         MenuField {
+                                            title: o.label;
                                             width: 150px;
                                             text: o.choices[o.chosen];
                                             choices: o.choices;

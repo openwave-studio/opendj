@@ -776,7 +776,7 @@ export component PlayerBar inherits Rectangle {
             width: drop-text.preferred-width + 20px;
             border-radius: 11px;
             background: Theme.accent;
-            drop-text := Text { text: "Play now"; color: #ffffff; font-size: 13px; font-weight: 700; }
+            drop-text := Text { text: "Play now"; color: Theme.f-ffffff; font-size: 13px; font-weight: 700; }
         }
     }
 }
@@ -991,8 +991,8 @@ export component QuickResults inherits Rectangle {
                                     // Artists round, as other players show them.
                                     border-radius: r.kind == 1 ? 17px : 5px;
                                     clip: true;
-                                    background: @linear-gradient(135deg, Theme.accent 0%, Theme.accent.darker(0.6) 60%, #101012 100%);
-                                    if !r.has-cover: Text { text: r.initials; color: #ffffffe0; font-size: 12px; font-weight: 700; }
+                                    background: @linear-gradient(135deg, Theme.accent 0%, Theme.accent.darker(0.6) 60%, Theme.f-101012 100%);
+                                    if !r.has-cover: Text { text: r.initials; color: Theme.f-ffffffe0; font-size: 12px; font-weight: 700; }
                                     if r.has-cover: Image { width: parent.width; height: parent.height; source: r.cover; image-fit: cover; }
                                 }
                             }

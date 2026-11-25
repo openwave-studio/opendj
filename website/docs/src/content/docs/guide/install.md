@@ -45,8 +45,10 @@ The builds aren't signed yet, so on the first start Windows shows "Windows
 protected your PC". Click **More info**, then **Run anyway**.
 
 In Settings → Audio, pick an **ASIO** driver if your controller or audio
-interface has one, for the lowest latency. Windows lets only one app use a
-MIDI controller at a time, so quit any other DJ app before you start openDJ.
+interface has one, for the lowest latency. An ASIO device plugged in after
+openDJ started shows up once you press **Refresh devices** there.
+Windows lets only one app use a MIDI controller at a time, so quit any other
+DJ app before you start openDJ.
 
 ## First start: the guided tour
 

@@ -375,6 +375,14 @@ fn model_numbers(name: &str) -> Vec<String> {
         .collect()
 }
 
+/// Every number standing on its own in a name ("Beatmix 2/4" → "2", "4").
+fn bare_numbers(name: &str) -> Vec<String> {
+    name.split(|c: char| !c.is_alphanumeric())
+        .filter(|t| !t.is_empty() && t.chars().all(|c| c.is_ascii_digit()))
+        .map(str::to_string)
+        .collect()
+}
+
 /// The mapping for a MIDI port: every word of the port's name must appear in
 /// the mapping's name ("DDJ-FLX4" → "Pioneer DDJ-FLX4", "XONE:K2" →
 /// "Allen&Heath Xone K1/K2/K3"); among those, one whose model numbers are
@@ -394,10 +402,16 @@ pub fn match_mapping<'a>(port: &str, mappings: &'a [(String, PathBuf)]) -> Optio
                 .iter()
                 .filter(|n| !port_numbers.contains(n))
                 .count();
+            // A bare number in both names ("Beatmix 2" → "Beatmix 2/4")
+            // only breaks ties between names that fit otherwise.
+            let shared = bare_numbers(port)
+                .iter()
+                .filter(|n| bare_numbers(name).contains(n))
+                .count();
             port_tokens
                 .iter()
                 .all(|t| m.contains(t))
-                .then_some(((missing, m.len()), path))
+                .then_some(((missing, usize::MAX - shared, m.len()), path))
         })
         .min_by_key(|(rank, _)| *rank)
         .map(|(_, p)| p.as_path())
@@ -436,7 +450,11 @@ fn hid_ports<'a>(
         let midi_twin = midi_ports
             .iter()
             .any(|p| *p == d.product || device_key(p) == device_key(&d.product));
-        let base = if d.product.is_empty() || midi_twin {
+        // A keyboard whose keys play over its own MIDI port (`keys="midi"`)
+        // names its HID side after the mapping, so the two never share a
+        // name and the MIDI port stays free to play instruments.
+        let keys = m.2.iter().any(|p| p.keys);
+        let base = if d.product.is_empty() || midi_twin || keys {
             m.0.clone()
         } else {
             d.product.clone()
@@ -1313,6 +1331,7 @@ mod tests {
             ("DDJ-WeGO3", "Pioneer-DDJ-WeGO3.midi.xml"),
             ("DDJ-WeGO4", "Pioneer-DDJ-WeGO4.midi.xml"),
             ("PIONEER DDJ-800", "Pioneer-DDJ-800.midi.xml"),
+            ("DDJ-1000", "Pioneer-DDJ-1000.midi.xml"),
             ("XDJ-AZ", "Pioneer-XDJ-AZ.midi.xml"),
             ("OPUS-QUAD", "Pioneer-OPUS-QUAD.midi.xml"),
             ("PIONEER XDJ-RX", "Pioneer-XDJ-RX.midi.xml"),
@@ -1391,10 +1410,55 @@ mod tests {
             // Port names from djay Pro's built-in Reloop mappings.
             ("MIXTOUR", "Reloop Mixtour.midi.xml"),
             ("Reloop Mixtour Pro", "Reloop Mixtour Pro.midi.xml"),
+            ("Reloop Ready", "Reloop Ready.midi.xml"),
+            ("Reloop Buddy", "Reloop Buddy.midi.xml"),
+            ("Mixon 4", "Reloop Mixon 4.midi.xml"),
+            ("Reloop Mixon 8 Pro", "Reloop Mixon 8 Pro.midi.xml"),
+            ("Reloop Beatpad2", "Reloop Beatpad 2.midi.xml"),
+            ("Reloop BeatMix", "Reloop Beatmix.midi.xml"),
+            ("Reloop ELITE", "Reloop Elite.midi.xml"),
+            ("RP8000", "Reloop RP-8000.midi.xml"),
+            ("RP8000mk2", "Reloop RP-8000 MK2.midi.xml"),
+            ("Beatmix 2", "Reloop-Beatmix-2-4-MK2.midi.xml"),
+            ("Beatmix 4", "Reloop-Beatmix-2-4-MK2.midi.xml"),
+            ("Reloop Beatpad", "Reloop Beatpad.midi.xml"),
+            ("Terminal Mix 2", "Reloop Terminal Mix 2-4.midi.xml"),
+            ("Terminal Mix 4", "Reloop Terminal Mix 2-4.midi.xml"),
         ] {
             assert_eq!(name(port).as_deref(), Some(file), "{port}");
         }
         assert_eq!(name("Generic USB MIDI 1"), None);
+    }
+
+    #[test]
+    fn a_keyboards_hid_side_leaves_its_midi_port_to_play() {
+        let mappings = vec![(
+            "Native Instruments Komplete Kontrol M32".to_string(),
+            PathBuf::from("Native Instruments Komplete Kontrol M32.hid.xml"),
+            vec![hid::Product {
+                vendor_id: 0x17cc,
+                product_id: 0x1860,
+                keys: true,
+                ..Default::default()
+            }],
+        )];
+        let device = hid::DeviceInfo {
+            vendor_id: 0x17cc,
+            product_id: 0x1860,
+            interface: 3,
+            product: "KOMPLETE KONTROL M32".into(),
+            ..Default::default()
+        };
+        // The MIDI port has no mapping, so it isn't among the mapped ports;
+        // the HID side still takes the mapping's name.
+        let found = hid_ports(vec![device], &mappings, &[]);
+        assert_eq!(found[0].0, "Native Instruments Komplete Kontrol M32");
+        assert!(plays_instruments(
+            "KOMPLETE KONTROL M32",
+            false,
+            None,
+            false
+        ));
     }
 
     #[test]

@@ -326,23 +326,16 @@ each label with a small tick along its top. While you edit the grid, every
 tempo change is labelled, to a tenth of a BPM. Turn them off with **BPM
 labels** in the drop-down on the waveforms button.
 
-The grid menu (**More…** under the waveform's pencil) says where the grid came from:
-**Detected**, **Edited** or the app it was imported from. A detected grid
-that fits the beats poorly says **may be off, check by ear**. **Lock grid**
-keeps a grid as it is: a locked grid can't be edited, and analysing the
-track again leaves it alone. Grids imported from another app come in
-locked. **Back to the detected grid** throws away your edits or the
-imported grid and uses openDJ's own.
+**Lock** (key **L** in Prep) keeps a grid as it is: a locked grid can't be edited,
+and analysing the track again leaves it alone. Grids imported from another
+app come in locked; **Unlock** in the Edit Grid popover frees one.
+**Reset** throws away your edits or the imported grid and uses openDJ's own. A detected grid that fits the beats poorly says **Check
+by ear** in the Edit Grid popover.
 
-To check a grid by ear, turn on **Metronome** in the same menu: the deck
+To check a grid by ear, turn on the click (key **M** in Prep): the deck
 clicks on every beat of the grid, higher on bar 1, through the deck's
 fader and cue like the music. If the clicks drift off the music, fix the
-grid while it plays: **Bar 1 here** on a downbeat puts bar 1 there,
-**Move grid** ‹ › nudges it, **Tempo here** − + changes the tempo,
-**Tempo × ½ / × 2** fixes a tempo read at half or double, **Tap tempo**
-sets it from your taps (it settles to a whole BPM over eight or more taps,
-skips a slipped tap, and starts over after a two second pause), and **New tempo section
-from here** starts a new tempo where a live track speeds up or slows down.
+grid while it plays.
 
 ### Edit Grid
 
@@ -356,12 +349,34 @@ in lilac, and the pencil lights up. While you edit:
   and the beat lines stay put until you let go. Hold **Alt** (⌥) to scrub as
   usual instead.
 - **Set Downbeat** in the Edit Grid popover makes the beat at the play line
-  bar 1, and **◀ |** **| ▶** nudge the whole grid a little earlier or later.
-- **More…** opens the full grid menu: tempo, ½ and ×2, tempo sections,
-  undo and the metronome.
-- **Reset** goes back to the detected grid; **Lock** locks it.
+  bar 1, and the two arrows under it move bar 1 a beat earlier or later
+  (the beats stay where they are).
+- **Reset** goes back to the detected grid.
+- **Show Editor** opens the grid editor; **Hide Editor** closes it.
 
-Click the pencil again, press **Done** or **Esc** to finish. Editing keeps
+### Grid editor
+
+The grid editor takes the FX bar's place. In 2-Deck it has deck 1's tools
+on the left and deck 2's on the right; in 4-Deck it shows the deck whose
+pencil opened it, and Prep shows deck 1's. At each outer edge are the grid
+**Type** (click it to pick **Auto**, **Fixed** or **Flexible**) and
+**Reset**. Then four groups:
+
+- **BPM**: the tempo with **Tap** beside it (tap along to set it), and
+  **½** and **×2**.
+- **Downbeat**: **Set** makes the beat at the play line bar 1; the arrows
+  move bar 1 a beat either way.
+- **Anchor**: an anchor is where the tempo changes, for a live track that
+  speeds up or slows down. **Add** puts one on the beat at the play line,
+  the crossed pin removes the one there, and the arrows move the nearest
+  one a little earlier or later: the beats either side stretch to meet it.
+- **Grid**: **Set** puts a beat at the play line, **Clear** takes the grid
+  away (for a track with no steady beat; Undo or **Reset** brings it back),
+  and the arrows nudge the whole grid a little earlier or later.
+
+Point at a button to see what it does, and its key.
+
+Click the pencil again or press **Esc** to finish editing. Editing keeps
 whatever zoom the waveform is at, and loading another track finishes it.
 In the [Prep layout](layouts.md) the grid is always open for editing while
 it is unlocked, and the metronome turns on by itself there and back off

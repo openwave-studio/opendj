@@ -1,0 +1,1127 @@
+{
+  "file": "Reloop-Beatmix-2-4-MK2.midi.xml",
+  "parts": {
+    "c-button-1": {
+      "normal": [
+        "Back button"
+      ]
+    },
+    "c-button-2": {
+      "normal": [
+        "Open or close folder"
+      ]
+    },
+    "c-button-3": {
+      "normal": [
+        "Open or close folder"
+      ]
+    },
+    "c-encoder-1": {
+      "normal": [
+        "Sampler 1 Channel fader",
+        "Sampler 2 Channel fader",
+        "Sampler 3 Channel fader",
+        "Sampler 4 Channel fader",
+        "Sampler 5 Channel fader",
+        "Sampler 6 Channel fader",
+        "Sampler 7 Channel fader",
+        "Sampler 8 Channel fader",
+        "Sampler 9 Channel fader",
+        "Sampler 10 Channel fader",
+        "Sampler 11 Channel fader",
+        "Sampler 12 Channel fader",
+        "Sampler 13 Channel fader",
+        "Sampler 14 Channel fader",
+        "Sampler 15 Channel fader",
+        "Sampler 16 Channel fader"
+      ]
+    },
+    "c-encoder-2": {
+      "normal": [
+        "Next playlist",
+        "Previous playlist"
+      ]
+    },
+    "c-encoder-3": {
+      "normal": [
+        "Next playlist",
+        "Previous playlist"
+      ]
+    },
+    "c-fader-1": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "c-fader-2": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "c-knob-1": {
+      "normal": [
+        "Headphone mix"
+      ]
+    },
+    "l-button-1": {
+      "Deck 3 Loop Set": [
+        "Loop in",
+        "Loop out"
+      ],
+      "normal": [
+        "Loop in",
+        "Loop out"
+      ]
+    },
+    "l-button-10": {
+      "Deck 3 Pitch Bend −": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "l-button-11": {
+      "Deck 3 Pitch Bend +": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "l-button-12": {
+      "Deck 3 Load Button": [
+        "Load button"
+      ],
+      "normal": [
+        "Load button"
+      ]
+    },
+    "l-button-13": {
+      "Deck 3 Headphone Cue": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-button-14": {
+      "Deck 3 Master Sync": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-button-15": {
+      "Deck 3 Range": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "l-button-16": {
+      "Deck 3 Cue Gotoandstop": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Stop at cue"
+      ]
+    },
+    "l-button-17": {
+      "Shift Fx Encoder Push": [
+        "FX 1 Shift fx encoder push"
+      ],
+      "normal": [
+        "FX 1 Shift fx encoder push"
+      ]
+    },
+    "l-button-18": {
+      "Deck 3 Activate Fx": [
+        "FX 1 Assign to Deck 3"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 1"
+      ]
+    },
+    "l-button-19": {
+      "Deck 3 Activate Fx": [
+        "FX 2 Assign to Deck 3"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 1"
+      ]
+    },
+    "l-button-2": {
+      "Deck 3 Loop ½": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "l-button-20": {
+      "normal": [
+        "FX 1 Fx knob on off"
+      ]
+    },
+    "l-button-21": {
+      "normal": [
+        "FX 1 Fx knob on off"
+      ]
+    },
+    "l-button-22": {
+      "normal": [
+        "FX 1 Fx knob on off"
+      ]
+    },
+    "l-button-23": {
+      "normal": [
+        "FX 1 Shift fx knob on off"
+      ]
+    },
+    "l-button-24": {
+      "normal": [
+        "FX 1 Shift fx knob on off"
+      ]
+    },
+    "l-button-25": {
+      "normal": [
+        "FX 1 Shift fx knob on off"
+      ]
+    },
+    "l-button-3": {
+      "Deck 3 Loop ×2": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "l-button-4": {
+      "Deck 3 Reloop": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "l-button-5": {
+      "Deck 3 Sync": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "l-button-6": {
+      "Deck 3 Cue Gotoandplay": [
+        "Play from cue"
+      ],
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "l-button-7": {
+      "Deck 3 Cue": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-button-8": {
+      "Deck 3 Play": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-button-9": {
+      "Fx Encoder Push": [
+        "FX 1 Unit on"
+      ],
+      "normal": [
+        "FX 1 Unit on"
+      ]
+    },
+    "l-encoder-1": {
+      "normal": [
+        "FX 1 Effect 1 parameter 1"
+      ]
+    },
+    "l-encoder-2": {
+      "normal": [
+        "FX 1 Effect 1 parameter 2"
+      ]
+    },
+    "l-encoder-3": {
+      "normal": [
+        "FX 1 Effect 1 parameter 3"
+      ]
+    },
+    "l-encoder-4": {
+      "normal": [
+        "FX 1 Effect 1 parameter 4"
+      ]
+    },
+    "l-encoder-5": {
+      "normal": [
+        "FX 1 Shift fx knob turn"
+      ]
+    },
+    "l-encoder-6": {
+      "normal": [
+        "FX 1 Shift fx knob turn"
+      ]
+    },
+    "l-encoder-7": {
+      "Fx Encoder Turn": [
+        "FX 1 Wet / dry"
+      ],
+      "normal": [
+        "FX 1 Wet / dry"
+      ]
+    },
+    "l-encoder-8": {
+      "Shift Fx Encoder Turn": [
+        "FX 1 Shift fx encoder turn"
+      ],
+      "normal": [
+        "FX 1 Shift fx encoder turn"
+      ]
+    },
+    "l-fader-1": {
+      "Deck 3 Volume": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "l-fader-2": {
+      "Deck 3 Pitch Slider": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-jog": {
+      "Deck 3 Wheel Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck 3 Wheel Turn": [
+        "Jog nudge"
+      ],
+      "Deck 3 Wheel Turn 2": [
+        "Wheel turn"
+      ],
+      "Wheel Turn": [
+        "Jog nudge"
+      ],
+      "Wheel Turn 2": [
+        "Wheel turn"
+      ],
+      "normal": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "l-knob-1": {
+      "Deck 3 Gain": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "l-knob-2": {
+      "Deck 3 High": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "l-knob-3": {
+      "Deck 3 Mid": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "l-knob-4": {
+      "Deck 3 Low": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "l-pad-1": {
+      "Deck 3 Hotcue 1": [
+        "Hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad-10": {
+      "Deck 3 Hotcue 2 Clear": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Clear hot cue 2"
+      ]
+    },
+    "l-pad-11": {
+      "Deck 3 Hotcue 3 Clear": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Clear hot cue 3"
+      ]
+    },
+    "l-pad-12": {
+      "Deck 3 Hotcue 4 Clear": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Clear hot cue 4"
+      ]
+    },
+    "l-pad-13": {
+      "Sampler Pad": [
+        "Sampler 1 Play from start"
+      ],
+      "normal": [
+        "Sampler 1 Play from start"
+      ]
+    },
+    "l-pad-14": {
+      "Sampler Pad": [
+        "Sampler 2 Play from start"
+      ],
+      "normal": [
+        "Sampler 2 Play from start"
+      ]
+    },
+    "l-pad-15": {
+      "Sampler Pad": [
+        "Sampler 3 Play from start"
+      ],
+      "normal": [
+        "Sampler 3 Play from start"
+      ]
+    },
+    "l-pad-16": {
+      "Sampler Pad": [
+        "Sampler 4 Play from start"
+      ],
+      "normal": [
+        "Sampler 4 Play from start"
+      ]
+    },
+    "l-pad-17": {
+      "Sampler Pad": [
+        "Sampler 5 Play from start"
+      ],
+      "normal": [
+        "Sampler 5 Play from start"
+      ]
+    },
+    "l-pad-18": {
+      "Sampler Pad": [
+        "Sampler 6 Play from start"
+      ],
+      "normal": [
+        "Sampler 6 Play from start"
+      ]
+    },
+    "l-pad-19": {
+      "Sampler Pad": [
+        "Sampler 7 Play from start"
+      ],
+      "normal": [
+        "Sampler 7 Play from start"
+      ]
+    },
+    "l-pad-2": {
+      "Deck 3 Hotcue 2": [
+        "Hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad-20": {
+      "Sampler Pad": [
+        "Sampler 8 Play from start"
+      ],
+      "normal": [
+        "Sampler 8 Play from start"
+      ]
+    },
+    "l-pad-21": {
+      "Shift Sampler Pad": [
+        "Sampler 1 Eject"
+      ],
+      "normal": [
+        "Sampler 1 Eject"
+      ]
+    },
+    "l-pad-22": {
+      "Shift Sampler Pad": [
+        "Sampler 2 Eject"
+      ],
+      "normal": [
+        "Sampler 2 Eject"
+      ]
+    },
+    "l-pad-23": {
+      "Shift Sampler Pad": [
+        "Sampler 3 Eject"
+      ],
+      "normal": [
+        "Sampler 3 Eject"
+      ]
+    },
+    "l-pad-24": {
+      "Shift Sampler Pad": [
+        "Sampler 4 Eject"
+      ],
+      "normal": [
+        "Sampler 4 Eject"
+      ]
+    },
+    "l-pad-25": {
+      "Shift Sampler Pad": [
+        "Sampler 5 Eject"
+      ],
+      "normal": [
+        "Sampler 5 Eject"
+      ]
+    },
+    "l-pad-26": {
+      "Shift Sampler Pad": [
+        "Sampler 6 Eject"
+      ],
+      "normal": [
+        "Sampler 6 Eject"
+      ]
+    },
+    "l-pad-27": {
+      "Shift Sampler Pad": [
+        "Sampler 7 Eject"
+      ],
+      "normal": [
+        "Sampler 7 Eject"
+      ]
+    },
+    "l-pad-28": {
+      "Shift Sampler Pad": [
+        "Sampler 8 Eject"
+      ],
+      "normal": [
+        "Sampler 8 Eject"
+      ]
+    },
+    "l-pad-29": {
+      "Deck 3 Reverseroll": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "l-pad-3": {
+      "Deck 3 Hotcue 3": [
+        "Hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad-4": {
+      "Deck 3 Hotcue 4": [
+        "Hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pad-5": {
+      "Deck 3 Beatloop 1 Toggle": [
+        "Loop 1 beat"
+      ],
+      "normal": [
+        "Loop 1 beat"
+      ]
+    },
+    "l-pad-6": {
+      "Deck 3 Beatloop 2 Toggle": [
+        "Loop 2 beats"
+      ],
+      "normal": [
+        "Loop 2 beats"
+      ]
+    },
+    "l-pad-7": {
+      "Deck 3 Beatloop 4 Toggle": [
+        "Loop 4 beats"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "l-pad-8": {
+      "Deck 3 Beatloop 8 Toggle": [
+        "Loop 8 beats"
+      ],
+      "normal": [
+        "Loop 8 beats"
+      ]
+    },
+    "l-pad-9": {
+      "Deck 3 Hotcue 1 Clear": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Clear hot cue 1"
+      ]
+    },
+    "r-button-1": {
+      "Deck 4 Loop Set": [
+        "Loop in",
+        "Loop out"
+      ],
+      "normal": [
+        "Loop in",
+        "Loop out"
+      ]
+    },
+    "r-button-10": {
+      "Deck 4 Pitch Bend −": [
+        "Nudge slower"
+      ],
+      "normal": [
+        "Nudge slower"
+      ]
+    },
+    "r-button-11": {
+      "Deck 4 Pitch Bend +": [
+        "Nudge faster"
+      ],
+      "normal": [
+        "Nudge faster"
+      ]
+    },
+    "r-button-12": {
+      "Deck 4 Load Button": [
+        "Load button"
+      ],
+      "normal": [
+        "Load button"
+      ]
+    },
+    "r-button-13": {
+      "Deck 4 Headphone Cue": [
+        "Headphone cue"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-button-14": {
+      "Deck 4 Master Sync": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-button-15": {
+      "Deck 4 Range": [
+        "Tempo range"
+      ],
+      "normal": [
+        "Tempo range"
+      ]
+    },
+    "r-button-16": {
+      "Deck 4 Cue Gotoandstop": [
+        "Stop at cue"
+      ],
+      "normal": [
+        "Stop at cue"
+      ]
+    },
+    "r-button-17": {
+      "Shift Fx Encoder Push": [
+        "FX 2 Shift fx encoder push"
+      ],
+      "normal": [
+        "FX 2 Shift fx encoder push"
+      ]
+    },
+    "r-button-18": {
+      "Deck 4 Activate Fx": [
+        "FX 1 Assign to Deck 4"
+      ],
+      "normal": [
+        "FX 1 Assign to Deck 2"
+      ]
+    },
+    "r-button-19": {
+      "Deck 4 Activate Fx": [
+        "FX 2 Assign to Deck 4"
+      ],
+      "normal": [
+        "FX 2 Assign to Deck 2"
+      ]
+    },
+    "r-button-2": {
+      "Deck 4 Loop ½": [
+        "Halve loop"
+      ],
+      "normal": [
+        "Halve loop"
+      ]
+    },
+    "r-button-20": {
+      "normal": [
+        "FX 2 Fx knob on off"
+      ]
+    },
+    "r-button-21": {
+      "normal": [
+        "FX 2 Fx knob on off"
+      ]
+    },
+    "r-button-22": {
+      "normal": [
+        "FX 2 Fx knob on off"
+      ]
+    },
+    "r-button-23": {
+      "normal": [
+        "FX 2 Shift fx knob on off"
+      ]
+    },
+    "r-button-24": {
+      "normal": [
+        "FX 2 Shift fx knob on off"
+      ]
+    },
+    "r-button-25": {
+      "normal": [
+        "FX 2 Shift fx knob on off"
+      ]
+    },
+    "r-button-3": {
+      "Deck 4 Loop ×2": [
+        "Double loop"
+      ],
+      "normal": [
+        "Double loop"
+      ]
+    },
+    "r-button-4": {
+      "Deck 4 Reloop": [
+        "Reloop / exit"
+      ],
+      "normal": [
+        "Reloop / exit"
+      ]
+    },
+    "r-button-5": {
+      "Deck 4 Sync": [
+        "Sync"
+      ],
+      "normal": [
+        "Sync"
+      ]
+    },
+    "r-button-6": {
+      "Deck 4 Cue Gotoandplay": [
+        "Play from cue"
+      ],
+      "normal": [
+        "Play from cue"
+      ]
+    },
+    "r-button-7": {
+      "Deck 4 Cue": [
+        "Cue"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-button-8": {
+      "Deck 4 Play": [
+        "Play / pause"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-button-9": {
+      "Fx Encoder Push": [
+        "FX 2 Unit on"
+      ],
+      "normal": [
+        "FX 2 Unit on"
+      ]
+    },
+    "r-encoder-1": {
+      "normal": [
+        "FX 2 Effect 1 parameter 1"
+      ]
+    },
+    "r-encoder-2": {
+      "normal": [
+        "FX 2 Effect 1 parameter 2"
+      ]
+    },
+    "r-encoder-3": {
+      "normal": [
+        "FX 2 Effect 1 parameter 3"
+      ]
+    },
+    "r-encoder-4": {
+      "normal": [
+        "FX 2 Effect 1 parameter 4"
+      ]
+    },
+    "r-encoder-5": {
+      "normal": [
+        "FX 2 Shift fx knob turn"
+      ]
+    },
+    "r-encoder-6": {
+      "normal": [
+        "FX 2 Shift fx knob turn"
+      ]
+    },
+    "r-encoder-7": {
+      "Fx Encoder Turn": [
+        "FX 2 Wet / dry"
+      ],
+      "normal": [
+        "FX 2 Wet / dry"
+      ]
+    },
+    "r-encoder-8": {
+      "Shift Fx Encoder Turn": [
+        "FX 2 Shift fx encoder turn"
+      ],
+      "normal": [
+        "FX 2 Shift fx encoder turn"
+      ]
+    },
+    "r-fader-1": {
+      "Deck 4 Volume": [
+        "Channel fader"
+      ],
+      "normal": [
+        "Channel fader"
+      ]
+    },
+    "r-fader-2": {
+      "Deck 4 Pitch Slider": [
+        "Tempo"
+      ],
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-jog": {
+      "Deck 4 Wheel Touch": [
+        "Scratch (platter touch)"
+      ],
+      "Deck 4 Wheel Turn": [
+        "Jog nudge"
+      ],
+      "Deck 4 Wheel Turn 2": [
+        "Wheel turn"
+      ],
+      "Wheel Turn": [
+        "Jog nudge"
+      ],
+      "Wheel Turn 2": [
+        "Wheel turn"
+      ],
+      "normal": [
+        "Scratch (platter touch)"
+      ]
+    },
+    "r-knob-1": {
+      "Deck 4 Gain": [
+        "Gain"
+      ],
+      "normal": [
+        "Gain"
+      ]
+    },
+    "r-knob-2": {
+      "Deck 4 High": [
+        "High EQ"
+      ],
+      "normal": [
+        "High EQ"
+      ]
+    },
+    "r-knob-3": {
+      "Deck 4 Mid": [
+        "Mid EQ"
+      ],
+      "normal": [
+        "Mid EQ"
+      ]
+    },
+    "r-knob-4": {
+      "Deck 4 Low": [
+        "Low EQ"
+      ],
+      "normal": [
+        "Low EQ"
+      ]
+    },
+    "r-pad-1": {
+      "Deck 4 Hotcue 1": [
+        "Hot cue 1"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad-10": {
+      "Deck 4 Hotcue 2 Clear": [
+        "Clear hot cue 2"
+      ],
+      "normal": [
+        "Clear hot cue 2"
+      ]
+    },
+    "r-pad-11": {
+      "Deck 4 Hotcue 3 Clear": [
+        "Clear hot cue 3"
+      ],
+      "normal": [
+        "Clear hot cue 3"
+      ]
+    },
+    "r-pad-12": {
+      "Deck 4 Hotcue 4 Clear": [
+        "Clear hot cue 4"
+      ],
+      "normal": [
+        "Clear hot cue 4"
+      ]
+    },
+    "r-pad-13": {
+      "Sampler Pad": [
+        "Sampler 1 Play from start"
+      ],
+      "normal": [
+        "Sampler 1 Play from start"
+      ]
+    },
+    "r-pad-14": {
+      "Sampler Pad": [
+        "Sampler 2 Play from start"
+      ],
+      "normal": [
+        "Sampler 2 Play from start"
+      ]
+    },
+    "r-pad-15": {
+      "Sampler Pad": [
+        "Sampler 3 Play from start"
+      ],
+      "normal": [
+        "Sampler 3 Play from start"
+      ]
+    },
+    "r-pad-16": {
+      "Sampler Pad": [
+        "Sampler 4 Play from start"
+      ],
+      "normal": [
+        "Sampler 4 Play from start"
+      ]
+    },
+    "r-pad-17": {
+      "Sampler Pad": [
+        "Sampler 5 Play from start"
+      ],
+      "normal": [
+        "Sampler 5 Play from start"
+      ]
+    },
+    "r-pad-18": {
+      "Sampler Pad": [
+        "Sampler 6 Play from start"
+      ],
+      "normal": [
+        "Sampler 6 Play from start"
+      ]
+    },
+    "r-pad-19": {
+      "Sampler Pad": [
+        "Sampler 7 Play from start"
+      ],
+      "normal": [
+        "Sampler 7 Play from start"
+      ]
+    },
+    "r-pad-2": {
+      "Deck 4 Hotcue 2": [
+        "Hot cue 2"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad-20": {
+      "Sampler Pad": [
+        "Sampler 8 Play from start"
+      ],
+      "normal": [
+        "Sampler 8 Play from start"
+      ]
+    },
+    "r-pad-21": {
+      "Shift Sampler Pad": [
+        "Sampler 1 Eject"
+      ],
+      "normal": [
+        "Sampler 1 Eject"
+      ]
+    },
+    "r-pad-22": {
+      "Shift Sampler Pad": [
+        "Sampler 2 Eject"
+      ],
+      "normal": [
+        "Sampler 2 Eject"
+      ]
+    },
+    "r-pad-23": {
+      "Shift Sampler Pad": [
+        "Sampler 3 Eject"
+      ],
+      "normal": [
+        "Sampler 3 Eject"
+      ]
+    },
+    "r-pad-24": {
+      "Shift Sampler Pad": [
+        "Sampler 4 Eject"
+      ],
+      "normal": [
+        "Sampler 4 Eject"
+      ]
+    },
+    "r-pad-25": {
+      "Shift Sampler Pad": [
+        "Sampler 5 Eject"
+      ],
+      "normal": [
+        "Sampler 5 Eject"
+      ]
+    },
+    "r-pad-26": {
+      "Shift Sampler Pad": [
+        "Sampler 6 Eject"
+      ],
+      "normal": [
+        "Sampler 6 Eject"
+      ]
+    },
+    "r-pad-27": {
+      "Shift Sampler Pad": [
+        "Sampler 7 Eject"
+      ],
+      "normal": [
+        "Sampler 7 Eject"
+      ]
+    },
+    "r-pad-28": {
+      "Shift Sampler Pad": [
+        "Sampler 8 Eject"
+      ],
+      "normal": [
+        "Sampler 8 Eject"
+      ]
+    },
+    "r-pad-29": {
+      "Deck 4 Reverseroll": [
+        "Reverse roll (censor)"
+      ],
+      "normal": [
+        "Reverse roll (censor)"
+      ]
+    },
+    "r-pad-3": {
+      "Deck 4 Hotcue 3": [
+        "Hot cue 3"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad-4": {
+      "Deck 4 Hotcue 4": [
+        "Hot cue 4"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pad-5": {
+      "Deck 4 Beatloop 1 Toggle": [
+        "Loop 1 beat"
+      ],
+      "normal": [
+        "Loop 1 beat"
+      ]
+    },
+    "r-pad-6": {
+      "Deck 4 Beatloop 2 Toggle": [
+        "Loop 2 beats"
+      ],
+      "normal": [
+        "Loop 2 beats"
+      ]
+    },
+    "r-pad-7": {
+      "Deck 4 Beatloop 4 Toggle": [
+        "Loop 4 beats"
+      ],
+      "normal": [
+        "Loop 4 beats"
+      ]
+    },
+    "r-pad-8": {
+      "Deck 4 Beatloop 8 Toggle": [
+        "Loop 8 beats"
+      ],
+      "normal": [
+        "Loop 8 beats"
+      ]
+    },
+    "r-pad-9": {
+      "Deck 4 Hotcue 1 Clear": [
+        "Clear hot cue 1"
+      ],
+      "normal": [
+        "Clear hot cue 1"
+      ]
+    }
+  }
+}
