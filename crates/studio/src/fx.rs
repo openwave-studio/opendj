@@ -1013,12 +1013,25 @@ pub struct RoarStage {
     pub bias: f32,
     /// Low-pass, Hz; at [`ROAR_OPEN`] or over it's open.
     pub lowpass: f32,
-    /// Live's shaper type; [`ROAR_TRI_FOLD`] folds, the rest saturate.
+    /// Live's shaper type, an index into [`ROAR_SHAPES`].
     pub shape: u8,
 }
 
 /// Roar's Tri Fold shaper type.
 pub const ROAR_TRI_FOLD: u8 = 9;
+
+/// One Roar shaper curve, by its index in [`ROAR_SHAPES`].
+fn roar_shape(shape: u8, x: f32) -> f32 {
+    use std::f32::consts::FRAC_PI_2;
+    match shape {
+        0 => x.clamp(-FRAC_PI_2, FRAC_PI_2).sin(),
+        1 => x.clamp(-1.0, 1.0),
+        5 => x.max(0.0).tanh(),
+        6 => x.abs().tanh(),
+        ROAR_TRI_FOLD => tri_fold(x),
+        _ => x.tanh(),
+    }
+}
 
 /// Folds back into -1..1 like a triangle wave.
 fn tri_fold(x: f32) -> f32 {
@@ -1065,7 +1078,7 @@ impl Default for RoarSettings {
 
 const STAGE_PARAMS: usize = 4;
 
-/// Roar's routings; Feedback plays as Serial here.
+/// Roar's routings, in Live's order; Feedback and Delay play as Serial here.
 pub const ROUTINGS: &[&str] = &[
     "Single",
     "Serial",
@@ -1073,15 +1086,42 @@ pub const ROUTINGS: &[&str] = &[
     "Multi Band",
     "Mid Side",
     "Feedback",
+    "Delay",
+];
+
+/// Roar's shaper types, in Live's order. Soft Sine, Hard Clip, the two
+/// rectifiers and Tri Fold are their own curves here; the rest saturate.
+pub const ROAR_SHAPES: &[&str] = &[
+    "Soft Sine",
+    "Hard Clip",
+    "Bit Crusher",
+    "Diode Clipper",
+    "Tube Preamp",
+    "Half Wave Rectifier",
+    "Full Wave Rectifier",
+    "Polynomial",
+    "Fractal",
+    "Tri Fold",
+    "Noise Injection",
+    "Shards",
 ];
 
 impl RoarSettings {
     pub fn summary(&self) -> String {
-        let n = self.stages.iter().filter(|s| s.on).count();
+        let shapes: Vec<&str> = self
+            .stages
+            .iter()
+            .filter(|s| s.on)
+            .map(|s| *ROAR_SHAPES.get(s.shape as usize).unwrap_or(&"Soft Sine"))
+            .collect();
         format!(
-            "{} · {n} stage{} · approximation",
+            "{} · {} · approximation",
             ROUTINGS.get(self.routing as usize).unwrap_or(&"Serial"),
-            if n == 1 { "" } else { "s" }
+            if shapes.is_empty() {
+                "no stages".to_string()
+            } else {
+                shapes.join(", ")
+            }
         )
     }
 
@@ -1223,13 +1263,8 @@ impl Roar {
             return x;
         }
         let (drive, bias, lp) = &mut self.stages[i];
-        let y = if st.shape == ROAR_TRI_FOLD {
-            let off = tri_fold(*bias);
-            x.map(|v| tri_fold(v * *drive + *bias) - off)
-        } else {
-            let off = bias.tanh();
-            x.map(|v| (v * *drive + *bias).tanh() - off)
-        };
+        let off = roar_shape(st.shape, *bias);
+        let y = x.map(|v| roar_shape(st.shape, v * *drive + *bias) - off);
         if st.lowpass < ROAR_OPEN {
             lp.process(y)
         } else {
