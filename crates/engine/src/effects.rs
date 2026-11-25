@@ -13,7 +13,7 @@
 //! on or off.
 
 use std::f32::consts::{PI, TAU};
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use opendj_control::{Behavior, ControlHandle, ControlRegistry};
@@ -1391,7 +1391,7 @@ const SILENCE: f32 = 1e-5;
 /// Bins the instrument's scope shows, each its lowest and highest sample.
 pub const SCOPE_BINS: usize = 128;
 /// Samples the scope spans: about 43 ms at 48 kHz.
-const SCOPE_SAMPLES: usize = SCOPE_BINS * 16;
+pub const SCOPE_SAMPLES: usize = SCOPE_BINS * 16;
 
 /// What the instrument plays, written on the audio thread each buffer for
 /// the app to show: the notes held and a scope of its sound.
@@ -1399,6 +1399,14 @@ pub struct InstrumentView {
     held: [AtomicU64; 2],
     /// Each bin's lowest then highest sample, as `f32` bits.
     scope: [AtomicU32; 2 * SCOPE_BINS],
+    /// The last [`SCOPE_SAMPLES`] samples themselves, oldest first, as
+    /// `f32` bits: for a spectrum.
+    wave: [AtomicU32; SCOPE_SAMPLES],
+    /// The scope shows the deck's sound after its effects (set by the
+    /// app), not the instrument's own.
+    post: AtomicBool,
+    /// The sample rate the samples come at, as `f32` bits.
+    rate: AtomicU32,
 }
 
 impl Default for InstrumentView {
@@ -1406,6 +1414,9 @@ impl Default for InstrumentView {
         Self {
             held: std::array::from_fn(|_| AtomicU64::new(0)),
             scope: std::array::from_fn(|_| AtomicU32::new(0)),
+            wave: std::array::from_fn(|_| AtomicU32::new(0)),
+            post: AtomicBool::new(false),
+            rate: AtomicU32::new(48_000f32.to_bits()),
         }
     }
 }
@@ -1426,6 +1437,59 @@ impl InstrumentView {
                 (v(2 * b), v(2 * b + 1))
             })
             .collect()
+    }
+
+    /// The last [`SCOPE_SAMPLES`] samples, oldest first.
+    pub fn wave(&self) -> Vec<f32> {
+        self.wave
+            .iter()
+            .map(|v| f32::from_bits(v.load(Ordering::Relaxed)))
+            .collect()
+    }
+
+    /// The spectrum of [`InstrumentView::wave`] in `bands` bands spaced
+    /// evenly in pitch from 30 Hz to 16 kHz, low first, each 0 (-84 dB or
+    /// quieter) to 1 (full scale).
+    pub fn spectrum(&self, bands: usize) -> Vec<f32> {
+        use rustfft::num_complex::Complex;
+        let wave = self.wave();
+        let n = wave.len();
+        let rate = f32::from_bits(self.rate.load(Ordering::Relaxed)).max(1.0);
+        let mut buf: Vec<Complex<f32>> = wave
+            .iter()
+            .enumerate()
+            .map(|(i, &x)| {
+                let w = 0.5 - 0.5 * (std::f32::consts::TAU * i as f32 / n as f32).cos();
+                Complex::new(x * w, 0.0)
+            })
+            .collect();
+        rustfft::FftPlanner::new()
+            .plan_fft_forward(n)
+            .process(&mut buf);
+        // A full-scale sine through the Hann window peaks at n / 4.
+        let norm = 4.0 / n as f32;
+        let (lo, hi) = (30.0f32, 16_000.0f32.min(rate / 2.0));
+        let bin_of = |f: f32| (f * n as f32 / rate).clamp(1.0, (n / 2 - 1) as f32);
+        (0..bands)
+            .map(|b| {
+                let f0 = lo * (hi / lo).powf(b as f32 / bands as f32);
+                let f1 = lo * (hi / lo).powf((b + 1) as f32 / bands as f32);
+                let (a, z) = (bin_of(f0) as usize, bin_of(f1) as usize);
+                let peak = (a..=z.max(a)).map(|k| buf[k].norm()).fold(0.0, f32::max) * norm;
+                let db = 20.0 * peak.max(1e-9).log10();
+                ((db + 84.0) / 84.0).clamp(0.0, 1.0)
+            })
+            .collect()
+    }
+
+    /// Whether the scope follows the deck after its effects (true) or the
+    /// instrument as it plays (false).
+    pub fn set_post(&self, post: bool) {
+        self.post.store(post, Ordering::Relaxed);
+    }
+
+    pub fn post(&self) -> bool {
+        self.post.load(Ordering::Relaxed)
     }
 
     fn set_held(&self, held: u128) {
@@ -1687,7 +1751,7 @@ impl EffectRack {
                 self.view_clear = true;
                 self.view.set_held(0);
                 self.scope_ring.fill(0.0);
-                for v in &self.view.scope {
+                for v in self.view.scope.iter().chain(&self.view.wave) {
                     v.store(0, Ordering::Relaxed);
                 }
             }
@@ -1695,6 +1759,24 @@ impl EffectRack {
         };
         self.view_clear = false;
         self.view.set_held(held);
+        if !self.view.post() {
+            self.scope_from(buf);
+        }
+    }
+
+    /// Shows the deck playing the instrument after its effects in the
+    /// scope, while it follows that ([`InstrumentView::set_post`]).
+    pub(crate) fn show_instrument_deck(&mut self, buf: &[[f32; 2]]) {
+        if self.view.post() && !self.view_clear {
+            self.scope_from(buf);
+        }
+    }
+
+    /// Adds `buf` to the scope.
+    fn scope_from(&mut self, buf: &[[f32; 2]]) {
+        self.view
+            .rate
+            .store(self.sample_rate.to_bits(), Ordering::Relaxed);
         for s in buf {
             self.scope_ring[self.scope_pos] = 0.5 * (s[0] + s[1]);
             self.scope_pos = (self.scope_pos + 1) % SCOPE_SAMPLES;
@@ -1709,6 +1791,10 @@ impl EffectRack {
             }
             self.view.scope[2 * b].store(lo.to_bits(), Ordering::Relaxed);
             self.view.scope[2 * b + 1].store(hi.to_bits(), Ordering::Relaxed);
+        }
+        for (i, v) in self.view.wave.iter().enumerate() {
+            let x = self.scope_ring[(self.scope_pos + i) % SCOPE_SAMPLES];
+            v.store(x.to_bits(), Ordering::Relaxed);
         }
     }
 
@@ -1789,6 +1875,15 @@ impl EffectRack {
         self.scale.set_chord(mode, shape, learn);
     }
 
+    pub(crate) fn sample_rate(&self) -> f32 {
+        self.sample_rate
+    }
+
+    /// How chords strum and what keys outside the scale do, from now on.
+    pub(crate) fn set_feel(&mut self, feel: crate::scale::Feel) {
+        self.scale.set_feel(feel);
+    }
+
     /// The arpeggiator's settings from now on. Its `hold` is the
     /// instrument's HOLD: the arpeggiator's own while it is on, otherwise
     /// [`crate::latch`] keeps the notes played sounding.
@@ -1835,6 +1930,7 @@ impl EffectRack {
                 self.scale.map(n, self.scale_mask, &mut self.arp_in);
             }
         }
+        self.scale.flush(frames, &mut self.arp_in);
         self.keys.clear();
         self.seq_notes.clear();
         if self.arp.is_on() {
@@ -4111,6 +4207,23 @@ mod bench;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_spectrum_peaks_at_a_sine() {
+        let view = InstrumentView::default();
+        for (i, v) in view.wave.iter().enumerate() {
+            let x = 0.5 * (std::f32::consts::TAU * 1000.0 * i as f32 / 48_000.0).sin();
+            v.store(x.to_bits(), Ordering::Relaxed);
+        }
+        let bands = view.spectrum(64);
+        let peak = (0..64)
+            .max_by(|&a, &b| bands[a].total_cmp(&bands[b]))
+            .unwrap();
+        // 30 Hz to 16 kHz in 64 steps: 1 kHz falls in band 35.
+        assert!((34..=36).contains(&peak), "peak in band {peak}");
+        assert!(bands[peak] > 0.85, "about -6 dB: {}", bands[peak]);
+        assert!(bands[5] < 0.5, "quiet far from it");
+    }
 
     #[test]
     fn effects_step_in_list_order_and_wrap() {

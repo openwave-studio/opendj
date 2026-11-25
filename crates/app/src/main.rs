@@ -1281,6 +1281,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         let (weak, view) = (app.as_weak(), engine.instrument_view());
         let mut last_held = u128::MAX;
         let mut quiet = false;
+        let mut last_choice = (false, false);
         instrument_timer.start(
             slint::TimerMode::Repeated,
             Duration::from_millis(40),
@@ -1295,13 +1296,21 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                     let keys: Vec<bool> = (36..84).map(|n| held >> n & 1 == 1).collect();
                     ui.set_held(slint::ModelRc::from(keys.as_slice()));
                 }
+                let (freq, post) = (ui.get_scope_freq(), ui.get_scope_post());
+                view.set_post(post);
                 let scope = view.scope();
                 let silent = scope.iter().all(|&(lo, hi)| lo == 0.0 && hi == 0.0);
-                if silent && quiet {
+                if silent && quiet && (freq, post) == last_choice {
                     return;
                 }
                 quiet = silent;
-                ui.set_scope(scope_path(&scope).into());
+                last_choice = (freq, post);
+                let path = if freq {
+                    spectrum_path(&view.spectrum(64))
+                } else {
+                    scope_path(&scope)
+                };
+                ui.set_scope(path.into());
             },
         );
     }
@@ -3625,6 +3634,25 @@ fn scope_path(bins: &[(f32, f32)]) -> String {
         let _ = write!(out, "L {:.1} {:.1} ", x(i), y(lo));
     }
     out.push('Z');
+    out
+}
+
+/// Path commands for the instrument's spectrum in the scope's 128 by 32
+/// box: an area rising from the bottom, low notes on the left.
+fn spectrum_path(bands: &[f32]) -> String {
+    use std::fmt::Write;
+    let last = bands.len().saturating_sub(1).max(1) as f32;
+    let mut out = String::with_capacity(bands.len() * 16 + 16);
+    out.push_str("M 0 32 ");
+    for (i, &v) in bands.iter().enumerate() {
+        let _ = write!(
+            out,
+            "L {:.1} {:.1} ",
+            i as f32 * 128.0 / last,
+            32.0 - 31.0 * v.clamp(0.0, 1.0)
+        );
+    }
+    out.push_str("L 128 32 Z");
     out
 }
 

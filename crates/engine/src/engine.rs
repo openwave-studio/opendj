@@ -4205,6 +4205,10 @@ impl Engine {
             };
             self.fx.process_blocks(&mut blocks);
         }
+        // The instrument's scope can follow its deck after the effects.
+        if let Some(i) = (0..NUM_DECKS).find(|&i| live_on[i] == crate::inputs::INSTRUMENT + 1) {
+            self.fx.show_instrument_deck(&deck_buf[i][..frames]);
+        }
         let preview_main = self.preview.on_main();
         // The Mixer's dry strips join its deck after the deck's effects.
         if let Some(m) = mixer_deck {

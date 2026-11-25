@@ -316,6 +316,21 @@ impl InputControls {
                 Behavior::Free,
             );
             reg.create(g, "chord_learn", 0.0, 0.0, 1.0, Behavior::Free);
+            // How chords strum (ms between notes, 0 for none), and what a
+            // key outside the scale does: Snap (0) or Mute (1).
+            let strum = crate::scale::MAX_STRUM_MS;
+            reg.create(g, "chord_strum", 0.0, 0.0, strum, Behavior::Linear);
+            reg.create(
+                g,
+                "chord_crescendo",
+                0.0,
+                -1.0,
+                1.0,
+                Behavior::CenteredOnDefault,
+            );
+            let from = (crate::scale::STRUM_FROM.len() - 1) as f64;
+            reg.create(g, "chord_strum_from", 0.0, 0.0, from, Behavior::Free);
+            reg.create(g, "scale_off", 0.0, 0.0, 1.0, Behavior::Free);
             // The arpeggiator (see `crate::arp`): off, Up, 1/16, half gate.
             use crate::arp::{DEFAULT_RATE, MODES, RATES};
             reg.create(g, "arp", 0.0, 0.0, 1.0, Behavior::Free);
@@ -339,6 +354,9 @@ impl InputControls {
             reg.create(g, "arp_gate", 0.5, 0.05, 1.0, Behavior::Linear);
             reg.create(g, "arp_octaves", 1.0, 1.0, 4.0, Behavior::Free);
             reg.create(g, "arp_hold", 0.0, 0.0, 1.0, Behavior::Free);
+            // Swing: where every other step lands between its neighbours,
+            // 0.5 straight to 0.75.
+            reg.create(g, "arp_swing", 0.5, 0.5, 0.75, Behavior::Linear);
         }
         // The Mixer deck's strip controls, for the auxiliary inputs (fed by
         // an interface's channels), the microphone and the instrument
@@ -408,8 +426,11 @@ pub(crate) struct Input {
     scale: Option<[ControlHandle; 5]>,
     /// Its chord mode, learned chord and learn switch.
     chord: Option<[ControlHandle; 3]>,
-    /// Its arpeggiator: on, mode, rate, gate, octaves and hold.
-    arp: Option<[ControlHandle; 6]>,
+    /// How its chords strum (time, crescendo, from which end) and whether
+    /// keys outside the scale are muted.
+    feel: Option<[ControlHandle; 4]>,
+    /// Its arpeggiator: on, mode, rate, gate, octaves, hold and swing.
+    arp: Option<[ControlHandle; 7]>,
     /// Its step sequencer (see [`crate::seq`]).
     seq: Option<crate::seq::Seq>,
     /// The master deck's key, for Auto.
@@ -474,6 +495,18 @@ impl Input {
                         .expect("the instrument's chord controls exist")
                 })
             }),
+            feel: (input == INSTRUMENT).then(|| {
+                [
+                    "chord_strum",
+                    "chord_crescendo",
+                    "chord_strum_from",
+                    "scale_off",
+                ]
+                .map(|k| {
+                    reg.get(input_group(input), k)
+                        .expect("the instrument's strum controls exist")
+                })
+            }),
             arp: (input == INSTRUMENT).then(|| {
                 [
                     "arp",
@@ -482,6 +515,7 @@ impl Input {
                     "arp_gate",
                     "arp_octaves",
                     "arp_hold",
+                    "arp_swing",
                 ]
                 .map(|k| {
                     reg.get(input_group(input), k)
@@ -609,7 +643,16 @@ impl Input {
                 learn.get() > 0.5,
             );
         }
-        if let Some([on, mode, rate, gate, octaves, hold]) = &self.arp {
+        if let Some([strum, crescendo, from, off]) = &self.feel {
+            let ms = strum.get().clamp(0.0, crate::scale::MAX_STRUM_MS);
+            fx.set_feel(crate::scale::Feel {
+                strum: (ms / 1000.0 * f64::from(fx.sample_rate())).round() as u32,
+                from: from.get().round() as u8,
+                crescendo: crescendo.get() as f32,
+                mute: off.get() > 0.5,
+            });
+        }
+        if let Some([on, mode, rate, gate, octaves, hold, swing]) = &self.arp {
             fx.set_arp(crate::arp::ArpSettings {
                 on: on.get() > 0.5,
                 mode: mode.get().round() as u8,
@@ -617,6 +660,7 @@ impl Input {
                 gate: gate.get(),
                 octaves: octaves.get().round() as u8,
                 hold: hold.get() > 0.5,
+                swing: swing.get(),
             });
         }
         if let Some(pads) = &mut self.pads {

@@ -4718,7 +4718,7 @@ component InstrumentScope inherits Rectangle {
     in property <color> tint;
     border-radius: 4px;
     background: Theme.n-0c0c0e;
-    Rectangle { y: parent.height / 2; height: 1px; background: Theme.n-26262a; }
+    if !InstrumentsUi.scope-freq: Rectangle { y: parent.height / 2; height: 1px; background: Theme.n-26262a; }
     Path {
         // The same shape as the scope (160 by 40), so it fills it: a path
         // keeps its viewbox's proportions.
@@ -4732,6 +4732,31 @@ component InstrumentScope inherits Rectangle {
         stroke: root.tint;
         stroke-width: 1px;
         commands: InstrumentsUi.scope;
+    }
+}
+
+// Two choices stacked, beside the instrument's scope: the one picked lit.
+component ScopeChoice inherits VerticalLayout {
+    in property <[string]> options;
+    in property <int> picked;
+    callback chose(index: int);
+    width: 40px;
+    spacing: 3px;
+    alignment: center;
+    for o[i] in root.options: Rectangle {
+        height: 18px;
+        border-radius: 4px;
+        background: i == root.picked ? Theme.accent.with-alpha(0.28) : ta.has-hover ? Theme.n-2a2a2d : Theme.n-1a1a1c;
+        border-width: 1px;
+        border-color: i == root.picked ? Theme.accent : Theme.n-2a2a2d;
+        Text {
+            text: o;
+            color: i == root.picked ? Theme.text : Theme.text-dim;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        ta := TouchArea { mouse-cursor: pointer; clicked => { root.chose(i); } }
     }
 }
 
@@ -4856,7 +4881,7 @@ component NoteFxHead inherits HorizontalLayout {
 }
 
 component NoteFxLabel inherits Text {
-    width: 48px;
+    width: 58px;
     color: Theme.text-dim;
     font-size: 9px;
     font-weight: 600;
@@ -4874,10 +4899,15 @@ component ScaleMenu inherits PopupWindow {
     property <int> picked-type: Controls.value(type-index, Controls.tick);
     property <int> now: Controls.value(Controls.resolve("[Instrument1]", "scale_now"), Controls.tick);
     property <[string]> notes: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    property <[string]> kinds: ["", "m", " pent", "m pent"];
+    property <[string]> kinds: ["", "m", " pent", "m pent", " Dorian", " Phrygian", " Mixolydian", " harm. minor", " blues"];
     property <string> now-name: now == 0 ? "" : notes[Math.mod(now - 1, 12)] + kinds[floor((now - 1) / 12)];
-    width: 250px;
-    height: 18px + 22px + 3 * 20px + 3 * 6px + 6px;
+    property <int> off-index: Controls.resolve("[Instrument1]", "scale_off");
+    property <bool> mute: Controls.value(off-index, Controls.tick) > 0;
+    // The scales on each row of the picker, as `scale_type` numbers them.
+    property <[int]> first-row: [0, 1, 2, 3, 8];
+    property <[int]> second-row: [4, 5, 6, 7];
+    width: 270px;
+    height: 18px + 22px + 5 * 20px + 5 * 6px + 6px;
     close-policy: close-on-click-outside;
     GrooveMenuBackground { }
     VerticalLayout {
@@ -4923,12 +4953,33 @@ component ScaleMenu inherits PopupWindow {
             spacing: 8px;
             NoteFxLabel { text: "Scale"; }
             NoteSeg {
-                options: ["Maj", "Min", "Pent", "mPent"];
-                picked: mode == 2 ? picked-type : -1;
+                options: ["Major", "Minor", "Pent", "m Pent", "Blues"];
+                picked: mode != 2 ? -1 : picked-type < 4 ? picked-type : picked-type == 8 ? 4 : -1;
                 chose(i) => {
-                    Controls.set-value(type-index, i);
+                    Controls.set-value(type-index, first-row[i]);
                     Controls.set-value(mode-index, 2);
                 }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: ""; }
+            NoteSeg {
+                options: ["Dorian", "Phrygian", "Mixolyd.", "Harm. min"];
+                picked: mode == 2 && picked-type >= 4 && picked-type <= 7 ? picked-type - 4 : -1;
+                chose(i) => {
+                    Controls.set-value(type-index, second-row[i]);
+                    Controls.set-value(mode-index, 2);
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Off-scale"; }
+            NoteSeg {
+                options: ["Snap", "Mute"];
+                picked: mute ? 1 : 0;
+                chose(i) => { Controls.set-value(off-index, i); }
             }
         }
     }
@@ -4942,8 +4993,14 @@ component ChordMenu inherits PopupWindow {
     property <int> mode: Controls.value(mode-index, Controls.tick);
     property <bool> learning: Controls.value(learn-index, Controls.tick) > 0;
     property <[string]> names: ["Off", "Triad", "Seventh", "Power", "Mine"];
-    width: 250px;
-    height: 18px + 22px + 2 * 20px + 2 * 6px + 6px;
+    property <int> strum-index: Controls.resolve("[Instrument1]", "chord_strum");
+    property <int> crescendo-index: Controls.resolve("[Instrument1]", "chord_crescendo");
+    property <int> from-index: Controls.resolve("[Instrument1]", "chord_strum_from");
+    property <int> strum: round(Controls.value(strum-index, Controls.tick));
+    property <int> crescendo: round(Controls.value(crescendo-index, Controls.tick) * 100);
+    property <int> from: Controls.value(from-index, Controls.tick);
+    width: 270px;
+    height: 18px + 22px + 5 * 20px + 5 * 6px + 6px;
     close-policy: close-on-click-outside;
     GrooveMenuBackground { }
     VerticalLayout {
@@ -4979,6 +5036,32 @@ component ChordMenu inherits PopupWindow {
                 chose(i) => { Controls.set-value(learn-index, learning ? 0 : 1); }
             }
         }
+        // Strum: the chord's notes start one after another, like a guitar.
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Strum"; }
+            NoteStepper {
+                text: strum == 0 ? "Off" : strum + " ms";
+                step(by) => { Controls.set-value(strum-index, max(0, min(200, strum + by * 10))); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Crescendo"; }
+            NoteStepper {
+                text: crescendo == 0 ? "0%" : (crescendo > 0 ? "+" : "") + crescendo + "%";
+                step(by) => { Controls.set-value(crescendo-index, max(-100, min(100, crescendo + by * 25)) / 100); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            NoteFxLabel { text: "Strum from"; }
+            NoteSeg {
+                options: ["Low", "High", "Alt"];
+                picked: from;
+                chose(i) => { Controls.set-value(from-index, i); }
+            }
+        }
     }
 }
 
@@ -4989,16 +5072,16 @@ component ArpMenu inherits PopupWindow {
     property <int> rate-index: Controls.resolve("[Instrument1]", "arp_rate");
     property <int> gate-index: Controls.resolve("[Instrument1]", "arp_gate");
     property <int> octaves-index: Controls.resolve("[Instrument1]", "arp_octaves");
-    property <int> hold-index: Controls.resolve("[Instrument1]", "arp_hold");
+    property <int> swing-index: Controls.resolve("[Instrument1]", "arp_swing");
     property <bool> on: Controls.value(on-index, Controls.tick) > 0;
     property <int> mode: Controls.value(mode-index, Controls.tick);
     property <int> rate: Controls.value(rate-index, Controls.tick);
     property <float> gate: Controls.value(gate-index, Controls.tick);
     property <int> octaves: Controls.value(octaves-index, Controls.tick);
-    property <bool> hold: Controls.value(hold-index, Controls.tick) > 0;
+    property <int> swing: round(Controls.value(swing-index, Controls.tick) * 100);
     property <[string]> rates: ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"];
     property <[float]> gates: [0.25, 0.5, 0.75, 1.0];
-    width: 250px;
+    width: 270px;
     height: 18px + 22px + 5 * 20px + 5 * 6px + 6px;
     close-policy: close-on-click-outside;
     GrooveMenuBackground { }
@@ -5051,11 +5134,10 @@ component ArpMenu inherits PopupWindow {
         }
         HorizontalLayout {
             spacing: 8px;
-            NoteFxLabel { text: "Hold"; }
-            NoteSeg {
-                options: ["Off", "On"];
-                picked: hold ? 1 : 0;
-                chose(i) => { Controls.set-value(hold-index, i); }
+            NoteFxLabel { text: "Swing"; }
+            NoteStepper {
+                text: swing <= 50 ? "Off" : swing + "%";
+                step(by) => { Controls.set-value(swing-index, max(50, min(75, swing + by * 2)) / 100); }
             }
         }
     }
@@ -5071,7 +5153,7 @@ component ScaleButton inherits GrooveButton {
     property <int> picked-type: Controls.value(type-index, Controls.tick);
     property <int> now: Controls.value(Controls.resolve("[Instrument1]", "scale_now"), Controls.tick);
     property <[string]> notes: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    property <[string]> kinds: ["", "m", " pent", "m pent"];
+    property <[string]> kinds: ["", "m", " pent", "m pent", " Dorian", " Phrygian", " Mixolydian", " harm. minor", " blues"];
     property <string> now-name: now == 0 ? "" : notes[Math.mod(now - 1, 12)] + kinds[floor((now - 1) / 12)];
     icon: 1;
     text: (mode == 0 ? "Off" : mode == 1 ? (now != 0 ? "Auto " + now-name : "Auto") : now-name) + " ▾";
@@ -6574,7 +6656,7 @@ component NoteFxRow inherits HorizontalLayout {
     property <int> scale-now: Controls.value(Controls.resolve("[Instrument1]", "scale_now"), Controls.tick);
     property <int> scale-mask: Controls.value(Controls.resolve("[Instrument1]", "scale_mask"), Controls.tick);
     property <[string]> notes: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    property <[string]> kinds: [" major", " minor", " pent", "m pent"];
+    property <[string]> kinds: [" major", " minor", " pent", "m pent", " Dorian", " Phrygian", " Mixolydian", " harm. minor", " blues"];
     property <string> scale-name: scale-now == 0 ? "" : notes[Math.mod(scale-now - 1, 12)] + kinds[floor((scale-now - 1) / 12)];
     property <int> chord-index: Controls.resolve("[Instrument1]", "chord_mode");
     property <int> chord: Controls.value(chord-index, Controls.tick);
@@ -7344,6 +7426,15 @@ component InstrumentRack inherits Rectangle {
                 }
             }
             Rectangle { horizontal-stretch: 1; }
+            // What the scope draws: the wave (OSC) or its spectrum (FREQ),
+            // and the instrument as it plays (PRE) or the deck after its
+            // effects (POST). Each pair sits outside the scope, the same
+            // width, so the scope stays on the deck's centre line.
+            ScopeChoice {
+                options: ["OSC", "FREQ"];
+                picked: InstrumentsUi.scope-freq ? 1 : 0;
+                chose(i) => { InstrumentsUi.scope-freq = i == 1; }
+            }
             Rectangle {
                 width: 320px;
                 border-radius: 6px;
@@ -7352,6 +7443,11 @@ component InstrumentRack inherits Rectangle {
                 border-color: Theme.n-1c1c1e;
                 clip: true;
                 InstrumentScope { tint: root.hue; width: parent.width; height: parent.height; }
+            }
+            ScopeChoice {
+                options: ["PRE", "POST"];
+                picked: InstrumentsUi.scope-post ? 1 : 0;
+                chose(i) => { InstrumentsUi.scope-post = i == 1; }
             }
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
