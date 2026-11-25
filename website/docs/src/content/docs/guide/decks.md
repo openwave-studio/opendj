@@ -42,18 +42,21 @@ cover has **Unload deck** too, and <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> 
 
 ### Waveform look
 
-Click the arrow on the right of the waveforms button in the top bar. Under
-the height slider, these set how the waveforms look:
+Click the arrow on the right of the waveforms button in the top bar. At the
+top are two sliders: the waveforms' **Height** and their **Zoom** (how many
+seconds show across them); double-click one to go back to its default.
+Under them, each row's choices sit side by side, one click each:
 
-- **Type**: **Full** (the default) mirrors the waveforms about their middle;
+- **Size**: **Full** (the default) mirrors the waveforms about their middle;
   **Half** grows them from the bottom edge, as on rekordbox. It applies to
   the large waveforms and the overviews under the decks alike.
-- **Color**:
-  - **RGB** (the default): one shape, red where the bass is loudest, amber
-    for the mids and blue for the highs.
+- **Style**:
+  - **RGB** (the default): one shape, colored by where the sound is
+    loudest. A **Color** row under it picks **Red-Amber** (the default: deep
+    red bass, amber mids, ice-blue highs) or **Red-Green-Blue**.
   - **3-Band**: the bass, mids and highs stacked in their own colors, the
-    bass widest, as on rekordbox. A second row picks **Blue-Orange**
-    (rekordbox's colors) or **Lilac-Cyan**.
+    bass widest, as on rekordbox. A **Color** row under it picks
+    **Blue-Orange** (rekordbox's colors) or **Lilac-Cyan**.
   - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
     color of its stem pad, the loudest at the back, so you can see where
     the vocals come in or the bass drops out. A track shows RGB until its
@@ -62,17 +65,14 @@ the height slider, these set how the waveforms look:
   (the default) shows as much of what has played as what is coming;
   **Left** puts it a quarter of the way in, so three quarters of the
   waveform shows what is coming next.
-- **Vocals**: what runs along the bottom of the large waveforms, one at a
-  time. **Lyrics** (the default) shows a track's timed lyrics in cyan.
-  **Bar** draws a cyan bar wherever someone sings, leaving the waveform's
-  colors as they are. openDJ checks each track for vocals the first time
-  you load it (or when it's analyzed), in the background, so the bar shows
-  up a few seconds after the waveform; after that it's there straight
-  away. Tracks with HQ stems use their vocal stem instead. **Off** shows
-  neither.
-- **Phrases**: the colored phrase bar along the bottom of the overviews
-  (**Overview**), the phrase flags on the large waveforms (**Waveform**),
-  **Both** (the default) or neither (**Off**).
+- **Phrases**: two toggles. **Overview** shows the colored phrase bar along
+  the bottom of the overviews, **Waveform** the phrase flags on the large
+  waveforms; both are on at first.
+- **Lyrics**: a switch for the track's timed lyrics in cyan along the
+  bottom of the large waveforms (on at first).
+
+On a grid whose tempo moves (Flexible, or with tempo sections), the large
+waveforms show the BPM where it changes.
 
 The changes show straight away and the menu stays open, so you can try them
 out.
@@ -414,9 +414,10 @@ right-click it, or use **Settings › Mixer**.
 
 ## Master, phones and mic
 
-The large knob at the right of the top bar is the master level, with the
-left and right meters beside it and the clock. Right-click the knob, or
-click the clock, to open the output levels: **Master**, **Phones**,
+The knob at the right of the top bar is the master level, with the left and
+right meters beside it; the clock has its own pill after it. Click the ▾ at
+the end of the master pill, or right-click the knob, to open the output
+levels: **Master**, **Phones**,
 **Booth**, and **Cue / Mix**, which blends cue and main in the headphones.
 **Room EQ** shows its preset while one is on, and **Setup** opens it. The
 **Link** switch is described in [Ableton Link](link.md). **Audio Settings…** opens the
