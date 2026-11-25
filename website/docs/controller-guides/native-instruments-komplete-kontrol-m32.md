@@ -6,12 +6,16 @@ instrument on a deck, or turn the 4-D encoder to pick one, and play.
 
 The keys, the OCTAVE buttons, the pitch and modulation strips and a sustain
 pedal play the instrument deck over the M32's own MIDI port, as any
-keyboard does. Everything else is openDJ's own mapping. Nobody has tried it
+keyboard does. The knobs also send MIDI controllers on that port, which
+openDJ leaves out so they don't turn the plugin's parameters in its own
+way. Everything else is openDJ's own mapping. Nobody has tried it
 on the hardware yet, so tell us how it goes.
 
 - The **8 knobs** turn the instrument's knobs on the page the deck shows.
   They're endless, so they pick up where the knob is. Hold **SHIFT** to
   turn them finely. **◀ (M)** and **▶ (S)** show the page before or after.
+  Turning one closes the browser on the screen, which then shows the
+  knob's name and value.
 - **PRESET ▲ / ▼** load the previous or next preset of the instrument.
 - **PLAY** starts the instrument deck's step sequencer, **STOP** stops it.
 - **REC** records the set. **SHIFT** and **REC** records what you play

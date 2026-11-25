@@ -159,6 +159,24 @@ const RATE_RESET_SPEED: f64 = 0.005;
 /// A live input's safety ceiling: -1 dBTP.
 const LIVE_CEILING: f32 = 0.891_250_9;
 
+#[derive(Clone, Copy)]
+struct HotcueLaunch {
+    pad: usize,
+    position: f64,
+    end: Option<f64>,
+    slip: bool,
+}
+
+#[derive(Clone, Copy)]
+struct PendingHotcue {
+    launch: HotcueLaunch,
+    at: f64,
+    /// `play` and `cue_default` versions when it was queued: a pause, play or
+    /// CUE press while it waits cancels it.
+    play: u32,
+    cue: u32,
+}
+
 /// Left and right gains for balance `pan` (-1 left, 1 right): the side
 /// moved away from fades, the other stays, so the middle is unchanged.
 fn live_balance(pan: f32) -> [f32; 2] {
@@ -241,6 +259,12 @@ struct Deck {
     /// The hot cue held in slip mode: it plays from its point while held and
     /// the track carries on from the silent playhead when it is let go.
     slip_cue: Option<usize>,
+    /// A hot cue pressed this buffer, resolved against the other deck after
+    /// every deck has read its controls.
+    hotcue_request: Option<HotcueLaunch>,
+    /// A hot cue whose nearest quantize point is still ahead. The old audio
+    /// keeps playing (or a stopped deck stays stopped) until that point.
+    pending_hotcue: Option<PendingHotcue>,
     rolling: bool,
     /// SLICER: the grid beat its 8-beat section starts on, while it is on.
     slicer: Option<f64>,
@@ -409,6 +433,31 @@ impl Deck {
             && (self.loop_end - end).abs() < 1e-3
     }
 
+    fn launch_hotcue(&mut self, launch: HotcueLaunch) {
+        if launch.slip {
+            if launch.end.is_none() {
+                self.slip_cue = Some(launch.pad);
+            }
+            if self.slip.is_none() {
+                self.slip = Some(self.pos);
+                self.slip_moving =
+                    self.was_playing || self.c.play.get_bool() || launch.end.is_some();
+            }
+        }
+        if let Some(end) = launch.end {
+            self.loop_in_pending = false;
+            self.loop_start = launch.position;
+            self.loop_end = end;
+            self.c.loop_enabled.set_bool(true);
+            self.set_seconds(launch.position);
+        } else {
+            self.seek(launch.position);
+        }
+        // A paused deck jumps there and plays, as on Pioneer gear and as the
+        // pads' guide says.
+        self.c.play.set_bool(true);
+    }
+
     /// Whether a hot cue pad holds the loop that is playing.
     fn loop_on_a_pad(&self) -> bool {
         self.c.hotcues.iter().any(|hc| {
@@ -572,6 +621,8 @@ impl Deck {
         self.slip = None;
         self.slip_moving = false;
         self.slip_cue = None;
+        self.hotcue_request = None;
+        self.pending_hotcue = None;
         self.c.slip_position.set(-1.0);
         self.rolling = false;
         self.stop_slicer();
@@ -652,6 +703,18 @@ impl Deck {
         // Where the track is before this buffer's jumps: a slip that starts
         // now runs on from here.
         let unslipped = self.pos;
+        if self.pending_hotcue.is_some_and(|pending| {
+            pending.play != self.c.play.version() || pending.cue != self.c.cue_default.version()
+        }) {
+            self.pending_hotcue = None;
+        }
+        if self
+            .pending_hotcue
+            .is_some_and(|pending| pending.at <= self.clock + 1e-9)
+        {
+            let pending = self.pending_hotcue.take().expect("pending hot cue");
+            self.launch_hotcue(pending.launch);
+        }
         // Beats played since the last buffer, at the speed reached then.
         let beats_dt = (self.clock - self.last_clock).max(0.0)
             * self.velocity.max(0.0)
@@ -737,25 +800,24 @@ impl Deck {
                         self.c.loop_enabled.set_bool(false)
                     }
                     Some(end) => {
-                        self.loop_in_pending = false;
-                        self.loop_start = position;
-                        self.loop_end = end;
-                        self.c.loop_enabled.set_bool(true);
-                        self.set_seconds(position);
-                        // A paused deck starts playing the loop, as on
-                        // Pioneer gear.
-                        self.c.play.set_bool(true);
+                        self.hotcue_request = Some(HotcueLaunch {
+                            pad: h,
+                            position,
+                            end: Some(end),
+                            // A loop is a slip trick whether the deck was
+                            // already playing or starts from the pad.
+                            slip: self.c.slip_enabled.get_bool(),
+                        });
                     }
                     None if set => {
-                        // In slip mode a playing deck plays the cue while
-                        // it is held, then carries on as if it hadn't.
-                        if playing && self.c.slip_enabled.get_bool() {
-                            self.slip_cue = Some(h);
-                        }
-                        self.seek(position);
-                        // A paused deck jumps there and plays, as on
-                        // Pioneer gear and as the pads' guide says.
-                        self.c.play.set_bool(true);
+                        self.hotcue_request = Some(HotcueLaunch {
+                            pad: h,
+                            position,
+                            end: None,
+                            // In slip mode a playing deck plays the cue while
+                            // it is held, then carries on as if it hadn't.
+                            slip: playing && self.c.slip_enabled.get_bool(),
+                        });
                     }
                     None => {
                         // An empty pad pressed while a loop plays saves the
@@ -876,7 +938,7 @@ impl Deck {
                 }
                 Action::BeatLoop(n) => {
                     if !enabled {
-                        self.loop_start = snap(now, true);
+                        self.loop_start = snap(now, false);
                     }
                     self.c.beatloop_size.set(n);
                     self.loop_end = self.loop_start + beats_from(self.loop_start, n);
@@ -884,7 +946,7 @@ impl Deck {
                 }
                 Action::BeatLoopToggle if enabled => self.c.loop_enabled.set_bool(false),
                 Action::BeatLoopToggle => {
-                    self.loop_start = snap(now, true);
+                    self.loop_start = snap(now, false);
                     self.loop_end = self.loop_start + beats_from(self.loop_start, size);
                     self.c.loop_enabled.set_bool(true);
                 }
@@ -2018,6 +2080,8 @@ impl Engine {
             slip: None,
             slip_moving: false,
             slip_cue: None,
+            hotcue_request: None,
+            pending_hotcue: None,
             rolling: false,
             slicer: None,
             slice_held: None,
@@ -2293,6 +2357,8 @@ impl Engine {
                     d.c.cue_point.set(track.first_beat);
                     d.c.loop_enabled.set_bool(false);
                     d.loop_in_pending = false;
+                    d.hotcue_request = None;
+                    d.pending_hotcue = None;
                     d.c.loop_in_pending.set_bool(false);
                     for h in &d.c.hotcues {
                         h.enabled.set_bool(false);
@@ -2942,6 +3008,67 @@ impl Engine {
             .or_else(|| (0..NUM_DECKS).find(|&k| k != deck && has_bpm(&self.decks[k])))
     }
 
+    /// Resolves hot-cue presses after every deck has read its controls. A
+    /// press in the first half of a quantize step jumps at once and catches
+    /// up to the current phase. In the second half, the upcoming point is
+    /// nearer, so keep the old audio playing and launch there instead of
+    /// pulling the cue backwards ahead of the beat.
+    fn resolve_hotcue_launches(&mut self) {
+        for i in 0..NUM_DECKS {
+            let Some(launch) = self.decks[i].hotcue_request.take() else {
+                continue;
+            };
+            let pending_at = (|| {
+                let other = self.sync_target(i)?;
+                let (d, l) = (&self.decks[i], &self.decks[other]);
+                if !(d.c.quantize.get_bool() || d.following) || !l.c.play.get_bool() || d.nudging()
+                {
+                    return None;
+                }
+                let (Some(mine), Some(theirs)) = (&d.track, &l.track) else {
+                    return None;
+                };
+                if mine.bpm <= 0.0 || theirs.bpm <= 0.0 {
+                    return None;
+                }
+                let (ratio, offset) = if d.following {
+                    (d.sync_ratio, d.phase_offset)
+                } else {
+                    (sync_ratio(l.effective_bpm(), d.effective_bpm()), 0.0)
+                };
+                let step = if d.following {
+                    d.quantize_beats().max(1.0)
+                } else {
+                    d.quantize_beats()
+                };
+                let cue_beat = mine.beat_at(launch.position);
+                let leader_beat = theirs.beat_at(l.seconds());
+                let leader_phase = leader_beat * ratio + offset;
+                let error = phase_error(leader_phase / step, cue_beat / step);
+                if error >= -1e-6 {
+                    return None;
+                }
+                let wait_beats = -error * step / ratio;
+                let until = theirs.beats_from(l.seconds(), wait_beats) - l.seconds();
+                let wait = until / l.forward_speed();
+                (wait.is_finite() && wait > 0.0).then_some(self.clock + wait)
+            })();
+
+            let d = &mut self.decks[i];
+            d.pending_hotcue = None;
+            if let Some(at) = pending_at {
+                d.pending_hotcue = Some(PendingHotcue {
+                    launch,
+                    at,
+                    play: d.c.play.version(),
+                    cue: d.c.cue_default.version(),
+                });
+            } else {
+                d.launch_hotcue(launch);
+            }
+        }
+    }
+
     /// With quantize on, or on a synced deck, a deck that jumps (hot cue,
     /// CUE, beat jump, a click on the overview) while the other deck plays
     /// lands on the same part of the beat, at most half a step from where
@@ -3289,20 +3416,12 @@ impl Engine {
         }
         let link = self.link.begin(frames, self.sample_rate);
         self.sync(link);
-        let mut moved = [Move::None; NUM_DECKS];
+        let before = self.decks.each_ref().map(|d| d.pos);
         let clock = self.clock;
         for (deck, d) in self.decks.iter_mut().enumerate() {
-            let before = d.pos;
             d.clock = clock;
             d.reset_rate(dt);
             d.handle_controls();
-            moved[deck] = if d.pos != before {
-                Move::Jump
-            } else if !d.was_playing && d.c.play.get_bool() {
-                Move::Start
-            } else {
-                Move::None
-            };
             if let (Some((edit, seconds)), Some(track)) = (d.grid_edit.take(), &d.track) {
                 let _ = self.returned.push(Returned::GridEdit {
                     deck,
@@ -3312,6 +3431,17 @@ impl Engine {
                 });
             }
         }
+        self.resolve_hotcue_launches();
+        let moved = std::array::from_fn(|deck| {
+            let d = &self.decks[deck];
+            if d.pos != before[deck] {
+                Move::Jump
+            } else if !d.was_playing && d.c.play.get_bool() {
+                Move::Start
+            } else {
+                Move::None
+            }
+        });
         self.land_in_phase(moved);
         self.start_gapless(frames);
         // The audio each deck's own joins on to, for this buffer.
@@ -5986,6 +6116,26 @@ mod tests {
     }
 
     #[test]
+    fn beat_loop_uses_the_nearest_quantize_point() {
+        let (reg, mut engine, mut input) = setup();
+        let track = short_track(120.0, 20.0);
+        load(&mut input, 0, track.clone());
+        run(&mut engine, 0.02);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        ctl("playposition").set(track.seconds_at(3.8) / track.duration);
+        ctl("play").set_bool(true);
+        run(&mut engine, 0.01);
+
+        ctl("beatloop_1_activate").set_bool(true);
+        ctl("beatloop_1_activate").set_bool(false);
+        run(&mut engine, 0.01);
+
+        let start = track.beat_at(ctl("loop_start_position").get());
+        assert!((start - 4.0).abs() < 1e-6, "started on beat {start}");
+        assert!(ctl("loop_enabled").get_bool());
+    }
+
+    #[test]
     fn sync_matches_tempo_and_hotcues_catch_fast_presses() {
         let (reg, mut engine, mut input) = setup();
         load(&mut input, 0, short_track(124.0, 10.0));
@@ -6288,6 +6438,160 @@ mod tests {
         assert!((beat_at("hotcue_2_position") - 2.27).abs() < 0.02);
     }
 
+    #[test]
+    fn a_synced_hot_cue_waits_for_the_upcoming_quantize_point() {
+        let (reg, mut engine, mut input) = setup();
+        let leader = short_track(120.0, 30.0);
+        let follower = short_track(120.0, 30.0);
+        load(&mut input, 0, leader.clone());
+        load(&mut input, 1, follower.clone());
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+        // The leader is in the second half of its beat, so the upcoming beat
+        // is nearer than the one behind it.
+        c("[Channel1]", "playposition").set(leader.seconds_at(3.75) / leader.duration);
+        c("[Channel1]", "play").set_bool(true);
+        c("[Channel2]", "sync_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+        c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+        run(&mut engine, 0.01);
+        let parked = engine.decks[1].seconds();
+
+        press(&reg, "[Channel2]", "hotcue_1_activate");
+        run(&mut engine, 0.01);
+        let pending = engine.decks[1]
+            .pending_hotcue
+            .expect("hot cue should wait for the upcoming beat");
+        assert!(pending.at > engine.clock);
+        assert!(!c("[Channel2]", "play").get_bool());
+        assert!((engine.decks[1].seconds() - parked).abs() < 1e-9);
+
+        run(&mut engine, 0.3);
+        assert!(engine.decks[1].pending_hotcue.is_none());
+        assert!(c("[Channel2]", "play").get_bool());
+        assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn a_synced_saved_loop_waits_for_the_upcoming_quantize_point() {
+        let (reg, mut engine, mut input) = setup();
+        let leader = short_track(120.0, 30.0);
+        let follower = short_track(120.0, 30.0);
+        load(&mut input, 0, leader.clone());
+        load(&mut input, 1, follower.clone());
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+        let (start, end) = (follower.seconds_at(8.0), follower.seconds_at(12.0));
+
+        c("[Channel1]", "playposition").set(leader.seconds_at(3.75) / leader.duration);
+        c("[Channel1]", "play").set_bool(true);
+        c("[Channel2]", "sync_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_position").set(start);
+        c("[Channel2]", "hotcue_1_endposition").set(end);
+        c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_type").set(HOTCUE_LOOP);
+        run(&mut engine, 0.01);
+        let parked = engine.decks[1].seconds();
+
+        press(&reg, "[Channel2]", "hotcue_1_activate");
+        run(&mut engine, 0.01);
+        let pending = engine.decks[1]
+            .pending_hotcue
+            .expect("saved loop should wait for the upcoming beat");
+        assert_eq!(pending.launch.end, Some(end));
+        assert!(!c("[Channel2]", "loop_enabled").get_bool());
+        assert!(!c("[Channel2]", "play").get_bool());
+        assert!((engine.decks[1].seconds() - parked).abs() < 1e-9);
+
+        run(&mut engine, 0.3);
+        assert!(engine.decks[1].pending_hotcue.is_none());
+        assert!(c("[Channel2]", "loop_enabled").get_bool());
+        assert!(c("[Channel2]", "play").get_bool());
+        assert_eq!(
+            (engine.decks[1].loop_start, engine.decks[1].loop_end),
+            (start, end)
+        );
+        assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn a_playing_deck_runs_on_while_its_hot_cue_waits() {
+        let (reg, mut engine, mut input) = setup();
+        let leader = short_track(120.0, 30.0);
+        let follower = short_track(120.0, 30.0);
+        load(&mut input, 0, leader.clone());
+        load(&mut input, 1, follower.clone());
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+        for d in ["[Channel1]", "[Channel2]"] {
+            c(d, "play").set_bool(true);
+        }
+        c("[Channel2]", "sync_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+        c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+        run(&mut engine, 0.37);
+        let before = engine.decks[1].seconds();
+
+        press(&reg, "[Channel2]", "hotcue_1_activate");
+        run(&mut engine, 0.01);
+        let after = engine.decks[1].seconds();
+        assert!(
+            engine.decks[1].pending_hotcue.is_some(),
+            "leader beat {}, follower beat {}, following {}",
+            leader.beat_at(engine.decks[0].seconds()),
+            follower.beat_at(after),
+            engine.decks[1].following
+        );
+        assert!((0.0..0.03).contains(&(after - before)), "{before}..{after}");
+        assert!((after - follower.seconds_at(8.0)).abs() > 0.5);
+
+        run(&mut engine, 0.3);
+        assert!(engine.decks[1].pending_hotcue.is_none());
+        assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn pausing_or_cue_cancels_a_waiting_hot_cue() {
+        for control in ["play", "cue_default"] {
+            let (reg, mut engine, mut input) = setup();
+            let leader = short_track(120.0, 30.0);
+            let follower = short_track(120.0, 30.0);
+            load(&mut input, 0, leader.clone());
+            load(&mut input, 1, follower.clone());
+            run(&mut engine, 0.02);
+            let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+            for d in ["[Channel1]", "[Channel2]"] {
+                c(d, "play").set_bool(true);
+            }
+            c("[Channel2]", "sync_enabled").set_bool(true);
+            c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+            c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+            c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+            run(&mut engine, 0.37);
+
+            press(&reg, "[Channel2]", "hotcue_1_activate");
+            run(&mut engine, 0.01);
+            assert!(engine.decks[1].pending_hotcue.is_some(), "{control}");
+
+            // Pause, or CUE on a playing deck (which stops it at the cue).
+            if control == "play" {
+                c("[Channel2]", "play").set_bool(false);
+            } else {
+                press(&reg, "[Channel2]", "cue_default");
+            }
+            run(&mut engine, 0.3);
+            assert!(engine.decks[1].pending_hotcue.is_none(), "{control}");
+            assert!(!c("[Channel2]", "play").get_bool(), "{control}");
+            let beat = follower.beat_at(engine.decks[1].seconds());
+            assert!((beat - 8.0).abs() > 0.5, "{control} launched: beat {beat}");
+        }
+    }
+
     /// A controller's delete is pressed and let go between two blocks; it
     /// still deletes.
     #[test]
@@ -6386,7 +6690,7 @@ mod tests {
         press(&reg, "[Channel2]", "hotcue_3_activate");
         run(&mut engine, 1.33);
         press(&reg, "[Channel2]", "hotcue_3_activate");
-        run(&mut engine, 0.05);
+        run(&mut engine, 0.3);
         assert!(phase_gap(&engine) < 0.01, "{}", phase_gap(&engine));
     }
 
