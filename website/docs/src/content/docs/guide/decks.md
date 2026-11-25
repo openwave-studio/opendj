@@ -340,7 +340,9 @@ The same switches live under **Settings › Decks**.
 on the beat, and play, CUE, hot cues and jumps land in step with the other
 playing deck. The same menu sets the step: **1/16**, **1/8**, **1/4**,
 **1/2** or **1** beat, or **4** to land on the same beat of the bar. Cues and
-loops snap to a beat at most. **Settings › Decks › Quantize** sets whether
+loops snap to a beat at most. A hot cue or saved-loop pad pressed closer to the
+upcoming step waits for it instead of jumping ahead of the master; the current
+audio keeps playing until then. **Settings › Decks › Quantize** sets whether
 quantize starts on for every deck.
 
 ## Keys
