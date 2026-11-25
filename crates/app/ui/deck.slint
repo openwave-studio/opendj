@@ -600,6 +600,10 @@ component AutoLetter inherits Rectangle {
             tip-mine = true;
             HoverTip.title = root.tip-title;
             HoverTip.body = root.tip-body;
+            // Under the letter, so it never shows at another control's spot.
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
             HoverTip.shown = true;
         }
     }
