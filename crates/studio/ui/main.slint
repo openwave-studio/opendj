@@ -75,6 +75,8 @@ export struct DeviceData {
     can-open: bool,
     // Plays the track's notes (an instrument), rather than its sound.
     instrument: bool,
+    // Changes the notes on their way to the instrument.
+    midi: bool,
     // The studio's own device: its panel shows these.
     builtin: bool,
     eq: bool,
@@ -121,7 +123,10 @@ export struct TrackData {
     midi-to: string,
     // Shown when notes go out over MIDI.
     midi-to-channel: string,
-    // The devices a set lists for it.
+    // Its MIDI effects, which lead its chain, then the rest of its devices
+    // (places from midi-count on).
+    midi-chain: [DeviceData],
+    midi-count: int,
     chain: [DeviceData],
     // A plug-in plays its notes (the built-in sound isn't shown).
     plugin-instrument: bool,
@@ -840,13 +845,15 @@ component NavHeading inherits Text {
     vertical-alignment: bottom;
 }
 
+
 component Browser inherits Rectangle {
     in-out property <int> category: 3;
     in-out property <int> picked: -1;
-    // The studio's devices, from the app: instruments, audio effects, and
-    // the All list.
+    // The studio's devices, from the app: instruments, audio effects, MIDI
+    // effects, and the All list.
     in property <[BrowserItem]> instruments;
     in property <[BrowserItem]> effects;
+    in property <[BrowserItem]> midi-effects;
     in property <[BrowserItem]> all;
     property <[string]> categories: [
         "Favorites", "Effects", "Instruments",
@@ -865,12 +872,6 @@ component Browser inherits Rectangle {
         { name: "Bass · Mono saw", kind: 0, detail: "preset" },
         { name: "Pad · Warm chords", kind: 0, detail: "preset" },
         { name: "Lead · Pluck", kind: 0, detail: "preset" },
-    ];
-    property <[BrowserItem]> midi-effects: [
-        { name: "Arpeggiator", kind: 2 },
-        { name: "Scale", kind: 2 },
-        { name: "Chord", kind: 2 },
-        { name: "Pitch", kind: 2 },
     ];
     property <[BrowserItem]> plugins: [
         { name: "CLAP", kind: 3 },
@@ -1346,6 +1347,61 @@ component Eq8Panel inherits HorizontalLayout {
     }
 }
 
+// A device in a track's chain: its panel, dragged by its title, dropped
+// on to place another before or after it.
+component ChainDevice inherits Device {
+    in property <DeviceData> d;
+    in property <int> track-index;
+    // Its place in the chain.
+    in property <int> at;
+    in property <color> track-color;
+    callback remove-device(int, int);
+    callback toggle-device(int, int, bool);
+    callback open-device(int, int);
+    callback device-param(int, int, int, float);
+    callback device-click(int, int, int);
+    callback device-drag(int, int, int, float, float);
+
+    width: d.builtin ? d.panel-width * 1px : 150px;
+    title: d.name;
+    on: d.on;
+    track: track-index;
+    index: at;
+    kind: d.instrument ? 0 : d.midi ? 2 : 1;
+    place-before: at;
+    place-after: at + 1;
+    removed => { root.remove-device(track-index, at); }
+    tint: d.instrument ? track-color : d.midi ? Theme.midi-fx : d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
+    toggled(v) => { root.toggle-device(track-index, at, v); }
+    opened => { root.open-device(track-index, at); }
+    if d.builtin && !d.eq: KnobPanel {
+        d: d;
+        tint: d.midi ? Theme.midi-fx : Theme.effect;
+        param(k, v) => { root.device-param(track-index, at, k, v); }
+        click(k) => { root.device-click(track-index, at, k); }
+    }
+    if d.eq: Eq8Panel {
+        d: d;
+        tint: d.midi ? Theme.midi-fx : Theme.effect;
+        param(k, v) => { root.device-param(track-index, at, k, v); }
+        click(k) => { root.device-click(track-index, at, k); }
+        drag(b, x, y) => { root.device-drag(track-index, at, b, x, y); }
+    }
+    if !d.builtin: VerticalLayout {
+        padding: 10px;
+        spacing: 6px;
+        Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
+        Text { text: d.note; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
+        if d.can-open: Rectangle {
+            height: 22px;
+            border-radius: 3px;
+            background: open-area.has-hover ? Theme.line : Theme.bg;
+            Text { text: "Open window"; color: Theme.text; font-size: 11px; }
+            open-area := TouchArea { clicked => { root.open-device(track-index, at); } }
+        }
+    }
+}
+
 component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
@@ -1677,6 +1733,7 @@ export component AppWindow inherits Window {
     // The browser's devices.
     in property <[BrowserItem]> browser-instruments;
     in property <[BrowserItem]> browser-effects;
+    in property <[BrowserItem]> browser-midi-effects;
     in property <[BrowserItem]> browser-all;
 
     property <TrackData> track: tracks[selected-track];
@@ -1756,6 +1813,7 @@ export component AppWindow inherits Window {
                 width: 310px;
                 instruments: root.browser-instruments;
                 effects: root.browser-effects;
+                midi-effects: root.browser-midi-effects;
                 all: root.browser-all;
             }
             Rectangle { width: 1px; background: Theme.line; }
@@ -2060,6 +2118,20 @@ export component AppWindow inherits Window {
                                 Text { text: track.audio-from == "No Input" ? "Recordings play from the clips." : (track.monitor == 0 ? "Plays what comes in; its clips are quiet (Monitor In)." : track.monitor == 1 ? "Plays what comes in when armed and no clip plays (Monitor Auto)." : "Plays its clips only (Monitor Off)."); color: Theme.dim; font-size: 11px; wrap: word-wrap; }
                             }
                         }
+                        // MIDI effects come first: they change the notes the
+                        // instrument plays.
+                        for d[i] in track.midi-chain: ChainDevice {
+                            d: d;
+                            at: i;
+                            track-index: selected-track;
+                            track-color: track.color;
+                            remove-device(t, k) => { root.remove-device(t, k); }
+                            toggle-device(t, k, v) => { root.toggle-device(t, k, v); }
+                            open-device(t, k) => { root.open-device(t, k); }
+                            device-param(t, k, p, v) => { root.device-param(t, k, p, v); }
+                            device-click(t, k, p) => { root.device-click(t, k, p); }
+                            device-drag(t, k, b, x, y) => { root.device-drag(t, k, b, x, y); }
+                        }
                         if track.drums: Device {
                             width: 480px;
                             title: track.device;
@@ -2113,47 +2185,20 @@ export component AppWindow inherits Window {
                                 }
                             }
                         }
-                        // A set's own devices: plug-ins run, Live's own are
-                        // listed until they have built-in matches.
-                        for d[i] in track.chain: Device {
-                            width: d.builtin ? d.panel-width * 1px : 150px;
-                            title: d.name;
-                            on: d.on;
-                            track: selected-track;
-                            index: i;
-                            kind: d.instrument ? 0 : 1;
-                            place-before: i;
-                            place-after: i + 1;
-                            removed => { root.remove-device(selected-track, i); }
-                            tint: d.instrument ? track.color : d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
-                            toggled(v) => { root.toggle-device(selected-track, i, v); }
-                            opened => { root.open-device(selected-track, i); }
-                            if d.builtin && !d.eq: KnobPanel {
-                                d: d;
-                                tint: Theme.effect;
-                                param(k, v) => { root.device-param(selected-track, i, k, v); }
-                                click(k) => { root.device-click(selected-track, i, k); }
-                            }
-                            if d.eq: Eq8Panel {
-                                d: d;
-                                tint: Theme.effect;
-                                param(k, v) => { root.device-param(selected-track, i, k, v); }
-                                click(k) => { root.device-click(selected-track, i, k); }
-                                drag(b, x, y) => { root.device-drag(selected-track, i, b, x, y); }
-                            }
-                            if !d.builtin: VerticalLayout {
-                                padding: 10px;
-                                spacing: 6px;
-                                Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
-                                Text { text: d.note; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
-                                if d.can-open: Rectangle {
-                                    height: 22px;
-                                    border-radius: 3px;
-                                    background: open-area.has-hover ? Theme.line : Theme.bg;
-                                    Text { text: "Open window"; color: Theme.text; font-size: 11px; }
-                                    open-area := TouchArea { clicked => { root.open-device(selected-track, i); } }
-                                }
-                            }
+                        // A set's own devices after the instrument: plug-ins
+                        // run, Live's own are listed until they have built-in
+                        // matches.
+                        for d[i] in track.chain: ChainDevice {
+                            d: d;
+                            at: track.midi-count + i;
+                            track-index: selected-track;
+                            track-color: track.color;
+                            remove-device(t, k) => { root.remove-device(t, k); }
+                            toggle-device(t, k, v) => { root.toggle-device(t, k, v); }
+                            open-device(t, k) => { root.open-device(t, k); }
+                            device-param(t, k, p, v) => { root.device-param(t, k, p, v); }
+                            device-click(t, k, p) => { root.device-click(t, k, p); }
+                            device-drag(t, k, b, x, y) => { root.device-drag(t, k, b, x, y); }
                         }
                         end-place := Rectangle {
                             width: 130px;
@@ -2165,7 +2210,7 @@ export component AppWindow inherits Window {
                                 && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width
                                 && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
                             property <bool> hot: self.over && Drag.owner == 3000;
-                            changed over => { Drag.target(3000, self.over, selected-track, track.chain.length); }
+                            changed over => { Drag.target(3000, self.over, selected-track, track.midi-count + track.chain.length); }
                             Text {
                                 text: "+\nDrop an effect here";
                                 color: Theme.faint;

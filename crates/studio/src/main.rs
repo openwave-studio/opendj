@@ -602,9 +602,10 @@ fn ui(
     }
     // Devices: the browser's, dragged onto tracks; a track's, moved,
     // copied or removed.
-    let (instruments, effects, all) = browser_devices();
+    let (instruments, effects, midi, all) = browser_devices();
     window.set_browser_instruments(ModelRc::new(VecModel::from(instruments)));
     window.set_browser_effects(ModelRc::new(VecModel::from(effects)));
+    window.set_browser_midi_effects(ModelRc::new(VecModel::from(midi)));
     window.set_browser_all(ModelRc::new(VecModel::from(all)));
     {
         let p = plugins.clone();
@@ -959,7 +960,13 @@ fn device_row(
 /// The browser's lists of the studio's own devices: instruments, audio
 /// effects, and All (headings between). The built-in sounds can't be
 /// dragged yet.
-fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
+/// The browser's lists: instruments, audio effects, MIDI effects, and All.
+fn browser_devices() -> (
+    Vec<BrowserItem>,
+    Vec<BrowserItem>,
+    Vec<BrowserItem>,
+    Vec<BrowserItem>,
+) {
     let item = |name: &str, kind: i32, detail: &str, id: i32| BrowserItem {
         name: name.into(),
         kind,
@@ -971,9 +978,12 @@ fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
         .map(|n| item(n, 0, "built in", 0))
         .collect();
     let mut effects = Vec::new();
+    let mut midi = Vec::new();
     for (i, (name, s)) in devices::catalog().into_iter().enumerate() {
         if s.is_instrument() {
             instruments.push(item(name, 0, "hardware synth", i as i32 + 1));
+        } else if s.is_midi_effect() {
+            midi.push(item(name, 2, "", i as i32 + 1));
         } else {
             effects.push(item(name, 1, "", i as i32 + 1));
         }
@@ -983,9 +993,9 @@ fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
     all.push(item("Audio Effects", 3, "", 0));
     all.extend(effects.iter().cloned());
     all.push(item("MIDI Effects", 3, "", 0));
-    all.push(item("Arpeggiator", 2, "soon", 0));
+    all.extend(midi.iter().cloned());
     all.push(item("Plug-ins", 3, "", 0));
-    (instruments, effects, all)
+    (instruments, effects, midi, all)
 }
 
 fn track_row(
@@ -996,6 +1006,54 @@ fn track_row(
 ) -> TrackData {
     let info = &c.tracks[t];
     let devices = c.devices(t);
+    // MIDI effects lead the chain; they show before the instrument.
+    let midi_count = control::midi_effects(&devices);
+    let rows: Vec<DeviceData> = devices
+        .iter()
+        .enumerate()
+        .map(|(i, d)| {
+            let state = plugins.state(t, i);
+            let running = state == Some(plugins::State::Running);
+            let builtin = d.builtin.clone();
+            let note = match &state {
+                Some(plugins::State::Running) => {
+                    if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
+                        "Playing, with the set's sound".to_string()
+                    } else {
+                        "Playing".to_string()
+                    }
+                }
+                Some(s) => s.text(),
+                None if d.plugin.is_some() => "Plug-in".to_string(),
+                None if builtin.is_some() => String::new(),
+                None if d.name.ends_with("Drum Rack)") || d.name == "Drum Rack" => {
+                    "Its pads play as the track's kit".to_string()
+                }
+                None => "Live device: no built-in match yet".to_string(),
+            };
+            let before = old.and_then(|o| {
+                if i < o.midi_count as usize {
+                    o.midi_chain.row_data(i)
+                } else {
+                    o.chain.row_data(i - o.midi_count as usize)
+                }
+            });
+            device_row(
+                DeviceData {
+                    name: d.name.as_str().into(),
+                    kind: d.kind.as_str().into(),
+                    note: note.into(),
+                    on: d.on,
+                    instrument: control::is_instrument(d),
+                    midi: control::is_midi_effect(d),
+                    can_open: running,
+                    ..DeviceData::default()
+                },
+                builtin.as_ref(),
+                before.as_ref(),
+            )
+        })
+        .collect();
     let params: Vec<ParamData> = (0..sound::PARAMS)
         .map(|i| ParamData {
             name: c.param_name(t, i).into(),
@@ -1063,48 +1121,9 @@ fn track_row(
             .any(|d| matches!(d.builtin, Some(devices::Settings::External(_)))),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
         input: io.input_text(info.audio()).into(),
-        chain: reuse(
-            old.map(|o| &o.chain),
-            devices
-                .iter()
-                .enumerate()
-                .map(|(i, d)| {
-                    let state = plugins.state(t, i);
-                    let running = state == Some(plugins::State::Running);
-                    let builtin = d.builtin.clone();
-                    let note = match &state {
-                        Some(plugins::State::Running) => {
-                            if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
-                                "Playing, with the set's sound".to_string()
-                            } else {
-                                "Playing".to_string()
-                            }
-                        }
-                        Some(s) => s.text(),
-                        None if d.plugin.is_some() => "Plug-in".to_string(),
-                        None if builtin.is_some() => String::new(),
-                        None if d.name.ends_with("Drum Rack)") || d.name == "Drum Rack" => {
-                            "Its pads play as the track's kit".to_string()
-                        }
-                        None => "Live device: no built-in match yet".to_string(),
-                    };
-                    let before = old.and_then(|o| o.chain.row_data(i));
-                    device_row(
-                        DeviceData {
-                            name: d.name.as_str().into(),
-                            kind: d.kind.as_str().into(),
-                            note: note.into(),
-                            on: d.on,
-                            instrument: control::is_instrument(d),
-                            can_open: running,
-                            ..DeviceData::default()
-                        },
-                        builtin.as_ref(),
-                        before.as_ref(),
-                    )
-                })
-                .collect(),
-        ),
+        midi_chain: reuse(old.map(|o| &o.midi_chain), rows[..midi_count].to_vec()),
+        midi_count: midi_count as i32,
+        chain: reuse(old.map(|o| &o.chain), rows[midi_count..].to_vec()),
         plugin_instrument: devices
             .iter()
             .any(|d| d.plugin.as_ref().is_some_and(|p| p.instrument)),

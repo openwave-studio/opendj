@@ -440,6 +440,12 @@ fn device(d: Node) -> DeviceInfo {
         "MultiSampler" => "Sampler",
         "ProxyInstrumentDevice" => "External Instrument",
         "AutoFilter" | "AutoFilter2" => "Auto Filter",
+        "MidiArpeggiator" => "Arpeggiator",
+        "MidiNoteLength" => "Note Length",
+        "MidiPitcher" => "Pitch",
+        "MidiRandom" => "Random",
+        "MidiVelocity" => "Velocity",
+        "MidiNoteEcho" => "Note Echo",
         other => other,
     };
     DeviceInfo {
@@ -724,6 +730,47 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 a.dry_wet = fraction(v);
             }
             Settings::AutoFilter(a)
+        }
+        // MIDI effects: the type always, and the settings Live names
+        // plainly; the rest start fresh.
+        "MidiArpeggiator" | "MidiChord" | "MidiScale" | "MidiNoteLength" | "MidiVelocity"
+        | "MidiRandom" | "MidiPitcher" | "MidiNoteEcho" => {
+            use crate::midifx::MidiSettings;
+            let name = match d.tag_name().name() {
+                "MidiArpeggiator" => "Arpeggiator",
+                "MidiChord" => "Chord",
+                "MidiScale" => "Scale",
+                "MidiNoteLength" => "Note Length",
+                "MidiVelocity" => "Velocity",
+                "MidiRandom" => "Random",
+                "MidiPitcher" => "Pitch",
+                _ => "Note Echo",
+            };
+            let (_, mut m) = MidiSettings::catalog()
+                .into_iter()
+                .find(|(n, _)| *n == name)?;
+            match &mut m {
+                MidiSettings::Pitch { shift } => {
+                    *shift = num("Pitch").unwrap_or(0.0).round().clamp(-48.0, 48.0) as i8;
+                }
+                MidiSettings::Chord { shifts } => {
+                    for (i, s) in shifts.iter_mut().enumerate() {
+                        if let Some(v) = num(&format!("Shift{}", i + 1)) {
+                            *s = v.round().clamp(-36.0, 36.0) as i8;
+                        }
+                    }
+                }
+                MidiSettings::Scale { root, .. } => {
+                    *root = num("Base").unwrap_or(0.0).round().clamp(0.0, 11.0) as u8;
+                }
+                MidiSettings::Random { chance, .. } => {
+                    if let Some(v) = num("Chance") {
+                        *chance = fraction(v);
+                    }
+                }
+                _ => {}
+            }
+            Settings::Midi(m)
         }
         _ => return None,
     })

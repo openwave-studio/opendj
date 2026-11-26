@@ -10,6 +10,7 @@ use opendj_engine::dsp::Biquad;
 use crate::autofilter::{AutoFilter, AutoFilterSettings};
 use crate::fx;
 use crate::limiter::{Limiter, LimiterSettings};
+use crate::midifx::{MidiFx, MidiSettings};
 use crate::saturator::{Saturator, SaturatorSettings};
 
 /// How a setting reads and moves.
@@ -27,6 +28,10 @@ pub enum Unit {
     Note,
     /// -1 left to 1 right.
     Pan,
+    /// Whole semitones, shown signed.
+    Semitones,
+    /// A whole number.
+    Count,
     Plain,
     Toggle,
     Choice(&'static [&'static str]),
@@ -111,7 +116,9 @@ impl Param {
             self.min + n * (self.max - self.min)
         };
         match self.unit {
-            Unit::Note | Unit::Toggle | Unit::Choice(_) => v.round(),
+            Unit::Note | Unit::Toggle | Unit::Choice(_) | Unit::Semitones | Unit::Count => {
+                v.round()
+            }
             _ => v,
         }
     }
@@ -148,6 +155,8 @@ impl Param {
             Unit::Note => fx::NOTE_NAMES[(v.round() as usize).min(fx::NOTES.len() - 1)].into(),
             Unit::Pan if v.abs() < 0.005 => "C".into(),
             Unit::Pan => format!("{:.0}{}", v.abs() * 50.0, if v < 0.0 { "L" } else { "R" }),
+            Unit::Semitones => format!("{:+} st", v.round() as i32),
+            Unit::Count => format!("{}", v.round() as i32),
             Unit::Plain => format!("{v:.2}"),
             Unit::Toggle => if v >= 0.5 { "On" } else { "Off" }.into(),
             Unit::Choice(names) => names
@@ -170,7 +179,7 @@ pub fn catalog() -> Vec<(&'static str, Settings)> {
     }
     bands[0].shape = Shape::LowCut48;
     bands[7].shape = Shape::HighCut48;
-    vec![
+    let mut list = vec![
         (
             "External Instrument",
             Settings::External(ExternalSettings::default()),
@@ -228,13 +237,25 @@ pub fn catalog() -> Vec<(&'static str, Settings)> {
             Settings::Overdrive(fx::OverdriveSettings::default()),
         ),
         ("Roar", Settings::Roar(fx::RoarSettings::default())),
-    ]
+    ];
+    // The MIDI effects, which go before the instrument.
+    list.extend(
+        MidiSettings::catalog()
+            .into_iter()
+            .map(|(n, m)| (n, Settings::Midi(m))),
+    );
+    list
 }
 
 impl Settings {
     /// Plays the track's notes, rather than working on its sound.
     pub fn is_instrument(&self) -> bool {
         matches!(self, Settings::External(_))
+    }
+
+    /// Changes the notes on their way to the instrument.
+    pub fn is_midi_effect(&self) -> bool {
+        matches!(self, Settings::Midi(_))
     }
 }
 
@@ -252,6 +273,7 @@ pub enum Settings {
     Limiter(LimiterSettings),
     Saturator(SaturatorSettings),
     AutoFilter(AutoFilterSettings),
+    Midi(MidiSettings),
     External(ExternalSettings),
 }
 
@@ -335,6 +357,7 @@ impl Settings {
             Settings::Limiter(l) => l.summary(),
             Settings::Saturator(s) => s.summary(),
             Settings::AutoFilter(a) => a.summary(),
+            Settings::Midi(m) => m.summary(),
             Settings::External(e) => e.summary(),
         }
     }
@@ -354,6 +377,7 @@ impl Settings {
             Settings::Limiter(l) => l.params(),
             Settings::Saturator(s) => s.params(),
             Settings::AutoFilter(a) => a.params(),
+            Settings::Midi(m) => m.params(),
             Settings::External(e) => e.params(),
         }
     }
@@ -367,11 +391,9 @@ impl Settings {
             Settings::Roar(_) => {
                 Some((vec![0, 2, 3, 4, 13, 17, 6, 7, 8, 14, 18, 10, 11, 12, 15], 5))
             }
-            // Auto Filter: the filter, then the envelope, then the LFO.
-            Settings::AutoFilter(_) => Some((
-                vec![0, 1, 2, 3, 4, 5, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-                6,
-            )),
+            // Auto Filter: the filter's knobs, then the envelope's, then the
+            // LFO's (its switches sit on the left).
+            Settings::AutoFilter(_) => Some((vec![3, 4, 5, 6, 16, 7, 8, 9, 10, 13, 14, 15], 4)),
             _ => None,
         }
     }
@@ -391,6 +413,7 @@ impl Settings {
             Settings::Limiter(l) => l.set(i, v),
             Settings::Saturator(s) => s.set(i, v),
             Settings::AutoFilter(a) => a.set(i, v),
+            Settings::Midi(m) => m.set(i, v),
             Settings::External(e) => e.set(i, v),
         }
     }
@@ -757,6 +780,8 @@ pub enum Device {
     Limiter(Box<Limiter>),
     Saturator(Box<Saturator>),
     AutoFilter(Box<AutoFilter>),
+    /// Works on notes, before the instrument; passes the sound through.
+    Midi(Box<MidiFx>),
     /// The input comes in before the chain runs (the engine adds it), so
     /// this only sets its level and holds the latency.
     External(ExternalSettings),
@@ -776,6 +801,7 @@ impl Device {
             Settings::Limiter(l) => Device::Limiter(Box::new(Limiter::new(l, rate))),
             Settings::Saturator(s) => Device::Saturator(Box::new(Saturator::new(s, rate))),
             Settings::AutoFilter(a) => Device::AutoFilter(Box::new(AutoFilter::new(a, rate))),
+            Settings::Midi(m) => Device::Midi(Box::new(MidiFx::new(m))),
             Settings::External(e) => Device::External(e.clone()),
         }
     }
@@ -801,6 +827,7 @@ impl Device {
             Device::Limiter(l) => l.set(i, v),
             Device::Saturator(s) => s.set(i, v),
             Device::AutoFilter(a) => a.set(i, v),
+            Device::Midi(m) => m.set(i, v),
             Device::External(e) => e.set(i, v),
         }
     }
@@ -809,6 +836,14 @@ impl Device {
     pub fn latency_ms(&self) -> Option<f32> {
         match self {
             Device::External(e) => Some(e.latency_ms),
+            _ => None,
+        }
+    }
+
+    /// The MIDI effect, if this is one.
+    pub fn midi_mut(&mut self) -> Option<&mut MidiFx> {
+        match self {
+            Device::Midi(m) => Some(m),
             _ => None,
         }
     }
@@ -837,6 +872,7 @@ impl Device {
             Device::Limiter(l) => l.process(buf),
             Device::Saturator(s) => s.process(buf),
             Device::AutoFilter(a) => a.process(buf, tempo),
+            Device::Midi(_) => {}
             Device::External(e) => {
                 let g = from_db(e.gain_db);
                 for f in buf.iter_mut() {

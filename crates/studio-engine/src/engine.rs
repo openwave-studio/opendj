@@ -528,6 +528,12 @@ struct Column {
     /// Where the last block's events ended, in beats (ahead of the clock
     /// for an External Instrument), while playing.
     events_end: Option<f64>,
+    /// Notes played live, waiting for the track's MIDI effects.
+    live: Vec<(u8, f32)>,
+    /// The MIDI effects' clock: the beat the next block starts on. It runs
+    /// on while the transport is stopped, so an arpeggio plays from the
+    /// keys.
+    fx_beat: f64,
 }
 
 /// A track's bit in the engine's masks.
@@ -602,6 +608,13 @@ impl Column {
     /// then quiet).
     fn plugin_instrument(&self) -> bool {
         self.slots.iter().any(|s| s.instrument)
+    }
+
+    /// Whether a MIDI effect that's on changes the track's notes.
+    fn midi_effects(&self) -> bool {
+        self.slots
+            .iter()
+            .any(|s| s.on && matches!(&s.kind, SlotKind::Builtin(crate::devices::Device::Midi(_))))
     }
 
     fn push_midi(&mut self, m: Midi) {
@@ -683,6 +696,8 @@ pub struct Logged {
 }
 
 const MAX_EVENTS: usize = 1024;
+/// Live notes a track holds for its MIDI effects between blocks.
+const MAX_LIVE: usize = 64;
 
 /// The master level before the soft clipper: headroom for four tracks.
 const MASTER: f32 = 0.7;
@@ -696,6 +711,10 @@ pub struct Engine {
     /// the beat.
     last_end: Option<f64>,
     events: Vec<Event>,
+    /// The notes on their way through a track's MIDI effects, from one
+    /// effect to the next.
+    notes_in: Vec<crate::midifx::NoteEvent>,
+    notes_out: Vec<crate::midifx::NoteEvent>,
     scratch: Vec<[f32; 2]>,
     frames_done: u64,
     main_gain: f32,
@@ -784,6 +803,8 @@ impl Engine {
                 planar: vec![0.0; 4 * MAX_BLOCK],
                 routing: Routing::from(&t.io),
                 events_end: None,
+                live: Vec::with_capacity(MAX_LIVE),
+                fx_beat: 0.0,
                 rng: 0x9E37_79B9 ^ (i as u32 + 1).wrapping_mul(0x85EB_CA6B),
                 instrument: match t.sound {
                     // A set's Drum Rack plays its own samples when they loaded.
@@ -805,6 +826,8 @@ impl Engine {
             playing: false,
             last_end: None,
             events: Vec::with_capacity(MAX_EVENTS),
+            notes_in: Vec::with_capacity(MAX_EVENTS),
+            notes_out: Vec::with_capacity(MAX_EVENTS),
             scratch: vec![[0.0; 2]; MAX_BLOCK],
             frames_done: 0,
             main_gain: 1.0,
@@ -849,7 +872,12 @@ impl Engine {
             return;
         };
         let v = (velocity.min(1.0) * 127.0).round() as u8;
-        if c.routing.midi_out {
+        if c.midi_effects() {
+            // Through the MIDI effects with the track's next block.
+            if c.live.len() < MAX_LIVE {
+                c.live.push((pitch, velocity.clamp(0.0, 1.0)));
+            }
+        } else if c.routing.midi_out {
             if let Some(q) = self.midi_out.as_mut() {
                 let data = if v > 0 {
                     [0x90, pitch, v.max(1)]
@@ -1187,6 +1215,15 @@ impl Engine {
                 self.events.clear();
                 self.columns[t].events_end = None;
             }
+            // The MIDI effects play on their own clock, which keeps
+            // running while the transport is stopped.
+            let (from, beats_per_frame) = if self.playing && end > start {
+                (from, beats_per_frame)
+            } else {
+                (self.columns[t].fx_beat, span.tempo / 60.0 / self.rate)
+            };
+            self.midi_effects(t, from, from + frames as f64 * beats_per_frame, span.tempo);
+            self.columns[t].fx_beat = from + frames as f64 * beats_per_frame;
             let scratch = &mut self.scratch[..frames];
             scratch.fill([0.0; 2]);
             let mut done = 0;
@@ -1569,6 +1606,82 @@ impl Engine {
     /// onto where its last block's ended, so no note plays twice or goes
     /// missing when an External Instrument's latency or the tempo moves
     /// the window. A jump of the clock starts afresh.
+    /// Runs track `t`'s notes for `lo..hi` (and those played live) through
+    /// its MIDI effects, in chain order, leaving what comes out in
+    /// `self.events`.
+    fn midi_effects(&mut self, t: usize, lo: f64, hi: f64, bpm: f64) {
+        use crate::midifx::{push as add, Note};
+        let col = &mut self.columns[t];
+        if !col.midi_effects() {
+            col.live.clear();
+            return;
+        }
+        let (notes, next) = (&mut self.notes_in, &mut self.notes_out);
+        notes.clear();
+        // The clock jumped (play started or stopped, a relocate): what the
+        // effects were holding ends.
+        if (lo - col.fx_beat).abs() > 1e-6 {
+            add(notes, lo, Note::AllOff);
+        }
+        for (p, v) in col.live.drain(..) {
+            add(
+                notes,
+                lo,
+                if v > 0.0 {
+                    Note::On(p, v)
+                } else {
+                    Note::Off(p)
+                },
+            );
+        }
+        // The clock's own events (knob locks) stay as they are.
+        let mut kept = 0;
+        for i in 0..self.events.len() {
+            let e = self.events[i];
+            let note = match e.kind {
+                Kind::On(p, v) => Note::On(p, v),
+                Kind::Off(p) => Note::Off(p),
+                Kind::AllOff => Note::AllOff,
+                Kind::Lock(_) | Kind::Unlock => {
+                    self.events[kept] = e;
+                    kept += 1;
+                    continue;
+                }
+            };
+            add(notes, e.beat.max(lo), note);
+        }
+        self.events.truncate(kept);
+        for slot in col.slots.iter_mut().filter(|s| s.on) {
+            if let SlotKind::Builtin(d) = &mut slot.kind {
+                if let Some(fx) = d.midi_mut() {
+                    next.clear();
+                    fx.run(notes, next, hi, bpm);
+                    std::mem::swap(notes, next);
+                }
+            }
+        }
+        for n in notes.iter() {
+            let kind = match n.note {
+                Note::On(p, v) => Kind::On(p, v),
+                Note::Off(p) => Kind::Off(p),
+                Note::AllOff => Kind::AllOff,
+            };
+            if self.events.len() < self.events.capacity() {
+                self.events.push(Event {
+                    beat: n.beat,
+                    kind,
+                    scene: 254,
+                });
+            }
+        }
+        // In place: a stable sort would allocate.
+        self.events.sort_unstable_by(|a, b| {
+            a.beat
+                .total_cmp(&b.beat)
+                .then_with(|| order(a.kind).cmp(&order(b.kind)))
+        });
+    }
+
     fn window(&mut self, t: usize, lo: f64, hi: f64) -> (f64, f64) {
         let c = &mut self.columns[t];
         let lo = match c.events_end {
@@ -2645,6 +2758,97 @@ mod tests {
     }
 
     /// Each track's devices as the audio thread holds them: place and on.
+    /// A clip's note goes through the track's MIDI effects in order: a
+    /// chord, then the pitch moved up an octave.
+    #[test]
+    fn clip_notes_go_through_the_midi_effects_in_order() {
+        use crate::midifx::MidiSettings;
+        let mut set = one_note_set();
+        set[0].devices = vec![
+            builtin(
+                "Chord",
+                true,
+                crate::devices::Settings::Midi(MidiSettings::Chord {
+                    shifts: [7, 0, 0, 0, 0, 0],
+                }),
+            ),
+            builtin(
+                "Pitch",
+                true,
+                crate::devices::Settings::Midi(MidiSettings::Pitch { shift: 12 }),
+            ),
+        ];
+        let (mut s, mut r) = Studio::new(&set, RATE, 120.0);
+        s.engine.keep_log(64);
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        run(&mut s, (1.0 * RATE) as usize / BLOCK);
+        let log = s.engine.log();
+        let ons: Vec<(u64, u8)> = log
+            .iter()
+            .filter(|e| e.on)
+            .map(|e| (e.frame, e.pitch))
+            .collect();
+        assert_eq!(ons, [(0, 72), (0, 79)]);
+        // Both end with the clip's note, a quarter second (half a beat) in.
+        let offs: Vec<(u64, u8)> = log
+            .iter()
+            .filter(|e| !e.on)
+            .map(|e| (e.frame, e.pitch))
+            .collect();
+        let half = (0.5 * frames_per_beat(120.0)) as u64;
+        assert_eq!(offs, [(half, 72), (half, 79)]);
+    }
+
+    /// Keys held with the transport stopped still arpeggiate, on the MIDI
+    /// effects' own clock.
+    #[test]
+    fn live_keys_arpeggiate_while_stopped() {
+        use crate::midifx::MidiSettings;
+        let mut set = one_note_set();
+        set[0].devices = vec![builtin(
+            "Arpeggiator",
+            true,
+            crate::devices::Settings::Midi(MidiSettings::Arpeggiator {
+                style: 0,
+                rate: 0.25,
+                gate: 0.5,
+                octaves: 1,
+            }),
+        )];
+        let (mut s, mut r) = Studio::new(&set, RATE, 120.0);
+        s.engine.keep_log(64);
+        for pitch in [64, 60] {
+            r.commands
+                .push(Command::Note {
+                    track: 0,
+                    pitch,
+                    velocity: 0.8,
+                })
+                .ok();
+        }
+        // One beat at 120 BPM: four 16ths.
+        run(&mut s, (0.5 * RATE) as usize / BLOCK);
+        let ons: Vec<u8> = s
+            .engine
+            .log()
+            .iter()
+            .filter(|e| e.on)
+            .map(|e| e.pitch)
+            .collect();
+        assert_eq!(ons, [60, 64, 60, 64]);
+        let sixteenth = (0.25 * frames_per_beat(120.0)) as u64;
+        let frames: Vec<u64> = s
+            .engine
+            .log()
+            .iter()
+            .filter(|e| e.on)
+            .map(|e| e.frame)
+            .collect();
+        for (i, f) in frames.iter().enumerate() {
+            assert!(f.abs_diff(i as u64 * sixteenth) <= 1, "step {i} at {f}");
+        }
+    }
+
     fn chain(s: &Studio, track: usize) -> Vec<(usize, bool)> {
         s.engine.columns[track]
             .slots

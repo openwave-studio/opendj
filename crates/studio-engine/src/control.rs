@@ -73,10 +73,24 @@ pub fn is_instrument(d: &DeviceInfo) -> bool {
         || matches!(d.builtin, Some(Settings::External(_)))
 }
 
+/// Whether a device changes the notes on their way to the instrument.
+pub fn is_midi_effect(d: &DeviceInfo) -> bool {
+    d.builtin.as_ref().is_some_and(Settings::is_midi_effect)
+}
+
+/// How many MIDI effects lead the chain: the places before the instrument.
+pub fn midi_effects(chain: &[DeviceInfo]) -> usize {
+    chain.iter().take_while(|d| is_midi_effect(d)).count()
+}
+
 /// The first place in a chain an audio effect can go: after its
-/// instruments (and the MIDI effects before them).
+/// instruments and the MIDI effects before them.
 pub fn first_effect_place(chain: &[DeviceInfo]) -> usize {
-    chain.iter().rposition(is_instrument).map_or(0, |i| i + 1)
+    chain
+        .iter()
+        .rposition(is_instrument)
+        .map_or(0, |i| i + 1)
+        .max(midi_effects(chain))
 }
 
 /// Which of the track's controls a mixer value is.

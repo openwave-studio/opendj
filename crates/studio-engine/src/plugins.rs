@@ -166,8 +166,10 @@ impl Plugins {
             From::Chain(t, at) => (c.devices(t).get(at)?.clone(), (!d.copy).then_some((t, at))),
         };
         let instrument = crate::control::is_instrument(&device);
-        // An audio track plays recordings: no instrument there.
-        if instrument && track.audio() {
+        let midi = crate::control::is_midi_effect(&device);
+        // An audio track plays recordings: no instrument or MIDI effect
+        // there.
+        if (instrument || midi) && track.audio() {
             return None;
         }
         let external = matches!(device.builtin, Some(crate::devices::Settings::External(_)));
@@ -198,7 +200,10 @@ impl Plugins {
             for &i in olds.iter().rev() {
                 p.remove(d.to_track, i);
             }
-            place = first.unwrap_or(0);
+            place = first.unwrap_or(crate::control::midi_effects(&chain));
+        } else if midi {
+            // Among the MIDI effects, before the instrument.
+            place = place.min(crate::control::midi_effects(&chain));
         } else {
             place = place.max(crate::control::first_effect_place(&chain));
         }
