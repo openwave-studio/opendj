@@ -832,3 +832,106 @@ fn komplete_kontrol_m32_plays_the_instrument_deck() {
     assert!(c.errors().is_empty(), "{:#?}", c.errors());
     c.shutdown();
 }
+
+/// The S2 MK1 as it reports itself: calibration in feature reports 0xD0
+/// (faders, little-endian min and max) and 0xD1-0xD3 (knobs: min, centre,
+/// max), the jog touch thresholds in 0xD4.
+struct S2Mk1;
+
+impl Io for S2Mk1 {
+    fn write(&self, _: &[u8]) -> Result<(), String> {
+        Ok(())
+    }
+    fn send_feature(&self, _: &[u8]) -> Result<(), String> {
+        Ok(())
+    }
+    fn get_input(&self, _: u8) -> Option<Vec<u8>> {
+        Some(vec![0; 63])
+    }
+    fn get_feature(&self, id: u8) -> Option<Vec<u8>> {
+        let mut r = vec![0xFF; 32];
+        match id {
+            0xD0 => {
+                r[..12].copy_from_slice(&[1, 0, 0, 0, 0x10, 0, 0xF0, 0x0F, 0x10, 0, 0xF0, 0x0F]);
+                for at in [0x0C, 0x10, 0x14] {
+                    r[at..at + 4].copy_from_slice(&[0x10, 0x00, 0xF0, 0x0F]);
+                }
+            }
+            0xD1..=0xD3 => {
+                for at in (0..30).step_by(6) {
+                    r[at..at + 6].copy_from_slice(&[0x10, 0x00, 0x00, 0x08, 0xF0, 0x0F]);
+                }
+            }
+            0xD4 => r[..8].copy_from_slice(&[1, 0, 2, 0, 1, 0, 2, 0]),
+            _ => return None,
+        }
+        Some(r)
+    }
+}
+
+/// Mixxx's S2 MK1 mapping, with openDJ's changes: PLAY and the calibrated
+/// channel fader reach deck 1, RESET resets the tempo, and pushing and
+/// turning GAIN picks the deck's quick effect.
+#[test]
+fn traktor_kontrol_s2_mk1() {
+    let reg = ControlRegistry::new();
+    let _engine = opendj_engine::engine::Engine::new(&reg, 44_100.0);
+    let path = default_mappings_dir()
+        .unwrap()
+        .join("Traktor Kontrol S2 Mk1.hid.xml");
+    let mapping = Mapping::load(&path).unwrap();
+    let mut c = Controller::new_hid("test", mapping, reg.clone(), Rc::new(S2Mk1)).unwrap();
+    settle(&mut c, 50);
+    assert!(!c.take_reports().is_empty(), "init lights the controller");
+
+    // Buttons and jogs: report 0x01.
+    let mut idle = vec![0u8; 16];
+    idle[0] = 0x01;
+    c.receive_report(&idle);
+    c.receive_report(&idle);
+    // PLAY on deck 1: bit 0x10 of byte 13.
+    tap(&mut c, &idle, 13, 0x10);
+    assert_eq!(get(&reg, "[Channel1]", "play"), 1.0, "PLAY starts deck 1");
+    // RESET on deck 1 (bit 0x10 of byte 9) puts the tempo back.
+    reg.get("[Channel1]", "rate").unwrap().set(0.5);
+    tap(&mut c, &idle, 9, 0x10);
+    assert_eq!(
+        get(&reg, "[Channel1]", "rate"),
+        0.0,
+        "RESET resets the tempo"
+    );
+
+    // Knobs and faders: report 0x02, 16-bit little-endian, calibrated.
+    let mut analog = vec![0u8; 52];
+    analog[0] = 0x02;
+    c.receive_report(&analog);
+    // Soft takeover: slide it up, as a hand would.
+    for v in (0x10u16..=0x0FF0).step_by(0x40) {
+        analog[43..45].copy_from_slice(&v.to_le_bytes());
+        c.receive_report(&analog);
+        settle(&mut c, 2);
+    }
+    let v = get(&reg, "[Channel1]", "volume");
+    assert!(v > 0.9, "the channel fader at the top: {v}");
+
+    // Push GAIN (bit 0x01 of byte 14) and turn it one step (the low nibble
+    // of report 0x02's byte 1): the next quick effect.
+    let quick = "[QuickEffectRack1_[Channel1]]";
+    // A press the engine picks up on its next block: count the writes.
+    let next = reg.get(quick, "next_chain_preset").unwrap();
+    let before = next.version();
+    let mut pushed = idle.clone();
+    pushed[14] |= 0x01;
+    c.receive_report(&pushed);
+    analog[1] = 0x01;
+    c.receive_report(&analog);
+    c.receive_report(&idle);
+    settle(&mut c, 30);
+    assert!(
+        next.version() != before,
+        "push and turn GAIN picks the next quick effect"
+    );
+    let filter = get(&reg, quick, "super1");
+    assert_eq!(filter, 0.5, "and leaves the filter where it was");
+    assert_eq!(c.errors(), Vec::<String>::new());
+}

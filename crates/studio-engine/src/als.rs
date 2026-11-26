@@ -96,7 +96,13 @@ fn fader(gain: f64) -> f32 {
     (1.0 - (6.0 - db) / 66.0).clamp(0.0, 1.0) as f32
 }
 
+thread_local! {
+    /// The set's folder while it's read, for samples kept beside it.
+    static FOLDER: std::cell::RefCell<PathBuf> = const { std::cell::RefCell::new(PathBuf::new()) };
+}
+
 pub fn parse(text: &str, folder: &Path) -> Result<LiveSet, String> {
+    FOLDER.with(|f| *f.borrow_mut() = folder.to_path_buf());
     let doc = Document::parse_with_options(
         text,
         roxmltree::ParsingOptions {
@@ -440,6 +446,12 @@ fn device(d: Node) -> DeviceInfo {
         "MultiSampler" => "Sampler",
         "ProxyInstrumentDevice" => "External Instrument",
         "AutoFilter" | "AutoFilter2" => "Auto Filter",
+        "MidiArpeggiator" => "Arpeggiator",
+        "MidiNoteLength" => "Note Length",
+        "MidiPitcher" => "Pitch",
+        "MidiRandom" => "Random",
+        "MidiVelocity" => "Velocity",
+        "MidiNoteEcho" => "Note Echo",
         other => other,
     };
     DeviceInfo {
@@ -697,6 +709,13 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
             dc: value(d, "PreDcFilter/Manual") != Some("false"),
             soft_clip: flag("PostClip"),
         }),
+        "OriginalSimpler" => Settings::Simpler(simpler(d)?),
+        // A rack with one chain came in as its devices (see `devices`).
+        "AudioEffectGroupDevice" => Settings::Rack(rack(d, crate::rack::Kind::Audio)),
+        "InstrumentGroupDevice" => Settings::Rack(rack(d, crate::rack::Kind::Instrument)),
+        // Its pads come in with the kit, once their samples are decoded
+        // (`load_kits`).
+        "DrumGroupDevice" => Settings::Rack(rack(d, crate::rack::Kind::Drum)),
         "AutoFilter" | "AutoFilter2" => {
             let mut a = crate::autofilter::AutoFilterSettings::default();
             if let Some(v) = num("Cutoff").or_else(|| num("Filter_Frequency")) {
@@ -724,6 +743,47 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 a.dry_wet = fraction(v);
             }
             Settings::AutoFilter(a)
+        }
+        // MIDI effects: the type always, and the settings Live names
+        // plainly; the rest start fresh.
+        "MidiArpeggiator" | "MidiChord" | "MidiScale" | "MidiNoteLength" | "MidiVelocity"
+        | "MidiRandom" | "MidiPitcher" | "MidiNoteEcho" => {
+            use crate::midifx::MidiSettings;
+            let name = match d.tag_name().name() {
+                "MidiArpeggiator" => "Arpeggiator",
+                "MidiChord" => "Chord",
+                "MidiScale" => "Scale",
+                "MidiNoteLength" => "Note Length",
+                "MidiVelocity" => "Velocity",
+                "MidiRandom" => "Random",
+                "MidiPitcher" => "Pitch",
+                _ => "Note Echo",
+            };
+            let (_, mut m) = MidiSettings::catalog()
+                .into_iter()
+                .find(|(n, _)| *n == name)?;
+            match &mut m {
+                MidiSettings::Pitch { shift } => {
+                    *shift = num("Pitch").unwrap_or(0.0).round().clamp(-48.0, 48.0) as i8;
+                }
+                MidiSettings::Chord { shifts } => {
+                    for (i, s) in shifts.iter_mut().enumerate() {
+                        if let Some(v) = num(&format!("Shift{}", i + 1)) {
+                            *s = v.round().clamp(-36.0, 36.0) as i8;
+                        }
+                    }
+                }
+                MidiSettings::Scale { root, .. } => {
+                    *root = num("Base").unwrap_or(0.0).round().clamp(0.0, 11.0) as u8;
+                }
+                MidiSettings::Random { chance, .. } => {
+                    if let Some(v) = num("Chance") {
+                        *chance = fraction(v);
+                    }
+                }
+                _ => {}
+            }
+            Settings::Midi(m)
         }
         _ => return None,
     })
@@ -842,6 +902,173 @@ fn pad(branch: Node, folder: &Path) -> Option<Pad> {
     })
 }
 
+/// A rack's chains (each with its devices, mixer and zones) and macros.
+/// A Drum Rack's pads are left for `load_kits`. Live's names for the
+/// zones are read from its sets, not yet confirmed against every version.
+fn rack(d: Node, kind: crate::rack::Kind) -> crate::rack::RackSettings {
+    use crate::rack::{Branch, Kind, RackSettings, MACROS};
+    let mut r = RackSettings::new(kind);
+    for (i, m) in r.macros.iter_mut().enumerate().take(MACROS) {
+        if let Some(v) = number(d, &format!("MacroControls.{i}/Manual")) {
+            m.value = (v / 127.0).clamp(0.0, 1.0) as f32;
+        }
+        if let Some(n) = value(d, &format!("MacroDisplayNames.{i}")).filter(|n| !n.is_empty()) {
+            m.name = n.to_string();
+        }
+    }
+    if kind == Kind::Drum {
+        return r;
+    }
+    let branches = child(d, "Branches")
+        .map(|b| b.children().filter(Node::is_element).collect::<Vec<_>>())
+        .unwrap_or_default();
+    for b in branches.into_iter().take(crate::rack::MAX_BRANCHES) {
+        let chain = [
+            "MidiToAudioDeviceChain",
+            "AudioToAudioDeviceChain",
+            "MidiToMidiDeviceChain",
+        ]
+        .iter()
+        .find_map(|c| at(b, &format!("DeviceChain/{c}/Devices")));
+        let devices = chain
+            .map(|c| {
+                c.children()
+                    .filter(Node::is_element)
+                    .flat_map(devices)
+                    .collect()
+            })
+            .unwrap_or_default();
+        let mixer = child(b, "MixerDevice");
+        let mix = |p: &str| mixer.and_then(|m| number(m, &format!("{p}/Manual")));
+        let zone = |p: &str, lo: u8, hi: u8| {
+            let n = |e: &str| {
+                number(b, &format!("ZoneSettings/{p}/{e}")).map(|v| v.clamp(0.0, 127.0) as u8)
+            };
+            (n("Min").unwrap_or(lo), n("Max").unwrap_or(hi))
+        };
+        r.branches.push(Branch {
+            name: value(b, "Name/EffectiveName")
+                .or_else(|| value(b, "Name"))
+                .filter(|n| !n.is_empty())
+                .unwrap_or("Chain")
+                .to_string(),
+            devices,
+            volume_db: mix("Volume").map_or(0.0, |v| (20.0 * v.max(1e-6).log10()) as f32),
+            pan: mix("Panorama").unwrap_or(0.0).clamp(-1.0, 1.0) as f32,
+            on: mixer.is_none_or(|m| value(m, "Speaker/Manual") != Some("false")),
+            keys: zone("KeyRange", 0, 127),
+            velocities: zone("VelocityRange", 1, 127),
+            ..Default::default()
+        });
+    }
+    r
+}
+
+/// A Simpler's sample and settings; decoded later by `load_simplers`.
+/// Live's parameter names here are read from its sets, not yet confirmed
+/// against every version; a missing one keeps the default.
+fn simpler(d: Node) -> Option<crate::simpler::SimplerSettings> {
+    let mut s = crate::simpler::SimplerSettings::default();
+    let num = |p: &str| number(d, &format!("{p}/Manual")).map(|v| v as f32);
+    let part = d.descendants().find(|n| n.has_tag_name("MultiSamplePart"));
+    if let Some(part) = part {
+        if let Some(file) = at(part, "SampleRef/FileRef") {
+            s.path = Some(FOLDER.with(|f| sample_path(file, &f.borrow())));
+        }
+        if let Some(k) = number(part, "RootKey") {
+            s.root = k.clamp(0.0, 127.0) as u8;
+        }
+        // Start and end in frames of the file: shares of its length.
+        if let (Some(a), Some(b), Some(len)) = (
+            number(part, "SampleStart"),
+            number(part, "SampleEnd"),
+            number(part, "SampleRef/DefaultDuration").filter(|l| *l > 0.0),
+        ) {
+            s.start = (a / len).clamp(0.0, 1.0) as f32;
+            s.end = (b / len).clamp(0.0, 1.0) as f32;
+        }
+        if let Some(lp) = at(part, "SustainLoop") {
+            s.looping = number(lp, "Mode").unwrap_or(0.0) > 0.0;
+            if let (Some(a), Some(len)) = (
+                number(lp, "Start"),
+                number(part, "SampleRef/DefaultDuration").filter(|l| *l > 0.0),
+            ) {
+                s.loop_start = (a / len).clamp(0.0, 1.0) as f32;
+            }
+        }
+    }
+    s.mode = match number(d, "Globals/PlaybackMode").or_else(|| number(d, "Player/PlaybackMode")) {
+        Some(m) if m >= 1.0 => 1,
+        _ => 0,
+    };
+    let env = "VolumeAndPan/Envelope";
+    if let Some(v) = num(&format!("{env}/AttackTime")) {
+        s.attack_ms = v;
+    }
+    if let Some(v) = num(&format!("{env}/DecayTime")) {
+        s.decay_ms = v;
+    }
+    if let Some(v) = num(&format!("{env}/SustainLevel")) {
+        s.sustain = v;
+    }
+    if let Some(v) = num(&format!("{env}/ReleaseTime")) {
+        s.release_ms = v;
+    }
+    s.transpose = num("Pitch/TransposeKey").unwrap_or(0.0);
+    s.detune = num("Pitch/TransposeFine").unwrap_or(0.0);
+    s.volume_db = num("VolumeAndPan/Volume").unwrap_or(s.volume_db);
+    s.velocity = num("VolumeAndPan/VolumeVelScale").unwrap_or(s.velocity);
+    s.filter = value(d, "Filter/IsOn/Manual") == Some("true");
+    let filter = "Filter/Slot/Value/SimplerFilter";
+    if let Some(v) = num(&format!("{filter}/Freq")) {
+        s.cutoff = v;
+    }
+    if let Some(v) = num(&format!("{filter}/Res")) {
+        s.resonance = v.clamp(0.0, 1.0);
+    }
+    if let Some(v) = number(d, "Globals/NumVoices") {
+        // Live's choices are 1, 2, 4 … 32 voices.
+        s.voices = v.clamp(1.0, 32.0) as u8;
+    }
+    // Through `set`, so every value is in range.
+    for (i, p) in s.params().iter().enumerate() {
+        let v = p.value;
+        s.set(i, v);
+    }
+    Some(s)
+}
+
+/// Decodes every Simpler's sample at `rate`; returns those not found.
+pub fn load_simplers(tracks: &mut [Track], rate: f64) -> Vec<String> {
+    let mut missing = Vec::new();
+    for t in tracks.iter_mut() {
+        simplers(&mut t.devices, rate, &mut missing);
+    }
+    missing
+}
+
+fn simplers(devices: &mut [DeviceInfo], rate: f64, missing: &mut Vec<String>) {
+    for d in devices.iter_mut() {
+        match d.builtin.as_mut() {
+            Some(crate::devices::Settings::Simpler(s)) if s.sample.is_none() => {
+                let Some(path) = s.path.clone() else {
+                    continue;
+                };
+                match opendj_engine::sampler::Sample::load(&path, rate) {
+                    Ok(x) => s.sample = Some(Arc::new(x)),
+                    Err(_) => missing.push(path.display().to_string()),
+                }
+            }
+            Some(crate::devices::Settings::Rack(r)) => {
+                for b in r.branches.iter_mut() {
+                    simplers(&mut b.devices, rate, missing);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 /// Where a sample is on this computer: beside the set, where the set says,
 /// or in an installed Live's Core Library (whatever its edition).
 fn sample_path(file: Node, folder: &Path) -> PathBuf {
@@ -949,6 +1176,16 @@ pub fn load_kits(tracks: &mut [Track], rate: f64) -> Vec<String> {
                 }
             }
         });
+        // The track's Drum Rack plays the pads, sharing their samples.
+        let drum = t.devices.iter_mut().find_map(|d| match d.builtin.as_mut() {
+            Some(crate::devices::Settings::Rack(r)) if r.kind == crate::rack::Kind::Drum => Some(r),
+            _ => None,
+        });
+        if let Some(r) = drum {
+            let macros = std::mem::take(&mut r.macros);
+            *r = crate::rack::drum_rack(kit);
+            r.macros = macros;
+        }
     }
     missing.sort();
     missing.dedup();
@@ -1335,6 +1572,95 @@ mod tests {
         assert_eq!(t.io.midi_to, e.midi_to);
         assert!(t.io.midi_to.is_some());
         assert_eq!(t.io.audio_in, Some((2, true)));
+    }
+
+    #[test]
+    fn simpler() {
+        let xml = r#"<Ableton><LiveSet><Tracks><MidiTrack Id="1">
+          <Name><EffectiveName Value="Keys" /></Name>
+          <DeviceChain><DeviceChain><Devices>
+            <OriginalSimpler Id="0">
+              <On><Manual Value="true" /></On>
+              <Player><MultiSampleMap><SampleParts><MultiSamplePart Id="0">
+                <RootKey Value="57" />
+                <SampleStart Value="4800" /><SampleEnd Value="43200" />
+                <SustainLoop><Start Value="24000" /><End Value="43200" /><Mode Value="1" /></SustainLoop>
+                <SampleRef><FileRef><RelativePath Value="Samples/keys.wav" /><Path Value="/nowhere/keys.wav" /></FileRef><DefaultDuration Value="48000" /><DefaultSampleRate Value="48000" /></SampleRef>
+              </MultiSamplePart></SampleParts></MultiSampleMap></Player>
+              <Globals><PlaybackMode Value="1" /><NumVoices Value="4" /></Globals>
+              <VolumeAndPan>
+                <Volume><Manual Value="-6" /></Volume>
+                <Envelope><AttackTime><Manual Value="12" /></AttackTime><ReleaseTime><Manual Value="300" /></ReleaseTime><SustainLevel><Manual Value="0.5" /></SustainLevel></Envelope>
+              </VolumeAndPan>
+              <Pitch><TransposeKey><Manual Value="-12" /></TransposeKey></Pitch>
+            </OriginalSimpler>
+          </Devices></DeviceChain></DeviceChain>
+        </MidiTrack></Tracks></LiveSet></Ableton>"#;
+        let set = parse(xml, Path::new("/sets")).unwrap();
+        let d = &set.tracks[0].devices[0];
+        let Some(crate::devices::Settings::Simpler(s)) = &d.builtin else {
+            panic!("no Simpler: {d:?}");
+        };
+        assert_eq!(d.name, "Simpler");
+        assert_eq!(s.path.as_deref(), Some(Path::new("/nowhere/keys.wav")));
+        assert_eq!((s.root, s.mode, s.voices), (57, 1, 4));
+        assert_eq!((s.start, s.end), (0.1, 0.9));
+        assert!(s.looping);
+        assert_eq!(s.loop_start, 0.5);
+        assert_eq!((s.attack_ms, s.release_ms, s.sustain), (12.0, 300.0, 0.5));
+        assert_eq!((s.volume_db, s.transpose), (-6.0, -12.0));
+        assert!(crate::control::is_instrument(d));
+    }
+
+    #[test]
+    fn racks_with_several_chains() {
+        let xml = r#"<Ableton><LiveSet><Tracks><MidiTrack Id="1">
+          <Name><EffectiveName Value="Split" /></Name>
+          <DeviceChain><DeviceChain><Devices>
+            <InstrumentGroupDevice Id="0">
+              <On><Manual Value="true" /></On>
+              <MacroControls.0><Manual Value="63.5" /></MacroControls.0>
+              <MacroDisplayNames.0 Value="Tone" />
+              <Branches>
+                <InstrumentBranch Id="0">
+                  <Name><EffectiveName Value="Low" /></Name>
+                  <DeviceChain><MidiToAudioDeviceChain><Devices>
+                    <StereoGain Id="1"><Gain><Manual Value="0.5" /></Gain></StereoGain>
+                  </Devices></MidiToAudioDeviceChain></DeviceChain>
+                  <ZoneSettings><KeyRange><Min Value="0" /><Max Value="59" /></KeyRange></ZoneSettings>
+                  <MixerDevice><Volume><Manual Value="0.5" /></Volume><Panorama><Manual Value="-0.5" /></Panorama></MixerDevice>
+                </InstrumentBranch>
+                <InstrumentBranch Id="1">
+                  <Name><EffectiveName Value="High" /></Name>
+                  <DeviceChain><MidiToAudioDeviceChain><Devices /></MidiToAudioDeviceChain></DeviceChain>
+                  <ZoneSettings><KeyRange><Min Value="60" /><Max Value="127" /></KeyRange><VelocityRange><Min Value="64" /><Max Value="127" /></VelocityRange></ZoneSettings>
+                  <MixerDevice><Speaker><Manual Value="false" /></Speaker></MixerDevice>
+                </InstrumentBranch>
+              </Branches>
+            </InstrumentGroupDevice>
+          </Devices></DeviceChain></DeviceChain>
+        </MidiTrack></Tracks></LiveSet></Ableton>"#;
+        let set = parse(xml, Path::new("/sets")).unwrap();
+        let d = &set.tracks[0].devices[0];
+        let Some(crate::devices::Settings::Rack(r)) = &d.builtin else {
+            panic!("no rack: {d:?}");
+        };
+        assert_eq!(d.name, "Instrument Rack");
+        assert_eq!(r.kind, crate::rack::Kind::Instrument);
+        assert_eq!(r.macros[0].name, "Tone");
+        assert!((r.macros[0].value - 0.5).abs() < 1e-6);
+        let [low, high] = &r.branches[..] else {
+            panic!("{:?}", r.branches);
+        };
+        assert_eq!((low.name.as_str(), low.keys), ("Low", (0, 59)));
+        assert_eq!(low.devices[0].name, "Utility");
+        assert!((low.volume_db + 6.0206).abs() < 1e-3);
+        assert_eq!(low.pan, -0.5);
+        assert_eq!(
+            (high.keys, high.velocities, high.on),
+            ((60, 127), (64, 127), false)
+        );
+        assert!(crate::control::is_instrument(d));
     }
 
     #[test]

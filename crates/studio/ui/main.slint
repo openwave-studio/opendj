@@ -54,6 +54,8 @@ export struct KnobData {
     // An on/off switch (else a list that steps on a click).
     toggle: bool,
     on: bool,
+    // Inside a rack: the macro it follows, plus one (0 for none).
+    mapped: int,
 }
 
 // An EQ Eight band on its graph: place across and down, 0..1.
@@ -66,6 +68,27 @@ export struct DotData {
 }
 
 // A device a set lists: a plug-in, or one of the studio's own with its panel.
+// A chain of a rack, as its list shows it.
+export struct ChainData {
+    name: string,
+    // Its volume, as text, and its zone (keys) or pad note.
+    volume: string,
+    zone: string,
+    on: bool,
+    solo: bool,
+    // Its first setting on the rack (volume; pan, on and solo follow).
+    index: int,
+}
+
+// A Drum Rack pad: the note it takes and the sample on it.
+export struct PadData {
+    note: int,
+    name: string,
+    filled: bool,
+    // Its chain on the rack, -1 for an empty pad.
+    chain: int,
+}
+
 export struct DeviceData {
     name: string,
     kind: string,
@@ -75,6 +98,8 @@ export struct DeviceData {
     can-open: bool,
     // Plays the track's notes (an instrument), rather than its sound.
     instrument: bool,
+    // Changes the notes on their way to the instrument.
+    midi: bool,
     // The studio's own device: its panel shows these.
     builtin: bool,
     eq: bool,
@@ -88,6 +113,16 @@ export struct DeviceData {
     zero: float,
     dots: [DotData],
     panel-width: float,
+    // A rack: 1 audio effect, 2 instrument, 3 drum (0 for any other).
+    rack: int,
+    chains: [ChainData],
+    pads: [PadData],
+    // A rack: the chain whose devices show beside it (-1 for none), and
+    // the macro being mapped (-1 when not mapping).
+    open-chain: int,
+    mapping: int,
+    // A device inside a rack: the setting that switches it on.
+    on-index: int,
 }
 
 export struct TrackData {
@@ -121,10 +156,19 @@ export struct TrackData {
     midi-to: string,
     // Shown when notes go out over MIDI.
     midi-to-channel: string,
-    // The devices a set lists for it.
+    // Its MIDI effects, which lead its chain, then the rest of its devices
+    // (places from midi-count on).
+    midi-chain: [DeviceData],
+    midi-count: int,
     chain: [DeviceData],
     // A plug-in plays its notes (the built-in sound isn't shown).
     plugin-instrument: bool,
+    // The rack whose chain is open (its place, -1 for none), the chain,
+    // its name and its devices (their settings as the rack's).
+    rack-at: int,
+    rack-chain: int,
+    chain-name: string,
+    inner: [DeviceData],
     // Meter, 0..1 on a dB scale.
     level: float,
     // Fader position 0..1 (0 dB at 60/66) and as text.
@@ -157,7 +201,7 @@ export global Drag {
     in-out property <length> x;
     in-out property <length> y;
     in-out property <string> label;
-    // 0 instrument, 1 audio effect.
+    // 0 instrument, 1 audio effect, 2 MIDI effect, 5 sample.
     in-out property <int> kind;
     // From the browser: the item's id (see BrowserItem).
     in-out property <int> item;
@@ -170,6 +214,15 @@ export global Drag {
     in-out property <int> to-track: -1;
     // A place in the chain, -1 for after the last device.
     in-out property <int> to-place: -1;
+    // A Drum Rack pad's note a sample is over, -1 for none.
+    in-out property <int> to-pad: -1;
+    // Into a rack (its place on the track): a chain, or -2 for a new one.
+    in-out property <int> to-rack: -1;
+    in-out property <int> to-chain: -1;
+    // From inside a rack: its place and the chain (from-device is the
+    // device's place in that chain).
+    in-out property <int> from-rack: -1;
+    in-out property <int> from-chain: -1;
     callback dropped();
 
     public function start-from-browser(name: string, kind: int, item: int) {
@@ -178,6 +231,8 @@ export global Drag {
         self.item = item;
         self.from-track = -1;
         self.from-device = -1;
+        self.from-rack = -1;
+        self.from-chain = -1;
         self.active = true;
     }
 
@@ -187,7 +242,15 @@ export global Drag {
         self.item = 0;
         self.from-track = track;
         self.from-device = device;
+        self.from-rack = -1;
+        self.from-chain = -1;
         self.active = true;
+    }
+
+    public function start-from-rack(name: string, kind: int, track: int, rack: int, chain: int, device: int) {
+        self.start-from-chain(name, kind, track, device);
+        self.from-rack = rack;
+        self.from-chain = chain;
     }
 
     public function finish(copy: bool) {
@@ -199,6 +262,28 @@ export global Drag {
         self.owner = -1;
         self.to-track = -1;
         self.to-place = -1;
+        self.to-pad = -1;
+        self.to-rack = -1;
+        self.to-chain = -1;
+    }
+
+    // A place inside a rack's chain (-2 for a new chain): as `target`.
+    public function target-in(id: int, over: bool, track: int, rack: int, chain: int, place: int) {
+        self.target(id, over, track, place);
+        if over {
+            self.to-rack = rack;
+            self.to-chain = chain;
+        }
+    }
+
+    // A pad under the pointer: as `target`, for a sample.
+    public function target-pad(id: int, over: bool, track: int, place: int, note: int) {
+        self.target(id, over, track, place);
+        if over {
+            self.to-pad = note;
+        } else if self.owner == -1 {
+            self.to-pad = -1;
+        }
     }
 
     // A target under the pointer (`over`) takes the drop, and lets go of
@@ -208,10 +293,15 @@ export global Drag {
             self.owner = id;
             self.to-track = track;
             self.to-place = place;
+            self.to-pad = -1;
+            self.to-rack = -1;
+            self.to-chain = -1;
         } else if self.owner == id {
             self.owner = -1;
             self.to-track = -1;
             self.to-place = -1;
+            self.to-rack = -1;
+            self.to-chain = -1;
         }
     }
 }
@@ -308,7 +398,14 @@ component Knob inherits Rectangle {
     in property <bool> bipolar;
     in property <length> size: 30px;
     in property <color> tint: Theme.accent;
+    // Map mode: a press picks the knob (`pressed`) and turning it does
+    // nothing. `badge` is the macro it follows (0 for none); `picked`
+    // marks the macro being mapped.
+    in property <bool> mapping;
+    in property <int> badge;
+    in property <bool> picked;
     callback changed(float);
+    callback pressed();
     property <float> local;
     property <float> shown: free ? local : value;
     property <float> start-value;
@@ -318,6 +415,16 @@ component Knob inherits Rectangle {
     property <angle> centre: 270deg;
     width: max(size, 48px);
     height: (label != "" ? 14px : 0px) + size + (display != "" ? 14px : 0px);
+    if mapping || picked: Rectangle {
+        y: label != "" ? 12px : -2px;
+        x: (parent.width - size) / 2 - 3px;
+        width: size + 6px;
+        height: size + 4px;
+        border-radius: 3px;
+        background: picked ? Theme.accent.with-alpha(0.35) : Theme.accent.with-alpha(0.12);
+        border-width: 1px;
+        border-color: Theme.accent;
+    }
     if label != "": Text {
         y: 0;
         height: 14px;
@@ -383,18 +490,32 @@ component Knob inherits Rectangle {
         font-size: 10px;
         horizontal-alignment: center;
     }
+    if badge > 0: Rectangle {
+        x: (parent.width + size) / 2 - 4px;
+        y: label != "" ? 12px : -2px;
+        width: 13px;
+        height: 11px;
+        border-radius: 2px;
+        background: Theme.accent;
+        Text { text: badge; color: Theme.bg; font-size: 8px; font-weight: 700; }
+    }
     TouchArea {
-        mouse-cursor: ns-resize;
+        mouse-cursor: root.mapping ? MouseCursor.pointer : MouseCursor.ns-resize;
         pointer-event(e) => {
             if e.kind == PointerEventKind.down {
                 root.start-value = root.shown;
+                if root.mapping {
+                    root.pressed();
+                }
             }
         }
         moved => {
-            root.set(root.start-value + (self.pressed-y - self.mouse-y) / 160px);
+            if !root.mapping {
+                root.set(root.start-value + (self.pressed-y - self.mouse-y) / 160px);
+            }
         }
         double-clicked => {
-            if root.bipolar {
+            if root.bipolar && !root.mapping {
                 root.set(0.5);
             }
         }
@@ -795,7 +916,7 @@ component KindIcon inherits Rectangle {
     height: 10px;
     border-width: 1.5px;
     border-radius: kind == 3 ? 1px : 2px;
-    border-color: kind == 0 ? Theme.accent : (kind == 1 ? Theme.effect : (kind == 2 ? Theme.midi-fx : (kind == 4 ? Theme.playing : Theme.dim)));
+    border-color: kind == 0 || kind == 5 ? Theme.accent : (kind == 1 ? Theme.effect : (kind == 2 ? Theme.midi-fx : (kind == 4 ? Theme.playing : Theme.dim)));
     if kind != 3: Rectangle {
         width: 4px;
         height: 4px;
@@ -840,14 +961,18 @@ component NavHeading inherits Text {
     vertical-alignment: bottom;
 }
 
+
 component Browser inherits Rectangle {
     in-out property <int> category: 3;
     in-out property <int> picked: -1;
-    // The studio's devices, from the app: instruments, audio effects, and
-    // the All list.
+    // The studio's devices, from the app: instruments, audio effects, MIDI
+    // effects, and the All list.
     in property <[BrowserItem]> instruments;
     in property <[BrowserItem]> effects;
+    in property <[BrowserItem]> midi-effects;
     in property <[BrowserItem]> all;
+    // Audio files, played on a Simpler when dropped on a track.
+    in property <[BrowserItem]> samples;
     property <[string]> categories: [
         "Favorites", "Effects", "Instruments",
         "All", "Sounds", "Drums", "Instruments", "Audio Effects", "MIDI Effects", "Plug-ins", "Clips", "Samples",
@@ -865,12 +990,6 @@ component Browser inherits Rectangle {
         { name: "Bass · Mono saw", kind: 0, detail: "preset" },
         { name: "Pad · Warm chords", kind: 0, detail: "preset" },
         { name: "Lead · Pluck", kind: 0, detail: "preset" },
-    ];
-    property <[BrowserItem]> midi-effects: [
-        { name: "Arpeggiator", kind: 2 },
-        { name: "Scale", kind: 2 },
-        { name: "Chord", kind: 2 },
-        { name: "Pitch", kind: 2 },
     ];
     property <[BrowserItem]> plugins: [
         { name: "CLAP", kind: 3 },
@@ -894,6 +1013,7 @@ component Browser inherits Rectangle {
         : category == 9 ? plugins
         : category == 10 ? clips
         : category == 3 ? all
+        : category == 11 ? samples
         : empty;
     background: Theme.panel;
 
@@ -1004,7 +1124,7 @@ component Browser inherits Rectangle {
                     }
                 }
                 if items.length == 0: Text {
-                    text: category == 11 ? "Add a folder to see its samples" : "Nothing here yet";
+                    text: category == 11 ? "No samples in the set's folder or Music/openDJ/Samples" : "Nothing here yet";
                     color: Theme.faint;
                     font-size: 11px;
                     vertical-alignment: top;
@@ -1046,17 +1166,30 @@ component Device inherits Rectangle {
     // Its place in the chain before it (as a drop target) and after it.
     in property <int> place-before: -1;
     in property <int> place-after: -1;
+    // Inside a rack: the rack's place and the chain (`index` and the
+    // places count along the chain).
+    in property <int> rack: -1;
+    in property <int> chain: -1;
+    // A rack's Map button, and whether map mode is on.
+    in property <bool> can-map;
+    in property <bool> mapping;
+    callback map-clicked();
     callback removed();
     property <bool> over: Drag.active && self.place-before >= 0
         && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width + 3px
         && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
     property <bool> left-half: Drag.x < self.absolute-position.x + self.width / 2;
     property <int> drop-place: !over ? -1 : left-half ? place-before : place-after;
+    property <int> id: (chain >= 0 ? 6000 : 2000) + index;
     changed drop-place => {
-        Drag.target(2000 + self.index, self.drop-place >= 0, self.track, self.drop-place);
+        if self.chain >= 0 {
+            Drag.target-in(self.id, self.drop-place >= 0, self.track, self.rack, self.chain, self.drop-place);
+        } else {
+            Drag.target(self.id, self.drop-place >= 0, self.track, self.drop-place);
+        }
     }
     // Where it would land: a line on that side.
-    if over && Drag.owner == 2000 + root.index: Rectangle {
+    if over && Drag.owner == root.id: Rectangle {
         x: root.left-half ? -4px : root.width + 1px;
         width: 3px;
         height: root.height;
@@ -1092,7 +1225,24 @@ component Device inherits Rectangle {
                 DragSource {
                     enabled-drag: root.track >= 0 && root.index >= 0;
                     clicked => { root.opened(); }
-                    begin => { Drag.start-from-chain(root.title, root.kind, root.track, root.index); }
+                    begin => {
+                        if root.chain >= 0 {
+                            Drag.start-from-rack(root.title, root.kind, root.track, root.rack, root.chain, root.index);
+                        } else {
+                            Drag.start-from-chain(root.title, root.kind, root.track, root.index);
+                        }
+                    }
+                }
+            }
+            if root.can-map: VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 34px;
+                    height: 15px;
+                    border-radius: 2px;
+                    background: root.mapping ? Theme.accent : map-area.has-hover ? Theme.line : Theme.bg;
+                    Text { text: "Map"; color: root.mapping ? Theme.bg : Theme.text; font-size: 10px; font-weight: root.mapping ? 700 : 400; }
+                    map-area := TouchArea { clicked => { root.map-clicked(); } }
                 }
             }
             if root.index >= 0: Text {
@@ -1175,8 +1325,12 @@ component Graph inherits Rectangle {
 component KnobPanel inherits HorizontalLayout {
     in property <DeviceData> d;
     in property <color> tint;
+    // Map mode, and the knob picked (the macro being mapped), -1 for none.
+    in property <bool> mapping;
+    in property <int> picked: -1;
     callback param(int, float);
     callback click(int);
+    callback pressed(int);
     padding: 8px;
     spacing: 8px;
     if d.switches.length > 0: VerticalLayout {
@@ -1204,7 +1358,11 @@ component KnobPanel inherits HorizontalLayout {
                 value: k.value;
                 bipolar: k.bipolar;
                 tint: root.tint;
+                mapping: root.mapping;
+                badge: k.mapped;
+                picked: root.picked == k.index;
                 changed(v) => { root.param(k.index, v); }
+                pressed => { root.pressed(k.index); }
             }
         }
     }
@@ -1346,6 +1504,266 @@ component Eq8Panel inherits HorizontalLayout {
     }
 }
 
+// A device in a track's chain: its panel, dragged by its title, dropped
+// on to place another before or after it.
+component DrumPad inherits Rectangle {
+    in property <string> label;
+    in property <int> pitch;
+    in property <color> tint;
+    callback note(int, float);
+    border-radius: 2px;
+    background: ta.pressed ? tint : tint.with-alpha(ta.has-hover ? 0.32 : 0.2);
+    Text { text: label; color: Theme.text; font-size: 10px; }
+    ta := TouchArea {
+        pointer-event(e) => {
+            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                root.note(root.pitch, 0.9);
+            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                root.note(root.pitch, 0);
+            }
+        }
+    }
+}
+
+// A rack's chains: name, zone, volume, and On / Solo. A click opens a
+// chain; a device dropped on the list starts a new one.
+component RackChains inherits VerticalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    in property <int> track-index;
+    in property <int> at;
+    callback param(int, float);
+    callback select(int);
+    callback remove(int);
+    width: 190px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    spacing: 2px;
+    for c[b] in d.chains: Rectangle {
+        height: 20px;
+        border-radius: 2px;
+        background: b == d.open-chain ? root.tint.with-alpha(0.3) : row-area.has-hover ? Theme.slot : Theme.bg;
+        row-area := TouchArea { clicked => { root.select(b); } }
+        HorizontalLayout {
+            padding-left: 6px;
+            padding-right: 3px;
+            spacing: 4px;
+            Text { text: c.name; color: c.on ? Theme.text : Theme.faint; font-size: 11px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+            Text { text: c.zone; color: Theme.faint; font-size: 10px; vertical-alignment: center; }
+            Text { text: c.volume; color: Theme.dim; font-size: 10px; vertical-alignment: center; width: 44px; horizontal-alignment: right; }
+            Rectangle {
+                width: 16px;
+                height: 14px;
+                y: 3px;
+                border-radius: 2px;
+                background: c.on ? root.tint : Theme.slot;
+                Text { text: "●"; color: c.on ? Theme.bg : Theme.faint; font-size: 7px; }
+                TouchArea { clicked => { root.param(c.index + 2, c.on ? 0 : 1); } }
+            }
+            Rectangle {
+                width: 16px;
+                height: 14px;
+                y: 3px;
+                border-radius: 2px;
+                background: c.solo ? #5aa9e6 : Theme.slot;
+                Text { text: "S"; color: c.solo ? Theme.bg : Theme.faint; font-size: 9px; }
+                TouchArea { clicked => { root.param(c.index + 3, c.solo ? 0 : 1); } }
+            }
+            Text {
+                text: "×";
+                width: 10px;
+                color: x-area.has-hover ? Theme.text : Theme.faint;
+                font-size: 12px;
+                vertical-alignment: center;
+                x-area := TouchArea { clicked => { root.remove(b); } }
+            }
+        }
+    }
+    // Where a device dropped makes a new chain.
+    new-chain := Rectangle {
+        vertical-stretch: 1;
+        min-height: 22px;
+        border-radius: 2px;
+        property <bool> over: Drag.active
+            && Drag.x >= self.absolute-position.x && Drag.x < self.absolute-position.x + self.width
+            && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
+        property <bool> hot: self.over && Drag.owner == 7000 + root.at;
+        changed over => { Drag.target-in(7000 + root.at, self.over, root.track-index, root.at, -2, -1); }
+        border-width: 1px;
+        border-color: self.hot ? Theme.accent : Drag.active ? Theme.line : transparent;
+        background: self.hot ? Theme.accent.with-alpha(0.08) : transparent;
+        Text {
+            text: d.chains.length == 0 ? "Drop a device here to make a chain" : Drag.active ? "Drop here for a new chain" : "";
+            color: Theme.faint;
+            font-size: 10px;
+            wrap: word-wrap;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+// A Drum Rack's sixteen pads, laid out as Push plays them; a sample
+// dropped on a pad goes onto it.
+component RackPads inherits Rectangle {
+    in property <DeviceData> d;
+    in property <color> tint;
+    in property <int> track-index;
+    in property <int> at;
+    callback note(int, float);
+    callback select(int);
+    width: 4 * 42px;
+    for p[i] in d.pads: pad := Rectangle {
+        // The bottom row is the first four notes.
+        x: mod(i, 4) * 42px;
+        y: (3 - floor(i / 4)) * 40px + 6px;
+        width: 39px;
+        height: 37px;
+        property <bool> over: Drag.active && Drag.kind == 5
+            && Drag.x >= self.absolute-position.x && Drag.x < self.absolute-position.x + self.width
+            && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
+        changed over => { Drag.target-pad(5000 + p.note, self.over, root.track-index, root.at, p.note); }
+        DrumPad {
+            label: p.name;
+            pitch: p.note;
+            tint: p.filled ? root.tint : Theme.faint;
+            note(k, v) => {
+                root.note(k, v);
+                if v > 0 && p.chain >= 0 {
+                    root.select(p.chain);
+                }
+            }
+        }
+        if p.chain >= 0 && p.chain == d.open-chain: Rectangle {
+            border-radius: 2px;
+            border-width: 1px;
+            border-color: Theme.text;
+        }
+        if pad.over: Rectangle {
+            border-radius: 2px;
+            border-width: 2px;
+            border-color: Theme.accent;
+        }
+    }
+}
+
+component ChainDevice inherits Device {
+    in property <DeviceData> d;
+    in property <int> track-index;
+    // Its place in the chain.
+    in property <int> at;
+    in property <color> track-color;
+    callback remove-device(int, int);
+    callback toggle-device(int, int, bool);
+    callback open-device(int, int);
+    callback device-param(int, int, int, float);
+    callback device-click(int, int, int);
+    callback device-drag(int, int, int, float, float);
+    // A Drum Rack pad was played.
+    callback pad-note(int, float);
+    // A rack: a chain opened or removed, map mode switched, a macro picked.
+    callback select-chain(int, int, int);
+    callback remove-chain(int, int, int);
+    callback toggle-map(int, int);
+    callback pick-macro(int, int, int);
+    // A knob inside a rack picked in map mode (its setting on the rack).
+    callback map-knob(int, int, int);
+    // A device inside a rack (`inner-at` in chain `inner-chain`; `at` is
+    // the rack's place, so its settings go to the rack).
+    in property <int> inner-at: -1;
+    in property <int> inner-chain: -1;
+    // Map mode is on for the rack it is in.
+    in property <bool> inner-mapping;
+    callback remove-inner(int, int, int, int);
+
+    width: d.builtin ? d.panel-width * 1px : 150px;
+    title: d.name;
+    on: d.on;
+    track: track-index;
+    index: inner-at >= 0 ? inner-at : at;
+    rack: inner-at >= 0 ? at : -1;
+    chain: inner-chain;
+    kind: d.instrument ? 0 : d.midi ? 2 : 1;
+    place-before: self.index;
+    place-after: self.index + 1;
+    can-map: d.rack > 0;
+    mapping: d.mapping >= 0;
+    map-clicked => { root.toggle-map(track-index, at); }
+    removed => {
+        if inner-at >= 0 {
+            root.remove-inner(track-index, at, inner-chain, inner-at);
+        } else {
+            root.remove-device(track-index, at);
+        }
+    }
+    tint: d.instrument ? track-color : d.midi ? Theme.midi-fx : d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
+    toggled(v) => {
+        if inner-at >= 0 {
+            root.device-param(track-index, at, d.on-index, v ? 1 : 0);
+        } else {
+            root.toggle-device(track-index, at, v);
+        }
+    }
+    opened => { root.open-device(track-index, at); }
+    if d.rack > 0: HorizontalLayout {
+        padding-left: 8px;
+        spacing: 4px;
+        if d.rack == 3: RackPads {
+            d: d;
+            tint: root.track-color;
+            track-index: root.track-index;
+            at: root.at;
+            note(p, v) => { root.pad-note(p, v); }
+            select(b) => { root.select-chain(track-index, at, b); }
+        }
+        if d.rack != 3: RackChains {
+            d: d;
+            tint: d.rack == 2 ? root.track-color : Theme.effect;
+            track-index: root.track-index;
+            at: root.at;
+            param(k, v) => { root.device-param(track-index, at, k, v); }
+            select(b) => { root.select-chain(track-index, at, b); }
+            remove(b) => { root.remove-chain(track-index, at, b); }
+        }
+        KnobPanel {
+            d: d;
+            tint: d.rack == 1 ? Theme.effect : root.track-color;
+            mapping: d.mapping >= 0;
+            picked: d.mapping;
+            param(k, v) => { root.device-param(track-index, at, k, v); }
+            click(k) => { root.device-click(track-index, at, k); }
+            pressed(k) => { root.pick-macro(track-index, at, k); }
+        }
+    }
+    if d.builtin && !d.eq && d.rack == 0: KnobPanel {
+        d: d;
+        tint: d.midi ? Theme.midi-fx : Theme.effect;
+        mapping: root.inner-mapping;
+        param(k, v) => { root.device-param(track-index, at, k, v); }
+        click(k) => { root.device-click(track-index, at, k); }
+        pressed(k) => { root.map-knob(track-index, at, k); }
+    }
+    if d.eq: Eq8Panel {
+        d: d;
+        tint: d.midi ? Theme.midi-fx : Theme.effect;
+        param(k, v) => { root.device-param(track-index, at, k, v); }
+        click(k) => { root.device-click(track-index, at, k); }
+        drag(b, x, y) => { root.device-drag(track-index, at, b, x, y); }
+    }
+    if !d.builtin: VerticalLayout {
+        padding: 10px;
+        spacing: 6px;
+        Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
+        Text { text: d.note; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
+        if d.can-open: Rectangle {
+            height: 22px;
+            border-radius: 3px;
+            background: open-area.has-hover ? Theme.line : Theme.bg;
+            Text { text: "Open window"; color: Theme.text; font-size: 11px; }
+            open-area := TouchArea { clicked => { root.open-device(track-index, at); } }
+        }
+    }
+}
+
 component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> value;
@@ -1446,24 +1864,6 @@ component ParamKnobs inherits VerticalLayout {
     }
 }
 
-component DrumPad inherits Rectangle {
-    in property <string> label;
-    in property <int> pitch;
-    in property <color> tint;
-    callback note(int, float);
-    border-radius: 2px;
-    background: ta.pressed ? tint : tint.with-alpha(ta.has-hover ? 0.32 : 0.2);
-    Text { text: label; color: Theme.text; font-size: 10px; }
-    ta := TouchArea {
-        pointer-event(e) => {
-            if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
-                root.note(root.pitch, 0.9);
-            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
-                root.note(root.pitch, 0);
-            }
-        }
-    }
-}
 
 // One setting: its name on the left, its menu on the right.
 component SettingRow inherits HorizontalLayout {
@@ -1674,10 +2074,21 @@ export component AppWindow inherits Window {
     callback settings-pick(int, int);
     // A device's × was clicked (track, place in its chain).
     callback remove-device(int, int);
+    // A rack (track, its place): a chain opened or removed, map mode
+    // switched, a macro picked, a knob inside picked to map (its setting
+    // on the rack), a device inside removed (chain, place).
+    callback select-chain(int, int, int);
+    callback remove-chain(int, int, int);
+    callback toggle-map(int, int);
+    callback pick-macro(int, int, int);
+    callback map-knob(int, int, int);
+    callback remove-inner(int, int, int, int);
     // The browser's devices.
     in property <[BrowserItem]> browser-instruments;
     in property <[BrowserItem]> browser-effects;
+    in property <[BrowserItem]> browser-midi-effects;
     in property <[BrowserItem]> browser-all;
+    in property <[BrowserItem]> browser-samples;
 
     property <TrackData> track: tracks[selected-track];
     property <bool> has-clip: selected-scene >= 0
@@ -1756,7 +2167,9 @@ export component AppWindow inherits Window {
                 width: 310px;
                 instruments: root.browser-instruments;
                 effects: root.browser-effects;
+                midi-effects: root.browser-midi-effects;
                 all: root.browser-all;
+                samples: root.browser-samples;
             }
             Rectangle { width: 1px; background: Theme.line; }
 
@@ -2060,7 +2473,22 @@ export component AppWindow inherits Window {
                                 Text { text: track.audio-from == "No Input" ? "Recordings play from the clips." : (track.monitor == 0 ? "Plays what comes in; its clips are quiet (Monitor In)." : track.monitor == 1 ? "Plays what comes in when armed and no clip plays (Monitor Auto)." : "Plays its clips only (Monitor Off)."); color: Theme.dim; font-size: 11px; wrap: word-wrap; }
                             }
                         }
-                        if track.drums: Device {
+                        // MIDI effects come first: they change the notes the
+                        // instrument plays.
+                        for d[i] in track.midi-chain: ChainDevice {
+                            d: d;
+                            at: i;
+                            track-index: selected-track;
+                            track-color: track.color;
+                            remove-device(t, k) => { root.remove-device(t, k); }
+                            toggle-device(t, k, v) => { root.toggle-device(t, k, v); }
+                            open-device(t, k) => { root.open-device(t, k); }
+                            device-param(t, k, p, v) => { root.device-param(t, k, p, v); }
+                            device-click(t, k, p) => { root.device-click(t, k, p); }
+                            device-drag(t, k, b, x, y) => { root.device-drag(t, k, b, x, y); }
+                            pad-note(p, v) => { root.play-note(selected-track, p, v); }
+                        }
+                        if track.drums && !track.plugin-instrument: Device {
                             width: 480px;
                             title: track.device;
                             tint: track.color;
@@ -2113,45 +2541,72 @@ export component AppWindow inherits Window {
                                 }
                             }
                         }
-                        // A set's own devices: plug-ins run, Live's own are
-                        // listed until they have built-in matches.
-                        for d[i] in track.chain: Device {
-                            width: d.builtin ? d.panel-width * 1px : 150px;
-                            title: d.name;
-                            on: d.on;
-                            track: selected-track;
-                            index: i;
-                            kind: d.instrument ? 0 : 1;
-                            place-before: i;
-                            place-after: i + 1;
-                            removed => { root.remove-device(selected-track, i); }
-                            tint: d.instrument ? track.color : d.builtin ? Theme.effect : d.kind == "Live" ? Theme.faint : Theme.effect;
-                            toggled(v) => { root.toggle-device(selected-track, i, v); }
-                            opened => { root.open-device(selected-track, i); }
-                            if d.builtin && !d.eq: KnobPanel {
+                        // A set's own devices after the instrument: plug-ins
+                        // run, Live's own are listed until they have built-in
+                        // matches.
+                        for d[i] in track.chain: HorizontalLayout {
+                            spacing: 6px;
+                            ChainDevice {
                                 d: d;
-                                tint: Theme.effect;
-                                param(k, v) => { root.device-param(selected-track, i, k, v); }
-                                click(k) => { root.device-click(selected-track, i, k); }
+                                at: track.midi-count + i;
+                                track-index: selected-track;
+                                track-color: track.color;
+                                remove-device(t, k) => { root.remove-device(t, k); }
+                                toggle-device(t, k, v) => { root.toggle-device(t, k, v); }
+                                open-device(t, k) => { root.open-device(t, k); }
+                                device-param(t, k, p, v) => { root.device-param(t, k, p, v); }
+                                device-click(t, k, p) => { root.device-click(t, k, p); }
+                                device-drag(t, k, b, x, y) => { root.device-drag(t, k, b, x, y); }
+                                pad-note(p, v) => { root.play-note(selected-track, p, v); }
+                                select-chain(t, k, b) => { root.select-chain(t, k, b); }
+                                remove-chain(t, k, b) => { root.remove-chain(t, k, b); }
+                                toggle-map(t, k) => { root.toggle-map(t, k); }
+                                pick-macro(t, k, m) => { root.pick-macro(t, k, m); }
                             }
-                            if d.eq: Eq8Panel {
-                                d: d;
-                                tint: Theme.effect;
-                                param(k, v) => { root.device-param(selected-track, i, k, v); }
-                                click(k) => { root.device-click(selected-track, i, k); }
-                                drag(b, x, y) => { root.device-drag(selected-track, i, b, x, y); }
-                            }
-                            if !d.builtin: VerticalLayout {
-                                padding: 10px;
-                                spacing: 6px;
-                                Text { text: d.kind; color: Theme.text; font-size: 12px; font-weight: 700; }
-                                Text { text: d.note; color: Theme.dim; font-size: 11px; wrap: word-wrap; }
-                                if d.can-open: Rectangle {
-                                    height: 22px;
-                                    border-radius: 3px;
-                                    background: open-area.has-hover ? Theme.line : Theme.bg;
-                                    Text { text: "Open window"; color: Theme.text; font-size: 11px; }
-                                    open-area := TouchArea { clicked => { root.open-device(selected-track, i); } }
+                            // The open chain's devices, framed in the rack's
+                            // colour, then a place to drop more.
+                            if track.rack-at == track.midi-count + i: Rectangle {
+                                border-radius: 3px;
+                                border-width: 1px;
+                                border-color: (d.rack == 1 ? Theme.effect : track.color).with-alpha(0.6);
+                                background: (d.rack == 1 ? Theme.effect : track.color).with-alpha(0.05);
+                                HorizontalLayout {
+                                    padding-left: 3px;
+                                    padding-right: 3px;
+                                    spacing: 4px;
+                                    for e[k] in track.inner: ChainDevice {
+                                        d: e;
+                                        at: track.rack-at;
+                                        inner-at: k;
+                                        inner-chain: track.rack-chain;
+                                        inner-mapping: d.mapping >= 0;
+                                        track-index: selected-track;
+                                        track-color: track.color;
+                                        device-param(t, a, p, v) => { root.device-param(t, a, p, v); }
+                                        device-click(t, a, p) => { root.device-click(t, a, p); }
+                                        map-knob(t, a, p) => { root.map-knob(t, a, p); }
+                                        remove-inner(t, a, b, x) => { root.remove-inner(t, a, b, x); }
+                                    }
+                                    inner-end := Rectangle {
+                                        width: 96px;
+                                        border-radius: 3px;
+                                        border-width: self.hot ? 2px : 1px;
+                                        border-color: self.hot ? Theme.accent : Theme.line;
+                                        background: self.hot ? Theme.accent.with-alpha(0.08) : transparent;
+                                        property <bool> over: Drag.active
+                                            && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width
+                                            && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
+                                        property <bool> hot: self.over && Drag.owner == 7500;
+                                        changed over => { Drag.target-in(7500, self.over, selected-track, track.rack-at, track.rack-chain, track.inner.length); }
+                                        Text {
+                                            width: parent.width - 8px;
+                                            text: track.chain-name + "\n\n+\nDrop a device into this chain";
+                                            color: Theme.faint;
+                                            font-size: 10px;
+                                            wrap: word-wrap;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2165,7 +2620,7 @@ export component AppWindow inherits Window {
                                 && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width
                                 && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
                             property <bool> hot: self.over && Drag.owner == 3000;
-                            changed over => { Drag.target(3000, self.over, selected-track, track.chain.length); }
+                            changed over => { Drag.target(3000, self.over, selected-track, track.midi-count + track.chain.length); }
                             Text {
                                 text: "+\nDrop an effect here";
                                 color: Theme.faint;
@@ -2210,7 +2665,7 @@ export component AppWindow inherits Window {
         width: ghost.preferred-width + 20px;
         height: 24px;
         border-radius: 3px;
-        background: Drag.kind == 0 ? Theme.accent : Theme.effect;
+        background: Drag.kind == 0 || Drag.kind == 5 ? Theme.accent : (Drag.kind == 2 ? Theme.midi-fx : Theme.effect);
         drop-shadow-blur: 8px;
         drop-shadow-color: #00000080;
         ghost := Text {

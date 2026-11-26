@@ -6,6 +6,10 @@
 /*      Copyright (C) 2020, Be <be@mixxx.org>                   */
 /*      Copyright (C) 2017, z411 <z411@omaera.org>              */
 /*      but feel free to tweak this to your heart's content!    */
+/*                                                              */
+/*      Changed for openDJ: RESET resets the tempo (openDJ has  */
+/*      no intro/outro cues), SHIFT + LOAD ejects (no deck      */
+/*      cloning), push and turn GAIN picks the quick effect.    */
 /****************************************************************/
 
 // ==== Friendly User Configuration ====
@@ -67,7 +71,7 @@ class DeckClass {
         this.registerButton("!loop_in", config.loopIn, this.loopInButton);
         this.registerButton("!loop_out", config.loopOut, this.loopOutButton);
         this.registerButton("!samples_button", config.samples, this.samplerModeButton);
-        this.registerButton("!reset_button", config.reset, this.introOutroModeButton);
+        this.registerButton("!reset_button", config.reset, this.resetButton);
         this.registerButton("!left_encoder_press", config.leftEncoderPress, this.leftEncoderPress);
         this.registerButton("!right_encoder_press", config.rightEncoderPress, this.rightEncoderPress);
         this.registerButton("!load_track", config.loadTrack, this.loadTrackButton);
@@ -244,26 +248,21 @@ class DeckClass {
         const padMode = this.currentPadMode;
         if (padMode !== padModes.sampler) {
             this.setPadMode(padModes.sampler);
-            this.controller.setOutput(this.channel, "!samples_button", ButtonBrightnessOn, false);
-            this.controller.setOutput(this.channel, "!reset_button", ButtonBrightnessOff, !this.parent.batchingLEDUpdate);
+            this.controller.setOutput(this.channel, "!samples_button", ButtonBrightnessOn, !this.parent.batchingLEDUpdate);
         } else {
             this.setPadMode(padModes.hotcue);
             this.controller.setOutput(this.channel, "!samples_button", ButtonBrightnessOff, !this.parent.batchingLEDUpdate);
         }
     }
-    introOutroModeButton(field) {
-        if (field.value === 0) {
-            return;
+    // openDJ: RESET puts the tempo back to 0%, as its label says. It
+    // lights while held.
+    resetButton(field) {
+        if (field.value > 0) {
+            script.triggerControl(this.channel, "rate_set_default");
         }
-        const padMode = this.currentPadMode;
-        if (padMode !== padModes.introOutro) {
-            this.setPadMode(padModes.introOutro);
-            this.controller.setOutput(this.channel, "!reset_button", ButtonBrightnessOn, false);
-            this.controller.setOutput(this.channel, "!samples_button", ButtonBrightnessOff, !this.parent.batchingLEDUpdate);
-        } else {
-            this.setPadMode(padModes.hotcue);
-            this.controller.setOutput(this.channel, "!reset_button", ButtonBrightnessOff, !this.parent.batchingLEDUpdate);
-        }
+        this.controller.setOutput(this.channel, "!reset_button",
+            field.value > 0 ? ButtonBrightnessOn : ButtonBrightnessOff,
+            !this.parent.batchingLEDUpdate);
     }
     leftEncoderPress(field) {
         this.leftEncoderPressed = field.value > 0;
@@ -295,7 +294,10 @@ class DeckClass {
     }
     loadTrackButton(field) {
         if (this.shiftPressed) {
-            engine.setValue(this.channel, "CloneFromDeck", 0);
+            // openDJ has no deck cloning: SHIFT + LOAD ejects instead.
+            if (field.value > 0) {
+                script.triggerControl(this.channel, "eject");
+            }
         } else {
             engine.setValue(this.channel, "LoadSelectedTrack", field.value);
         }
@@ -369,7 +371,8 @@ class DeckClass {
         }
     }
     gainEncoderCallback(field) {
-        const delta = 0.03333 * this.gainEncoder.delta(field.value);
+        const steps = this.gainEncoder.delta(field.value);
+        const delta = 0.03333 * steps;
 
         if (this.shiftPressed) {
             const currentPregain = engine.getParameter(this.channel, "pregain");
@@ -377,10 +380,10 @@ class DeckClass {
         } else {
             const quickEffectGroup = "[QuickEffectRack1_" + this.channel + "]";
             if (this.gainEncoderPressed) {
-                if (delta === 1) {
-                    script.triggerControl(quickEffectGroup, "next_chain");
-                } else if (delta === -1) {
-                    script.triggerControl(quickEffectGroup, "prev_chain");
+                if (steps === 1) {
+                    script.triggerControl(quickEffectGroup, "next_chain_preset");
+                } else if (steps === -1) {
+                    script.triggerControl(quickEffectGroup, "prev_chain_preset");
                 }
             } else {
                 const currentQuickEffectSuperKnob = engine.getParameter(quickEffectGroup, "super1");

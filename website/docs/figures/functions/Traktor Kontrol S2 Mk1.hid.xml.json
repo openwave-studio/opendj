@@ -1,0 +1,561 @@
+{
+  "file": "Traktor Kontrol S2 Mk1.hid.xml",
+  "parts": {
+    "browse": {
+      "Push": [
+        "Open the selected item"
+      ],
+      "SHIFT": [
+        "Scroll a page"
+      ],
+      "SHIFT + push": [
+        "Move between panes"
+      ],
+      "normal": [
+        "Scroll the list"
+      ]
+    },
+    "crossfader": {
+      "normal": [
+        "Crossfader"
+      ]
+    },
+    "hp-mix": {
+      "normal": [
+        "Headphone cue / main mix (front panel)"
+      ]
+    },
+    "l-cue": {
+      "SHIFT": [
+        "Stop and go back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "l-fx-btn1": {
+      "SHIFT": [
+        "FX 1 Load effect chain preset 2"
+      ],
+      "normal": [
+        "FX 1 Effect 1 on or off (focused: button 1)"
+      ]
+    },
+    "l-fx-btn2": {
+      "SHIFT": [
+        "FX 1 Load effect chain preset 3"
+      ],
+      "normal": [
+        "FX 1 Effect 2 on or off (focused: button 2)"
+      ]
+    },
+    "l-fx-btn3": {
+      "SHIFT": [
+        "FX 1 Load effect chain preset 4"
+      ],
+      "normal": [
+        "FX 1 Effect 3 on or off (focused: button 3)"
+      ]
+    },
+    "l-fx-focus": {
+      "SHIFT": [
+        "FX 1 Load effect chain preset 1"
+      ],
+      "normal": [
+        "FX 1 Show the effects (hold, then press 1-3: focus one)"
+      ]
+    },
+    "l-fx-knob1": {
+      "normal": [
+        "FX 1 Effect 1 amount (focused: parameter 1)"
+      ]
+    },
+    "l-fx-knob2": {
+      "normal": [
+        "FX 1 Effect 2 amount (focused: parameter 2)"
+      ]
+    },
+    "l-fx-knob3": {
+      "normal": [
+        "FX 1 Effect 3 amount (focused: parameter 3)"
+      ]
+    },
+    "l-fx-mix": {
+      "normal": [
+        "FX 1 Dry / wet"
+      ]
+    },
+    "l-fx1": {
+      "normal": [
+        "Send to effect unit 1"
+      ]
+    },
+    "l-fx2": {
+      "normal": [
+        "Send to effect unit 2"
+      ]
+    },
+    "l-gain": {
+      "Push": [
+        "Reset the filter"
+      ],
+      "Push + turn": [
+        "Choose the quick effect"
+      ],
+      "SHIFT": [
+        "Gain"
+      ],
+      "SHIFT + push": [
+        "Reset the gain"
+      ],
+      "normal": [
+        "Filter (the deck's quick effect)"
+      ]
+    },
+    "l-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "l-in": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "l-jog": {
+      "SHIFT": [
+        "Scratch ten times as fast"
+      ],
+      "normal": [
+        "Scratch (press the top) / bend (edge)"
+      ]
+    },
+    "l-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "l-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "l-move": {
+      "Push": [
+        "Beat jump size"
+      ],
+      "SHIFT": [
+        "Key down / up"
+      ],
+      "SHIFT + push": [
+        "Reset key"
+      ],
+      "normal": [
+        "Beat jump back / forward"
+      ]
+    },
+    "l-out": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "l-pad1": {
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "Samples": [
+        "Play sampler 1 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 1 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "l-pad2": {
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "Samples": [
+        "Play sampler 2 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 2 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "l-pad3": {
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "Samples": [
+        "Play sampler 3 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 3 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "l-pad4": {
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "Samples": [
+        "Play sampler 4 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 4 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "l-pfl": {
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "l-play": {
+      "SHIFT": [
+        "Key lock"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "l-reset": {
+      "normal": [
+        "Reset tempo"
+      ]
+    },
+    "l-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "l-size": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Beat jump 1 beat back / forward"
+      ],
+      "SHIFT + push": [
+        "Reloop (on a loop: jump to it and stop)"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "l-sync": {
+      "SHIFT": [
+        "Sync lock on or off"
+      ],
+      "normal": [
+        "Sync (hold: sync lock)"
+      ]
+    },
+    "l-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "l-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "load-a": {
+      "SHIFT": [
+        "Eject"
+      ],
+      "normal": [
+        "Load the selected track"
+      ]
+    },
+    "load-b": {
+      "SHIFT": [
+        "Eject"
+      ],
+      "normal": [
+        "Load the selected track"
+      ]
+    },
+    "master": {
+      "normal": [
+        "Main level (on the device)"
+      ]
+    },
+    "r-cue": {
+      "SHIFT": [
+        "Stop and go back to the start"
+      ],
+      "normal": [
+        "Cue"
+      ]
+    },
+    "r-fx-btn1": {
+      "SHIFT": [
+        "FX 2 Load effect chain preset 2"
+      ],
+      "normal": [
+        "FX 2 Effect 1 on or off (focused: button 1)"
+      ]
+    },
+    "r-fx-btn2": {
+      "SHIFT": [
+        "FX 2 Load effect chain preset 3"
+      ],
+      "normal": [
+        "FX 2 Effect 2 on or off (focused: button 2)"
+      ]
+    },
+    "r-fx-btn3": {
+      "SHIFT": [
+        "FX 2 Load effect chain preset 4"
+      ],
+      "normal": [
+        "FX 2 Effect 3 on or off (focused: button 3)"
+      ]
+    },
+    "r-fx-focus": {
+      "SHIFT": [
+        "FX 2 Load effect chain preset 1"
+      ],
+      "normal": [
+        "FX 2 Show the effects (hold, then press 1-3: focus one)"
+      ]
+    },
+    "r-fx-knob1": {
+      "normal": [
+        "FX 2 Effect 1 amount (focused: parameter 1)"
+      ]
+    },
+    "r-fx-knob2": {
+      "normal": [
+        "FX 2 Effect 2 amount (focused: parameter 2)"
+      ]
+    },
+    "r-fx-knob3": {
+      "normal": [
+        "FX 2 Effect 3 amount (focused: parameter 3)"
+      ]
+    },
+    "r-fx-mix": {
+      "normal": [
+        "FX 2 Dry / wet"
+      ]
+    },
+    "r-fx1": {
+      "normal": [
+        "Send to effect unit 1"
+      ]
+    },
+    "r-fx2": {
+      "normal": [
+        "Send to effect unit 2"
+      ]
+    },
+    "r-gain": {
+      "Push": [
+        "Reset the filter"
+      ],
+      "Push + turn": [
+        "Choose the quick effect"
+      ],
+      "SHIFT": [
+        "Gain"
+      ],
+      "SHIFT + push": [
+        "Reset the gain"
+      ],
+      "normal": [
+        "Filter (the deck's quick effect)"
+      ]
+    },
+    "r-hi": {
+      "normal": [
+        "EQ high"
+      ]
+    },
+    "r-in": {
+      "normal": [
+        "Loop in"
+      ]
+    },
+    "r-jog": {
+      "SHIFT": [
+        "Scratch ten times as fast"
+      ],
+      "normal": [
+        "Scratch (press the top) / bend (edge)"
+      ]
+    },
+    "r-low": {
+      "normal": [
+        "EQ low"
+      ]
+    },
+    "r-mid": {
+      "normal": [
+        "EQ mid"
+      ]
+    },
+    "r-move": {
+      "Push": [
+        "Beat jump size"
+      ],
+      "SHIFT": [
+        "Key down / up"
+      ],
+      "SHIFT + push": [
+        "Reset key"
+      ],
+      "normal": [
+        "Beat jump back / forward"
+      ]
+    },
+    "r-out": {
+      "normal": [
+        "Loop out"
+      ]
+    },
+    "r-pad1": {
+      "SHIFT": [
+        "Delete hot cue 1"
+      ],
+      "Samples": [
+        "Play sampler 5 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 5 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 1"
+      ]
+    },
+    "r-pad2": {
+      "SHIFT": [
+        "Delete hot cue 2"
+      ],
+      "Samples": [
+        "Play sampler 6 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 6 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 2"
+      ]
+    },
+    "r-pad3": {
+      "SHIFT": [
+        "Delete hot cue 3"
+      ],
+      "Samples": [
+        "Play sampler 7 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 7 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 3"
+      ]
+    },
+    "r-pad4": {
+      "SHIFT": [
+        "Delete hot cue 4"
+      ],
+      "Samples": [
+        "Play sampler 8 (empty: load)"
+      ],
+      "Samples + SHIFT": [
+        "Stop sampler 8 (stopped: eject)"
+      ],
+      "normal": [
+        "Hot cue 4"
+      ]
+    },
+    "r-pfl": {
+      "SHIFT": [
+        "Quantize"
+      ],
+      "normal": [
+        "Headphone cue"
+      ]
+    },
+    "r-play": {
+      "SHIFT": [
+        "Key lock"
+      ],
+      "normal": [
+        "Play / pause"
+      ]
+    },
+    "r-reset": {
+      "normal": [
+        "Reset tempo"
+      ]
+    },
+    "r-shift": {
+      "normal": [
+        "Shift"
+      ]
+    },
+    "r-size": {
+      "Push": [
+        "Loop on or off"
+      ],
+      "SHIFT": [
+        "Beat jump 1 beat back / forward"
+      ],
+      "SHIFT + push": [
+        "Reloop (on a loop: jump to it and stop)"
+      ],
+      "normal": [
+        "Loop size half / double"
+      ]
+    },
+    "r-sync": {
+      "SHIFT": [
+        "Sync lock on or off"
+      ],
+      "normal": [
+        "Sync (hold: sync lock)"
+      ]
+    },
+    "r-tempo": {
+      "normal": [
+        "Tempo"
+      ]
+    },
+    "r-volume": {
+      "normal": [
+        "Volume"
+      ]
+    },
+    "sample-level": {
+      "normal": [
+        "Samplers Sampler level"
+      ]
+    },
+    "samples-a": {
+      "normal": [
+        "Pads play samplers 1-4 (again: hot cues)"
+      ]
+    },
+    "samples-b": {
+      "normal": [
+        "Pads play samplers 5-8 (again: hot cues)"
+      ]
+    }
+  }
+}

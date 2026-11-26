@@ -94,6 +94,85 @@ fn peak(buf: &[[f32; 2]]) -> f32 {
 /// it's only a gain here, and checked like any other device.
 fn devices() -> Vec<(&'static str, Settings)> {
     catalog()
+        .into_iter()
+        .map(|(n, mut s)| {
+            fill(&mut s);
+            (n, s)
+        })
+        .collect()
+}
+
+/// A device from the catalog by name, fresh.
+fn fresh(name: &str) -> Settings {
+    catalog()
+        .into_iter()
+        .find(|(n, _)| *n == name)
+        .map(|(_, s)| s)
+        .expect(name)
+}
+
+fn info(name: &str, s: Settings) -> crate::clip::DeviceInfo {
+    crate::clip::DeviceInfo {
+        name: name.into(),
+        kind: "Built-in".into(),
+        on: true,
+        plugin: None,
+        builtin: Some(s),
+    }
+}
+
+/// Racks come empty from the catalog; checked with chains in them: an
+/// effect rack with a reverb, a delay into a saturator and a utility; an
+/// instrument rack split across the keys; a drum rack whose hats choke
+/// each other.
+fn fill(s: &mut Settings) {
+    use crate::rack::{Branch, Kind};
+    let Settings::Rack(r) = s else {
+        if let Settings::Simpler(x) = s {
+            x.sample = Some(test_sample());
+            x.path = Some("test.wav".into());
+        }
+        return;
+    };
+    let simpler = || {
+        let mut s = fresh("Simpler");
+        fill(&mut s);
+        info("Simpler", s)
+    };
+    match r.kind {
+        Kind::Audio => {
+            for chain in [vec!["Reverb"], vec!["Delay", "Saturator"], vec!["Utility"]] {
+                r.branches.push(Branch {
+                    devices: chain.into_iter().map(|n| info(n, fresh(n))).collect(),
+                    ..Default::default()
+                });
+            }
+        }
+        Kind::Instrument => {
+            for keys in [(0, 59), (60, 127), (48, 72)] {
+                let mut devices = vec![simpler(), info("Auto Filter", fresh("Auto Filter"))];
+                // The layer plays chords: a MIDI effect inside a chain.
+                if keys == (48, 72) {
+                    devices.insert(0, info("Chord", fresh("Chord")));
+                }
+                r.branches.push(Branch {
+                    devices,
+                    keys,
+                    ..Default::default()
+                });
+            }
+        }
+        Kind::Drum => {
+            for (note, choke) in [(36, 0), (38, 0), (42, 1), (46, 1), (48, 0), (50, 0)] {
+                r.branches.push(Branch {
+                    devices: vec![simpler()],
+                    note,
+                    choke,
+                    ..Default::default()
+                });
+            }
+        }
+    }
 }
 
 #[test]
@@ -199,6 +278,16 @@ fn neutral() -> Vec<(&'static str, Settings, f32)> {
             // Fresh Utility and EQ Eight (bands off) do nothing.
             Settings::Utility(_) | Settings::Eq8(_) | Settings::External(_) => {
                 list.push((name, s, 0.5))
+            }
+            // Empty, and with one chain that does nothing.
+            Settings::Rack(r) if !r.plays_notes() => {
+                list.push((name, s.clone(), 0.5));
+                let mut one = r.clone();
+                one.branches.push(crate::rack::Branch {
+                    devices: vec![info("Utility", fresh("Utility"))],
+                    ..Default::default()
+                });
+                list.push((name, Settings::Rack(one), 0.5));
             }
             // Below the ceiling.
             Settings::Limiter(_) => list.push((name, s, 0.25)),
@@ -317,6 +406,8 @@ fn budget(name: &str) -> f64 {
         // Its curve runs four times per frame per side.
         "Saturator" => 400.0,
         "Hybrid Reverb" => 600.0,
+        // Its chains (reverb, delay into saturator, utility) and the mix.
+        "Audio Effect Rack" => 900.0,
         _ => 100.0,
     }
 }
@@ -361,5 +452,224 @@ fn device_bench() {
     }
     if !cfg!(debug_assertions) {
         assert!(over.is_empty(), "over budget: {over:?}");
+    }
+}
+
+// Instruments: the built-in ones that play the track's notes.
+
+/// A one-second sample: a 220 Hz sine that starts and ends at full level,
+/// the worst case for clicks.
+fn test_sample() -> std::sync::Arc<opendj_engine::sampler::Sample> {
+    let frames: Vec<[f32; 2]> = (0..RATE as usize)
+        .map(|i| {
+            let v = (i as f32 * 220.0 * std::f32::consts::TAU / RATE as f32).cos() * 0.5;
+            [v, v]
+        })
+        .collect();
+    let audio = opendj_engine::track::Audio::from_frames(RATE as u32, frames);
+    std::sync::Arc::new(opendj_engine::sampler::Sample::from_audio(&audio, RATE))
+}
+
+fn instruments() -> Vec<(&'static str, Settings)> {
+    devices()
+        .into_iter()
+        .filter(|(_, s)| s.plays_notes())
+        .collect()
+}
+
+/// Blocks of chords: every block a new chord on top of the last, then the
+/// old one let go, so voices are stolen all the time.
+fn chords(block: usize) -> Vec<opendj_plugin_host::shm::Midi> {
+    use opendj_plugin_host::shm::Midi;
+    let base = 36 + (block * 7 % 48) as u8;
+    let old = 36 + ((block + 47) * 7 % 48) as u8;
+    let mut m = Vec::new();
+    for k in [0, 4, 7, 11, 14] {
+        m.push(Midi::note_off(0, 0, old + k));
+    }
+    for (i, k) in [0u8, 4, 7, 11, 14].iter().enumerate() {
+        m.push(Midi::note_on(i as u32 * 20, 0, base + k, 40 + i as u8 * 20));
+    }
+    m
+}
+
+#[test]
+fn no_instrument_allocates_while_it_plays_or_its_knobs_turn() {
+    for (name, s) in instruments() {
+        let mut d = Device::new(&s, RATE);
+        let params = s.params();
+        let mut buf = vec![[0.0f32; 2]; BLOCK];
+        d.play(&chords(0), &mut buf, 120.0);
+        let notes: Vec<_> = (0..40).map(chords).collect();
+        let before = allocations();
+        for n in &notes {
+            d.play(n, &mut buf, 120.0);
+        }
+        for (i, p) in params.iter().enumerate() {
+            for v in [p.min, p.max, (p.min + p.max) / 2.0] {
+                d.set(i, v);
+                d.play(&notes[i % notes.len()], &mut buf, 120.0);
+            }
+        }
+        let made = allocations() - before;
+        assert_eq!(made, 0, "{name} allocated {made} times on the audio thread");
+    }
+}
+
+#[test]
+fn every_instrument_stays_finite_and_falls_silent() {
+    opendj_engine::dsp::flush_denormals();
+    for (name, s) in instruments() {
+        let params = s.params();
+        let corners: Vec<Vec<f32>> = vec![
+            params.iter().map(|p| p.min).collect(),
+            params.iter().map(|p| p.max).collect(),
+            params.iter().map(|p| p.value).collect(),
+        ];
+        for values in corners {
+            let mut s = s.clone();
+            for (i, v) in values.iter().enumerate() {
+                s.set(i, *v);
+            }
+            let mut d = Device::new(&s, RATE);
+            let mut buf = vec![[0.0f32; 2]; BLOCK];
+            for b in 0..200 {
+                d.play(&chords(b), &mut buf, 120.0);
+                assert!(
+                    buf.iter().all(|f| f[0].is_finite() && f[1].is_finite()),
+                    "{name} {values:?} blew up"
+                );
+            }
+            // Everything off, then a minute for the longest release.
+            let off = [opendj_plugin_host::shm::Midi {
+                frame: 0,
+                data: [0xB0, 123, 0],
+            }];
+            d.play(&off, &mut buf, 120.0);
+            for _ in 0..(61.0 * RATE) as usize / BLOCK {
+                d.play(&[], &mut buf, 120.0);
+            }
+            for f in buf {
+                for v in f {
+                    assert!(v == 0.0 || v.is_normal(), "{name} left a denormal: {v:e}");
+                    assert!(v.abs() < 1e-4, "{name} {values:?} still sounds: {v}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn stolen_and_ended_notes_fade_instead_of_clicking() {
+    use opendj_plugin_host::shm::Midi;
+    for (name, mut s) in instruments() {
+        // Two voices, so every third note steals; a trimmed end. Inside
+        // racks too.
+        each_simpler(&mut s, &mut |x| {
+            x.voices = 2;
+            x.end = 0.3;
+            x.mode = 1;
+            x.attack_ms = 5.0;
+        });
+        let mut d = Device::new(&s, RATE);
+        let mut out = Vec::new();
+        let mut buf = vec![[0.0f32; 2]; BLOCK];
+        for b in 0..600 {
+            // Three notes close together (the third steals), then each
+            // plays on to its trimmed end.
+            let notes = match b % 100 {
+                // The third lands where the first is at its peak (five
+                // cycles in), the worst place to cut it.
+                0 | 4 => vec![Midi::note_on(0, 0, [60, 64][b % 100 / 4], 127)],
+                8 => vec![Midi::note_on(67, 0, 67, 127)],
+                _ => vec![],
+            };
+            d.play(&notes, &mut buf, 120.0);
+            out.extend_from_slice(&buf);
+        }
+        // A 220 Hz sine at its level moves at most this much per frame;
+        // a cut is a step up to the whole level.
+        let smooth = 0.5 * 2.0 * std::f32::consts::PI * 262.0 / RATE as f32 * 3.0;
+        let worst = steepest(&out);
+        assert!(
+            worst < smooth,
+            "{name} clicked: step {worst} (smooth {smooth})"
+        );
+    }
+}
+
+/// What each instrument may cost with eight notes held, filter on, ns per
+/// frame at 48 kHz in a release build.
+fn instrument_budget(name: &str) -> f64 {
+    match name {
+        "Simpler" => 250.0,
+        // Three Simplers with Auto Filters, overlapping zones.
+        "Instrument Rack" => 700.0,
+        "Drum Rack" => 300.0,
+        _ => 500.0,
+    }
+}
+
+#[test]
+#[ignore = "benchmark: run with --release -- --ignored --nocapture"]
+fn instrument_bench() {
+    use opendj_plugin_host::shm::Midi;
+    opendj_engine::dsp::flush_denormals();
+    println!();
+    println!("openDJ Studio instruments, 8 notes, 48 kHz stereo, ns per frame (budget)");
+    let mut over = Vec::new();
+    for (name, mut s) in instruments() {
+        if let Settings::Simpler(x) = &mut s {
+            x.looping = true;
+            x.filter = true;
+            x.cutoff = 2_000.0;
+        }
+        let mut d = Device::new(&s, RATE);
+        let chord: Vec<Midi> = [48u8, 52, 55, 59, 62, 64, 67, 71]
+            .iter()
+            .map(|&k| Midi::note_on(0, 0, k, 100))
+            .collect();
+        let mut buf = vec![[0.0f32; 2]; BLOCK];
+        d.play(&chord, &mut buf, 120.0);
+        let blocks = 5 * RATE as usize / BLOCK;
+        let ns = (0..3)
+            .map(|_| {
+                let start = Instant::now();
+                for _ in 0..blocks {
+                    d.play(&[], black_box(&mut buf), 120.0);
+                    black_box(&buf);
+                }
+                start.elapsed().as_nanos() as f64 / (blocks * BLOCK) as f64
+            })
+            .fold(f64::INFINITY, f64::min);
+        let b = instrument_budget(name);
+        println!(
+            "{name:<20}{ns:>8.1}{:>8.0}{:>9.2}% core{}",
+            b,
+            ns / (1e9 / RATE) * 100.0,
+            if ns > b { "  OVER" } else { "" }
+        );
+        if ns > b {
+            over.push(name);
+        }
+    }
+    if !cfg!(debug_assertions) {
+        assert!(over.is_empty(), "over budget: {over:?}");
+    }
+}
+
+fn each_simpler(s: &mut Settings, f: &mut dyn FnMut(&mut crate::simpler::SimplerSettings)) {
+    match s {
+        Settings::Simpler(x) => f(x),
+        Settings::Rack(r) => {
+            for b in r.branches.iter_mut() {
+                for d in b.devices.iter_mut() {
+                    if let Some(s) = d.builtin.as_mut() {
+                        each_simpler(s, f);
+                    }
+                }
+            }
+        }
+        _ => {}
     }
 }

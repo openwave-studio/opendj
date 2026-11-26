@@ -211,7 +211,8 @@ fn read(path: &Path, rate: f64) -> Result<Opened, String> {
     files.dedup();
     let missing = als::decode_audio(&mut set.tracks);
     let samples = als::load_kits(&mut set.tracks, rate);
-    let rooms = als::load_irs(&mut set.tracks, rate);
+    let mut rooms = als::load_irs(&mut set.tracks, rate);
+    rooms.extend(als::load_simplers(&mut set.tracks, rate));
     for m in missing.iter().chain(&samples).chain(&rooms) {
         eprintln!("not found: {m}");
     }

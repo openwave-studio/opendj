@@ -13,13 +13,16 @@
 
 // The engine's modules, under their old paths.
 pub use opendj_studio_engine::{
-    als, clip, control, conv, devices, engine, fx, link, plugins, scale, sound, steps,
+    als, clip, control, conv, devices, engine, fx, link, plugins, rack, scale, simpler, sound,
+    steps,
 };
 
 mod audio;
 mod check;
 mod midi;
 mod push;
+mod rack_ui;
+mod samples;
 mod settings;
 
 use std::cell::{Cell, RefCell};
@@ -135,6 +138,9 @@ struct Opened {
 
 fn open_set(path: &Path) -> Result<Opened, String> {
     let mut set = als::read(path)?;
+    if let Some(folder) = path.parent() {
+        let _ = samples::SET_FOLDER.set(folder.to_path_buf());
+    }
     let mut files: Vec<_> = set
         .tracks
         .iter()
@@ -189,14 +195,19 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
         format!("{note} · {} drum samples not found", missing.len())
     };
     // Hybrid Reverbs' rooms, from the Live that's installed.
-    let rooms = als::load_irs(&mut set, rate);
+    let mut rooms = als::load_irs(&mut set, rate);
     for m in &rooms {
         eprintln!("reverb room not found: {m}");
+    }
+    // Simplers' samples count with them: files the set needs.
+    for m in als::load_simplers(&mut set, rate) {
+        eprintln!("Simpler sample not found: {m}");
+        rooms.push(m);
     }
     let note = if rooms.is_empty() {
         note
     } else {
-        format!("{note} · {} reverb rooms not found", rooms.len())
+        format!("{note} · {} reverb rooms or samples not found", rooms.len())
     };
     let (mut studio, remote) = Studio::new(&set, rate, tempo);
     let mut link_clock = link::LinkClock::new(tempo, rate);
@@ -559,7 +570,7 @@ fn ui(
         let c = controls.clone();
         window.on_device_param(move |t, d, i, n| {
             let (t, d, i) = (t as usize, d as usize, i as usize);
-            if let Some(p) = c.builtin(t, d).and_then(|s| s.params().get(i).cloned()) {
+            if let Some(p) = c.builtin(t, d).and_then(|s| rack_ui::param(&s, i)) {
                 c.set_device_param(t, d, i, p.at_norm(n));
             }
         });
@@ -568,7 +579,7 @@ fn ui(
         let c = controls.clone();
         window.on_device_click(move |t, d, i| {
             let (t, d, i) = (t as usize, d as usize, i as usize);
-            if let Some(p) = c.builtin(t, d).and_then(|s| s.params().get(i).cloned()) {
+            if let Some(p) = c.builtin(t, d).and_then(|s| rack_ui::param(&s, i)) {
                 c.set_device_param(t, d, i, p.next());
             }
         });
@@ -602,14 +613,92 @@ fn ui(
     }
     // Devices: the browser's, dragged onto tracks; a track's, moved,
     // copied or removed.
-    let (instruments, effects, all) = browser_devices();
+    let (instruments, effects, midi, all) = browser_devices();
     window.set_browser_instruments(ModelRc::new(VecModel::from(instruments)));
     window.set_browser_effects(ModelRc::new(VecModel::from(effects)));
+    window.set_browser_midi_effects(ModelRc::new(VecModel::from(midi)));
     window.set_browser_all(ModelRc::new(VecModel::from(all)));
+    // Samples: found on their own thread, then listed.
+    let sample_files: Arc<Mutex<Vec<std::path::PathBuf>>> = Arc::default();
+    {
+        let (w, files) = (window.as_weak(), sample_files.clone());
+        let _ = std::thread::Builder::new()
+            .name("samples".into())
+            .spawn(move || {
+                let found = samples::scan(&samples::folders());
+                let _ = slint::invoke_from_event_loop(move || {
+                    let Some(w) = w.upgrade() else { return };
+                    let items: Vec<BrowserItem> = found
+                        .iter()
+                        .enumerate()
+                        .map(|(i, p)| BrowserItem {
+                            name: p
+                                .file_stem()
+                                .map(|n| n.to_string_lossy().to_string())
+                                .unwrap_or_default()
+                                .into(),
+                            kind: 5,
+                            detail: p
+                                .extension()
+                                .map(|e| e.to_string_lossy().to_lowercase())
+                                .unwrap_or_default()
+                                .into(),
+                            id: i as i32 + 1,
+                        })
+                        .collect();
+                    w.set_browser_samples(ModelRc::new(VecModel::from(items)));
+                    if let Ok(mut f) = files.lock() {
+                        *f = found;
+                    }
+                });
+            });
+    }
     {
         let p = plugins.clone();
         window.on_remove_device(move |t, d| {
             p.remove(t as usize, d as usize);
+        });
+    }
+    // Racks: chains opened, edited and mapped.
+    {
+        let c = controls.clone();
+        window.on_select_chain(move |t, a, b| {
+            rack_ui::select_chain(&c, t as usize, a as usize, b.max(0) as usize)
+        });
+    }
+    {
+        let (c, p) = (controls.clone(), plugins.clone());
+        window.on_remove_chain(move |t, a, b| {
+            rack_ui::remove_chain(&c, &p, t as usize, a as usize, b.max(0) as usize)
+        });
+    }
+    {
+        let (c, p) = (controls.clone(), plugins.clone());
+        window.on_remove_inner(move |t, a, b, d| {
+            rack_ui::remove_inner(
+                &c,
+                &p,
+                t as usize,
+                a as usize,
+                b.max(0) as usize,
+                d.max(0) as usize,
+            )
+        });
+    }
+    {
+        let c = controls.clone();
+        window.on_toggle_map(move |t, a| rack_ui::toggle_map(&c, t as usize, a as usize));
+    }
+    {
+        let c = controls.clone();
+        window.on_pick_macro(move |t, a, m| {
+            rack_ui::pick_macro(&c, t as usize, a as usize, m.max(0) as usize)
+        });
+    }
+    {
+        let (c, p) = (controls.clone(), plugins.clone());
+        window.on_map_knob(move |t, a, i| {
+            rack_ui::map_knob(&c, &p, t as usize, a as usize, i.max(0) as usize)
         });
     }
     {
@@ -631,6 +720,134 @@ fn ui(
                 plugins::From::Browser(d.get_item().max(1) as usize - 1)
             };
             let place = usize::try_from(d.get_to_place()).ok();
+            // Into a rack's chain (or a new chain), or out of one.
+            let to_rack = usize::try_from(d.get_to_rack()).ok();
+            let to_chain = usize::try_from(d.get_to_chain()).ok();
+            let from_inner = (d.get_from_chain() >= 0 && d.get_from_track() >= 0).then(|| {
+                (
+                    d.get_from_track() as usize,
+                    d.get_from_rack().max(0) as usize,
+                    d.get_from_chain() as usize,
+                    d.get_from_device().max(0) as usize,
+                )
+            });
+            if d.get_kind() != 5 {
+                if let Some(at) = to_rack {
+                    let source = if let Some((t, a, b, x)) = from_inner {
+                        rack_ui::Source::Inner(t, a, b, x)
+                    } else if let plugins::From::Chain(t, x) = from {
+                        rack_ui::Source::Chain(t, x)
+                    } else {
+                        let i = d.get_item().max(1) as usize - 1;
+                        let Some((name, s)) = devices::catalog().into_iter().nth(i) else {
+                            return;
+                        };
+                        rack_ui::Source::New(Box::new(clip::DeviceInfo {
+                            name: name.into(),
+                            kind: "Built-in".into(),
+                            on: true,
+                            plugin: None,
+                            builtin: Some(s),
+                        }))
+                    };
+                    let into = rack_ui::Into {
+                        track: to_track,
+                        at,
+                        chain: to_chain,
+                        place,
+                    };
+                    rack_ui::drop_in(&c, &p, into, source, d.get_copy());
+                    return;
+                }
+                if let Some(inner) = from_inner {
+                    rack_ui::drag_out(&c, &p, inner, to_track, place, d.get_copy());
+                    return;
+                }
+            }
+            if d.get_kind() == 5 {
+                // A sample: it plays on a Simpler, the track's own if it
+                // has one (keeping its settings), else a new one.
+                let Some(path) = sample_files
+                    .lock()
+                    .ok()
+                    .and_then(|f| f.get(d.get_item().max(1) as usize - 1).cloned())
+                else {
+                    return;
+                };
+                let sample = match opendj_engine::sampler::Sample::load(&path, rate) {
+                    Ok(s) => Arc::new(s),
+                    Err(e) => {
+                        eprintln!("{}: {e}", path.display());
+                        return;
+                    }
+                };
+                // Into a rack's chain: a new Simpler there.
+                if let Some(at) = to_rack {
+                    let device = clip::DeviceInfo {
+                        name: path
+                            .file_stem()
+                            .map_or("Simpler".into(), |n| n.to_string_lossy().to_string()),
+                        kind: "Built-in".into(),
+                        on: true,
+                        plugin: None,
+                        builtin: Some(devices::Settings::Simpler(simpler::SimplerSettings {
+                            path: Some(path),
+                            sample: Some(sample),
+                            ..Default::default()
+                        })),
+                    };
+                    let into = rack_ui::Into {
+                        track: to_track,
+                        at,
+                        chain: to_chain,
+                        place,
+                    };
+                    rack_ui::drop_in(&c, &p, into, rack_ui::Source::New(Box::new(device)), false);
+                    return;
+                }
+                let chain = c.devices(to_track);
+                // Onto a Drum Rack: a pad (the one it was let go on, else
+                // the next free one).
+                let drum = chain.iter().find(|d| {
+                    matches!(&d.builtin, Some(devices::Settings::Rack(r)) if r.kind == rack::Kind::Drum)
+                });
+                if let Some(mut info) = drum.cloned() {
+                    let Some(devices::Settings::Rack(r)) = info.builtin.as_mut() else {
+                        return;
+                    };
+                    let pad = u8::try_from(d.get_to_pad()).ok();
+                    if rack::put_sample(r, pad, path, sample).is_some()
+                        && p.drop_new(to_track, place, info).is_some()
+                    {
+                        c.select_track(to_track);
+                    }
+                    return;
+                }
+                let mut s = chain
+                    .into_iter()
+                    .find_map(|d| match d.builtin {
+                        Some(devices::Settings::Simpler(s)) => Some(s),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                // Named after its sample, as Live does.
+                let name = path
+                    .file_stem()
+                    .map_or("Simpler".into(), |n| n.to_string_lossy().to_string());
+                s.path = Some(path);
+                s.sample = Some(sample);
+                let device = clip::DeviceInfo {
+                    name,
+                    kind: "Built-in".into(),
+                    on: true,
+                    plugin: None,
+                    builtin: Some(devices::Settings::Simpler(s)),
+                };
+                if p.drop_new(to_track, place, device).is_some() {
+                    c.select_track(to_track);
+                }
+                return;
+            }
             let dropped = plugins::Dropped {
                 from,
                 to_track,
@@ -850,6 +1067,23 @@ fn reuse<T: Clone + PartialEq + 'static>(old: Option<&ModelRc<T>>, new: Vec<T>) 
     ModelRc::new(VecModel::from(new))
 }
 
+/// The device rows: the old model while no row changed (a knob being
+/// dragged changes only its panel's list, in place), else a new one, since
+/// a row changed in place isn't always shown again.
+fn reuse_rows(old: Option<&ModelRc<DeviceData>>, new: Vec<DeviceData>) -> ModelRc<DeviceData> {
+    if let Some(o) = old {
+        let same = o.row_count() == new.len()
+            && new
+                .iter()
+                .enumerate()
+                .all(|(i, n)| o.row_data(i).as_ref() == Some(n));
+        if same {
+            return o.clone();
+        }
+    }
+    ModelRc::new(VecModel::from(new))
+}
+
 /// A knob or switch on a built-in device's panel.
 fn knob_data(i: usize, p: &devices::Param) -> KnobData {
     KnobData {
@@ -860,6 +1094,7 @@ fn knob_data(i: usize, p: &devices::Param) -> KnobData {
         bipolar: p.bipolar,
         toggle: p.unit == devices::Unit::Toggle,
         on: p.unit == devices::Unit::Toggle && p.value >= 0.5,
+        mapped: 0,
     }
 }
 
@@ -936,12 +1171,62 @@ fn device_row(
         }
     }
     let graph = !row.curve.is_empty() && !eq;
+    // A rack: its chains (or pads) beside its macros.
+    let (switches, rack_width) = if let devices::Settings::Rack(r) = s {
+        use rack::{Kind, BRANCH_PARAMS, MACROS};
+        row.rack = match r.kind {
+            Kind::Audio => 1,
+            Kind::Instrument => 2,
+            Kind::Drum => 3,
+        };
+        let chains: Vec<ChainData> = r
+            .branches
+            .iter()
+            .enumerate()
+            .map(|(b, c)| ChainData {
+                name: c.name.as_str().into(),
+                volume: format!("{:+.1} dB", c.volume_db).into(),
+                zone: match r.kind {
+                    Kind::Instrument if c.keys != (0, 127) => format!(
+                        "{}-{}",
+                        simpler::key_name(c.keys.0),
+                        simpler::key_name(c.keys.1)
+                    )
+                    .into(),
+                    _ => "".into(),
+                },
+                on: c.on,
+                solo: c.solo,
+                index: (MACROS + b * BRANCH_PARAMS) as i32,
+            })
+            .collect();
+        // Pads from C1 (36) up, as Push lays them out.
+        let pads: Vec<PadData> = (36u8..52)
+            .map(|note| {
+                let b = r.pad(note).map(|i| &r.branches[i]);
+                PadData {
+                    note: note as i32,
+                    name: b
+                        .map_or_else(|| simpler::key_name(note), |b| b.name.clone())
+                        .into(),
+                    filled: b.is_some(),
+                    chain: r.pad(note).map_or(-1, |i| i as i32),
+                }
+            })
+            .collect();
+        row.chains = reuse(old.map(|o| &o.chains), chains);
+        row.pads = reuse(old.map(|o| &o.pads), pads);
+        (Vec::new(), 200.0)
+    } else {
+        (switches, 0.0)
+    };
     row.panel_width = if eq {
         560.0
     } else {
         (if switches.is_empty() { 0.0 } else { 96.0 }
             + cols as f32 * 58.0
             + if graph { 190.0 } else { 0.0 }
+            + rack_width
             + 20.0)
             .max(150.0)
     };
@@ -959,7 +1244,13 @@ fn device_row(
 /// The browser's lists of the studio's own devices: instruments, audio
 /// effects, and All (headings between). The built-in sounds can't be
 /// dragged yet.
-fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
+/// The browser's lists: instruments, audio effects, MIDI effects, and All.
+fn browser_devices() -> (
+    Vec<BrowserItem>,
+    Vec<BrowserItem>,
+    Vec<BrowserItem>,
+    Vec<BrowserItem>,
+) {
     let item = |name: &str, kind: i32, detail: &str, id: i32| BrowserItem {
         name: name.into(),
         kind,
@@ -971,9 +1262,17 @@ fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
         .map(|n| item(n, 0, "built in", 0))
         .collect();
     let mut effects = Vec::new();
+    let mut midi = Vec::new();
     for (i, (name, s)) in devices::catalog().into_iter().enumerate() {
         if s.is_instrument() {
-            instruments.push(item(name, 0, "hardware synth", i as i32 + 1));
+            let detail = if s.plays_notes() {
+                "sampler"
+            } else {
+                "hardware synth"
+            };
+            instruments.push(item(name, 0, detail, i as i32 + 1));
+        } else if s.is_midi_effect() {
+            midi.push(item(name, 2, "", i as i32 + 1));
         } else {
             effects.push(item(name, 1, "", i as i32 + 1));
         }
@@ -983,9 +1282,9 @@ fn browser_devices() -> (Vec<BrowserItem>, Vec<BrowserItem>, Vec<BrowserItem>) {
     all.push(item("Audio Effects", 3, "", 0));
     all.extend(effects.iter().cloned());
     all.push(item("MIDI Effects", 3, "", 0));
-    all.push(item("Arpeggiator", 2, "soon", 0));
+    all.extend(midi.iter().cloned());
     all.push(item("Plug-ins", 3, "", 0));
-    (instruments, effects, all)
+    (instruments, effects, midi, all)
 }
 
 fn track_row(
@@ -996,6 +1295,70 @@ fn track_row(
 ) -> TrackData {
     let info = &c.tracks[t];
     let devices = c.devices(t);
+    // MIDI effects lead the chain; they show before the instrument.
+    let midi_count = control::midi_effects(&devices);
+    // The rack whose chain shows beside it.
+    let open = rack_ui::open_chain(t, &devices);
+    let rows: Vec<DeviceData> = devices
+        .iter()
+        .enumerate()
+        .map(|(i, d)| {
+            let state = plugins.state(t, i);
+            let running = state == Some(plugins::State::Running);
+            let builtin = d.builtin.clone();
+            let note = match &state {
+                Some(plugins::State::Running) => {
+                    if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
+                        "Playing, with the set's sound".to_string()
+                    } else {
+                        "Playing".to_string()
+                    }
+                }
+                Some(s) => s.text(),
+                None if d.plugin.is_some() => "Plug-in".to_string(),
+                None if builtin.is_some() => String::new(),
+                None if d.name.ends_with("Drum Rack)") || d.name == "Drum Rack" => {
+                    "Its pads play as the track's kit".to_string()
+                }
+                None => "Live device: no built-in match yet".to_string(),
+            };
+            let before = old.and_then(|o| {
+                if i < o.midi_count as usize {
+                    o.midi_chain.row_data(i)
+                } else {
+                    o.chain.row_data(i - o.midi_count as usize)
+                }
+            });
+            device_row(
+                DeviceData {
+                    name: d.name.as_str().into(),
+                    kind: d.kind.as_str().into(),
+                    note: note.into(),
+                    on: d.on,
+                    instrument: control::is_instrument(d),
+                    midi: control::is_midi_effect(d),
+                    can_open: running,
+                    open_chain: open.filter(|o| o.0 == i).map_or(-1, |o| o.1 as i32),
+                    mapping: rack_ui::mapping(t, i).map_or(-1, |m| m as i32),
+                    ..DeviceData::default()
+                },
+                builtin.as_ref(),
+                before.as_ref(),
+            )
+        })
+        .collect();
+    let (inner, chain_name) = open
+        .and_then(|(at, b)| match &devices[at].builtin {
+            Some(devices::Settings::Rack(r)) => Some((
+                rack_ui::inner_rows(r, b, old.map(|o| &o.inner)),
+                r.branches
+                    .get(b)
+                    .map(|x| x.name.clone())
+                    .unwrap_or_default(),
+            )),
+            _ => None,
+        })
+        .unwrap_or_default();
     let params: Vec<ParamData> = (0..sound::PARAMS)
         .map(|i| ParamData {
             name: c.param_name(t, i).into(),
@@ -1063,51 +1426,19 @@ fn track_row(
             .any(|d| matches!(d.builtin, Some(devices::Settings::External(_)))),
         kind: if info.audio() { "AUDIO" } else { "MIDI" }.into(),
         input: io.input_text(info.audio()).into(),
-        chain: reuse(
-            old.map(|o| &o.chain),
-            devices
-                .iter()
-                .enumerate()
-                .map(|(i, d)| {
-                    let state = plugins.state(t, i);
-                    let running = state == Some(plugins::State::Running);
-                    let builtin = d.builtin.clone();
-                    let note = match &state {
-                        Some(plugins::State::Running) => {
-                            if d.plugin.as_ref().is_some_and(|p| p.state.is_some()) {
-                                "Playing, with the set's sound".to_string()
-                            } else {
-                                "Playing".to_string()
-                            }
-                        }
-                        Some(s) => s.text(),
-                        None if d.plugin.is_some() => "Plug-in".to_string(),
-                        None if builtin.is_some() => String::new(),
-                        None if d.name.ends_with("Drum Rack)") || d.name == "Drum Rack" => {
-                            "Its pads play as the track's kit".to_string()
-                        }
-                        None => "Live device: no built-in match yet".to_string(),
-                    };
-                    let before = old.and_then(|o| o.chain.row_data(i));
-                    device_row(
-                        DeviceData {
-                            name: d.name.as_str().into(),
-                            kind: d.kind.as_str().into(),
-                            note: note.into(),
-                            on: d.on,
-                            instrument: control::is_instrument(d),
-                            can_open: running,
-                            ..DeviceData::default()
-                        },
-                        builtin.as_ref(),
-                        before.as_ref(),
-                    )
-                })
-                .collect(),
-        ),
-        plugin_instrument: devices
-            .iter()
-            .any(|d| d.plugin.as_ref().is_some_and(|p| p.instrument)),
+        midi_chain: reuse_rows(old.map(|o| &o.midi_chain), rows[..midi_count].to_vec()),
+        midi_count: midi_count as i32,
+        chain: reuse_rows(old.map(|o| &o.chain), rows[midi_count..].to_vec()),
+        rack_at: open.map_or(-1, |o| o.0 as i32),
+        rack_chain: open.map_or(-1, |o| o.1 as i32),
+        chain_name: chain_name.into(),
+        inner: reuse_rows(old.map(|o| &o.inner), inner),
+        plugin_instrument: devices.iter().any(|d| {
+            d.plugin.as_ref().is_some_and(|p| p.instrument)
+                || d.builtin
+                    .as_ref()
+                    .is_some_and(devices::Settings::plays_notes)
+        }),
         level: 0.0,
         volume,
         volume_text: control::fader_text(volume).into(),

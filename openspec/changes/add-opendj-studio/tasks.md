@@ -48,16 +48,20 @@
 - [ ] 2.33 Play a hardware synth through an External Instrument on macOS
 - [x] 2.35 Devices dragged from the browser onto a track or a place in its device bar, moved along the chain or to another track, copied with Option, removed with ×; effects stay after the instrument and an instrument replaces the track's; edits fade so they don't click (design.md, Device chains)
 - [ ] 2.36 Built-in synths and plug-ins dragged from the browser; dropping on empty space makes a track
-- [ ] 2.37 Audio Effect and Instrument Racks: branches, zones and macros (design.md, Racks)
+- [x] 2.37 Audio Effect and Instrument Racks: branches, zones and macros, read from the set (design.md, Racks)
 - [ ] 2.38 Drag, reorder and copy devices on macOS
 - [x] 2.39 Device kit: knobs that glide, LFO, envelope follower and 4x oversampling shared by devices; every device checked for no allocation, no runaway, silent tails, a clean bypass and no clicks, and benched against a budget (design.md, Devices)
 - [x] 2.40 Limiter, Auto Filter (FunDSP filters) and Saturator (4x oversampled), read from the set
-- [ ] 2.41 MIDI effects: Arpeggiator, Chord, Scale, Note Length, Velocity, Random, Pitch, Note Echo, in the chain before the instrument
-- [ ] 2.42 Simpler: a sample played across the keys, then Drum Rack on the rack engine
+- [x] 2.41 MIDI effects: Arpeggiator, Chord, Scale, Note Length, Velocity, Random, Pitch, Note Echo, in the chain before the instrument, on clip notes and live keys (their own clock runs while stopped), read from the set
+- [x] 2.42 Simpler: a sample played across the keys (Classic and One-Shot, loop, envelope, filter), from the browser's Samples or read from the set
 - [ ] 2.43 Modulators (LFO, envelope, envelope follower) that drive any knob of any device, as in Bitwig
 - [ ] 2.44 Delay compensation for devices that look ahead or oversample (Limiter, Saturator), so tracks stay in time
 - [ ] 2.45 One analog-style synth with Bass, Pad and Lead as its presets
-- [ ] 2.46 Hear Limiter, Auto Filter and Saturator on macOS
+- [ ] 2.46 Hear Limiter, Auto Filter, Saturator, the MIDI effects and Simpler on macOS
+- [x] 2.47 Drum Rack on the rack engine: each pad a Simpler with its own chain, choke groups; samples dropped on its pads
+- [x] 2.48 Racks in the window: open a chain beside its rack, drag devices into a chain (and move them, take them out), new chains by dropping on the chain list, map knobs inside to a macro (Map)
+- [x] 2.49 MIDI effects inside rack chains: they lead their chain, before its instrument, and follow the song's beat
+- [ ] 2.50 Racks, next: plug-ins inside chains, Live's macro mappings, macros on Push's encoders, macro ranges
 
 ## 3. Clip editing
 

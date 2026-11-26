@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::probe::message_key;
 
-const LAYOUTS: [&str; 111] = [
+const LAYOUTS: [&str; 112] = [
     include_str!("../layouts/flx4.json"),
     include_str!("../layouts/ddj-flx6.json"),
     include_str!("../layouts/ddj-flx10.json"),
@@ -117,6 +117,7 @@ const LAYOUTS: [&str; 111] = [
     include_str!("../layouts/djm-s11.json"),
     include_str!("../layouts/djm-t1.json"),
     include_str!("../layouts/plx-crss12.json"),
+    include_str!("../layouts/traktor-kontrol-s2-mk1.json"),
     include_str!("../layouts/traktor-kontrol-s2-mk3.json"),
     include_str!("../layouts/traktor-kontrol-s3.json"),
     include_str!("../layouts/traktor-kontrol-s4-mk3.json"),

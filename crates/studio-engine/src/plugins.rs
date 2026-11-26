@@ -147,8 +147,7 @@ impl Plugins {
     /// the place of the one the track has (a track plays one). Returns whether
     /// an External Instrument came in, or None when nothing changed.
     pub fn drop_device(&self, d: Dropped) -> Option<bool> {
-        let (c, p) = (&*self.controls, self);
-        let track = c.tracks.get(d.to_track)?;
+        let c = &*self.controls;
         let (device, moving) = match d.from {
             From::Browser(i) => {
                 let (name, s) = crate::devices::catalog().into_iter().nth(i)?;
@@ -165,9 +164,39 @@ impl Plugins {
             }
             From::Chain(t, at) => (c.devices(t).get(at)?.clone(), (!d.copy).then_some((t, at))),
         };
+        self.place(d, device, moving)
+    }
+
+    /// Puts a new device (a Simpler made from a sample, say) in a track's
+    /// chain, as a drop from the browser would.
+    pub fn drop_new(
+        &self,
+        to_track: usize,
+        place: Option<usize>,
+        device: DeviceInfo,
+    ) -> Option<bool> {
+        let d = Dropped {
+            from: From::Browser(0),
+            to_track,
+            place,
+            copy: false,
+        };
+        self.place(d, device, None)
+    }
+
+    fn place(
+        &self,
+        d: Dropped,
+        device: DeviceInfo,
+        moving: Option<(usize, usize)>,
+    ) -> Option<bool> {
+        let (c, p) = (&*self.controls, self);
+        let track = c.tracks.get(d.to_track)?;
         let instrument = crate::control::is_instrument(&device);
-        // An audio track plays recordings: no instrument there.
-        if instrument && track.audio() {
+        let midi = crate::control::is_midi_effect(&device);
+        // An audio track plays recordings: no instrument or MIDI effect
+        // there.
+        if (instrument || midi) && track.audio() {
             return None;
         }
         let external = matches!(device.builtin, Some(crate::devices::Settings::External(_)));
@@ -198,7 +227,10 @@ impl Plugins {
             for &i in olds.iter().rev() {
                 p.remove(d.to_track, i);
             }
-            place = first.unwrap_or(0);
+            place = first.unwrap_or(crate::control::midi_effects(&chain));
+        } else if midi {
+            // Among the MIDI effects, before the instrument.
+            place = place.min(crate::control::midi_effects(&chain));
         } else {
             place = place.max(crate::control::first_effect_place(&chain));
         }
@@ -262,6 +294,12 @@ impl Plugins {
                 drop(book);
                 plugins.controls.bump();
             });
+    }
+
+    /// Swaps the device at `at` for `device` in the same place (a rack
+    /// whose chains changed). The track fades around it, as for any edit.
+    pub fn replace(&self, track: usize, at: usize, device: DeviceInfo) -> bool {
+        self.remove(track, at).is_some() && self.insert(track, at, device).is_some()
     }
 
     /// Puts a device in `track`'s chain at `at` (clamped to its end): a
