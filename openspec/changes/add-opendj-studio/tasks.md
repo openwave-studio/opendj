@@ -59,7 +59,9 @@
 - [ ] 2.45 One analog-style synth with Bass, Pad and Lead as its presets
 - [ ] 2.46 Hear Limiter, Auto Filter, Saturator, the MIDI effects and Simpler on macOS
 - [x] 2.47 Drum Rack on the rack engine: each pad a Simpler with its own chain, choke groups; samples dropped on its pads
-- [ ] 2.48 Racks, next: drag devices into a chain, map a knob to a macro, MIDI effects and plug-ins inside chains, Live's macro mappings, macros on Push's encoders
+- [x] 2.48 Racks in the window: open a chain beside its rack, drag devices into a chain (and move them, take them out), new chains by dropping on the chain list, map knobs inside to a macro (Map)
+- [x] 2.49 MIDI effects inside rack chains: they lead their chain, before its instrument, and follow the song's beat
+- [ ] 2.50 Racks, next: plug-ins inside chains, Live's macro mappings, macros on Push's encoders, macro ranges
 
 ## 3. Clip editing
 

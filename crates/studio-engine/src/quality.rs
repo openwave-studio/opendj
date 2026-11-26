@@ -150,8 +150,13 @@ fn fill(s: &mut Settings) {
         }
         Kind::Instrument => {
             for keys in [(0, 59), (60, 127), (48, 72)] {
+                let mut devices = vec![simpler(), info("Auto Filter", fresh("Auto Filter"))];
+                // The layer plays chords: a MIDI effect inside a chain.
+                if keys == (48, 72) {
+                    devices.insert(0, info("Chord", fresh("Chord")));
+                }
                 r.branches.push(Branch {
-                    devices: vec![simpler(), info("Auto Filter", fresh("Auto Filter"))],
+                    devices,
                     keys,
                     ..Default::default()
                 });
