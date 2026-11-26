@@ -427,10 +427,11 @@ impl Settings {
     pub fn knob_layout(&self) -> Option<(Vec<usize>, usize)> {
         match self {
             // Roar: a column per stage, input and the crossovers on the
-            // left, the output section on the right.
-            Settings::Roar(_) => {
-                Some((vec![0, 2, 3, 4, 13, 17, 6, 7, 8, 14, 18, 10, 11, 12, 15], 5))
-            }
+            // left, the output section, then the feedback on the right.
+            Settings::Roar(_) => Some((
+                vec![0, 2, 3, 4, 13, 22, 17, 6, 7, 8, 14, 23, 18, 10, 11, 12, 15],
+                6,
+            )),
             // Auto Filter: the filter's knobs, then the envelope's, then the
             // LFO's (its switches sit on the left).
             Settings::AutoFilter(_) => Some((vec![3, 4, 5, 6, 16, 7, 8, 9, 10, 13, 14, 15], 4)),

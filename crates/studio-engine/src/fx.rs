@@ -1,8 +1,8 @@
 //! Live's time and character effects, built in: Delay and Echo, Reverb and
 //! Hybrid Reverb, Gate, Overdrive and Roar. Delay, Echo, Reverb, Gate and
 //! Overdrive follow the settings a set saves; Hybrid Reverb (its
-//! room is the set's, else a built-in hall) and Roar (its shapers and filters in
-//! series, no feedback or modulation) are close approximations. Every
+//! room is the set's, else a built-in hall) and Roar (its shapers, filters
+//! and routings, no modulation) are close approximations. Every
 //! buffer is allocated when the device is built, never on the audio thread;
 //! a setting changed from the panel retunes the device in place.
 
@@ -1061,7 +1061,24 @@ pub struct RoarSettings {
     pub compression: f32,
     pub output_db: f32,
     pub dry_wet: f32,
+    /// Feedback and Delay routings: how much comes round again (0..0.95)
+    /// and after how long, ms.
+    #[serde(default = "roar_feedback")]
+    pub feedback: f32,
+    #[serde(default = "roar_feedback_ms")]
+    pub feedback_ms: f32,
 }
+
+fn roar_feedback() -> f32 {
+    0.4
+}
+
+fn roar_feedback_ms() -> f32 {
+    250.0
+}
+
+/// The longest feedback time, ms.
+const ROAR_MAX_FEEDBACK_MS: f32 = 2_000.0;
 
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RoarStage {
@@ -1078,6 +1095,8 @@ pub struct RoarStage {
 
 /// Roar's Tri Fold shaper type.
 pub const ROAR_TRI_FOLD: u8 = 9;
+/// Roar's Noise Injection shaper type.
+const ROAR_NOISE: u8 = 10;
 
 /// One Roar shaper curve, by its index in [`ROAR_SHAPES`].
 fn roar_shape(shape: u8, x: f32) -> f32 {
@@ -1085,9 +1104,32 @@ fn roar_shape(shape: u8, x: f32) -> f32 {
     match shape {
         0 => x.clamp(-FRAC_PI_2, FRAC_PI_2).sin(),
         1 => x.clamp(-1.0, 1.0),
+        // Bit Crusher: 16 steps across -1..1.
+        2 => (x.clamp(-1.0, 1.0) * 8.0).round() / 8.0,
+        // Diode Clipper: soft and early on the way up, later and lower
+        // on the way down.
+        3 => {
+            if x >= 0.0 {
+                1.0 - (-x).exp()
+            } else {
+                -0.8 * (1.0 - (0.6 * x).exp())
+            }
+        }
+        // Tube Preamp: even harmonics from a lean before the curve.
+        4 => (x + 0.25 * x * x.abs()).tanh(),
         5 => x.max(0.0).tanh(),
         6 => x.abs().tanh(),
+        // Polynomial: the cubic soft clip, flat past 1.5.
+        7 => {
+            let x = x.clamp(-1.5, 1.5);
+            x - 4.0 / 27.0 * x * x * x
+        }
+        // Fractal: the curve with smaller and smaller ripples on it.
+        8 => 0.6 * x.tanh() + 0.25 * (3.0 * x).sin() + 0.15 * (9.0 * x).sin(),
         ROAR_TRI_FOLD => tri_fold(x),
+        // Shards: a fold three times as fast, over the curve.
+        11 => 0.5 * x.tanh() + 0.5 * tri_fold(3.0 * x),
+        // Noise Injection saturates; its noise is added by the stage.
         _ => x.tanh(),
     }
 }
@@ -1131,13 +1173,18 @@ impl Default for RoarSettings {
             compression: 0.0,
             output_db: 0.0,
             dry_wet: 1.0,
+            feedback: roar_feedback(),
+            feedback_ms: roar_feedback_ms(),
         }
     }
 }
 
 const STAGE_PARAMS: usize = 4;
 
-/// Roar's routings, in Live's order; Feedback and Delay play as Serial here.
+/// Roar's routings, in Live's order. Feedback runs the stages in series
+/// with their output coming round again after the feedback time; Delay
+/// runs stages 1 and 2 in series into an echo whose repeats go through
+/// stage 3.
 pub const ROUTINGS: &[&str] = &[
     "Single",
     "Serial",
@@ -1148,8 +1195,8 @@ pub const ROUTINGS: &[&str] = &[
     "Delay",
 ];
 
-/// Roar's shaper types, in Live's order. Soft Sine, Hard Clip, the two
-/// rectifiers and Tri Fold are their own curves here; the rest saturate.
+/// Roar's shaper types, in Live's order, each its own curve (close to
+/// Live's, not the same).
 pub const ROAR_SHAPES: &[&str] = &[
     "Soft Sine",
     "Hard Clip",
@@ -1174,7 +1221,7 @@ impl RoarSettings {
             .map(|s| *ROAR_SHAPES.get(s.shape as usize).unwrap_or(&"Soft Sine"))
             .collect();
         format!(
-            "{} · {} · approximation",
+            "{} · {}",
             ROUTINGS.get(self.routing as usize).unwrap_or(&"Serial"),
             if shapes.is_empty() {
                 "no stages".to_string()
@@ -1217,6 +1264,30 @@ impl RoarSettings {
         p.push(Param::choice("Routing", self.routing as usize, ROUTINGS));
         p.push(Param::knob("Low/Mid", self.low_mid, 50.0, 1000.0, Unit::Hz).log());
         p.push(Param::knob("Mid/High", self.mid_high, 500.0, 10_000.0, Unit::Hz).log());
+        for (i, s) in self.stages.iter().enumerate() {
+            p.push(Param::choice(
+                format!("Shape {}", i + 1),
+                s.shape as usize,
+                ROAR_SHAPES,
+            ));
+        }
+        p.push(Param::knob(
+            "Feedback",
+            self.feedback,
+            0.0,
+            0.95,
+            Unit::Percent,
+        ));
+        p.push(
+            Param::knob(
+                "Time",
+                self.feedback_ms,
+                1.0,
+                ROAR_MAX_FEEDBACK_MS,
+                Unit::Ms,
+            )
+            .log(),
+        );
         p
     }
 
@@ -1238,9 +1309,15 @@ impl RoarSettings {
             0 => self.compression = v.clamp(0.0, 1.0),
             1 => self.output_db = v,
             2 => self.dry_wet = v.clamp(0.0, 1.0),
-            3 => self.routing = v.round().clamp(0.0, 5.0) as u8,
+            3 => self.routing = v.round().clamp(0.0, (ROUTINGS.len() - 1) as f32) as u8,
             4 => self.low_mid = v.clamp(20.0, 5000.0),
             5 => self.mid_high = v.clamp(100.0, 20_000.0),
+            k @ 6..=8 => {
+                self.stages[k - 6].shape =
+                    v.round().clamp(0.0, (ROAR_SHAPES.len() - 1) as f32) as u8
+            }
+            9 => self.feedback = v.clamp(0.0, 0.95),
+            10 => self.feedback_ms = v.clamp(1.0, ROAR_MAX_FEEDBACK_MS),
             _ => {}
         }
     }
@@ -1256,6 +1333,12 @@ pub struct Roar {
     comp: Compressor,
     /// Multi Band's split: low, the rest, then mid and high from the rest.
     split: [Lr4; 4],
+    /// Feedback and Delay: what comes round again, each side, and how many
+    /// samples later.
+    lines: [Line; 2],
+    lag: f32,
+    /// Noise Injection's generator.
+    seed: u32,
 }
 
 impl Roar {
@@ -1284,6 +1367,10 @@ impl Roar {
                 Lr4::lowpass(rate, 2000.0),
                 Lr4::highpass(rate, 2000.0),
             ],
+            lines: [0, 1]
+                .map(|_| Line::new((ROAR_MAX_FEEDBACK_MS * 0.001 * rate as f32) as usize + 4)),
+            lag: 1.0,
+            seed: 0x2545_f491,
         };
         r.retune();
         r
@@ -1307,6 +1394,8 @@ impl Roar {
         self.comp.retune();
         self.input = from_db(self.s.input_db);
         self.output = from_db(self.s.output_db);
+        self.lag = (self.s.feedback_ms.clamp(1.0, ROAR_MAX_FEEDBACK_MS) * 0.001 * self.rate as f32)
+            .max(1.0);
         let (lo, hi) = (self.s.low_mid as f64, self.s.mid_high as f64);
         let [a, b, c, d] = &mut self.split;
         a.set_lowpass(self.rate, lo);
@@ -1323,7 +1412,17 @@ impl Roar {
         }
         let (drive, bias, lp) = &mut self.stages[i];
         let off = roar_shape(st.shape, *bias);
-        let y = x.map(|v| roar_shape(st.shape, v * *drive + *bias) - off);
+        let mut y = x.map(|v| roar_shape(st.shape, v * *drive + *bias) - off);
+        if st.shape == ROAR_NOISE {
+            // Noise that follows the sound: none in silence.
+            for (c, v) in y.iter_mut().enumerate() {
+                self.seed ^= self.seed << 13;
+                self.seed ^= self.seed >> 17;
+                self.seed ^= self.seed << 5;
+                let n = self.seed as f32 / u32::MAX as f32 * 2.0 - 1.0;
+                *v += n * 0.2 * (x[c] * *drive).abs().min(1.0);
+            }
+        }
         if st.lowpass < ROAR_OPEN {
             lp.process(y)
         } else {
@@ -1363,6 +1462,33 @@ impl Roar {
                     let m = self.stage(0, [mid; 2])[0];
                     let sd = self.stage(1, [side; 2])[0];
                     [m + sd, m - sd]
+                }
+                5 => {
+                    // The stages' output comes round again, kept in
+                    // bounds by a soft curve.
+                    let back = [0, 1].map(|c| self.lines[c].tap_frac(self.lag));
+                    let fb = self.s.feedback.clamp(0.0, 0.95);
+                    let mut y = [0, 1].map(|c| x[c] + (back[c] * fb).tanh());
+                    for i in 0..3 {
+                        y = self.stage(i, y);
+                    }
+                    for (line, v) in self.lines.iter_mut().zip(y) {
+                        line.push(v);
+                    }
+                    y
+                }
+                6 => {
+                    // Stages 1 and 2 into an echo; its repeats go through
+                    // stage 3 each time round.
+                    let y = self.stage(0, x);
+                    let y = self.stage(1, y);
+                    let echo = [0, 1].map(|c| self.lines[c].tap_frac(self.lag));
+                    let fb = self.s.feedback.clamp(0.0, 0.95);
+                    let again = self.stage(2, echo);
+                    for c in 0..2 {
+                        self.lines[c].push(y[c] + (again[c] * fb).tanh());
+                    }
+                    [y[0] + echo[0], y[1] + echo[1]]
                 }
                 _ => {
                     let mut y = x;
@@ -1501,6 +1627,66 @@ mod tests {
             .unwrap();
         assert_eq!(at, 1480, "{peak:?}");
         assert!((peak[0] - 0.5).abs() < 0.01 && (peak[1] - 0.25).abs() < 0.01);
+    }
+
+    #[test]
+    fn roar_feedback_and_delay_routings_are_their_own() {
+        let play = |routing: u8| {
+            let s = RoarSettings {
+                routing,
+                feedback: 0.8,
+                feedback_ms: 50.0,
+                ..RoarSettings::default()
+            };
+            let mut r = Roar::new(&s, 48_000.0);
+            // A short burst, then silence for the repeats.
+            let mut buf: Vec<[f32; 2]> = (0..48_000)
+                .map(|i| {
+                    let v = if i < 960 {
+                        (i as f32 * 0.05).sin() * 0.5
+                    } else {
+                        0.0
+                    };
+                    [v, v]
+                })
+                .collect();
+            r.process(&mut buf);
+            buf
+        };
+        let serial = play(1);
+        // Serial is silent once the burst ends; the others come round again.
+        assert!(energy(&serial[4_800..]) == 0.0);
+        for routing in [5, 6] {
+            let out = play(routing);
+            let later = energy(&out[4_800..]);
+            assert!(later > 1e-3, "routing {routing}: no repeats");
+            assert!(out.iter().all(|f| f[0].is_finite() && f[0].abs() < 4.0));
+        }
+    }
+
+    #[test]
+    fn every_roar_shape_is_its_own_curve() {
+        let curve = |shape: u8| -> Vec<f32> {
+            (-40..=40)
+                .map(|i| roar_shape(shape, i as f32 / 10.0))
+                .collect()
+        };
+        let all: Vec<Vec<f32>> = (0..ROAR_SHAPES.len() as u8).map(curve).collect();
+        for (i, a) in all.iter().enumerate() {
+            for (j, b) in all.iter().enumerate().skip(i + 1) {
+                // Noise Injection saturates like Polynomial's neighbours;
+                // its noise is what sets it apart.
+                if i as u8 == ROAR_NOISE || j as u8 == ROAR_NOISE {
+                    continue;
+                }
+                assert!(
+                    a.iter().zip(b).any(|(x, y)| (x - y).abs() > 1e-3),
+                    "{} sounds like {}",
+                    ROAR_SHAPES[i],
+                    ROAR_SHAPES[j]
+                );
+            }
+        }
     }
 
     #[test]
