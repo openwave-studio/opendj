@@ -835,6 +835,9 @@ pub enum Device {
     Simpler(Box<Simpler>),
     /// Chains side by side (see [`crate::rack`]).
     Rack(Box<Rack>),
+    /// A plug-in inside a rack: its helper joins once it's up (see
+    /// [`crate::rack::Hosted`]).
+    Plugin(Box<crate::rack::Hosted>),
     /// The input comes in before the chain runs (the engine adds it), so
     /// this only sets its level and holds the latency.
     External(ExternalSettings),
@@ -886,6 +889,7 @@ impl Device {
             Device::Simpler(x) => x.set(i, v),
             Device::Rack(r) => r.set(i, v),
             Device::External(e) => e.set(i, v),
+            Device::Plugin(_) => {}
         }
     }
 
@@ -902,6 +906,7 @@ impl Device {
         match self {
             Device::Simpler(_) => true,
             Device::Rack(r) => r.plays_notes(),
+            Device::Plugin(h) => h.instrument,
             _ => false,
         }
     }
@@ -924,6 +929,14 @@ impl Device {
     pub fn at_beat(&mut self, beat: f64) {
         if let Device::Rack(r) = self {
             r.at_beat(beat);
+        }
+    }
+
+    /// Whether the song plays, and when the block must be done by (a
+    /// rack's plug-ins have until then).
+    pub fn until(&mut self, playing: bool, deadline: std::time::Instant) {
+        if let Device::Rack(r) = self {
+            r.until(playing, deadline);
         }
     }
 
@@ -960,7 +973,7 @@ impl Device {
             Device::Limiter(l) => l.process(buf),
             Device::Saturator(s) => s.process(buf),
             Device::AutoFilter(a) => a.process(buf, tempo),
-            Device::Midi(_) | Device::Simpler(_) => {}
+            Device::Midi(_) | Device::Simpler(_) | Device::Plugin(_) => {}
             Device::Rack(r) => r.process(buf, tempo),
             Device::External(e) => {
                 let g = from_db(e.gain_db);

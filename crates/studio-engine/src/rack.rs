@@ -24,6 +24,8 @@ use crate::clip::DeviceInfo;
 use crate::devices::{from_db, Device, Param, Settings, Unit};
 use crate::kit::Smooth;
 use crate::midifx::{push as add, Note, NoteEvent};
+use opendj_plugin_host::Transport;
+use std::time::{Duration, Instant};
 
 /// The most branches a rack holds.
 pub const MAX_BRANCHES: usize = 128;
@@ -282,12 +284,15 @@ impl RackSettings {
         true
     }
 
-    /// Whether `d` can go in a chain: the studio's own audio devices, and
-    /// instruments and MIDI effects in a rack that plays notes. Plug-ins
-    /// and racks inside racks come later.
+    /// Whether `d` can go in a chain: the studio's own audio devices and
+    /// effect plug-ins, and instruments (plug-ins too) and MIDI effects in
+    /// a rack that plays notes. Racks inside racks come later.
     pub fn accepts(&self, d: &DeviceInfo) -> bool {
         let Some(s) = d.builtin.as_ref() else {
-            return false;
+            return d
+                .plugin
+                .as_ref()
+                .is_some_and(|p| !p.instrument || self.plays_notes());
         };
         if matches!(s, Settings::Rack(_) | Settings::External(_)) {
             return false;
@@ -430,6 +435,73 @@ fn zone(chain: &[DeviceInfo], d: &DeviceInfo) -> (usize, usize) {
     }
 }
 
+/// A plug-in inside a rack. Its helper starts on its own thread; until it
+/// joins, an effect passes the sound through and an instrument is quiet.
+pub struct Hosted {
+    pub instrument: bool,
+    slot: Option<Box<crate::engine::PluginSlot>>,
+    /// Its buffers, one channel each: in left, in right, out left, out
+    /// right.
+    planar: Vec<f32>,
+}
+
+impl Hosted {
+    pub fn new(instrument: bool) -> Hosted {
+        Hosted {
+            instrument,
+            slot: None,
+            planar: vec![0.0; 4 * CHUNK],
+        }
+    }
+
+    /// Runs one chunk (at most [`CHUNK`] frames) through the plug-in, an
+    /// instrument playing `notes`. Off, an effect passes the sound and an
+    /// instrument is quiet.
+    fn run(
+        &mut self,
+        buf: &mut [[f32; 2]],
+        notes: &[Midi],
+        on: bool,
+        transport: Transport,
+        deadline: Instant,
+    ) {
+        let n = buf.len().min(CHUNK);
+        let conn = match self.slot.as_mut().and_then(|s| s.conn_mut()) {
+            Some(c) if on => c,
+            _ => {
+                if self.instrument {
+                    buf.fill([0.0; 2]);
+                }
+                return;
+            }
+        };
+        let (inl, rest) = self.planar.split_at_mut(CHUNK);
+        let (inr, rest) = rest.split_at_mut(CHUNK);
+        let (outl, outr) = rest.split_at_mut(CHUNK);
+        for (i, f) in buf[..n].iter().enumerate() {
+            let (l, r) = if self.instrument {
+                (0.0, 0.0)
+            } else {
+                (f[0], f[1])
+            };
+            inl[i] = l;
+            inr[i] = r;
+        }
+        let events: &[Midi] = if self.instrument { notes } else { &[] };
+        let left = deadline.saturating_duration_since(Instant::now());
+        conn.process_events(
+            [&inl[..n], &inr[..n]],
+            [&mut outl[..n], &mut outr[..n]],
+            transport.for_plugins(),
+            events,
+            left.max(Duration::from_micros(300)),
+        );
+        for (i, f) in buf[..n].iter_mut().enumerate() {
+            *f = [outl[i], outr[i]];
+        }
+    }
+}
+
 /// A branch as the audio thread runs it.
 struct Run {
     devices: Vec<(bool, Device)>,
@@ -462,6 +534,10 @@ pub struct Rack {
     rate: f64,
     /// The song's beat at the start of the next block (see [`Rack::at_beat`]).
     beat: f64,
+    /// Whether the song plays, and when this block must be done by: the
+    /// plug-ins inside are told (see [`Rack::until`]).
+    playing: bool,
+    deadline: Option<Instant>,
 }
 
 impl Rack {
@@ -475,11 +551,15 @@ impl Rack {
                     .devices
                     .iter()
                     .take(MAX_DEVICES)
-                    .map(|d| match &d.builtin {
-                        Some(b) => (d.on, Device::new(b, rate)),
-                        // Plug-ins don't run inside racks yet: a silent
-                        // stand-in keeps the places in step.
-                        None => (
+                    .map(|d| match (&d.builtin, &d.plugin) {
+                        (Some(b), _) => (d.on, Device::new(b, rate)),
+                        // Its helper joins once it's up (see Rack::attach).
+                        (None, Some(p)) => {
+                            (d.on, Device::Plugin(Box::new(Hosted::new(p.instrument))))
+                        }
+                        // A device that doesn't play here: a silent stand-in
+                        // keeps the places in step.
+                        (None, None) => (
                             false,
                             Device::Utility(crate::devices::UtilitySettings::default()),
                         ),
@@ -509,6 +589,8 @@ impl Rack {
             held: [0; 128],
             rate,
             beat: 0.0,
+            playing: false,
+            deadline: None,
         }
     }
 
@@ -586,8 +668,44 @@ impl Rack {
             // No chains: the sound passes through, as in Live.
             return;
         }
+        let per_frame = self.per_frame(tempo);
         for chunk in buf.chunks_mut(CHUNK) {
-            self.mix(chunk, tempo, true);
+            let lo = self.beat;
+            self.mix(chunk, tempo, lo, true);
+            self.beat += chunk.len() as f64 * per_frame;
+        }
+    }
+
+    fn per_frame(&self, tempo: f64) -> f64 {
+        if tempo.is_finite() && tempo > 0.0 {
+            tempo / 60.0 / self.rate
+        } else {
+            0.0
+        }
+    }
+
+    /// Whether the song plays, and when the block must be done by: the
+    /// plug-ins inside have until then.
+    pub fn until(&mut self, playing: bool, deadline: Instant) {
+        self.playing = playing;
+        self.deadline = Some(deadline);
+    }
+
+    /// A plug-in inside came up: it takes its place in chain `b` at `d`.
+    /// Gives the slot back when that place holds no plug-in waiting for
+    /// one (the rack was edited while it started).
+    pub fn attach(
+        &mut self,
+        b: usize,
+        d: usize,
+        slot: Box<crate::engine::PluginSlot>,
+    ) -> Option<Box<crate::engine::PluginSlot>> {
+        match self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
+            Some((_, Device::Plugin(h))) if h.slot.is_none() => {
+                h.slot = Some(slot);
+                None
+            }
+            _ => Some(slot),
         }
     }
 
@@ -608,11 +726,7 @@ impl Rack {
         if !self.plays_notes() {
             return;
         }
-        let per_frame = if tempo.is_finite() && tempo > 0.0 {
-            tempo / 60.0 / self.rate
-        } else {
-            0.0
-        };
+        let per_frame = self.per_frame(tempo);
         let mut from = 0;
         let mut at = 0;
         while at < buf.len() {
@@ -627,7 +741,7 @@ impl Rack {
             for r in self.runs.iter_mut() {
                 r.midi_effects(lo, per_frame, n, tempo);
             }
-            self.mix(&mut buf[at..end], tempo, false);
+            self.mix(&mut buf[at..end], tempo, lo, false);
             from = to;
             at = end;
         }
@@ -725,8 +839,17 @@ impl Rack {
 
     /// Runs every branch over `out`'s frames and sums them into it: from
     /// `out` itself for an effect rack, from the notes for an instrument.
-    fn mix(&mut self, out: &mut [[f32; 2]], tempo: f64, effect: bool) {
+    fn mix(&mut self, out: &mut [[f32; 2]], tempo: f64, beat: f64, effect: bool) {
         let n = out.len();
+        let transport = Transport {
+            bpm: tempo,
+            beat,
+            playing: self.playing,
+        };
+        // Each plug-in round trip gets what's left of the block's time.
+        let deadline = self.deadline.unwrap_or_else(|| {
+            Instant::now() + Duration::from_secs_f64(n as f64 / self.rate * 0.75)
+        });
         let any_solo = self.runs.iter().any(|r| r.solo);
         let mut sum = [[0.0f32; 2]; CHUNK];
         let sum = &mut sum[..n];
@@ -742,6 +865,10 @@ impl Rack {
             // so its notes end and tails keep their state; it just isn't
             // heard.
             for (on, d) in r.devices.iter_mut() {
+                if let Device::Plugin(h) = d {
+                    h.run(buf, &r.notes, *on, transport, deadline);
+                    continue;
+                }
                 if !*on {
                     continue;
                 }
@@ -1336,5 +1463,33 @@ mod tests {
         assert!((7..=9).contains(&starts), "{starts}");
         // Its clock follows the song: it went on from beat 0 to beat 2.
         assert!((rack.beat - 2.0).abs() < 1e-6, "{}", rack.beat);
+    }
+
+    #[test]
+    fn plugins_go_in_chains_where_their_kind_fits() {
+        let plugin = |instrument: bool| DeviceInfo {
+            name: "Plug".into(),
+            kind: "VST3".into(),
+            on: true,
+            plugin: Some(crate::clip::PluginRef {
+                name: "Plug".into(),
+                vendor: String::new(),
+                format: crate::clip::PluginFormat::Named,
+                instrument,
+                state: None,
+            }),
+            builtin: None,
+        };
+        let mut fx = RackSettings::new(Kind::Audio);
+        fx.add_chain(None);
+        assert_eq!(fx.insert(0, 0, plugin(false)), Some(0));
+        assert_eq!(fx.insert(0, 0, plugin(true)), None);
+        let mut inst = RackSettings::new(Kind::Instrument);
+        inst.add_chain(Some(utility(1.0)));
+        // A plug-in instrument takes the chain's first place.
+        assert_eq!(inst.insert(0, 1, plugin(true)), Some(0));
+        // Its place waits for its helper: an effect passes sound through.
+        let rack = Rack::new(&fx, RATE);
+        assert!(matches!(rack.runs[0].devices[0].1, Device::Plugin(_)));
     }
 }

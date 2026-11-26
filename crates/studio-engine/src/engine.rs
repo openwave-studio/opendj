@@ -166,6 +166,15 @@ pub enum Command {
         from: usize,
         to: usize,
     },
+    /// A plug-in inside a rack came up: it takes its place in chain
+    /// `branch` (at `inner`) of the rack at `device` on `track`.
+    AttachInner {
+        track: usize,
+        device: usize,
+        branch: usize,
+        inner: usize,
+        slot: Box<PluginSlot>,
+    },
     /// A device moves to another track's chain, at `to` there. Its sound
     /// (and a plug-in's helper) goes with it.
     Transfer {
@@ -257,6 +266,14 @@ impl PluginSlot {
             instrument,
             on,
             kind: SlotKind::Plugin(conn),
+        }
+    }
+
+    /// Its plug-in's connection, if it is a plug-in.
+    pub(crate) fn conn_mut(&mut self) -> Option<&mut Connection> {
+        match &mut self.kind {
+            SlotKind::Plugin(c) => Some(c),
+            SlotKind::Builtin(_) => None,
         }
     }
 
@@ -1033,6 +1050,34 @@ impl Engine {
                 }
                 None
             }
+            Command::AttachInner {
+                track,
+                device,
+                branch,
+                inner,
+                slot,
+            } => {
+                let rack = self.columns.get_mut(track).and_then(|c| {
+                    c.slots.iter_mut().find_map(|s| match &mut s.kind {
+                        SlotKind::Builtin(crate::devices::Device::Rack(r))
+                            if s.device == device =>
+                        {
+                            Some(r)
+                        }
+                        _ => None,
+                    })
+                });
+                let left = match rack {
+                    Some(r) => r.attach(branch, inner, slot),
+                    None => Some(slot),
+                };
+                // The rack changed while it started: dropped on the UI
+                // thread.
+                if let Some(s) = left {
+                    let _ = self.trash.push(Trash::Device(s));
+                }
+                None
+            }
             Command::Insert { track, at, slot } => {
                 self.edit(Edit::Insert { track, at, slot });
                 None
@@ -1556,11 +1601,14 @@ impl Engine {
                         // Plays the notes; off, the track is quiet.
                         if slot.on {
                             d.at_beat(transport.beat);
+                            d.until(transport.playing, deadline);
                             d.play(midi, scratch, transport.bpm);
                         } else {
                             scratch.fill([0.0; 2]);
                         }
                     } else if slot.on {
+                        d.at_beat(transport.beat);
+                        d.until(transport.playing, deadline);
                         d.process(scratch, transport.bpm);
                     }
                     continue;
@@ -2746,6 +2794,61 @@ mod tests {
             .ok();
         studio.process(&mut out);
         assert!(out.iter().all(|f| f[0].abs() < 1e-6));
+    }
+
+    #[test]
+    fn a_plugin_inside_a_rack_plays_once_its_helper_joins() {
+        use crate::rack::{Branch, Kind, RackSettings};
+        let mut set = one_note_set();
+        let synth = crate::clip::DeviceInfo {
+            name: "Synth".into(),
+            kind: "Test".into(),
+            on: true,
+            plugin: Some(crate::clip::PluginRef {
+                name: "Synth".into(),
+                vendor: String::new(),
+                format: crate::clip::PluginFormat::Named,
+                instrument: true,
+                state: None,
+            }),
+            builtin: None,
+        };
+        let mut rack = RackSettings::new(Kind::Instrument);
+        rack.branches.push(Branch {
+            devices: vec![synth],
+            ..Default::default()
+        });
+        set[0].devices = vec![builtin(
+            "Instrument Rack",
+            true,
+            crate::devices::Settings::Rack(rack),
+        )];
+        let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let (slot, _h) = slot("test-synth", 0, true);
+        r.commands
+            .push(Command::AttachInner {
+                track: 0,
+                device: 0,
+                branch: 0,
+                inner: 0,
+                slot,
+            })
+            .ok();
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        // The test synth plays key/127 as a constant while the note holds.
+        let want = soft_clip(60.0 / 127.0 * pan_gains(set[0].pan)[0] * MASTER);
+        let mut level = 0.0;
+        for _ in 0..40 {
+            studio.process(&mut out);
+            level = out[BLOCK / 2][0];
+            if (level - want).abs() < 0.01 {
+                break;
+            }
+        }
+        assert!((level - want).abs() < 0.01, "{level} vs {want}");
+        // Nothing went to the trash: it found its place.
+        assert!(r.trash.pop().is_err());
     }
 
     fn builtin(name: &str, on: bool, s: crate::devices::Settings) -> crate::clip::DeviceInfo {

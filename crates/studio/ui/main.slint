@@ -1674,6 +1674,8 @@ component ChainDevice inherits Device {
     // Map mode is on for the rack it is in.
     in property <bool> inner-mapping;
     callback remove-inner(int, int, int, int);
+    // A plug-in inside a rack: its window opened or closed.
+    callback open-inner(int, int, int, int);
 
     width: d.builtin ? d.panel-width * 1px : 150px;
     title: d.name;
@@ -1703,7 +1705,13 @@ component ChainDevice inherits Device {
             root.toggle-device(track-index, at, v);
         }
     }
-    opened => { root.open-device(track-index, at); }
+    opened => {
+        if inner-at >= 0 {
+            root.open-inner(track-index, at, inner-chain, inner-at);
+        } else {
+            root.open-device(track-index, at);
+        }
+    }
     if d.rack > 0: HorizontalLayout {
         padding-left: 8px;
         spacing: 4px;
@@ -1759,7 +1767,7 @@ component ChainDevice inherits Device {
             border-radius: 3px;
             background: open-area.has-hover ? Theme.line : Theme.bg;
             Text { text: "Open window"; color: Theme.text; font-size: 11px; }
-            open-area := TouchArea { clicked => { root.open-device(track-index, at); } }
+            open-area := TouchArea { clicked => { root.opened(); } }
         }
     }
 }
@@ -2083,6 +2091,9 @@ export component AppWindow inherits Window {
     callback pick-macro(int, int, int);
     callback map-knob(int, int, int);
     callback remove-inner(int, int, int, int);
+    // A plug-in inside a rack (track, the rack's place, chain, place): its
+    // window opened or closed.
+    callback open-inner(int, int, int, int);
     // The browser's devices.
     in property <[BrowserItem]> browser-instruments;
     in property <[BrowserItem]> browser-effects;
@@ -2586,6 +2597,7 @@ export component AppWindow inherits Window {
                                         device-click(t, a, p) => { root.device-click(t, a, p); }
                                         map-knob(t, a, p) => { root.map-knob(t, a, p); }
                                         remove-inner(t, a, b, x) => { root.remove-inner(t, a, b, x); }
+                                        open-inner(t, a, b, x) => { root.open-inner(t, a, b, x); }
                                     }
                                     inner-end := Rectangle {
                                         width: 96px;

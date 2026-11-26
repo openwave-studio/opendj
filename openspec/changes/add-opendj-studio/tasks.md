@@ -61,7 +61,9 @@
 - [x] 2.47 Drum Rack on the rack engine: each pad a Simpler with its own chain, choke groups; samples dropped on its pads
 - [x] 2.48 Racks in the window: open a chain beside its rack, drag devices into a chain (and move them, take them out), new chains by dropping on the chain list, map knobs inside to a macro (Map)
 - [x] 2.49 MIDI effects inside rack chains: they lead their chain, before its instrument, and follow the song's beat
-- [ ] 2.50 Racks, next: plug-ins inside chains, Live's macro mappings, macros on Push's encoders, macro ranges
+- [x] 2.50 Plug-ins inside rack chains: each in its own helper, joining its place once it's up; a rack edit restarts them with the sound they had
+- [ ] 2.51 Plug-ins in the browser (openDJ's scanned list), to drag onto tracks and into chains
+- [ ] 2.52 Racks, next: Live's macro mappings, macros on Push's encoders, macro ranges, keeping plug-ins running through a rack edit
 
 ## 3. Clip editing
 

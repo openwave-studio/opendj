@@ -611,6 +611,12 @@ fn ui(
             p.toggle_window(t as usize, d as usize);
         });
     }
+    {
+        let p = plugins.clone();
+        window.on_open_inner(move |t, a, b, d| {
+            p.toggle_inner_window(t as usize, a as usize, b.max(0) as usize, d.max(0) as usize);
+        });
+    }
     // Devices: the browser's, dragged onto tracks; a track's, moved,
     // copied or removed.
     let (instruments, effects, midi, all) = browser_devices();
@@ -1350,7 +1356,9 @@ fn track_row(
     let (inner, chain_name) = open
         .and_then(|(at, b)| match &devices[at].builtin {
             Some(devices::Settings::Rack(r)) => Some((
-                rack_ui::inner_rows(r, b, old.map(|o| &o.inner)),
+                rack_ui::inner_rows(r, b, old.map(|o| &o.inner), &|d| {
+                    plugins.inner_state(t, at, b, d)
+                }),
                 r.branches
                     .get(b)
                     .map(|x| x.name.clone())
