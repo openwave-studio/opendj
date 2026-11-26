@@ -58,9 +58,12 @@ Under them, each row's choices sit side by side, one click each:
     bass widest, as on rekordbox. A **Color** row under it picks
     **Blue-Orange** (rekordbox's colors) or **Lilac-Cyan**.
   - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
-    color of its stem pad, the loudest at the back, so you can see where
-    the vocals come in or the bass drops out. A track shows RGB until its
-    stems are ready.
+    color of its stem pad, so you can see where the vocals come in or the
+    bass drops out. A **Layout** row under it picks **Stacked** (the
+    default: the track's own waveform cut into a layer per stem, kick and
+    bass at the middle, vocals and hi-hats on the outside) or **3 Lanes**
+    (three small waveforms on the large ones: drums, music and vocals; the
+    overviews stay stacked). A track shows RGB until its stems are ready.
 - **Needle**: where the play line sits on the large waveforms. **Center**
   (the default) shows as much of what has played as what is coming;
   **Left** puts it a quarter of the way in, so three quarters of the

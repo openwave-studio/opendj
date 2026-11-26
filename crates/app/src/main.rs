@@ -3162,8 +3162,10 @@ impl Gpu {
                 (wave_look::style(), wave_look::palette(), wave_look::half());
             let vocals = wave_look::show_vocals();
             let needle = wave_look::needle();
+            let stem_layout = wave_look::stem_layout();
             for v in self.scrolling.iter_mut().chain(self.overview.iter_mut()) {
                 v.set_style(style);
+                v.set_stem_layout(stem_layout);
                 v.set_palette(palette);
                 v.set_half(half);
                 v.set_needle(needle);
@@ -3311,6 +3313,7 @@ impl Gpu {
                             stems: stems.as_deref().map_or(&[], |s| s.levels.as_slice()),
                             stem_rate: stem_levels::RATE,
                             stem_colors: stems.as_deref().map_or(&[], |s| s.colors.as_slice()),
+                            stem_roles: stems.as_deref().map_or(&[], |s| s.roles.as_slice()),
                         },
                     )),
                     t.waveform.clone(),
