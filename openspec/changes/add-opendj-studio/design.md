@@ -160,3 +160,22 @@ the demo) asks for a name, so a Live set is never written over. Opening a
 set restarts the studio with it, so the sound card, Push and plug-ins start
 clean; with unsaved changes it asks first. Changes are told apart by
 comparing the set's text with the text last saved or opened.
+
+### Macro mappings and Push
+
+A Live set's macro mappings come in with it: Live marks a setting a macro
+turns with a `KeyMidi` on channel 16 whose controller is the macro, and
+keeps the range on it (`MidiControllerRange`, in the setting's units).
+Which of our settings it is shows by reading the device again with that
+setting moved, which also gives the range's ends in our units. In map mode
+the rack shows what the picked macro turns, each with Min and Max knobs;
+a range edit is a setting of the rack (`rack::range`), so it reaches the
+audio thread without rebuilding the rack.
+
+On Push, Device mode works as in Live: the buttons under the screen pick
+the track's sound or a device on it, the encoders turn eight settings at a
+time (pages over the screen, or Page left and right). A rack's first page
+is its macros, and the buttons over the screen go into its chains; the
+first button under the screen comes back out. Stop Clip held with a
+track's button stops that track, on its own the selected one, with Shift
+all of them.

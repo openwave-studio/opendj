@@ -1666,7 +1666,7 @@ fn track_row(
                     o.chain.row_data(i - o.midi_count as usize)
                 }
             });
-            device_row(
+            let mut row = device_row(
                 DeviceData {
                     name: d.name.as_str().into(),
                     kind: d.kind.as_str().into(),
@@ -1681,7 +1681,13 @@ fn track_row(
                 },
                 builtin.as_ref(),
                 before.as_ref(),
-            )
+            );
+            if let (Some(m), Some(devices::Settings::Rack(r))) =
+                (rack_ui::mapping(t, i), builtin.as_ref())
+            {
+                row.ranges = rack_ui::ranges(r, m);
+            }
+            row
         })
         .collect();
     let (inner, chain_name) = open

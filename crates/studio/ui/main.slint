@@ -41,6 +41,13 @@ export struct KnobData {
     mapped: int,
 }
 
+// A setting a macro turns, with its range's two ends as knobs.
+export struct RangeData {
+    name: string,
+    low: KnobData,
+    high: KnobData,
+}
+
 // An EQ Eight band on its graph: place across and down, 0..1.
 export struct DotData {
     band: int,
@@ -104,6 +111,8 @@ export struct DeviceData {
     // the macro being mapped (-1 when not mapping).
     open-chain: int,
     mapping: int,
+    // In map mode: what the macro being mapped turns, and over what range.
+    ranges: [RangeData],
     // A device inside a rack: the setting that switches it on.
     on-index: int,
 }
@@ -1316,6 +1325,53 @@ component Graph inherits Rectangle {
 }
 
 // One of the studio's own devices: its switches, knobs and graph.
+// Map mode on a rack: the settings the picked macro turns, each with the
+// setting at the macro's bottom (Min) and top (Max).
+component MacroRanges inherits VerticalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    callback param(int, float);
+    width: 210px;
+    padding: 6px;
+    spacing: 2px;
+    Text {
+        text: d.ranges.length == 0 ? "Click knobs in the open chain to map them" : "Mapped";
+        color: Theme.dim;
+        font-size: 10px;
+        wrap: word-wrap;
+    }
+    for r in d.ranges: HorizontalLayout {
+        height: 50px;
+        spacing: 2px;
+        Text {
+            text: r.name;
+            color: Theme.text;
+            font-size: 10px;
+            wrap: word-wrap;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Knob {
+            width: 46px;
+            size: 22px;
+            label: r.low.name;
+            display: r.low.text;
+            value: r.low.value;
+            tint: root.tint;
+            changed(v) => { root.param(r.low.index, v); }
+        }
+        Knob {
+            width: 46px;
+            size: 22px;
+            label: r.high.name;
+            display: r.high.text;
+            value: r.high.value;
+            tint: root.tint;
+            changed(v) => { root.param(r.high.index, v); }
+        }
+    }
+}
+
 component KnobPanel inherits HorizontalLayout {
     in property <DeviceData> d;
     in property <color> tint;
@@ -1672,7 +1728,8 @@ component ChainDevice inherits Device {
     // A plug-in inside a rack: its window opened or closed.
     callback open-inner(int, int, int, int);
 
-    width: d.builtin ? d.panel-width * 1px : 150px;
+    // Map mode on a rack adds the macro's ranges beside its knobs.
+    width: d.builtin ? (d.panel-width + (d.rack > 0 && d.mapping >= 0 ? 214 : 0)) * 1px : 150px;
     title: d.name;
     on: d.on;
     track: track-index;
@@ -1735,6 +1792,11 @@ component ChainDevice inherits Device {
             param(k, v) => { root.device-param(track-index, at, k, v); }
             click(k) => { root.device-click(track-index, at, k); }
             pressed(k) => { root.pick-macro(track-index, at, k); }
+        }
+        if d.mapping >= 0: MacroRanges {
+            d: d;
+            tint: d.rack == 1 ? Theme.effect : root.track-color;
+            param(k, v) => { root.device-param(track-index, at, k, v); }
         }
     }
     if d.builtin && !d.eq && d.rack == 0: KnobPanel {
