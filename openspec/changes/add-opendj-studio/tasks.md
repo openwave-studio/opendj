@@ -48,7 +48,7 @@
 - [ ] 2.33 Play a hardware synth through an External Instrument on macOS
 - [x] 2.35 Devices dragged from the browser onto a track or a place in its device bar, moved along the chain or to another track, copied with Option, removed with ×; effects stay after the instrument and an instrument replaces the track's; edits fade so they don't click (design.md, Device chains)
 - [ ] 2.36 Built-in synths and plug-ins dragged from the browser; dropping on empty space makes a track
-- [ ] 2.37 Audio Effect and Instrument Racks: branches, zones and macros (design.md, Racks)
+- [x] 2.37 Audio Effect and Instrument Racks: branches, zones and macros, read from the set (design.md, Racks)
 - [ ] 2.38 Drag, reorder and copy devices on macOS
 - [x] 2.39 Device kit: knobs that glide, LFO, envelope follower and 4x oversampling shared by devices; every device checked for no allocation, no runaway, silent tails, a clean bypass and no clicks, and benched against a budget (design.md, Devices)
 - [x] 2.40 Limiter, Auto Filter (FunDSP filters) and Saturator (4x oversampled), read from the set
@@ -58,7 +58,8 @@
 - [ ] 2.44 Delay compensation for devices that look ahead or oversample (Limiter, Saturator), so tracks stay in time
 - [ ] 2.45 One analog-style synth with Bass, Pad and Lead as its presets
 - [ ] 2.46 Hear Limiter, Auto Filter, Saturator, the MIDI effects and Simpler on macOS
-- [ ] 2.47 Drum Rack on the rack engine: each pad a Simpler with its own chain, choke groups
+- [x] 2.47 Drum Rack on the rack engine: each pad a Simpler with its own chain, choke groups; samples dropped on its pads
+- [ ] 2.48 Racks, next: drag devices into a chain, map a knob to a macro, MIDI effects and plug-ins inside chains, Live's macro mappings, macros on Push's encoders
 
 ## 3. Clip editing
 

@@ -1,0 +1,834 @@
+//! Racks: a device that holds several chains (branches) side by side.
+//!
+//! - An **Audio Effect Rack** sends its input into every branch and sums
+//!   what comes out.
+//! - An **Instrument Rack** plays the track's notes: each branch has an
+//!   instrument and audio effects after it, and takes the notes inside its
+//!   key and velocity zones (splits and layers).
+//! - A **Drum Rack** is an instrument rack with one branch per pad: a
+//!   branch takes one note, plays it as its own note (C3 by default) and
+//!   cuts off the other pads in its choke group.
+//!
+//! Every branch renders into its own buffer, made before the audio starts,
+//! so a rack never allocates while it plays. Eight macro knobs turn
+//! settings of the devices inside it, each between a low and a high value.
+//! A branch's structure (its devices) is fixed while it plays: adding or
+//! removing a device inside a rack replaces the rack.
+
+use opendj_plugin_host::shm::Midi;
+
+use crate::clip::DeviceInfo;
+use crate::devices::{from_db, Device, Param, Settings, Unit};
+use crate::kit::Smooth;
+
+/// The most branches a rack holds.
+pub const MAX_BRANCHES: usize = 128;
+/// The most devices in a branch.
+pub const MAX_DEVICES: usize = 16;
+/// Macro knobs on every rack.
+pub const MACROS: usize = 8;
+/// Frames a branch renders at once; a longer block is split.
+const CHUNK: usize = 512;
+/// Note events a branch takes per chunk.
+const MAX_NOTES: usize = 256;
+/// Settings of each branch on the rack's own list (see `Settings::params`):
+/// volume, pan, on, solo.
+pub const BRANCH_PARAMS: usize = 4;
+
+/// Where inner settings start: `INNER | branch << 14 | device << 9 | param`
+/// names one setting of a device inside the rack.
+pub const INNER: usize = 1 << 22;
+
+/// The index [`RackSettings::set`] takes for a setting of a device inside.
+pub fn inner(branch: usize, device: usize, param: usize) -> usize {
+    INNER | (branch & 0xFF) << 14 | (device & 0x1F) << 9 | (param & 0x1FF)
+}
+
+/// (branch, device, param) of an inner index.
+pub fn split(i: usize) -> Option<(usize, usize, usize)> {
+    (i & INNER != 0).then_some(((i >> 14) & 0xFF, (i >> 9) & 0x1F, i & 0x1FF))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Kind {
+    Audio,
+    Instrument,
+    Drum,
+}
+
+/// A chain inside a rack.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Branch {
+    pub name: String,
+    pub devices: Vec<DeviceInfo>,
+    pub volume_db: f32,
+    /// -1 left to 1 right.
+    pub pan: f32,
+    pub on: bool,
+    pub solo: bool,
+    /// Instrument Rack: the notes it takes, lowest and highest.
+    pub keys: (u8, u8),
+    /// Instrument Rack: the velocities it takes, 1..127.
+    pub velocities: (u8, u8),
+    /// Drum Rack: the note it takes.
+    pub note: u8,
+    /// Drum Rack: the note its instrument plays (C3 = 60).
+    pub play: u8,
+    /// Drum Rack: pads in the same group (not 0) cut each other off.
+    pub choke: u8,
+}
+
+impl Default for Branch {
+    fn default() -> Self {
+        Branch {
+            name: "Chain".into(),
+            devices: Vec::new(),
+            volume_db: 0.0,
+            pan: 0.0,
+            on: true,
+            solo: false,
+            keys: (0, 127),
+            velocities: (1, 127),
+            note: 36,
+            play: 60,
+            choke: 0,
+        }
+    }
+}
+
+/// One setting a macro turns.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Target {
+    pub branch: u8,
+    pub device: u8,
+    pub param: u16,
+    /// The setting at the macro's bottom and top.
+    pub low: f32,
+    pub high: f32,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Macro {
+    pub name: String,
+    /// 0..1.
+    pub value: f32,
+    pub targets: Vec<Target>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct RackSettings {
+    pub kind: Kind,
+    pub branches: Vec<Branch>,
+    pub macros: Vec<Macro>,
+}
+
+impl RackSettings {
+    pub fn new(kind: Kind) -> RackSettings {
+        RackSettings {
+            kind,
+            branches: Vec::new(),
+            macros: (0..MACROS)
+                .map(|i| Macro {
+                    name: format!("Macro {}", i + 1),
+                    value: 0.0,
+                    targets: Vec::new(),
+                })
+                .collect(),
+        }
+    }
+
+    pub fn summary(&self) -> String {
+        let n = self.branches.len();
+        match (self.kind, n) {
+            (Kind::Drum, 1) => "1 pad".into(),
+            (Kind::Drum, _) => format!("{n} pads"),
+            (_, 1) => "1 chain".into(),
+            _ => format!("{n} chains"),
+        }
+    }
+
+    /// The macros, then each branch's volume, pan, on and solo.
+    pub fn params(&self) -> Vec<Param> {
+        let mut list: Vec<Param> = self
+            .macros
+            .iter()
+            .map(|m| Param::knob(m.name.clone(), m.value, 0.0, 1.0, Unit::Percent))
+            .collect();
+        for b in &self.branches {
+            list.push(Param::knob(
+                format!("{} Volume", b.name),
+                b.volume_db,
+                -70.0,
+                6.0,
+                Unit::Db,
+            ));
+            list.push(
+                Param::knob(format!("{} Pan", b.name), b.pan, -1.0, 1.0, Unit::Pan).bipolar(),
+            );
+            list.push(Param::toggle(format!("{} On", b.name), b.on));
+            list.push(Param::toggle(format!("{} Solo", b.name), b.solo));
+        }
+        list
+    }
+
+    /// Changes a macro (moving its targets), a branch's setting, or one
+    /// setting of a device inside (an [`inner`] index).
+    pub fn set(&mut self, i: usize, v: f32) {
+        if let Some((b, d, p)) = split(i) {
+            if let Some(s) = self
+                .branches
+                .get_mut(b)
+                .and_then(|b| b.devices.get_mut(d))
+                .and_then(|d| d.builtin.as_mut())
+            {
+                s.set(p, v);
+            }
+            return;
+        }
+        if i < self.macros.len() {
+            let v = v.clamp(0.0, 1.0);
+            self.macros[i].value = v;
+            for t in self.macros[i].targets.clone() {
+                let to = t.low + (t.high - t.low) * v;
+                self.set(
+                    inner(t.branch as usize, t.device as usize, t.param as usize),
+                    to,
+                );
+            }
+            return;
+        }
+        let k = i - self.macros.len();
+        let Some(b) = self.branches.get_mut(k / BRANCH_PARAMS) else {
+            return;
+        };
+        match k % BRANCH_PARAMS {
+            0 => b.volume_db = v.clamp(-70.0, 6.0),
+            1 => b.pan = v.clamp(-1.0, 1.0),
+            2 => b.on = v >= 0.5,
+            _ => b.solo = v >= 0.5,
+        }
+    }
+
+    /// Whether it plays notes (an instrument or drum rack).
+    pub fn plays_notes(&self) -> bool {
+        self.kind != Kind::Audio
+    }
+
+    /// The branch a Drum Rack plays for `note`.
+    pub fn pad(&self, note: u8) -> Option<usize> {
+        self.branches.iter().position(|b| b.note == note)
+    }
+}
+
+/// A branch as the audio thread runs it.
+struct Run {
+    devices: Vec<(bool, Device)>,
+    buf: Vec<[f32; 2]>,
+    notes: Vec<Midi>,
+    gain: Smooth,
+    pan: f32,
+    on: bool,
+    solo: bool,
+    keys: (u8, u8),
+    velocities: (u8, u8),
+    note: u8,
+    play: u8,
+    choke: u8,
+}
+
+pub struct Rack {
+    kind: Kind,
+    runs: Vec<Run>,
+    macros: Vec<Macro>,
+    /// Which branches each key's note went to, so its note-off follows.
+    held: [u128; 128],
+}
+
+impl Rack {
+    pub fn new(s: &RackSettings, rate: f64) -> Rack {
+        let runs = s
+            .branches
+            .iter()
+            .take(MAX_BRANCHES)
+            .map(|b| Run {
+                devices: b
+                    .devices
+                    .iter()
+                    .take(MAX_DEVICES)
+                    .filter_map(|d| Some((d.on, Device::new(d.builtin.as_ref()?, rate))))
+                    .collect(),
+                buf: vec![[0.0; 2]; CHUNK],
+                notes: Vec::with_capacity(MAX_NOTES),
+                gain: Smooth::knob(from_db(b.volume_db), rate),
+                pan: b.pan,
+                on: b.on,
+                solo: b.solo,
+                keys: b.keys,
+                velocities: b.velocities,
+                note: b.note,
+                play: b.play,
+                choke: b.choke,
+            })
+            .collect();
+        Rack {
+            kind: s.kind,
+            runs,
+            macros: s.macros.clone(),
+            held: [0; 128],
+        }
+    }
+
+    /// See [`RackSettings::set`]. Never allocates.
+    pub fn set(&mut self, i: usize, v: f32) {
+        if let Some((b, d, p)) = split(i) {
+            if let Some((_, dev)) = self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
+                dev.set(p, v);
+            }
+            return;
+        }
+        if i < self.macros.len() {
+            let v = v.clamp(0.0, 1.0);
+            self.macros[i].value = v;
+            for k in 0..self.macros[i].targets.len() {
+                let t = self.macros[i].targets[k];
+                let to = t.low + (t.high - t.low) * v;
+                if let Some((_, dev)) = self
+                    .runs
+                    .get_mut(t.branch as usize)
+                    .and_then(|r| r.devices.get_mut(t.device as usize))
+                {
+                    dev.set(t.param as usize, to);
+                }
+            }
+            return;
+        }
+        let k = i - self.macros.len();
+        let Some(r) = self.runs.get_mut(k / BRANCH_PARAMS) else {
+            return;
+        };
+        match k % BRANCH_PARAMS {
+            0 => r.gain.set(from_db(v.clamp(-70.0, 6.0))),
+            1 => r.pan = v.clamp(-1.0, 1.0),
+            2 => r.on = v >= 0.5,
+            _ => r.solo = v >= 0.5,
+        }
+    }
+
+    /// Frames of delay inside: the slowest branch.
+    pub fn latency(&self) -> usize {
+        self.runs
+            .iter()
+            .map(|r| r.devices.iter().map(|(_, d)| d.latency()).sum::<usize>())
+            .max()
+            .unwrap_or(0)
+    }
+
+    pub fn plays_notes(&self) -> bool {
+        self.kind != Kind::Audio
+    }
+
+    /// Audio Effect Rack: every branch processes `buf`, and their sum
+    /// takes its place.
+    pub fn process(&mut self, buf: &mut [[f32; 2]], tempo: f64) {
+        if self.plays_notes() {
+            return;
+        }
+        if self.runs.is_empty() {
+            // No chains: the sound passes through, as in Live.
+            return;
+        }
+        for chunk in buf.chunks_mut(CHUNK) {
+            self.mix(chunk, tempo, true);
+        }
+    }
+
+    /// Instrument or Drum Rack: plays the block's notes into `buf`.
+    pub fn play(&mut self, midi: &[Midi], buf: &mut [[f32; 2]], tempo: f64) {
+        buf.fill([0.0; 2]);
+        if !self.plays_notes() {
+            return;
+        }
+        let mut from = 0;
+        let mut at = 0;
+        while at < buf.len() {
+            let n = CHUNK.min(buf.len() - at);
+            let end = at + n;
+            let mut to = from;
+            while to < midi.len() && (midi[to].frame as usize) < end {
+                to += 1;
+            }
+            self.route(&midi[from..to], at as u32);
+            self.mix(&mut buf[at..end], tempo, false);
+            from = to;
+            at = end;
+        }
+    }
+
+    /// Hands each branch the notes it takes, at frames from `offset`.
+    fn route(&mut self, midi: &[Midi], offset: u32) {
+        for r in self.runs.iter_mut() {
+            r.notes.clear();
+        }
+        let drum = self.kind == Kind::Drum;
+        for m in midi {
+            let frame = m.frame.saturating_sub(offset);
+            let status = m.data[0] & 0xF0;
+            let key = m.data[1] & 127;
+            let on = status == 0x90 && m.data[2] > 0;
+            let off = status == 0x80 || (status == 0x90 && m.data[2] == 0);
+            if !on && !off {
+                // Controllers and the rest go to every branch.
+                for r in self.runs.iter_mut() {
+                    push(
+                        &mut r.notes,
+                        Midi {
+                            frame,
+                            data: m.data,
+                        },
+                    );
+                }
+                if status == 0xB0 && (m.data[1] == 123 || m.data[1] == 120) {
+                    self.held = [0; 128];
+                }
+                continue;
+            }
+            if off {
+                let mask = self.held[key as usize];
+                self.held[key as usize] = 0;
+                for (i, r) in self.runs.iter_mut().enumerate() {
+                    if mask & (1 << i) != 0 {
+                        let k = if drum { r.play } else { key };
+                        push(
+                            &mut r.notes,
+                            Midi {
+                                frame,
+                                data: [m.data[0], k, m.data[2]],
+                            },
+                        );
+                    }
+                }
+                continue;
+            }
+            let vel = m.data[2];
+            let mut choke = 0;
+            let mut mask = 0u128;
+            for (i, r) in self.runs.iter_mut().enumerate() {
+                let takes = if drum {
+                    r.note == key
+                } else {
+                    (r.keys.0..=r.keys.1).contains(&key)
+                        && (r.velocities.0..=r.velocities.1).contains(&vel)
+                };
+                if !takes {
+                    continue;
+                }
+                mask |= 1 << i;
+                let k = if drum { r.play } else { key };
+                push(
+                    &mut r.notes,
+                    Midi {
+                        frame,
+                        data: [m.data[0], k, vel],
+                    },
+                );
+                if drum && r.choke != 0 {
+                    choke = r.choke;
+                }
+            }
+            self.held[key as usize] |= mask;
+            if choke != 0 {
+                // The other pads of its group stop at once (fast fade).
+                for (i, r) in self.runs.iter_mut().enumerate() {
+                    if r.choke == choke && mask & (1 << i) == 0 {
+                        push(
+                            &mut r.notes,
+                            Midi {
+                                frame,
+                                data: [0xB0, 120, 0],
+                            },
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// Runs every branch over `out`'s frames and sums them into it: from
+    /// `out` itself for an effect rack, from the notes for an instrument.
+    fn mix(&mut self, out: &mut [[f32; 2]], tempo: f64, effect: bool) {
+        let n = out.len();
+        let any_solo = self.runs.iter().any(|r| r.solo);
+        let mut sum = [[0.0f32; 2]; CHUNK];
+        let sum = &mut sum[..n];
+        for r in self.runs.iter_mut() {
+            let heard = r.on && (!any_solo || r.solo);
+            let buf = &mut r.buf[..n];
+            if effect {
+                buf.copy_from_slice(out);
+            } else {
+                buf.fill([0.0; 2]);
+            }
+            // A branch that's off or not soloed still runs its instrument,
+            // so its notes end and tails keep their state; it just isn't
+            // heard.
+            for (on, d) in r.devices.iter_mut() {
+                if !*on {
+                    continue;
+                }
+                if d.plays_notes() {
+                    d.play(&r.notes, buf, tempo);
+                } else {
+                    d.process(buf, tempo);
+                }
+            }
+            let (l, rr) = ((1.0 - r.pan).min(1.0), (1.0 + r.pan).min(1.0));
+            for (s, f) in sum.iter_mut().zip(buf.iter()) {
+                let g = r.gain.tick();
+                if heard {
+                    s[0] += f[0] * g * l;
+                    s[1] += f[1] * g * rr;
+                }
+            }
+        }
+        out.copy_from_slice(sum);
+    }
+
+    /// How many chains it runs.
+    #[cfg(test)]
+    pub fn branches(&self) -> usize {
+        self.runs.len()
+    }
+}
+
+/// Adds a note to a branch's list, dropping it if the list is full rather
+/// than growing.
+fn push(list: &mut Vec<Midi>, m: Midi) {
+    if list.len() < list.capacity() {
+        list.push(m);
+    }
+}
+
+/// Puts a sample on a Drum Rack pad: the pad at `note`, else the first
+/// free one from C1 (36). A pad that has a Simpler keeps its settings and
+/// takes the new sample. Returns the pad's note, or None when it's full.
+pub fn put_sample(
+    rack: &mut RackSettings,
+    note: Option<u8>,
+    path: std::path::PathBuf,
+    sample: std::sync::Arc<opendj_engine::sampler::Sample>,
+) -> Option<u8> {
+    use crate::simpler::SimplerSettings;
+    let note = match note {
+        Some(n) => n,
+        None => (36u8..128).find(|n| rack.pad(*n).is_none())?,
+    };
+    let name = path
+        .file_stem()
+        .map_or("Pad".into(), |n| n.to_string_lossy().to_string());
+    let i = match rack.pad(note) {
+        Some(i) => i,
+        None if rack.branches.len() < MAX_BRANCHES => {
+            rack.branches.push(Branch {
+                note,
+                ..Default::default()
+            });
+            rack.branches.len() - 1
+        }
+        None => return None,
+    };
+    let b = &mut rack.branches[i];
+    b.name = name;
+    let simpler = b.devices.iter_mut().find_map(|d| match d.builtin.as_mut() {
+        Some(Settings::Simpler(s)) => Some(s),
+        _ => None,
+    });
+    match simpler {
+        Some(s) => {
+            s.path = Some(path);
+            s.sample = Some(sample);
+        }
+        None => b.devices.insert(
+            0,
+            DeviceInfo {
+                name: "Simpler".into(),
+                kind: "Built-in".into(),
+                on: true,
+                plugin: None,
+                builtin: Some(Settings::Simpler(SimplerSettings {
+                    path: Some(path),
+                    sample: Some(sample),
+                    // Drums play to their end, as in Live.
+                    mode: 1,
+                    ..Default::default()
+                })),
+            },
+        ),
+    }
+    Some(note)
+}
+
+/// A Drum Rack from a set's pads: each pad a Simpler in One-Shot mode.
+pub fn drum_rack(kit: &crate::clip::Kit) -> RackSettings {
+    use crate::simpler::SimplerSettings;
+    let mut rack = RackSettings::new(Kind::Drum);
+    for p in kit.pads.iter().take(MAX_BRANCHES) {
+        let len = p.sample.as_ref().map_or(0.0, |s| s.seconds());
+        let share = |t: f64| {
+            if len > 0.0 {
+                (t / len).clamp(0.0, 1.0) as f32
+            } else {
+                0.0
+            }
+        };
+        let simpler = SimplerSettings {
+            path: Some(p.path.clone()),
+            sample: p.sample.clone(),
+            mode: 1,
+            root: 60,
+            start: share(p.start),
+            end: p.end.map_or(1.0, share),
+            attack_ms: 0.1,
+            release_ms: 50.0,
+            transpose: p.transpose.round(),
+            detune: (p.transpose - p.transpose.round()) * 100.0,
+            volume_db: 20.0 * p.gain.max(1e-6).log10(),
+            velocity: p.velocity,
+            ..Default::default()
+        };
+        rack.branches.push(Branch {
+            name: p.name.clone(),
+            devices: vec![DeviceInfo {
+                name: "Simpler".into(),
+                kind: "Built-in".into(),
+                on: true,
+                plugin: None,
+                builtin: Some(Settings::Simpler(simpler)),
+            }],
+            pan: p.pan,
+            on: p.on,
+            note: p.note,
+            play: 60,
+            choke: p.choke,
+            ..Default::default()
+        });
+    }
+    rack
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::devices::UtilitySettings;
+    use crate::simpler::SimplerSettings;
+    use std::sync::Arc;
+
+    const RATE: f64 = 48_000.0;
+
+    fn sample(freq: f32) -> Arc<opendj_engine::sampler::Sample> {
+        let frames: Vec<[f32; 2]> = (0..RATE as usize)
+            .map(|i| {
+                let v = (i as f32 * freq * std::f32::consts::TAU / RATE as f32).sin() * 0.5;
+                [v, v]
+            })
+            .collect();
+        let audio = opendj_engine::track::Audio::from_frames(RATE as u32, frames);
+        Arc::new(opendj_engine::sampler::Sample::from_audio(&audio, RATE))
+    }
+
+    fn simpler(freq: f32, mode: u8) -> DeviceInfo {
+        DeviceInfo {
+            name: "Simpler".into(),
+            kind: "Built-in".into(),
+            on: true,
+            plugin: None,
+            builtin: Some(Settings::Simpler(SimplerSettings {
+                sample: Some(sample(freq)),
+                mode,
+                volume_db: 0.0,
+                velocity: 0.0,
+                release_ms: 5.0,
+                ..Default::default()
+            })),
+        }
+    }
+
+    fn utility(gain: f32) -> DeviceInfo {
+        DeviceInfo {
+            name: "Utility".into(),
+            kind: "Built-in".into(),
+            on: true,
+            plugin: None,
+            builtin: Some(Settings::Utility(UtilitySettings {
+                gain,
+                ..Default::default()
+            })),
+        }
+    }
+
+    fn level(buf: &[[f32; 2]]) -> f32 {
+        buf.iter().fold(0.0f32, |m, f| m.max(f[0].abs()))
+    }
+
+    #[test]
+    fn an_effect_rack_sums_its_branches() {
+        let mut s = RackSettings::new(Kind::Audio);
+        for g in [0.5, 0.25] {
+            s.branches.push(Branch {
+                devices: vec![utility(g)],
+                ..Default::default()
+            });
+        }
+        let mut r = Rack::new(&s, RATE);
+        let mut buf = vec![[1.0f32; 2]; 1_000];
+        r.process(&mut buf, 120.0);
+        assert!((buf[999][0] - 0.75).abs() < 1e-4, "{}", buf[999][0]);
+        // Muting one leaves the other.
+        r.set(MACROS + 2, 0.0);
+        let mut buf = vec![[1.0f32; 2]; 1_000];
+        r.process(&mut buf, 120.0);
+        assert!((buf[999][0] - 0.25).abs() < 1e-4, "{}", buf[999][0]);
+        // Soloing the first leaves only it.
+        r.set(MACROS + 2, 1.0);
+        r.set(MACROS + 3, 1.0);
+        let mut buf = vec![[1.0f32; 2]; 1_000];
+        r.process(&mut buf, 120.0);
+        assert!((buf[999][0] - 0.5).abs() < 1e-4, "{}", buf[999][0]);
+    }
+
+    #[test]
+    fn an_empty_effect_rack_passes_the_sound() {
+        let mut r = Rack::new(&RackSettings::new(Kind::Audio), RATE);
+        let mut buf = vec![[0.3f32; 2]; 64];
+        r.process(&mut buf, 120.0);
+        assert!(buf.iter().all(|f| *f == [0.3; 2]));
+    }
+
+    #[test]
+    fn instrument_zones_split_the_keyboard() {
+        let mut s = RackSettings::new(Kind::Instrument);
+        s.branches.push(Branch {
+            devices: vec![simpler(220.0, 0)],
+            keys: (0, 59),
+            ..Default::default()
+        });
+        s.branches.push(Branch {
+            devices: vec![simpler(220.0, 0)],
+            keys: (60, 127),
+            velocities: (100, 127),
+            ..Default::default()
+        });
+        let mut r = Rack::new(&s, RATE);
+        let mut buf = vec![[0.0f32; 2]; 2_048];
+        // A high soft note: neither branch takes it.
+        r.play(&[Midi::note_on(0, 0, 72, 50)], &mut buf, 120.0);
+        assert_eq!(level(&buf), 0.0);
+        // A low note: the first branch.
+        r.play(&[Midi::note_on(0, 0, 48, 50)], &mut buf, 120.0);
+        assert!(level(&buf[1_000..]) > 0.2);
+        // Its note-off reaches it, whatever the zones.
+        r.play(&[Midi::note_off(0, 0, 48)], &mut buf, 120.0);
+        let mut buf = vec![[0.0f32; 2]; 4_096];
+        r.play(&[], &mut buf, 120.0);
+        assert!(level(&buf[2_000..]) < 1e-3);
+    }
+
+    #[test]
+    fn a_macro_turns_settings_inside() {
+        let mut s = RackSettings::new(Kind::Audio);
+        s.branches.push(Branch {
+            devices: vec![utility(1.0)],
+            ..Default::default()
+        });
+        // Utility's gain (setting 0) from -24 dB to 0 dB.
+        s.macros[0].targets.push(Target {
+            branch: 0,
+            device: 0,
+            param: 0,
+            low: -24.0,
+            high: 0.0,
+        });
+        s.set(0, 0.25);
+        let Some(Settings::Utility(u)) = &s.branches[0].devices[0].builtin else {
+            panic!()
+        };
+        assert!((u.gain - from_db(-18.0)).abs() < 1e-6, "{}", u.gain);
+        let mut r = Rack::new(&s, RATE);
+        r.set(0, 0.5);
+        let mut buf = vec![[1.0f32; 2]; 4_800];
+        r.process(&mut buf, 120.0);
+        let want = from_db(-12.0);
+        assert!((buf[4_799][0] - want).abs() < 0.01, "{}", buf[4_799][0]);
+    }
+
+    #[test]
+    fn drum_pads_play_their_note_and_choke_each_other() {
+        let mut s = RackSettings::new(Kind::Drum);
+        for (note, choke) in [(42, 1), (46, 1), (36, 0)] {
+            s.branches.push(Branch {
+                name: format!("{note}"),
+                devices: vec![simpler(220.0, 1)],
+                note,
+                choke,
+                ..Default::default()
+            });
+        }
+        let mut r = Rack::new(&s, RATE);
+        let mut buf = vec![[0.0f32; 2]; 2_048];
+        // An open hat, then the closed hat chokes it.
+        r.play(&[Midi::note_on(0, 0, 46, 127)], &mut buf, 120.0);
+        assert!(level(&buf[1_000..]) > 0.2);
+        let count = |r: &Rack| {
+            r.runs
+                .iter()
+                .map(|x| match &x.devices[0].1 {
+                    Device::Simpler(s) => s.sounding(),
+                    _ => 0,
+                })
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(count(&r), [0, 1, 0]);
+        r.play(&[Midi::note_on(0, 0, 42, 127)], &mut buf, 120.0);
+        assert_eq!(count(&r), [1, 0, 0]);
+        // A note no pad takes plays nothing new.
+        r.play(&[Midi::note_on(0, 0, 50, 127)], &mut buf, 120.0);
+        assert_eq!(count(&r), [1, 0, 0]);
+        // The kick isn't in the group.
+        r.play(&[Midi::note_on(0, 0, 36, 127)], &mut buf, 120.0);
+        assert_eq!(count(&r), [1, 0, 1]);
+        assert_eq!(r.branches(), 3);
+    }
+
+    #[test]
+    fn samples_fill_the_next_free_pad_or_the_one_named() {
+        let mut r = RackSettings::new(Kind::Drum);
+        let kick = sample(60.0);
+        assert_eq!(
+            put_sample(&mut r, None, "a/Kick.wav".into(), kick.clone()),
+            Some(36)
+        );
+        assert_eq!(
+            put_sample(&mut r, None, "a/Snare.wav".into(), kick.clone()),
+            Some(37)
+        );
+        // Onto the kick's pad: it keeps its settings, the sample changes.
+        if let Some(Settings::Simpler(s)) = r.branches[0].devices[0].builtin.as_mut() {
+            s.transpose = 3.0;
+        }
+        assert_eq!(
+            put_sample(&mut r, Some(36), "a/Kick 2.wav".into(), kick),
+            Some(36)
+        );
+        assert_eq!(r.branches.len(), 2);
+        assert_eq!(r.branches[0].name, "Kick 2");
+        let Some(Settings::Simpler(s)) = &r.branches[0].devices[0].builtin else {
+            panic!()
+        };
+        assert_eq!((s.transpose, s.mode), (3.0, 1));
+    }
+
+    #[test]
+    fn inner_indices_round_trip() {
+        assert_eq!(split(inner(12, 3, 17)), Some((12, 3, 17)));
+        assert_eq!(split(5), None);
+    }
+}

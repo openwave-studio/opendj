@@ -1555,7 +1555,7 @@ impl Engine {
                     if slot.instrument {
                         // Plays the notes; off, the track is quiet.
                         if slot.on {
-                            d.play(midi, scratch);
+                            d.play(midi, scratch, transport.bpm);
                         } else {
                             scratch.fill([0.0; 2]);
                         }

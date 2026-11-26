@@ -13,7 +13,8 @@
 
 // The engine's modules, under their old paths.
 pub use opendj_studio_engine::{
-    als, clip, control, conv, devices, engine, fx, link, plugins, scale, sound, steps,
+    als, clip, control, conv, devices, engine, fx, link, plugins, rack, scale, simpler, sound,
+    steps,
 };
 
 mod audio;
@@ -693,8 +694,25 @@ fn ui(
                         return;
                     }
                 };
-                let mut s = c
-                    .devices(to_track)
+                let chain = c.devices(to_track);
+                // Onto a Drum Rack: a pad (the one it was let go on, else
+                // the next free one).
+                let drum = chain.iter().find(|d| {
+                    matches!(&d.builtin, Some(devices::Settings::Rack(r)) if r.kind == rack::Kind::Drum)
+                });
+                if let Some(mut info) = drum.cloned() {
+                    let Some(devices::Settings::Rack(r)) = info.builtin.as_mut() else {
+                        return;
+                    };
+                    let pad = u8::try_from(d.get_to_pad()).ok();
+                    if rack::put_sample(r, pad, path, sample).is_some()
+                        && p.drop_new(to_track, place, info).is_some()
+                    {
+                        c.select_track(to_track);
+                    }
+                    return;
+                }
+                let mut s = chain
                     .into_iter()
                     .find_map(|d| match d.builtin {
                         Some(devices::Settings::Simpler(s)) => Some(s),
@@ -1024,12 +1042,61 @@ fn device_row(
         }
     }
     let graph = !row.curve.is_empty() && !eq;
+    // A rack: its chains (or pads) beside its macros.
+    let (switches, rack_width) = if let devices::Settings::Rack(r) = s {
+        use rack::{Kind, BRANCH_PARAMS, MACROS};
+        row.rack = match r.kind {
+            Kind::Audio => 1,
+            Kind::Instrument => 2,
+            Kind::Drum => 3,
+        };
+        let chains: Vec<ChainData> = r
+            .branches
+            .iter()
+            .enumerate()
+            .map(|(b, c)| ChainData {
+                name: c.name.as_str().into(),
+                volume: format!("{:+.1} dB", c.volume_db).into(),
+                zone: match r.kind {
+                    Kind::Instrument if c.keys != (0, 127) => format!(
+                        "{}-{}",
+                        simpler::key_name(c.keys.0),
+                        simpler::key_name(c.keys.1)
+                    )
+                    .into(),
+                    _ => "".into(),
+                },
+                on: c.on,
+                solo: c.solo,
+                index: (MACROS + b * BRANCH_PARAMS) as i32,
+            })
+            .collect();
+        // Pads from C1 (36) up, as Push lays them out.
+        let pads: Vec<PadData> = (36u8..52)
+            .map(|note| {
+                let b = r.pad(note).map(|i| &r.branches[i]);
+                PadData {
+                    note: note as i32,
+                    name: b
+                        .map_or_else(|| simpler::key_name(note), |b| b.name.clone())
+                        .into(),
+                    filled: b.is_some(),
+                }
+            })
+            .collect();
+        row.chains = reuse(old.map(|o| &o.chains), chains);
+        row.pads = reuse(old.map(|o| &o.pads), pads);
+        (Vec::new(), 200.0)
+    } else {
+        (switches, 0.0)
+    };
     row.panel_width = if eq {
         560.0
     } else {
         (if switches.is_empty() { 0.0 } else { 96.0 }
             + cols as f32 * 58.0
             + if graph { 190.0 } else { 0.0 }
+            + rack_width
             + 20.0)
             .max(150.0)
     };

@@ -371,11 +371,20 @@ impl Simpler {
         }
     }
 
+    fn choke(&mut self) {
+        for v in self.voices.iter_mut().filter(|v| v.stage != Stage::Idle) {
+            v.stage = Stage::Release;
+            v.fast = true;
+        }
+    }
+
     fn event(&mut self, m: &Midi) {
         match (m.data[0] & 0xF0, m.data[2]) {
             (0x90, v) if v > 0 => self.note_on(m.data[1], v as f32 / 127.0),
             (0x90, _) | (0x80, _) => self.note_off(m.data[1]),
-            (0xB0, _) if m.data[1] == 123 || m.data[1] == 120 => self.all_off(),
+            (0xB0, _) if m.data[1] == 123 => self.all_off(),
+            // All sound off (a Drum Rack's choke): a fast fade.
+            (0xB0, _) if m.data[1] == 120 => self.choke(),
             _ => {}
         }
     }

@@ -70,17 +70,33 @@ Where each device lives, and the bar it has to clear.
   plays it on a Simpler named after it; a track that has a Simpler keeps
   its settings and swaps the sample.
 
-## Racks (planned)
+## Racks
 
-A rack is a device in the chain that holds several chains side by side.
+A rack is a device in the chain that holds several chains side by side
+(`rack.rs`).
+
+- **Built so far.** Audio Effect, Instrument and Drum Racks run built-in
+  devices in up to 128 chains, each with volume, pan, on, solo and (for
+  instruments) key and velocity zones; a note-off follows its note-on to
+  the chains that took it. Eight macros turn settings inside, each between
+  a low and a high value; a setting inside has an index of its own
+  (`rack::inner`), so `DeviceParam` reaches it. A Drum Rack's pad takes
+  one note and plays it as its own note (C3), and a pad in a choke group
+  stops the others with all-sound-off, which Simpler fades over 3 ms.
+  Chains render in 512-frame chunks into their own buffers.
+- **Not yet.** Plug-ins and MIDI effects inside chains, dragging devices
+  into a chain (a change inside a rack replaces the rack for now), Live's
+  macro mappings, macros on Push. The window shows the chains (on, solo)
+  or a Drum Rack's 16 pads, which play on click and take a sample dropped
+  on them, beside the macros.
 
 - **Kinds.** An *Audio Effect Rack* sits with the audio effects: its input
   goes to every branch and the branches are summed. An *Instrument Rack*
   sits in the instrument place: each branch has its own MIDI effects,
   instrument and audio effects, with a key range and a velocity range for
-  splits and layers. A *MIDI Effect Rack* comes later. Drum Rack becomes an
-  Instrument Rack with one branch per pad note (today's `KitPlayer` plays
-  its samples meanwhile).
+  splits and layers. A *MIDI Effect Rack* comes later. A Live set's Drum
+  Rack plays on the rack engine (one Simpler per pad, sharing the kit's
+  decoded samples); `KitPlayer` still plays the built-in kits.
 - **Branches.** Each branch has volume, pan, on and solo. Branches render
   into their own preallocated buffers (`MAX_BLOCK` frames each), so a rack
   adds no allocation on the audio thread. Up to 16 branches.

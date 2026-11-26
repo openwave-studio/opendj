@@ -40,6 +40,7 @@ pub mod link {
 pub mod plugins;
 #[cfg(test)]
 mod quality;
+pub mod rack;
 pub mod saturator;
 pub mod scale;
 pub mod session;
