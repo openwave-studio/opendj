@@ -28,7 +28,7 @@ const MOD_OCTAVES: f32 = 5.0;
 /// Frames between cutoff updates.
 const STRIDE: usize = 8;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct AutoFilterSettings {
     /// An index into [`TYPES`].
     pub kind: u8,

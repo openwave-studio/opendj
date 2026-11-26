@@ -9,7 +9,7 @@ use crate::sound::{DRUM_NOTES, PARAMS};
 
 pub const STAGES: usize = 8;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Stage {
     /// Scale degree, 0..=7 (7 is the octave). On a drum track, which of
     /// the first eight drum sounds.
@@ -145,7 +145,7 @@ pub fn press(stage: &mut Stage, layer: Layer, row: u8, select: bool, shift: bool
 }
 
 /// A stage clip: what Push edits.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Stages {
     pub stages: [Stage; STAGES],
     /// Beats per pulse.

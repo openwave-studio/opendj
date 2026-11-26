@@ -9,8 +9,8 @@ Club players show a phase meter: how far a deck's beats are ahead of or behind t
 ## What Changes
 
 - **A 14 px strip under each deck's overview** in the 2-Deck layout, right under the phrase colours. The title row gets shorter by about as much (the key box slims), so the deck keeps its height and the cover stays the same square.
-- **Beat counter moves into the strip**, on its inner side next to the mixer: beat dots, phrase.bar.beat and the countdown to the next phrase (mirrored on the left deck, so the dots sit closest to the mixer). The beat counter setting still applies: Beats shows the dots only, Off leaves that corner empty.
-- **EARLY / LATE line** on the strip's outer side: a line half a beat each way with a marker at this deck's offset from the master deck, and the offset in ms. Whole beats off (the wrong beat of the bar) read "+1 BEAT" or "−1 BEAT" instead. Green within 10 ms, yellow within 35 ms, orange beyond or when whole beats off.
+- **Beat counter moves into the strip**, on its inner side next to the mixer: the countdown to the next phrase ("↓ 10 › DROP"), a big beat number and the current phrase's name over the beat dots (no phrase.bar.beat count) (mirrored on the left deck, so the dots sit closest to the mixer). The beat counter setting still applies: Beats shows the dots only, Off leaves that corner empty.
+- **EARLY / LATE line** on the strip's outer side: a line half a beat each way with a marker at this deck's offset from the master deck, colored by how close it is. Whole beats off (the wrong beat of the bar) read "+1 BEAT" or "−1 BEAT". Green within 10 ms, yellow within 35 ms, orange beyond or when whole beats off.
 - **Tempo arrows** beside it: ▲ or ▼ points the way to move this deck's tempo fader until its BPM matches the master's (following the fader direction setting); both dark within 0.05 BPM.
 - **What a deck compares with**: the deck with the MASTER badge, else the other playing deck. Half and double tempo count as matched. The master deck's line is drawn muted with a MASTER label; with nothing to compare with, it is muted and blank.
 - The strip always shows, at a fixed height, so the deck never changes height.

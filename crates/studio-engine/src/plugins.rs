@@ -62,9 +62,31 @@ struct Entry {
     id: u64,
     track: usize,
     device: usize,
+    /// Inside a rack (at `device`): the chain and the place in it.
+    inner: Option<(usize, usize)>,
     name: String,
     state: State,
     helper: Option<Helper>,
+}
+
+/// The plug-ins a device holds: its own, or those in a rack's chains (by
+/// chain and place).
+fn plugins_of(d: &DeviceInfo) -> Vec<(Option<(usize, usize)>, PluginRef)> {
+    if let Some(p) = &d.plugin {
+        return vec![(None, p.clone())];
+    }
+    let Some(crate::devices::Settings::Rack(r)) = &d.builtin else {
+        return Vec::new();
+    };
+    let mut list = Vec::new();
+    for (b, chain) in r.branches.iter().enumerate() {
+        for (i, x) in chain.devices.iter().enumerate() {
+            if let Some(p) = &x.plugin {
+                list.push((Some((b, i)), p.clone()));
+            }
+        }
+    }
+    list
 }
 
 /// The plug-ins of a set.
@@ -83,12 +105,20 @@ struct Book {
 }
 
 impl Book {
-    fn add(&mut self, track: usize, device: usize, name: &str, state: State) -> u64 {
+    fn add(
+        &mut self,
+        track: usize,
+        device: usize,
+        inner: Option<(usize, usize)>,
+        name: &str,
+        state: State,
+    ) -> u64 {
         self.next_id += 1;
         self.entries.push(Entry {
             id: self.next_id,
             track,
             device,
+            inner,
             name: name.into(),
             state,
             helper: None,
@@ -107,12 +137,21 @@ impl Book {
     }
 }
 
-/// The helper binary, next to the studio's own.
+/// The helper binary: next to the studio's own, else (run from source) one
+/// built with another profile in the same target folder.
 pub fn helper_path() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
     let name = format!("opendj-plugin-host{}", std::env::consts::EXE_SUFFIX);
-    let path = exe.parent()?.join(name);
-    path.is_file().then_some(path)
+    let dir = exe.parent()?;
+    let path = dir.join(&name);
+    if path.is_file() {
+        return Some(path);
+    }
+    let target = dir.parent()?;
+    ["release", "fast", "debug"]
+        .iter()
+        .map(|profile| target.join(profile).join(&name))
+        .find(|p| p.is_file())
 }
 
 impl Plugins {
@@ -130,9 +169,10 @@ impl Plugins {
             let mut book = plugins.entries.lock().expect("fresh lock");
             for (t, track) in tracks.iter().enumerate() {
                 for (d, device) in track.devices.iter().enumerate() {
-                    let Some(p) = &device.plugin else { continue };
-                    let id = book.add(t, d, &p.name, plugins.first_state());
-                    jobs.push((id, p.clone()));
+                    for (inner, p) in plugins_of(device) {
+                        let id = book.add(t, d, inner, &p.name, plugins.first_state());
+                        jobs.push((id, p));
+                    }
                 }
             }
         }
@@ -250,7 +290,7 @@ impl Plugins {
     fn first_state(&self) -> State {
         if self.helper.is_none() {
             State::Failed(
-                "Build the plug-in helper: cargo build --release -p opendj-plugin-host".into(),
+                "Build the plug-in helper: cargo build --profile fast -p opendj-plugin-host".into(),
             )
         } else {
             State::Loading
@@ -279,9 +319,19 @@ impl Plugins {
                 match result {
                     Ok((conn, h)) => {
                         let on = plugins.controls.device_on(e.track, e.device);
-                        plugins.controls.send(Command::Attach {
-                            track: e.track,
-                            slot: Box::new(PluginSlot::new(e.device, p.instrument, on, conn)),
+                        let slot = Box::new(PluginSlot::new(e.device, p.instrument, on, conn));
+                        plugins.controls.send(match e.inner {
+                            Some((branch, inner)) => Command::AttachInner {
+                                track: e.track,
+                                device: e.device,
+                                branch,
+                                inner,
+                                slot,
+                            },
+                            None => Command::Attach {
+                                track: e.track,
+                                slot,
+                            },
                         });
                         e.state = State::Running;
                         e.helper = Some(h);
@@ -314,15 +364,18 @@ impl Plugins {
                 crate::devices::Device::new(b, self.rate as f64),
             ))
         });
-        let plugin = device.plugin.clone();
+        let plugins = plugins_of(&device);
         let at = self
             .controls
             .edit_chains(|c| c.insert(track, at, device, slot))
             .flatten()?;
         book.shift(track, at, 1);
-        if let Some(p) = plugin {
-            let id = book.add(track, at, &p.name, self.first_state());
-            drop(book);
+        let jobs: Vec<(u64, PluginRef)> = plugins
+            .into_iter()
+            .map(|(inner, p)| (book.add(track, at, inner, &p.name, self.first_state()), p))
+            .collect();
+        drop(book);
+        for (id, p) in jobs {
             self.launch(id, p);
         }
         Some(at)
@@ -368,16 +421,20 @@ impl Plugins {
         {
             return false;
         }
-        let moving = book
+        // A rack's plug-ins go with it, as well as a device's own.
+        let moving: Vec<usize> = book
             .entries
             .iter()
-            .position(|e| e.track == track && e.device == from);
-        if let Some(i) = moving {
+            .enumerate()
+            .filter(|(_, e)| e.track == track && e.device == from)
+            .map(|(i, _)| i)
+            .collect();
+        for &i in &moving {
             book.entries[i].device = usize::MAX;
         }
         book.shift(track, from + 1, -1);
         book.shift(to_track, to, 1);
-        if let Some(i) = moving {
+        for &i in &moving {
             book.entries[i].track = to_track;
             book.entries[i].device = to;
         }
@@ -386,11 +443,26 @@ impl Plugins {
 
     /// The state of a device's plug-in; None when it has none.
     pub fn state(&self, track: usize, device: usize) -> Option<State> {
+        self.state_of(track, device, None)
+    }
+
+    /// The state of a plug-in inside the rack at `device`: chain `b`,
+    /// place `d`.
+    pub fn inner_state(&self, track: usize, device: usize, b: usize, d: usize) -> Option<State> {
+        self.state_of(track, device, Some((b, d)))
+    }
+
+    fn state_of(
+        &self,
+        track: usize,
+        device: usize,
+        inner: Option<(usize, usize)>,
+    ) -> Option<State> {
         let mut book = self.entries.lock().ok()?;
         let e = book
             .entries
             .iter_mut()
-            .find(|e| e.track == track && e.device == device)?;
+            .find(|e| e.track == track && e.device == device && e.inner == inner)?;
         if let Some(h) = &e.helper {
             if h.is_gone() {
                 e.state = State::Failed(format!("{} stopped working", e.name));
@@ -402,13 +474,22 @@ impl Plugins {
     /// Opens (or closes) a device's plug-in window. False when there is no
     /// running plug-in to show.
     pub fn toggle_window(&self, track: usize, device: usize) -> bool {
+        self.toggle(track, device, None)
+    }
+
+    /// As [`Plugins::toggle_window`], for a plug-in inside a rack.
+    pub fn toggle_inner_window(&self, track: usize, device: usize, b: usize, d: usize) -> bool {
+        self.toggle(track, device, Some((b, d)))
+    }
+
+    fn toggle(&self, track: usize, device: usize, inner: Option<(usize, usize)>) -> bool {
         let Ok(book) = self.entries.lock() else {
             return false;
         };
         match book
             .entries
             .iter()
-            .find(|e| e.track == track && e.device == device)
+            .find(|e| e.track == track && e.device == device && e.inner == inner)
             .and_then(|e| e.helper.as_ref())
         {
             Some(h) => {
@@ -416,6 +497,35 @@ impl Plugins {
                 true
             }
             None => false,
+        }
+    }
+
+    /// Puts the sound each running plug-in of the device at `device` has
+    /// now (its own, or those inside a rack) into `info`, so a copy or a
+    /// rebuilt rack starts where they are rather than where the set
+    /// left them.
+    pub fn keep_sounds(&self, track: usize, device: usize, info: &mut DeviceInfo) {
+        let Ok(book) = self.entries.lock() else {
+            return;
+        };
+        for e in book
+            .entries
+            .iter()
+            .filter(|e| e.track == track && e.device == device)
+        {
+            let Some(h) = &e.helper else { continue };
+            let target = match (e.inner, &mut info.builtin) {
+                (None, _) => info.plugin.as_mut(),
+                (Some((b, d)), Some(crate::devices::Settings::Rack(r))) => r
+                    .branches
+                    .get_mut(b)
+                    .and_then(|c| c.devices.get_mut(d))
+                    .and_then(|x| x.plugin.as_mut()),
+                _ => None,
+            };
+            if let (Some(p), Ok(data)) = (target, h.save_state()) {
+                p.state = Some(Arc::new(data));
+            }
         }
     }
 }
@@ -467,6 +577,17 @@ fn resolve(helper: &Path, p: &PluginRef) -> Result<Plugin, State> {
         }
         PluginFormat::Vst3(id) => {
             find(helper, &p.name, "vst3", Some(id)).ok_or_else(|| not_installed(&p.name))
+        }
+        PluginFormat::Clap { file, id } | PluginFormat::Vst3File { file, id } => {
+            if !file.exists() {
+                return Err(not_installed(&p.name));
+            }
+            let (file, id) = (file.clone(), id.clone());
+            Ok(if matches!(p.format, PluginFormat::Clap { .. }) {
+                Plugin::Clap { file, id }
+            } else {
+                Plugin::Vst3 { file, id }
+            })
         }
         PluginFormat::Named => find(helper, &p.name, "vst3", None)
             .or_else(|| find(helper, &p.name, "clap", None))

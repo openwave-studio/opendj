@@ -155,7 +155,7 @@ static SCALE_NAMES: [&str; SCALES.len()] = {
 };
 
 /// What a MIDI effect does and its settings, as a set saves them.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum MidiSettings {
     Arpeggiator {
         /// An index into [`ARP_STYLES`].

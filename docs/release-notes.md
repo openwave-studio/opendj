@@ -8,7 +8,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 - **2-Deck**: the loop controls sit under the pads (IN, OUT, then the length), and Play and CUE stay under the jog.
 - **Grid editor bar** under both decks in 2-Deck: grid type, BPM with Tap, ½ and ×2, downbeat, anchors and grid nudges, plus a new **Clear** for the grid. Prep uses the same bar. The Cues and Checklist tabs are gone.
 - Under each deck's key, a **Master** pill and a ⚡ pill replace the B, K, S and P letters. The ⚡ pill opens **Deck options**: Match BPM, Match Key, Sync on Play and Key Lock on load.
-- **Phase meter** (2-Deck): a strip under each overview shows the beat counter, an EARLY / LATE meter against the master deck (in ms, or whole beats) and tempo arrows that point the way to move the fader.
+- **Phase meter** (2-Deck): a strip under each overview shows a big beat number, the countdown to the next phrase and the current phrase's name, an EARLY / LATE meter against the master deck (the marker's colour shows how close; +1 BEAT when a beat off) and tempo arrows that point the way to move the fader.
 - **2-Deck mixer**: the level meters sit beside each fader and span its travel, with a peak hold. EQ / STEMS / SCULPT is a drop-down pill, and knob names are condensed capitals that show the value for a moment while you turn.
 - **Play** starts and pauses on the press of the button, not when you let go, so a track starts right on the beat.
 - **Pitch Color FX**: pick **Pitch** from the filter knob's menu, and the COLOR knob shifts the deck up to an octave down or up while keeping the tempo. PITCH buttons on the DDJ-FLX10, DDJ-1000, XDJ-R1, XDJ-RR, DDJ-RX/RZ/RZX/SZ and DDJ-800 pick it.
@@ -25,19 +25,19 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 
 **Instruments and Jam**
 
-- **Instrument deck**: a thin colored frame, the preset on the centre line, and a **PLAY | SEQ** switch between eight bigger knobs and the step sequencer, with a ‹ page › turner under it. A scope sits over the knobs: **OSC | FREQ** switches wave and spectrum, **PRE | POST** the instrument alone or after its effects.
+- **Instrument deck**: a thin colored frame, the preset on the centre line, and a **PLAY | SEQ** switch between eight bigger knobs and the step sequencer, with a ‹ page › turner under it. A scope sits over the knobs: **OSC | FREQ** switches wave and spectrum, **PRE | POST** the instrument alone or after its effects. Dice, clear and undo have drawn icons, the scope runs full width, and the deck fits a 1280 × 720 window.
 - **Note FX tiles** for Scale, Chord and Arp, with a round HOLD latch. New scales (Dorian, Phrygian, Mixolydian, Harmonic minor, Blues), chord **Strum** and arpeggiator **Swing**.
 - **Plugin panel**: **OPEN** on the instrument deck shows the instrument in the browser area, at its own shape for plugins that draw a display, or as sliders for the others. The panel's header opens the plugin's own window.
 - **Jam** is one column: a **Presets | Instruments** switch, search, a ☆ for starred items, and filter chips for sound type, character, instrument and maker.
 - **Pure Data** (experimental): Pd patches run as effects and instruments in the plugin helper, with the cyclone, ELSE and pd-lua libraries built in. A patch's knobs, sliders and radios become openDJ knobs, Lua displays show on the instrument deck or in a VIEW panel on an FX slot, and a slot keeps its knobs and Lua state with its sound.
-- **Komplete Kontrol M32** (Beta) drives the instrument deck: knobs, transport, presets, ARP and SCALE, and its screen.
+- **Komplete Kontrol M32** (Beta) drives the instrument deck: knobs, transport, presets, ARP and SCALE, and its screen. In the keyboard's MIDI mode its knobs still turn the instrument's knobs, and its screen shows one line in big letters.
 - An instrument's notes are no longer sent twice after a late block, which could leave a note hanging.
 
 **openDJ Studio and Session (preview)**
 
 - First steps of openDJ Studio, a clip-launching music app built on openDJ's engine: a Session grid of looping MIDI clips launched on the bar, in time over Ableton Link. It isn't in the downloads yet. Build it with `cargo run --profile fast --bin opendj-studio`.
 - In Studio, drag devices from the browser onto a track, reorder a track's chain in the device bar, or move a device to another track (Option/Alt copies it).
-- Studio gains Limiter, Auto Filter and Saturator devices, MIDI effects, Simpler, and racks with a Drum Rack, macros and MIDI effects inside rack chains.
+- Studio gains Limiter, Auto Filter and Saturator devices, MIDI effects, Simpler, racks (with a Drum Rack, macros, and MIDI effects and plug-ins inside rack chains), plug-ins in the browser, and saving and opening sets.
 - **Session** (preview), in openDJ itself: **File › Open Live Set…** opens an Ableton Live set, and its clips and scenes launch from the Jam source in time with your decks, with a mixer strip per track (pan, fader, mute, solo) and a Session channel of their own in the mixer. Plug-in tracks stay silent for now.
 
 **Stems**
@@ -63,6 +63,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 - The scrolling waveforms and the jog marker follow the display's refresh, so they no longer shake sideways when frames are missed.
 - The overview waveform is drawn at true loudness: quiet parts sit low and 3-Band no longer fills the height.
 - On computers with two graphics cards, openDJ asks for the faster one.
+- The **Stems** waveform look no longer draws the stems over each other: **Stacked** cuts the track's waveform into a layer per stem, and **3 Lanes** splits drums, music and vocals. New Ember and Lilac stem colors.
 
 **Controllers**
 

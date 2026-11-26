@@ -80,7 +80,7 @@ impl Smooth {
 }
 
 /// An LFO's wave.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum Wave {
     #[default]
     Sine,

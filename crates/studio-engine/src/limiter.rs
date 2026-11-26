@@ -16,7 +16,7 @@ pub const LOOKAHEADS: [f32; 3] = [1.5, 3.0, 6.0];
 const LOOKAHEAD_NAMES: &[&str] = &["1.5 ms", "3 ms", "6 ms"];
 const LINK_NAMES: &[&str] = &["Stereo", "L/R"];
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct LimiterSettings {
     /// Gain into the limiter, dB.
     pub gain_db: f32,

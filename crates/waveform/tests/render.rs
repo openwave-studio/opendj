@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use opendj_waveform::{
-    steady_grid, wgpu, Extras, Frame, GpuTrack, Mode, Palette, PhraseKind, Style, TempoLabel,
-    WaveformRenderer, WaveformView,
+    steady_grid, wgpu, Extras, Frame, GpuTrack, Mode, Palette, PhraseKind, StemLayout, StemRole,
+    Style, TempoLabel, WaveformRenderer, WaveformView,
 };
 
 /// Builds the coarser levels the way the analyser does (peaks by maximum;
@@ -1037,6 +1037,89 @@ fn draws_each_stem_in_its_color() {
     let px = draw(&without);
     let i = ((h / 2 * w + w / 2) * 4) as usize;
     assert!(px[i..i + 3].iter().any(|&c| c > 60), "drawn without stems");
+}
+
+/// Stems in three lanes: the drums in the top lane, the vocals in the
+/// bottom one, nothing in a lane whose stems are silent; stacked, the
+/// layers sit one on the other from the line out.
+#[test]
+fn lays_stems_out_in_lanes_or_stacked() {
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    let base: Vec<[u8; 8]> = (0..20_000)
+        .map(|_| [200, 120, 60, 220, 160, 100, 50, 180])
+        .collect();
+    // Kick, hats, bass, other, vocals: drums and vocals loud, the music
+    // lane silent.
+    let stems: Vec<[u8; 5]> = (0..200).map(|_| [230, 0, 0, 0, 230]).collect();
+    let colors = [0xD01010, 0x10D0D0, 0x101010, 0x101010, 0x10D010];
+    let roles = [
+        StemRole::Kick,
+        StemRole::Hats,
+        StemRole::Bass,
+        StemRole::Music,
+        StemRole::Vocal,
+    ];
+    let track = Arc::new(GpuTrack::with_extras(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(base),
+        1000.0,
+        Extras {
+            stems: &stems,
+            stem_rate: 10.0,
+            stem_colors: &colors,
+            stem_roles: &roles,
+            ..Extras::default()
+        },
+    ));
+    let (w, h) = (256u32, 90u32);
+    let frame = Frame {
+        play_seconds: 10.0,
+        visible_seconds: 8.0,
+        duration: 20.0,
+        first_bar_beat: 0.0,
+        grid: steady_grid(0.0, 0.0),
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        tempos: Vec::new(),
+        phrases: Vec::new(),
+    };
+    let draw = |layout: StemLayout| {
+        let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+        view.set_style(Style::Stems);
+        view.set_stem_layout(layout);
+        view.set_track(&device, &renderer, Some(&track));
+        view.render(&device, &queue, &renderer, Some(&frame), 1.0);
+        read_back(&device, &queue, &view)
+    };
+    let at = |px: &[u8], y: u32| {
+        let i = ((y * w + w / 3) * 4) as usize;
+        (px[i] as i32, px[i + 1] as i32, px[i + 2] as i32)
+    };
+    let px = draw(StemLayout::Lanes);
+    // Lanes 30 pixels tall (less the gaps): drums, music, vocals.
+    let (r, g, _) = at(&px, 14);
+    assert!(r > g + 60, "drums lane: r {r} g {g}");
+    let (r, g, b) = at(&px, 45);
+    assert!(r.max(g).max(b) < 60, "music lane empty: {r} {g} {b}");
+    let (r, g, _) = at(&px, 75);
+    assert!(g > r + 60, "vocal lane: r {r} g {g}");
+    let px = draw(StemLayout::Stacked);
+    // The kick at the line, the vocals out from it.
+    let (r, g, _) = at(&px, h / 2);
+    assert!(r > g + 60, "kick at the line: r {r} g {g}");
+    let (r, g, _) = at(&px, h / 2 - 25);
+    assert!(g > r + 60, "vocals further out: r {r} g {g}");
 }
 
 /// 3-Band layers as rekordbox does: equal bands draw the lows widest, the

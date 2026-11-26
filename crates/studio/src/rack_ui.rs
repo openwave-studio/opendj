@@ -8,7 +8,7 @@ use std::cell::Cell;
 use crate::clip::DeviceInfo;
 use crate::control::{self, Controls};
 use crate::devices::Settings;
-use crate::plugins::Plugins;
+use crate::plugins::{Plugins, State};
 use crate::rack::{self, RackSettings};
 use crate::{DeviceData, KnobData};
 use slint::{Model, ModelRc};
@@ -20,9 +20,19 @@ thread_local! {
     static MAPPING: Cell<Option<(usize, usize, usize)>> = const { Cell::new(None) };
 }
 
-/// The rack at `at` on `track`, if it is one.
-fn rack_at(c: &Controls, track: usize, at: usize) -> Option<(DeviceInfo, RackSettings)> {
-    let info = c.devices(track).get(at)?.clone();
+/// The rack at `at` on `track`, if it is one, with the sounds its
+/// plug-ins have now (an edit restarts them).
+fn rack_at(
+    c: &Controls,
+    p: &Plugins,
+    track: usize,
+    at: usize,
+) -> Option<(DeviceInfo, RackSettings)> {
+    let mut info = c.devices(track).get(at)?.clone();
+    if !matches!(&info.builtin, Some(Settings::Rack(_))) {
+        return None;
+    }
+    p.keep_sounds(track, at, &mut info);
     match &info.builtin {
         Some(Settings::Rack(r)) => {
             let r = r.clone();
@@ -83,6 +93,7 @@ pub fn inner_rows(
     r: &RackSettings,
     b: usize,
     old: Option<&ModelRc<DeviceData>>,
+    state: &dyn Fn(usize) -> Option<State>,
 ) -> Vec<DeviceData> {
     let Some(chain) = r.branches.get(b) else {
         return Vec::new();
@@ -94,15 +105,19 @@ pub fn inner_rows(
         .map(|(d, info)| {
             let before = old.and_then(|o| o.row_data(d));
             let before = before.as_ref();
+            let state = state(d);
+            let note = match &state {
+                Some(State::Running) => "Playing".to_string(),
+                Some(s) => s.text(),
+                None if info.builtin.is_some() => String::new(),
+                None => "Live device: no built-in match yet".to_string(),
+            };
             let mut row = crate::device_row(
                 DeviceData {
                     name: info.name.as_str().into(),
                     kind: info.kind.as_str().into(),
-                    note: if info.builtin.is_some() {
-                        "".into()
-                    } else {
-                        "Not playing inside a rack yet".into()
-                    },
+                    note: note.into(),
+                    can_open: state == Some(State::Running),
                     on: info.on,
                     instrument: control::is_instrument(info),
                     midi: control::is_midi_effect(info),
@@ -143,7 +158,7 @@ pub fn select_chain(c: &Controls, track: usize, at: usize, b: usize) {
 }
 
 pub fn remove_chain(c: &Controls, p: &Plugins, track: usize, at: usize, b: usize) {
-    if let Some((info, mut r)) = rack_at(c, track, at) {
+    if let Some((info, mut r)) = rack_at(c, p, track, at) {
         if r.remove_chain(b).is_some() {
             put_back(p, track, at, info, r, Some(b.saturating_sub(1)));
         }
@@ -151,7 +166,7 @@ pub fn remove_chain(c: &Controls, p: &Plugins, track: usize, at: usize, b: usize
 }
 
 pub fn remove_inner(c: &Controls, p: &Plugins, track: usize, at: usize, b: usize, d: usize) {
-    if let Some((info, mut r)) = rack_at(c, track, at) {
+    if let Some((info, mut r)) = rack_at(c, p, track, at) {
         if r.remove(b, d).is_some() {
             put_back(p, track, at, info, r, Some(b));
         }
@@ -180,7 +195,7 @@ pub fn map_knob(c: &Controls, p: &Plugins, track: usize, at: usize, index: usize
     let (Some(m), Some((b, d, param))) = (mapping(track, at), rack::split(index)) else {
         return;
     };
-    if let Some((info, mut r)) = rack_at(c, track, at) {
+    if let Some((info, mut r)) = rack_at(c, p, track, at) {
         r.toggle_map(m, b, d, param);
         put_back(p, track, at, info, r, Some(b));
     }
@@ -213,7 +228,7 @@ pub fn drop_in(c: &Controls, p: &Plugins, into: Into, from: Source, copy: bool) 
         chain: to,
         place,
     } = into;
-    let Some((info, mut r)) = rack_at(c, track, at) else {
+    let Some((info, mut r)) = rack_at(c, p, track, at) else {
         return;
     };
     let mut at = at;
@@ -249,7 +264,7 @@ pub fn drop_in(c: &Controls, p: &Plugins, into: Into, from: Source, copy: bool) 
         Source::Inner(t, a, b, d) => {
             // From another rack: copied (taking it out of there too is a
             // later step).
-            let device = rack_at(c, t, a)
+            let device = rack_at(c, p, t, a)
                 .and_then(|(_, other)| other.branches.get(b)?.devices.get(d).cloned());
             if let Some(device) = device {
                 if let Some(open) = add(&mut r, to, place, device) {
@@ -261,9 +276,10 @@ pub fn drop_in(c: &Controls, p: &Plugins, into: Into, from: Source, copy: bool) 
             if t == track && d == at {
                 return;
             }
-            let Some(device) = c.devices(t).get(d).cloned() else {
+            let Some(mut device) = c.devices(t).get(d).cloned() else {
                 return;
             };
+            p.keep_sounds(t, d, &mut device);
             let Some(open) = add(&mut r, to, place, device) else {
                 return;
             };
@@ -308,7 +324,7 @@ pub fn drag_out(
     place: Option<usize>,
     copy: bool,
 ) -> bool {
-    let Some((info, mut r)) = rack_at(c, track, at) else {
+    let Some((info, mut r)) = rack_at(c, p, track, at) else {
         return false;
     };
     let Some(device) = r.branches.get(b).and_then(|x| x.devices.get(d)).cloned() else {

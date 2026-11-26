@@ -1368,7 +1368,7 @@ pub(crate) struct EffectRack {
     keys: Vec<Midi>,
     /// What the instrument plays, for its deck to show.
     view: Arc<InstrumentView>,
-    /// Its last [`SCOPE_SAMPLES`] samples (mono), and where the next goes.
+    /// Its last [`WAVE_SAMPLES`] samples (mono), and where the next goes.
     scope_ring: Vec<f32>,
     scope_pos: usize,
     /// The view shows nothing playing.
@@ -1392,6 +1392,9 @@ const SILENCE: f32 = 1e-5;
 pub const SCOPE_BINS: usize = 128;
 /// Samples the scope spans: about 43 ms at 48 kHz.
 pub const SCOPE_SAMPLES: usize = SCOPE_BINS * 16;
+/// Samples the spectrum looks at: about 170 ms at 48 kHz, so its lowest
+/// bands (6 Hz apart) still tell the bass notes apart.
+pub const WAVE_SAMPLES: usize = 8192;
 
 /// What the instrument plays, written on the audio thread each buffer for
 /// the app to show: the notes held and a scope of its sound.
@@ -1399,9 +1402,9 @@ pub struct InstrumentView {
     held: [AtomicU64; 2],
     /// Each bin's lowest then highest sample, as `f32` bits.
     scope: [AtomicU32; 2 * SCOPE_BINS],
-    /// The last [`SCOPE_SAMPLES`] samples themselves, oldest first, as
+    /// The last [`WAVE_SAMPLES`] samples themselves, oldest first, as
     /// `f32` bits: for a spectrum.
-    wave: [AtomicU32; SCOPE_SAMPLES],
+    wave: Box<[AtomicU32; WAVE_SAMPLES]>,
     /// The scope shows the deck's sound after its effects (set by the
     /// app), not the instrument's own.
     post: AtomicBool,
@@ -1414,7 +1417,7 @@ impl Default for InstrumentView {
         Self {
             held: std::array::from_fn(|_| AtomicU64::new(0)),
             scope: std::array::from_fn(|_| AtomicU32::new(0)),
-            wave: std::array::from_fn(|_| AtomicU32::new(0)),
+            wave: Box::new(std::array::from_fn(|_| AtomicU32::new(0))),
             post: AtomicBool::new(false),
             rate: AtomicU32::new(48_000f32.to_bits()),
         }
@@ -1439,7 +1442,7 @@ impl InstrumentView {
             .collect()
     }
 
-    /// The last [`SCOPE_SAMPLES`] samples, oldest first.
+    /// The last [`WAVE_SAMPLES`] samples, oldest first.
     pub fn wave(&self) -> Vec<f32> {
         self.wave
             .iter()
@@ -1449,7 +1452,9 @@ impl InstrumentView {
 
     /// The spectrum of [`InstrumentView::wave`] in `bands` bands spaced
     /// evenly in pitch from 30 Hz to 16 kHz, low first, each 0 (-84 dB or
-    /// quieter) to 1 (full scale).
+    /// quieter) to 1 (full scale). Tilted up 3 dB an octave about 1 kHz,
+    /// as analysers show it, so a mix reads level rather than falling to
+    /// the right.
     pub fn spectrum(&self, bands: usize) -> Vec<f32> {
         use rustfft::num_complex::Complex;
         let wave = self.wave();
@@ -1468,15 +1473,27 @@ impl InstrumentView {
             .process(&mut buf);
         // A full-scale sine through the Hann window peaks at n / 4.
         let norm = 4.0 / n as f32;
+        let mag: Vec<f32> = buf[..n / 2].iter().map(|c| c.norm() * norm).collect();
         let (lo, hi) = (30.0f32, 16_000.0f32.min(rate / 2.0));
-        let bin_of = |f: f32| (f * n as f32 / rate).clamp(1.0, (n / 2 - 1) as f32);
+        let bin = |f: f32| (f * n as f32 / rate).clamp(1.0, (n / 2 - 2) as f32);
         (0..bands)
             .map(|b| {
-                let f0 = lo * (hi / lo).powf(b as f32 / bands as f32);
-                let f1 = lo * (hi / lo).powf((b + 1) as f32 / bands as f32);
-                let (a, z) = (bin_of(f0) as usize, bin_of(f1) as usize);
-                let peak = (a..=z.max(a)).map(|k| buf[k].norm()).fold(0.0, f32::max) * norm;
-                let db = 20.0 * peak.max(1e-9).log10();
+                let at = |t: f32| lo * (hi / lo).powf(t / bands as f32);
+                let (f0, f1) = (at(b as f32), at(b as f32 + 1.0));
+                let (a, z) = (bin(f0), bin(f1));
+                // A band narrower than a bin reads the bins about its
+                // middle (interpolated); a wider one its loudest bin.
+                let peak = if z - a < 1.0 {
+                    let c = bin((f0 * f1).sqrt());
+                    let (i, t) = (c.floor() as usize, c.fract());
+                    mag[i] * (1.0 - t) + mag[i + 1] * t
+                } else {
+                    (a.ceil() as usize..=z.floor() as usize)
+                        .map(|k| mag[k])
+                        .fold(0.0, f32::max)
+                };
+                let tilt = 3.0 * ((f0 * f1).sqrt() / 1000.0).log2();
+                let db = 20.0 * peak.max(1e-9).log10() + tilt;
                 ((db + 84.0) / 84.0).clamp(0.0, 1.0)
             })
             .collect()
@@ -1730,7 +1747,7 @@ impl EffectRack {
             seq_notes: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             keys: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             view: Arc::default(),
-            scope_ring: vec![0.0; SCOPE_SAMPLES],
+            scope_ring: vec![0.0; WAVE_SAMPLES],
             scope_pos: 0,
             view_clear: true,
             instrument_sent: false,
@@ -1751,7 +1768,7 @@ impl EffectRack {
                 self.view_clear = true;
                 self.view.set_held(0);
                 self.scope_ring.fill(0.0);
-                for v in self.view.scope.iter().chain(&self.view.wave) {
+                for v in self.view.scope.iter().chain(self.view.wave.iter()) {
                     v.store(0, Ordering::Relaxed);
                 }
             }
@@ -1779,13 +1796,14 @@ impl EffectRack {
             .store(self.sample_rate.to_bits(), Ordering::Relaxed);
         for s in buf {
             self.scope_ring[self.scope_pos] = 0.5 * (s[0] + s[1]);
-            self.scope_pos = (self.scope_pos + 1) % SCOPE_SAMPLES;
+            self.scope_pos = (self.scope_pos + 1) % WAVE_SAMPLES;
         }
         let per = SCOPE_SAMPLES / SCOPE_BINS;
         for b in 0..SCOPE_BINS {
             let (mut lo, mut hi) = (f32::MAX, f32::MIN);
             for k in 0..per {
-                let v = self.scope_ring[(self.scope_pos + b * per + k) % SCOPE_SAMPLES];
+                let at = self.scope_pos + WAVE_SAMPLES - SCOPE_SAMPLES + b * per + k;
+                let v = self.scope_ring[at % WAVE_SAMPLES];
                 lo = lo.min(v);
                 hi = hi.max(v);
             }
@@ -1793,7 +1811,7 @@ impl EffectRack {
             self.view.scope[2 * b + 1].store(hi.to_bits(), Ordering::Relaxed);
         }
         for (i, v) in self.view.wave.iter().enumerate() {
-            let x = self.scope_ring[(self.scope_pos + i) % SCOPE_SAMPLES];
+            let x = self.scope_ring[(self.scope_pos + i) % WAVE_SAMPLES];
             v.store(x.to_bits(), Ordering::Relaxed);
         }
     }
@@ -4223,6 +4241,23 @@ mod tests {
         assert!((34..=36).contains(&peak), "peak in band {peak}");
         assert!(bands[peak] > 0.85, "about -6 dB: {}", bands[peak]);
         assert!(bands[5] < 0.5, "quiet far from it");
+    }
+
+    #[test]
+    fn the_spectrum_shows_the_bass() {
+        let view = InstrumentView::default();
+        for (i, v) in view.wave.iter().enumerate() {
+            let x = 0.5 * (std::f32::consts::TAU * 60.0 * i as f32 / 48_000.0).sin();
+            v.store(x.to_bits(), Ordering::Relaxed);
+        }
+        let bands = view.spectrum(64);
+        let peak = (0..64)
+            .max_by(|&a, &b| bands[a].total_cmp(&bands[b]))
+            .unwrap();
+        // 60 Hz is one octave above 30 Hz: band 7 of 64.
+        assert!((6..=8).contains(&peak), "peak in band {peak}");
+        assert!(bands[peak] > 0.7, "loud: {}", bands[peak]);
+        assert!(bands[30] < 0.3, "quiet far above it: {}", bands[30]);
     }
 
     #[test]

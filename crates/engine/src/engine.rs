@@ -4991,7 +4991,7 @@ mod tests {
         load(&mut input, 0, track.clone());
         run(&mut engine, 0.01);
         assert_eq!(reg.get("[Channel1]", "stem_count").unwrap().get(), 4.0);
-        assert_eq!(reg_stem(&reg, "color").get(), 0x2E4E75 as f64);
+        assert_eq!(reg_stem(&reg, "color").get(), 0xC9444A as f64);
         assert_eq!(reg.get("[Channel2]", "stem_count").unwrap().get(), 0.0);
     }
 
