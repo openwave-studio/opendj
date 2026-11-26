@@ -29,9 +29,9 @@ While the peer-to-peer client is signed out of its network, downloads whose tran
 - **WHEN** slskd loses its Soulseek sign-in while a song is downloading
 - **THEN** the song reads "Paused · Soulseek signed out", and when slskd signs in again it is asked for from the same user
 
-### Requirement: Music server similarity
-A music-server source SHALL offer "Similar artists' songs" on a song; when the server lists audio similarity among its OpenSubsonic extensions it SHALL also offer "Sounds like this" and "Path to another song", the latter listing the songs the server finds between the two.
+### Requirement: Music server similar songs
+A music-server source SHALL offer "Similar artists' songs" on a song, listing the server's songs by artists similar to the song's.
 
-#### Scenario: A server without audio similarity
-- **WHEN** the server does not list `sonicSimilarity`
-- **THEN** only "Similar artists' songs" shows
+#### Scenario: Similar artists' songs
+- **WHEN** the DJ picks "Similar artists' songs" on a song from a Navidrome source
+- **THEN** the results show the server's `getSimilarSongs2` answer for that song
