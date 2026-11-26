@@ -19,9 +19,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
-use opendj_engine::{
-    deck_group, eq_group, quick_effect_group, Track, MEMORY_CUE, NUM_DECKS, NUM_HOTCUES,
-};
+use opendj_engine::{deck_group, eq_group, quick_effect_group, Track, NUM_DECKS, NUM_HOTCUES};
 use opendj_remote::Server;
 use serde_json::{json, Value};
 
@@ -340,7 +338,7 @@ fn track_json(t: Option<&Track>, wave: Option<&str>, camelot: bool) -> Value {
         .info
         .hotcues
         .iter()
-        .filter(|c| c.number < MEMORY_CUE && c.number < NUM_HOTCUES)
+        .filter(|c| c.number < NUM_HOTCUES)
         .map(|c| json!({"n": c.number, "name": c.name, "color": c.color.map(|c| format!("#{c:06x}"))}))
         .collect();
     json!({
