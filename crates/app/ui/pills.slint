@@ -32,6 +32,7 @@ export component BandIcon inherits Rectangle {
 // It outlines on hover.
 export component ValuePill inherits Rectangle {
     in property <bool> open;
+    out property <bool> hovered: ta.has-hover;
     callback clicked();
     height: 22px;
     border-radius: 7px;
