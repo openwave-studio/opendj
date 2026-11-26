@@ -54,6 +54,9 @@ component RowTitle inherits Text {
 // default. Steps above `fits` are dimmer.
 component WaveSlider inherits HorizontalLayout {
     in property <int> steps: 10;
+    // How many tick marks are drawn: every step by default, fewer for a
+    // fine slider (zoom moves in 5% steps but shows ten ticks like height).
+    in property <int> ticks: steps;
     in property <int> default-level: 1;
     in property <int> fits: 1000;
     // Where it is now, possibly between steps.
@@ -74,12 +77,15 @@ component WaveSlider inherits HorizontalLayout {
         property <float> at: (at-level - 1) / (steps - 1);
         Rectangle { x: 8px; y: 12px; width: track.span; height: 4px; border-radius: 2px; background: Theme.panel-raised.brighter(0.3); }
         Rectangle { x: 8px; y: 12px; width: track.span * track.at; height: 4px; border-radius: 2px; background: Theme.accent; }
-        for i in steps: Rectangle {
-            x: 8px + track.span * i / (steps - 1) - 1px;
+        for i in ticks: Rectangle {
+            // The step this tick stands for.
+            property <float> level: 1 + i * (steps - 1) / (ticks - 1);
+            property <bool> home: abs(level - default-level) < (steps - 1) / (ticks - 1) / 2;
+            x: 8px + track.span * i / (ticks - 1) - 1px;
             y: 20px;
             width: 2px;
-            height: i + 1 == default-level ? 6px : 4px;
-            background: i + 1 > fits ? Theme.text-dim.with-alpha(0.25) : i + 1 == default-level ? Theme.text-dim : Theme.text-dim.with-alpha(0.55);
+            height: home ? 6px : 4px;
+            background: level > fits ? Theme.text-dim.with-alpha(0.25) : home ? Theme.text-dim : Theme.text-dim.with-alpha(0.55);
         }
         Rectangle {
             x: 8px + track.span * track.at - 8px;
@@ -157,7 +163,7 @@ component WaveSegments inherits Rectangle {
     // Small color swatches before each choice's name, if any.
     in property <[[color]]> swatches;
     callback picked(index: int);
-    height: 26px;
+    height: 34px;
     horizontal-stretch: 1;
     border-radius: 8px;
     background: Theme.pill;
@@ -179,8 +185,8 @@ component WaveSegments inherits Rectangle {
                 if i < swatches.length: HorizontalLayout {
                     alignment: center;
                     spacing: 1px;
-                    padding-top: 7px;
-                    padding-bottom: 7px;
+                    padding-top: 10px;
+                    padding-bottom: 10px;
                     for sw in swatches[i]: Rectangle { width: 5px; border-radius: 1px; background: sw; }
                 }
                 Text {
@@ -200,36 +206,10 @@ component WaveSegments inherits Rectangle {
     }
 }
 
-// A choice that is on or off by itself, lit while on.
-component WaveChip inherits Rectangle {
-    in property <string> text;
-    in property <bool> on;
-    callback toggled(on: bool);
-    height: 26px;
-    horizontal-stretch: 1;
-    min-width: 0px;
-    preferred-width: 0px;
-    border-radius: 8px;
-    border-width: 1px;
-    border-color: on ? Theme.accent : Theme.n-2c2c31;
-    background: on ? Theme.accent.with-alpha(0.14) : cta.has-hover ? Theme.pill-hover : Theme.pill;
-    Text {
-        text: root.text;
-        color: on ? Theme.text : Theme.text-dim;
-        font-size: 12px;
-        font-weight: on ? 600 : 500;
-        vertical-alignment: center;
-    }
-    cta := TouchArea {
-        mouse-cursor: pointer;
-        clicked => { root.toggled(!root.on); }
-    }
-}
-
 // A row: its title at the left, its control filling the rest.
 component WaveRow inherits HorizontalLayout {
     in property <string> title;
-    height: 30px;
+    height: 34px;
     spacing: 8px;
     RowTitle { text: root.title; }
     @children
@@ -237,7 +217,7 @@ component WaveRow inherits HorizontalLayout {
 
 // The waveforms button's drop-down: the height and zoom as sliders, then
 // how the waveforms look, each a title with its choices side by side, and
-// lyrics as a switch. No lists to open: every choice is one click. Dragging the height slider resizes the waveforms
+// phrases and lyrics as switches. No lists to open: every choice is one click. Dragging the height slider resizes the waveforms
 // as it moves and settles on the nearest of the ten steps when let go;
 // arrow keys move a step. `fits` is the highest step the window has room for now; a
 // higher one can still be chosen and shows once there is room.
@@ -245,9 +225,9 @@ export component WaveHeightList inherits VerticalLayout {
     in property <int> fits: 10;
     // A choice was made (the window shows the waveforms if hidden).
     callback picked();
-    padding: 12px;
-    padding-top: 8px;
-    spacing: 6px;
+    padding: 14px;
+    padding-top: 10px;
+    spacing: 12px;
     WaveRow {
         title: "HEIGHT";
         WaveSlider {
@@ -279,6 +259,7 @@ export component WaveHeightList inherits VerticalLayout {
         title: "ZOOM";
         WaveSlider {
             steps: WaveZoom.steps;
+            ticks: 10;
             default-level: WaveZoom.default-level;
             shown: WaveZoom.position;
             readout: WaveZoom.percent(self.sliding ? round(self.slide) : WaveZoom.level);
@@ -348,32 +329,23 @@ export component WaveHeightList inherits VerticalLayout {
             }
         }
     }
-    // Phrases as two toggles: the bar on the overviews, the flags on the
-    // large waveforms (both lit is Both, neither is Off).
+    // Phrases (the bar on the overviews and the flags on the large
+    // waveforms, together) and the track's timed lyrics along the bottom
+    // of the large waveforms, each an on/off switch, side by side.
     WaveRow {
         title: "PHRASES";
-        spacing: 8px;
-        WaveChip {
-            text: "Overview";
-            on: mod(WaveLook.phrases, 2) == 1;
-            toggled(on) => {
-                WaveLook.pick-phrases((on ? 1 : 0) + (WaveLook.phrases >= 2 ? 2 : 0));
-                root.picked();
+        VerticalLayout {
+            alignment: center;
+            Switch {
+                on: WaveLook.phrases > 0;
+                toggled(on) => {
+                    WaveLook.pick-phrases(on ? 3 : 0);
+                    root.picked();
+                }
             }
         }
-        WaveChip {
-            text: "Waveform";
-            on: WaveLook.phrases >= 2;
-            toggled(on) => {
-                WaveLook.pick-phrases(mod(WaveLook.phrases, 2) + (on ? 2 : 0));
-                root.picked();
-            }
-        }
-    }
-    // The track's timed lyrics along the bottom of the large waveforms.
-    WaveRow {
-        title: "LYRICS";
         Rectangle { horizontal-stretch: 1; }
+        RowTitle { text: "LYRICS"; }
         VerticalLayout {
             alignment: center;
             Switch {

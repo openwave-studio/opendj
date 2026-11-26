@@ -762,9 +762,10 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
     if (p.mode == 1u) {
         bar_h = select(0.0, 6.0 * k, p.phrase_count > 0u);
         dots_h = select(0.0, 6.0 * k, p.minute_bins > 0.0);
-        // Too short to hold the strips under a waveform (drawn at a
-        // placeholder size): the waveform alone, never only the strips.
-        if (p.size.y < 3.0 * (bar_h + dots_h)) {
+        // Too short to hold the strips under a waveform at least as tall
+        // (drawn at a placeholder size): the waveform alone, never only the
+        // strips. The 2-Deck overview, above its beat strip, is about 3x.
+        if (p.size.y < 2.0 * (bar_h + dots_h)) {
             bar_h = 0.0;
             dots_h = 0.0;
         }
