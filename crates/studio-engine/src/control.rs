@@ -70,7 +70,7 @@ impl TrackInfo {
 /// External Instrument) rather than working on its sound.
 pub fn is_instrument(d: &DeviceInfo) -> bool {
     d.plugin.as_ref().is_some_and(|p| p.instrument)
-        || matches!(d.builtin, Some(Settings::External(_)))
+        || d.builtin.as_ref().is_some_and(Settings::is_instrument)
 }
 
 /// Whether a device changes the notes on their way to the instrument.

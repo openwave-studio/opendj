@@ -162,7 +162,7 @@ export global Drag {
     in-out property <length> x;
     in-out property <length> y;
     in-out property <string> label;
-    // 0 instrument, 1 audio effect.
+    // 0 instrument, 1 audio effect, 2 MIDI effect, 5 sample.
     in-out property <int> kind;
     // From the browser: the item's id (see BrowserItem).
     in-out property <int> item;
@@ -800,7 +800,7 @@ component KindIcon inherits Rectangle {
     height: 10px;
     border-width: 1.5px;
     border-radius: kind == 3 ? 1px : 2px;
-    border-color: kind == 0 ? Theme.accent : (kind == 1 ? Theme.effect : (kind == 2 ? Theme.midi-fx : (kind == 4 ? Theme.playing : Theme.dim)));
+    border-color: kind == 0 || kind == 5 ? Theme.accent : (kind == 1 ? Theme.effect : (kind == 2 ? Theme.midi-fx : (kind == 4 ? Theme.playing : Theme.dim)));
     if kind != 3: Rectangle {
         width: 4px;
         height: 4px;
@@ -855,6 +855,8 @@ component Browser inherits Rectangle {
     in property <[BrowserItem]> effects;
     in property <[BrowserItem]> midi-effects;
     in property <[BrowserItem]> all;
+    // Audio files, played on a Simpler when dropped on a track.
+    in property <[BrowserItem]> samples;
     property <[string]> categories: [
         "Favorites", "Effects", "Instruments",
         "All", "Sounds", "Drums", "Instruments", "Audio Effects", "MIDI Effects", "Plug-ins", "Clips", "Samples",
@@ -895,6 +897,7 @@ component Browser inherits Rectangle {
         : category == 9 ? plugins
         : category == 10 ? clips
         : category == 3 ? all
+        : category == 11 ? samples
         : empty;
     background: Theme.panel;
 
@@ -1005,7 +1008,7 @@ component Browser inherits Rectangle {
                     }
                 }
                 if items.length == 0: Text {
-                    text: category == 11 ? "Add a folder to see its samples" : "Nothing here yet";
+                    text: category == 11 ? "No samples in the set's folder or Music/openDJ/Samples" : "Nothing here yet";
                     color: Theme.faint;
                     font-size: 11px;
                     vertical-alignment: top;
@@ -1735,6 +1738,7 @@ export component AppWindow inherits Window {
     in property <[BrowserItem]> browser-effects;
     in property <[BrowserItem]> browser-midi-effects;
     in property <[BrowserItem]> browser-all;
+    in property <[BrowserItem]> browser-samples;
 
     property <TrackData> track: tracks[selected-track];
     property <bool> has-clip: selected-scene >= 0
@@ -1815,6 +1819,7 @@ export component AppWindow inherits Window {
                 effects: root.browser-effects;
                 midi-effects: root.browser-midi-effects;
                 all: root.browser-all;
+                samples: root.browser-samples;
             }
             Rectangle { width: 1px; background: Theme.line; }
 
@@ -2255,7 +2260,7 @@ export component AppWindow inherits Window {
         width: ghost.preferred-width + 20px;
         height: 24px;
         border-radius: 3px;
-        background: Drag.kind == 0 ? Theme.accent : Theme.effect;
+        background: Drag.kind == 0 || Drag.kind == 5 ? Theme.accent : (Drag.kind == 2 ? Theme.midi-fx : Theme.effect);
         drop-shadow-blur: 8px;
         drop-shadow-color: #00000080;
         ghost := Text {

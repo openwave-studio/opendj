@@ -55,6 +55,20 @@ Where each device lives, and the bar it has to clear.
   more than 70 dB less aliasing than without for the rounded curves, at
   1 ms of latency. Lookahead and oversampling report their latency; delay
   compensation across tracks is still to come.
+- **Instruments in the chain.** A built-in instrument (Simpler first) takes
+  the instrument's place, as a plug-in instrument does: the track's notes
+  reach it with their frame offsets and the built-in sound stays quiet.
+  Simpler reads its sample with 4-point Hermite interpolation; a stolen
+  voice fades out over 3 ms in a spare voice, and a trimmed end fades over
+  2 ms, so neither clicks. Instruments pass their own checks (no
+  allocation while chords play and steal, finite at the extremes, silent
+  after all-notes-off, no clicks on steal or end) and `instrument_bench`
+  (Simpler: about 160 ns per frame with eight notes and the filter on).
+- **Samples.** The browser's Samples list holds the audio files in the
+  set's folder, `~/Music/openDJ/Samples` and a Live User Library's
+  Samples. Dropping one on a MIDI track
+  plays it on a Simpler named after it; a track that has a Simpler keeps
+  its settings and swaps the sample.
 
 ## Racks (planned)
 

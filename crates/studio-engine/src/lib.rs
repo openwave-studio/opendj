@@ -43,5 +43,6 @@ mod quality;
 pub mod saturator;
 pub mod scale;
 pub mod session;
+pub mod simpler;
 pub mod sound;
 pub mod steps;

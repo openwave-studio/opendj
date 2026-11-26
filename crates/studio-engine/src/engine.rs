@@ -268,7 +268,7 @@ impl PluginSlot {
     fn builtin(device: usize, on: bool, d: crate::devices::Device) -> PluginSlot {
         PluginSlot {
             device,
-            instrument: false,
+            instrument: d.plays_notes(),
             on,
             kind: SlotKind::Builtin(d),
         }
@@ -1552,7 +1552,14 @@ impl Engine {
         for slot in slots.iter_mut() {
             let conn = match &mut slot.kind {
                 SlotKind::Builtin(d) => {
-                    if slot.on {
+                    if slot.instrument {
+                        // Plays the notes; off, the track is quiet.
+                        if slot.on {
+                            d.play(midi, scratch);
+                        } else {
+                            scratch.fill([0.0; 2]);
+                        }
+                    } else if slot.on {
                         d.process(scratch, transport.bpm);
                     }
                     continue;
@@ -1602,10 +1609,6 @@ impl Engine {
         midi.clear();
     }
 
-    /// The beats a track's events come from this block, `lo..hi`, joined
-    /// onto where its last block's ended, so no note plays twice or goes
-    /// missing when an External Instrument's latency or the tempo moves
-    /// the window. A jump of the clock starts afresh.
     /// Runs track `t`'s notes for `lo..hi` (and those played live) through
     /// its MIDI effects, in chain order, leaving what comes out in
     /// `self.events`.
@@ -1682,6 +1685,10 @@ impl Engine {
         });
     }
 
+    /// The beats a track's events come from this block, `lo..hi`, joined
+    /// onto where its last block's ended, so no note plays twice or goes
+    /// missing when an External Instrument's latency or the tempo moves
+    /// the window. A jump of the clock starts afresh.
     fn window(&mut self, t: usize, lo: f64, hi: f64) -> (f64, f64) {
         let c = &mut self.columns[t];
         let lo = match c.events_end {
@@ -2797,6 +2804,47 @@ mod tests {
             .collect();
         let half = (0.5 * frames_per_beat(120.0)) as u64;
         assert_eq!(offs, [(half, 72), (half, 79)]);
+    }
+
+    /// A Simpler plays the clip's notes in place of the track's own sound:
+    /// its sample at the note's pitch, quiet once the note ends.
+    #[test]
+    fn a_simpler_plays_the_clips_notes() {
+        let frames: Vec<[f32; 2]> = (0..RATE as usize)
+            .map(|i| {
+                let v = (i as f32 * 220.0 * std::f32::consts::TAU / RATE as f32).sin() * 0.5;
+                [v, v]
+            })
+            .collect();
+        let audio = opendj_engine::track::Audio::from_frames(RATE as u32, frames);
+        let sample = Arc::new(opendj_engine::sampler::Sample::from_audio(&audio, RATE));
+        let mut set = one_note_set();
+        set[0].devices = vec![builtin(
+            "Simpler",
+            true,
+            crate::devices::Settings::Simpler(crate::simpler::SimplerSettings {
+                sample: Some(sample),
+                // The clip's C3 an octave up: 440 Hz.
+                root: 48,
+                release_ms: 5.0,
+                ..Default::default()
+            }),
+        )];
+        let (mut s, mut r) = Studio::new(&set, RATE, 120.0);
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let mut all = Vec::new();
+        for _ in 0..(0.5 * RATE) as usize / BLOCK {
+            s.process(&mut out);
+            all.extend(out.iter().map(|f| f[0]));
+        }
+        // The note lasts a quarter second (half a beat at 120).
+        let during = &all[2_400..9_600];
+        let ups = during.windows(2).filter(|w| w[0] <= 0.0 && w[1] > 0.0).count();
+        let hz = ups as f64 / (during.len() as f64 / RATE);
+        assert!((hz - 440.0).abs() < 10.0, "plays at {hz} Hz");
+        let after = all[15_000..].iter().fold(0.0f32, |m, v| m.max(v.abs()));
+        assert!(after < 1e-3, "rings on: {after}");
     }
 
     /// Keys held with the transport stopped still arpeggiate, on the MIDI

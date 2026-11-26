@@ -53,11 +53,12 @@
 - [x] 2.39 Device kit: knobs that glide, LFO, envelope follower and 4x oversampling shared by devices; every device checked for no allocation, no runaway, silent tails, a clean bypass and no clicks, and benched against a budget (design.md, Devices)
 - [x] 2.40 Limiter, Auto Filter (FunDSP filters) and Saturator (4x oversampled), read from the set
 - [x] 2.41 MIDI effects: Arpeggiator, Chord, Scale, Note Length, Velocity, Random, Pitch, Note Echo, in the chain before the instrument, on clip notes and live keys (their own clock runs while stopped), read from the set
-- [ ] 2.42 Simpler: a sample played across the keys, then Drum Rack on the rack engine
+- [x] 2.42 Simpler: a sample played across the keys (Classic and One-Shot, loop, envelope, filter), from the browser's Samples or read from the set
 - [ ] 2.43 Modulators (LFO, envelope, envelope follower) that drive any knob of any device, as in Bitwig
 - [ ] 2.44 Delay compensation for devices that look ahead or oversample (Limiter, Saturator), so tracks stay in time
 - [ ] 2.45 One analog-style synth with Bass, Pad and Lead as its presets
-- [ ] 2.46 Hear Limiter, Auto Filter and Saturator on macOS
+- [ ] 2.46 Hear Limiter, Auto Filter, Saturator, the MIDI effects and Simpler on macOS
+- [ ] 2.47 Drum Rack on the rack engine: each pad a Simpler with its own chain, choke groups
 
 ## 3. Clip editing
 

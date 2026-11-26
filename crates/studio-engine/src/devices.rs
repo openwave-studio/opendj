@@ -12,6 +12,8 @@ use crate::fx;
 use crate::limiter::{Limiter, LimiterSettings};
 use crate::midifx::{MidiFx, MidiSettings};
 use crate::saturator::{Saturator, SaturatorSettings};
+use crate::simpler::{Simpler, SimplerSettings};
+use opendj_plugin_host::shm::Midi;
 
 /// How a setting reads and moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -32,6 +34,10 @@ pub enum Unit {
     Semitones,
     /// A whole number.
     Count,
+    /// A MIDI key, shown by name (C3 is 60).
+    Key,
+    /// Hundredths of a semitone.
+    Cents,
     Plain,
     Toggle,
     Choice(&'static [&'static str]),
@@ -116,7 +122,7 @@ impl Param {
             self.min + n * (self.max - self.min)
         };
         match self.unit {
-            Unit::Note | Unit::Toggle | Unit::Choice(_) | Unit::Semitones | Unit::Count => {
+            Unit::Note | Unit::Toggle | Unit::Choice(_) | Unit::Semitones | Unit::Count | Unit::Key => {
                 v.round()
             }
             _ => v,
@@ -152,6 +158,8 @@ impl Param {
             Unit::Seconds => format!("{v:.2} s"),
             Unit::Ratio => format!("{v:.1} : 1"),
             Unit::Octaves => format!("{v:.1} oct"),
+            Unit::Key => crate::simpler::key_name(v.round().clamp(0.0, 127.0) as u8),
+            Unit::Cents => format!("{v:+.0} ct"),
             Unit::Note => fx::NOTE_NAMES[(v.round() as usize).min(fx::NOTES.len() - 1)].into(),
             Unit::Pan if v.abs() < 0.005 => "C".into(),
             Unit::Pan => format!("{:.0}{}", v.abs() * 50.0, if v < 0.0 { "L" } else { "R" }),
@@ -184,6 +192,7 @@ pub fn catalog() -> Vec<(&'static str, Settings)> {
             "External Instrument",
             Settings::External(ExternalSettings::default()),
         ),
+        ("Simpler", Settings::Simpler(SimplerSettings::default())),
         ("Utility", Settings::Utility(UtilitySettings::default())),
         (
             "EQ Eight",
@@ -250,7 +259,12 @@ pub fn catalog() -> Vec<(&'static str, Settings)> {
 impl Settings {
     /// Plays the track's notes, rather than working on its sound.
     pub fn is_instrument(&self) -> bool {
-        matches!(self, Settings::External(_))
+        matches!(self, Settings::External(_) | Settings::Simpler(_))
+    }
+
+    /// Makes its own sound from the notes, in the chain (not hardware).
+    pub fn plays_notes(&self) -> bool {
+        matches!(self, Settings::Simpler(_))
     }
 
     /// Changes the notes on their way to the instrument.
@@ -274,6 +288,7 @@ pub enum Settings {
     Saturator(SaturatorSettings),
     AutoFilter(AutoFilterSettings),
     Midi(MidiSettings),
+    Simpler(SimplerSettings),
     External(ExternalSettings),
 }
 
@@ -358,6 +373,7 @@ impl Settings {
             Settings::Saturator(s) => s.summary(),
             Settings::AutoFilter(a) => a.summary(),
             Settings::Midi(m) => m.summary(),
+            Settings::Simpler(x) => x.summary(),
             Settings::External(e) => e.summary(),
         }
     }
@@ -378,6 +394,7 @@ impl Settings {
             Settings::Saturator(s) => s.params(),
             Settings::AutoFilter(a) => a.params(),
             Settings::Midi(m) => m.params(),
+            Settings::Simpler(x) => x.params(),
             Settings::External(e) => e.params(),
         }
     }
@@ -394,6 +411,9 @@ impl Settings {
             // Auto Filter: the filter's knobs, then the envelope's, then the
             // LFO's (its switches sit on the left).
             Settings::AutoFilter(_) => Some((vec![3, 4, 5, 6, 16, 7, 8, 9, 10, 13, 14, 15], 4)),
+            // Simpler: the sample's span and pitch, the envelope, then the
+            // level and filter (its switches sit on the left).
+            Settings::Simpler(_) => Some((vec![3, 4, 5, 6, 11, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17], 5)),
             _ => None,
         }
     }
@@ -414,6 +434,7 @@ impl Settings {
             Settings::Saturator(s) => s.set(i, v),
             Settings::AutoFilter(a) => a.set(i, v),
             Settings::Midi(m) => m.set(i, v),
+            Settings::Simpler(x) => x.set(i, v),
             Settings::External(e) => e.set(i, v),
         }
     }
@@ -782,6 +803,8 @@ pub enum Device {
     AutoFilter(Box<AutoFilter>),
     /// Works on notes, before the instrument; passes the sound through.
     Midi(Box<MidiFx>),
+    /// Plays a sample from the track's notes (see [`Device::play`]).
+    Simpler(Box<Simpler>),
     /// The input comes in before the chain runs (the engine adds it), so
     /// this only sets its level and holds the latency.
     External(ExternalSettings),
@@ -802,6 +825,7 @@ impl Device {
             Settings::Saturator(s) => Device::Saturator(Box::new(Saturator::new(s, rate))),
             Settings::AutoFilter(a) => Device::AutoFilter(Box::new(AutoFilter::new(a, rate))),
             Settings::Midi(m) => Device::Midi(Box::new(MidiFx::new(m))),
+            Settings::Simpler(x) => Device::Simpler(Box::new(Simpler::new(x, rate))),
             Settings::External(e) => Device::External(e.clone()),
         }
     }
@@ -828,6 +852,7 @@ impl Device {
             Device::Saturator(s) => s.set(i, v),
             Device::AutoFilter(a) => a.set(i, v),
             Device::Midi(m) => m.set(i, v),
+            Device::Simpler(x) => x.set(i, v),
             Device::External(e) => e.set(i, v),
         }
     }
@@ -837,6 +862,20 @@ impl Device {
         match self {
             Device::External(e) => Some(e.latency_ms),
             _ => None,
+        }
+    }
+
+    /// Whether it plays the track's notes itself (see [`Device::play`]).
+    pub fn plays_notes(&self) -> bool {
+        matches!(self, Device::Simpler(_))
+    }
+
+    /// An instrument plays this block's notes into `buf`, replacing what
+    /// was there. Never allocates.
+    pub fn play(&mut self, midi: &[Midi], buf: &mut [[f32; 2]]) {
+        if let Device::Simpler(x) = self {
+            buf.fill([0.0; 2]);
+            x.play(midi, buf);
         }
     }
 
@@ -872,7 +911,7 @@ impl Device {
             Device::Limiter(l) => l.process(buf),
             Device::Saturator(s) => s.process(buf),
             Device::AutoFilter(a) => a.process(buf, tempo),
-            Device::Midi(_) => {}
+            Device::Midi(_) | Device::Simpler(_) => {}
             Device::External(e) => {
                 let g = from_db(e.gain_db);
                 for f in buf.iter_mut() {

@@ -96,7 +96,13 @@ fn fader(gain: f64) -> f32 {
     (1.0 - (6.0 - db) / 66.0).clamp(0.0, 1.0) as f32
 }
 
+thread_local! {
+    /// The set's folder while it's read, for samples kept beside it.
+    static FOLDER: std::cell::RefCell<PathBuf> = const { std::cell::RefCell::new(PathBuf::new()) };
+}
+
 pub fn parse(text: &str, folder: &Path) -> Result<LiveSet, String> {
+    FOLDER.with(|f| *f.borrow_mut() = folder.to_path_buf());
     let doc = Document::parse_with_options(
         text,
         roxmltree::ParsingOptions {
@@ -703,6 +709,7 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
             dc: value(d, "PreDcFilter/Manual") != Some("false"),
             soft_clip: flag("PostClip"),
         }),
+        "OriginalSimpler" => Settings::Simpler(simpler(d)?),
         "AutoFilter" | "AutoFilter2" => {
             let mut a = crate::autofilter::AutoFilterSettings::default();
             if let Some(v) = num("Cutoff").or_else(|| num("Filter_Frequency")) {
@@ -887,6 +894,102 @@ fn pad(branch: Node, folder: &Path) -> Option<Pad> {
         on: on(simpler) && heard,
         sample: None,
     })
+}
+
+/// A Simpler's sample and settings; decoded later by `load_simplers`.
+/// Live's parameter names here are read from its sets, not yet confirmed
+/// against every version; a missing one keeps the default.
+fn simpler(d: Node) -> Option<crate::simpler::SimplerSettings> {
+    let mut s = crate::simpler::SimplerSettings::default();
+    let num = |p: &str| number(d, &format!("{p}/Manual")).map(|v| v as f32);
+    let part = d
+        .descendants()
+        .find(|n| n.has_tag_name("MultiSamplePart"));
+    if let Some(part) = part {
+        if let Some(file) = at(part, "SampleRef/FileRef") {
+            s.path = Some(FOLDER.with(|f| sample_path(file, &f.borrow())));
+        }
+        if let Some(k) = number(part, "RootKey") {
+            s.root = k.clamp(0.0, 127.0) as u8;
+        }
+        // Start and end in frames of the file: shares of its length.
+        if let (Some(a), Some(b), Some(len)) = (
+            number(part, "SampleStart"),
+            number(part, "SampleEnd"),
+            number(part, "SampleRef/DefaultDuration").filter(|l| *l > 0.0),
+        ) {
+            s.start = (a / len).clamp(0.0, 1.0) as f32;
+            s.end = (b / len).clamp(0.0, 1.0) as f32;
+        }
+        if let Some(lp) = at(part, "SustainLoop") {
+            s.looping = number(lp, "Mode").unwrap_or(0.0) > 0.0;
+            if let (Some(a), Some(len)) = (
+                number(lp, "Start"),
+                number(part, "SampleRef/DefaultDuration").filter(|l| *l > 0.0),
+            ) {
+                s.loop_start = (a / len).clamp(0.0, 1.0) as f32;
+            }
+        }
+    }
+    s.mode = match number(d, "Globals/PlaybackMode").or_else(|| number(d, "Player/PlaybackMode")) {
+        Some(m) if m >= 1.0 => 1,
+        _ => 0,
+    };
+    let env = "VolumeAndPan/Envelope";
+    if let Some(v) = num(&format!("{env}/AttackTime")) {
+        s.attack_ms = v;
+    }
+    if let Some(v) = num(&format!("{env}/DecayTime")) {
+        s.decay_ms = v;
+    }
+    if let Some(v) = num(&format!("{env}/SustainLevel")) {
+        s.sustain = v;
+    }
+    if let Some(v) = num(&format!("{env}/ReleaseTime")) {
+        s.release_ms = v;
+    }
+    s.transpose = num("Pitch/TransposeKey").unwrap_or(0.0);
+    s.detune = num("Pitch/TransposeFine").unwrap_or(0.0);
+    s.volume_db = num("VolumeAndPan/Volume").unwrap_or(s.volume_db);
+    s.velocity = num("VolumeAndPan/VolumeVelScale").unwrap_or(s.velocity);
+    s.filter = value(d, "Filter/IsOn/Manual") == Some("true");
+    let filter = "Filter/Slot/Value/SimplerFilter";
+    if let Some(v) = num(&format!("{filter}/Freq")) {
+        s.cutoff = v;
+    }
+    if let Some(v) = num(&format!("{filter}/Res")) {
+        s.resonance = v.clamp(0.0, 1.0);
+    }
+    if let Some(v) = number(d, "Globals/NumVoices") {
+        // Live's choices are 1, 2, 4 … 32 voices.
+        s.voices = v.clamp(1.0, 32.0) as u8;
+    }
+    // Through `set`, so every value is in range.
+    for (i, p) in s.params().iter().enumerate() {
+        let v = p.value;
+        s.set(i, v);
+    }
+    Some(s)
+}
+
+/// Decodes every Simpler's sample at `rate`; returns those not found.
+pub fn load_simplers(tracks: &mut [Track], rate: f64) -> Vec<String> {
+    let mut missing = Vec::new();
+    for t in tracks.iter_mut() {
+        for d in t.devices.iter_mut() {
+            let Some(crate::devices::Settings::Simpler(s)) = d.builtin.as_mut() else {
+                continue;
+            };
+            let Some(path) = s.path.clone() else {
+                continue;
+            };
+            match opendj_engine::sampler::Sample::load(&path, rate) {
+                Ok(x) => s.sample = Some(Arc::new(x)),
+                Err(_) => missing.push(path.display().to_string()),
+            }
+        }
+    }
+    missing
 }
 
 /// Where a sample is on this computer: beside the set, where the set says,
@@ -1382,6 +1485,44 @@ mod tests {
         assert_eq!(t.io.midi_to, e.midi_to);
         assert!(t.io.midi_to.is_some());
         assert_eq!(t.io.audio_in, Some((2, true)));
+    }
+
+    #[test]
+    fn simpler() {
+        let xml = r#"<Ableton><LiveSet><Tracks><MidiTrack Id="1">
+          <Name><EffectiveName Value="Keys" /></Name>
+          <DeviceChain><DeviceChain><Devices>
+            <OriginalSimpler Id="0">
+              <On><Manual Value="true" /></On>
+              <Player><MultiSampleMap><SampleParts><MultiSamplePart Id="0">
+                <RootKey Value="57" />
+                <SampleStart Value="4800" /><SampleEnd Value="43200" />
+                <SustainLoop><Start Value="24000" /><End Value="43200" /><Mode Value="1" /></SustainLoop>
+                <SampleRef><FileRef><RelativePath Value="Samples/keys.wav" /><Path Value="/nowhere/keys.wav" /></FileRef><DefaultDuration Value="48000" /><DefaultSampleRate Value="48000" /></SampleRef>
+              </MultiSamplePart></SampleParts></MultiSampleMap></Player>
+              <Globals><PlaybackMode Value="1" /><NumVoices Value="4" /></Globals>
+              <VolumeAndPan>
+                <Volume><Manual Value="-6" /></Volume>
+                <Envelope><AttackTime><Manual Value="12" /></AttackTime><ReleaseTime><Manual Value="300" /></ReleaseTime><SustainLevel><Manual Value="0.5" /></SustainLevel></Envelope>
+              </VolumeAndPan>
+              <Pitch><TransposeKey><Manual Value="-12" /></TransposeKey></Pitch>
+            </OriginalSimpler>
+          </Devices></DeviceChain></DeviceChain>
+        </MidiTrack></Tracks></LiveSet></Ableton>"#;
+        let set = parse(xml, Path::new("/sets")).unwrap();
+        let d = &set.tracks[0].devices[0];
+        let Some(crate::devices::Settings::Simpler(s)) = &d.builtin else {
+            panic!("no Simpler: {d:?}");
+        };
+        assert_eq!(d.name, "Simpler");
+        assert_eq!(s.path.as_deref(), Some(Path::new("/nowhere/keys.wav")));
+        assert_eq!((s.root, s.mode, s.voices), (57, 1, 4));
+        assert_eq!((s.start, s.end), (0.1, 0.9));
+        assert!(s.looping);
+        assert_eq!(s.loop_start, 0.5);
+        assert_eq!((s.attack_ms, s.release_ms, s.sustain), (12.0, 300.0, 0.5));
+        assert_eq!((s.volume_db, s.transpose), (-6.0, -12.0));
+        assert!(crate::control::is_instrument(d));
     }
 
     #[test]

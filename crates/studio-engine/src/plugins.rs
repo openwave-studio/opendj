@@ -147,8 +147,7 @@ impl Plugins {
     /// the place of the one the track has (a track plays one). Returns whether
     /// an External Instrument came in, or None when nothing changed.
     pub fn drop_device(&self, d: Dropped) -> Option<bool> {
-        let (c, p) = (&*self.controls, self);
-        let track = c.tracks.get(d.to_track)?;
+        let c = &*self.controls;
         let (device, moving) = match d.from {
             From::Browser(i) => {
                 let (name, s) = crate::devices::catalog().into_iter().nth(i)?;
@@ -165,6 +164,24 @@ impl Plugins {
             }
             From::Chain(t, at) => (c.devices(t).get(at)?.clone(), (!d.copy).then_some((t, at))),
         };
+        self.place(d, device, moving)
+    }
+
+    /// Puts a new device (a Simpler made from a sample, say) in a track's
+    /// chain, as a drop from the browser would.
+    pub fn drop_new(&self, to_track: usize, place: Option<usize>, device: DeviceInfo) -> Option<bool> {
+        let d = Dropped {
+            from: From::Browser(0),
+            to_track,
+            place,
+            copy: false,
+        };
+        self.place(d, device, None)
+    }
+
+    fn place(&self, d: Dropped, device: DeviceInfo, moving: Option<(usize, usize)>) -> Option<bool> {
+        let (c, p) = (&*self.controls, self);
+        let track = c.tracks.get(d.to_track)?;
         let instrument = crate::control::is_instrument(&device);
         let midi = crate::control::is_midi_effect(&device);
         // An audio track plays recordings: no instrument or MIDI effect
