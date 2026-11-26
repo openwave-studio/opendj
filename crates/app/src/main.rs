@@ -3602,6 +3602,11 @@ impl Gpu {
                     .map_or(slint::Color::from_rgb_u8(0x9e, 0x9e, 0xa3), |k| {
                         slint::Color::from_argb_encoded(0xff00_0000 | beat_counter::kind_color(k))
                     }),
+                kind_name: c.kind.map_or("BEAT", beat_counter::kind_name).into(),
+                has_kind: c.kind.is_some(),
+                kind_color: c.kind.map_or(slint::Color::default(), |k| {
+                    slint::Color::from_argb_encoded(0xff00_0000 | beat_counter::kind_color(k))
+                }),
                 ..Default::default()
             },
         };

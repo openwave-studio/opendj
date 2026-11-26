@@ -27,8 +27,8 @@ In the 2-Deck layout the beat counter SHALL show in the strip under the overview
 
 #### Scenario: Countdown only
 - **WHEN** the deck is 10 bars from a Drop
-- **THEN** the strip shows the beat dots and "↓ 10 › DROP" in the Drop's color, without the phrase.bar.beat count
+- **THEN** the strip shows "↓ 10 › DROP" in the Drop's color, the beat number, and the current phrase's name over the beat dots, without the phrase.bar.beat count
 
 #### Scenario: Phrases off
 - **WHEN** the beat counter is set to Beats
-- **THEN** the strip shows the beat dots without the phrase count or countdown
+- **THEN** the strip shows the beat number and BEAT over the beat dots, without the countdown

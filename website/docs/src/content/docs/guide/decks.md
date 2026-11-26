@@ -150,9 +150,11 @@ Choose **Off**, **Beats** (squares only) or **Beats and phrases** under
 only.
 
 In **2-Deck** the counter sits in a thin strip under each deck's overview,
-on the side next to the mixer: four dots for the beats, then the bars
-left to the next phrase and what it is, in its color (for example
-↓ 10 › DROP).
+on the side next to the mixer: the bars left to the next phrase and what
+it is, in its color (for example ↓ 10 › DROP), then the beat as a big
+number with the phrase playing now (DROP, INTRO…) over four dots in its
+color. The dots turn lilac in the last bar before the next phrase. With
+the counter set to Beats, the name reads BEAT and the countdown is hidden.
 
 ### Phase meter
 

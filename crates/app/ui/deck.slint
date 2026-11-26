@@ -764,6 +764,11 @@ export struct BeatCount {
     label: string,
     countdown: string,
     next-color: color,
+    // The 2-Deck strip: the phrase playing now ("DROP", "BEAT" without
+    // phrases) over the dots, lit in its color.
+    kind-name: string,
+    has-kind: bool,
+    kind-color: color,
     // The phase meter, filled in whatever the counter's setting: 0 nothing
     // to compare with, 1 the master deck, 2 against the master.
     phase: int,
@@ -872,10 +877,37 @@ component TempoArrows inherits VerticalLayout {
     Path { width: 8px; height: 5px; commands: "M 0 0 L 8 0 L 4 5 Z"; fill: arrow < 0 ? Theme.phase-off : Theme.n-2c2c2f; }
 }
 
+// The beat in the 2-Deck strip: a big beat number, then the phrase playing
+// now ("BEAT" without phrases) over four dots lit in its color, all lilac
+// in the last bar before the next phrase.
+component StripBeat inherits HorizontalLayout {
+    in property <BeatCount> count;
+    in property <color> tint;
+    property <color> lit: count.last-bar ? Theme.accent : count.has-kind ? count.kind-color : tint;
+    horizontal-stretch: 0;
+    spacing: 5px;
+    Text { text: count.beat + 1; color: Theme.text; font-size: 15px; font-weight: 800; vertical-alignment: center; }
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        Text { text: count.kind-name; color: count.has-kind ? count.kind-color : Theme.text-dim; font-size: 7px; font-weight: 800; letter-spacing: 0.6px; }
+        HorizontalLayout {
+            spacing: 2px;
+            for i in 4: Rectangle {
+                width: 7px;
+                height: 3px;
+                border-radius: 1px;
+                background: i == count.beat ? lit : Theme.n-3a3a3e;
+                opacity: i == count.beat && !count.playing ? 0.5 : 1;
+            }
+        }
+    }
+}
+
 // The 2-Deck strip under a deck's overview: on the outer side the phase
-// meter, its offset and the tempo guide; on the side by the mixer the beat
-// dots, phrase.bar.beat and the countdown to the next phrase (each as the
-// beat counter setting picks). Always there, so the deck keeps its height.
+// meter, its offset and the tempo guide; on the side by the mixer the
+// countdown to the next phrase and the beat (each as the beat counter
+// setting picks). Always there, so the deck keeps its height.
 component BeatStrip inherits Rectangle {
     in property <BeatCount> count;
     in property <color> tint;
@@ -893,37 +925,11 @@ component BeatStrip inherits Rectangle {
         if !mirrored && loaded: PhaseLine { count: count; tone: tone; }
         if !mirrored && loaded: Text { min-width: 44px; horizontal-stretch: 0; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; vertical-alignment: center; }
         if !mirrored && loaded: TempoArrows { arrow: count.phase == 2 ? count.tempo-arrow : 0; }
-        if mirrored && counter: HorizontalLayout {
-            horizontal-stretch: 0;
-            spacing: 3px;
-            for i in 4: VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 10px;
-                    height: 5px;
-                    border-radius: 2px;
-                    background: i != count.beat ? Theme.n-2c2c2f : count.last-bar ? Theme.accent : i == 0 ? Theme.text : tint;
-                    opacity: i == count.beat && !count.playing ? 0.5 : 1;
-                }
-            }
-        }
+        if mirrored && counter: StripBeat { count: count; tint: tint; }
         if mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 11px; font-weight: 600; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
         if !mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 11px; font-weight: 600; vertical-alignment: center; }
-        if !mirrored && counter: HorizontalLayout {
-            horizontal-stretch: 0;
-            spacing: 3px;
-            for i in 4: VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 10px;
-                    height: 5px;
-                    border-radius: 2px;
-                    background: i != count.beat ? Theme.n-2c2c2f : count.last-bar ? Theme.accent : i == 0 ? Theme.text : tint;
-                    opacity: i == count.beat && !count.playing ? 0.5 : 1;
-                }
-            }
-        }
+        if !mirrored && counter: StripBeat { count: count; tint: tint; }
         // Right deck: the same, mirrored.
         if mirrored && loaded: TempoArrows { arrow: count.phase == 2 ? count.tempo-arrow : 0; }
         if mirrored && loaded: Text { min-width: 44px; horizontal-stretch: 0; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center; }
