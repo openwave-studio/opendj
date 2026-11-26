@@ -30,8 +30,12 @@ on the hardware yet, so tell us how it goes.
   then turn and press again to load one of its presets. **SHIFT** and press
   (or push it left) goes back. **BROWSER** opens the list and **TRACK**
   closes it. **PLUG-IN** opens the instrument's own window.
-- The screen shows the instrument and its preset, and the knob you turn
-  with its value.
+- The screen puts one thing in big letters, with smaller lines around it:
+  while you play, the preset (the instrument above it, and SEQ, REC, ARP
+  and SCALE below when they're on); while you turn a knob, its value, with
+  its name and a bar; while you browse, the one picked, with the ones
+  before and after it and its place in the list. A name too long for the
+  screen scrolls once your hands are off the controls.
 
 ## When you try it
 

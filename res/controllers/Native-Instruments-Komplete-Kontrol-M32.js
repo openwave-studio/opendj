@@ -90,6 +90,7 @@ KompleteKontrolM32.incomingData = function(data, _length) {
         if (down !== this.held[b]) {
             this.held[b] = down;
             if (down) {
+                KeyboardInstrument.touch();
                 this.press(b);
             }
         }
@@ -215,7 +216,7 @@ KompleteKontrolM32.sendLights = function() {
 };
 
 KompleteKontrolM32.drawScreen = function() {
-    const pixels = KeyboardInstrument.pixels(KeyboardInstrument.lines());
+    const pixels = KeyboardInstrument.screen();
     // Each half only when it changed: a screen write holds up the knobs.
     for (let half = 0; half < 2; half++) {
         const bytes = pixels.slice(half * 256, half * 256 + 256).map(v => v ^ 0xff);
