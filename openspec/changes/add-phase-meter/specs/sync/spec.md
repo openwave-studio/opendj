@@ -25,6 +25,10 @@ Beside the phase meter each deck SHALL show an up and a down arrow; the arrow po
 ### Requirement: Beat counter in the strip
 In the 2-Deck layout the beat counter SHALL show in the strip under the overview, on the side next to the mixer, and not beside the title.
 
+#### Scenario: Countdown only
+- **WHEN** the deck is 10 bars from a Drop
+- **THEN** the strip shows the beat dots and "↓ 10 › DROP" in the Drop's color, without the phrase.bar.beat count
+
 #### Scenario: Phrases off
 - **WHEN** the beat counter is set to Beats
 - **THEN** the strip shows the beat dots without the phrase count or countdown
