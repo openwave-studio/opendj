@@ -9,6 +9,9 @@
 //!   branch takes one note, plays it as its own note (C3 by default) and
 //!   cuts off the other pads in its choke group.
 //!
+//! In an instrument or drum rack, a branch's MIDI effects come before its
+//! instrument and change the notes it plays, on the song's beat.
+//!
 //! Every branch renders into its own buffer, made before the audio starts,
 //! so a rack never allocates while it plays. Eight macro knobs turn
 //! settings of the devices inside it, each between a low and a high value.
@@ -20,6 +23,7 @@ use opendj_plugin_host::shm::Midi;
 use crate::clip::DeviceInfo;
 use crate::devices::{from_db, Device, Param, Settings, Unit};
 use crate::kit::Smooth;
+use crate::midifx::{push as add, Note, NoteEvent};
 
 /// The most branches a rack holds.
 pub const MAX_BRANCHES: usize = 128;
@@ -222,24 +226,15 @@ impl RackSettings {
         if chain.len() >= MAX_DEVICES {
             return None;
         }
-        let instrument = d.builtin.as_ref().is_some_and(Settings::plays_notes)
-            || d.plugin.as_ref().is_some_and(|p| p.instrument);
-        let is_instrument = |x: &DeviceInfo| {
-            x.builtin.as_ref().is_some_and(Settings::plays_notes)
-                || x.plugin.as_ref().is_some_and(|p| p.instrument)
-        };
-        let mut at = at.min(chain.len());
-        if instrument {
+        if is_instrument(&d) {
             if let Some(i) = chain.iter().position(is_instrument) {
                 chain[i] = d;
                 self.shift_targets(b, |x| if x == i { None } else { Some(x) });
                 return Some(i);
             }
-            at = 0;
-        } else if let Some(i) = chain.iter().position(is_instrument) {
-            // Effects go after the instrument.
-            at = at.max(i + 1);
         }
+        let (lo, hi) = zone(chain, &d);
+        let at = at.clamp(lo, hi);
         chain.insert(at, d);
         self.shift_targets(b, |x| Some(if x >= at { x + 1 } else { x }));
         Some(at)
@@ -269,8 +264,9 @@ impl RackSettings {
         if from >= chain.len() {
             return false;
         }
-        let to = to.min(chain.len() - 1);
         let d = chain.remove(from);
+        let (lo, hi) = zone(chain, &d);
+        let to = to.clamp(lo, hi);
         chain.insert(to, d);
         self.shift_targets(b, |x| {
             Some(if x == from {
@@ -287,16 +283,16 @@ impl RackSettings {
     }
 
     /// Whether `d` can go in a chain: the studio's own audio devices, and
-    /// instruments in a rack that plays notes. MIDI effects, plug-ins and
-    /// racks inside racks come later.
+    /// instruments and MIDI effects in a rack that plays notes. Plug-ins
+    /// and racks inside racks come later.
     pub fn accepts(&self, d: &DeviceInfo) -> bool {
         let Some(s) = d.builtin.as_ref() else {
             return false;
         };
-        if s.is_midi_effect() || matches!(s, Settings::Rack(_) | Settings::External(_)) {
+        if matches!(s, Settings::Rack(_) | Settings::External(_)) {
             return false;
         }
-        !s.plays_notes() || self.plays_notes()
+        !(s.plays_notes() || s.is_midi_effect()) || self.plays_notes()
     }
 
     /// A new chain with `d` in it, at the end. Returns its place.
@@ -407,6 +403,33 @@ impl RackSettings {
     }
 }
 
+fn is_instrument(x: &DeviceInfo) -> bool {
+    x.builtin.as_ref().is_some_and(Settings::plays_notes)
+        || x.plugin.as_ref().is_some_and(|p| p.instrument)
+}
+
+fn is_midi_effect(x: &DeviceInfo) -> bool {
+    x.builtin.as_ref().is_some_and(Settings::is_midi_effect)
+}
+
+/// The places `d` can go in `chain`, as in Live: MIDI effects, then the
+/// instrument, then audio effects.
+fn zone(chain: &[DeviceInfo], d: &DeviceInfo) -> (usize, usize) {
+    let midi = chain.iter().take_while(|x| is_midi_effect(x)).count();
+    let after = chain
+        .iter()
+        .rposition(is_instrument)
+        .map_or(midi, |i| i + 1)
+        .max(midi);
+    if is_midi_effect(d) {
+        (0, midi)
+    } else if is_instrument(d) {
+        (midi, midi)
+    } else {
+        (after, chain.len())
+    }
+}
+
 /// A branch as the audio thread runs it.
 struct Run {
     devices: Vec<(bool, Device)>,
@@ -421,6 +444,13 @@ struct Run {
     note: u8,
     play: u8,
     choke: u8,
+    /// Its MIDI effects' notes, on the beat: in and out.
+    fx_in: Vec<NoteEvent>,
+    fx_out: Vec<NoteEvent>,
+    /// The beat its MIDI effects last ran up to (NaN: start afresh).
+    fx_beat: f64,
+    /// A MIDI effect was switched off: the instrument's notes end.
+    flush: bool,
 }
 
 pub struct Rack {
@@ -429,6 +459,9 @@ pub struct Rack {
     macros: Vec<Macro>,
     /// Which branches each key's note went to, so its note-off follows.
     held: [u128; 128],
+    rate: f64,
+    /// The song's beat at the start of the next block (see [`Rack::at_beat`]).
+    beat: f64,
 }
 
 impl Rack {
@@ -463,6 +496,10 @@ impl Rack {
                 note: b.note,
                 play: b.play,
                 choke: b.choke,
+                fx_in: Vec::with_capacity(MAX_NOTES),
+                fx_out: Vec::with_capacity(MAX_NOTES),
+                fx_beat: f64::NAN,
+                flush: false,
             })
             .collect();
         Rack {
@@ -470,15 +507,28 @@ impl Rack {
             runs,
             macros: s.macros.clone(),
             held: [0; 128],
+            rate,
+            beat: 0.0,
         }
     }
 
     /// See [`RackSettings::set`]. Never allocates.
     pub fn set(&mut self, i: usize, v: f32) {
         if let Some((b, d, p)) = split(i) {
-            if let Some((on, dev)) = self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
+            if let Some(r) = self.runs.get_mut(b) {
+                let Some((on, dev)) = r.devices.get_mut(d) else {
+                    return;
+                };
                 if p == ON {
+                    let was = *on;
                     *on = v >= 0.5;
+                    // A MIDI effect switched off lets go of what it holds.
+                    if was && !*on {
+                        if let Some(fx) = dev.midi_mut() {
+                            fx.reset();
+                            r.flush = true;
+                        }
+                    }
                 } else {
                     dev.set(p, v);
                 }
@@ -541,12 +591,28 @@ impl Rack {
         }
     }
 
+    /// The song's beat at the start of the next block, for the MIDI
+    /// effects inside. Without it the rack counts beats from where it was.
+    /// Close to where the rack's own count got to, it keeps its own (no
+    /// note is played twice or lost to rounding).
+    pub fn at_beat(&mut self, beat: f64) {
+        let near = (beat - self.beat).abs() < 0.25;
+        if !near {
+            self.beat = beat;
+        }
+    }
+
     /// Instrument or Drum Rack: plays the block's notes into `buf`.
     pub fn play(&mut self, midi: &[Midi], buf: &mut [[f32; 2]], tempo: f64) {
         buf.fill([0.0; 2]);
         if !self.plays_notes() {
             return;
         }
+        let per_frame = if tempo.is_finite() && tempo > 0.0 {
+            tempo / 60.0 / self.rate
+        } else {
+            0.0
+        };
         let mut from = 0;
         let mut at = 0;
         while at < buf.len() {
@@ -557,10 +623,15 @@ impl Rack {
                 to += 1;
             }
             self.route(&midi[from..to], at as u32);
+            let lo = self.beat + at as f64 * per_frame;
+            for r in self.runs.iter_mut() {
+                r.midi_effects(lo, per_frame, n, tempo);
+            }
             self.mix(&mut buf[at..end], tempo, false);
             from = to;
             at = end;
         }
+        self.beat += buf.len() as f64 * per_frame;
     }
 
     /// Hands each branch the notes it takes, at frames from `offset`.
@@ -696,6 +767,91 @@ impl Rack {
     #[cfg(test)]
     pub fn branches(&self) -> usize {
         self.runs.len()
+    }
+}
+
+impl Run {
+    /// Runs the branch's notes for `n` frames from beat `lo` through its
+    /// MIDI effects (those that are on, in order), leaving what comes out
+    /// in `notes`. Controllers other than All Notes Off pass by them.
+    fn midi_effects(&mut self, lo: f64, per_frame: f64, n: usize, tempo: f64) {
+        if self.flush {
+            self.flush = false;
+            if self.notes.len() == self.notes.capacity() {
+                self.notes.pop();
+            }
+            self.notes.insert(
+                0,
+                Midi {
+                    frame: 0,
+                    data: [0xB0, 123, 0],
+                },
+            );
+        }
+        let any = self
+            .devices
+            .iter()
+            .any(|(on, d)| *on && matches!(d, Device::Midi(_)));
+        if !any || per_frame <= 0.0 {
+            return;
+        }
+        let hi = lo + n as f64 * per_frame;
+        self.fx_in.clear();
+        // The song jumped (play started or stopped, a relocate): what
+        // the effects hold ends.
+        let joined = (lo - self.fx_beat).abs() < 1e-6;
+        if !joined {
+            add(&mut self.fx_in, lo, Note::AllOff);
+        }
+        self.fx_beat = hi;
+        let mut kept = 0;
+        for i in 0..self.notes.len() {
+            let m = self.notes[i];
+            let beat = lo + m.frame as f64 * per_frame;
+            let status = m.data[0] & 0xF0;
+            let note = match status {
+                0x90 if m.data[2] > 0 => Note::On(m.data[1] & 127, m.data[2] as f32 / 127.0),
+                0x80 | 0x90 => Note::Off(m.data[1] & 127),
+                0xB0 if m.data[1] == 123 => Note::AllOff,
+                _ => {
+                    self.notes[kept] = m;
+                    kept += 1;
+                    continue;
+                }
+            };
+            add(&mut self.fx_in, beat, note);
+        }
+        self.notes.truncate(kept);
+        for (on, d) in self.devices.iter_mut() {
+            if !*on {
+                continue;
+            }
+            if let Some(fx) = d.midi_mut() {
+                self.fx_out.clear();
+                fx.run(&self.fx_in, &mut self.fx_out, hi, tempo);
+                std::mem::swap(&mut self.fx_in, &mut self.fx_out);
+            }
+        }
+        for e in &self.fx_in {
+            let frame = ((e.beat - lo) / per_frame)
+                .floor()
+                .clamp(0.0, (n - 1) as f64) as u32;
+            let data = match e.note {
+                Note::On(p, v) => [0x90, p, (v * 127.0).round().clamp(1.0, 127.0) as u8],
+                Note::Off(p) => [0x80, p, 0],
+                Note::AllOff => [0xB0, 123, 0],
+            };
+            push(&mut self.notes, Midi { frame, data });
+        }
+        // By frame, keeping the order within one (an insertion sort: no
+        // allocation, and the lists are short).
+        for i in 1..self.notes.len() {
+            let mut j = i;
+            while j > 0 && self.notes[j - 1].frame > self.notes[j].frame {
+                self.notes.swap(j - 1, j);
+                j -= 1;
+            }
+        }
     }
 }
 
@@ -1088,5 +1244,97 @@ mod tests {
     fn inner_indices_round_trip() {
         assert_eq!(split(inner(12, 3, 17)), Some((12, 3, 17)));
         assert_eq!(split(5), None);
+    }
+
+    fn midi(name: &str, m: crate::midifx::MidiSettings) -> DeviceInfo {
+        DeviceInfo {
+            name: name.into(),
+            kind: "Built-in".into(),
+            on: true,
+            plugin: None,
+            builtin: Some(Settings::Midi(m)),
+        }
+    }
+
+    /// Sign changes in the left channel: twice the pitch, twice as many.
+    fn crossings(buf: &[[f32; 2]]) -> usize {
+        buf.windows(2)
+            .filter(|w| (w[0][0] >= 0.0) != (w[1][0] >= 0.0))
+            .count()
+    }
+
+    #[test]
+    fn midi_effects_go_first_in_a_chain_and_change_its_notes() {
+        use crate::midifx::MidiSettings;
+        let mut r = RackSettings::new(Kind::Instrument);
+        r.add_chain(Some(simpler(220.0, 0)));
+        // A MIDI effect dropped after the instrument still goes before it,
+        // and an audio effect dropped first goes after it.
+        assert_eq!(
+            r.insert(0, 5, midi("Pitch", MidiSettings::Pitch { shift: 12 })),
+            Some(0)
+        );
+        assert_eq!(r.insert(0, 0, utility(1.0)), Some(2));
+        assert!(!r.move_device(0, 0, 2) || is_midi_effect(&r.branches[0].devices[0]));
+        // Not in an effect rack.
+        let mut fx = RackSettings::new(Kind::Audio);
+        fx.add_chain(None);
+        assert_eq!(
+            fx.insert(0, 0, midi("Pitch", MidiSettings::Pitch { shift: 12 })),
+            None
+        );
+
+        let play = |r: &RackSettings| {
+            let mut rack = Rack::new(r, RATE);
+            let mut buf = vec![[0.0f32; 2]; 4800];
+            rack.play(&[Midi::note_on(0, 0, 60, 100)], &mut buf, 120.0);
+            crossings(&buf[480..])
+        };
+        let up = play(&r);
+        r.set(inner(0, 0, ON), 0.0);
+        let plain = play(&r);
+        // An octave up: about twice as many crossings.
+        assert!(plain > 0, "the Simpler plays");
+        let ratio = up as f32 / plain as f32;
+        assert!((1.8..2.2).contains(&ratio), "{up} vs {plain}");
+    }
+
+    #[test]
+    fn an_arpeggiator_in_a_chain_plays_steps_on_the_beat() {
+        use crate::midifx::MidiSettings;
+        let arp = crate::midifx::MidiSettings::catalog()
+            .into_iter()
+            .find(|(n, _)| *n == "Arpeggiator")
+            .map(|(_, s)| s)
+            .unwrap();
+        assert!(matches!(arp, MidiSettings::Arpeggiator { .. }));
+        let mut r = RackSettings::new(Kind::Instrument);
+        r.add_chain(Some(simpler(220.0, 0)));
+        r.insert(0, 0, midi("Arpeggiator", arp));
+        let mut rack = Rack::new(&r, RATE);
+        rack.at_beat(0.0);
+        // Hold a chord for two beats at 120 BPM (one second), in 10 ms
+        // blocks, counting where sound starts after a quiet block.
+        let mut starts = 0;
+        let mut quiet = true;
+        for b in 0..(48_000 / 480) {
+            let notes = if b == 0 {
+                vec![Midi::note_on(0, 0, 60, 100), Midi::note_on(0, 0, 64, 100)]
+            } else {
+                vec![]
+            };
+            let mut buf = vec![[0.0f32; 2]; 480];
+            rack.play(&notes, &mut buf, 120.0);
+            let loud = buf.iter().any(|f| f[0].abs() > 0.01);
+            if loud && quiet {
+                starts += 1;
+            }
+            quiet = !loud;
+        }
+        // Steps of a quarter beat, each half as long: eight notes start in
+        // two beats (a held chord without it would start once).
+        assert!((7..=9).contains(&starts), "{starts}");
+        // Its clock follows the song: it went on from beat 0 to beat 2.
+        assert!((rack.beat - 2.0).abs() < 1e-6, "{}", rack.beat);
     }
 }

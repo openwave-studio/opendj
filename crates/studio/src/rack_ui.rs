@@ -105,6 +105,7 @@ pub fn inner_rows(
                     },
                     on: info.on,
                     instrument: control::is_instrument(info),
+                    midi: control::is_midi_effect(info),
                     on_index: rack::inner(b, d, rack::ON) as i32,
                     ..DeviceData::default()
                 },

@@ -1584,7 +1584,7 @@ component RackChains inherits VerticalLayout {
         vertical-stretch: 1;
         min-height: 22px;
         border-radius: 2px;
-        property <bool> over: Drag.active && Drag.kind != 2
+        property <bool> over: Drag.active
             && Drag.x >= self.absolute-position.x && Drag.x < self.absolute-position.x + self.width
             && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
         property <bool> hot: self.over && Drag.owner == 7000 + root.at;
@@ -2593,7 +2593,7 @@ export component AppWindow inherits Window {
                                         border-width: self.hot ? 2px : 1px;
                                         border-color: self.hot ? Theme.accent : Theme.line;
                                         background: self.hot ? Theme.accent.with-alpha(0.08) : transparent;
-                                        property <bool> over: Drag.active && Drag.kind != 2
+                                        property <bool> over: Drag.active
                                             && Drag.x >= self.absolute-position.x - 3px && Drag.x < self.absolute-position.x + self.width
                                             && Drag.y >= self.absolute-position.y && Drag.y < self.absolute-position.y + self.height;
                                         property <bool> hot: self.over && Drag.owner == 7500;

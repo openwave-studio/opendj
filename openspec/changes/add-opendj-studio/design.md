@@ -96,8 +96,13 @@ A rack is a device in the chain that holds several chains side by side
   each click maps that setting over its whole range or unmaps it; a
   setting follows one macro, and its knob shows the macro's number. Each
   edit swaps the rack for the edited one, so its sound restarts.
-- **Not yet.** Plug-ins and MIDI effects inside chains, racks inside
-  racks, Live's macro mappings, macros on Push, a range per mapping.
+- **MIDI effects in chains.** In an instrument or drum rack a chain can
+  hold MIDI effects; they always lead it, before its instrument, as on a
+  track. Each chain turns its notes into beats (the song's, from the
+  transport), runs them through its effects in order and back into frames,
+  so an Arpeggiator inside steps on the song's grid. Switching one off
+  ends the notes it held.
+- **Not yet.** Plug-ins inside chains, racks inside racks, Live's macro mappings, macros on Push, a range per mapping.
 - **Kinds.** An *Audio Effect Rack* sits with the audio effects: its input
   goes to every branch and the branches are summed. An *Instrument Rack*
   sits in the instrument place: each branch has its own MIDI effects,

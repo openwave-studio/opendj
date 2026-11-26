@@ -919,6 +919,14 @@ impl Device {
         }
     }
 
+    /// The song's beat at the start of the next block (a rack's MIDI
+    /// effects follow it).
+    pub fn at_beat(&mut self, beat: f64) {
+        if let Device::Rack(r) = self {
+            r.at_beat(beat);
+        }
+    }
+
     /// The MIDI effect, if this is one.
     pub fn midi_mut(&mut self) -> Option<&mut MidiFx> {
         match self {
