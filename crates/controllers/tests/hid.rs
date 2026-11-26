@@ -736,6 +736,33 @@ fn traktor_kontrol_s5_plays_as_traktor() {
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
+/// Without NI's host agent the M32 stays in its own MIDI mode ("Template
+/// 1"), where knobs 1-8 send CC 22-29 on its MIDI port instead of over HID.
+#[test]
+fn komplete_kontrol_m32_knobs_in_midi_mode() {
+    let (reg, mut c, _device) = load("Native Instruments Komplete Kontrol M32.hid.xml");
+    reg.get("[Channel2]", "live_input").unwrap().set(3.0);
+    reg.get("[Instrument1]", "num_parameters")
+        .unwrap()
+        .set(20.0);
+    settle(&mut c, 100);
+    // The first value only says where the knob is, then each change turns.
+    c.receive_twin([0xB0, 22, 40]);
+    c.receive_twin([0xB0, 22, 80]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 40.0 / 127.0).abs() < 1e-9);
+    // Knob 8 is CC 29; other controllers do nothing.
+    c.receive_twin([0xB0, 29, 10]);
+    c.receive_twin([0xB0, 29, 30]);
+    c.receive_twin([0xB0, 30, 100]);
+    c.poll(Instant::now());
+    assert!(get(&reg, "[Instrument1]", "parameter8") > 0.0);
+    c.receive_twin([0xB0, 22, 0]);
+    c.poll(Instant::now());
+    assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
 /// The Komplete Kontrol M32 plays the instrument deck: its knobs turn the
 /// instrument's knobs on the page shown, < > turn the page, the transport
 /// runs the sequencer, PRESET asks for the next preset, and the 4-D encoder
@@ -786,19 +813,10 @@ fn komplete_kontrol_m32_plays_the_instrument_deck() {
     assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
     let idle = knob;
 
-    // In its MIDI mode ("Template 1") knob 1 sends CC 22 on the MIDI port
-    // instead: the first value only says where it is, then each change turns.
+    // With NI's agent running the knobs come over HID: controllers the
+    // MIDI port also sends for them don't turn the knob a second time.
     c.receive_twin([0xB0, 22, 40]);
     c.receive_twin([0xB0, 22, 80]);
-    c.poll(Instant::now());
-    assert!((get(&reg, "[Instrument1]", "parameter1") - 40.0 / 127.0).abs() < 1e-9);
-    // Knob 8 is CC 29; other controllers do nothing.
-    c.receive_twin([0xB0, 29, 10]);
-    c.receive_twin([0xB0, 29, 30]);
-    c.receive_twin([0xB0, 30, 100]);
-    c.poll(Instant::now());
-    assert!(get(&reg, "[Instrument1]", "parameter8") > 0.0);
-    c.receive_twin([0xB0, 22, 0]);
     c.poll(Instant::now());
     assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
 

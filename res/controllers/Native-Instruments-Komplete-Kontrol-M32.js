@@ -50,6 +50,8 @@ KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
 // these controllers on its MIDI port instead, which openDJ hands to
 // incomingMidi below.
 KompleteKontrolM32.FIRST_KNOB_CC = 22;
+// How long after a knob moves over HID its MIDI controllers are left alone.
+KompleteKontrolM32.HID_KNOBS_HOLD_MS = 5000;
 
 KompleteKontrolM32.OFF = 0x00;
 KompleteKontrolM32.DIM = 0x10;
@@ -62,6 +64,7 @@ KompleteKontrolM32.init = function(_id) {
     this.coverUntil = 0;
     this.coveredAt = 0;
     this.drawnAt = 0;
+    this.hidKnobsAt = -Infinity;
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
@@ -115,6 +118,7 @@ KompleteKontrolM32.incomingData = function(data, _length) {
         const now = data[o] | (data[o + 1] << 8);
         const before = last[o] | (last[o + 1] << 8);
         if (now !== before) {
+            this.hidKnobsAt = Date.now();
             const delta = ((now - before + 1500) % 1000) - 500;
             KeyboardInstrument.turnKnob(k, delta * (fine ? this.FINE_PER_COUNT : this.PER_COUNT));
         }
@@ -139,6 +143,12 @@ KompleteKontrolM32.incomingData = function(data, _length) {
 KompleteKontrolM32.incomingMidi = function(status, control, value) {
     const k = control - this.FIRST_KNOB_CC;
     if ((status & 0xf0) !== 0xb0 || k < 0 || k >= KeyboardInstrument.KNOBS) {
+        return;
+    }
+    // With NI's host agent running the knobs come over HID (above), and
+    // any controllers they also send here are the same turn.
+    if (Date.now() - this.hidKnobsAt < this.HID_KNOBS_HOLD_MS) {
+        this.ccs[k] = value;
         return;
     }
     this.coverTemplate();
