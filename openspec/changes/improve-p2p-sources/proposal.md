@@ -14,18 +14,19 @@ Soulseek results today rank by format, then a free upload slot, then queue lengt
 - **Sign-out pause**: while slskd is signed out, a download whose transfers fail is held as waiting ("Paused · Soulseek signed out"), not failed, and not counted against the other user; once slskd is signed in again it is asked for again from the same user. Downloads shows a banner while any are held.
 - **Fake-lossless check**: a finished FLAC, WAV, AIFF or ALAC download, and any lossless track on Analyze, gets its spectrum's cutoff measured; below 19.5 kHz (at 44.1 kHz or more) it is flagged: an amber "Not real lossless" chip on Downloads, a Lossy tag, and a Health list.
 - **Find and source order**: the `add-download-search` change, moved into this release.
-- **Music servers**: a song's menu on a Subsonic/Navidrome source gains "Similar artists' songs" (`getSimilarSongs2`) and, when the server lists the `sonicSimilarity` OpenSubsonic extension, "Sounds like this" (`getSonicSimilarTracks`) and "Path to another song…" (`findSonicPath`).
+- **Music servers**: a song's menu on a Subsonic/Navidrome source gains "Similar artists' songs" (`getSimilarSongs2`).
 
 ## Out of scope
 
 - Torrent and Usenet sources, and web services that rip DRM-protected stores.
 - Keeping peer observations across restarts.
+- Audio-similarity "Sounds like this" and "Path to another song" from Navidrome's sonic-similarity plugin: dropped after review (needs a server plugin few have, and goes by overall sound, not tempo or key).
 
 ## Capabilities
 
 ### Modified Capabilities
 
-- `library-sources`: readiness ranking and column, unwanted copies, sign-out pause, music-server similarity.
+- `library-sources`: readiness ranking and column, unwanted copies, sign-out pause, similar artists' songs from music servers.
 - `library-health`: a fake-lossless list.
 
 ## Impact
@@ -33,4 +34,4 @@ Soulseek results today rank by format, then a free upload slot, then queue lengt
 - Soulseek add-on (separate repository): `src/peers.rs` (observations, wait, rank), `src/slskd.rs` (ranking, unwanted copies), `src/lib.rs` (sign-out pause, observations).
 - Engine: `crates/engine/src/bandwidth.rs` (spectrum cutoff).
 - Plugins API: `Found` gains a readiness line for the Ready column (empty from sources that have none).
-- App: `crates/app/ui/sources.slint`, `crates/app/src/sources.rs` (Ready column, Other versions group, sign-out banner, fake-lossless chip), Health, `crates/plugins/src/subsonic.rs` (similarity calls).
+- App: `crates/app/ui/sources.slint`, `crates/app/src/sources.rs` (Ready column, Other versions group, sign-out banner, fake-lossless chip), Health, `crates/plugins/src/subsonic.rs` (`getSimilarSongs2`).

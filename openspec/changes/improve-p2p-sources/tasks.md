@@ -21,4 +21,3 @@
 ## 4. Music servers
 
 - [ ] 4.1 Similar artists' songs (`getSimilarSongs2`)
-- [ ] 4.2 Sounds like this and Path to another song when the server lists `sonicSimilarity`
