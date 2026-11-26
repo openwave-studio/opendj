@@ -65,9 +65,8 @@ Under them, each row's choices sit side by side, one click each:
   (the default) shows as much of what has played as what is coming;
   **Left** puts it a quarter of the way in, so three quarters of the
   waveform shows what is coming next.
-- **Phrases**: two toggles. **Overview** shows the colored phrase bar along
-  the bottom of the overviews, **Waveform** the phrase flags on the large
-  waveforms; both are on at first.
+- **Phrases**: a switch for the colored phrase bar along the bottom of the
+  overviews and the phrase flags on the large waveforms (on at first).
 - **Lyrics**: a switch for the track's timed lyrics in cyan along the
   bottom of the large waveforms (on at first).
 

@@ -1257,6 +1257,18 @@ component WaveformsButton inherits Rectangle {
             HorizontalLayout {
                 padding-left: 12px;
                 padding-right: 10px;
+                spacing: 6px;
+                // A small waveform, then the word.
+                Path {
+                    width: 16px;
+                    height: 12px;
+                    y: (parent.height - self.height) / 2;
+                    viewbox-width: 16;
+                    viewbox-height: 12;
+                    stroke: on ? Theme.accent : Theme.text-dim;
+                    stroke-width: 1.5px;
+                    commands: "M 1 5 L 1 7 M 4 3 L 4 9 M 7 0.5 L 7 11.5 M 10 2 L 10 10 M 13 4 L 13 8 M 15.5 5.5 L 15.5 6.5";
+                }
                 Text { text: "Wave"; color: on ? Theme.lilac-text : Theme.pill-off-text; font-size: 12px; font-weight: 600; vertical-alignment: center; }
             }
             ta := TouchArea {
@@ -1330,7 +1342,9 @@ component FxButton inherits Rectangle {
     HorizontalLayout {
         padding-left: 11px;
         padding-right: 11px;
-        Text { text: "FX"; color: lit ? Theme.lilac-text : Theme.pill-off-text; font-size: 13px; font-weight: 700; font-italic: true; vertical-alignment: center; }
+        // Its own family name, so every platform picks the bundled italic
+        // rather than a regular face or a slanted system font.
+        Text { text: "FX"; color: lit ? Theme.lilac-text : Theme.pill-off-text; font-family: "Inter Tabular Italic"; font-size: 13px; font-weight: 700; font-italic: true; vertical-alignment: center; }
     }
     ta := TouchArea {
         mouse-cursor: pointer;

@@ -9,7 +9,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 - **Grid editor bar** under both decks in 2-Deck: grid type, BPM with Tap, ½ and ×2, downbeat, anchors and grid nudges, plus a new **Clear** for the grid. Prep uses the same bar. The Cues and Checklist tabs are gone.
 - Under each deck's key, a **Master** pill and a ⚡ pill replace the B, K, S and P letters. The ⚡ pill opens **Deck options**: Match BPM, Match Key, Sync on Play and Key Lock on load.
 - **Phase meter** (2-Deck): a strip under each overview shows the beat counter, an EARLY / LATE meter against the master deck (in ms, or whole beats) and tempo arrows that point the way to move the fader.
-- **2-Deck mixer**: the level meters sit beside each fader and span its travel, with a peak hold. EQ / STEMS / SCULPT is a stacked switch, and knob names are condensed capitals that show the value for a moment while you turn.
+- **2-Deck mixer**: the level meters sit beside each fader and span its travel, with a peak hold. EQ / STEMS / SCULPT is a drop-down pill, and knob names are condensed capitals that show the value for a moment while you turn.
 - **Play** starts and pauses on the press of the button, not when you let go, so a track starts right on the beat.
 - **Pitch Color FX**: pick **Pitch** from the filter knob's menu, and the COLOR knob shifts the deck up to an octave down or up while keeping the tempo. PITCH buttons on the DDJ-FLX10, DDJ-1000, XDJ-R1, XDJ-RR, DDJ-RX/RZ/RZX/SZ and DDJ-800 pick it.
 - A hot cue or cue jump out of a playing loop now ends the loop.
@@ -19,7 +19,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 
 - Every top bar button is the same 32 px pill. The clock has its own pill, and **Master** is one pill with the knob, two wider meters and a ▾ that opens the Master panel.
 - **Remote** moves to **File › Remote…**. Its pill shows only while the phone remote is on, and turns green when a phone connects.
-- A compact **WAVE** panel: height and zoom sliders, one row each for size, style, color and needle, and Phrases and Lyrics switches. BPM labels always show.
+- A compact **WAVE** panel behind the waveform icon: height and zoom sliders (zoom with ten ticks), one row each for size, style, color and needle, and Phrases and Lyrics switches. BPM labels always show.
 - **RGB** waveforms come in Red-Amber or Red-Green-Blue.
 - On macOS, dragging the master knob no longer moves the window.
 
