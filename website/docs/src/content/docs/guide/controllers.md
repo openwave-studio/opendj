@@ -202,9 +202,9 @@ in the Controller Editor and a guide page:
   AERO, R1 and AN, the OPUS-QUAD and OMNIS-DUO; the DJM-250MK2, 450, 750MK2,
   900NXS2, A9, V5, V10, TOUR1, S7, S9, S11 and T1 mixers, the euphonia and
   the PLX-CRSS12.
-- **Native Instruments:** Traktor Kontrol S2 MK3, S3, S4 MK3, S5, S8, D2, X1
-  MK3, Z1 MK2, Traktor MX2, Maschine Mikro MK3 and the Komplete Kontrol M32
-  keyboard.
+- **Native Instruments:** Traktor Kontrol S2 MK1, S2 MK3, S3, S4 MK3, S5,
+  S8, D2, X1 MK3, Z1 MK2, Traktor MX2, Maschine Mikro MK3 and the Komplete
+  Kontrol M32 keyboard.
 - **Denon DJ:** SC LIVE 4, PRIME 4, PRIME GO, MC7000, MC6000MK2, MC4000,
   MC3000, DN-SC2000 and DN-HS5500.
 - **Numark:** Mixtrack Platinum FX, Mixtrack Pro FX, NS4FX, Mixstream Pro,

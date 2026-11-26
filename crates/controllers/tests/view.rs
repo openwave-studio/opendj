@@ -158,6 +158,7 @@ fn traktor_hid_pictures_say_what_controls_do() {
         .unwrap();
     assert_eq!(play.midi, "Report 01 · byte 2 · 0x08");
     for file in [
+        "Traktor Kontrol S2 Mk1.hid.xml",
         "Traktor Kontrol S3.hid.xml",
         "Traktor Kontrol S4 MK3.hid.xml",
         "Traktor MX2.hid.xml",
