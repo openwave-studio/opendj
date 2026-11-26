@@ -439,6 +439,7 @@ fn device(d: Node) -> DeviceInfo {
         "OriginalSimpler" => "Simpler",
         "MultiSampler" => "Sampler",
         "ProxyInstrumentDevice" => "External Instrument",
+        "AutoFilter" | "AutoFilter2" => "Auto Filter",
         other => other,
     };
     DeviceInfo {
@@ -677,8 +678,60 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 dry_wet: num("Output_DryWet").unwrap_or(1.0),
             })
         }
+        // The parameter names below follow Live's own names for these
+        // knobs; one a set doesn't have keeps the device's default.
+        "Limiter" => Settings::Limiter(crate::limiter::LimiterSettings {
+            gain_db: num("Gain").unwrap_or(0.0),
+            ceiling_db: num("Ceiling").unwrap_or(-0.3),
+            release_ms: num("Release").unwrap_or(300.0),
+            auto_release: value(d, "AutoRelease/Manual") != Some("false"),
+            lookahead: num("Lookahead").unwrap_or(0.0).clamp(0.0, 2.0) as u8,
+            split: num("LinkChannels").is_some_and(|v| v == 0.0)
+                || value(d, "LinkChannels/Manual") == Some("false"),
+        }),
+        "Saturator" => Settings::Saturator(crate::saturator::SaturatorSettings {
+            drive_db: num("PreDrive").unwrap_or(0.0),
+            curve: num("Type").unwrap_or(0.0).clamp(0.0, 5.0) as u8,
+            output_db: num("PostDrive").unwrap_or(0.0).min(0.0),
+            dry_wet: fraction(num("DryWet").unwrap_or(1.0)),
+            dc: value(d, "PreDcFilter/Manual") != Some("false"),
+            soft_clip: flag("PostClip"),
+        }),
+        "AutoFilter" | "AutoFilter2" => {
+            let mut a = crate::autofilter::AutoFilterSettings::default();
+            if let Some(v) = num("Cutoff").or_else(|| num("Filter_Frequency")) {
+                // Older sets keep the cutoff as a MIDI note number.
+                a.freq = if v <= 135.0 {
+                    440.0 * ((v - 69.0) / 12.0).exp2()
+                } else {
+                    v
+                }
+                .clamp(20.0, 20_000.0);
+            }
+            if let Some(v) = num("FilterType").or_else(|| num("Filter_Type")) {
+                a.kind = v.clamp(0.0, 4.0) as u8;
+            }
+            if let Some(v) = num("Resonance").or_else(|| num("Filter_Resonance")) {
+                a.resonance = fraction(v).clamp(0.0, 1.25);
+            }
+            if let Some(v) = num("LfoAmount").or_else(|| num("Lfo_Amount")) {
+                a.lfo_amount = fraction(v);
+            }
+            if let Some(v) = num("EnvelopeAmount").or_else(|| num("Envelope_Amount")) {
+                a.env_amount = (v / if v.abs() > 1.0 { 100.0 } else { 1.0 }).clamp(-1.0, 1.0);
+            }
+            if let Some(v) = num("DryWet").or_else(|| num("Mix")) {
+                a.dry_wet = fraction(v);
+            }
+            Settings::AutoFilter(a)
+        }
         _ => return None,
     })
+}
+
+/// A fraction that a set keeps as 0..1 or as a percentage.
+fn fraction(v: f32) -> f32 {
+    if v > 1.0 { v / 100.0 } else { v }.clamp(0.0, 1.0)
 }
 
 /// The built-in sound that stands in for a MIDI track's instrument.

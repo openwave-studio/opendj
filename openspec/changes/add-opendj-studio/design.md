@@ -27,6 +27,35 @@ the reverb's tail.
   plug-in starts a new helper from the sound the set saved it with (its
   own state can't yet be read back from the helper).
 
+## Devices
+
+Where each device lives, and the bar it has to clear.
+
+- **Native, Pure Data or plug-in.** Devices on most tracks, MIDI effects,
+  racks, modulators, the sampler and our synths are native Rust. Pure Data
+  holds experimental and community devices. Large synths (Surge XT, Vital,
+  Dexed) stay plug-ins, out of process.
+- **Order.** The kit, then Limiter, Auto Filter and Saturator, then the MIDI
+  effects, then Simpler and Drum Rack. Bass, Pad and Lead become presets of
+  one analog-style synth.
+- **Modulation, as in Bitwig.** A modulator (LFO, envelope, follower) can
+  drive any knob of any device. A modulated knob moves its target; the
+  knob's glide (`kit::Smooth`) does the smoothing, so modulation never
+  clicks.
+- **FunDSP as a toolbox.** Devices use FunDSP's parts inside our own device
+  code (Auto Filter's state-variable and ladder filters), not its graph as
+  the engine. Dynamics, EQ and the sampler stay hand-written.
+- **The bar.** `quality.rs` runs every device in the catalog through the
+  same checks: no allocation while it plays or its knobs turn, no runaway
+  at its extremes, a tail that dies to true zero with denormals flushed, no
+  change at neutral settings, and no click when a gliding knob jumps. The
+  bench (`device_bench`) holds each device to a cost per frame.
+- **Oversampling.** Devices that bend the sound run their curve at 4x
+  through two linear-phase half-band stages (65 taps each, polyphase):
+  more than 70 dB less aliasing than without for the rounded curves, at
+  1 ms of latency. Lookahead and oversampling report their latency; delay
+  compensation across tracks is still to come.
+
 ## Racks (planned)
 
 A rack is a device in the chain that holds several chains side by side.

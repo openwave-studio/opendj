@@ -7,12 +7,15 @@
 //! the UI's end: commands in, the [`engine::Monitor`] to read.
 
 pub mod als;
+pub mod autofilter;
 pub mod clip;
 pub mod control;
 pub mod conv;
 pub mod devices;
 pub mod engine;
 pub mod fx;
+pub mod kit;
+pub mod limiter;
 #[cfg(feature = "link")]
 pub mod link;
 /// Without Ableton Link (openDJ's Session): a clock that can't exist, so
@@ -34,6 +37,9 @@ pub mod link {
     }
 }
 pub mod plugins;
+#[cfg(test)]
+mod quality;
+pub mod saturator;
 pub mod scale;
 pub mod session;
 pub mod sound;
