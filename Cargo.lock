@@ -8192,6 +8192,7 @@ name = "opendj-controllers"
 version = "1.0.0-dev"
 dependencies = [
  "base64 0.22.1",
+ "core-foundation-sys",
  "hidapi",
  "midir",
  "opendj-control",

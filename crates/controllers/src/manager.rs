@@ -786,6 +786,8 @@ fn watch_devices(
                         }
                     };
                     let d_stop = Arc::new(AtomicBool::new(false));
+                    let agent = crate::ni_agent::needs_agent(info.vendor_id, info.product_id)
+                        .then(|| (info.product_id, info.serial.clone()));
                     let thread = {
                         let (registry, path, port, d_stop, connected, twin) = (
                             registry.clone(),
@@ -798,6 +800,14 @@ fn watch_devices(
                         std::thread::Builder::new()
                             .name(format!("hid {port}"))
                             .spawn(move || {
+                                // Held while the mapping runs.
+                                let _agent = agent.map(|(product, serial)| {
+                                    crate::ni_agent::Registration::start(
+                                        product,
+                                        serial,
+                                        port.clone(),
+                                    )
+                                });
                                 run_hid(&port, &path, device, registry, &d_stop, &connected, &twin)
                             })
                             .expect("spawn controller thread")
