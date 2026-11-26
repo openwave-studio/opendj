@@ -12,6 +12,7 @@ The Stems waveform look draws all five stems (kick, hi-hats, bass, instruments, 
 - **3 Lanes**: the large waveforms split into three thin waveforms, top to bottom: drums (kick and hi-hats), music (bass and instruments) and vocals, each its stems stacked as above. Overviews stay Stacked: too short for lanes.
 - **Layout row** in the Wave panel under Style, only with Stems, in place of the Color row the other styles have: Stacked / 3 Lanes, kept under `waveform_stem_layout`.
 - The overlapping look is removed.
+- **New stem colors**, shared by the waveform and the stem pads: warm drums and vocals against cool music, so stacked layers part by hue rather than by shade: kick red `#C9444A`, hi-hats salmon `#F4A08C`, bass navy `#3E4A94`, instruments lilac `#A58AE8`, vocals yellow `#F2CF6A` ("Ember & Lilac"). Drawn as they are, no longer lifted towards white. NI STEM files keep their own colors.
 - A stem's place comes from its name (kick, drums, hat, bass, vocal...), so NI STEM files with their own names land in the right lane; unknown names count as instruments.
 
 ## Out of scope
@@ -27,5 +28,6 @@ The Stems waveform look draws all five stems (kick, hi-hats, bass, instruments, 
 
 ## Impact
 
+- Engine: `crates/engine/src/stems.rs` (`default_info` colors). UI: `crates/app/ui/theme.slint`, `crates/app/ui/deck.slint` (stem pad fallback tints).
 - Waveform: `crates/waveform/src/lib.rs` (`StemLayout`, `StemRole`, `Extras::stem_roles`, `WaveformView::set_stem_layout`, per-stem lane and layer uniforms); `crates/waveform/src/waveform.wgsl` (`stem_layers`, `stem_lanes` replace the overlay).
 - App: `crates/app/src/wave_look.rs` (layout setting), `crates/app/src/stem_levels.rs` (roles from stem names), `crates/app/src/main.rs`; UI `crates/app/ui/wave_height.slint`, `crates/app/ui/wave_look.slint`.

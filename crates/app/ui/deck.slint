@@ -2848,15 +2848,15 @@ export component Pads inherits HorizontalLayout {
         { key: "beatjump_32_backward", light: "beatjump_32_backward", text: "−32" },
         { key: "beatjump_32_forward", light: "beatjump_32_forward", text: "+32" },
     ];
-    // VirtualDJ's STEMS pads: stems 1 to 5 are kick, bass, instruments,
+    // The STEMS pads: stems 1 to 5 are kick, bass, instruments,
     // vocals and hi-hats (see opendj_engine::stems::default_info).
     property <[StemPadSpec]> stem-pads: [
-        { stem: 4, text: "Vocal", tint: Theme.f-09ad18 },
-        { stem: 3, text: "Instru", tint: Theme.f-a26018 },
-        { stem: 2, text: "Bass", tint: Theme.f-a21418 },
+        { stem: 4, text: "Vocal", tint: Theme.stem-vocal },
+        { stem: 3, text: "Instru", tint: Theme.stem-instru },
+        { stem: 2, text: "Bass", tint: Theme.stem-bass },
         { stem: 0, text: "Acapella", tint: Theme.n-a9aaab },
-        { stem: 1, text: "Kick", tint: Theme.f-2e4e75 },
-        { stem: 5, text: "HiHat", tint: Theme.f-0960b1 },
+        { stem: 1, text: "Kick", tint: Theme.stem-kick },
+        { stem: 5, text: "HiHat", tint: Theme.stem-hihat },
         { stem: -2, text: "Stems FX", tint: Theme.n-5d5d5e },
         { stem: -1, text: "Instrumental", tint: Theme.n-a9aaab },
     ];
@@ -3086,7 +3086,7 @@ export component Pads inherits HorizontalLayout {
                             stem: stem-pads[row * 4 + i].stem;
                             text: stem-pads[row * 4 + i].text;
                             show-quality: row == 0 && i == 3;
-                            // The track's own color for a stem, else VirtualDJ's.
+                            // The track's own color for a stem, else the default one.
                             tint: stem-pads[row * 4 + i].stem > 0 && stem-pads[row * 4 + i].stem <= info.stem-colors.length
                                 ? info.stem-colors[stem-pads[row * 4 + i].stem - 1] : stem-pads[row * 4 + i].tint;
                             horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; max-width: grid.cell-w; max-height: grid.cell; border-radius: Theme.pad-radius; border-width: 1px; border-color: Theme.n-2c2c31;

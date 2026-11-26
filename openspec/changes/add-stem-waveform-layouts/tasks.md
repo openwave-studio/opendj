@@ -6,7 +6,7 @@
 - [x] 1.2 3 Lanes on the large waveforms (drums, music, vocals), overviews stacked, with tests
 - [x] 1.3 Stem roles from stem names
 - [x] 1.4 Layout row (Stacked / 3 Lanes) under Stems in the Wave panel, saved
-- [ ] 1.5 One stem palette for the waveform and the stem pads
+- [x] 1.5 One stem palette for the waveform and the stem pads
 
 ## 2. Later
 

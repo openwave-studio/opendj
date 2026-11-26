@@ -113,9 +113,6 @@ const BAND_BOTH = vec3<f32>(0.7, 0.6, 0.6);
 const BLUE_BODY = vec3<f32>(0.173, 0.482, 0.898);   // #2C7BE5
 const BLUE_HIGHS = vec3<f32>(0.863, 0.922, 1.0);    // #DCEBFF
 // Show vocals: the strip over the sung parts.
-// Stems: how far each stem's colour is lifted towards white, to read on
-// the dark background.
-const STEM_LIFT: f32 = 0.18;
 const VOCAL_CYAN = vec3<f32>(0.247, 0.831, 0.933); // #3FD4EE
 // Phrase colours, in PhraseKind order: intro, build (up), drop (peak),
 // breakdown (break or bridge), outro, chorus (main), verse.
@@ -285,7 +282,7 @@ fn stem_layers(base: vec3<f32>, levels: array<f32, 5>, lane: f32, total: f32, d:
         let r = n - 1u - i;
         for (var s = 0u; s < n; s = s + 1u) {
             if (u32(p.stem_place[s].y) == r && edge[s] > 0.0) {
-                let c = mix(p.stem_colors[s].rgb, vec3<f32>(1.0), STEM_LIFT);
+                let c = p.stem_colors[s].rgb;
                 let shade = 0.78 + 0.22 * sqrt(clamp(1.0 - d / total, 0.0, 1.0));
                 color = over(color, c * shade, fill(edge[s], d) * 0.95);
             }
