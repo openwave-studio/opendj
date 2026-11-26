@@ -112,10 +112,14 @@ struct Shared {
     /// mapping Automatic picks for each.
     hid_ports: Mutex<HashMap<String, String>>,
     /// The MIDI ports of keyboards whose knobs and buttons run over HID
-    /// (`keys="midi"`): only their keys, strips and pedals play, as the
-    /// controllers their knobs also send there would turn the instrument's
-    /// parameters in its own way, besides the mapping's.
-    keys_only: Mutex<Vec<String>>,
+    /// (`keys="midi"`), with their HID side's port: only their keys, strips
+    /// and pedals play the instrument. Their other controllers (the knobs,
+    /// in the keyboard's own MIDI mode) go to the HID mapping's script
+    /// instead, through `twin_midi`.
+    keys_only: Mutex<Vec<(String, String)>>,
+    /// Controllers from a keys-only MIDI port waiting for its HID mapping,
+    /// by HID port.
+    twin_midi: Arc<Mutex<HashMap<String, Vec<[u8; 3]>>>>,
     /// Why a device couldn't be opened, by port name.
     problems: Mutex<HashMap<String, String>>,
 }
@@ -510,21 +514,23 @@ fn hid_ports<'a>(
 }
 
 /// The MIDI ports of `found` keyboards whose mapping says their keys play
-/// over MIDI (`keys="midi"`).
+/// over MIDI (`keys="midi"`), each with its HID side's port.
 fn keys_only(
     midi_ports: &[String],
     found: &[(String, hid::DeviceInfo, &hid::HidMapping)],
-) -> Vec<String> {
+) -> Vec<(String, String)> {
     midi_ports
         .iter()
-        .filter(|p| {
-            found.iter().any(|(_, d, m)| {
-                m.2.iter().any(|product| product.keys)
-                    && !d.product.is_empty()
-                    && (**p == d.product || device_key(p) == device_key(&d.product))
-            })
+        .filter_map(|p| {
+            found
+                .iter()
+                .find(|(_, d, m)| {
+                    m.2.iter().any(|product| product.keys)
+                        && !d.product.is_empty()
+                        && (*p == d.product || device_key(p) == device_key(&d.product))
+                })
+                .map(|(hid_port, _, _)| (p.clone(), hid_port.clone()))
         })
-        .cloned()
         .collect()
 }
 
@@ -781,17 +787,18 @@ fn watch_devices(
                     };
                     let d_stop = Arc::new(AtomicBool::new(false));
                     let thread = {
-                        let (registry, path, port, d_stop, connected) = (
+                        let (registry, path, port, d_stop, connected, twin) = (
                             registry.clone(),
                             path.clone(),
                             port.clone(),
                             d_stop.clone(),
                             connected.clone(),
+                            shared.twin_midi.clone(),
                         );
                         std::thread::Builder::new()
                             .name(format!("hid {port}"))
                             .spawn(move || {
-                                run_hid(&port, &path, device, registry, &d_stop, &connected)
+                                run_hid(&port, &path, device, registry, &d_stop, &connected, &twin)
                             })
                             .expect("spawn controller thread")
                     };
@@ -987,11 +994,23 @@ fn run_keyboard(
             let Some(data) = channel_message(msg) else {
                 return;
             };
-            if data[0] & 0xF0 == 0xB0
-                && !keys_only_plays(data)
-                && shared_in.keys_only.lock().unwrap().contains(&name)
-            {
-                return;
+            if data[0] & 0xF0 == 0xB0 && !keys_only_plays(data) {
+                let hid = shared_in
+                    .keys_only
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|(midi, _)| *midi == name)
+                    .map(|(_, hid)| hid.clone());
+                if let Some(hid) = hid {
+                    let mut waiting = shared_in.twin_midi.lock().unwrap();
+                    let queue = waiting.entry(hid).or_default();
+                    // Nobody reading: don't grow without end.
+                    if queue.len() < 1024 {
+                        queue.push(data);
+                    }
+                    return;
+                }
             }
             let note_on = data[0] & 0xF0 == 0x90 && data[2] > 0;
             // Pinned to a deck without the instrument: nothing reaches it,
@@ -1221,6 +1240,7 @@ fn run_hid(
     registry: Arc<ControlRegistry>,
     stop: &AtomicBool,
     connected: &Mutex<Vec<ConnectedController>>,
+    twin_midi: &Mutex<HashMap<String, Vec<[u8; 3]>>>,
 ) {
     use hid::Io;
     let mapping = match Mapping::load(mapping_path) {
@@ -1277,6 +1297,11 @@ fn run_hid(
                 }
             }
             wait = 0;
+        }
+        // The knobs a keyboard sends over its MIDI port (`keys="midi"`).
+        let twin = twin_midi.lock().unwrap().remove(port).unwrap_or_default();
+        for msg in twin {
+            controller.receive_twin(msg);
         }
         controller.poll(Instant::now());
         flush(&mut controller);
@@ -1545,7 +1570,10 @@ mod tests {
         let ports = vec!["KOMPLETE KONTROL M32".to_string(), "Other Keys".to_string()];
         assert_eq!(
             keys_only(&ports, &found),
-            vec!["KOMPLETE KONTROL M32".to_string()]
+            vec![(
+                "KOMPLETE KONTROL M32".to_string(),
+                "Native Instruments Komplete Kontrol M32".to_string()
+            )]
         );
         assert!(keys_only_plays([0x90, 60, 100]));
         assert!(keys_only_plays([0xE0, 0, 64]));

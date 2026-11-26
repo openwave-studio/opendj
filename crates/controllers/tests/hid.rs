@@ -786,6 +786,22 @@ fn komplete_kontrol_m32_plays_the_instrument_deck() {
     assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
     let idle = knob;
 
+    // In its MIDI mode ("Template 1") knob 1 sends CC 22 on the MIDI port
+    // instead: the first value only says where it is, then each change turns.
+    c.receive_twin([0xB0, 22, 40]);
+    c.receive_twin([0xB0, 22, 80]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 40.0 / 127.0).abs() < 1e-9);
+    // Knob 8 is CC 29; other controllers do nothing.
+    c.receive_twin([0xB0, 29, 10]);
+    c.receive_twin([0xB0, 29, 30]);
+    c.receive_twin([0xB0, 30, 100]);
+    c.poll(Instant::now());
+    assert!(get(&reg, "[Instrument1]", "parameter8") > 0.0);
+    c.receive_twin([0xB0, 22, 0]);
+    c.poll(Instant::now());
+    assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
+
     // > (S): page 2, where knob 1 turns knob 9.
     tap(&mut c, &idle, 2, 0x80);
     assert_eq!(get(&reg, "[Instrument1]", "knob_page"), 1.0);

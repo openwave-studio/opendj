@@ -46,6 +46,10 @@ KompleteKontrolM32.ENCODER_BYTE = 24;
 // of its whole range, and with SHIFT.
 KompleteKontrolM32.PER_COUNT = 0.002;
 KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
+// In the M32's own MIDI mode ("Template 1" on its screen) knobs 1-8 send
+// these controllers on its MIDI port instead, which openDJ hands to
+// incomingMidi below.
+KompleteKontrolM32.FIRST_KNOB_CC = 22;
 
 KompleteKontrolM32.OFF = 0x00;
 KompleteKontrolM32.DIM = 0x10;
@@ -54,15 +58,22 @@ KompleteKontrolM32.ON = 0x7f;
 KompleteKontrolM32.init = function(_id) {
     KeyboardInstrument.init();
     this.last = null;
+    this.ccs = [];
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
     this.timer = engine.beginTimer(50, () => this.refresh());
+    // The M32 writes its own "Template 1" over the screen at times (in its
+    // MIDI mode): draw all of it again now and then.
+    this.redrawTimer = engine.beginTimer(1000, () => {
+        this.lastScreen = ["", ""];
+    });
     this.refresh();
 };
 
 KompleteKontrolM32.shutdown = function() {
     engine.stopTimer(this.timer);
+    engine.stopTimer(this.redrawTimer);
     controller.sendOutputReport(0x80, new Array(this.LIGHTS).fill(0), true);
     this.sendHalf(0, new Array(256).fill(0xff));
     this.sendHalf(1, new Array(256).fill(0xff));
@@ -116,6 +127,24 @@ KompleteKontrolM32.incomingData = function(data, _length) {
             KeyboardInstrument.browseTurn(delta);
         }
     }
+    this.refresh();
+};
+
+// A knob in the M32's MIDI mode. Its value is absolute (0-127, stopping
+// at each end): the change from the one before turns the instrument's
+// knob, so the two never jump to match each other.
+KompleteKontrolM32.incomingMidi = function(status, control, value) {
+    const k = control - this.FIRST_KNOB_CC;
+    if ((status & 0xf0) !== 0xb0 || k < 0 || k >= KeyboardInstrument.KNOBS) {
+        return;
+    }
+    const before = this.ccs[k];
+    this.ccs[k] = value;
+    if (before === undefined || before === value) {
+        return;
+    }
+    const fine = this.held[this.B.SHIFT];
+    KeyboardInstrument.turnKnob(k, (value - before) / 127 * (fine ? 0.2 : 1));
     this.refresh();
 };
 
