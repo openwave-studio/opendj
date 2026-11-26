@@ -17,6 +17,7 @@ pub mod analysis;
 pub mod arp;
 mod auto_trim;
 pub mod background;
+pub mod bandwidth;
 pub mod beats;
 pub mod beatthis;
 pub mod cache;
