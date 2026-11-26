@@ -64,8 +64,7 @@ KompleteKontrolM32.init = function(_id) {
     KeyboardInstrument.init();
     this.last = null;
     this.ccs = [];
-    this.coverUntil = 0;
-    this.coveredAt = 0;
+    this.coverAt = 0;
     this.drawnAt = 0;
     this.hidKnobsAt = -Infinity;
     this.held = new Array(this.BUTTONS).fill(false);
@@ -169,12 +168,13 @@ KompleteKontrolM32.incomingMidi = function(status, control, value) {
 };
 
 // In its MIDI mode the M32 shows its own "Template 1" readout as soon as a
-// knob turns or < > is pressed: draw over it every 100 ms until 400 ms
-// after the last one (each full draw holds up the knobs a little).
-KompleteKontrolM32.COVER_MS = 400;
-KompleteKontrolM32.COVER_EVERY_MS = 100;
+// knob turns or < > is pressed. Drawing over it while the knob turns only
+// flickers (the readout comes back with every step, and shows the knob's
+// value too, as openDJ keeps its count): draw the screen again once
+// COVER_AFTER_MS after the last one.
+KompleteKontrolM32.COVER_AFTER_MS = 300;
 KompleteKontrolM32.coverTemplate = function() {
-    this.coverUntil = Date.now() + this.COVER_MS;
+    this.coverAt = Date.now() + this.COVER_AFTER_MS;
 };
 
 KompleteKontrolM32.press = function(b) {
@@ -259,14 +259,16 @@ KompleteKontrolM32.refresh = function() {
     this.sendLights();
     this.syncKnobCcs();
     const now = Date.now();
-    if (now - this.drawnAt < this.DRAW_EVERY_MS) {
+    if (this.coverAt && now >= this.coverAt) {
+        this.coverAt = 0;
+        this.lastScreen = ["", ""];
+        this.drawnAt = 0;
+    }
+    // Not while the M32's own readout is up.
+    if (this.coverAt || now - this.drawnAt < this.DRAW_EVERY_MS) {
         return;
     }
     this.drawnAt = now;
-    if (now < this.coverUntil + this.COVER_EVERY_MS && now - this.coveredAt >= this.COVER_EVERY_MS) {
-        this.coveredAt = now;
-        this.lastScreen = ["", ""];
-    }
     this.drawScreen();
 };
 
