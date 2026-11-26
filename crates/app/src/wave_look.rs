@@ -8,7 +8,7 @@
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use opendj_waveform::{Palette, Style, BAND_PALETTES, RGB_PALETTES};
+use opendj_waveform::{Palette, StemLayout, Style, BAND_PALETTES, RGB_PALETTES};
 
 use crate::settings;
 
@@ -16,6 +16,9 @@ pub const COLOR_KEY: &str = "waveform_color";
 pub const PALETTE_KEY: &str = "waveform_palette";
 /// RGB's palette: 0 Red-Amber (the default), 1 Red-Green-Blue.
 pub const RGB_PALETTE_KEY: &str = "waveform_rgb_palette";
+/// How the Stems look lays the stems out: 0 Stacked (the default), 1 in
+/// 3 Lanes.
+pub const STEM_LAYOUT_KEY: &str = "waveform_stem_layout";
 /// Full or Half, for the large waveforms and the overviews alike (the key
 /// keeps its first name, from when only the overview could be half).
 pub const HALF_KEY: &str = "waveform_overview_half";
@@ -49,6 +52,8 @@ pub const COLOR_LABELS: [&str; 3] = ["RGB", "3-Band", "Stems"];
 const COLOR_SAVED: [u32; 3] = [0, 1, 3];
 /// The stacked bands' palettes, in [`BAND_PALETTES`] order.
 pub const PALETTE_LABELS: [&str; BAND_PALETTES.len()] = ["Blue-Orange-White", "Lilac-Cyan-White"];
+/// The Stems look's layouts, in [`StemLayout`] order.
+pub const STEM_LAYOUT_LABELS: [&str; 2] = ["Stacked", "3 Lanes"];
 pub const SHAPE_LABELS: [&str; 2] = ["Full", "Half"];
 /// Where the needle is, as a fraction of the waveform's width, for Center
 /// and Left.
@@ -57,6 +62,7 @@ pub const NEEDLE_AT: [f32; 2] = [0.5, 0.25];
 static COLOR: AtomicU32 = AtomicU32::new(0);
 static PALETTE: AtomicU32 = AtomicU32::new(0);
 static RGB_PALETTE: AtomicU32 = AtomicU32::new(0);
+static STEM_LAYOUT: AtomicU32 = AtomicU32::new(0);
 static HALF: AtomicU32 = AtomicU32::new(0);
 static NEEDLE: AtomicU32 = AtomicU32::new(0);
 static VERSION: AtomicU32 = AtomicU32::new(1);
@@ -70,6 +76,10 @@ pub fn load() {
     COLOR.store(color_from_saved(saved) as u32, Ordering::Relaxed);
     PALETTE.store(read(PALETTE_KEY, PALETTE_LABELS.len()), Ordering::Relaxed);
     RGB_PALETTE.store(read(RGB_PALETTE_KEY, RGB_PALETTES.len()), Ordering::Relaxed);
+    STEM_LAYOUT.store(
+        read(STEM_LAYOUT_KEY, STEM_LAYOUT_LABELS.len()),
+        Ordering::Relaxed,
+    );
     HALF.store(read(HALF_KEY, SHAPE_LABELS.len()), Ordering::Relaxed);
     NEEDLE.store(read(NEEDLE_KEY, NEEDLE_AT.len()), Ordering::Relaxed);
     GAIN.store(settings::flag(GAIN_KEY, true) as u32, Ordering::Relaxed);
@@ -126,6 +136,23 @@ pub fn choose_palette(index: usize) {
 
 pub fn choose_rgb_palette(index: usize) {
     pick(&RGB_PALETTE, RGB_PALETTE_KEY, index, RGB_PALETTES.len());
+}
+
+pub fn choose_stem_layout(index: usize) {
+    pick(
+        &STEM_LAYOUT,
+        STEM_LAYOUT_KEY,
+        index,
+        STEM_LAYOUT_LABELS.len(),
+    );
+}
+
+/// How the Stems look lays the stems out.
+pub fn stem_layout() -> StemLayout {
+    match STEM_LAYOUT.load(Ordering::Relaxed) {
+        1 => StemLayout::Lanes,
+        _ => StemLayout::Stacked,
+    }
 }
 
 pub fn choose_half(index: usize) {
@@ -229,6 +256,8 @@ pub fn install(app: &crate::AppWindow) {
     let a = after.clone();
     ui.on_pick_rgb_palette(move |i| a(&|| choose_rgb_palette(i.max(0) as usize)));
     let a = after.clone();
+    ui.on_pick_stem_layout(move |i| a(&|| choose_stem_layout(i.max(0) as usize)));
+    let a = after.clone();
     ui.on_pick_half(move |half| a(&|| choose_half(half as usize)));
     let a = after.clone();
     ui.on_pick_needle_left(move |left| a(&|| choose_needle(left as usize)));
@@ -259,6 +288,7 @@ fn show(ui: &crate::WaveLook) {
     ui.set_color(color() as i32);
     ui.set_palette(palette_index() as i32);
     ui.set_rgb_palette(RGB_PALETTE.load(Ordering::Relaxed) as i32);
+    ui.set_stem_layout(STEM_LAYOUT.load(Ordering::Relaxed) as i32);
     ui.set_half(half());
     ui.set_needle(needle());
     ui.set_vocals(vocals() as i32);

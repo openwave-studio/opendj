@@ -64,6 +64,8 @@ struct Params {
     tempo_at: array<vec4<f32>, 4>,     // each tempo label on its own, in slices
     tempo_value: array<vec4<u32>, 4>,  // its BPM in tenths; top bit: show the tenth
     tempo_count: vec4<u32>,            // x: how many
+    stem_place: array<vec4<f32>, 5>,   // each stem's lane (0 drums, 1 music, 2 vocals) and layer from the line out
+    stem_layout: vec4<f32>,            // x: 0 stacked, 1 in three lanes
 };
 
 @group(0) @binding(0) var<uniform> p: Params;
@@ -241,35 +243,82 @@ fn stems_range(a: f32, b: f32) -> array<f32, 5> {
     return most;
 }
 
-// The Stems look: each stem's shape in its colour, the tallest at the
-// back so every stem shows where it is louder than the ones in front.
-fn stems_wave(base: vec3<f32>, levels: array<f32, 5>, d: f32, span: f32) -> vec3<f32> {
-    var color = base;
-    let h = levels;
+// How much of a stacked waveform a stem's layer takes: its level on a
+// gentler curve, so quiet stems (hats) still show as more than a hairline.
+fn stem_weight(v: f32) -> f32 {
+    return pow(max(v, 0.0), 0.8);
+}
+
+// The Stems look, stacked: `total` pixels of waveform (from the line the
+// waveform grows from) cut into a layer per stem, in layer order from the
+// line out, each as thick as its share of the stems' levels. Only the
+// stems in `lane` (all of them for a lane below 0). Layers sit one on the
+// other, so no stem hides another.
+fn stem_layers(base: vec3<f32>, levels: array<f32, 5>, lane: f32, total: f32, d: f32) -> vec3<f32> {
     let n = min(u32(p.stems.w), 5u);
-    var done = array<bool, 5>(false, false, false, false, false);
-    for (var round = 0u; round < n; round = round + 1u) {
-        var pick = 0u;
-        var best = -1.0;
+    var sum = 0.0;
+    for (var s = 0u; s < n; s = s + 1u) {
+        if (lane < 0.0 || p.stem_place[s].x == lane) {
+            sum = sum + stem_weight(levels[s]);
+        }
+    }
+    if (sum <= 0.0 || total < 0.5) {
+        return base;
+    }
+    // Each layer's outer edge, in pixels from the line.
+    var edge = array<f32, 5>(0.0, 0.0, 0.0, 0.0, 0.0);
+    var acc = 0.0;
+    for (var r = 0u; r < n; r = r + 1u) {
         for (var s = 0u; s < n; s = s + 1u) {
-            if (!done[s] && h[s] > best) {
-                best = h[s];
-                pick = s;
+            if (u32(p.stem_place[s].y) == r && (lane < 0.0 || p.stem_place[s].x == lane)) {
+                acc = acc + stem_weight(levels[s]) / sum * total;
+                edge[s] = acc;
             }
         }
-        done[pick] = true;
-        // The rest are quieter still: under a pixel, they'd only smear the
-        // centre line.
-        let reach = height(best) * span;
-        if (reach < 1.0) {
-            break;
+    }
+    // Outermost first, so each layer's own edge is smooth over the next.
+    var color = base;
+    for (var i = 0u; i < n; i = i + 1u) {
+        let r = n - 1u - i;
+        for (var s = 0u; s < n; s = s + 1u) {
+            if (u32(p.stem_place[s].y) == r && edge[s] > 0.0) {
+                let c = p.stem_colors[s].rgb;
+                let shade = 0.78 + 0.22 * sqrt(clamp(1.0 - d / total, 0.0, 1.0));
+                color = over(color, c * shade, fill(edge[s], d) * 0.95);
+            }
         }
-        // Pad colours are dark; lift them a little to read on the background.
-        let c = mix(p.stem_colors[pick].rgb, vec3<f32>(1.0), 0.18);
-        color = over(color, c * 0.75, fill(reach, d) * 0.5);
-        color = over(color, c, fill(reach * 0.8, d) * 0.95);
     }
     return color;
+}
+
+// The Stems look in three lanes, top to bottom: drums, music and vocals,
+// each its own small waveform of its stems stacked. `y` is the pixel's row
+// and `wave_h` the waveform's height; a lane's height comes from its stems
+// together.
+fn stem_lanes(base: vec3<f32>, levels: array<f32, 5>, y: f32, wave_h: f32) -> vec3<f32> {
+    let gap = 2.0 * max(p.scale, 1.0);
+    let lane_h = (wave_h - 2.0 * gap) / 3.0;
+    let lane = min(floor(y / (lane_h + gap)), 2.0);
+    let top = lane * (lane_h + gap);
+    if (y > top + lane_h || lane_h < 2.0) {
+        return base;
+    }
+    var d = abs(y - (top + lane_h * 0.5)) - 0.5;
+    var span = lane_h * 0.5 - 1.0;
+    if (p.half == 1u) {
+        d = top + lane_h - 0.5 - y;
+        span = lane_h - 2.0;
+    }
+    // The lane's stems' peaks together.
+    let n = min(u32(p.stems.w), 5u);
+    var power = 0.0;
+    for (var s = 0u; s < n; s = s + 1u) {
+        if (p.stem_place[s].x == lane) {
+            power = power + levels[s] * levels[s];
+        }
+    }
+    let total = height(min(sqrt(power), 1.0)) * span;
+    return stem_layers(base, levels, lane, total, d);
 }
 
 // Levels are stored as square roots; this returns them as linear levels.
@@ -837,10 +886,17 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
         let cols = columns(bin);
         let stems = p.style == 4u && p.stems.w > 0.5;
         if (stems) {
-            // Each stem's shapes per column too, blended like the others.
+            // Each stem's levels per column too, blended like the others.
             let ha = stems_range(cols.start, cols.start + cols.width);
             let hb = stems_range(cols.start + cols.width, cols.start + 2.0 * cols.width);
-            color = mix(stems_wave(color, ha, d, span), stems_wave(color, hb, d, span), cols.t);
+            if (p.stem_layout.x > 0.5) {
+                color = mix(stem_lanes(color, ha, y, wave_h), stem_lanes(color, hb, y, wave_h), cols.t);
+            } else {
+                // The track's own shape, cut into the stems' layers.
+                let ta = shape(cols.a) * span;
+                let tb = shape(cols.b) * span;
+                color = mix(stem_layers(color, ha, -1.0, ta, d), stem_layers(color, hb, -1.0, tb, d), cols.t);
+            }
         } else {
             let summary = mix(wave(color, cols.a, bin, d, span), wave(color, cols.b, bin, d, span), cols.t);
             // Zoomed right in, the real wave takes over from the summary.

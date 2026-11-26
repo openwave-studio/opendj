@@ -688,6 +688,12 @@ fn builtin(d: Node) -> Option<crate::devices::Settings> {
                 compression: num("Output_CompressionAmount").unwrap_or(0.0),
                 output_db: db(num("Output_OutputGain").unwrap_or(1.0)),
                 dry_wet: num("Output_DryWet").unwrap_or(1.0),
+                // Names as Live's other Roar settings; a set without them
+                // keeps the defaults.
+                feedback: num("Feedback_FeedbackAmount")
+                    .unwrap_or(0.4)
+                    .clamp(0.0, 0.95),
+                feedback_ms: num("Feedback_FeedbackTime").unwrap_or(250.0),
             })
         }
         // The parameter names below follow Live's own names for these

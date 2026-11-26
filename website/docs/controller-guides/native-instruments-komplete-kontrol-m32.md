@@ -6,9 +6,11 @@ instrument on a deck, or turn the 4-D encoder to pick one, and play.
 
 The keys, the OCTAVE buttons, the pitch and modulation strips and a sustain
 pedal play the instrument deck over the M32's own MIDI port, as any
-keyboard does. The knobs also send MIDI controllers on that port, which
-openDJ leaves out so they don't turn the plugin's parameters in its own
-way. Everything else is openDJ's own mapping. Nobody has tried it
+keyboard does. When the M32's screen says "Template 1" (its own MIDI
+mode), the knobs send MIDI controllers 22 to 29 on that port too: openDJ
+gives those to this mapping, so they still turn the instrument's knobs and
+not the plugin's parameters in their own way. In that mode a knob stops at
+each end of its travel, so turn it back a little if it stops. Everything else is openDJ's own mapping. Nobody has tried it
 on the hardware yet, so tell us how it goes.
 
 - The **8 knobs** turn the instrument's knobs on the page the deck shows.

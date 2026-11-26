@@ -58,7 +58,7 @@ pub fn split(i: usize) -> Option<(usize, usize, usize)> {
     (i & INNER != 0).then_some(((i >> 14) & 0xFF, (i >> 9) & 0x1F, i & 0x1FF))
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Kind {
     Audio,
     Instrument,
@@ -66,7 +66,7 @@ pub enum Kind {
 }
 
 /// A chain inside a rack.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Branch {
     pub name: String,
     pub devices: Vec<DeviceInfo>,
@@ -106,7 +106,7 @@ impl Default for Branch {
 }
 
 /// One setting a macro turns.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Target {
     pub branch: u8,
     pub device: u8,
@@ -116,7 +116,7 @@ pub struct Target {
     pub high: f32,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Macro {
     pub name: String,
     /// 0..1.
@@ -124,7 +124,7 @@ pub struct Macro {
     pub targets: Vec<Target>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RackSettings {
     pub kind: Kind,
     pub branches: Vec<Branch>,

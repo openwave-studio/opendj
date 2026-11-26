@@ -10,6 +10,13 @@
 //! ```text
 //! cargo test --release -p opendj-studio-engine device_bench -- --ignored --nocapture
 //! ```
+//!
+//! The knob audit (every setting of every device turned, fresh and while
+//! it plays, listening for a change) prints a table; also ignored:
+//!
+//! ```text
+//! cargo test --release -p opendj-studio-engine knob_audit -- --ignored --nocapture
+//! ```
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
@@ -672,4 +679,364 @@ fn each_simpler(s: &mut Settings, f: &mut dyn FnMut(&mut crate::simpler::Simpler
         }
         _ => {}
     }
+}
+
+// Every knob does something: the audit behind "turning it changes the
+// sound". Each setting of each device is moved to a handful of values,
+// both on a fresh device and on a running one (as the panel does), and
+// the sound (or, for a MIDI effect, the notes) must change. A knob that
+// only matters with a switch flipped (a synced time with sync off) counts
+// when flipping another setting first makes it heard.
+
+/// Values a setting is tried at: its switch positions, else across its range.
+fn tries(p: &crate::devices::Param) -> Vec<f32> {
+    let steps: Vec<f32> = match p.unit {
+        Unit::Toggle => vec![p.min, p.max],
+        Unit::Choice(_) | Unit::Note | Unit::Count | Unit::Semitones | Unit::Key => {
+            let n = (p.max - p.min).round() as usize;
+            (0..=n).map(|k| p.min + k as f32).collect()
+        }
+        _ => [0.0, 0.1, 0.25, 0.5, 0.75, 1.0]
+            .iter()
+            .map(|n| p.at_norm(*n))
+            .collect(),
+    };
+    steps
+        .into_iter()
+        .filter(|v| (v - p.value).abs() > 1e-6)
+        .collect()
+}
+
+/// Music with dynamics: noise and a low sine, swelling from quiet to loud
+/// every quarter second, so gates, compressors and limiters all move.
+fn swell(frames: usize) -> Vec<[f32; 2]> {
+    let n = noise(frames, 0.3);
+    let s = sine(110.0, 0.4, frames);
+    (0..frames)
+        .map(|i| {
+            let env = 0.03 + 0.97 * ((i % 12_000) as f32 / 12_000.0).powi(2);
+            [(n[i][0] + s[i][0]) * env, (n[i][1] + s[i][1]) * env]
+        })
+        .collect()
+}
+
+const AUDIT_FRAMES: usize = 48_000;
+/// Instruments play longer: held past the test sample's end (a loop), let
+/// go (a release), and played again after the knob moves (a new note's
+/// start).
+const AUDIT_NOTES: usize = 120_064;
+
+fn audit_frames(s: &Settings) -> usize {
+    if s.plays_notes() {
+        AUDIT_NOTES
+    } else {
+        AUDIT_FRAMES
+    }
+}
+
+/// Every pad of the audit's drum rack and a chord across the key zones.
+const AUDIT_KEYS: [u8; 9] = [36, 38, 42, 46, 48, 50, 60, 64, 67];
+
+fn audit_notes(block: usize) -> Vec<opendj_plugin_host::shm::Midi> {
+    use opendj_plugin_host::shm::Midi;
+    let at = |f: usize| block == f / BLOCK;
+    let mut m = Vec::new();
+    for (i, k) in AUDIT_KEYS.iter().enumerate() {
+        if at(0) || at(64_000) {
+            m.push(Midi::note_on(0, 0, *k, 60 + i as u8 * 7));
+        }
+        if at(40_064) || at(100_096) {
+            m.push(Midi::note_off(0, 0, *k));
+        }
+    }
+    m
+}
+
+/// What the device makes: an effect from [`swell`], an instrument from
+/// held chords. With `live`, the setting moves halfway through on the
+/// running device.
+fn render(s: &Settings, live: Option<(usize, f32)>) -> Vec<[f32; 2]> {
+    let frames = audit_frames(s);
+    let mut d = Device::new(s, RATE);
+    // Loud enough that a limiter at 0 dB works.
+    let input: Vec<[f32; 2]> = swell(frames)
+        .iter()
+        .map(|f| [f[0] * 2.0, f[1] * 2.0])
+        .collect();
+    let mut out = Vec::with_capacity(frames);
+    for (b, chunk) in input.chunks(BLOCK).enumerate() {
+        if b == frames / BLOCK / 2 {
+            if let Some((i, v)) = live {
+                d.set(i, v);
+            }
+        }
+        let mut buf = chunk.to_vec();
+        if s.plays_notes() {
+            d.play(&audit_notes(b), &mut buf, 120.0);
+        } else {
+            d.process(&mut buf, 120.0);
+        }
+        out.extend_from_slice(&buf);
+    }
+    out
+}
+
+/// How different two renders are, against the louder one's level.
+fn differs(a: &[[f32; 2]], b: &[[f32; 2]]) -> bool {
+    let (mut diff, mut level) = (0.0f64, 0.0f64);
+    for (x, y) in a.iter().zip(b) {
+        for c in 0..2 {
+            diff += ((x[c] - y[c]) as f64).powi(2);
+            level += (x[c] as f64).powi(2).max((y[c] as f64).powi(2));
+        }
+    }
+    diff > level.max(1e-9) * 1e-8
+}
+
+/// The notes a MIDI effect makes from a phrase: a chord, single notes at
+/// different velocities, held and let go, over eight beats.
+fn notes_out(s: &crate::midifx::MidiSettings, live: Option<(usize, f32)>) -> Vec<String> {
+    use crate::midifx::{MidiFx, Note, NoteEvent};
+    let mut fx = MidiFx::new(s);
+    let mut phrase = Vec::new();
+    for (beat, pitch, vel, len) in [
+        (0.0, 60u8, 0.8f32, 1.0f64),
+        (0.0, 64, 0.6, 1.0),
+        (0.0, 67, 0.4, 1.0),
+        (1.5, 62, 0.2, 0.25),
+        (2.0, 65, 1.0, 1.5),
+        (4.0, 61, 0.5, 2.0),
+        (4.5, 70, 0.9, 0.5),
+        (6.0, 55, 0.3, 1.0),
+    ] {
+        phrase.push(NoteEvent {
+            beat,
+            note: Note::On(pitch, vel),
+        });
+        phrase.push(NoteEvent {
+            beat: beat + len,
+            note: Note::Off(pitch),
+        });
+    }
+    phrase.sort_by(|a, b| a.beat.total_cmp(&b.beat));
+    let mut out = Vec::with_capacity(4096);
+    let mut all = Vec::new();
+    let step = 0.125;
+    for k in 0..(12.0 / step) as usize {
+        let (lo, hi) = (k as f64 * step, (k + 1) as f64 * step);
+        if k == (6.0 / step) as usize / 2 {
+            if let Some((i, v)) = live {
+                fx.set(i, v);
+            }
+        }
+        let block: Vec<NoteEvent> = phrase
+            .iter()
+            .filter(|e| e.beat >= lo && e.beat < hi)
+            .copied()
+            .collect();
+        out.clear();
+        fx.run(&block, &mut out, hi, 120.0);
+        all.extend(out.iter().map(|e| format!("{:.4} {:?}", e.beat, e.note)));
+    }
+    all
+}
+
+/// How a setting fared: heard on a fresh device, heard when turned live.
+#[derive(Debug, Default, Clone, Copy)]
+struct Heard {
+    fresh: bool,
+    live: bool,
+    /// Only with another switch flipped first.
+    conditional: bool,
+}
+
+fn audit_one(s: &Settings, i: usize) -> Heard {
+    let p = &s.params()[i];
+    let mut h = Heard::default();
+    if let Settings::Midi(m) = s {
+        let base = notes_out(m, None);
+        for v in tries(p) {
+            let mut m2 = m.clone();
+            m2.set(i, v);
+            h.fresh |= notes_out(&m2, None) != base;
+            // Only the second half moved.
+            let half = |x: Vec<String>| {
+                x.into_iter()
+                    .filter(|l| l.split(' ').next().unwrap().parse::<f64>().unwrap() >= 3.0)
+                    .collect::<Vec<_>>()
+            };
+            h.live |= half(notes_out(m, Some((i, v)))) != half(base.clone());
+            if h.fresh && h.live {
+                break;
+            }
+        }
+        return h;
+    }
+    let base = render(s, None);
+    let second = audit_frames(s) / BLOCK / 2 * BLOCK;
+    for v in tries(p) {
+        let mut s2 = s.clone();
+        s2.set(i, v);
+        h.fresh |= differs(&render(&s2, None), &base);
+        // 50 ms after the move, for a glide to land.
+        let late = second + if s.plays_notes() { 0 } else { 2_400 };
+        h.live |= differs(&render(s, Some((i, v)))[late..], &base[late..]);
+        if h.fresh && h.live {
+            break;
+        }
+    }
+    h
+}
+
+/// Each setting, flipping each other switch (and stepping each choice)
+/// first when it isn't heard at the defaults.
+fn audit(s: &Settings) -> Vec<(String, Heard)> {
+    let params = s.params();
+    (0..params.len())
+        .map(|i| {
+            // A rack's unmapped macros move nothing, by design.
+            if params[i].name.starts_with("Macro ") && params[i].name != "Macro 1" {
+                return (params[i].name.clone(), Heard::default());
+            }
+            let mut h = audit_one(s, i);
+            if !(h.fresh && h.live) {
+                'ctx: for (j, q) in params.iter().enumerate() {
+                    if j == i {
+                        continue;
+                    }
+                    // Switches at each place; a knob low and high.
+                    let values = if q.is_switch() || matches!(q.unit, Unit::Note) {
+                        tries(q)
+                    } else {
+                        vec![q.at_norm(0.2), q.at_norm(0.8)]
+                    };
+                    for v in values {
+                        let mut c = s.clone();
+                        c.set(j, v);
+                        let hc = audit_one(&c, i);
+                        if hc.fresh || hc.live {
+                            h.fresh |= hc.fresh;
+                            h.live |= hc.live;
+                            h.conditional = true;
+                        }
+                        if h.fresh && h.live {
+                            break 'ctx;
+                        }
+                    }
+                }
+            }
+            (params[i].name.clone(), h)
+        })
+        .collect()
+}
+
+/// A list's places that sound the same as an earlier place, at the
+/// defaults: options that aren't built yet.
+fn same_as(s: &Settings, i: usize) -> Vec<(String, String)> {
+    let p = &s.params()[i];
+    let Unit::Choice(names) = p.unit else {
+        return Vec::new();
+    };
+    let mut heard: Vec<(usize, Vec<[f32; 2]>)> = Vec::new();
+    let mut same = Vec::new();
+    for k in 0..names.len() {
+        let mut s2 = s.clone();
+        s2.set(i, k as f32);
+        // A MIDI effect's notes, as pitch and time.
+        let out = match &s2 {
+            Settings::Midi(m) => notes_out(m, None)
+                .iter()
+                .map(|l| {
+                    let h = l
+                        .bytes()
+                        .fold(0u32, |a, b| a.wrapping_mul(31).wrapping_add(b as u32));
+                    [h as f32, 0.0]
+                })
+                .collect(),
+            _ => render(&s2, None),
+        };
+        if let Some((j, _)) = heard.iter().find(|(_, o)| !differs(o, &out)) {
+            same.push((names[k].to_string(), names[*j].to_string()));
+        } else {
+            heard.push((k, out));
+        }
+    }
+    same
+}
+
+#[test]
+#[ignore = "audit: run with -- --ignored --nocapture for the table"]
+fn knob_audit() {
+    let mut list = devices();
+    // EQ Eight: every band on and boosted, so each band's knobs are heard.
+    for (_, s) in list.iter_mut() {
+        if let Settings::Eq8(e) = s {
+            for b in e.bands.iter_mut() {
+                b.on = true;
+                b.gain_db = 6.0;
+            }
+        }
+    }
+    // Auto Filter with its LFO and envelope moving; Roar with every stage.
+    for (_, s) in list.iter_mut() {
+        match s {
+            Settings::AutoFilter(a) => {
+                a.lfo_amount = 0.5;
+                a.env_amount = 0.5;
+                a.morph = 0.3;
+            }
+            Settings::Roar(r) => {
+                for st in r.stages.iter_mut() {
+                    st.on = true;
+                }
+            }
+            _ => {}
+        }
+    }
+    // A rack's macros only move what's mapped to them: map the first one.
+    for (_, s) in list.iter_mut() {
+        if let Settings::Rack(r) = s {
+            // Every pad heard: no choke groups.
+            for b in r.branches.iter_mut() {
+                b.choke = 0;
+            }
+            if let Some(b) = r.branches.first() {
+                if let Some(d) = b.devices.iter().position(|d| d.builtin.is_some()) {
+                    r.macros[0].targets.push(crate::rack::Target {
+                        branch: 0,
+                        device: d as _,
+                        param: 0,
+                        low: 0.0,
+                        high: 1.0,
+                    });
+                }
+            }
+        }
+    }
+    println!();
+    let mut dead = 0;
+    for (name, s) in list {
+        for (i, p) in s.params().iter().enumerate() {
+            for (a, b) in same_as(&s, i) {
+                println!("{name}\t{} = {a}\tSAME AS {b}", p.name);
+            }
+        }
+        for (knob, h) in audit(&s) {
+            if knob.starts_with("Macro ") && !knob.ends_with(" 1") {
+                continue;
+            }
+            let verdict = match (h.fresh, h.live) {
+                (true, true) if h.conditional => "ok (with a switch)",
+                (true, true) => "ok",
+                (true, false) => "DEAD LIVE (works only on load)",
+                (false, true) => "LIVE ONLY",
+                (false, false) => "DEAD",
+            };
+            if !(h.fresh && h.live) {
+                dead += 1;
+            }
+            println!("{name}\t{knob}\t{verdict}");
+        }
+    }
+    println!("{dead} settings not heard");
 }

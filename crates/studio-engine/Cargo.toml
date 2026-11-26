@@ -29,3 +29,7 @@ fundsp = { version = "0.23", default-features = false, features = ["std"] }
 # The Session's own real-time thread in openDJ (already in the tree through
 # cpal).
 audio_thread_priority = { version = "0.35", default-features = false }
+# The studio's own set file: JSON, with plug-in sounds as base64.
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+base64 = "0.22"

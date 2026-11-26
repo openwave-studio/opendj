@@ -109,6 +109,11 @@ A rack is a device in the chain that holds several chains side by side
   left of the block's time. Racks never load plug-ins in the studio's own
   process. A rack edit rebuilds the rack, so its plug-ins restart: their
   sound is saved first and they start from it.
+- **Plug-ins in the browser.** The browser's Plug-ins list is what
+  openDJ's scan found (Settings › Plugins keeps it in `audio-plugins.json`),
+  instruments then effects, each with its format and maker. The studio
+  never scans itself. A plug-in dragged onto a track or into a chain starts
+  in its own helper, from the file and id the scan recorded.
 - **Not yet.** Racks inside racks, Live's macro mappings, macros on Push, a range per mapping.
 - **Kinds.** An *Audio Effect Rack* sits with the audio effects: its input
   goes to every branch and the branches are summed. An *Instrument Rack*
@@ -137,3 +142,21 @@ A rack is a device in the chain that holds several chains side by side
 - **Order.** Audio Effect Rack with branches and macros first, then
   Instrument Rack with zones, then reading Live's racks, then Drum Rack on
   the rack engine.
+
+## Sets
+
+The studio saves its own set file, `.odset`: JSON, so a set can be read
+and compared as text. It holds the tracks with their clips (notes, stage
+clips, audio clips' files and warp markers), each track's devices as they
+are now (built-in settings, racks with their chains and macros, plug-ins
+with the sound they have when saved, as base64), I/O, mixer (volume, pan,
+sends), the built-in sound's knobs, and the tempo, key, Main fader and
+returns. Samples, recordings and reverb rooms stay where they are: the file
+names them and they load again on open. A `format` number guards against a
+file from a newer studio, which is refused rather than half read.
+
+File › Open… takes one of these or a Live set, and Save on a Live set (or
+the demo) asks for a name, so a Live set is never written over. Opening a
+set restarts the studio with it, so the sound card, Push and plug-ins start
+clean; with unsaved changes it asks first. Changes are told apart by
+comparing the set's text with the text last saved or opened.
