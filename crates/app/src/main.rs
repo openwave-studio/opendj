@@ -40,6 +40,7 @@ mod app_menu;
 mod appearance;
 mod apple_music;
 mod art;
+mod arturia;
 mod audio_plugins;
 mod automix;
 mod automix_order;

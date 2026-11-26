@@ -98,6 +98,8 @@ export struct JamLine {
 // closed, and every value in lines.
 export struct JamFacet {
     name: string,
+    // Some row has a value for it (a maker's Genre or Style may not).
+    shown: bool,
     open: bool,
     picked: int,
     picks: [JamChip],
@@ -879,78 +881,81 @@ export component JamColumn inherits Rectangle {
             vertical-stretch: 0;
             for facet[f] in InstrumentsUi.facets: VerticalLayout {
                 vertical-stretch: 0;
-                Rectangle {
-                    height: 1px;
-                    background: f == 0 ? transparent : Theme.separator;
-                }
-                Rectangle {
-                    height: 28px;
-                    HorizontalLayout {
-                        padding-left: 4px;
-                        padding-right: 4px;
-                        spacing: 4px;
-                        alignment: stretch;
-                        Text {
-                            text: facet.name;
-                            color: Theme.text;
-                            font-size: 12.5px;
-                            font-weight: 500;
-                            vertical-alignment: center;
-                        }
-                        if !facet.open: HorizontalLayout {
-                            horizontal-stretch: 1;
-                            spacing: 3px;
+                if facet.shown: VerticalLayout {
+                    vertical-stretch: 0;
+                    Rectangle {
+                        height: 1px;
+                        background: f == 0 ? transparent : Theme.separator;
+                    }
+                    Rectangle {
+                        height: 28px;
+                        HorizontalLayout {
                             padding-left: 4px;
-                            alignment: start;
-                            for chip in facet.picks: VerticalLayout {
+                            padding-right: 4px;
+                            spacing: 4px;
+                            alignment: stretch;
+                            Text {
+                                text: facet.name;
+                                color: Theme.text;
+                                font-size: 12.5px;
+                                font-weight: 500;
+                                vertical-alignment: center;
+                            }
+                            if !facet.open: HorizontalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 3px;
+                                padding-left: 4px;
+                                alignment: start;
+                                for chip in facet.picks: VerticalLayout {
+                                    alignment: center;
+                                    JamChipButton {
+                                        chip: chip;
+                                        clicked => { InstrumentsUi.toggle-value(f, chip.name); }
+                                    }
+                                }
+                            }
+                            if facet.open: Rectangle { horizontal-stretch: 1; }
+                            VerticalLayout {
                                 alignment: center;
-                                JamChipButton {
+                                Path {
+                                    width: 10px;
+                                    height: 10px;
+                                    viewbox-width: 10;
+                                    viewbox-height: 10;
+                                    stroke: facet.open ? Theme.text : Theme.text-dim;
+                                    stroke-width: 1.6px;
+                                    stroke-line-cap: round;
+                                    fill: transparent;
+                                    commands: facet.open ? "M 2 6.5 L 5 3.5 L 8 6.5" : "M 2 3.5 L 5 6.5 L 8 3.5";
+                                }
+                            }
+                        }
+                        TouchArea {
+                            z: -1;
+                            mouse-cursor: pointer;
+                            clicked => { InstrumentsUi.toggle-facet(f); }
+                        }
+                    }
+                    if facet.open: ScrollView {
+                        height: min(facet.lines.length * 25px + 6px, 132px);
+                        VerticalLayout {
+                            padding-left: 4px;
+                            padding-bottom: 6px;
+                            spacing: 3px;
+                            alignment: start;
+                            for line in facet.lines: HorizontalLayout {
+                                spacing: 4px;
+                                alignment: start;
+                                for chip in line.chips: JamChipButton {
                                     chip: chip;
                                     clicked => { InstrumentsUi.toggle-value(f, chip.name); }
                                 }
                             }
-                        }
-                        if facet.open: Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout {
-                            alignment: center;
-                            Path {
-                                width: 10px;
-                                height: 10px;
-                                viewbox-width: 10;
-                                viewbox-height: 10;
-                                stroke: facet.open ? Theme.text : Theme.text-dim;
-                                stroke-width: 1.6px;
-                                stroke-line-cap: round;
-                                fill: transparent;
-                                commands: facet.open ? "M 2 6.5 L 5 3.5 L 8 6.5" : "M 2 3.5 L 5 6.5 L 8 3.5";
+                            if facet.lines.length == 0: Text {
+                                text: "Nothing to pick here yet.";
+                                color: Theme.text-dim;
+                                font-size: 11px;
                             }
-                        }
-                    }
-                    TouchArea {
-                        z: -1;
-                        mouse-cursor: pointer;
-                        clicked => { InstrumentsUi.toggle-facet(f); }
-                    }
-                }
-                if facet.open: ScrollView {
-                    height: min(facet.lines.length * 25px + 6px, 132px);
-                    VerticalLayout {
-                        padding-left: 4px;
-                        padding-bottom: 6px;
-                        spacing: 3px;
-                        alignment: start;
-                        for line in facet.lines: HorizontalLayout {
-                            spacing: 4px;
-                            alignment: start;
-                            for chip in line.chips: JamChipButton {
-                                chip: chip;
-                                clicked => { InstrumentsUi.toggle-value(f, chip.name); }
-                            }
-                        }
-                        if facet.lines.length == 0: Text {
-                            text: "Nothing to pick here yet.";
-                            color: Theme.text-dim;
-                            font-size: 11px;
                         }
                     }
                 }
