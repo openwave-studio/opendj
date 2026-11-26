@@ -625,8 +625,8 @@ component RoutePill inherits VerticalLayout {
 }
 
 // Release: one button that lets go of every effect while held
-// (`[Master],fx_release`), showing how it does that (`fx_release_mode`); a
-// right-click picks the mode from a list of Echo, Brake, Spin and Cut.
+// (`[Master],fx_release`); its tooltip names how (`fx_release_mode`), and a
+// right-click picks that from a list of Echo, Brake, Spin and Cut.
 // Every effect stops; Echo lets the echoes ring out, Brake slows the main
 // mix to a stop and Spin spins it back for a beat (both come back on
 // letting go), Cut mutes it while held.
@@ -661,7 +661,7 @@ component ReleaseButton inherits Rectangle {
             }
         }
         Text {
-            text: mode == 1 ? "Brake" : mode == 2 ? "Spin" : mode == 3 ? "Cut" : "Echo";
+            text: "Release";
             color: Theme.text;
             font-size: 12px;
             font-weight: 500;
@@ -682,7 +682,7 @@ component ReleaseButton inherits Rectangle {
             }
         }
     }
-    TipWatch { hovered: ta.has-hover && !root.firing; title: "Release"; body: "Hold to let go of every effect. Right-click: how it lets go"; }
+    TipWatch { hovered: ta.has-hover && !root.firing; title: "Release · " + (mode == 1 ? "Brake" : mode == 2 ? "Spin" : mode == 3 ? "Cut" : "Echo"); body: "Hold to let go of every effect. Right-click: how it lets go"; }
     MapMark { key: "[Master],fx_release"; }
     list := PopupWindow {
         x: 0px;

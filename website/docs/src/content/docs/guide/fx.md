@@ -81,8 +81,7 @@ that deck.
 
 ## Release
 
-The Beat FX has a red **Release** button beside D/W, showing how it lets
-go. Hold it, and every effect on every deck and the Beat FX stops at
+The Beat FX has a red **Release** button beside D/W. Hold it, and every effect on every deck and the Beat FX stops at
 once. Right-click it to pick how:
 
 - **Echo**: the effects stop taking in the music, and their echoes and
