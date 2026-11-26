@@ -7,10 +7,10 @@
 
 ## 2. The panel
 
-- [ ] 2.1 Bottom panel with the piano roll: double-click a MIDI clip to open it, Tab between notes and devices, resize, pop out; double-click an empty slot makes a one-bar clip and opens it
-- [ ] 2.2 Drawing: keys, ruler with loop bracket, rows, grid lines, notes, playhead; zoom and scroll; scale highlight; Fold (Off, Scale, Used); grid button and snap menu
-- [ ] 2.3 Ghost notes from the track's other clips or every MIDI track
-- [ ] 2.4 Clip column: start, length, loop, Draw/Select, scale, tools, ghosts
+- [x] 2.1 Bottom panel with the piano roll: double-click a MIDI clip to open it, Tab between notes and devices, resize, pop out; double-click an empty slot makes a one-bar clip and opens it
+- [x] 2.2 Drawing: keys, ruler with loop bracket, rows, grid lines, notes, playhead; zoom and scroll; scale highlight; Fold (Off, Scale, Used); grid button and snap menu
+- [x] 2.3 Ghost notes from the track's other clips or every MIDI track
+- [x] 2.4 Clip column: start, length, loop, Draw/Select, scale, tools, ghosts
 
 ## 3. Editing
 

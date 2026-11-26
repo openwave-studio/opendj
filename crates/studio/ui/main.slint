@@ -4,27 +4,10 @@ export { PushScreen, PushTrack, PushKnob, PushMenu }
 // the middle, returns A and B and Main on the right, and the selected
 // track's devices along the bottom.
 
-export global Theme {
-    out property <color> bg: #101112;
-    out property <color> panel: #161819;
-    out property <color> panel-2: #1b1d1f;
-    out property <color> slot: #1e2022;
-    out property <color> slot-hover: #26292b;
-    out property <color> line: #2a2d30;
-    out property <color> text: #e8e8ea;
-    out property <color> dim: #8b8d91;
-    out property <color> faint: #55585c;
-    out property <color> accent: #B69CFF;
-    out property <color> accent-dark: #8C72D9;
-    out property <color> select: #4A4A4D;
-    out property <color> playing: #7ee08a;
-    out property <color> queued: #ffd166;
-    out property <color> effect: #ff9f5a;
-    out property <color> midi-fx: #ffd166;
-    out property <color> return-a: #8C72D9;
-    out property <color> return-b: #5d8cc9;
-    out property <length> radius: 3px;
-}
+import { Theme, Pill, Picker } from "theme.slint";
+export { Theme }
+import { Piano, PianoRoll, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend } from "piano_roll.slint";
+export { Piano, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend }
 
 // Slot states, as the audio thread reports them.
 export enum SlotState { empty, stopped, queued, playing, stopping }
@@ -336,33 +319,6 @@ component DragSource inherits TouchArea {
 
 // ---------------------------------------------------------------- controls
 
-component Pill inherits Rectangle {
-    in property <string> label;
-    in property <bool> on;
-    in property <bool> enabled: true;
-    callback clicked;
-    height: 24px;
-    min-width: 28px;
-    border-radius: 3px;
-    background: on ? Theme.accent : (ta.has-hover ? Theme.slot-hover : Theme.slot);
-    opacity: enabled ? 1 : 0.4;
-    HorizontalLayout {
-        padding-left: 9px;
-        padding-right: 9px;
-        Text {
-            text: label;
-            color: on ? #101112 : Theme.text;
-            font-size: 12px;
-            font-weight: 600;
-            vertical-alignment: center;
-            horizontal-alignment: center;
-        }
-    }
-    ta := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
 
 component Readout inherits Rectangle {
     in property <string> title;
@@ -694,57 +650,6 @@ component UnsavedQuestion inherits Rectangle {
     }
 }
 
-// A drop-down: the current choice, and a list to pick from.
-component Picker inherits Rectangle {
-    in property <string> text;
-    in property <[string]> options;
-    in property <length> text-size: 10px;
-    callback picked(int);
-    height: 18px;
-    border-radius: 2px;
-    background: ta.has-hover ? Theme.slot-hover : Theme.slot;
-    HorizontalLayout {
-        padding-left: 5px;
-        padding-right: 4px;
-        spacing: 2px;
-        Text {
-            text: root.text;
-            color: Theme.text;
-            font-size: root.text-size;
-            overflow: elide;
-            horizontal-stretch: 1;
-            vertical-alignment: center;
-        }
-        Text { text: "▾"; color: Theme.dim; font-size: 9px; vertical-alignment: center; }
-    }
-    ta := TouchArea { clicked => { popup.show(); } }
-    popup := PopupWindow {
-        x: 0;
-        y: root.height;
-        width: max(root.width, 170px);
-        Rectangle {
-            background: Theme.panel-2;
-            border-width: 1px;
-            border-color: Theme.line;
-            VerticalLayout {
-                padding: 2px;
-                for o[i] in root.options: Rectangle {
-                    height: 20px;
-                    background: oa.has-hover ? Theme.select : transparent;
-                    Text {
-                        x: 6px;
-                        width: parent.width - 12px;
-                        text: o;
-                        color: o == root.text ? Theme.accent : Theme.text;
-                        font-size: 11px;
-                        overflow: elide;
-                    }
-                    oa := TouchArea { clicked => { root.picked(i); } }
-                }
-            }
-        }
-    }
-}
 
 component IoLabel inherits Text {
     color: Theme.dim;
@@ -949,6 +854,8 @@ component ClipSlot inherits Rectangle {
     in property <float> progress: -1;
     in property <bool> selected;
     callback launch;
+    // Double-click: the clip's notes (an empty slot gets a new clip).
+    callback open;
     background: data.state == SlotState.empty
         ? (ta.has-hover ? Theme.slot-hover : Theme.slot)
         : (data.state == SlotState.playing ? data.color : data.color.with-alpha(ta.has-hover ? 0.5 : 0.34));
@@ -993,6 +900,7 @@ component ClipSlot inherits Rectangle {
     }
     ta := TouchArea {
         clicked => { root.launch(); }
+        double-clicked => { root.open(); }
     }
 }
 
@@ -2142,6 +2050,13 @@ export component AppWindow inherits Window {
     callback open-path(string);
 
     callback launch-clip(int, int);   // track, scene
+    // Double-click on a slot: its notes in the bottom panel.
+    callback open-notes(int, int);   // track, scene
+    // ⌘Z and ⇧⌘Z while the piano roll shows.
+    callback piano-undo(bool);
+    // The piano roll instead of the devices along the bottom, and its height.
+    in-out property <bool> notes-shown;
+    in-out property <length> panel-height: 320px;
     callback launch-scene(int);
     callback stop-track(int);
     callback stop-all();
@@ -2209,6 +2124,15 @@ export component AppWindow inherits Window {
                     root.file(0);
                     return accept;
                 }
+                if root.notes-shown && (event.text == "z" || event.text == "Z") {
+                    root.piano-undo(event.modifiers.shift);
+                    return accept;
+                }
+            }
+            // Tab: the clip's notes or the track's devices.
+            if event.text == Key.Tab && !event.modifiers.control && !event.modifiers.meta {
+                root.notes-shown = !root.notes-shown;
+                return accept;
             }
             reject
         }
@@ -2379,6 +2303,7 @@ export component AppWindow inherits Window {
                             progress: t.progress;
                             selected: i == selected-track && s == selected-scene;
                             launch => { root.launch-clip(i, s); }
+                            open => { root.open-notes(i, s); }
                         }
                         // Stop button.
                         Rectangle {
@@ -2577,8 +2502,27 @@ export component AppWindow inherits Window {
                 }
                 Rectangle { height: 1px; background: Theme.line; }
 
+                // ---------------------------------------- piano roll
+                if root.notes-shown: Rectangle {
+                    height: root.panel-height;
+                    VerticalLayout {
+                        // Drag to make the panel taller or shorter.
+                        Rectangle {
+                            height: 4px;
+                            background: resize.has-hover || resize.pressed ? Theme.accent-dark : Theme.line;
+                            resize := TouchArea {
+                                mouse-cursor: row-resize;
+                                moved => {
+                                    root.panel-height = clamp(root.panel-height - (self.mouse-y - self.pressed-y),
+                                        220px, max(220px, root.height - 300px));
+                                }
+                            }
+                        }
+                        PianoRoll { }
+                    }
+                }
                 // ------------------------------------------- device row
-                Rectangle {
+                if !root.notes-shown: Rectangle {
                     height: 214px;
                     background: Theme.panel;
                     // Scrolls sideways when the chain is wider than the window.

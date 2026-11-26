@@ -5,15 +5,44 @@
 // another), its length in beats (beat-synced effects) or a slider for its
 // second control (the others), its D/W arc knob (the effect's main knob,
 // `meta`, which controllers turn too) and its bands. In 2-Deck each effect
-// is a cell of three rows; in 4-Deck each deck's three are stacked in
-// one-line rows. The FX button in the top bar shows and hides the bar.
+// is a cell of two rows; in 4-Deck each deck's three are stacked in
+// one-line rows. The controls carry no labels: each names itself in a
+// tooltip. The FX button in the top bar shows and hides the bar.
 import { Theme } from "theme.slint";
 import { TourMark } from "tourmark.slint";
-import { ControlButton, Controls, PickupDot, PickupGhost } from "controls.slint";
+import { ControlButton, Controls, HoverTip, PickupDot, PickupGhost } from "controls.slint";
 import { EffectList, EffectMenu } from "deck.slint";
 import { MapMark } from "mapmark.slint";
 import { FxDisplay } from "plugin_display.slint";
 import { ArcKnob, BandIcon, ListRow, PillCaret, PowerButton, StepperPill, TitledList, ValuePill } from "pills.slint";
+
+// Names the control it covers in a tooltip after a moment's hover, as the
+// labels it replaces did. It fills its parent, which must not be a layout.
+component TipWatch inherits Rectangle {
+    in property <bool> hovered;
+    in property <string> title;
+    in property <string> body;
+    property <bool> mine;
+    changed hovered => {
+        if !self.hovered && self.mine {
+            self.mine = false;
+            HoverTip.shown = false;
+        }
+    }
+    Timer {
+        interval: 600ms;
+        running: root.title != "" && root.hovered && !root.mine;
+        triggered => {
+            root.mine = true;
+            HoverTip.title = root.title;
+            HoverTip.body = root.body;
+            HoverTip.right-aligned = false;
+            HoverTip.x = root.absolute-position.x;
+            HoverTip.y = root.absolute-position.y + root.height + 6px;
+            HoverTip.shown = true;
+        }
+    }
+}
 
 // ‹ 1/8 › in a stepper pill: an effect's length, halved and doubled from
 // 1/16 to 4 beats.
@@ -24,21 +53,27 @@ component BeatChooser inherits StepperPill {
     next-enabled: beats > 0 && beats < 4;
     prev => { Controls.set-value(index, beats / 2); }
     next => { Controls.set-value(index, beats * 2); }
-    Text {
+    Rectangle {
         min-width: 22px;
         horizontal-stretch: 1;
-        text: root.beats <= 0 ? "–" : root.beats < 1 ? "1/" + round(1 / root.beats) : round(root.beats);
-        color: Theme.text;
-        font-size: 12.5px;
-        font-weight: 500;
-        horizontal-alignment: center;
-        vertical-alignment: center;
+        Text {
+            text: root.beats <= 0 ? "–" : root.beats < 1 ? "1/" + round(1 / root.beats) : round(root.beats);
+            color: Theme.text;
+            font-size: 12.5px;
+            font-weight: 500;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+        beat-hover := TouchArea { }
+        TipWatch { hovered: beat-hover.has-hover; title: "Beats"; body: "How long the effect's beat is"; }
     }
 }
 
 // A slim track filled in lilac up to a small bar: an effect's second control.
 component ParamSlider inherits Rectangle {
     in property <int> index;
+    // Its name, for the tooltip.
+    in property <string> name;
     property <float> pos: Controls.parameter(index, Controls.tick);
     property <float> hardware: Controls.hardware(index, Controls.tick);
     property <length> thumb: 6px;
@@ -101,6 +136,7 @@ component ParamSlider inherits Rectangle {
             accept
         }
     }
+    TipWatch { hovered: touch.has-hover && !touch.pressed; title: root.name; }
 }
 
 // D/W as an arc: a thick ring, filled in the tint as far as it is turned.
@@ -131,57 +167,46 @@ component DwKnob inherits Rectangle {
             accept
         }
     }
+    TipWatch { hovered: ta.has-hover && !ta.pressed; title: "D/W"; body: "Dry/wet: how much of the effect you hear"; }
 }
 
 // One effect: the effect chooser on top, ON, beats or slider and D/W under it.
 
-// The name and color of a band choice.
-component BandWord inherits Text {
-    in property <int> mask;
-    text: mask == 1 ? "Low" : mask == 2 ? "Mid" : mask == 4 ? "High"
-        : mask == 3 ? "Low+Mid" : mask == 6 ? "Mid+High" : mask == 5 ? "Low+High" : "All";
-    color: mask == 1 ? Theme.band-low : mask == 2 ? Theme.band-mid : mask == 4 ? Theme.band-high : Theme.lilac-text;
-    font-size: 12px;
-    font-weight: 500;
-    vertical-alignment: center;
-}
-
-// Band: a value pill for the bands an effect works on, with a titled list
-// of Whole signal, Low, Mid and High. The effect plays on the bands chosen
-// and the others pass by it, as on the RMX's band levers.
-component BandPill inherits HorizontalLayout {
+// Band: three bare bars, high over mid over low, for the bands an effect
+// works on. Grey on the whole signal; a chosen band lights in its colour
+// and the others go dark. A click opens a titled list of Whole signal,
+// Low, Mid and High. The effect plays on the bands chosen and the others
+// pass by it, as on the RMX's band levers.
+component BandBars inherits Rectangle {
     in property <string> fx;
-    in property <bool> with-label: true;
-    // Only the mark, for 4-Deck's one-line effects.
-    in property <bool> compact;
     property <int> band-index: Controls.resolve(fx, "band");
     property <int> mask: Controls.value(band-index, Controls.tick);
-    spacing: 6px;
-    if with-label: Text {
-        text: "Band";
-        color: Theme.n-a8a8ad;
-        font-size: 11.5px;
-        vertical-alignment: center;
+    property <bool> whole: mask == 0 || mask == 7;
+    width: 26px;
+    height: 22px;
+    border-radius: 5px;
+    background: ta.has-hover ? Theme.pill-hover : transparent;
+    for i in 3: Rectangle {
+        property <int> bit: i == 0 ? 4 : i == 1 ? 2 : 1;
+        property <bool> lit: root.whole || mod(floor(root.mask / bit), 2) == 1;
+        x: (root.width - self.width) / 2;
+        y: (root.height - 15px) / 2 + i * 6px;
+        width: 18px;
+        height: 3px;
+        border-radius: 1px;
+        background: root.whole ? (ta.has-hover ? Theme.text : Theme.n-6e6e73)
+            : !lit ? Theme.n-2e2e33
+            : i == 0 ? Theme.band-high : i == 1 ? Theme.band-mid : Theme.band-low;
     }
-    VerticalLayout {
-        alignment: center;
-        pill := ValuePill {
-            open: false;
-            clicked => { list.show(); }
-            HorizontalLayout {
-                padding-left: 9px;
-                padding-right: 9px;
-                spacing: 5px;
-                VerticalLayout { alignment: center; BandIcon { mask: mask; } }
-                if !compact: BandWord { mask: mask; }
-                VerticalLayout { alignment: center; PillCaret { } }
-            }
-            MapMark { key: root.fx + ",band"; }
-        }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { list.show(); }
     }
+    TipWatch { hovered: ta.has-hover; title: "Band"; body: "The bands the effect works on"; }
+    MapMark { key: root.fx + ",band"; }
     list := PopupWindow {
         x: 0px;
-        y: pill.y + pill.height + 4px;
+        y: root.height + 4px;
         width: 172px;
         close-policy: close-on-click-outside;
         TitledList {
@@ -425,9 +450,10 @@ component ViewButton inherits Rectangle {
     }
 }
 
-// An effect's second row: its beats or slider, named, then D/W. With
-// `with-name` (4-Deck's one-line rows) the power button, name and bands
-// come first, and the labels go.
+// An effect's second row: its bands under the power button, its beats or
+// slider, then D/W (anything placed in it goes just before D/W). With
+// `with-name` (4-Deck's one-line rows) the power button and name come
+// first and the bands after the beats.
 component FxControls inherits HorizontalLayout {
     in property <string> fx;
     in property <string> title;
@@ -442,9 +468,11 @@ component FxControls inherits HorizontalLayout {
     property <bool> plugin: has-effect && loaded > EffectList.builtin-count;
     // What the slider sets, by `loaded_effect`.
     property <string> param-name: loaded >= 1 && loaded <= EffectList.slider-labels.length ? EffectList.slider-labels[loaded - 1] : "";
-    padding-left: with-name ? 6px : 10px;
-    padding-right: with-name ? 6px : 10px;
+    padding-left: with-name ? 6px : 8px;
+    padding-right: with-name ? 6px : 8px;
     spacing: with-name ? 5px : 8px;
+    // As wide as the power button over it, so the beats line up under the name.
+    if !with-name: VerticalLayout { alignment: center; horizontal-stretch: 0; BandBars { fx: root.fx; } }
     if with-name: VerticalLayout { alignment: center; FxPower { fx: root.fx; size: 22px; } }
     if with-name: VerticalLayout { alignment: center; horizontal-stretch: 0; NamePill { fx: root.fx; title: root.title; tint: root.tint; height: 24px; horizontal-stretch: 0; min-width: 96px; preferred-width: 124px; } }
     // A plugin's own window, for its presets and every setting: lit while
@@ -467,23 +495,16 @@ component FxControls inherits HorizontalLayout {
         fx: fx;
         tint: tint;
     }
-    if !with-name && (beats > 0 || param >= 0): Text {
-        text: beats > 0 ? "Beats" : root.param-name != "" ? root.param-name : "Amount";
-        color: Theme.n-a8a8ad;
-        font-size: 11.5px;
-        vertical-alignment: center;
-        horizontal-stretch: 0;
-    }
     Rectangle {
         horizontal-stretch: 1;
         min-width: 50px;
         if beats > 0: BeatChooser { x: 0px; width: min(parent.width, 84px); y: (parent.height - self.height) / 2; index: beats-index; }
         if beats > 0: TourMark { width: parent.width; height: parent.height; id: root.fx + ",beats"; }
-        if beats <= 0 && param >= 0: ParamSlider { x: 0px; width: min(parent.width, 110px); height: parent.height; index: Controls.resolve(fx, "parameter" + (param + 1)); }
+        if beats <= 0 && param >= 0: ParamSlider { x: 0px; width: min(parent.width, 110px); height: parent.height; index: Controls.resolve(fx, "parameter" + (param + 1)); name: root.param-name != "" ? root.param-name : "Amount"; }
         if beats <= 0 && param >= 0: MapMark { width: parent.width; height: parent.height; key: root.fx + ",parameter" + (param + 1); }
     }
-    if with-name: BandPill { fx: fx; with-label: false; compact: true; }
-    if !with-name: Text { text: "D/W"; color: Theme.n-a8a8ad; font-size: 11.5px; vertical-alignment: center; horizontal-stretch: 0; }
+    if with-name: VerticalLayout { alignment: center; horizontal-stretch: 0; BandBars { fx: root.fx; } }
+    @children
     VerticalLayout {
         alignment: center;
         horizontal-stretch: 0;
@@ -497,8 +518,8 @@ component FxControls inherits HorizontalLayout {
     }
 }
 
-// 2-Deck: one effect as a cell of three rows: the power button and the
-// name pill, its controls, its bands.
+// 2-Deck: one effect as a cell of two rows: the power button and the
+// name pill, then its bands, its controls and D/W.
 component FxCell inherits Rectangle {
     // The effect unit and slot, from 0.
     in property <int> unit;
@@ -510,28 +531,21 @@ component FxCell inherits Rectangle {
     min-width: 0px;
     preferred-width: 0px;
     VerticalLayout {
+        padding-top: 6px;
+        padding-bottom: 4px;
         spacing: 0px;
         HorizontalLayout {
-            height: 34px;
+            height: 31px;
             padding-left: 8px;
             padding-right: 8px;
-            padding-top: 4px;
             spacing: 8px;
             VerticalLayout { alignment: center; FxPower { fx: root.fx; } }
             VerticalLayout { alignment: center; NamePill { fx: root.fx; title: "Deck " + (root.unit + 1) + " · FX " + (root.slot + 1); tint: root.tint; } }
         }
-        FxControls { height: 34px; fx: fx; tint: tint; }
-        HorizontalLayout {
-            height: 32px;
-            padding-left: 10px;
-            padding-right: 10px;
-            padding-bottom: 4px;
-            alignment: start;
-            BandPill { fx: fx; }
-        }
+        FxControls { height: 31px; fx: fx; tint: tint; }
     }
     // The name, for the step that picks another effect.
-    TourMark { id: root.fx; y: 0px; height: 34px; }
+    TourMark { id: root.fx; y: 6px; height: 31px; }
 }
 
 // 4-Deck: a deck's three effects stacked, one line each.
@@ -573,14 +587,14 @@ component RoutePill inherits VerticalLayout {
             padding-right: 9px;
             spacing: 5px;
             Text {
-                text: route == 5 ? "1&2" : route == 6 ? "MST" : route >= 1 ? route : "Off";
+                text: route == 5 ? "1+2" : route == 6 ? "MST" : route >= 1 ? route : "Off";
                 color: Theme.lilac-text;
                 font-size: 12px;
                 font-weight: 600;
                 vertical-alignment: center;
             }
-            VerticalLayout { alignment: center; PillCaret { } }
         }
+        TipWatch { hovered: pill.hovered; title: "Send to"; body: "Where the Beat FX plays: a deck, decks 1 and 2, or the main mix"; }
         MapMark { key: root.unit + ",route"; }
     }
     list := PopupWindow {
@@ -610,52 +624,30 @@ component RoutePill inherits VerticalLayout {
     }
 }
 
-// Release: how `[Master],fx_release` lets go (a value pill with Echo,
-// Brake, Spin and Cut) and a round button that does it while held. Every
-// effect stops; Echo lets the echoes ring out, Brake slows the main mix to a
-// stop and Spin spins it back for a beat (both come back on letting go),
-// Cut mutes it while held.
-component ReleaseControls inherits HorizontalLayout {
+// Release: one button that lets go of every effect while held
+// (`[Master],fx_release`); its tooltip names how (`fx_release_mode`), and a
+// right-click picks that from a list of Echo, Brake, Spin and Cut.
+// Every effect stops; Echo lets the echoes ring out, Brake slows the main
+// mix to a stop and Spin spins it back for a beat (both come back on
+// letting go), Cut mutes it while held.
+component ReleaseButton inherits Rectangle {
     property <int> mode-index: Controls.resolve("[Master]", "fx_release_mode");
     property <int> fire-index: Controls.resolve("[Master]", "fx_release");
     property <int> mode: Controls.value(mode-index, Controls.tick);
     property <bool> held: Controls.value(fire-index, Controls.tick) > 0;
-    spacing: 6px;
-    Text {
-        text: "Release";
-        color: Theme.n-a8a8ad;
-        font-size: 11.5px;
-        vertical-alignment: center;
-    }
-    VerticalLayout {
-        alignment: center;
-        pill := ValuePill {
-            clicked => { list.show(); }
-            HorizontalLayout {
-                padding-left: 9px;
-                padding-right: 9px;
-                spacing: 5px;
-                Text {
-                    text: mode == 1 ? "Brake" : mode == 2 ? "Spin" : mode == 3 ? "Cut" : "Echo";
-                    color: Theme.lilac-text;
-                    font-size: 12px;
-                    font-weight: 500;
-                    vertical-alignment: center;
-                }
-                VerticalLayout { alignment: center; PillCaret { } }
-            }
-            MapMark { key: "[Master],fx_release_mode"; }
-        }
-    }
-    VerticalLayout {
-        alignment: center;
-        Rectangle {
-            width: 22px;
-            height: 22px;
-            border-radius: 11px;
-            background: held ? Theme.n-ff6b70.with-alpha(0.25) : fta.has-hover ? Theme.n-ff6b70.with-alpha(0.12) : Theme.pill;
-            border-width: 1px;
-            border-color: held || fta.has-hover ? Theme.n-ff6b70 : Theme.n-ff6b70.with-alpha(0.45);
+    property <bool> firing;
+    height: 22px;
+    width: row.preferred-width;
+    border-radius: 7px;
+    background: held ? Theme.n-ff6b70.with-alpha(0.3) : ta.has-hover ? Theme.n-ff6b70.with-alpha(0.15) : Theme.n-ff6b70.with-alpha(0.08);
+    border-width: 1px;
+    border-color: held || ta.has-hover ? Theme.n-ff6b70 : Theme.n-ff6b70.with-alpha(0.45);
+    row := HorizontalLayout {
+        padding-left: 7px;
+        padding-right: 8px;
+        spacing: 5px;
+        VerticalLayout {
+            alignment: center;
             Path {
                 width: 10px;
                 height: 11px;
@@ -667,18 +659,34 @@ component ReleaseControls inherits HorizontalLayout {
                 stroke-line-cap: round;
                 fill: transparent;
             }
-            fta := TouchArea {
-                mouse-cursor: pointer;
-                changed pressed => {
-                    Controls.set-value(fire-index, self.pressed ? 1 : 0);
-                }
-            }
-            MapMark { key: "[Master],fx_release"; }
+        }
+        Text {
+            text: "Release";
+            color: Theme.text;
+            font-size: 12px;
+            font-weight: 500;
+            vertical-alignment: center;
         }
     }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if e.button == PointerEventButton.right && e.kind == PointerEventKind.down {
+                list.show();
+            } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                root.firing = true;
+                Controls.set-value(fire-index, 1);
+            } else if root.firing && (e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel) {
+                root.firing = false;
+                Controls.set-value(fire-index, 0);
+            }
+        }
+    }
+    TipWatch { hovered: ta.has-hover && !root.firing; title: "Release · " + (mode == 1 ? "Brake" : mode == 2 ? "Spin" : mode == 3 ? "Cut" : "Echo"); body: "Hold to let go of every effect. Right-click: how it lets go"; }
+    MapMark { key: "[Master],fx_release"; }
     list := PopupWindow {
-        x: pill.x;
-        y: pill.y + pill.height + 4px;
+        x: 0px;
+        y: root.height + 4px;
         width: 160px;
         close-policy: close-on-click-outside;
         TitledList {
@@ -703,40 +711,62 @@ component ReleaseControls inherits HorizontalLayout {
     }
 }
 
-// The middle, as wide as the mixer: the power button, BEAT FX, the effect
-// in its pill and where it goes, over its beats and LEVEL as D/W, then its
-// bands and Release. The BEAT FX sections of Pioneer controllers drive the
-// same controls.
+// The middle, as wide as the mixer, in a faint lilac with BEAT FX on a tab
+// centred on its top edge: the power button, the effect in its pill and
+// where it goes, over its bands, beats, Release and LEVEL as D/W. The BEAT
+// FX sections of Pioneer controllers drive the same controls.
 component BeatFxSection inherits Rectangle {
     in property <bool> four;
     property <string> unit: "[EffectRack1_EffectUnit5]";
     property <string> fx: "[EffectRack1_EffectUnit5_Effect1]";
+    // Where the outline starts. In 2-Deck it covers the hairline over the
+    // bar, so the mixer above meets the Beat FX on its lilac edge, and the
+    // tab sits across that edge.
+    property <length> edge: four ? 2px : -1px;
     background: Theme.panel;
     width: 254px;
+    Rectangle {
+        y: root.edge;
+        height: root.height - root.edge;
+        background: Theme.accent.with-alpha(0.07);
+        border-width: 1px;
+        border-color: Theme.accent.with-alpha(0.3);
+    }
     VerticalLayout {
         alignment: center;
+        padding-top: four ? root.edge : 6px;
+        padding-bottom: four ? 0px : 4px;
         spacing: 0px;
         HorizontalLayout {
-            height: four ? 32px : 34px;
+            height: four ? 30px : 31px;
             padding-left: 8px;
             padding-right: 8px;
-            padding-top: four ? 2px : 4px;
-            spacing: 6px;
+            spacing: 8px;
             VerticalLayout { alignment: center; FxPower { fx: root.fx; size: four ? 22px : 26px; } }
-            if !four: Text { text: "BEAT FX"; color: Theme.lilac-text; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; vertical-alignment: center; }
             VerticalLayout { alignment: center; NamePill { fx: root.fx; title: "Beat FX"; tint: Theme.accent; strip: true; } }
             RoutePill { four: root.four; unit: root.unit; }
         }
-        FxControls { height: 34px; fx: fx; tint: Theme.accent; }
-        if !four: HorizontalLayout {
-            height: 32px;
-            padding-left: 8px;
-            padding-right: 8px;
-            padding-bottom: 4px;
-            spacing: 6px;
-            BandPill { fx: fx; with-label: false; }
-            Rectangle { horizontal-stretch: 1; }
-            ReleaseControls { }
+        FxControls {
+            height: four ? 30px : 31px;
+            fx: fx;
+            tint: Theme.accent;
+            VerticalLayout { alignment: center; horizontal-stretch: 0; ReleaseButton { } }
+        }
+    }
+    if !four: Rectangle {
+        x: (root.width - self.width) / 2;
+        y: root.edge - self.height / 2;
+        width: tab-text.preferred-width + 12px;
+        height: 12px;
+        border-radius: 3px;
+        background: Theme.panel;
+        tab-text := Text {
+            text: "BEAT FX";
+            color: Theme.lilac-text;
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            vertical-alignment: center;
         }
     }
     TourMark { id: root.unit; }
@@ -747,7 +777,7 @@ export component FxBar inherits Rectangle {
     // deck's effects stacked.
     in property <bool> four;
     background: Theme.n-000000;
-    height: four ? 96px : 100px;
+    height: four ? 96px : 72px;
     if !four: HorizontalLayout {
         spacing: 1px;
         // As wide as the decks above, either side of the mixer.

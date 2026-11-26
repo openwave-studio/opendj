@@ -1,0 +1,653 @@
+// The piano roll: a MIDI clip's notes in the bottom panel (or its own
+// window). Rust builds everything drawn here from the clip and the view
+// (crates/studio/src/piano.rs); this file only lays it out and passes the
+// pointer, the wheel and the buttons back.
+
+import { Theme, Picker } from "theme.slint";
+
+// A row of the keys, top to bottom (only the rows in view).
+export struct PianoRow {
+    y: length,
+    h: length,
+    pitch: int,
+    label: string,
+    black: bool,
+    in-scale: bool,
+    root: bool,
+}
+
+// A note's rectangle in the grid (only the notes in view).
+export struct PianoNote {
+    x: length,
+    y: length,
+    w: length,
+    h: length,
+    color: color,
+    selected: bool,
+    // Deactivated: kept but not played.
+    muted: bool,
+    // Outside the loop: kept but not played.
+    outside: bool,
+}
+
+// Another clip's note, shown under the clip's own.
+export struct PianoGhost {
+    x: length,
+    y: length,
+    w: length,
+    h: length,
+    color: color,
+}
+
+// A bar number on the ruler.
+export struct PianoMark {
+    x: length,
+    label: string,
+}
+
+// Where the ghost notes come from: track and clip, in its colour.
+export struct PianoLegend {
+    label: string,
+    color: color,
+}
+
+export global Piano {
+    // Which clip, as the header shows it.
+    in-out property <string> track-name;
+    in-out property <string> clip-name;
+    in-out property <color> track-color: Theme.accent;
+    in-out property <string> sel-info;
+    // A Drum Rack's pads as rows instead of keys.
+    in-out property <bool> drums;
+    in-out property <length> keys-width: 38px;
+    // Shown in its own window (the button docks it back).
+    in-out property <bool> popped;
+
+    in-out property <[PianoRow]> rows;
+    in-out property <[PianoNote]> notes;
+    in-out property <[PianoGhost]> ghosts;
+    in-out property <[PianoMark]> marks;
+    in-out property <[PianoLegend]> legend;
+    // Grid lines as path commands: bars, beats and the grid's steps.
+    in-out property <string> bar-lines;
+    in-out property <string> beat-lines;
+    in-out property <string> sub-lines;
+    // The loop, in the grid's pixels, and the playhead (below 0: hidden).
+    in-out property <length> loop-x;
+    in-out property <length> loop-w;
+    in-out property <length> playhead: -1px;
+
+    // Clip column.
+    in-out property <string> start-text;
+    in-out property <string> length-text;
+    in-out property <bool> draw;
+    in-out property <bool> highlight: true;
+    in-out property <string> root-name;
+    in-out property <string> scale-name;
+    in-out property <[string]> root-names;
+    in-out property <[string]> scale-names;
+    // 0 Off, 1 Track, 2 All.
+    in-out property <int> ghost-mode: 1;
+
+    // Above the keys.
+    in-out property <bool> hear: true;
+    // 0 Off, 1 Scale, 2 Used.
+    in-out property <int> fold;
+    in-out property <string> grid-label: "1/16";
+    in-out property <bool> snap: true;
+    in-out property <bool> triplet;
+    // The grid ticked in the snap menu: one of the two is -1.
+    in-out property <int> adaptive: 2;
+    in-out property <int> fixed: -1;
+
+    // The grid area's size, for Rust to lay out rows and notes.
+    callback resized(length, length);
+    // Wheel over the grid: sideways, down, zoom (⌘ or Ctrl held), the
+    // pointer's x for zooming around it.
+    callback scroll(length, length, bool, length);
+    callback set-fold(int);
+    callback set-ghosts(int);
+    callback set-draw(bool);
+    callback toggle-highlight();
+    callback toggle-hear();
+    callback pick-root(int);
+    callback pick-scale(int);
+    // Snap menu: 0 adaptive (index), 1 fixed (index), 2 snap on/off,
+    // 3 triplet, 4 narrow, 5 widen.
+    callback grid(int, int);
+    // Quantize, Legato, Transpose −, Transpose +, Reverse, ×2, ÷2.
+    callback tool(int);
+    // 0 loop start, 1 length; -1 or +1.
+    callback nudge(int, int);
+    callback close();
+    callback pop-out();
+}
+
+// A row of buttons, one lit.
+component Seg inherits HorizontalLayout {
+    in property <[string]> options;
+    in property <int> current;
+    callback picked(int);
+    spacing: 1px;
+    for o[i] in root.options: Rectangle {
+        height: 18px;
+        min-width: t.preferred-width + 12px;
+        border-radius: 2px;
+        background: i == root.current ? Theme.accent : (ta.has-hover ? Theme.slot-hover : Theme.slot);
+        t := Text {
+            text: o;
+            color: i == root.current ? #101112 : Theme.text;
+            font-size: 10.5px;
+            font-weight: i == root.current ? 600 : 400;
+        }
+        ta := TouchArea { clicked => { root.picked(i); } }
+    }
+}
+
+// A small button.
+component Btn inherits Rectangle {
+    in property <string> label;
+    in property <bool> on;
+    callback clicked;
+    height: 18px;
+    min-width: t.preferred-width + 12px;
+    border-radius: 2px;
+    background: on ? Theme.accent : (ta.has-hover ? Theme.slot-hover : Theme.slot);
+    t := Text {
+        text: root.label;
+        color: root.on ? #101112 : Theme.text;
+        font-size: 10.5px;
+        font-weight: root.on ? 600 : 400;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A value with − and + on either side.
+component Stepper inherits HorizontalLayout {
+    in property <string> value;
+    callback step(int);
+    spacing: 1px;
+    height: 18px;
+    Btn { width: 16px; label: "−"; clicked => { root.step(-1); } }
+    Rectangle {
+        background: Theme.slot;
+        border-radius: 2px;
+        Text { text: root.value; color: Theme.text; font-size: 10.5px; }
+    }
+    Btn { width: 16px; label: "+"; clicked => { root.step(1); } }
+}
+
+component Dim inherits Text {
+    color: Theme.dim;
+    font-size: 10.5px;
+}
+
+// A line of the snap menu with a tick and a shortcut.
+component MenuItem inherits Rectangle {
+    in property <string> label;
+    in property <string> keys;
+    in property <bool> ticked;
+    callback clicked;
+    height: 22px;
+    background: ta.has-hover ? Theme.select : transparent;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 4px;
+        Text { width: 12px; text: root.ticked ? "✓" : ""; color: Theme.accent; font-size: 11px; vertical-alignment: center; }
+        Text { text: root.label; color: Theme.text; font-size: 11.5px; vertical-alignment: center; horizontal-stretch: 1; }
+        Text { text: root.keys; color: Theme.dim; font-size: 10.5px; vertical-alignment: center; }
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A grid size in the snap menu.
+component GridCell inherits Rectangle {
+    in property <string> label;
+    in property <bool> ticked;
+    callback clicked;
+    height: 20px;
+    background: ta.has-hover ? Theme.select : transparent;
+    Text {
+        x: 2px;
+        text: (root.ticked ? "✓ " : "") + root.label;
+        color: root.ticked ? Theme.accent : Theme.text;
+        font-size: 11.5px;
+        font-weight: root.ticked ? 600 : 400;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// The grid button's menu: Live's snap section of the right-click menu.
+component SnapMenu inherits Rectangle {
+    width: 290px;
+    background: Theme.panel-2;
+    border-width: 1px;
+    border-color: #3a3d41;
+    border-radius: 4px;
+    drop-shadow-blur: 16px;
+    drop-shadow-color: #00000080;
+    VerticalLayout {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        MenuItem { label: "Snap to Grid"; keys: "⌘4"; ticked: Piano.snap; clicked => { Piano.grid(2, 0); } }
+        Dim { text: "Adaptive grid"; height: 20px; vertical-alignment: center; x: 10px; }
+        HorizontalLayout {
+            padding-left: 26px;
+            padding-right: 10px;
+            VerticalLayout {
+                for row in 2: HorizontalLayout {
+                    for col in 3: GridCell {
+                        width: (290px - 36px) / 3;
+                        property <int> i: row * 3 + col;
+                        label: ["Widest", "Wide", "Medium", "Narrow", "Narrowest", ""][self.i];
+                        ticked: Piano.adaptive == self.i;
+                        visible: self.i < 5;
+                        clicked => { Piano.grid(0, self.i); }
+                    }
+                }
+            }
+        }
+        Dim { text: "Fixed grid"; height: 20px; vertical-alignment: center; x: 10px; }
+        HorizontalLayout {
+            padding-left: 26px;
+            padding-right: 10px;
+            VerticalLayout {
+                for row in 2: HorizontalLayout {
+                    for col in 5: GridCell {
+                        width: (290px - 36px) / 5;
+                        property <int> i: row * 5 + col;
+                        label: ["8 Bars", "4 Bars", "2 Bars", "1 Bar", "1/2", "1/4", "1/8", "1/16", "1/32", ""][self.i];
+                        ticked: Piano.fixed == self.i;
+                        visible: self.i < 9;
+                        clicked => { Piano.grid(1, self.i); }
+                    }
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.line; }
+        MenuItem { label: "Narrow Grid"; keys: "⌘1"; clicked => { Piano.grid(4, 0); } }
+        MenuItem { label: "Widen Grid"; keys: "⌘2"; clicked => { Piano.grid(5, 0); } }
+        Rectangle { height: 1px; background: Theme.line; }
+        MenuItem { label: "Triplet Grid"; keys: "⌘3"; ticked: Piano.triplet; clicked => { Piano.grid(3, 0); } }
+    }
+}
+
+// The clip's settings and the tools, left of the keys.
+component ClipColumn inherits Rectangle {
+    background: Theme.panel;
+    VerticalLayout {
+        padding: 8px;
+        spacing: 7px;
+        alignment: start;
+        HorizontalLayout {
+            spacing: 6px;
+            VerticalLayout {
+                spacing: 3px;
+                Dim { text: "Start"; }
+                Stepper { value: Piano.start-text; step(d) => { Piano.nudge(0, d); } }
+            }
+            VerticalLayout {
+                spacing: 3px;
+                Dim { text: "Length"; }
+                Stepper { value: Piano.length-text; step(d) => { Piano.nudge(1, d); } }
+            }
+        }
+        HorizontalLayout {
+            spacing: 6px;
+            alignment: start;
+            // Studio clips always loop.
+            Btn { label: "Loop"; on: true; }
+            Dim { text: "4/4"; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            alignment: start;
+            Seg {
+                options: ["Draw", "Select"];
+                current: Piano.draw ? 0 : 1;
+                picked(i) => { Piano.set-draw(i == 0); }
+            }
+        }
+        if !Piano.drums: HorizontalLayout {
+            spacing: 3px;
+            Btn { label: "Scale"; on: Piano.highlight; clicked => { Piano.toggle-highlight(); } }
+            Picker {
+                width: 40px;
+                text: Piano.root-name;
+                options: Piano.root-names;
+                picked(i) => { Piano.pick-root(i); }
+            }
+            Picker {
+                text: Piano.scale-name;
+                options: Piano.scale-names;
+                picked(i) => { Piano.pick-scale(i); }
+            }
+        }
+        VerticalLayout {
+            spacing: 3px;
+            HorizontalLayout {
+                spacing: 3px;
+                Btn { horizontal-stretch: 1; label: "Quantize"; clicked => { Piano.tool(0); } }
+                Btn { horizontal-stretch: 1; label: "Legato"; clicked => { Piano.tool(1); } }
+            }
+            HorizontalLayout {
+                spacing: 3px;
+                Btn { horizontal-stretch: 1; label: "− Transpose"; clicked => { Piano.tool(2); } }
+                Btn { horizontal-stretch: 1; label: "Transpose +"; clicked => { Piano.tool(3); } }
+            }
+            HorizontalLayout {
+                spacing: 3px;
+                Btn { horizontal-stretch: 1; label: "Reverse"; clicked => { Piano.tool(4); } }
+                Btn { horizontal-stretch: 1; label: "×2"; clicked => { Piano.tool(5); } }
+                Btn { horizontal-stretch: 1; label: "÷2"; clicked => { Piano.tool(6); } }
+            }
+        }
+        VerticalLayout {
+            spacing: 4px;
+            Dim { text: "Ghost notes"; }
+            HorizontalLayout {
+                alignment: start;
+                Seg {
+                    options: ["Off", "Track", "All"];
+                    current: Piano.ghost-mode;
+                    picked(i) => { Piano.set-ghosts(i); }
+                }
+            }
+            for g in Piano.legend: HorizontalLayout {
+                spacing: 5px;
+                VerticalLayout {
+                    alignment: center;
+                    Rectangle {
+                        width: 14px;
+                        height: 8px;
+                        border-radius: 2px;
+                        background: g.color.with-alpha(0.18);
+                        border-width: 1px;
+                        border-color: g.color.with-alpha(0.65);
+                    }
+                }
+                Dim { text: g.label; overflow: elide; horizontal-stretch: 1; }
+            }
+        }
+    }
+}
+
+// The keys, the ruler and the grid with the clip's notes.
+export component PianoRoll inherits Rectangle {
+    background: Theme.panel;
+    clip: true;
+    VerticalLayout {
+        // ------------------------------------------------- header
+        Rectangle {
+            height: 28px;
+            background: Theme.panel-2;
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 6px;
+                spacing: 8px;
+                VerticalLayout {
+                    alignment: center;
+                    Rectangle { width: 10px; height: 10px; border-radius: 2px; background: Piano.track-color; }
+                }
+                Text { text: Piano.track-name; color: Theme.text; font-size: 11px; font-weight: 600; vertical-alignment: center; }
+                Text { text: "·"; color: Theme.dim; font-size: 11px; vertical-alignment: center; }
+                Text { text: Piano.clip-name; color: Theme.text; font-size: 11px; vertical-alignment: center; horizontal-stretch: 1; overflow: elide; }
+                Text { text: Piano.sel-info; color: Theme.dim; font-size: 11px; vertical-alignment: center; }
+                VerticalLayout {
+                    alignment: center;
+                    Btn { width: 24px; label: Piano.popped ? "↙" : "↗"; clicked => { Piano.pop-out(); } }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Btn { width: 24px; label: "✕"; clicked => { Piano.close(); } }
+                }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.line; }
+        HorizontalLayout {
+            ClipColumn { width: 190px; }
+            Rectangle { width: 1px; background: Theme.line; }
+            VerticalLayout {
+                // ------------------------------------- above the keys
+                Rectangle {
+                    height: 24px;
+                    background: Theme.panel-2;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        padding-right: 8px;
+                        HorizontalLayout {
+                            width: Piano.keys-width;
+                            alignment: center;
+                            VerticalLayout {
+                                alignment: center;
+                                // Hear notes while editing.
+                                Btn { width: 26px; label: "🎧"; on: Piano.hear; clicked => { Piano.toggle-hear(); } }
+                            }
+                        }
+                        Dim { text: "Fold"; vertical-alignment: center; }
+                        VerticalLayout {
+                            alignment: center;
+                            if !Piano.drums: Seg {
+                                options: ["Off", "Scale", "Used"];
+                                current: Piano.fold;
+                                picked(i) => { Piano.set-fold(i); }
+                            }
+                            if Piano.drums: Seg {
+                                options: ["All pads", "In use"];
+                                current: Piano.fold == 2 ? 1 : 0;
+                                picked(i) => { Piano.set-fold(i == 1 ? 2 : 0); }
+                            }
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+                        VerticalLayout {
+                            alignment: center;
+                            grid-button := Rectangle {
+                                height: 18px;
+                                width: grid-text.preferred-width + 18px;
+                                border-radius: 2px;
+                                border-width: 1px;
+                                border-color: Theme.line;
+                                background: gb.has-hover ? Theme.slot-hover : Theme.slot;
+                                grid-text := Text {
+                                    text: Piano.grid-label + " ▾";
+                                    color: Theme.text;
+                                    font-size: 10.5px;
+                                }
+                                gb := TouchArea { clicked => { snap-menu.show(); } }
+                                snap-menu := PopupWindow {
+                                    x: grid-button.width - 290px;
+                                    y: grid-button.height + 3px;
+                                    SnapMenu { }
+                                }
+                            }
+                        }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.line; }
+                // ------------------------------------------- ruler
+                HorizontalLayout {
+                    height: 18px;
+                    Rectangle { width: Piano.keys-width; background: Theme.panel-2; }
+                    Rectangle {
+                        background: Theme.panel-2;
+                        clip: true;
+                        if Piano.loop-w > 0: Rectangle {
+                            x: Piano.loop-x;
+                            y: 0;
+                            width: Piano.loop-w;
+                            height: 3px;
+                            background: Theme.accent;
+                        }
+                        for m in Piano.marks: Text {
+                            x: m.x + 3px;
+                            y: 4px;
+                            text: m.label;
+                            color: Theme.dim;
+                            font-size: 10px;
+                        }
+                        for m in Piano.marks: Rectangle {
+                            x: m.x;
+                            y: parent.height - 5px;
+                            width: 1px;
+                            height: 5px;
+                            background: Theme.faint;
+                        }
+                        TouchArea {
+                            scroll-event(e) => {
+                                Piano.scroll(e.delta-x, e.delta-y, true, self.mouse-x);
+                                accept
+                            }
+                        }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.line; }
+                // -------------------------------------- keys + grid
+                HorizontalLayout {
+                    // Keys, or a Drum Rack's pad names.
+                    Rectangle {
+                        width: Piano.keys-width;
+                        background: Theme.bg;
+                        clip: true;
+                        for r in Piano.rows: Rectangle {
+                            y: r.y;
+                            height: r.h;
+                            background: Piano.drums ? Theme.slot : (r.black ? #2a2c2f : #e3e1ea);
+                            Rectangle { y: parent.height - 1px; height: 1px; background: #121314; }
+                            if !Piano.drums && Piano.highlight && r.in-scale: Rectangle {
+                                x: parent.width - 4px;
+                                width: 4px;
+                                background: r.root ? Theme.accent : Theme.accent-dark;
+                            }
+                            Text {
+                                x: Piano.drums ? 6px : 2px;
+                                width: parent.width - (Piano.drums ? 10px : 8px);
+                                text: r.label;
+                                color: Piano.drums || r.black ? Theme.text : #101112;
+                                font-size: Piano.drums ? 11px : 9px;
+                                horizontal-alignment: Piano.drums ? left : right;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                        TouchArea {
+                            scroll-event(e) => {
+                                Piano.scroll(0, e.delta-y, false, 0);
+                                accept
+                            }
+                        }
+                    }
+                    Rectangle { width: 1px; background: Theme.line; }
+                    grid := Rectangle {
+                        background: #141516;
+                        clip: true;
+                        init => { Piano.resized(self.width, self.height); }
+                        changed width => { Piano.resized(self.width, self.height); }
+                        changed height => { Piano.resized(self.width, self.height); }
+                        for r in Piano.rows: Rectangle {
+                            y: r.y;
+                            height: r.h;
+                            background: Piano.drums
+                                ? #1b1d1f
+                                : (Piano.highlight
+                                    ? (r.root ? #221f2b : (r.in-scale ? #1b1d1f : #141516))
+                                    : (r.black ? #161718 : #1b1d1f));
+                            Rectangle { y: parent.height - 1px; height: 1px; background: #121314; }
+                        }
+                        // Darker outside the loop.
+                        if Piano.loop-x > 0: Rectangle {
+                            x: 0;
+                            width: Piano.loop-x;
+                            background: #00000050;
+                        }
+                        Rectangle {
+                            x: max(0px, Piano.loop-x + Piano.loop-w);
+                            width: max(0px, parent.width - self.x);
+                            background: #00000050;
+                        }
+                        if Piano.sub-lines != "": Path {
+                            width: parent.width;
+                            height: parent.height;
+                            viewbox-width: self.width / 1px;
+                            viewbox-height: self.height / 1px;
+                            commands: Piano.sub-lines;
+                            stroke: #1f2123;
+                            stroke-width: 1px;
+                        }
+                        if Piano.beat-lines != "": Path {
+                            width: parent.width;
+                            height: parent.height;
+                            viewbox-width: self.width / 1px;
+                            viewbox-height: self.height / 1px;
+                            commands: Piano.beat-lines;
+                            stroke: #2a2d30;
+                            stroke-width: 1px;
+                        }
+                        if Piano.bar-lines != "": Path {
+                            width: parent.width;
+                            height: parent.height;
+                            viewbox-width: self.width / 1px;
+                            viewbox-height: self.height / 1px;
+                            commands: Piano.bar-lines;
+                            stroke: #3b3e42;
+                            stroke-width: 1px;
+                        }
+                        for g in Piano.ghosts: Rectangle {
+                            x: g.x + 1px;
+                            y: g.y + 1px;
+                            width: max(2px, g.w - 2px);
+                            height: max(2px, g.h - 2px);
+                            border-radius: 2px;
+                            background: g.color.with-alpha(0.16);
+                            border-width: 1px;
+                            border-color: g.color.with-alpha(0.6);
+                        }
+                        for n in Piano.notes: Rectangle {
+                            x: n.x + 1px;
+                            y: n.y + 1px;
+                            width: max(2px, n.w - 2px);
+                            height: max(2px, n.h - 2px);
+                            border-radius: 2px;
+                            background: n.muted ? Theme.faint : n.color;
+                            border-width: 1px;
+                            border-color: n.selected ? #ffffff : #00000073;
+                            opacity: n.outside ? 0.45 : 1;
+                        }
+                        if Piano.playhead >= 0: Rectangle {
+                            x: Piano.playhead;
+                            width: 1px;
+                            background: Theme.queued;
+                        }
+                        TouchArea {
+                            scroll-event(e) => {
+                                Piano.scroll(e.delta-x, e.delta-y,
+                                    e.modifiers.control || e.modifiers.meta, self.mouse-x);
+                                accept
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// The piano roll popped out into its own window.
+export component PianoWindow inherits Window {
+    title: Piano.track-name + " · " + Piano.clip-name;
+    preferred-width: 1200px;
+    preferred-height: 520px;
+    min-width: 700px;
+    min-height: 280px;
+    background: Theme.bg;
+    callback undo(bool);
+    FocusScope {
+        key-pressed(e) => {
+            if (e.modifiers.control || e.modifiers.meta) && (e.text == "z" || e.text == "Z") {
+                root.undo(e.modifiers.shift);
+                return accept;
+            }
+            reject
+        }
+        PianoRoll { }
+    }
+}
