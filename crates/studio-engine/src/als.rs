@@ -1335,20 +1335,19 @@ fn midi_clip(c: Node) -> Option<Clip> {
             .descendants()
             .filter(|n| n.has_tag_name("MidiNoteEvent"))
         {
-            if e.attribute("IsEnabled") == Some("false") {
-                continue;
-            }
             notes.push(Note {
-                start: attr(e, "Time").unwrap_or(0.0) - start,
+                start: attr(e, "Time").unwrap_or(0.0),
                 length: attr(e, "Duration").unwrap_or(0.25),
                 pitch,
                 velocity: (attr(e, "Velocity").unwrap_or(100.0) / 127.0).clamp(0.0, 1.0) as f32,
                 chance: attr(e, "Probability").unwrap_or(1.0).clamp(0.0, 1.0) as f32,
+                muted: e.attribute("IsEnabled") == Some("false"),
             });
         }
     }
-    Some(Clip::new(
+    Some(Clip::with_loop(
         if name.is_empty() { "MIDI" } else { &name },
+        start,
         beats,
         notes,
     ))
@@ -1874,10 +1873,13 @@ mod tests {
         let clip = kit.slots[0].as_ref().unwrap();
         assert_eq!(
             (clip.name.as_str(), clip.beats, clip.notes.len()),
-            ("MIDI", 4.0, 2)
+            ("MIDI", 4.0, 3)
         );
         assert_eq!(clip.notes[1].chance, 0.5);
         assert_eq!(clip.notes[0].velocity, 1.0);
+        // A deactivated note is kept, silent.
+        assert!(clip.notes[2].muted && !clip.notes[1].muted);
+        assert_eq!(clip.playable().notes.len(), 2);
     }
 
     #[test]

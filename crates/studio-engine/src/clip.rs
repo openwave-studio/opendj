@@ -15,6 +15,26 @@ pub struct Note {
     pub velocity: f32,
     /// The chance it plays each time round, 0..1.
     pub chance: f32,
+    /// Deactivated: kept in the clip but silent.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub muted: bool,
+}
+
+impl Note {
+    pub fn new(start: f64, length: f64, pitch: u8, velocity: f32) -> Note {
+        Note {
+            start,
+            length,
+            pitch,
+            velocity,
+            chance: 1.0,
+            muted: false,
+        }
+    }
+
+    pub fn end(&self) -> f64 {
+        self.start + self.length
+    }
 }
 
 /// Where a stage clip sets the instrument's knobs: each lock or, for
@@ -33,7 +53,11 @@ pub struct Clip {
     pub name: String,
     /// Loop length in beats.
     pub beats: f64,
-    /// Sorted by start.
+    /// Where the loop starts, in beats from the clip's start (note clips
+    /// only). Notes before or after the loop stay in the clip, silent.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub loop_start: f64,
+    /// Sorted by start, in beats from the clip's start.
     pub notes: Vec<Note>,
     /// Knob changes by stage (stage clips only), sorted by start.
     pub locks: Vec<Lock>,
@@ -87,6 +111,7 @@ impl Clip {
         Clip {
             name: name.to_string(),
             beats,
+            loop_start: 0.0,
             notes,
             locks: Vec::new(),
             stage_starts: Vec::new(),
@@ -94,6 +119,52 @@ impl Clip {
             audio: None,
         }
     }
+}
+
+impl Clip {
+    /// A note clip whose loop starts `loop_start` beats in; notes outside
+    /// the loop are kept.
+    pub fn with_loop(name: &str, loop_start: f64, beats: f64, mut notes: Vec<Note>) -> Clip {
+        notes.retain(|n| n.start >= 0.0 && n.length > 0.0);
+        notes.sort_by(|a, b| a.start.total_cmp(&b.start));
+        let mut clip = Clip::new(name, f64::INFINITY, notes);
+        clip.beats = beats;
+        clip.loop_start = loop_start.max(0.0);
+        clip
+    }
+
+    /// The clip as the audio thread plays it: its loop from beat 0, with
+    /// deactivated notes and notes outside the loop left out. Stage and
+    /// audio clips come back as they are.
+    pub fn playable(&self) -> Clip {
+        if self.stages.is_some() || self.audio.is_some() {
+            return self.clone();
+        }
+        let (lo, hi) = (self.loop_start, self.loop_start + self.beats);
+        let notes = self
+            .notes
+            .iter()
+            .filter(|n| !n.muted && n.start >= lo - 1e-9 && n.start < hi - 1e-9)
+            .map(|n| Note {
+                start: (n.start - lo).max(0.0),
+                ..*n
+            })
+            .collect();
+        Clip {
+            name: self.name.clone(),
+            beats: self.beats,
+            loop_start: 0.0,
+            notes,
+            locks: self.locks.clone(),
+            stage_starts: self.stage_starts.clone(),
+            stages: None,
+            audio: None,
+        }
+    }
+}
+
+fn is_zero(v: &f64) -> bool {
+    *v == 0.0
 }
 
 /// What plays a track's notes.
@@ -345,6 +416,7 @@ fn n(start: f64, length: f64, pitch: u8, velocity: f32) -> Note {
         pitch,
         velocity,
         chance: 1.0,
+        muted: false,
     }
 }
 
@@ -652,5 +724,38 @@ mod tests {
         assert_eq!(c.notes.len(), 2);
         assert_eq!(c.notes[1].start, 1.0);
         assert_eq!(c.notes[1].velocity, 0.55);
+    }
+
+    #[test]
+    fn plays_its_loop_without_deactivated_notes() {
+        let mut muted = Note::new(2.5, 0.25, 64, 1.0);
+        muted.muted = true;
+        let notes = vec![
+            Note::new(0.0, 1.0, 60, 1.0), // before the loop
+            Note::new(2.0, 0.5, 62, 1.0),
+            muted,
+            Note::new(5.75, 0.25, 65, 1.0),
+            Note::new(6.0, 0.25, 67, 1.0), // after it
+        ];
+        let clip = Clip::with_loop("c", 2.0, 4.0, notes);
+        assert_eq!(clip.notes.len(), 5);
+        let p = clip.playable();
+        let at: Vec<(f64, u8)> = p.notes.iter().map(|n| (n.start, n.pitch)).collect();
+        assert_eq!(at, vec![(0.0, 62), (3.75, 65)]);
+        assert_eq!((p.beats, p.loop_start), (4.0, 0.0));
+    }
+
+    #[test]
+    fn saves_new_fields_only_when_set() {
+        let clip = Clip::new("c", 4.0, vec![Note::new(0.0, 1.0, 60, 1.0)]);
+        let text = serde_json::to_string(&clip).unwrap();
+        assert!(!text.contains("muted") && !text.contains("loop_start"));
+        let back: Clip = serde_json::from_str(&text).unwrap();
+        assert_eq!(back.notes, clip.notes);
+        let mut c2 = Clip::with_loop("c", 1.0, 4.0, clip.notes.clone());
+        c2.notes[0].muted = true;
+        let back: Clip = serde_json::from_str(&serde_json::to_string(&c2).unwrap()).unwrap();
+        assert!(back.notes[0].muted);
+        assert_eq!(back.loop_start, 1.0);
     }
 }

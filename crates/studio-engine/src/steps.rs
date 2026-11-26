@@ -189,6 +189,7 @@ impl Stages {
                 pitch: s.pitch(sound, key),
                 velocity: s.velocity,
                 chance: s.chance,
+                muted: false,
             };
             let first = (0..s.pulses).find(|&p| s.gate(p));
             match (s.tie, first) {

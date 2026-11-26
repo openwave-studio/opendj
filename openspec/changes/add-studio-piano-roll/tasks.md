@@ -2,8 +2,8 @@
 
 ## 1. Engine
 
-- [ ] 1.1 `Note::muted` and `Clip::loop_start`, read from Live sets (disabled notes kept, loop start kept), saved in Studio sets, skipped or honoured when a clip compiles
-- [ ] 1.2 `note_edit`: grid (adaptive, fixed, triplet) and snap; move and resize with relative and absolute snap; quantize (grid, start/end, amount, swing), legato, transpose, reverse, ×2 and ÷2, chop on grid, join, duplicate, invert selection, paste; unit tests
+- [x] 1.1 `Note::muted` and `Clip::loop_start`, read from Live sets (disabled notes kept, loop start kept), saved in Studio sets, skipped or honoured when a clip compiles
+- [x] 1.2 `note_edit`: grid (adaptive, fixed, triplet) and snap; move and resize with relative and absolute snap; quantize (grid, start/end, amount, swing), legato, transpose, reverse, ×2 and ÷2, chop on grid, join, duplicate, invert selection, paste; unit tests
 
 ## 2. The panel
 
