@@ -52,6 +52,10 @@ KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
 // below: from these, one set for each of its 4 pages (< > step them, as
 // they step the deck's knob page).
 KompleteKontrolM32.KNOB_CCS = [14, 22, 102, 110];
+// A HID knob count moves 8 at a time, so each one would jump the knob:
+// what it turns glides there instead, GLIDE of the rest every GLIDE_MS.
+KompleteKontrolM32.GLIDE = 0.35;
+KompleteKontrolM32.GLIDE_MS = 10;
 // How long after a knob moves over HID its MIDI controllers are left alone.
 KompleteKontrolM32.HID_KNOBS_HOLD_MS = 5000;
 // The most one knob message moves its count, turning fast.
@@ -68,10 +72,12 @@ KompleteKontrolM32.init = function(_id) {
     this.coverAt = 0;
     this.drawnAt = 0;
     this.hidKnobsAt = -Infinity;
+    this.gliding = new Array(KeyboardInstrument.KNOBS).fill(0);
+    this.glideTimer = engine.beginFastTimer(this.GLIDE_MS, () => this.glide());
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
-    this.timer = engine.beginTimer(50, () => this.refresh());
+    this.timer = engine.beginTimer(25, () => this.refresh());
     // The M32 writes its own "Template 1" over the screen at times (in its
     // MIDI mode): draw all of it again now and then.
     this.redrawTimer = engine.beginTimer(1000, () => {
@@ -83,6 +89,7 @@ KompleteKontrolM32.init = function(_id) {
 KompleteKontrolM32.shutdown = function() {
     engine.stopTimer(this.timer);
     engine.stopTimer(this.redrawTimer);
+    engine.stopTimer(this.glideTimer);
     controller.sendOutputReport(0x80, new Array(this.LIGHTS).fill(0), true);
     this.sendHalf(0, new Array(256).fill(0xff));
     this.sendHalf(1, new Array(256).fill(0xff));
@@ -123,7 +130,7 @@ KompleteKontrolM32.incomingData = function(data, _length) {
         if (now !== before) {
             this.hidKnobsAt = Date.now();
             const delta = ((now - before + 1500) % 1000) - 500;
-            KeyboardInstrument.turnKnob(k, delta * (fine ? this.FINE_PER_COUNT : this.PER_COUNT));
+            this.gliding[k] += delta * (fine ? this.FINE_PER_COUNT : this.PER_COUNT);
         }
     }
     const now = data[this.ENCODER_BYTE];
@@ -174,6 +181,19 @@ KompleteKontrolM32.incomingMidi = function(status, control, value) {
 // value too, as openDJ keeps its count): draw the screen again once
 // COVER_AFTER_MS after the last one.
 KompleteKontrolM32.COVER_AFTER_MS = 300;
+// Turn each knob part of the way still to go.
+KompleteKontrolM32.glide = function() {
+    for (let k = 0; k < this.gliding.length; k++) {
+        const left = this.gliding[k];
+        if (left === 0) {
+            continue;
+        }
+        const step = Math.abs(left) < 0.002 ? left : left * this.GLIDE;
+        this.gliding[k] = left - step;
+        KeyboardInstrument.turnKnob(k, step);
+    }
+};
+
 KompleteKontrolM32.coverTemplate = function() {
     this.coverAt = Date.now() + this.COVER_AFTER_MS;
 };
@@ -183,8 +203,8 @@ KompleteKontrolM32.press = function(b) {
     const K = KeyboardInstrument;
     const shift = this.held[B.SHIFT];
     switch (b) {
-    case B.LEFT: K.stepPage(-1); this.coverTemplate(); break;
-    case B.RIGHT: K.stepPage(1); this.coverTemplate(); break;
+    case B.LEFT: this.gliding.fill(0); K.stepPage(-1); this.coverTemplate(); break;
+    case B.RIGHT: this.gliding.fill(0); K.stepPage(1); this.coverTemplate(); break;
     case B.PRESET_UP: K.stepPreset(-1); break;
     case B.PRESET_DOWN: K.stepPreset(1); break;
     case B.PLAY: K.play(); break;
@@ -258,6 +278,8 @@ KompleteKontrolM32.syncKnobCcs = function() {
 // write holds up reading the knobs, so drawing on each knob report would
 // pile reports up and the knobs would run on after they stop.
 KompleteKontrolM32.DRAW_EVERY_MS = 100;
+// With the knobs over HID nothing draws over the screen: draw more often.
+KompleteKontrolM32.HID_DRAW_EVERY_MS = 40;
 KompleteKontrolM32.refresh = function() {
     this.sendLights();
     this.syncKnobCcs();
@@ -268,7 +290,8 @@ KompleteKontrolM32.refresh = function() {
         this.drawnAt = 0;
     }
     // Not while the M32's own readout is up.
-    if (this.coverAt || now - this.drawnAt < this.DRAW_EVERY_MS) {
+    const every = now - this.hidKnobsAt < this.HID_KNOBS_HOLD_MS ? this.HID_DRAW_EVERY_MS : this.DRAW_EVERY_MS;
+    if (this.coverAt || now - this.drawnAt < every) {
         return;
     }
     this.drawnAt = now;
