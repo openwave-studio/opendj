@@ -92,7 +92,15 @@ pub struct Program {
 impl Program {
     pub fn compile(tracks: &[Track]) -> Box<Program> {
         Box::new(Program {
-            tracks: tracks.iter().map(|t| t.slots.clone()).collect(),
+            tracks: tracks
+                .iter()
+                .map(|t| {
+                    t.slots
+                        .iter()
+                        .map(|s| s.as_ref().map(Clip::playable))
+                        .collect()
+                })
+                .collect(),
         })
     }
 
@@ -2263,6 +2271,7 @@ mod tests {
                     pitch,
                     velocity: 1.0,
                     chance: 1.0,
+                    muted: false,
                 }],
             ))
         };

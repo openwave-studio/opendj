@@ -23,7 +23,8 @@
 //   METRO / TEMPO      the instrument deck's metronome / tap tempo
 //   ARP / SCALE        arpeggiator / scale (Auto) on or off; SHIFT + ARP: hold
 //   IDEAS / UNDO       a new random pattern (Dice) / undo it
-//   PLUG-IN            the instrument's own window
+//   PLUG-IN            the instrument's own window (SHIFT + PLUG-IN, MIDI,
+//                      and SHIFT + TRACK, INSTANCE, are left to the M32)
 //   4-D encoder        turn: browse instruments, then presets; press: open
 //                      or load; SHIFT + press or LEFT: back; UP / DOWN step
 //   BROWSER / TRACK    open / close the browser
@@ -47,9 +48,14 @@ KompleteKontrolM32.ENCODER_BYTE = 24;
 KompleteKontrolM32.PER_COUNT = 0.002;
 KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
 // In the M32's own MIDI mode ("Template 1" on its screen) knobs 1-8 send
-// these controllers on its MIDI port instead, which openDJ hands to
-// incomingMidi below.
-KompleteKontrolM32.FIRST_KNOB_CC = 22;
+// controllers on its MIDI port instead, which openDJ hands to incomingMidi
+// below: from these, one set for each of its 4 pages (< > step them, as
+// they step the deck's knob page).
+KompleteKontrolM32.KNOB_CCS = [14, 22, 102, 110];
+// How long after a knob moves over HID its MIDI controllers are left alone.
+KompleteKontrolM32.HID_KNOBS_HOLD_MS = 5000;
+// The most one knob message moves its count, turning fast.
+KompleteKontrolM32.MAX_CC_STEP = 16;
 
 KompleteKontrolM32.OFF = 0x00;
 KompleteKontrolM32.DIM = 0x10;
@@ -59,6 +65,9 @@ KompleteKontrolM32.init = function(_id) {
     KeyboardInstrument.init();
     this.last = null;
     this.ccs = [];
+    this.coverAt = 0;
+    this.drawnAt = 0;
+    this.hidKnobsAt = -Infinity;
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
@@ -112,6 +121,7 @@ KompleteKontrolM32.incomingData = function(data, _length) {
         const now = data[o] | (data[o + 1] << 8);
         const before = last[o] | (last[o + 1] << 8);
         if (now !== before) {
+            this.hidKnobsAt = Date.now();
             const delta = ((now - before + 1500) % 1000) - 500;
             KeyboardInstrument.turnKnob(k, delta * (fine ? this.FINE_PER_COUNT : this.PER_COUNT));
         }
@@ -134,13 +144,23 @@ KompleteKontrolM32.incomingData = function(data, _length) {
 // at each end): the change from the one before turns the instrument's
 // knob, so the two never jump to match each other.
 KompleteKontrolM32.incomingMidi = function(status, control, value) {
-    const k = control - this.FIRST_KNOB_CC;
-    if ((status & 0xf0) !== 0xb0 || k < 0 || k >= KeyboardInstrument.KNOBS) {
+    const first = this.KNOB_CCS.find(c => control >= c && control < c + KeyboardInstrument.KNOBS);
+    if ((status & 0xf0) !== 0xb0 || first === undefined) {
         return;
     }
-    const before = this.ccs[k];
-    this.ccs[k] = value;
-    if (before === undefined || before === value) {
+    const k = control - first;
+    // With NI's host agent running the knobs come over HID (above), and
+    // any controllers they also send here are the same turn.
+    if (Date.now() - this.hidKnobsAt < this.HID_KNOBS_HOLD_MS) {
+        this.ccs[control] = value;
+        return;
+    }
+    this.coverTemplate();
+    const before = this.ccs[control];
+    this.ccs[control] = value;
+    // A jump means the M32's count isn't where openDJ last put it: start
+    // from here.
+    if (before === undefined || before === value || Math.abs(value - before) > this.MAX_CC_STEP) {
         return;
     }
     const fine = this.held[this.B.SHIFT];
@@ -148,13 +168,23 @@ KompleteKontrolM32.incomingMidi = function(status, control, value) {
     this.refresh();
 };
 
+// In its MIDI mode the M32 shows its own "Template 1" readout as soon as a
+// knob turns or < > is pressed. Drawing over it while the knob turns only
+// flickers (the readout comes back with every step, and shows the knob's
+// value too, as openDJ keeps its count): draw the screen again once
+// COVER_AFTER_MS after the last one.
+KompleteKontrolM32.COVER_AFTER_MS = 300;
+KompleteKontrolM32.coverTemplate = function() {
+    this.coverAt = Date.now() + this.COVER_AFTER_MS;
+};
+
 KompleteKontrolM32.press = function(b) {
     const B = this.B;
     const K = KeyboardInstrument;
     const shift = this.held[B.SHIFT];
     switch (b) {
-    case B.LEFT: K.stepPage(-1); break;
-    case B.RIGHT: K.stepPage(1); break;
+    case B.LEFT: K.stepPage(-1); this.coverTemplate(); break;
+    case B.RIGHT: K.stepPage(1); this.coverTemplate(); break;
     case B.PRESET_UP: K.stepPreset(-1); break;
     case B.PRESET_DOWN: K.stepPreset(1); break;
     case B.PLAY: K.play(); break;
@@ -178,9 +208,11 @@ KompleteKontrolM32.press = function(b) {
     case B.SCALE: K.scale(); break;
     case B.IDEAS: K.dice(); break;
     case B.UNDO: K.diceUndo(); break;
-    case B.PLUGIN: K.editor(); break;
+    // SHIFT + PLUG-IN is the M32's own MIDI (mode) button and SHIFT +
+    // TRACK its INSTANCE button: left to the keyboard and NI's agent.
+    case B.PLUGIN: if (!shift) { K.editor(); } break;
     case B.BROWSER: K.openBrowser(); break;
-    case B.TRACK: K.level = null; break;
+    case B.TRACK: if (!shift) { K.level = null; } break;
     case B.PUSH:
         if (shift) {
             K.browseBack();
@@ -197,8 +229,49 @@ KompleteKontrolM32.press = function(b) {
 };
 
 // Lights and screen, each sent only when it changed.
+// In its MIDI mode each knob keeps its own 0-127 count, which stops at the
+// ends. Sending it the deck's knob values back keeps the count where the
+// knob is (the M32 takes them on all its pages' controllers), so it stops
+// just where the knob does. With NI's agent the knobs are endless and come
+// over HID, so nothing is sent.
+KompleteKontrolM32.syncKnobCcs = function() {
+    if (Date.now() - this.hidKnobsAt < this.HID_KNOBS_HOLD_MS) {
+        return;
+    }
+    for (let k = 0; k < KeyboardInstrument.KNOBS; k++) {
+        const v = KeyboardInstrument.knobValue(k);
+        if (v === null) {
+            continue;
+        }
+        const value = Math.round(v * 127);
+        for (const first of this.KNOB_CCS) {
+            const cc = first + k;
+            if (this.ccs[cc] !== value) {
+                this.ccs[cc] = value;
+                midi.sendShortMsg(0xb0, cc, value);
+            }
+        }
+    }
+};
+
+// The screen is drawn from the timer, at most every DRAW_EVERY_MS: a screen
+// write holds up reading the knobs, so drawing on each knob report would
+// pile reports up and the knobs would run on after they stop.
+KompleteKontrolM32.DRAW_EVERY_MS = 100;
 KompleteKontrolM32.refresh = function() {
     this.sendLights();
+    this.syncKnobCcs();
+    const now = Date.now();
+    if (this.coverAt && now >= this.coverAt) {
+        this.coverAt = 0;
+        this.lastScreen = ["", ""];
+        this.drawnAt = 0;
+    }
+    // Not while the M32's own readout is up.
+    if (this.coverAt || now - this.drawnAt < this.DRAW_EVERY_MS) {
+        return;
+    }
+    this.drawnAt = now;
     this.drawScreen();
 };
 

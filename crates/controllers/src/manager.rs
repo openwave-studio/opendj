@@ -786,6 +786,8 @@ fn watch_devices(
                         }
                     };
                     let d_stop = Arc::new(AtomicBool::new(false));
+                    let agent = crate::ni_agent::needs_agent(info.vendor_id, info.product_id)
+                        .then(|| (info.product_id, info.serial.clone()));
                     let thread = {
                         let (registry, path, port, d_stop, connected, twin) = (
                             registry.clone(),
@@ -793,11 +795,19 @@ fn watch_devices(
                             port.clone(),
                             d_stop.clone(),
                             connected.clone(),
-                            shared.twin_midi.clone(),
+                            shared.clone(),
                         );
                         std::thread::Builder::new()
                             .name(format!("hid {port}"))
                             .spawn(move || {
+                                // Held while the mapping runs.
+                                let _agent = agent.map(|(product, serial)| {
+                                    crate::ni_agent::Registration::start(
+                                        product,
+                                        serial,
+                                        port.clone(),
+                                    )
+                                });
                                 run_hid(&port, &path, device, registry, &d_stop, &connected, &twin)
                             })
                             .expect("spawn controller thread")
@@ -1119,28 +1129,31 @@ fn run_device(
             return;
         }
     };
-    // The output with the same name, or failing that the closest one: some
-    // systems name the two directions slightly differently.
-    let mut out_conn = MidiOutput::new(CLIENT).ok().and_then(|output| {
-        let ports = output.ports();
-        let want = tokens(port);
-        let p = ports
-            .iter()
-            .find(|p| output.port_name(p).as_deref() == Ok(port))
-            .or_else(|| {
-                ports
-                    .iter()
-                    .find(|p| output.port_name(p).is_ok_and(|n| tokens(&n) == want))
-            })?
-            .clone();
-        output.connect(&p, "openDJ out").ok()
-    });
+    let mut out_conn = open_midi_output(port);
     let send = move |m: &[u8]| {
         if let Some(out) = out_conn.as_mut() {
             let _ = out.send(m);
         }
     };
     run_controller(port, mapping_path, own, registry, stop, connected, rx, send);
+}
+
+/// The MIDI output with the same name as input `port`, or failing that the
+/// closest one: some systems name the two directions slightly differently.
+fn open_midi_output(port: &str) -> Option<midir::MidiOutputConnection> {
+    let output = MidiOutput::new(CLIENT).ok()?;
+    let ports = output.ports();
+    let want = tokens(port);
+    let p = ports
+        .iter()
+        .find(|p| output.port_name(p).as_deref() == Ok(port))
+        .or_else(|| {
+            ports
+                .iter()
+                .find(|p| output.port_name(p).is_ok_and(|n| tokens(&n) == want))
+        })?
+        .clone();
+    output.connect(&p, "openDJ out").ok()
 }
 
 /// Runs a mapping until `stop` is set or the input ends.
@@ -1240,7 +1253,7 @@ fn run_hid(
     registry: Arc<ControlRegistry>,
     stop: &AtomicBool,
     connected: &Mutex<Vec<ConnectedController>>,
-    twin_midi: &Mutex<HashMap<String, Vec<[u8; 3]>>>,
+    shared: &Shared,
 ) {
     use hid::Io;
     let mapping = match Mapping::load(mapping_path) {
@@ -1279,6 +1292,7 @@ fn run_hid(
     };
     flush(&mut controller);
     let mut buf = [0u8; hid::BUFFER];
+    let mut midi_out = None;
     'run: while !stop.load(Ordering::Relaxed) {
         let now = Instant::now();
         let deadline = controller
@@ -1299,12 +1313,36 @@ fn run_hid(
             wait = 0;
         }
         // The knobs a keyboard sends over its MIDI port (`keys="midi"`).
-        let twin = twin_midi.lock().unwrap().remove(port).unwrap_or_default();
+        let twin = shared
+            .twin_midi
+            .lock()
+            .unwrap()
+            .remove(port)
+            .unwrap_or_default();
         for msg in twin {
             controller.receive_twin(msg);
         }
         controller.poll(Instant::now());
         flush(&mut controller);
+        // And what the mapping sends back to that MIDI port.
+        let out = controller.take_output();
+        if !out.is_empty() {
+            if midi_out.is_none() {
+                let midi_port = shared
+                    .keys_only
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|(_, hid)| hid == port)
+                    .map(|(midi, _)| midi.clone());
+                midi_out = midi_port.and_then(|p| open_midi_output(&p));
+            }
+            if let Some(conn) = midi_out.as_mut() {
+                for m in out {
+                    let _ = conn.send(&m);
+                }
+            }
+        }
     }
     controller.shutdown();
     controller.poll(Instant::now());

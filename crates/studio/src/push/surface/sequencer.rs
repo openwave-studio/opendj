@@ -104,11 +104,12 @@ impl Surface {
             return Vec::new();
         };
         let len = self.resolution();
+        let off = c.loop_start(t, s);
         notes
             .into_iter()
             .filter(|n| {
                 held.iter()
-                    .any(|&h| in_step(n, pitch, self.step_start(h), len))
+                    .any(|&h| in_step(n, pitch, off + self.step_start(h), len))
             })
             .collect()
     }
@@ -118,12 +119,14 @@ impl Surface {
         let down = velocity > 0;
         let (t, s) = c.steps_slot();
         let len = self.resolution();
+        // Steps count from the loop's start.
+        let off = c.loop_start(t, s);
         match seq_pad(index) {
             SeqPad::Step(step) => {
                 let Some(pitch) = self.drum_pitch(c) else {
                     return;
                 };
-                let start = self.step_start(step);
+                let start = off + self.step_start(step);
                 if !down {
                     self.down &= !bit;
                     let quiet = (self.used | self.added) & bit != 0;
@@ -140,7 +143,7 @@ impl Surface {
                 let first = self.held_steps().into_iter().find(|&h| h < step);
                 self.down |= bit;
                 if let Some(first) = first {
-                    let from = self.step_start(first);
+                    let from = off + self.step_start(first);
                     c.edit_notes(t, s, |clip| {
                         if !clip.notes.iter().any(|n| in_step(n, pitch, from, len)) {
                             clip.notes.push(self.new_note(from, pitch, velocity));
@@ -159,7 +162,7 @@ impl Surface {
                 let Some((beats, notes)) = c.notes(t, s) else {
                     return;
                 };
-                if start >= beats - 1e-6 {
+                if start - off >= beats - 1e-6 {
                     self.used |= bit;
                     return;
                 }
@@ -231,6 +234,7 @@ impl Surface {
                 (velocity as f32 / 127.0).max(0.05)
             },
             chance: 1.0,
+            muted: false,
         }
     }
 
@@ -242,10 +246,11 @@ impl Surface {
         };
         let (t, s) = c.steps_slot();
         let len = self.resolution();
+        let off = c.loop_start(t, s);
         let starts: Vec<f64> = self
             .held_steps()
             .iter()
-            .map(|&h| self.step_start(h))
+            .map(|&h| off + self.step_start(h))
             .collect();
         c.edit_notes(t, s, |clip| {
             let beats = clip.beats;
@@ -281,6 +286,7 @@ impl Surface {
             return Led::OFF;
         };
         let len = self.resolution();
+        let off = c.loop_start(t, s);
         let playing = m.slot(t, s) == SlotState::Playing;
         let at = playing.then(|| m.progress(t).max(0.0) as f64 * beats);
         if self.down & (1 << index) != 0 {
@@ -291,13 +297,14 @@ impl Surface {
                 let Some(pitch) = self.drum_pitch(c) else {
                     return Led::OFF;
                 };
-                let start = self.step_start(step);
-                if start >= beats - 1e-6 {
+                let rel = self.step_start(step);
+                if rel >= beats - 1e-6 {
                     return Led::OFF;
                 }
-                if at.is_some_and(|b| b >= start && b < start + len) {
+                if at.is_some_and(|b| b >= rel && b < rel + len) {
                     return Led::solid(WHITE);
                 }
+                let start = off + rel;
                 if notes.iter().any(|n| in_step(n, pitch, start, len)) {
                     Led::solid(track_color(t))
                 } else if notes.iter().any(|n| {

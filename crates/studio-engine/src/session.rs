@@ -291,6 +291,7 @@ mod tests {
                 pitch: 60,
                 velocity: 1.0,
                 chance: 1.0,
+                muted: false,
             }],
         ));
         let mut tracks = vec![Track::new("Lead", Sound::Lead, slots)];

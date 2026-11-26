@@ -25,5 +25,10 @@ rquickjs = { version = "0.14", features = ["classes", "properties", "bindgen"] }
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 hidapi = { version = "2.6", default-features = false, features = ["linux-static-hidraw", "macos-shared-device"] }
 
+# Registering with NI's host agent, which some NI keyboards need before
+# their knobs work over HID (see src/ni_agent.rs).
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation-sys = "0.8"
+
 [dev-dependencies]
 opendj-engine = { path = "../engine" }
