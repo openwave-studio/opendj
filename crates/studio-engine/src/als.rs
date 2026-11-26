@@ -902,9 +902,7 @@ fn pad(branch: Node, folder: &Path) -> Option<Pad> {
 fn simpler(d: Node) -> Option<crate::simpler::SimplerSettings> {
     let mut s = crate::simpler::SimplerSettings::default();
     let num = |p: &str| number(d, &format!("{p}/Manual")).map(|v| v as f32);
-    let part = d
-        .descendants()
-        .find(|n| n.has_tag_name("MultiSamplePart"));
+    let part = d.descendants().find(|n| n.has_tag_name("MultiSamplePart"));
     if let Some(part) = part {
         if let Some(file) = at(part, "SampleRef/FileRef") {
             s.path = Some(FOLDER.with(|f| sample_path(file, &f.borrow())));

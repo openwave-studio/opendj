@@ -76,7 +76,11 @@ impl PartialEq for SimplerSettings {
         };
         same_sample
             && self.path == o.path
-            && self.params().iter().map(|p| p.value).eq(o.params().iter().map(|p| p.value))
+            && self
+                .params()
+                .iter()
+                .map(|p| p.value)
+                .eq(o.params().iter().map(|p| p.value))
     }
 }
 
@@ -159,7 +163,13 @@ impl SimplerSettings {
             Param::knob("Vel > Vol", self.velocity, 0.0, 1.0, Unit::Percent),
             Param::knob("Cutoff", self.cutoff, 30.0, 20_000.0, Unit::Hz).log(),
             Param::knob("Resonance", self.resonance, 0.0, 1.0, Unit::Percent),
-            Param::knob("Voices", self.voices as f32, 1.0, MAX_VOICES as f32, Unit::Count),
+            Param::knob(
+                "Voices",
+                self.voices as f32,
+                1.0,
+                MAX_VOICES as f32,
+                Unit::Count,
+            ),
         ]
     }
 
@@ -533,7 +543,11 @@ mod tests {
         let mut buf = vec![[0.0f32; 2]; 24_000];
         // An octave up from the root, then a fifth down.
         s.play(&[Midi::note_on(0, 0, 72, 100)], &mut buf);
-        assert!((pitch(&buf[2_000..]) - 880.0).abs() < 5.0, "{}", pitch(&buf));
+        assert!(
+            (pitch(&buf[2_000..]) - 880.0).abs() < 5.0,
+            "{}",
+            pitch(&buf)
+        );
         let mut s = simpler(SimplerSettings::default());
         let mut buf = vec![[0.0f32; 2]; 24_000];
         s.play(&[Midi::note_on(0, 0, 53, 100)], &mut buf);

@@ -506,7 +506,10 @@ fn stolen_and_ended_notes_fade_instead_of_clicking() {
         // a cut is a step up to the whole level.
         let smooth = 0.5 * 2.0 * std::f32::consts::PI * 262.0 / RATE as f32 * 3.0;
         let worst = steepest(&out);
-        assert!(worst < smooth, "{name} clicked: step {worst} (smooth {smooth})");
+        assert!(
+            worst < smooth,
+            "{name} clicked: step {worst} (smooth {smooth})"
+        );
     }
 }
 

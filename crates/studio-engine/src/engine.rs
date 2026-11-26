@@ -2840,7 +2840,10 @@ mod tests {
         }
         // The note lasts a quarter second (half a beat at 120).
         let during = &all[2_400..9_600];
-        let ups = during.windows(2).filter(|w| w[0] <= 0.0 && w[1] > 0.0).count();
+        let ups = during
+            .windows(2)
+            .filter(|w| w[0] <= 0.0 && w[1] > 0.0)
+            .count();
         let hz = ups as f64 / (during.len() as f64 / RATE);
         assert!((hz - 440.0).abs() < 10.0, "plays at {hz} Hz");
         let after = all[15_000..].iter().fold(0.0f32, |m, v| m.max(v.abs()));

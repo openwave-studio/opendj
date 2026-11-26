@@ -1068,7 +1068,11 @@ fn browser_devices() -> (
     let mut midi = Vec::new();
     for (i, (name, s)) in devices::catalog().into_iter().enumerate() {
         if s.is_instrument() {
-            let detail = if s.plays_notes() { "sampler" } else { "hardware synth" };
+            let detail = if s.plays_notes() {
+                "sampler"
+            } else {
+                "hardware synth"
+            };
             instruments.push(item(name, 0, detail, i as i32 + 1));
         } else if s.is_midi_effect() {
             midi.push(item(name, 2, "", i as i32 + 1));
@@ -1214,7 +1218,9 @@ fn track_row(
         chain: reuse(old.map(|o| &o.chain), rows[midi_count..].to_vec()),
         plugin_instrument: devices.iter().any(|d| {
             d.plugin.as_ref().is_some_and(|p| p.instrument)
-                || d.builtin.as_ref().is_some_and(devices::Settings::plays_notes)
+                || d.builtin
+                    .as_ref()
+                    .is_some_and(devices::Settings::plays_notes)
         }),
         level: 0.0,
         volume,

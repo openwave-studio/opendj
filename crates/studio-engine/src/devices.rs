@@ -122,9 +122,12 @@ impl Param {
             self.min + n * (self.max - self.min)
         };
         match self.unit {
-            Unit::Note | Unit::Toggle | Unit::Choice(_) | Unit::Semitones | Unit::Count | Unit::Key => {
-                v.round()
-            }
+            Unit::Note
+            | Unit::Toggle
+            | Unit::Choice(_)
+            | Unit::Semitones
+            | Unit::Count
+            | Unit::Key => v.round(),
             _ => v,
         }
     }
@@ -413,7 +416,9 @@ impl Settings {
             Settings::AutoFilter(_) => Some((vec![3, 4, 5, 6, 16, 7, 8, 9, 10, 13, 14, 15], 4)),
             // Simpler: the sample's span and pitch, the envelope, then the
             // level and filter (its switches sit on the left).
-            Settings::Simpler(_) => Some((vec![3, 4, 5, 6, 11, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17], 5)),
+            Settings::Simpler(_) => {
+                Some((vec![3, 4, 5, 6, 11, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17], 5))
+            }
             _ => None,
         }
     }

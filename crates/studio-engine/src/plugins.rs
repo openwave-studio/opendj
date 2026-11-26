@@ -169,7 +169,12 @@ impl Plugins {
 
     /// Puts a new device (a Simpler made from a sample, say) in a track's
     /// chain, as a drop from the browser would.
-    pub fn drop_new(&self, to_track: usize, place: Option<usize>, device: DeviceInfo) -> Option<bool> {
+    pub fn drop_new(
+        &self,
+        to_track: usize,
+        place: Option<usize>,
+        device: DeviceInfo,
+    ) -> Option<bool> {
         let d = Dropped {
             from: From::Browser(0),
             to_track,
@@ -179,7 +184,12 @@ impl Plugins {
         self.place(d, device, None)
     }
 
-    fn place(&self, d: Dropped, device: DeviceInfo, moving: Option<(usize, usize)>) -> Option<bool> {
+    fn place(
+        &self,
+        d: Dropped,
+        device: DeviceInfo,
+        moving: Option<(usize, usize)>,
+    ) -> Option<bool> {
         let (c, p) = (&*self.controls, self);
         let track = c.tracks.get(d.to_track)?;
         let instrument = crate::control::is_instrument(&device);
