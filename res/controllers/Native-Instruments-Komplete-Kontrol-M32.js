@@ -59,6 +59,8 @@ KompleteKontrolM32.init = function(_id) {
     KeyboardInstrument.init();
     this.last = null;
     this.ccs = [];
+    this.coverUntil = 0;
+    this.coveredAt = 0;
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
@@ -138,6 +140,7 @@ KompleteKontrolM32.incomingMidi = function(status, control, value) {
     if ((status & 0xf0) !== 0xb0 || k < 0 || k >= KeyboardInstrument.KNOBS) {
         return;
     }
+    this.coverTemplate();
     const before = this.ccs[k];
     this.ccs[k] = value;
     if (before === undefined || before === value) {
@@ -148,13 +151,22 @@ KompleteKontrolM32.incomingMidi = function(status, control, value) {
     this.refresh();
 };
 
+// In its MIDI mode the M32 shows its own "Template 1" readout as soon as a
+// knob turns or < > is pressed: draw over it every 100 ms until 400 ms
+// after the last one (each full draw holds up the knobs a little).
+KompleteKontrolM32.COVER_MS = 400;
+KompleteKontrolM32.COVER_EVERY_MS = 100;
+KompleteKontrolM32.coverTemplate = function() {
+    this.coverUntil = Date.now() + this.COVER_MS;
+};
+
 KompleteKontrolM32.press = function(b) {
     const B = this.B;
     const K = KeyboardInstrument;
     const shift = this.held[B.SHIFT];
     switch (b) {
-    case B.LEFT: K.stepPage(-1); break;
-    case B.RIGHT: K.stepPage(1); break;
+    case B.LEFT: K.stepPage(-1); this.coverTemplate(); break;
+    case B.RIGHT: K.stepPage(1); this.coverTemplate(); break;
     case B.PRESET_UP: K.stepPreset(-1); break;
     case B.PRESET_DOWN: K.stepPreset(1); break;
     case B.PLAY: K.play(); break;
@@ -199,6 +211,11 @@ KompleteKontrolM32.press = function(b) {
 // Lights and screen, each sent only when it changed.
 KompleteKontrolM32.refresh = function() {
     this.sendLights();
+    const now = Date.now();
+    if (now < this.coverUntil + this.COVER_EVERY_MS && now - this.coveredAt >= this.COVER_EVERY_MS) {
+        this.coveredAt = now;
+        this.lastScreen = ["", ""];
+    }
     this.drawScreen();
 };
 

@@ -10,7 +10,9 @@ keyboard does. When the M32's screen says "Template 1" (its own MIDI
 mode), the knobs send MIDI controllers 22 to 29 on that port too: openDJ
 gives those to this mapping, so they still turn the instrument's knobs and
 not the plugin's parameters in their own way. In that mode a knob stops at
-each end of its travel, so turn it back a little if it stops. Everything else is openDJ's own mapping. Nobody has tried it
+each end of its travel, so turn it back a little if it stops. The M32 also
+flashes its own "Template 1" readout when a knob turns or ◀ ▶ is pressed;
+openDJ draws its screen back over it straight away. Everything else is openDJ's own mapping. Nobody has tried it
 on the hardware yet, so tell us how it goes.
 
 - The **8 knobs** turn the instrument's knobs on the page the deck shows.
