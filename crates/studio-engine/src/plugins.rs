@@ -137,12 +137,21 @@ impl Book {
     }
 }
 
-/// The helper binary, next to the studio's own.
+/// The helper binary: next to the studio's own, else (run from source) one
+/// built with another profile in the same target folder.
 pub fn helper_path() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
     let name = format!("opendj-plugin-host{}", std::env::consts::EXE_SUFFIX);
-    let path = exe.parent()?.join(name);
-    path.is_file().then_some(path)
+    let dir = exe.parent()?;
+    let path = dir.join(&name);
+    if path.is_file() {
+        return Some(path);
+    }
+    let target = dir.parent()?;
+    ["release", "fast", "debug"]
+        .iter()
+        .map(|profile| target.join(profile).join(&name))
+        .find(|p| p.is_file())
 }
 
 impl Plugins {
@@ -281,7 +290,7 @@ impl Plugins {
     fn first_state(&self) -> State {
         if self.helper.is_none() {
             State::Failed(
-                "Build the plug-in helper: cargo build --release -p opendj-plugin-host".into(),
+                "Build the plug-in helper: cargo build --profile fast -p opendj-plugin-host".into(),
             )
         } else {
             State::Loading

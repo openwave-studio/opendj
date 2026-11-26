@@ -11,7 +11,7 @@ cargo run --release -p opendj-studio                    # the window
 cargo run --release -p opendj-studio -- --check         # launch timing, CPU, allocations
 cargo run --release -p opendj-studio -- --render a.wav  # 32 bars through the scenes
 cargo run --release -p opendj-studio -- --link-check    # joins a Link session, checks a launch lands on its bar
-cargo build --release -p opendj-plugin-host              # the plug-in helper, once (for plug-ins)
+cargo build --release -p opendj-plugin-host              # the plug-in helper, once (any profile; for plug-ins)
 cargo run --release -p opendj-studio -- path/to/set.als # opens an Ableton Live set
 cargo run --release -p opendj-studio -- --als-info set.als # prints what a set holds
 ```
