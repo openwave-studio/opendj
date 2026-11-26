@@ -106,6 +106,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 
 - [add-phase-meter](changes/add-phase-meter/proposal.md) (a phase meter and tempo guide per deck in 2-Deck: an EARLY/LATE line with ms against the master deck, whole beats off, tempo arrows, and the beat counter moved to a strip under the overview; from a club-mode and CDJ comparison, a user request, issue #1096, 2026-11-25)
 - [add-stem-waveform-layouts](changes/add-stem-waveform-layouts/proposal.md) (the Stems waveform look as Stacked layers or 3 Lanes (drums, music, vocals) instead of overlapping stems, picked in the Wave panel; a user request after mockups, issue #1132, 2026-11-26)
+- [add-studio-piano-roll](changes/add-studio-piano-roll/proposal.md) (a piano roll for openDJ Studio's MIDI clips in the bottom panel: Live's grid and snap menu, scale highlight and folding, ghost notes from other clips, velocity and chance lanes, quantize, legato, transpose, chop and join, Live's right-click menu and shortcuts, drum rows by pad name; a user request after mockups, issue #1150, 2026-11-26)
 
 ## v1.0 · Ready for any DJ switching over
 
