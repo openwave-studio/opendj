@@ -803,9 +803,18 @@ fn komplete_kontrol_m32_plays_the_instrument_deck() {
         idle[6 + 2 * k] = 100;
     }
     c.receive_report(&idle);
+    // Knobs glide to where they're turned: give them time to get there,
+    // on a clock that only goes forward.
+    let clock = std::cell::Cell::new(Instant::now() + Duration::from_secs(1));
+    let glide = |c: &mut Controller| {
+        for _ in 0..300 {
+            clock.set(clock.get() + Duration::from_millis(1));
+            c.poll(clock.get());
+        }
+    };
     let send = |c: &mut Controller, r: &[u8]| {
         c.receive_report(r);
-        c.poll(Instant::now());
+        glide(c);
     };
     let tap = |c: &mut Controller, idle: &[u8], byte: usize, mask: u8| {
         let mut r = idle.to_vec();
@@ -814,7 +823,15 @@ fn komplete_kontrol_m32_plays_the_instrument_deck() {
         c.receive_report(idle);
         c.poll(Instant::now());
     };
-    // Knob 1 on 50 counts: a tenth of the way up.
+    // Knob 1 on 50 counts: a tenth of the way up, not all at once.
+    let mut knob = idle.clone();
+    knob[6] = 150;
+    c.receive_report(&knob);
+    c.poll(Instant::now());
+    let first = get(&reg, "[Instrument1]", "parameter1");
+    assert!(first < 0.1, "{first}");
+    send(&mut c, &idle);
+    assert!(get(&reg, "[Instrument1]", "parameter1").abs() < 1e-9);
     let mut knob = idle.clone();
     knob[6] = 150;
     send(&mut c, &knob);

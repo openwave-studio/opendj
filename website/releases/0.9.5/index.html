@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>openDJ 0.9.5 · Release notes</title>
+  <meta name="description" content="openDJ 0.9.5: a simpler instrument deck with a plugin panel, a one-column Jam source, Pure Data effects and instruments, pad tabs, HQ stems from the playhead, smoother waveforms, Windows audio fixes and Reloop, DDJ-1000 and Komplete Kontrol M32 mappings.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0e0d17">
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <meta property="og:title" content="openDJ 0.9.5 · Release notes">
+  <meta property="og:description" content="openDJ 0.9.5: a simpler instrument deck with a plugin panel, a one-column Jam source, Pure Data effects and instruments, pad tabs, HQ stems from the playhead, smoother waveforms, Windows audio fixes and Reloop, DDJ-1000 and Komplete Kontrol M32 mappings.">
+  <meta property="og:image" content="https://opendj.app/assets/og.png">
+  <meta property="og:url" content="https://opendj.app/releases/0.9.5/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/style.css?v=202611201900">
+  <link rel="stylesheet" href="/home.css?v=202611201900">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/" aria-label="openDJ home">
+      <img src="/assets/logo.svg" alt="" width="32" height="32">
+      <span class="wordmark">openDJ</span>
+    </a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="/#features">Features</a>
+      <a href="/#screenshots">Screenshots</a>
+      <a href="/docs/">Docs</a>
+      <a href="/releases/" aria-current="page">Releases</a>
+      <a href="/about/">About</a>
+      <a href="https://github.com/openwave-studio/opendj">GitHub</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="/#download">Download</a>
+  </div>
+</header>
+
+
+
+<main id="main" class="rn-page">
+  <div class="wrap">
+    <header class="rn-hero">
+      <p class="rn-kicker"><span class="soon">Test release</span> Released 26 November 2026</p>
+      <h1>openDJ 0.9.5</h1>
+      <p class="rn-lede">A test release on the way to 1.0. A tidier top bar and mixer, a phase meter for beatmatching by ear, a simpler instrument deck with a plugin panel, a one-column Jam source, a first Session preview that plays Ableton Live sets in time with your decks, Pure Data effects and instruments, HQ stems that start at the playhead, smoother waveforms, Windows audio fixes, and Reloop, DDJ-1000 and Komplete Kontrol M32 mappings.</p>
+      <p class="rn-cta"><a class="btn btn-primary" href="/#download">Download openDJ 0.9.5</a> <a href="https://github.com/openwave-studio/opendj/releases/tag/v0.9.5">Full release notes on GitHub</a></p>
+      <nav class="rn-toc" aria-label="On this page">
+        <a href="#decks">Decks</a><a href="#instruments">Instruments, Jam and Session</a><a href="#stems">Stems</a><a href="#library">Library</a><a href="#waveforms">Waveforms</a><a href="#controllers">Controllers</a><a href="#fixed">Windows and fixes</a>
+      </nav>
+    </header>
+
+    <section class="rn-area rn-noimg" id="decks">
+      <div class="rn-text">
+        <h2>Decks</h2>
+        <ul>
+          <li>A tidier <strong>top bar</strong>: one pill style, a Master pill with wider meters, the clock in its own pill, and a compact <strong>WAVE</strong> panel.</li>
+          <li>A <strong>phase meter</strong> under each 2-Deck overview: a big beat number, the countdown to the next phrase, EARLY / LATE against the master deck and tempo arrows.</li>
+          <li>The 2-Deck <strong>mixer</strong> has meters beside the faders, and a <strong>Deck options</strong> pill under each key.</li>
+          <li><strong>Pad tabs</strong>: four tabs over the pad columns again, with each page's setting under the pads.</li>
+          <li>A slimmer <strong>FX bar</strong> in two rows, with Beat FX in its own box and one Release button.</li>
+          <li>A <strong>grid editor bar</strong> under the decks in 2-Deck: grid type, BPM, downbeat, anchors, nudges and Clear.</li>
+          <li><strong>Play</strong> starts on the press, right on the beat.</li>
+          <li><strong>Pitch Color FX</strong>: the COLOR knob shifts a deck up to an octave down or up.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="instruments">
+      <div class="rn-text">
+        <h2>Instruments, Jam and Session</h2>
+        <ul>
+          <li>The <strong>instrument deck</strong>: PLAY or SEQ, eight bigger knobs, a scope with wave or spectrum, and <strong>Note FX</strong> tiles for Scale, Chord and Arp, with strum, swing and new scales.</li>
+          <li>The <strong>plugin panel</strong> shows the instrument in the browser area. OPEN on the deck opens it.</li>
+          <li><strong>Jam</strong> is one column with Presets and Instruments, search, stars and filter chips.</li>
+          <li><strong>Session</strong> (preview): File › Open Live Set… opens an Ableton Live set, and its clips launch from the Jam source in time with your decks.</li>
+          <li><strong>Pure Data</strong> patches as effects and instruments, with cyclone, ELSE and pd-lua displays (experimental).</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="stems">
+      <div class="rn-text">
+        <h2>Stems</h2>
+        <ul>
+          <li>HQ stems are ready around the playhead first, and a whole crate can be prepared at once.</li>
+          <li>The HQ cache takes a quarter less space.</li>
+          <li><strong>File › Export › Stem Files…</strong> writes NI STEM files.</li>
+          <li>Stems on tracks not at 44.1 kHz stay in line with the track.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="library">
+      <div class="rn-text">
+        <h2>Library</h2>
+        <ul>
+          <li>A <strong>Background</strong> ring and panel for analysis, HQ stems, lyrics and covers, with pause, stop and Do next.</li>
+          <li>Analysis runs several tracks at once while no deck plays, and finds lyrics as it goes.</li>
+          <li>rekordbox import finds beat grids in more libraries, and USB export fixes for Pioneer players.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="waveforms">
+      <div class="rn-text">
+        <h2>Waveforms</h2>
+        <ul>
+          <li>Waveforms and the jog marker follow the display's refresh and no longer shake.</li>
+          <li>The overview waveform shows true loudness.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="controllers">
+      <div class="rn-text">
+        <h2>Controllers</h2>
+        <ul>
+          <li><strong>Reloop</strong>: the whole current line and several older models, with pictures and guides.</li>
+          <li><strong>Pioneer DJ DDJ-1000</strong> with its jog displays, and DDJ-FLX10 fixes.</li>
+          <li><strong>Komplete Kontrol M32</strong> drives the instrument deck.</li>
+          <li>All new mappings are Beta. If you have one, tell us how it plays.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-area rn-noimg" id="fixed">
+      <div class="rn-text">
+        <h2>Windows and fixes</h2>
+        <ul>
+          <li>ASIO plays as the master output, devices are scanned once, and a missing master falls back to the default device.</li>
+          <li>Collection Health no longer hangs on large libraries.</li>
+          <li>Plugin helper crash fixes on macOS.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="rn-foot">
+      <p>Every change, fix and known limit is in the <a href="https://github.com/openwave-studio/opendj/releases/tag/v0.9.5">release notes on GitHub</a>.</p>
+      <p>Found a problem? In openDJ, choose <strong>Help › Report a Problem…</strong>: it fills in your version, computer, graphics, audio and controllers. <a href="/releases/">All releases →</a></p>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <a class="brand" href="/"><img src="/assets/logo.svg" alt="" width="28" height="28"><span class="wordmark">openDJ</span></a>
+      <p>Free, open-source DJ software for macOS, Linux and Windows.</p>
+      <p class="made">Built with love in Oakland, CA by DJ Nahuel.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/#download">Download</a>
+      <a href="/releases/">Release notes</a>
+    </div>
+    <div class="footer-col">
+      <h4>Learn</h4>
+      <a href="/docs/">Docs</a>
+      <a href="/tutorials/">Tutorials</a>
+      <a href="https://github.com/openwave-studio/opendj/issues/new/choose">Report a problem</a>
+    </div>
+    <div class="footer-col">
+      <h4>Project</h4>
+      <a href="/about/">About</a>
+      <a href="https://github.com/openwave-studio/opendj">Source code</a>
+      <a href="https://github.com/openwave-studio/opendj/blob/main/LICENSE">Licence (GPL-2.0+)</a>
+      <a href="https://github.com/openwave-studio/opendj#building-from-source">Build from source</a>
+      <a href="https://buymeacoffee.com/opendj">Buy me a coffee</a>
+    </div>
+  </div>
+  <div class="wrap fine">
+    <p>openDJ is not affiliated with or endorsed by the Mixxx project. Ableton Link is a trademark of Ableton AG. Other names are trademarks of their owners.</p>
+  </div>
+</footer>
+
+</body>
+</html>
