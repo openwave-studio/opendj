@@ -318,6 +318,18 @@ export component WaveHeightList inherits VerticalLayout {
             }
         }
     }
+    // How the stems are laid out, in place of a palette, only with Stems.
+    if WaveLook.color == 2: WaveRow {
+        title: "LAYOUT";
+        WaveSegments {
+            choices: ["Stacked", "3 Lanes"];
+            chosen: WaveLook.stem-layout;
+            picked(i) => {
+                WaveLook.pick-stem-layout(i);
+                root.picked();
+            }
+        }
+    }
     WaveRow {
         title: "NEEDLE";
         WaveSegments {

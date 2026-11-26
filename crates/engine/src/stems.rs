@@ -45,15 +45,17 @@ pub struct StemInfo {
     pub color: u32,
 }
 
-/// The names and colours of separated stems, VirtualDJ's (drums become
-/// Kick and HiHat, see [`split_drums`]); NI STEM files without their own
-/// take them too. In NI's order: drums, bass, other ("synth") and vocals.
+/// The names and colours of separated stems (drums become Kick and HiHat,
+/// see [`split_drums`]), for the stem pads and the Stems waveform: warm
+/// drums and vocals (kick red, hi-hats salmon, vocals yellow) against cool
+/// music (bass navy, instruments lilac), so stacked stems part by hue. NI
+/// STEM files without their own take them too. In NI's order: drums, bass, other ("synth") and vocals.
 pub fn default_info() -> Vec<StemInfo> {
     [
         ("Drums", KICK_COLOR),
-        ("Bass", 0xA21418),
-        ("Instru", 0xA26018),
-        ("Vocal", 0x09AD18),
+        ("Bass", 0x3E4A94),
+        ("Instru", 0xA58AE8),
+        ("Vocal", 0xF2CF6A),
     ]
     .map(|(name, color)| StemInfo {
         name: name.into(),
@@ -62,8 +64,8 @@ pub fn default_info() -> Vec<StemInfo> {
     .to_vec()
 }
 
-const KICK_COLOR: u32 = 0x2E4E75;
-const HIHAT_COLOR: u32 = 0x0960B1;
+const KICK_COLOR: u32 = 0xC9444A;
+const HIHAT_COLOR: u32 = 0xF4A08C;
 
 /// Frames per chunk, as in [`Audio`](crate::track::Audio).
 pub(crate) const CHUNK: usize = 1 << 16;
@@ -1378,7 +1380,7 @@ mod tests {
         assert_eq!(info[0].color, 0xFF0000);
         // Missing values take NI's defaults.
         assert_eq!(info[2].name, "Instru");
-        assert_eq!(info[2].color, 0xA26018);
+        assert_eq!(info[2].color, 0xA58AE8);
         assert_eq!(info[3].color, 0x0000FF);
     }
 

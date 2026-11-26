@@ -294,7 +294,7 @@ impl Settings {
 }
 
 /// A device's settings, as a set saves them (Live's own units).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Settings {
     Utility(UtilitySettings),
     Eq8(Eq8Settings),
@@ -316,7 +316,7 @@ pub enum Settings {
 /// Live's External Instrument: the track's notes go out to a hardware
 /// synth, and its sound comes back in from an input, moved earlier by the
 /// hardware's latency so it lands on the beat.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ExternalSettings {
     /// The MIDI output and channel (0..16) the notes go to.
     pub midi_to: Option<(String, u8)>,
@@ -427,10 +427,11 @@ impl Settings {
     pub fn knob_layout(&self) -> Option<(Vec<usize>, usize)> {
         match self {
             // Roar: a column per stage, input and the crossovers on the
-            // left, the output section on the right.
-            Settings::Roar(_) => {
-                Some((vec![0, 2, 3, 4, 13, 17, 6, 7, 8, 14, 18, 10, 11, 12, 15], 5))
-            }
+            // left, the output section, then the feedback on the right.
+            Settings::Roar(_) => Some((
+                vec![0, 2, 3, 4, 13, 22, 17, 6, 7, 8, 14, 23, 18, 10, 11, 12, 15],
+                6,
+            )),
             // Auto Filter: the filter's knobs, then the envelope's, then the
             // LFO's (its switches sit on the left).
             Settings::AutoFilter(_) => Some((vec![3, 4, 5, 6, 16, 7, 8, 9, 10, 13, 14, 15], 4)),
@@ -571,7 +572,7 @@ fn on(v: f32) -> bool {
 }
 
 /// Live's Utility.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct UtilitySettings {
     /// Linear gain.
     pub gain: f32,
@@ -632,7 +633,7 @@ impl UtilitySettings {
 }
 
 /// An EQ Eight band's shape, in Live's order.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Shape {
     LowCut48,
     LowCut12,
@@ -679,7 +680,7 @@ impl Shape {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Band {
     pub on: bool,
     pub shape: Shape,
@@ -701,7 +702,7 @@ impl Default for Band {
 }
 
 /// Live's EQ Eight.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Eq8Settings {
     pub bands: [Band; 8],
     /// Output gain, dB.
@@ -775,7 +776,7 @@ const SHAPE_ORDER: [Shape; 8] = [
 ];
 
 /// Live's Compressor (peak, feed-forward).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CompressorSettings {
     /// Linear level.
     pub threshold: f32,
@@ -835,6 +836,9 @@ pub enum Device {
     Simpler(Box<Simpler>),
     /// Chains side by side (see [`crate::rack`]).
     Rack(Box<Rack>),
+    /// A plug-in inside a rack: its helper joins once it's up (see
+    /// [`crate::rack::Hosted`]).
+    Plugin(Box<crate::rack::Hosted>),
     /// The input comes in before the chain runs (the engine adds it), so
     /// this only sets its level and holds the latency.
     External(ExternalSettings),
@@ -886,6 +890,7 @@ impl Device {
             Device::Simpler(x) => x.set(i, v),
             Device::Rack(r) => r.set(i, v),
             Device::External(e) => e.set(i, v),
+            Device::Plugin(_) => {}
         }
     }
 
@@ -902,6 +907,7 @@ impl Device {
         match self {
             Device::Simpler(_) => true,
             Device::Rack(r) => r.plays_notes(),
+            Device::Plugin(h) => h.instrument,
             _ => false,
         }
     }
@@ -924,6 +930,14 @@ impl Device {
     pub fn at_beat(&mut self, beat: f64) {
         if let Device::Rack(r) = self {
             r.at_beat(beat);
+        }
+    }
+
+    /// Whether the song plays, and when the block must be done by (a
+    /// rack's plug-ins have until then).
+    pub fn until(&mut self, playing: bool, deadline: std::time::Instant) {
+        if let Device::Rack(r) = self {
+            r.until(playing, deadline);
         }
     }
 
@@ -960,7 +974,7 @@ impl Device {
             Device::Limiter(l) => l.process(buf),
             Device::Saturator(s) => s.process(buf),
             Device::AutoFilter(a) => a.process(buf, tempo),
-            Device::Midi(_) | Device::Simpler(_) => {}
+            Device::Midi(_) | Device::Simpler(_) | Device::Plugin(_) => {}
             Device::Rack(r) => r.process(buf, tempo),
             Device::External(e) => {
                 let g = from_db(e.gain_db);

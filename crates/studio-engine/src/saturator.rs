@@ -21,7 +21,7 @@ pub const CURVES: &[&str] = &[
     "Digital Clip",
 ];
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SaturatorSettings {
     /// Into the curve, dB.
     pub drive_db: f32,

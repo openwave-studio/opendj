@@ -54,7 +54,7 @@ pub const NOTE_NAMES: [&str; 12] = [
 ];
 
 /// How notes are laid out on the pads.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Layout {
     /// A step right, a fourth up (Push's default).
     FourthUp,
@@ -89,7 +89,7 @@ impl Layout {
 }
 
 /// The key the pads play in and stage clips are written in.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Key {
     /// Index into [`SCALES`].
     pub scale: usize,

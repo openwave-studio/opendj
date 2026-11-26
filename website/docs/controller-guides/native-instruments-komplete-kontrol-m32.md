@@ -6,9 +6,11 @@ instrument on a deck, or turn the 4-D encoder to pick one, and play.
 
 The keys, the OCTAVE buttons, the pitch and modulation strips and a sustain
 pedal play the instrument deck over the M32's own MIDI port, as any
-keyboard does. The knobs also send MIDI controllers on that port, which
-openDJ leaves out so they don't turn the plugin's parameters in its own
-way. Everything else is openDJ's own mapping. Nobody has tried it
+keyboard does. When the M32's screen says "Template 1" (its own MIDI
+mode), the knobs send MIDI controllers 22 to 29 on that port too: openDJ
+gives those to this mapping, so they still turn the instrument's knobs and
+not the plugin's parameters in their own way. In that mode a knob stops at
+each end of its travel, so turn it back a little if it stops. Everything else is openDJ's own mapping. Nobody has tried it
 on the hardware yet, so tell us how it goes.
 
 - The **8 knobs** turn the instrument's knobs on the page the deck shows.
@@ -30,8 +32,12 @@ on the hardware yet, so tell us how it goes.
   then turn and press again to load one of its presets. **SHIFT** and press
   (or push it left) goes back. **BROWSER** opens the list and **TRACK**
   closes it. **PLUG-IN** opens the instrument's own window.
-- The screen shows the instrument and its preset, and the knob you turn
-  with its value.
+- The screen puts one thing in big letters, with smaller lines around it:
+  while you play, the preset (the instrument above it, and SEQ, REC, ARP
+  and SCALE below when they're on); while you turn a knob, its value, with
+  its name and a bar; while you browse, the one picked, with the ones
+  before and after it and its place in the list. A name too long for the
+  screen scrolls once your hands are off the controls.
 
 ## When you try it
 

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use opendj_engine::stems::Stems;
-use opendj_waveform::MAX_STEMS;
+use opendj_waveform::{StemRole, MAX_STEMS};
 
 /// Levels per second: a level every 10 ms, enough for the scrolling view.
 pub const RATE: f64 = 100.0;
@@ -23,6 +23,8 @@ type Found = HashMap<usize, (Weak<Stems>, Option<Arc<Levels>>)>;
 pub struct Levels {
     pub levels: Vec<[u8; MAX_STEMS]>,
     pub colors: Vec<u32>,
+    /// What each stem is, from its name, which places it in the Stems look.
+    pub roles: Vec<StemRole>,
     pub vocals: Option<Arc<Vec<u8>>>,
 }
 
@@ -73,6 +75,11 @@ pub fn levels(stems: &Arc<Stems>) -> Option<Arc<Levels>> {
             let levels = Levels {
                 levels: current.levels(RATE).unwrap_or_default(),
                 colors: current.info.iter().map(|i| i.color).collect(),
+                roles: current
+                    .info
+                    .iter()
+                    .map(|i| StemRole::from_name(&i.name))
+                    .collect(),
                 vocals: current.vocal_levels(RATE).map(Arc::new),
             };
             if let Some(m) = FOUND.get() {

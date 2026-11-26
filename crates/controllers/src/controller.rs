@@ -342,6 +342,22 @@ impl Controller {
         }
     }
 
+    /// A controller message from the MIDI port of a keyboard whose HID
+    /// side this mapping runs (`keys="midi"`): its knobs, in the keyboard's
+    /// own MIDI mode. The script's `incomingMidi(status, control, value)`
+    /// functions get it.
+    pub fn receive_twin(&mut self, msg: [u8; 3]) {
+        if self.debug {
+            eprintln!("{} midi -> {msg:02X?}", self.name);
+        }
+        for p in self.prefixes.clone() {
+            let f = format!("{p}.incomingMidi");
+            if self.script.has_function(&f) {
+                self.script.call_incoming_midi(&p, msg);
+            }
+        }
+    }
+
     /// HID output reports to write to the device, each starting with its
     /// report ID, oldest first.
     pub fn take_reports(&mut self) -> Vec<Vec<u8>> {

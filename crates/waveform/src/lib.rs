@@ -39,14 +39,86 @@ pub enum Style {
     /// One shape in blue, lighter where the highs are loud (rekordbox's
     /// Blue).
     Blue,
-    /// Each stem in its own colour, the loudest at the back, from the
-    /// stem levels a [`GpuTrack`] has (see [`Extras`]); [`Style::Rgb`] for a
-    /// track without them.
+    /// Each stem in its own colour, laid out as [`StemLayout`] says, from
+    /// the stem levels a [`GpuTrack`] has (see [`Extras`]); [`Style::Rgb`]
+    /// for a track without them.
     Stems,
 }
 
 /// Stems a waveform draws at most, as the engine plays them.
 pub const MAX_STEMS: usize = 5;
+
+/// How [`Style::Stems`] lays the stems out.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum StemLayout {
+    /// One waveform, the track's own shape, cut into a layer per stem that
+    /// sit one on the other from the line out (see [`StemRole`]), so no
+    /// stem hides another.
+    #[default]
+    Stacked,
+    /// A scrolling view split into three thin waveforms, from the top:
+    /// drums, music (bass and the rest) and vocals, each stacked as above.
+    /// Overviews stay [`StemLayout::Stacked`].
+    Lanes,
+}
+
+/// What a stem is, which places it: its lane in [`StemLayout::Lanes`] and
+/// its layer in [`StemLayout::Stacked`], in this order from the line out
+/// (kick and bass at the core, hats on the outside, as the highs are in the
+/// 3-Band look).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum StemRole {
+    /// The kick, or all the drums in one stem.
+    Kick,
+    Bass,
+    /// Anything else: chords, synths, guitars ("other", "instrumental").
+    Music,
+    Vocal,
+    /// Hi-hats, cymbals and the rest of the drums above the kick.
+    Hats,
+}
+
+impl StemRole {
+    /// The role a stem's name suggests (as NI STEM files, Demucs and the
+    /// engine name them); [`StemRole::Music`] for any other name.
+    pub fn from_name(name: &str) -> Self {
+        let n = name.to_ascii_lowercase();
+        let has = |words: &[&str]| words.iter().any(|w| n.contains(w));
+        if has(&["vocal", "voice", "vox", "acapella"]) {
+            Self::Vocal
+        } else if has(&["hat", "cymbal", "perc", "snare"]) {
+            Self::Hats
+        } else if has(&["kick", "drum", "beat"]) {
+            Self::Kick
+        } else if has(&["bass", "sub"]) {
+            Self::Bass
+        } else {
+            Self::Music
+        }
+    }
+
+    /// The lane it takes in [`StemLayout::Lanes`]: 0 drums, 1 music, 2 vocals.
+    pub fn lane(self) -> u32 {
+        match self {
+            Self::Kick | Self::Hats => 0,
+            Self::Bass | Self::Music => 1,
+            Self::Vocal => 2,
+        }
+    }
+}
+
+/// Each stem's lane and layer (from the line out) for the shader, from
+/// their roles: stems with the same role keep their order.
+fn stem_places(roles: &[StemRole]) -> [[f32; 4]; MAX_STEMS] {
+    let n = roles.len().min(MAX_STEMS);
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&k| (roles[k], k));
+    let mut places = [[0.0; 4]; MAX_STEMS];
+    for (layer, &k) in order.iter().enumerate() {
+        places[k] = [roles[k].lane() as f32, layer as f32, 0.0, 0.0];
+    }
+    places
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -304,6 +376,11 @@ struct Params {
     tempo_at: [[f32; 4]; MAX_TEMPOS / 4],
     tempo_value: [[u32; 4]; MAX_TEMPOS / 4],
     tempo_count: [u32; 4],
+    /// Each stem's lane (0 drums, 1 music, 2 vocals) and its layer from
+    /// the line out (see [`StemRole`]).
+    stem_place: [[f32; 4]; MAX_STEMS],
+    /// How the stems are laid out: 0 stacked, 1 in lanes.
+    stem_layout: [f32; 4],
 }
 
 /// The colours [`MarkKind::Level`]'s `color` 1 to 8 picks, as sRGB hex.
@@ -583,6 +660,7 @@ pub struct GpuTrack {
     /// there are, finest-level slices per level, and how many stems.
     stems: [f32; 4],
     stem_colors: [[f32; 4]; MAX_STEMS],
+    stem_place: [[f32; 4]; MAX_STEMS],
 }
 
 /// What a [`GpuTrack`] can carry beside its waveform.
@@ -599,6 +677,9 @@ pub struct Extras<'a> {
     pub stem_rate: f64,
     /// Each stem's colour as `0xRRGGBB`; as many as there are stems.
     pub stem_colors: &'a [u32],
+    /// What each stem is, which places it (see [`StemRole`]); a stem
+    /// without one is [`StemRole::Music`].
+    pub stem_roles: &'a [StemRole],
 }
 
 impl GpuTrack {
@@ -695,6 +776,11 @@ impl GpuTrack {
             stem_colors: std::array::from_fn(|k| {
                 extras.stem_colors.get(k).map_or([0.0; 4], |&c| rgb(c))
             }),
+            stem_place: stem_places(
+                &(0..stem_count)
+                    .map(|k| extras.stem_roles.get(k).copied().unwrap_or(StemRole::Music))
+                    .collect::<Vec<_>>(),
+            ),
         }
     }
 
@@ -795,6 +881,8 @@ fn write_bins(queue: &wgpu::Queue, texture: &wgpu::Texture, data: &[[u8; 4]]) {
 pub struct WaveformView {
     mode: Mode,
     style: Style,
+    /// How [`Style::Stems`] lays the stems out.
+    stem_layout: StemLayout,
     palette: Palette,
     /// Drawn from the bottom up (see [`WaveformView::set_half`]).
     half: bool,
@@ -838,6 +926,7 @@ impl WaveformView {
         Self {
             mode,
             style: Style::default(),
+            stem_layout: StemLayout::default(),
             palette: Palette::default(),
             half: false,
             needle: 0.5,
@@ -867,6 +956,11 @@ impl WaveformView {
 
     pub fn set_style(&mut self, style: Style) {
         self.style = style;
+    }
+
+    /// How [`Style::Stems`] lays the stems out; overviews always stack them.
+    pub fn set_stem_layout(&mut self, layout: StemLayout) {
+        self.stem_layout = layout;
     }
 
     /// The band colours, keeping the background.
@@ -1054,10 +1148,15 @@ impl WaveformView {
             tempo_at: [[0.0; 4]; MAX_TEMPOS / 4],
             tempo_value: [[0; 4]; MAX_TEMPOS / 4],
             tempo_count: [0; 4],
+            stem_place: [[0.0; 4]; MAX_STEMS],
+            stem_layout: [0.0; 4],
         };
         if let (Some(t), Style::Stems) = (track, self.style) {
             params.stems = t.stems;
             params.stem_colors = t.stem_colors;
+            params.stem_place = t.stem_place;
+            let lanes = self.stem_layout == StemLayout::Lanes && self.mode == Mode::Scrolling;
+            params.stem_layout[0] = lanes as u32 as f32;
         }
         if let (Some(t), true) = (track, self.show_vocals) {
             if t.vocal[1] > 0.0 && t.vocal[2] > 0.0 {
@@ -1574,6 +1673,34 @@ fn text_field() -> TextField {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn stem_roles_from_names() {
+        let roles: Vec<_> = [
+            "Kick", "HiHat", "Bass", "Instru", "Vocal", "Drums", "other", "Vocals",
+        ]
+        .iter()
+        .map(|n| StemRole::from_name(n))
+        .collect();
+        use StemRole::*;
+        assert_eq!(roles, [Kick, Hats, Bass, Music, Vocal, Kick, Music, Vocal]);
+    }
+
+    #[test]
+    fn stems_stack_kick_first_hats_last_and_share_lanes() {
+        // The engine's order: kick, bass, other, vocals, then hats split
+        // from the drums.
+        use StemRole::*;
+        let p = stem_places(&[Kick, Bass, Music, Vocal, Hats]);
+        let layer: Vec<f32> = p.iter().map(|x| x[1]).collect();
+        let lane: Vec<f32> = p.iter().map(|x| x[0]).collect();
+        assert_eq!(layer, [0.0, 1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(lane, [0.0, 1.0, 1.0, 2.0, 0.0]);
+        // NI's order (drums, bass, other, vocals) and two of a role.
+        let p = stem_places(&[Vocal, Music, Kick, Music]);
+        let layer: Vec<f32> = p.iter().take(4).map(|x| x[1]).collect();
+        assert_eq!(layer, [3.0, 1.0, 0.0, 2.0]);
+    }
     use super::*;
 
     #[test]

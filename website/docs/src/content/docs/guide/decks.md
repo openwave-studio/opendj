@@ -58,9 +58,12 @@ Under them, each row's choices sit side by side, one click each:
     bass widest, as on rekordbox. A **Color** row under it picks
     **Blue-Orange** (rekordbox's colors) or **Lilac-Cyan**.
   - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
-    color of its stem pad, the loudest at the back, so you can see where
-    the vocals come in or the bass drops out. A track shows RGB until its
-    stems are ready.
+    color of its stem pad, so you can see where the vocals come in or the
+    bass drops out. A **Layout** row under it picks **Stacked** (the
+    default: the track's own waveform cut into a layer per stem, kick and
+    bass at the middle, vocals and hi-hats on the outside) or **3 Lanes**
+    (three small waveforms on the large ones: drums, music and vocals; the
+    overviews stay stacked). A track shows RGB until its stems are ready.
 - **Needle**: where the play line sits on the large waveforms. **Center**
   (the default) shows as much of what has played as what is coming;
   **Left** puts it a quarter of the way in, so three quarters of the
@@ -150,8 +153,11 @@ Choose **Off**, **Beats** (squares only) or **Beats and phrases** under
 only.
 
 In **2-Deck** the counter sits in a thin strip under each deck's overview,
-on the side next to the mixer: four dots for the beats, then the
-phrase.bar.beat count and the countdown.
+on the side next to the mixer: the bars left to the next phrase and what
+it is, in its color (for example ↓ 10 › DROP), then the beat as a big
+number with the phrase playing now (DROP, INTRO…) over four dots in its
+color. The dots turn lilac in the last bar before the next phrase. With
+the counter set to Beats, the name reads BEAT and the countdown is hidden.
 
 ### Phase meter
 
@@ -160,10 +166,9 @@ with the master deck's (the deck with the **MASTER** badge, or else the
 other playing deck), like the phase meter on a club player:
 
 - The line runs from half a beat **EARLY** to half a beat **LATE**, with a
-  marker at this deck's beats. Next to it the offset reads in milliseconds,
-  for example **+18 ms** when the beats land 18 ms late: nudge the jog
-  forward. Green means tight (within 10 ms), yellow close (within 35 ms),
-  orange off.
+  marker at this deck's beats: right of centre when they land late (nudge
+  the jog forward), left when early. Its color says how close: green
+  tight (within 10 ms), yellow close (within 35 ms), orange off.
 - **+1 BEAT** or **−1 BEAT** means the beats line up but on the wrong beat
   of the bar: the deck's downbeat lands on the master's second beat, or its
   fourth.

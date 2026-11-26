@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Phase meter
-In the 2-Deck layout each deck SHALL show, under its overview, a line spanning half a beat early to half a beat late with a marker at the deck's beat offset from its reference deck and the offset in milliseconds. The reference deck SHALL be the sync leader, else another playing deck. Tracks at half or double the reference tempo SHALL be compared beat for beat at the matching multiple. When the deck sits whole beats off the reference's bar, the readout SHALL say how many beats instead of milliseconds. The reference deck's own line SHALL be muted and labelled MASTER.
+In the 2-Deck layout each deck SHALL show, under its overview, a line spanning half a beat early to half a beat late with a marker at the deck's beat offset from its reference deck, colored by how close it is. The reference deck SHALL be the sync leader, else another playing deck. Tracks at half or double the reference tempo SHALL be compared beat for beat at the matching multiple. When the deck sits whole beats off the reference's bar, a readout SHALL say how many beats; otherwise no number SHALL show. The reference deck's own line SHALL be muted and labelled MASTER.
 
 #### Scenario: A deck drifting late
 - **WHEN** deck 1 plays 18 ms behind the master deck's beats, on the same beat of the bar
-- **THEN** deck 1's marker sits right of centre, toward LATE, and the readout says +18 ms
+- **THEN** deck 1's marker sits right of centre, toward LATE, in yellow, with no readout
 
 #### Scenario: A deck dropped a beat off
 - **WHEN** deck 2's downbeats land on the master deck's second beat
@@ -25,6 +25,10 @@ Beside the phase meter each deck SHALL show an up and a down arrow; the arrow po
 ### Requirement: Beat counter in the strip
 In the 2-Deck layout the beat counter SHALL show in the strip under the overview, on the side next to the mixer, and not beside the title.
 
+#### Scenario: Countdown only
+- **WHEN** the deck is 10 bars from a Drop
+- **THEN** the strip shows "↓ 10 › DROP" in the Drop's color, the beat number, and the current phrase's name over the beat dots, without the phrase.bar.beat count
+
 #### Scenario: Phrases off
 - **WHEN** the beat counter is set to Beats
-- **THEN** the strip shows the beat dots without the phrase count or countdown
+- **THEN** the strip shows the beat number and BEAT over the beat dots, without the countdown

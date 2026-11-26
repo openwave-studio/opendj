@@ -35,6 +35,8 @@ pub struct Count {
     pub bars_left: i64,
     /// The next phrase's kind, when the track has phrases.
     pub next: Option<PhraseKind>,
+    /// The phrase playing now, when the track has phrases.
+    pub kind: Option<PhraseKind>,
 }
 
 impl Count {
@@ -156,6 +158,10 @@ pub fn count(t: &Track, seconds: f64, phrases: &[(f64, PhraseKind)]) -> Option<C
             phrases.first().map(|&(s, kind)| (bar_of(s), Some(kind))),
         ),
     };
+    let kind = usize::try_from(index)
+        .ok()
+        .and_then(|i| phrases.get(i))
+        .map(|&(_, k)| k);
     let in_phrase = bar - start;
     let (bars_left, next) = match next {
         Some((at, kind)) if at > bar => (at - bar, kind),
@@ -169,6 +175,7 @@ pub fn count(t: &Track, seconds: f64, phrases: &[(f64, PhraseKind)]) -> Option<C
         bar_in_phrase: if counted { in_phrase + 1 } else { 0 },
         bars_left,
         next,
+        kind: if counted { kind } else { None },
     })
 }
 
@@ -298,6 +305,7 @@ mod tests {
         let c = count(&t, 20.0, &phrases).unwrap();
         assert_eq!((c.phrase, c.bar_in_phrase, c.bars_left), (1, 11, 6));
         assert_eq!(c.next, Some(PhraseKind::Build));
+        assert_eq!(c.kind, Some(PhraseKind::Intro));
         assert_eq!(c.countdown(), "↓ 6 › BUILD");
         // The bar strip counts from the phrase's start.
         assert_eq!(c.bar_in_group, 2);
@@ -316,6 +324,12 @@ mod tests {
         let phrases = [(0.0, PhraseKind::Intro), (31.98, PhraseKind::Drop)];
         let c = count(&t, 32.0, &phrases).unwrap();
         assert_eq!((c.phrase, c.bar_in_phrase), (2, 1));
+    }
+
+    #[test]
+    fn no_phrase_kind_without_phrases() {
+        let t = track(0.0);
+        assert_eq!(count(&t, 3.0, &[]).unwrap().kind, None);
     }
 
     #[test]

@@ -872,6 +872,11 @@ export struct BeatCount {
     label: string,
     countdown: string,
     next-color: color,
+    // The 2-Deck strip: the phrase playing now ("DROP", "BEAT" without
+    // phrases) over the dots, lit in its color.
+    kind-name: string,
+    has-kind: bool,
+    kind-color: color,
     // The phase meter, filled in whatever the counter's setting: 0 nothing
     // to compare with, 1 the master deck, 2 against the master.
     phase: int,
@@ -980,10 +985,37 @@ component TempoArrows inherits VerticalLayout {
     Path { width: 8px; height: 5px; commands: "M 0 0 L 8 0 L 4 5 Z"; fill: arrow < 0 ? Theme.phase-off : Theme.n-2c2c2f; }
 }
 
+// The beat in the 2-Deck strip: a big beat number, then the phrase playing
+// now ("BEAT" without phrases) over four dots lit in its color, all lilac
+// in the last bar before the next phrase.
+component StripBeat inherits HorizontalLayout {
+    in property <BeatCount> count;
+    in property <color> tint;
+    property <color> lit: count.last-bar ? Theme.accent : count.has-kind ? count.kind-color : tint;
+    horizontal-stretch: 0;
+    spacing: 5px;
+    Text { text: count.beat + 1; color: Theme.text; font-size: 15px; font-weight: 800; vertical-alignment: center; }
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        Text { text: count.kind-name; color: count.has-kind ? count.kind-color : Theme.text-dim; font-size: 7px; font-weight: 800; letter-spacing: 0.6px; }
+        HorizontalLayout {
+            spacing: 2px;
+            for i in 4: Rectangle {
+                width: 7px;
+                height: 3px;
+                border-radius: 1px;
+                background: i == count.beat ? lit : Theme.n-3a3a3e;
+                opacity: i == count.beat && !count.playing ? 0.5 : 1;
+            }
+        }
+    }
+}
+
 // The 2-Deck strip under a deck's overview: on the outer side the phase
-// meter, its offset and the tempo guide; on the side by the mixer the beat
-// dots, phrase.bar.beat and the countdown to the next phrase (each as the
-// beat counter setting picks). Always there, so the deck keeps its height.
+// meter, its offset and the tempo guide; on the side by the mixer the
+// countdown to the next phrase and the beat (each as the beat counter
+// setting picks). Always there, so the deck keeps its height.
 component BeatStrip inherits Rectangle {
     in property <BeatCount> count;
     in property <color> tint;
@@ -1001,39 +1033,11 @@ component BeatStrip inherits Rectangle {
         if !mirrored && loaded: PhaseLine { count: count; tone: tone; }
         if !mirrored && loaded: Text { min-width: 44px; horizontal-stretch: 0; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; vertical-alignment: center; }
         if !mirrored && loaded: TempoArrows { arrow: count.phase == 2 ? count.tempo-arrow : 0; }
-        if mirrored && counter: HorizontalLayout {
-            horizontal-stretch: 0;
-            spacing: 3px;
-            for i in 4: VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 10px;
-                    height: 5px;
-                    border-radius: 2px;
-                    background: i != count.beat ? Theme.n-2c2c2f : count.last-bar ? Theme.accent : i == 0 ? Theme.text : tint;
-                    opacity: i == count.beat && !count.playing ? 0.5 : 1;
-                }
-            }
-        }
-        if mirrored && phrases: Text { text: count.label; color: Theme.text; font-size: 11px; font-weight: 600; vertical-alignment: center; }
-        if mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 10px; font-weight: 600; vertical-alignment: center; }
+        if mirrored && counter: StripBeat { count: count; tint: tint; }
+        if mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 11px; font-weight: 600; vertical-alignment: center; }
         Rectangle { horizontal-stretch: 1; }
-        if !mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 10px; font-weight: 600; vertical-alignment: center; }
-        if !mirrored && phrases: Text { text: count.label; color: Theme.text; font-size: 11px; font-weight: 600; vertical-alignment: center; }
-        if !mirrored && counter: HorizontalLayout {
-            horizontal-stretch: 0;
-            spacing: 3px;
-            for i in 4: VerticalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 10px;
-                    height: 5px;
-                    border-radius: 2px;
-                    background: i != count.beat ? Theme.n-2c2c2f : count.last-bar ? Theme.accent : i == 0 ? Theme.text : tint;
-                    opacity: i == count.beat && !count.playing ? 0.5 : 1;
-                }
-            }
-        }
+        if !mirrored && phrases: Text { text: count.countdown; color: count.next-color; font-size: 11px; font-weight: 600; vertical-alignment: center; }
+        if !mirrored && counter: StripBeat { count: count; tint: tint; }
         // Right deck: the same, mirrored.
         if mirrored && loaded: TempoArrows { arrow: count.phase == 2 ? count.tempo-arrow : 0; }
         if mirrored && loaded: Text { min-width: 44px; horizontal-stretch: 0; text: count.phase == 2 ? count.phase-text : ""; color: tone; font-size: 10px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center; }
@@ -1264,7 +1268,29 @@ component ModeIcon inherits Path {
     fill: kind == 2 ? tint : transparent;
     commands: kind == 1 ? "M 2 13 L 6 13 L 6 9 L 10 9 L 10 5 L 14 5 L 14 3"
         : kind == 2 ? "M 3.5 12.5 a 2.2 1.8 0 1 0 4.4 0 a 2.2 1.8 0 1 0 -4.4 0 M 8.1 8 a 2.2 1.8 0 1 0 4.4 0 a 2.2 1.8 0 1 0 -4.4 0 M 3.5 3.5 a 2.2 1.8 0 1 0 4.4 0 a 2.2 1.8 0 1 0 -4.4 0"
+        // Clear: a cross (4 is DiceIcon).
+        : kind == 5 ? "M 4 4 L 12 12 M 12 4 L 4 12"
+        // Undo: an arrow turning back.
+        : kind == 6 ? "M 5.5 3.5 L 2.5 6.5 L 5.5 9.5 M 2.5 6.5 L 10 6.5 Q 13.5 6.5 13.5 10 Q 13.5 13.5 10 13.5 L 7 13.5"
         : "M 2 13 L 5 10 L 7 12 L 10 7 L 12 9 L 14 3 M 11 3 L 14 3 L 14 6";
+}
+
+// A die showing five, drawn (no font has a die everywhere): a thin
+// rounded outline and five pips, sharp at small sizes.
+component DiceIcon inherits Rectangle {
+    in property <color> tint;
+    property <length> pip: max(1.5px, root.width / 6);
+    border-width: 1px;
+    border-color: root.tint;
+    border-radius: root.width / 5;
+    for p in [{ x: 0.3, y: 0.3 }, { x: 0.7, y: 0.3 }, { x: 0.5, y: 0.5 }, { x: 0.3, y: 0.7 }, { x: 0.7, y: 0.7 }]: Rectangle {
+        x: root.width * p.x - root.pip / 2;
+        y: root.height * p.y - root.pip / 2;
+        width: root.pip;
+        height: root.pip;
+        border-radius: root.pip / 2;
+        background: root.tint;
+    }
 }
 
 component GrooveButton inherits Rectangle {
@@ -1299,7 +1325,8 @@ component GrooveButton inherits Rectangle {
         spacing: 4px;
         VerticalLayout {
             alignment: center;
-            ModeIcon { kind: root.icon; tint: lit ? Theme.lilac-text : Theme.text; width: 16px; height: 16px; }
+            if root.icon == 4: DiceIcon { tint: lit ? Theme.lilac-text : Theme.text; width: 14px; height: 14px; }
+            if root.icon != 4: ModeIcon { kind: root.icon; tint: lit ? Theme.lilac-text : Theme.text; width: 16px; height: 16px; }
         }
         Text {
             text: root.text;
@@ -2956,15 +2983,15 @@ export component Pads inherits HorizontalLayout {
         { key: "beatjump_32_backward", light: "beatjump_32_backward", text: "−32" },
         { key: "beatjump_32_forward", light: "beatjump_32_forward", text: "+32" },
     ];
-    // VirtualDJ's STEMS pads: stems 1 to 5 are kick, bass, instruments,
+    // The STEMS pads: stems 1 to 5 are kick, bass, instruments,
     // vocals and hi-hats (see opendj_engine::stems::default_info).
     property <[StemPadSpec]> stem-pads: [
-        { stem: 4, text: "Vocal", tint: Theme.f-09ad18 },
-        { stem: 3, text: "Instru", tint: Theme.f-a26018 },
-        { stem: 2, text: "Bass", tint: Theme.f-a21418 },
+        { stem: 4, text: "Vocal", tint: Theme.stem-vocal },
+        { stem: 3, text: "Instru", tint: Theme.stem-instru },
+        { stem: 2, text: "Bass", tint: Theme.stem-bass },
         { stem: 0, text: "Acapella", tint: Theme.n-a9aaab },
-        { stem: 1, text: "Kick", tint: Theme.f-2e4e75 },
-        { stem: 5, text: "HiHat", tint: Theme.f-0960b1 },
+        { stem: 1, text: "Kick", tint: Theme.stem-kick },
+        { stem: 5, text: "HiHat", tint: Theme.stem-hihat },
         { stem: -2, text: "Stems FX", tint: Theme.n-5d5d5e },
         { stem: -1, text: "Instrumental", tint: Theme.n-a9aaab },
     ];
@@ -3194,7 +3221,7 @@ export component Pads inherits HorizontalLayout {
                             stem: stem-pads[row * 4 + i].stem;
                             text: stem-pads[row * 4 + i].text;
                             show-quality: row == 0 && i == 3;
-                            // The track's own color for a stem, else VirtualDJ's.
+                            // The track's own color for a stem, else the default one.
                             tint: stem-pads[row * 4 + i].stem > 0 && stem-pads[row * 4 + i].stem <= info.stem-colors.length
                                 ? info.stem-colors[stem-pads[row * 4 + i].stem - 1] : stem-pads[row * 4 + i].tint;
                             horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; max-width: grid.cell-w; max-height: grid.cell; border-radius: Theme.pad-radius; border-width: 1px; border-color: Theme.n-2c2c31;
@@ -3889,9 +3916,8 @@ component GrooveDice inherits GrooveButton {
     property <bool> pending: Controls.value(Controls.resolve(g, "dice_pending"), Controls.tick) > 0;
     property <bool> can-undo: Controls.value(Controls.resolve(g, "can_undo"), Controls.tick) > 0;
     property <bool> varying: Controls.value(Controls.resolve(g, "vary"), Controls.tick) > 0.01;
-    text: "⚄";
+    icon: 4;
     lit: varying;
-    font-size: 16px;
     blink: pending && Controls.blink;
     clicked => { dice-menu.show(); }
     dice-menu := PopupWindow {
@@ -4994,14 +5020,16 @@ component InstrumentScope inherits Rectangle {
     background: Theme.n-0c0c0e;
     if !InstrumentsUi.scope-freq: Rectangle { y: parent.height / 2; height: 1px; background: Theme.n-26262a; }
     Path {
-        // The same shape as the scope (160 by 40), so it fills it: a path
-        // keeps its viewbox's proportions.
+        // A path keeps its viewbox's proportions (4 by 1), so it is drawn
+        // at those and stretched across the scope, whatever its shape.
         viewbox-width: 128;
         viewbox-height: 32;
         x: 0;
         y: 0;
-        width: parent.width;
+        width: parent.height * 4;
         height: parent.height;
+        transform-origin: { x: 0px, y: 0px };
+        transform-scale-x: parent.width / max(1px, parent.height * 4);
         fill: root.tint.with-alpha(0.35);
         stroke: root.tint;
         stroke-width: 1px;
@@ -6600,6 +6628,9 @@ component InstrumentTitle inherits Rectangle {
     property <bool> changed: PresetUi.is-changed(deck);
     // What the name popup is for: 0 a new preset, 1 a new name.
     property <int> asking;
+    // The preset box, narrower on a narrow deck (the smallest window) so
+    // the name and the buttons keep their room.
+    property <length> box: root.width < 640px ? 150px : 230px;
     height: 30px;
     background: Theme.panel;
     HorizontalLayout {
@@ -6622,7 +6653,14 @@ component InstrumentTitle inherits Rectangle {
                 tags => { tagger.show(); }
             }
         }
-        Text { text: root.name; color: Theme.text; font-size: 14px; font-weight: 600; vertical-alignment: center; overflow: elide; }
+        Text {
+            text: root.name;
+            color: Theme.text;
+            font-size: 14px;
+            font-weight: 600;
+            vertical-alignment: center;
+            overflow: elide;
+        }
         if InstrumentsUi.format() != "": VerticalLayout {
             alignment: center;
             FormatChip { text: InstrumentsUi.format(); tint: root.tint; compact: true; }
@@ -6665,14 +6703,14 @@ component InstrumentTitle inherits Rectangle {
     // The preset (‹ name › and its heart) on the deck's centre line,
     // whatever sits left and right of it.
     if root.ready: HorizontalLayout {
-        // The name box (230 wide) centred, the heart beside it.
-        x: (root.width - 230px) / 2;
+        // The name box centred, the heart beside it.
+        x: (root.width - root.box) / 2;
         height: root.height;
         spacing: 8px;
         VerticalLayout {
             alignment: center;
             Rectangle {
-                width: 230px;
+                width: root.box;
                 height: 22px;
                 border-radius: 4px;
                 background: Theme.control;
@@ -6925,6 +6963,8 @@ component ScaleKeys inherits Rectangle {
 // little keyboard, CHORD's shapes one click away, ARP's order drawn as
 // bars, then the round HOLD latch.
 component NoteFxRow inherits HorizontalLayout {
+    // A narrow deck (the smallest window): shorter states, smaller HOLD.
+    in property <bool> compact;
     property <int> scale-mode-index: Controls.resolve("[Instrument1]", "scale_mode");
     property <int> scale-mode: Controls.value(scale-mode-index, Controls.tick);
     property <int> scale-now: Controls.value(Controls.resolve("[Instrument1]", "scale_now"), Controls.tick);
@@ -6958,13 +6998,13 @@ component NoteFxRow inherits HorizontalLayout {
         [0.5, 0.2, 0.9, 0.4, 0.7, 0.3, 0.8, 0.6],
         [0.4, 0.7, 0.3, 0.9, 0.5, 0.6, 0.2, 0.8],
     ];
-    spacing: 8px;
+    spacing: compact ? 6px : 8px;
     NoteFxTile {
         horizontal-stretch: 1;
         name: "SCALE";
         on: scale-mode != 0;
         state: scale-mode == 0 ? "Off" : scale-name != "" ? scale-name : "Auto";
-        chip: scale-mode == 1 ? "AUTO" : "";
+        chip: scale-mode == 1 && !compact ? "AUTO" : "";
         toggled => { Controls.set-value(scale-mode-index, scale-mode == 0 ? 1 : 0); }
         opened => { scale-menu.show(); }
         ScaleKeys {
@@ -7001,7 +7041,7 @@ component NoteFxRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         name: "ARP";
         on: arp;
-        state: (arp ? "" : "Off · ") + ["↗", "↘", "⇅", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + " ×" + arp-octaves;
+        state: !arp && compact ? "Off" : (arp ? "" : "Off · ") + ["Up", "Down", "Up/Dn", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + (compact ? "" : " ×" + arp-octaves);
         toggled => { Controls.toggle(arp-index); }
         opened => { arp-menu.show(); }
         Rectangle {
@@ -7020,14 +7060,14 @@ component NoteFxRow inherits HorizontalLayout {
     // HOLD: notes keep sounding after their keys are let go (the
     // arpeggiator's hold while ARP is on).
     VerticalLayout {
-        width: 58px;
+        width: compact ? 48px : 58px;
         alignment: center;
         spacing: 4px;
         HorizontalLayout {
             alignment: center;
             Rectangle {
-                width: 44px;
-                height: 44px;
+                width: compact ? 38px : 44px;
+                height: compact ? 38px : 44px;
                 border-radius: 22px;
                 border-width: 2px;
                 border-color: root.hold ? Theme.accent : hta.has-hover ? Theme.n-6a6a70 : Theme.n-3a3a3d;
@@ -7301,11 +7341,13 @@ component SeqLaneButtons inherits HorizontalLayout {
     in property <int> lane;
     width: 50px;
     spacing: 2px;
-    for tool[i] in ["⚄", "✕"]: Rectangle {
+    // Dice the lane, or clear it.
+    for kind[i] in [4, 5]: Rectangle {
         height: 16px;
         border-radius: 3px;
         background: tta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
-        Text { text: tool; color: tta.has-hover ? Theme.text : Theme.text-dim; font-size: 11px; }
+        if kind == 4: DiceIcon { tint: tta.has-hover ? Theme.text : Theme.text-dim; width: 11px; height: 11px; }
+        if kind != 4: ModeIcon { kind: kind; tint: tta.has-hover ? Theme.text : Theme.text-dim; width: 11px; height: 11px; }
         tta := TouchArea {
             mouse-cursor: pointer;
             clicked => { InstrumentsUi.seq-lane(root.slot, root.lane, i == 0); }
@@ -7359,6 +7401,9 @@ component SeqLaneLen inherits Rectangle {
 // picked by the tabs.
 component SeqPanel inherits HorizontalLayout {
     in property <color> hue;
+    // A narrow deck (the smallest window): a slimmer left column, short
+    // tab names, DICE as its icon and no AUTO.
+    in property <bool> compact;
     property <string> g: "[Instrument1]";
     property <int> play-index: Controls.resolve(g, "seq");
     property <bool> playing: Controls.value(play-index, Controls.tick) > 0.5;
@@ -7394,7 +7439,7 @@ component SeqPanel inherits HorizontalLayout {
     spacing: 6px;
     // Playing: ▶ and the slots, the mode, rate, swing and length.
     VerticalLayout {
-        width: 172px;
+        width: root.compact ? 128px : 172px;
         padding: 2px;
         spacing: 4px;
         alignment: center;
@@ -7435,12 +7480,12 @@ component SeqPanel inherits HorizontalLayout {
         HorizontalLayout {
             spacing: 4px;
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: ["FWD", "BACK", "P-PONG", "RAND"][root.mode];
                 step(by) => { Controls.set-value(root.mode-index, Math.mod(root.mode + by + 4, 4)); }
             }
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][root.rate];
                 step(by) => { Controls.set-value(root.rate-index, clamp(root.rate + by, 0, 5)); }
             }
@@ -7448,12 +7493,12 @@ component SeqPanel inherits HorizontalLayout {
         HorizontalLayout {
             spacing: 4px;
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: "SW " + round(root.swing * 100) + "%";
                 step(by) => { Controls.set-value(root.swing-index, clamp(round(root.swing * 20 + by) / 20, 0, 0.75)); }
             }
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: "LEN " + root.len;
                 step(by) => { Controls.set-value(root.len-index, clamp(root.len + by, 1, 16)); }
             }
@@ -7514,9 +7559,9 @@ component SeqPanel inherits HorizontalLayout {
                 SeqLaneLen { slot: root.slot; lane: root.lane; pattern-len: root.len; }
             }
             NoteSeg {
-                width: 210px;
+                width: root.compact ? 150px : 210px;
                 height: 16px;
-                options: ["CHANCE", "VEL", "OCT", "GATE", "SLIDE"];
+                options: root.compact ? ["CHN", "VEL", "OCT", "GATE", "SLD"] : ["CHANCE", "VEL", "OCT", "GATE", "SLIDE"];
                 picked: root.tab;
                 chose(i) => { root.tab = i; }
             }
@@ -7524,18 +7569,26 @@ component SeqPanel inherits HorizontalLayout {
             // Dice: a new riff in the style picked, then undo (↶) or keep
             // (✓) it; AUTO rolls one every few bars.
             NoteStepper {
-                width: 56px;
+                width: root.compact ? 50px : 56px;
                 height: 16px;
                 arrow: 10px;
                 text: ["RIFF", "BASS", "ARP"][root.style];
                 step(by) => { Controls.set-value(root.style-index, Math.mod(root.style + by + 3, 3)); }
             }
             Rectangle {
-                width: 40px;
+                width: root.compact ? 18px : 40px;
                 height: 16px;
                 border-radius: 3px;
                 background: dta.pressed ? root.hue : dta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
-                Text { text: "⚄ DICE"; color: Theme.text; font-size: 9px; font-weight: 600; }
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    VerticalLayout {
+                        alignment: center;
+                        DiceIcon { tint: Theme.text; width: 10px; height: 10px; }
+                    }
+                    if !root.compact: Text { text: "DICE"; color: Theme.text; font-size: 9px; font-weight: 600; vertical-alignment: center; }
+                }
                 dta := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
@@ -7544,13 +7597,14 @@ component SeqPanel inherits HorizontalLayout {
                     }
                 }
             }
-            for tool[i] in ["↶", "✓"]: Rectangle {
+            for tool[i] in ["", "✓"]: Rectangle {
                 width: 16px;
                 height: 16px;
                 border-radius: 3px;
                 opacity: root.can-undo ? 1 : 0.35;
                 background: uta.has-hover && root.can-undo ? Theme.n-2a2a2d : Theme.n-111114;
-                Text { text: tool; color: Theme.text; font-size: 10px; }
+                if i == 0: ModeIcon { kind: 6; tint: Theme.text; width: 11px; height: 11px; }
+                if i == 1: Text { text: tool; color: Theme.text; font-size: 10px; }
                 uta := TouchArea {
                     enabled: root.can-undo;
                     mouse-cursor: pointer;
@@ -7560,7 +7614,7 @@ component SeqPanel inherits HorizontalLayout {
                     }
                 }
             }
-            NoteStepper {
+            if !root.compact: NoteStepper {
                 width: 58px;
                 height: 16px;
                 arrow: 10px;
@@ -7664,6 +7718,13 @@ component InstrumentRack inherits Rectangle {
     property <float> right: Controls.value(Controls.resolve(group, "vu_meter_right"), Controls.tick);
     // A short deck (a small window) packs its rows tighter.
     property <bool> short: root.height < 260px;
+    // A narrow deck (the smallest window): slimmer sides and a scope that
+    // gives way, so the top row stays inside the deck.
+    property <bool> narrow: root.width < 640px;
+    property <length> gap: narrow ? 6px : 10px;
+    // The sides give way first (down to 104), then the scope (from 320).
+    property <length> side: clamp((root.width - 24px - 320px - 80px - 6 * gap) / 2, 104px, 150px);
+    property <length> scope-width: max(120px, min(320px, root.width - 24px - 2 * side - 80px - 6 * gap));
     // One panel on the instrument's color, framed by a thin line in it
     // with a soft glow.
     border-radius: 8px;
@@ -7686,9 +7747,9 @@ component InstrumentRack inherits Rectangle {
         // middle of the deck, the level on the right.
         HorizontalLayout {
             height: root.short ? 48px : 60px;
-            spacing: 10px;
+            spacing: root.gap;
             VerticalLayout {
-                width: 150px;
+                width: root.side;
                 spacing: 4px;
                 alignment: start;
                 RackViewSwitch { width: parent.width; }
@@ -7710,7 +7771,7 @@ component InstrumentRack inherits Rectangle {
                 chose(i) => { InstrumentsUi.scope-freq = i == 1; }
             }
             Rectangle {
-                width: 320px;
+                width: root.scope-width;
                 border-radius: 6px;
                 background: Theme.f-08080a;
                 border-width: 1px;
@@ -7725,14 +7786,14 @@ component InstrumentRack inherits Rectangle {
             }
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
-                width: 150px;
+                width: root.side;
                 padding-top: 4px;
                 spacing: 4px;
                 alignment: start;
                 for level in [root.left, root.right]: HorizontalLayout {
                     alignment: end;
                     Rectangle {
-                        width: 80px;
+                        width: root.narrow ? 60px : 80px;
                         height: 5px;
                         border-radius: 2.5px;
                         background: Theme.n-2a2a2d;
@@ -7757,20 +7818,21 @@ component InstrumentRack inherits Rectangle {
         }
         // The step sequencer in the same place.
         if root.steps: SeqPanel {
+            compact: root.narrow;
             vertical-stretch: 1;
             min-height: root.short ? 70px : 100px;
             hue: root.hue;
         }
         HorizontalLayout {
             height: root.short ? 58px : 76px;
-            spacing: 8px;
+            spacing: root.narrow ? 6px : 8px;
             // The octave keys and pads play in.
             VerticalLayout {
                 alignment: center;
                 spacing: 4px;
                 BarLabel { text: "Octave"; }
                 StepperPill {
-                    width: 64px;
+                    width: root.narrow ? 56px : 64px;
                     height: 26px;
                     prev-enabled: root.octave > -3;
                     next-enabled: root.octave < 3;
@@ -7779,7 +7841,7 @@ component InstrumentRack inherits Rectangle {
                     Text { horizontal-stretch: 1; text: root.octave > 0 ? "+" + root.octave : "" + root.octave; color: Theme.text; font-size: 12px; font-weight: 500; horizontal-alignment: center; vertical-alignment: center; }
                 }
             }
-            NoteFxRow { horizontal-stretch: 1; }
+            NoteFxRow { horizontal-stretch: 1; compact: root.narrow; }
         }
         // The small keyboard, shown from ☰ › Show keyboard.
         if !root.steps && InstrumentsUi.keys-shown: HorizontalLayout {
