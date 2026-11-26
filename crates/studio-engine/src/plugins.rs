@@ -569,6 +569,17 @@ fn resolve(helper: &Path, p: &PluginRef) -> Result<Plugin, State> {
         PluginFormat::Vst3(id) => {
             find(helper, &p.name, "vst3", Some(id)).ok_or_else(|| not_installed(&p.name))
         }
+        PluginFormat::Clap { file, id } | PluginFormat::Vst3File { file, id } => {
+            if !file.exists() {
+                return Err(not_installed(&p.name));
+            }
+            let (file, id) = (file.clone(), id.clone());
+            Ok(if matches!(p.format, PluginFormat::Clap { .. }) {
+                Plugin::Clap { file, id }
+            } else {
+                Plugin::Vst3 { file, id }
+            })
+        }
         PluginFormat::Named => find(helper, &p.name, "vst3", None)
             .or_else(|| find(helper, &p.name, "clap", None))
             .or_else(|| find_au(helper, &p.name))

@@ -36,7 +36,7 @@ impl Default for AudioSettings {
 }
 
 /// openDJ's config folder (`OPENDJ_CONFIG`, else the system's).
-fn config_dir() -> Option<PathBuf> {
+pub(crate) fn config_dir() -> Option<PathBuf> {
     if let Some(d) = std::env::var_os("OPENDJ_CONFIG") {
         return Some(PathBuf::from(d));
     }

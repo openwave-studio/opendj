@@ -23,6 +23,7 @@ mod midi;
 mod push;
 mod rack_ui;
 mod samples;
+mod scanned;
 mod settings;
 
 use std::cell::{Cell, RefCell};
@@ -624,6 +625,9 @@ fn ui(
     window.set_browser_effects(ModelRc::new(VecModel::from(effects)));
     window.set_browser_midi_effects(ModelRc::new(VecModel::from(midi)));
     window.set_browser_all(ModelRc::new(VecModel::from(all)));
+    // Plug-ins: those openDJ's scan found, instruments then effects.
+    let scanned = Rc::new(scanned::load());
+    window.set_browser_plugins(ModelRc::new(VecModel::from(plugin_items(&scanned))));
     // Samples: found on their own thread, then listed.
     let sample_files: Arc<Mutex<Vec<std::path::PathBuf>>> = Arc::default();
     {
@@ -717,6 +721,26 @@ fn ui(
             let Ok(to_track) = usize::try_from(to_track) else {
                 return;
             };
+            // A plug-in from the browser: it starts in its own helper.
+            let plugin = (d.get_from_track() < 0)
+                .then(|| usize::try_from(d.get_item() - PLUGIN_ITEMS - 1).ok())
+                .flatten()
+                .and_then(|i| scanned.get(i).cloned());
+            if let Some(device) = plugin {
+                let place = usize::try_from(d.get_to_place()).ok();
+                if let Ok(at) = usize::try_from(d.get_to_rack()) {
+                    let into = rack_ui::Into {
+                        track: to_track,
+                        at,
+                        chain: usize::try_from(d.get_to_chain()).ok(),
+                        place,
+                    };
+                    rack_ui::drop_in(&c, &p, into, rack_ui::Source::New(Box::new(device)), false);
+                } else if p.drop_new(to_track, place, device).is_some() {
+                    c.select_track(to_track);
+                }
+                return;
+            }
             let from = if d.get_from_track() >= 0 {
                 plugins::From::Chain(
                     d.get_from_track() as usize,
@@ -1245,6 +1269,49 @@ fn device_row(
     row.switches = reuse(old.map(|o| &o.switches), switches);
     row.dots = reuse(old.map(|o| &o.dots), dots);
     row
+}
+
+/// Browser items for scanned plug-ins have ids from here on (above the
+/// studio's own devices).
+const PLUGIN_ITEMS: i32 = 100_000;
+
+/// The browser's Plug-ins list: instruments, then effects, each with its
+/// format and maker.
+fn plugin_items(found: &[clip::DeviceInfo]) -> Vec<BrowserItem> {
+    let item = |i: usize, d: &clip::DeviceInfo| {
+        let vendor = d.plugin.as_ref().map_or("", |p| p.vendor.as_str());
+        BrowserItem {
+            name: d.name.as_str().into(),
+            kind: if control::is_instrument(d) { 0 } else { 1 },
+            detail: if vendor.is_empty() {
+                d.kind.clone()
+            } else {
+                format!("{} · {vendor}", d.kind)
+            }
+            .into(),
+            id: PLUGIN_ITEMS + i as i32 + 1,
+        }
+    };
+    let heading = |name: &str| BrowserItem {
+        name: name.into(),
+        kind: 3,
+        detail: "".into(),
+        id: 0,
+    };
+    let mut out = Vec::new();
+    for (name, instruments) in [("Instruments", true), ("Effects", false)] {
+        let items: Vec<BrowserItem> = found
+            .iter()
+            .enumerate()
+            .filter(|(_, d)| control::is_instrument(d) == instruments)
+            .map(|(i, d)| item(i, d))
+            .collect();
+        if !items.is_empty() {
+            out.push(heading(name));
+            out.extend(items);
+        }
+    }
+    out
 }
 
 /// The browser's lists of the studio's own devices: instruments, audio

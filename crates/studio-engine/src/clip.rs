@@ -144,6 +144,10 @@ pub enum PluginFormat {
     /// Whatever installed plug-in carries this name (VST3, then CLAP, then
     /// AU): for a device swapped for another plug-in.
     Named,
+    /// Plug-in `id` in the `.clap` file `file` (one openDJ's scan found).
+    Clap { file: PathBuf, id: String },
+    /// Class `id` in the `.vst3` bundle `file` (one openDJ's scan found).
+    Vst3File { file: PathBuf, id: String },
 }
 
 /// A Drum Rack: a sample on each pad.

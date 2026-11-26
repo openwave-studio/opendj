@@ -991,11 +991,8 @@ component Browser inherits Rectangle {
         { name: "Pad · Warm chords", kind: 0, detail: "preset" },
         { name: "Lead · Pluck", kind: 0, detail: "preset" },
     ];
-    property <[BrowserItem]> plugins: [
-        { name: "CLAP", kind: 3 },
-        { name: "VST3", kind: 3 },
-        { name: "Audio Units", kind: 3 },
-    ];
+    // The plug-ins openDJ's scan found (Settings › Plugins there).
+    in property <[BrowserItem]> plugins;
     property <[BrowserItem]> clips: [
         { name: "Demo set", kind: 3 },
         { name: "Four on the floor", kind: 4, detail: "1 bar" },
@@ -1124,7 +1121,9 @@ component Browser inherits Rectangle {
                     }
                 }
                 if items.length == 0: Text {
-                    text: category == 11 ? "No samples in the set's folder or Music/openDJ/Samples" : "Nothing here yet";
+                    text: category == 11 ? "No samples in the set's folder or Music/openDJ/Samples"
+                        : category == 9 ? "No plug-ins yet: scan them in openDJ's Settings › Plugins"
+                        : "Nothing here yet";
                     color: Theme.faint;
                     font-size: 11px;
                     vertical-alignment: top;
@@ -2098,6 +2097,7 @@ export component AppWindow inherits Window {
     in property <[BrowserItem]> browser-instruments;
     in property <[BrowserItem]> browser-effects;
     in property <[BrowserItem]> browser-midi-effects;
+    in property <[BrowserItem]> browser-plugins;
     in property <[BrowserItem]> browser-all;
     in property <[BrowserItem]> browser-samples;
 
@@ -2181,6 +2181,7 @@ export component AppWindow inherits Window {
                 midi-effects: root.browser-midi-effects;
                 all: root.browser-all;
                 samples: root.browser-samples;
+                plugins: root.browser-plugins;
             }
             Rectangle { width: 1px; background: Theme.line; }
 
