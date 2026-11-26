@@ -22,7 +22,7 @@ opendj-engine = { path = "../engine" }
 # Ableton Link (it follows the master deck).
 opendj-studio-engine = { path = "../studio-engine", default-features = false }
 rtrb = "0.4"
-opendj-library = { version = "0.9.5", path = "../library" }
+opendj-library = { version = "0.9.6-dev", path = "../library" }
 opendj-export = { path = "../export" }
 opendj-plugins = { path = "../plugins" }
 opendj-remote = { path = "../remote" }
