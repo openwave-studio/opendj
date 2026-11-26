@@ -53,9 +53,12 @@ KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
 // they step the deck's knob page).
 KompleteKontrolM32.KNOB_CCS = [14, 22, 102, 110];
 // A HID knob count moves 8 at a time, so each one would jump the knob:
-// what it turns glides there instead, GLIDE of the rest every GLIDE_MS.
-KompleteKontrolM32.GLIDE = 0.35;
+// what it turns glides there instead, at an even speed: each step is spread
+// over the time since the step before (turning slowly, steps come far
+// apart), between GLIDE_MIN_MS and GLIDE_MAX_MS, moved every GLIDE_MS.
 KompleteKontrolM32.GLIDE_MS = 10;
+KompleteKontrolM32.GLIDE_MIN_MS = 20;
+KompleteKontrolM32.GLIDE_MAX_MS = 150;
 // How long after a knob moves over HID its MIDI controllers are left alone.
 KompleteKontrolM32.HID_KNOBS_HOLD_MS = 5000;
 // The most one knob message moves its count, turning fast.
@@ -73,6 +76,8 @@ KompleteKontrolM32.init = function(_id) {
     this.drawnAt = 0;
     this.hidKnobsAt = -Infinity;
     this.gliding = new Array(KeyboardInstrument.KNOBS).fill(0);
+    this.glideStep = new Array(KeyboardInstrument.KNOBS).fill(0);
+    this.stepAt = new Array(KeyboardInstrument.KNOBS).fill(-Infinity);
     this.glideTimer = engine.beginFastTimer(this.GLIDE_MS, () => this.glide());
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
@@ -130,7 +135,12 @@ KompleteKontrolM32.incomingData = function(data, _length) {
         if (now !== before) {
             this.hidKnobsAt = Date.now();
             const delta = ((now - before + 1500) % 1000) - 500;
+            const t = Date.now();
+            const ms = Math.min(this.GLIDE_MAX_MS, Math.max(this.GLIDE_MIN_MS, t - this.stepAt[k]));
+            this.stepAt[k] = t;
             this.gliding[k] += delta * (fine ? this.FINE_PER_COUNT : this.PER_COUNT);
+            // What's still to go, at the same speed, in that time.
+            this.glideStep[k] = Math.abs(this.gliding[k]) * this.GLIDE_MS / ms;
         }
     }
     const now = data[this.ENCODER_BYTE];
@@ -188,7 +198,7 @@ KompleteKontrolM32.glide = function() {
         if (left === 0) {
             continue;
         }
-        const step = Math.abs(left) < 0.002 ? left : left * this.GLIDE;
+        const step = Math.abs(left) <= this.glideStep[k] ? left : Math.sign(left) * this.glideStep[k];
         this.gliding[k] = left - step;
         KeyboardInstrument.turnKnob(k, step);
     }
