@@ -384,7 +384,28 @@ pub fn encode_wave(t: &Track) -> Option<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use opendj_engine::Waveform;
+    use opendj_engine::{Source, Waveform};
+
+    fn blank() -> Track {
+        Track {
+            id: 0,
+            artist: String::new(),
+            title: String::new(),
+            album: String::new(),
+            genre: String::new(),
+            rating: 0,
+            bpm: 0.0,
+            key: String::new(),
+            duration: 0.0,
+            first_beat: 0.0,
+            grid: Default::default(),
+            source: Source::Synth { seed: 0 },
+            waveform: Arc::new(Waveform::default()),
+            audio: None,
+            cover: None,
+            info: Default::default(),
+        }
+    }
 
     #[test]
     fn waveforms_encode_low_mid_high_peaks() {
@@ -393,14 +414,14 @@ mod tests {
                 1000.0,
                 vec![[10, 20, 30, 40, 1, 2, 3, 4], [50, 60, 70, 80, 5, 6, 7, 8]],
             )),
-            ..Default::default()
+            ..blank()
         };
         let bytes = encode_wave(&t).unwrap();
         assert_eq!(&bytes[..4], b"ODW1");
         assert_eq!(f32::from_le_bytes(bytes[4..8].try_into().unwrap()), 1000.0);
         assert_eq!(u32::from_le_bytes(bytes[8..12].try_into().unwrap()), 2);
         assert_eq!(&bytes[16..], &[10, 20, 30, 50, 60, 70]);
-        assert!(encode_wave(&Track::default()).is_none());
+        assert!(encode_wave(&blank()).is_none());
     }
 
     #[test]
@@ -409,7 +430,7 @@ mod tests {
             duration: 10.0,
             bpm: 120.0,
             grid: opendj_engine::BeatGrid::constant(120.0, 0.25),
-            ..Default::default()
+            ..blank()
         };
         let v = track_json(Some(&t), Some("1a"), true);
         let beats = v["beats"].as_array().unwrap();
