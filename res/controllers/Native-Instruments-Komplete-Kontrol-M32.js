@@ -53,6 +53,8 @@ KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
 KompleteKontrolM32.KNOB_CCS = [14, 22, 102, 110];
 // How long after a knob moves over HID its MIDI controllers are left alone.
 KompleteKontrolM32.HID_KNOBS_HOLD_MS = 5000;
+// The most one knob message moves its count, turning fast.
+KompleteKontrolM32.MAX_CC_STEP = 16;
 
 KompleteKontrolM32.OFF = 0x00;
 KompleteKontrolM32.DIM = 0x10;
@@ -156,7 +158,9 @@ KompleteKontrolM32.incomingMidi = function(status, control, value) {
     this.coverTemplate();
     const before = this.ccs[control];
     this.ccs[control] = value;
-    if (before === undefined || before === value) {
+    // A jump means the M32's count isn't where openDJ last put it: start
+    // from here.
+    if (before === undefined || before === value || Math.abs(value - before) > this.MAX_CC_STEP) {
         return;
     }
     const fine = this.held[this.B.SHIFT];
@@ -222,12 +226,38 @@ KompleteKontrolM32.press = function(b) {
 };
 
 // Lights and screen, each sent only when it changed.
+// In its MIDI mode each knob keeps its own 0-127 count, which stops at the
+// ends. Sending it the deck's knob values back keeps the count where the
+// knob is (the M32 takes them on all its pages' controllers), so it stops
+// just where the knob does. With NI's agent the knobs are endless and come
+// over HID, so nothing is sent.
+KompleteKontrolM32.syncKnobCcs = function() {
+    if (Date.now() - this.hidKnobsAt < this.HID_KNOBS_HOLD_MS) {
+        return;
+    }
+    for (let k = 0; k < KeyboardInstrument.KNOBS; k++) {
+        const v = KeyboardInstrument.knobValue(k);
+        if (v === null) {
+            continue;
+        }
+        const value = Math.round(v * 127);
+        for (const first of this.KNOB_CCS) {
+            const cc = first + k;
+            if (this.ccs[cc] !== value) {
+                this.ccs[cc] = value;
+                midi.sendShortMsg(0xb0, cc, value);
+            }
+        }
+    }
+};
+
 // The screen is drawn from the timer, at most every DRAW_EVERY_MS: a screen
 // write holds up reading the knobs, so drawing on each knob report would
 // pile reports up and the knobs would run on after they stop.
 KompleteKontrolM32.DRAW_EVERY_MS = 100;
 KompleteKontrolM32.refresh = function() {
     this.sendLights();
+    this.syncKnobCcs();
     const now = Date.now();
     if (now - this.drawnAt < this.DRAW_EVERY_MS) {
         return;

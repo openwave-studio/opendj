@@ -746,27 +746,33 @@ fn komplete_kontrol_m32_knobs_in_midi_mode() {
         .unwrap()
         .set(20.0);
     settle(&mut c, 100);
-    // The first value only says where the knob is, then each change turns.
-    c.receive_twin([0xB0, 22, 40]);
-    c.receive_twin([0xB0, 22, 80]);
-    c.poll(Instant::now());
-    assert!((get(&reg, "[Instrument1]", "parameter1") - 40.0 / 127.0).abs() < 1e-9);
-    // Knob 8 is CC 29; other controllers do nothing.
-    c.receive_twin([0xB0, 29, 10]);
-    c.receive_twin([0xB0, 29, 30]);
-    c.receive_twin([0xB0, 30, 100]);
-    c.poll(Instant::now());
-    assert!(get(&reg, "[Instrument1]", "parameter8") > 0.0);
-    c.receive_twin([0xB0, 22, 0]);
-    c.poll(Instant::now());
-    assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
-    // Its other pages send 14-21, 102-109 and 110-117: knob 1 still.
-    for cc in [14u8, 102, 110] {
-        c.receive_twin([0xB0, cc, 50]);
-        c.receive_twin([0xB0, cc, 60]);
+    // openDJ sends each knob's value to all four pages' controllers, so
+    // the M32's own 0-127 count starts where the knob is.
+    let out = c.take_output();
+    for cc in [14u8, 21, 22, 29, 102, 110, 117] {
+        assert!(out.contains(&vec![0xB0, cc, 0]), "CC {cc} sent");
     }
+    // Each change turns the knob by as much.
+    c.receive_twin([0xB0, 22, 10]);
     c.poll(Instant::now());
-    assert!((get(&reg, "[Instrument1]", "parameter1") - 30.0 / 127.0).abs() < 1e-9);
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 10.0 / 127.0).abs() < 1e-9);
+    // Knob 8 is CC 29; other controllers do nothing.
+    c.receive_twin([0xB0, 29, 5]);
+    c.receive_twin([0xB0, 30, 5]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter8") - 5.0 / 127.0).abs() < 1e-9);
+    assert_eq!(get(&reg, "[Instrument1]", "parameter9"), 0.0);
+    // The other pages' controllers turn the same knob, from the value sent.
+    settle(&mut c, 100);
+    let out = c.take_output();
+    assert!(out.contains(&vec![0xB0, 102, 10]), "{out:?}");
+    c.receive_twin([0xB0, 102, 14]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 14.0 / 127.0).abs() < 1e-9);
+    // A jump (the M32 didn't take the value) only says where its count is.
+    c.receive_twin([0xB0, 110, 100]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 14.0 / 127.0).abs() < 1e-9);
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
