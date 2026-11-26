@@ -6516,6 +6516,9 @@ component InstrumentTitle inherits Rectangle {
     property <bool> changed: PresetUi.is-changed(deck);
     // What the name popup is for: 0 a new preset, 1 a new name.
     property <int> asking;
+    // The preset box, narrower on a narrow deck (the smallest window) so
+    // the name and the buttons keep their room.
+    property <length> box: root.width < 640px ? 150px : 230px;
     height: 30px;
     background: Theme.panel;
     HorizontalLayout {
@@ -6538,7 +6541,14 @@ component InstrumentTitle inherits Rectangle {
                 tags => { tagger.show(); }
             }
         }
-        Text { text: root.name; color: Theme.text; font-size: 14px; font-weight: 600; vertical-alignment: center; overflow: elide; }
+        Text {
+            text: root.name;
+            color: Theme.text;
+            font-size: 14px;
+            font-weight: 600;
+            vertical-alignment: center;
+            overflow: elide;
+        }
         if InstrumentsUi.format() != "": VerticalLayout {
             alignment: center;
             FormatChip { text: InstrumentsUi.format(); tint: root.tint; compact: true; }
@@ -6581,14 +6591,14 @@ component InstrumentTitle inherits Rectangle {
     // The preset (‹ name › and its heart) on the deck's centre line,
     // whatever sits left and right of it.
     if root.ready: HorizontalLayout {
-        // The name box (230 wide) centred, the heart beside it.
-        x: (root.width - 230px) / 2;
+        // The name box centred, the heart beside it.
+        x: (root.width - root.box) / 2;
         height: root.height;
         spacing: 8px;
         VerticalLayout {
             alignment: center;
             Rectangle {
-                width: 230px;
+                width: root.box;
                 height: 22px;
                 border-radius: 4px;
                 background: Theme.control;
@@ -6841,6 +6851,8 @@ component ScaleKeys inherits Rectangle {
 // little keyboard, CHORD's shapes one click away, ARP's order drawn as
 // bars, then the round HOLD latch.
 component NoteFxRow inherits HorizontalLayout {
+    // A narrow deck (the smallest window): shorter states, smaller HOLD.
+    in property <bool> compact;
     property <int> scale-mode-index: Controls.resolve("[Instrument1]", "scale_mode");
     property <int> scale-mode: Controls.value(scale-mode-index, Controls.tick);
     property <int> scale-now: Controls.value(Controls.resolve("[Instrument1]", "scale_now"), Controls.tick);
@@ -6874,13 +6886,13 @@ component NoteFxRow inherits HorizontalLayout {
         [0.5, 0.2, 0.9, 0.4, 0.7, 0.3, 0.8, 0.6],
         [0.4, 0.7, 0.3, 0.9, 0.5, 0.6, 0.2, 0.8],
     ];
-    spacing: 8px;
+    spacing: compact ? 6px : 8px;
     NoteFxTile {
         horizontal-stretch: 1;
         name: "SCALE";
         on: scale-mode != 0;
         state: scale-mode == 0 ? "Off" : scale-name != "" ? scale-name : "Auto";
-        chip: scale-mode == 1 ? "AUTO" : "";
+        chip: scale-mode == 1 && !compact ? "AUTO" : "";
         toggled => { Controls.set-value(scale-mode-index, scale-mode == 0 ? 1 : 0); }
         opened => { scale-menu.show(); }
         ScaleKeys {
@@ -6917,7 +6929,7 @@ component NoteFxRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         name: "ARP";
         on: arp;
-        state: (arp ? "" : "Off · ") + ["Up", "Down", "Up/Dn", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + " ×" + arp-octaves;
+        state: !arp && compact ? "Off" : (arp ? "" : "Off · ") + ["Up", "Down", "Up/Dn", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + (compact ? "" : " ×" + arp-octaves);
         toggled => { Controls.toggle(arp-index); }
         opened => { arp-menu.show(); }
         Rectangle {
@@ -6936,14 +6948,14 @@ component NoteFxRow inherits HorizontalLayout {
     // HOLD: notes keep sounding after their keys are let go (the
     // arpeggiator's hold while ARP is on).
     VerticalLayout {
-        width: 58px;
+        width: compact ? 48px : 58px;
         alignment: center;
         spacing: 4px;
         HorizontalLayout {
             alignment: center;
             Rectangle {
-                width: 44px;
-                height: 44px;
+                width: compact ? 38px : 44px;
+                height: compact ? 38px : 44px;
                 border-radius: 22px;
                 border-width: 2px;
                 border-color: root.hold ? Theme.accent : hta.has-hover ? Theme.n-6a6a70 : Theme.n-3a3a3d;
@@ -7277,6 +7289,9 @@ component SeqLaneLen inherits Rectangle {
 // picked by the tabs.
 component SeqPanel inherits HorizontalLayout {
     in property <color> hue;
+    // A narrow deck (the smallest window): a slimmer left column, short
+    // tab names, DICE as its icon and no AUTO.
+    in property <bool> compact;
     property <string> g: "[Instrument1]";
     property <int> play-index: Controls.resolve(g, "seq");
     property <bool> playing: Controls.value(play-index, Controls.tick) > 0.5;
@@ -7312,7 +7327,7 @@ component SeqPanel inherits HorizontalLayout {
     spacing: 6px;
     // Playing: ▶ and the slots, the mode, rate, swing and length.
     VerticalLayout {
-        width: 172px;
+        width: root.compact ? 128px : 172px;
         padding: 2px;
         spacing: 4px;
         alignment: center;
@@ -7353,12 +7368,12 @@ component SeqPanel inherits HorizontalLayout {
         HorizontalLayout {
             spacing: 4px;
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: ["FWD", "BACK", "P-PONG", "RAND"][root.mode];
                 step(by) => { Controls.set-value(root.mode-index, Math.mod(root.mode + by + 4, 4)); }
             }
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][root.rate];
                 step(by) => { Controls.set-value(root.rate-index, clamp(root.rate + by, 0, 5)); }
             }
@@ -7366,12 +7381,12 @@ component SeqPanel inherits HorizontalLayout {
         HorizontalLayout {
             spacing: 4px;
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: "SW " + round(root.swing * 100) + "%";
                 step(by) => { Controls.set-value(root.swing-index, clamp(round(root.swing * 20 + by) / 20, 0, 0.75)); }
             }
             NoteStepper {
-                arrow: 16px;
+                arrow: root.compact ? 11px : 16px;
                 text: "LEN " + root.len;
                 step(by) => { Controls.set-value(root.len-index, clamp(root.len + by, 1, 16)); }
             }
@@ -7432,9 +7447,9 @@ component SeqPanel inherits HorizontalLayout {
                 SeqLaneLen { slot: root.slot; lane: root.lane; pattern-len: root.len; }
             }
             NoteSeg {
-                width: 210px;
+                width: root.compact ? 150px : 210px;
                 height: 16px;
-                options: ["CHANCE", "VEL", "OCT", "GATE", "SLIDE"];
+                options: root.compact ? ["CHN", "VEL", "OCT", "GATE", "SLD"] : ["CHANCE", "VEL", "OCT", "GATE", "SLIDE"];
                 picked: root.tab;
                 chose(i) => { root.tab = i; }
             }
@@ -7442,14 +7457,14 @@ component SeqPanel inherits HorizontalLayout {
             // Dice: a new riff in the style picked, then undo (↶) or keep
             // (✓) it; AUTO rolls one every few bars.
             NoteStepper {
-                width: 56px;
+                width: root.compact ? 50px : 56px;
                 height: 16px;
                 arrow: 10px;
                 text: ["RIFF", "BASS", "ARP"][root.style];
                 step(by) => { Controls.set-value(root.style-index, Math.mod(root.style + by + 3, 3)); }
             }
             Rectangle {
-                width: 40px;
+                width: root.compact ? 18px : 40px;
                 height: 16px;
                 border-radius: 3px;
                 background: dta.pressed ? root.hue : dta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
@@ -7460,7 +7475,7 @@ component SeqPanel inherits HorizontalLayout {
                         alignment: center;
                         DiceIcon { tint: Theme.text; width: 10px; height: 10px; }
                     }
-                    Text { text: "DICE"; color: Theme.text; font-size: 9px; font-weight: 600; vertical-alignment: center; }
+                    if !root.compact: Text { text: "DICE"; color: Theme.text; font-size: 9px; font-weight: 600; vertical-alignment: center; }
                 }
                 dta := TouchArea {
                     mouse-cursor: pointer;
@@ -7487,7 +7502,7 @@ component SeqPanel inherits HorizontalLayout {
                     }
                 }
             }
-            NoteStepper {
+            if !root.compact: NoteStepper {
                 width: 58px;
                 height: 16px;
                 arrow: 10px;
@@ -7591,6 +7606,13 @@ component InstrumentRack inherits Rectangle {
     property <float> right: Controls.value(Controls.resolve(group, "vu_meter_right"), Controls.tick);
     // A short deck (a small window) packs its rows tighter.
     property <bool> short: root.height < 260px;
+    // A narrow deck (the smallest window): slimmer sides and a scope that
+    // gives way, so the top row stays inside the deck.
+    property <bool> narrow: root.width < 640px;
+    property <length> gap: narrow ? 6px : 10px;
+    // The sides give way first (down to 104), then the scope (from 320).
+    property <length> side: clamp((root.width - 24px - 320px - 80px - 6 * gap) / 2, 104px, 150px);
+    property <length> scope-width: max(120px, min(320px, root.width - 24px - 2 * side - 80px - 6 * gap));
     // One panel on the instrument's color, framed by a thin line in it
     // with a soft glow.
     border-radius: 8px;
@@ -7613,9 +7635,9 @@ component InstrumentRack inherits Rectangle {
         // middle of the deck, the level on the right.
         HorizontalLayout {
             height: root.short ? 48px : 60px;
-            spacing: 10px;
+            spacing: root.gap;
             VerticalLayout {
-                width: 150px;
+                width: root.side;
                 spacing: 4px;
                 alignment: start;
                 RackViewSwitch { width: parent.width; }
@@ -7637,7 +7659,7 @@ component InstrumentRack inherits Rectangle {
                 chose(i) => { InstrumentsUi.scope-freq = i == 1; }
             }
             Rectangle {
-                width: 320px;
+                width: root.scope-width;
                 border-radius: 6px;
                 background: Theme.f-08080a;
                 border-width: 1px;
@@ -7652,14 +7674,14 @@ component InstrumentRack inherits Rectangle {
             }
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
-                width: 150px;
+                width: root.side;
                 padding-top: 4px;
                 spacing: 4px;
                 alignment: start;
                 for level in [root.left, root.right]: HorizontalLayout {
                     alignment: end;
                     Rectangle {
-                        width: 80px;
+                        width: root.narrow ? 60px : 80px;
                         height: 5px;
                         border-radius: 2.5px;
                         background: Theme.n-2a2a2d;
@@ -7684,20 +7706,21 @@ component InstrumentRack inherits Rectangle {
         }
         // The step sequencer in the same place.
         if root.steps: SeqPanel {
+            compact: root.narrow;
             vertical-stretch: 1;
             min-height: root.short ? 70px : 100px;
             hue: root.hue;
         }
         HorizontalLayout {
             height: root.short ? 58px : 76px;
-            spacing: 8px;
+            spacing: root.narrow ? 6px : 8px;
             // The octave keys and pads play in.
             VerticalLayout {
                 alignment: center;
                 spacing: 4px;
                 BarLabel { text: "Octave"; }
                 StepperPill {
-                    width: 64px;
+                    width: root.narrow ? 56px : 64px;
                     height: 26px;
                     prev-enabled: root.octave > -3;
                     next-enabled: root.octave < 3;
@@ -7706,7 +7729,7 @@ component InstrumentRack inherits Rectangle {
                     Text { horizontal-stretch: 1; text: root.octave > 0 ? "+" + root.octave : "" + root.octave; color: Theme.text; font-size: 12px; font-weight: 500; horizontal-alignment: center; vertical-alignment: center; }
                 }
             }
-            NoteFxRow { horizontal-stretch: 1; }
+            NoteFxRow { horizontal-stretch: 1; compact: root.narrow; }
         }
         // The small keyboard, shown from ☰ › Show keyboard.
         if !root.steps && InstrumentsUi.keys-shown: HorizontalLayout {
