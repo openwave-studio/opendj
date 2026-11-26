@@ -23,7 +23,8 @@
 //   METRO / TEMPO      the instrument deck's metronome / tap tempo
 //   ARP / SCALE        arpeggiator / scale (Auto) on or off; SHIFT + ARP: hold
 //   IDEAS / UNDO       a new random pattern (Dice) / undo it
-//   PLUG-IN            the instrument's own window
+//   PLUG-IN            the instrument's own window (SHIFT + PLUG-IN, MIDI,
+//                      and SHIFT + TRACK, INSTANCE, are left to the M32)
 //   4-D encoder        turn: browse instruments, then presets; press: open
 //                      or load; SHIFT + press or LEFT: back; UP / DOWN step
 //   BROWSER / TRACK    open / close the browser
@@ -207,9 +208,11 @@ KompleteKontrolM32.press = function(b) {
     case B.SCALE: K.scale(); break;
     case B.IDEAS: K.dice(); break;
     case B.UNDO: K.diceUndo(); break;
-    case B.PLUGIN: K.editor(); break;
+    // SHIFT + PLUG-IN is the M32's own MIDI (mode) button and SHIFT +
+    // TRACK its INSTANCE button: left to the keyboard and NI's agent.
+    case B.PLUGIN: if (!shift) { K.editor(); } break;
     case B.BROWSER: K.openBrowser(); break;
-    case B.TRACK: K.level = null; break;
+    case B.TRACK: if (!shift) { K.level = null; } break;
     case B.PUSH:
         if (shift) {
             K.browseBack();
