@@ -1,7 +1,7 @@
 //! Live's time and character effects, built in: Delay and Echo, Reverb and
 //! Hybrid Reverb, Gate, Overdrive and Roar. Delay, Echo, Reverb, Gate and
 //! Overdrive follow the settings a set saves; Hybrid Reverb (its
-//! algorithmic side, no convolution) and Roar (its shapers and filters in
+//! room is the set's, else a built-in hall) and Roar (its shapers and filters in
 //! series, no feedback or modulation) are close approximations. Every
 //! buffer is allocated when the device is built, never on the audio thread;
 //! a setting changed from the panel retunes the device in place.
@@ -459,7 +459,7 @@ impl ReverbSettings {
                 Some(ir) if !ir.frames.is_empty() => {
                     s.push_str(&format!(" · {}", ir.name));
                 }
-                _ => s.push_str(" · no convolution (its room wasn't found)"),
+                _ => s.push_str(" · built-in room"),
             }
         }
         s
@@ -581,11 +581,16 @@ impl Reverb {
             swing: 0.0,
             lfo: 0.0,
             lfo_step: 1.0 / rate as f32,
-            conv: s
-                .ir
-                .as_ref()
-                .filter(|ir| !ir.frames.is_empty())
-                .map(|ir| Box::new(crate::conv::Convolver::new(&ir.frames, rate))),
+            // The set's room, else (dropped from the browser, or its room
+            // wasn't found) the built-in one, so Blend and Routing work.
+            conv: match s.ir.as_ref().filter(|ir| !ir.frames.is_empty()) {
+                Some(ir) => Some(Box::new(crate::conv::Convolver::new(&ir.frames, rate))),
+                None if s.hybrid => Some(Box::new(crate::conv::Convolver::new(
+                    &built_in_room(rate),
+                    rate,
+                ))),
+                None => None,
+            },
         };
         r.retune();
         r
@@ -708,6 +713,59 @@ impl Reverb {
             - r4.tap(t[1][6]);
         [l * 0.6, r * 0.6]
     }
+}
+
+/// Hybrid Reverb's room when the set names none (or it can't be found): a
+/// medium hall, 1.6 s, as an impulse response. A few early reflections,
+/// then a tail of noise that dies away and darkens, each side its own.
+fn built_in_room(rate: f64) -> Vec<[f32; 2]> {
+    let len = (1.6 * rate) as usize;
+    let mut seed = 0x00dd_5eed_u32;
+    let mut noise = || {
+        seed ^= seed << 13;
+        seed ^= seed >> 17;
+        seed ^= seed << 5;
+        seed as f32 / u32::MAX as f32 * 2.0 - 1.0
+    };
+    // 60 dB down by the end.
+    let fall = (0.001f32).ln() / len as f32;
+    let mut lows = [0.0f32; 2];
+    let mut room: Vec<[f32; 2]> = (0..len)
+        .map(|i| {
+            let t = i as f32 / len as f32;
+            // The tail darkens: from 12 kHz down to 2 kHz.
+            let cut = 12_000.0 * (2_000.0f32 / 12_000.0).powf(t);
+            let a = 1.0 - (-std::f32::consts::TAU * cut / rate as f32).exp();
+            let env = (fall * i as f32).exp() * (i as f32 / (0.005 * rate as f32)).min(1.0);
+            let mut f = [0.0; 2];
+            for (c, low) in lows.iter_mut().enumerate() {
+                *low += (noise() - *low) * a;
+                f[c] = *low * env;
+            }
+            f
+        })
+        .collect();
+    // Early reflections: the walls, at their distances (ms) and levels.
+    for (ms, gain, side) in [
+        (7.0, 0.5, 0),
+        (11.0, 0.45, 1),
+        (17.0, 0.35, 0),
+        (23.0, 0.3, 1),
+        (31.0, 0.25, 0),
+        (37.0, 0.2, 1),
+    ] {
+        let i = (ms * 0.001 * rate) as usize;
+        room[i][side] += gain;
+        room[i][1 - side] += gain * 0.4;
+    }
+    // About the plate's level: the energy of a unit impulse's reply.
+    let energy: f32 = room.iter().map(|f| f[0] * f[0] + f[1] * f[1]).sum::<f32>() * 0.5;
+    let g = (0.35 / energy.max(1e-9)).sqrt();
+    for f in room.iter_mut() {
+        f[0] *= g;
+        f[1] *= g;
+    }
+    room
 }
 
 /// Convolution (blend 0) to algorithm (1).
@@ -1442,6 +1500,38 @@ mod tests {
             .unwrap();
         assert_eq!(at, 1480, "{peak:?}");
         assert!((peak[0] - 0.5).abs() < 0.01 && (peak[1] - 0.25).abs() < 0.01);
+    }
+
+    #[test]
+    fn hybrid_without_a_room_plays_the_built_in_one() {
+        // Dropped from the browser: no room of its own, yet Blend and
+        // Routing still change the sound.
+        let s = ReverbSettings {
+            hybrid: true,
+            dry_wet: 1.0,
+            ..ReverbSettings::default()
+        };
+        assert!(s.summary().ends_with("built-in room"));
+        let play = |s: &ReverbSettings| {
+            let mut r = Reverb::new(s, 48_000.0);
+            let mut buf = click(48_000);
+            r.process(&mut buf);
+            buf
+        };
+        let base = play(&s);
+        let energy: f32 = base.iter().map(|f| f[0] * f[0] + f[1] * f[1]).sum();
+        assert!(energy > 0.01 && energy.is_finite(), "{energy}");
+        for (i, v) in [(10, 0.0), (10, 1.0), (11, 0.0), (11, 2.0), (11, 3.0)] {
+            let mut t = s.clone();
+            t.set(i, v);
+            let out = play(&t);
+            let diff: f32 = out
+                .iter()
+                .zip(&base)
+                .map(|(a, b)| (a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2))
+                .sum();
+            assert!(diff > energy * 1e-4, "setting {i} at {v} changed nothing");
+        }
     }
 
     #[test]

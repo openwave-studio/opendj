@@ -1381,6 +1381,7 @@ component Eq8Panel inherits HorizontalLayout {
     in-out property <int> band: 0;
     callback param(int, float);
     callback click(int);
+    // A band's dot dragged: its Freq setting (as `param` numbers them).
     callback drag(int, float, float);
     padding: 6px;
     spacing: 6px;
@@ -1395,7 +1396,7 @@ component Eq8Panel inherits HorizontalLayout {
             value: d.params[band * 5 + 2 + j].value;
             bipolar: d.params[band * 5 + 2 + j].bipolar;
             tint: root.tint;
-            changed(v) => { root.param(band * 5 + 2 + j, v); }
+            changed(v) => { root.param(d.params[band * 5 + 2 + j].index, v); }
         }
     }
     VerticalLayout {
@@ -1433,7 +1434,7 @@ component Eq8Panel inherits HorizontalLayout {
                         }
                     }
                     moved => {
-                        root.drag(dot.band,
+                        root.drag(d.params[dot.band * 5 + 2].index,
                             parent.sx + (self.mouse-x - self.pressed-x) / graph.width,
                             parent.sy + (self.mouse-y - self.pressed-y) / graph.height);
                     }
@@ -1467,7 +1468,7 @@ component Eq8Panel inherits HorizontalLayout {
                         background: d.params[b * 5].on ? root.tint : transparent;
                         border-width: 1px;
                         border-color: root.tint;
-                        TouchArea { clicked => { root.click(b * 5); } }
+                        TouchArea { clicked => { root.click(d.params[b * 5].index); } }
                     }
                     Text {
                         text: b + 1;
@@ -1488,7 +1489,7 @@ component Eq8Panel inherits HorizontalLayout {
         SwitchPill {
             k: d.params[band * 5 + 1];
             tint: root.tint;
-            clicked => { root.click(band * 5 + 1); }
+            clicked => { root.click(d.params[band * 5 + 1].index); }
         }
         for j in 2: Knob {
             width: 64px;
@@ -1498,7 +1499,7 @@ component Eq8Panel inherits HorizontalLayout {
             value: d.params[40 + j].value;
             bipolar: d.params[40 + j].bipolar;
             tint: root.tint;
-            changed(v) => { root.param(40 + j, v); }
+            changed(v) => { root.param(d.params[40 + j].index, v); }
         }
     }
 }

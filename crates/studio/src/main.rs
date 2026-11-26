@@ -587,22 +587,27 @@ fn ui(
     }
     {
         // An EQ Eight band's dot dragged on its graph: frequency across,
-        // gain up and down (for the shapes with a gain).
+        // gain up and down (for the shapes with a gain). The panel names
+        // the band by its Freq setting, so an EQ inside a rack works too
+        // (its settings are the rack's inner ones).
         let c = controls.clone();
-        window.on_device_drag(move |t, d, band, x, y| {
-            let (t, d, b) = (t as usize, d as usize, band.max(0) as usize);
-            let Some(devices::Settings::Eq8(e)) = c.builtin(t, d) else {
+        window.on_device_drag(move |t, d, freq_at, x, y| {
+            let (t, d, at) = (t as usize, d as usize, freq_at.max(1) as usize);
+            let Some(s) = c.builtin(t, d) else {
                 return;
             };
-            let Some(bd) = e.bands.get(b) else {
+            // The band's Shape sits just before its Freq, its Gain after.
+            let Some(shape) = rack_ui::param(&s, at - 1) else {
                 return;
             };
-            let base = b * devices::BAND_PARAMS;
+            if !matches!(shape.unit, devices::Unit::Choice(n) if n == devices::SHAPES) {
+                return;
+            }
             let freq = devices::graph_freq(x.clamp(0.0, 1.0));
-            c.set_device_param(t, d, base + 2, freq);
-            if bd.shape.has_gain() {
+            c.set_device_param(t, d, at, freq);
+            if devices::Shape::from_live(shape.value.round() as u8).has_gain() {
                 let gain = devices::EQ_GAIN - y.clamp(0.0, 1.0) * 2.0 * devices::EQ_GAIN;
-                c.set_device_param(t, d, base + 3, gain);
+                c.set_device_param(t, d, at + 1, gain);
             }
         });
     }
