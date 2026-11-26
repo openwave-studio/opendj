@@ -719,8 +719,10 @@ component BeatFxSection inherits Rectangle {
     in property <bool> four;
     property <string> unit: "[EffectRack1_EffectUnit5]";
     property <string> fx: "[EffectRack1_EffectUnit5_Effect1]";
-    // Where the outline starts: the tab sits across it.
-    property <length> edge: four ? 2px : 6px;
+    // Where the outline starts. In 2-Deck it covers the hairline over the
+    // bar, so the mixer above meets the Beat FX on its lilac edge, and the
+    // tab sits across that edge.
+    property <length> edge: four ? 2px : -1px;
     background: Theme.panel;
     width: 254px;
     Rectangle {
@@ -732,7 +734,7 @@ component BeatFxSection inherits Rectangle {
     }
     VerticalLayout {
         alignment: center;
-        padding-top: root.edge;
+        padding-top: four ? root.edge : 6px;
         padding-bottom: four ? 0px : 4px;
         spacing: 0px;
         HorizontalLayout {
