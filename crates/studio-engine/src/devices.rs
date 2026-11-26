@@ -7,7 +7,10 @@
 
 use opendj_engine::dsp::Biquad;
 
+use crate::autofilter::{AutoFilter, AutoFilterSettings};
 use crate::fx;
+use crate::limiter::{Limiter, LimiterSettings};
+use crate::saturator::{Saturator, SaturatorSettings};
 
 /// How a setting reads and moves.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -210,6 +213,15 @@ pub fn catalog() -> Vec<(&'static str, Settings)> {
                 ..Default::default()
             }),
         ),
+        (
+            "Auto Filter",
+            Settings::AutoFilter(AutoFilterSettings::default()),
+        ),
+        (
+            "Saturator",
+            Settings::Saturator(SaturatorSettings::default()),
+        ),
+        ("Limiter", Settings::Limiter(LimiterSettings::default())),
         ("Gate", Settings::Gate(fx::GateSettings::default())),
         (
             "Overdrive",
@@ -237,6 +249,9 @@ pub enum Settings {
     Gate(fx::GateSettings),
     Overdrive(fx::OverdriveSettings),
     Roar(fx::RoarSettings),
+    Limiter(LimiterSettings),
+    Saturator(SaturatorSettings),
+    AutoFilter(AutoFilterSettings),
     External(ExternalSettings),
 }
 
@@ -317,6 +332,9 @@ impl Settings {
             Settings::Gate(g) => g.summary(),
             Settings::Overdrive(o) => o.summary(),
             Settings::Roar(r) => r.summary(),
+            Settings::Limiter(l) => l.summary(),
+            Settings::Saturator(s) => s.summary(),
+            Settings::AutoFilter(a) => a.summary(),
             Settings::External(e) => e.summary(),
         }
     }
@@ -333,6 +351,9 @@ impl Settings {
             Settings::Gate(g) => g.params(),
             Settings::Overdrive(o) => o.params(),
             Settings::Roar(r) => r.params(),
+            Settings::Limiter(l) => l.params(),
+            Settings::Saturator(s) => s.params(),
+            Settings::AutoFilter(a) => a.params(),
             Settings::External(e) => e.params(),
         }
     }
@@ -346,6 +367,11 @@ impl Settings {
             Settings::Roar(_) => {
                 Some((vec![0, 2, 3, 4, 13, 17, 6, 7, 8, 14, 18, 10, 11, 12, 15], 5))
             }
+            // Auto Filter: the filter, then the envelope, then the LFO.
+            Settings::AutoFilter(_) => Some((
+                vec![0, 1, 2, 3, 4, 5, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                6,
+            )),
             _ => None,
         }
     }
@@ -362,6 +388,9 @@ impl Settings {
             Settings::Gate(g) => g.set(i, v),
             Settings::Overdrive(o) => o.set(i, v),
             Settings::Roar(r) => r.set(i, v),
+            Settings::Limiter(l) => l.set(i, v),
+            Settings::Saturator(s) => s.set(i, v),
+            Settings::AutoFilter(a) => a.set(i, v),
             Settings::External(e) => e.set(i, v),
         }
     }
@@ -434,6 +463,16 @@ impl Settings {
                     -30.0,
                 ))
             }
+            Settings::AutoFilter(a) => Some((
+                (0..GRAPH_POINTS)
+                    .map(|i| {
+                        let hz = graph_freq(i as f32 / (GRAPH_POINTS - 1) as f32);
+                        AutoFilter::response_db(a, hz as f64).clamp(-60.0, 30.0)
+                    })
+                    .collect(),
+                24.0,
+                -36.0,
+            )),
             Settings::Reverb(r) => Some((
                 cuts_curve(
                     r.low_cut_on.then_some(r.low_cut),
@@ -715,6 +754,9 @@ pub enum Device {
     Gate(fx::Gate),
     Overdrive(Box<fx::Overdrive>),
     Roar(Box<fx::Roar>),
+    Limiter(Box<Limiter>),
+    Saturator(Box<Saturator>),
+    AutoFilter(Box<AutoFilter>),
     /// The input comes in before the chain runs (the engine adds it), so
     /// this only sets its level and holds the latency.
     External(ExternalSettings),
@@ -731,6 +773,9 @@ impl Device {
             Settings::Gate(g) => Device::Gate(fx::Gate::new(g, rate)),
             Settings::Overdrive(o) => Device::Overdrive(Box::new(fx::Overdrive::new(o, rate))),
             Settings::Roar(r) => Device::Roar(Box::new(fx::Roar::new(r, rate))),
+            Settings::Limiter(l) => Device::Limiter(Box::new(Limiter::new(l, rate))),
+            Settings::Saturator(s) => Device::Saturator(Box::new(Saturator::new(s, rate))),
+            Settings::AutoFilter(a) => Device::AutoFilter(Box::new(AutoFilter::new(a, rate))),
             Settings::External(e) => Device::External(e.clone()),
         }
     }
@@ -753,6 +798,9 @@ impl Device {
             Device::Gate(g) => g.set(i, v),
             Device::Overdrive(o) => o.set(i, v),
             Device::Roar(r) => r.set(i, v),
+            Device::Limiter(l) => l.set(i, v),
+            Device::Saturator(s) => s.set(i, v),
+            Device::AutoFilter(a) => a.set(i, v),
             Device::External(e) => e.set(i, v),
         }
     }
@@ -762,6 +810,16 @@ impl Device {
         match self {
             Device::External(e) => Some(e.latency_ms),
             _ => None,
+        }
+    }
+
+    /// Frames the device delays its sound by (a limiter's lookahead,
+    /// oversampling).
+    pub fn latency(&self) -> usize {
+        match self {
+            Device::Limiter(l) => l.latency(),
+            Device::Saturator(s) => s.latency(),
+            _ => 0,
         }
     }
 
@@ -776,6 +834,9 @@ impl Device {
             Device::Gate(g) => g.process(buf),
             Device::Overdrive(o) => o.process(buf),
             Device::Roar(r) => r.process(buf),
+            Device::Limiter(l) => l.process(buf),
+            Device::Saturator(s) => s.process(buf),
+            Device::AutoFilter(a) => a.process(buf, tempo),
             Device::External(e) => {
                 let g = from_db(e.gain_db);
                 for f in buf.iter_mut() {
@@ -823,8 +884,10 @@ fn band_filters(b: &Band, scale: f32, rate: f64) -> (usize, [Biquad; 2]) {
 
 /// Sets `f` for a band (keeping their state) and says how many it uses.
 fn tune_band(f: &mut [Biquad; 2], b: &Band, scale: f32, rate: f64) -> usize {
+    // A band set past the top (EQ Eight goes to 22 kHz) stays under
+    // Nyquist, where the filter is stable.
     let (freq, q, g) = (
-        b.freq as f64,
+        (b.freq as f64).min(rate * 0.45),
         b.q.max(0.1) as f64,
         (b.gain_db * scale) as f64,
     );

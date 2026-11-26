@@ -6014,24 +6014,58 @@ impl Browser {
         same_length: bool,
     ) -> Vec<Option<usize>> {
         // Files only shown in Files don't count as in the collection.
-        let normalized: Vec<(String, String)> = self
-            .library
-            .iter()
-            .map(|t| match is_browsed(t) {
-                true => Default::default(),
-                false => (spotify::normalize(&t.title), spotify::normalize(&t.artist)),
-            })
-            .collect();
+        // Each track's names are made comparable once, and found by title,
+        // so matching a long list stays quick while the DJ types.
+        let mut artists = vec![String::new(); self.library.len()];
+        let mut by_title: HashMap<String, Vec<usize>> = HashMap::new();
         let mut by_isrc = HashMap::new();
         for (i, t) in self.library.iter().enumerate() {
+            if is_browsed(t) {
+                continue;
+            }
+            let title = spotify::normalize(&t.title);
+            if !title.is_empty() {
+                artists[i] = spotify::normalize(&t.artist);
+                by_title.entry(title).or_default().push(i);
+            }
             let isrc = spotify::normalize_isrc(&t.info.isrc);
-            if !isrc.is_empty() && !is_browsed(t) {
+            if !isrc.is_empty() {
                 by_isrc.entry(isrc).or_insert(i);
             }
         }
         let length_fits = |sp: &StreamTrack, i: usize| {
             let d = self.library[i].duration;
             !same_length || sp.duration <= 0.0 || d <= 0.0 || (sp.duration - d).abs() <= 2.0
+        };
+        // The first collection track (as `spotify::matches` would pick it):
+        // the same title by one of its artists, or, with no artist, the
+        // artist and title run together in the title.
+        let by_names = |sp: &StreamTrack| {
+            let want = spotify::normalize(&sp.title);
+            if want.is_empty() {
+                return None;
+            }
+            let names: Vec<String> = sp
+                .artists
+                .iter()
+                .map(|a| spotify::normalize(a))
+                .filter(|a| !a.is_empty())
+                .collect();
+            let same = by_title
+                .get(&want)
+                .into_iter()
+                .flatten()
+                .copied()
+                .filter(|&i| names.iter().any(|a| artists[i].contains(a.as_str())));
+            let joined = names.iter().flat_map(|a| {
+                by_title
+                    .get(&format!("{a}{want}"))
+                    .into_iter()
+                    .flatten()
+                    .copied()
+                    .filter(|&i| artists[i].is_empty())
+            });
+            same.chain(joined).filter(|&i| length_fits(sp, i)).min()
         };
         tracks
             .iter()
@@ -6043,14 +6077,7 @@ impl Browser {
                 by_isrc
                     .get(&spotify::normalize_isrc(&sp.isrc))
                     .copied()
-                    .or_else(|| {
-                        normalized
-                            .iter()
-                            .enumerate()
-                            .position(|(i, (title, artist))| {
-                                spotify::matches(sp, title, artist) && length_fits(sp, i)
-                            })
-                    })
+                    .or_else(|| by_names(sp))
             })
             .collect()
     }

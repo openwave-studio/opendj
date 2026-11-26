@@ -37,6 +37,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 
 - First steps of openDJ Studio, a clip-launching music app built on openDJ's engine: a Session grid of looping MIDI clips launched on the bar, in time over Ableton Link. It isn't in the downloads yet. Build it with `cargo run --profile fast --bin opendj-studio`.
 - In Studio, drag devices from the browser onto a track, reorder a track's chain in the device bar, or move a device to another track (Option/Alt copies it).
+- Studio gains Limiter, Auto Filter and Saturator devices.
 - **Session** (preview), in openDJ itself: **File › Open Live Set…** opens an Ableton Live set, and its clips and scenes launch from the Jam source in time with your decks, with a mixer strip per track (pan, fader, mute, solo) and a Session channel of their own in the mixer. Plug-in tracks stay silent for now.
 
 **Stems**

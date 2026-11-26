@@ -22,6 +22,10 @@ rusty_link = { version = "0.4", optional = true }
 flate2 = "1"
 roxmltree = "0.21"
 realfft = "3.5"
+# Building blocks for new devices (filters, oscillators, oversampling),
+# used inside our own devices rather than as the engine. Without its file
+# loading and FFT extras.
+fundsp = { version = "0.23", default-features = false, features = ["std"] }
 # The Session's own real-time thread in openDJ (already in the tree through
 # cpal).
 audio_thread_priority = { version = "0.35", default-features = false }

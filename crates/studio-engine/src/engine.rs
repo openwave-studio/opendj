@@ -1970,6 +1970,9 @@ impl Studio {
     /// Renders `out` (stereo frames), cutting it into blocks of at most
     /// [`MAX_BLOCK`].
     pub fn process(&mut self, out: &mut [[f32; 2]]) {
+        // Tails decay to zero rather than lingering in denormals, which
+        // cost far more CPU (only this thread's flags; cheap to repeat).
+        opendj_engine::dsp::flush_denormals();
         out.fill([0.0; 2]);
         for chunk in out.chunks_mut(MAX_BLOCK) {
             self.block(chunk);
@@ -1981,6 +1984,7 @@ impl Studio {
     /// beat `out`'s first frame is heard on, and the tempo over it. The
     /// tempo commands the studio gets change nothing while it follows.
     pub fn process_following(&mut self, out: &mut [[f32; 2]], lead: Lead) {
+        opendj_engine::dsp::flush_denormals();
         out.fill([0.0; 2]);
         let per_frame = lead.tempo / 60.0 / self.rate;
         let mut beat = lead.beat;

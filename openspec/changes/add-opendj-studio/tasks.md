@@ -50,6 +50,14 @@
 - [ ] 2.36 Built-in synths and plug-ins dragged from the browser; dropping on empty space makes a track
 - [ ] 2.37 Audio Effect and Instrument Racks: branches, zones and macros (design.md, Racks)
 - [ ] 2.38 Drag, reorder and copy devices on macOS
+- [x] 2.39 Device kit: knobs that glide, LFO, envelope follower and 4x oversampling shared by devices; every device checked for no allocation, no runaway, silent tails, a clean bypass and no clicks, and benched against a budget (design.md, Devices)
+- [x] 2.40 Limiter, Auto Filter (FunDSP filters) and Saturator (4x oversampled), read from the set
+- [ ] 2.41 MIDI effects: Arpeggiator, Chord, Scale, Note Length, Velocity, Random, Pitch, Note Echo, in the chain before the instrument
+- [ ] 2.42 Simpler: a sample played across the keys, then Drum Rack on the rack engine
+- [ ] 2.43 Modulators (LFO, envelope, envelope follower) that drive any knob of any device, as in Bitwig
+- [ ] 2.44 Delay compensation for devices that look ahead or oversample (Limiter, Saturator), so tracks stay in time
+- [ ] 2.45 One analog-style synth with Bass, Pad and Lead as its presets
+- [ ] 2.46 Hear Limiter, Auto Filter and Saturator on macOS
 
 ## 3. Clip editing
 
