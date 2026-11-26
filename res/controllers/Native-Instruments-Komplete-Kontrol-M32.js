@@ -61,6 +61,7 @@ KompleteKontrolM32.init = function(_id) {
     this.ccs = [];
     this.coverUntil = 0;
     this.coveredAt = 0;
+    this.drawnAt = 0;
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
@@ -209,9 +210,17 @@ KompleteKontrolM32.press = function(b) {
 };
 
 // Lights and screen, each sent only when it changed.
+// The screen is drawn from the timer, at most every DRAW_EVERY_MS: a screen
+// write holds up reading the knobs, so drawing on each knob report would
+// pile reports up and the knobs would run on after they stop.
+KompleteKontrolM32.DRAW_EVERY_MS = 100;
 KompleteKontrolM32.refresh = function() {
     this.sendLights();
     const now = Date.now();
+    if (now - this.drawnAt < this.DRAW_EVERY_MS) {
+        return;
+    }
+    this.drawnAt = now;
     if (now < this.coverUntil + this.COVER_EVERY_MS && now - this.coveredAt >= this.COVER_EVERY_MS) {
         this.coveredAt = now;
         this.lastScreen = ["", ""];
