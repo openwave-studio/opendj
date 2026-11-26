@@ -47,9 +47,10 @@ KompleteKontrolM32.ENCODER_BYTE = 24;
 KompleteKontrolM32.PER_COUNT = 0.002;
 KompleteKontrolM32.FINE_PER_COUNT = 0.0004;
 // In the M32's own MIDI mode ("Template 1" on its screen) knobs 1-8 send
-// these controllers on its MIDI port instead, which openDJ hands to
-// incomingMidi below.
-KompleteKontrolM32.FIRST_KNOB_CC = 22;
+// controllers on its MIDI port instead, which openDJ hands to incomingMidi
+// below: from these, one set for each of its 4 pages (< > step them, as
+// they step the deck's knob page).
+KompleteKontrolM32.KNOB_CCS = [14, 22, 102, 110];
 // How long after a knob moves over HID its MIDI controllers are left alone.
 KompleteKontrolM32.HID_KNOBS_HOLD_MS = 5000;
 
@@ -141,19 +142,20 @@ KompleteKontrolM32.incomingData = function(data, _length) {
 // at each end): the change from the one before turns the instrument's
 // knob, so the two never jump to match each other.
 KompleteKontrolM32.incomingMidi = function(status, control, value) {
-    const k = control - this.FIRST_KNOB_CC;
-    if ((status & 0xf0) !== 0xb0 || k < 0 || k >= KeyboardInstrument.KNOBS) {
+    const first = this.KNOB_CCS.find(c => control >= c && control < c + KeyboardInstrument.KNOBS);
+    if ((status & 0xf0) !== 0xb0 || first === undefined) {
         return;
     }
+    const k = control - first;
     // With NI's host agent running the knobs come over HID (above), and
     // any controllers they also send here are the same turn.
     if (Date.now() - this.hidKnobsAt < this.HID_KNOBS_HOLD_MS) {
-        this.ccs[k] = value;
+        this.ccs[control] = value;
         return;
     }
     this.coverTemplate();
-    const before = this.ccs[k];
-    this.ccs[k] = value;
+    const before = this.ccs[control];
+    this.ccs[control] = value;
     if (before === undefined || before === value) {
         return;
     }

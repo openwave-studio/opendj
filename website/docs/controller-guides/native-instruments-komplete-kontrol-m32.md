@@ -7,7 +7,8 @@ instrument on a deck, or turn the 4-D encoder to pick one, and play.
 The keys, the OCTAVE buttons, the pitch and modulation strips and a sustain
 pedal play the instrument deck over the M32's own MIDI port, as any
 keyboard does. When the M32's screen says "Template 1" (its own MIDI
-mode), the knobs send MIDI controllers 22 to 29 on that port too: openDJ
+mode), the knobs send MIDI controllers on that port too (14-21, 22-29, 102-109
+or 110-117, one set for each of its pages): openDJ
 gives those to this mapping, so they still turn the instrument's knobs and
 not the plugin's parameters in their own way. In that mode a knob stops at
 each end of its travel, so turn it back a little if it stops. The M32 also

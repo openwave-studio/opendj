@@ -737,7 +737,7 @@ fn traktor_kontrol_s5_plays_as_traktor() {
 }
 
 /// Without NI's host agent the M32 stays in its own MIDI mode ("Template
-/// 1"), where knobs 1-8 send CC 22-29 on its MIDI port instead of over HID.
+/// 1"), where knobs 1-8 send CCs on its MIDI port instead of over HID.
 #[test]
 fn komplete_kontrol_m32_knobs_in_midi_mode() {
     let (reg, mut c, _device) = load("Native Instruments Komplete Kontrol M32.hid.xml");
@@ -760,6 +760,13 @@ fn komplete_kontrol_m32_knobs_in_midi_mode() {
     c.receive_twin([0xB0, 22, 0]);
     c.poll(Instant::now());
     assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
+    // Its other pages send 14-21, 102-109 and 110-117: knob 1 still.
+    for cc in [14u8, 102, 110] {
+        c.receive_twin([0xB0, cc, 50]);
+        c.receive_twin([0xB0, cc, 60]);
+    }
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 30.0 / 127.0).abs() < 1e-9);
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
