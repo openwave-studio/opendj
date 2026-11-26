@@ -21,6 +21,7 @@ mod audio;
 mod check;
 mod dialog;
 mod midi;
+mod piano;
 mod push;
 mod rack_ui;
 mod samples;
@@ -664,6 +665,22 @@ fn ui(
         let c = controls.clone();
         window.on_launch_clip(move |t, s| c.launch(t as usize, s as usize));
     }
+    // The piano roll in the bottom panel (or its own window).
+    let piano = piano::Ctx::new(controls.clone(), &window);
+    {
+        let p = Rc::downgrade(&piano);
+        window.on_open_notes(move |t, s| {
+            if let Some(p) = p.upgrade() {
+                p.open(t as usize, s as usize);
+            }
+        });
+        let p = Rc::downgrade(&piano);
+        window.on_piano_undo(move |redo| {
+            if let Some(p) = p.upgrade() {
+                p.undo(redo);
+            }
+        });
+    }
     {
         let c = controls.clone();
         window.on_select(move |t, s| c.select(t as usize, usize::try_from(s).ok()));
@@ -1234,6 +1251,7 @@ fn ui(
                     }
                 }
             }
+            piano.tick(changed);
             w.set_main_level(meter(w.get_main_level(), monitor.take_main_peak()));
             let beat = monitor.beat();
             let bar = (beat / engine::QUANTUM).floor();
