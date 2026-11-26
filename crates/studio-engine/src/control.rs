@@ -358,6 +358,18 @@ impl Controls {
         }
     }
 
+    /// Where a note clip's loop starts, in beats from its first beat (0 for
+    /// an empty slot).
+    pub fn loop_start(&self, track: usize, scene: usize) -> f64 {
+        let Ok(set) = self.set.lock() else {
+            return 0.0;
+        };
+        set.get(track)
+            .and_then(|t| t.slots.get(scene))
+            .and_then(|s| s.as_ref())
+            .map_or(0.0, |c| c.loop_start)
+    }
+
     /// Changes the note clip in a slot (making a one-bar clip in an empty
     /// slot) and sends the set to the audio thread. False for a stage or
     /// audio clip.

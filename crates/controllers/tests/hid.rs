@@ -736,6 +736,46 @@ fn traktor_kontrol_s5_plays_as_traktor() {
     assert_eq!(c.errors(), Vec::<String>::new());
 }
 
+/// Without NI's host agent the M32 stays in its own MIDI mode ("Template
+/// 1"), where knobs 1-8 send CCs on its MIDI port instead of over HID.
+#[test]
+fn komplete_kontrol_m32_knobs_in_midi_mode() {
+    let (reg, mut c, _device) = load("Native Instruments Komplete Kontrol M32.hid.xml");
+    reg.get("[Channel2]", "live_input").unwrap().set(3.0);
+    reg.get("[Instrument1]", "num_parameters")
+        .unwrap()
+        .set(20.0);
+    settle(&mut c, 100);
+    // openDJ sends each knob's value to all four pages' controllers, so
+    // the M32's own 0-127 count starts where the knob is.
+    let out = c.take_output();
+    for cc in [14u8, 21, 22, 29, 102, 110, 117] {
+        assert!(out.contains(&vec![0xB0, cc, 0]), "CC {cc} sent");
+    }
+    // Each change turns the knob by as much.
+    c.receive_twin([0xB0, 22, 10]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 10.0 / 127.0).abs() < 1e-9);
+    // Knob 8 is CC 29; other controllers do nothing.
+    c.receive_twin([0xB0, 29, 5]);
+    c.receive_twin([0xB0, 30, 5]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter8") - 5.0 / 127.0).abs() < 1e-9);
+    assert_eq!(get(&reg, "[Instrument1]", "parameter9"), 0.0);
+    // The other pages' controllers turn the same knob, from the value sent.
+    settle(&mut c, 100);
+    let out = c.take_output();
+    assert!(out.contains(&vec![0xB0, 102, 10]), "{out:?}");
+    c.receive_twin([0xB0, 102, 14]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 14.0 / 127.0).abs() < 1e-9);
+    // A jump (the M32 didn't take the value) only says where its count is.
+    c.receive_twin([0xB0, 110, 100]);
+    c.poll(Instant::now());
+    assert!((get(&reg, "[Instrument1]", "parameter1") - 14.0 / 127.0).abs() < 1e-9);
+    assert_eq!(c.errors(), Vec::<String>::new());
+}
+
 /// The Komplete Kontrol M32 plays the instrument deck: its knobs turn the
 /// instrument's knobs on the page shown, < > turn the page, the transport
 /// runs the sequencer, PRESET asks for the next preset, and the 4-D encoder
@@ -786,19 +826,10 @@ fn komplete_kontrol_m32_plays_the_instrument_deck() {
     assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
     let idle = knob;
 
-    // In its MIDI mode ("Template 1") knob 1 sends CC 22 on the MIDI port
-    // instead: the first value only says where it is, then each change turns.
+    // With NI's agent running the knobs come over HID: controllers the
+    // MIDI port also sends for them don't turn the knob a second time.
     c.receive_twin([0xB0, 22, 40]);
     c.receive_twin([0xB0, 22, 80]);
-    c.poll(Instant::now());
-    assert!((get(&reg, "[Instrument1]", "parameter1") - 40.0 / 127.0).abs() < 1e-9);
-    // Knob 8 is CC 29; other controllers do nothing.
-    c.receive_twin([0xB0, 29, 10]);
-    c.receive_twin([0xB0, 29, 30]);
-    c.receive_twin([0xB0, 30, 100]);
-    c.poll(Instant::now());
-    assert!(get(&reg, "[Instrument1]", "parameter8") > 0.0);
-    c.receive_twin([0xB0, 22, 0]);
     c.poll(Instant::now());
     assert_eq!(get(&reg, "[Instrument1]", "parameter1"), 0.0);
 

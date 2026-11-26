@@ -10,6 +10,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 - Under each deck's key, a **Master** pill and a ⚡ pill replace the B, K, S and P letters. The ⚡ pill opens **Deck options**: Match BPM, Match Key, Sync on Play and Key Lock on load.
 - **Phase meter** (2-Deck): a strip under each overview shows a big beat number, the countdown to the next phrase and the current phrase's name, an EARLY / LATE meter against the master deck (the marker's colour shows how close; +1 BEAT when a beat off) and tempo arrows that point the way to move the fader.
 - **2-Deck mixer**: the level meters sit beside each fader and span its travel, with a peak hold. EQ / STEMS / SCULPT is a drop-down pill, and knob names are condensed capitals that show the value for a moment while you turn.
+- **FX bar** in two rows (72 px): labels move to tooltips, Band is three bars under the power button, and Beat FX sits in a lilac box with a BEAT FX tab, 1+2 routing and one **Release** button (hold to release, right-click for the mode).
 - **Play** starts and pauses on the press of the button, not when you let go, so a track starts right on the beat.
 - **Pitch Color FX**: pick **Pitch** from the filter knob's menu, and the COLOR knob shifts the deck up to an octave down or up while keeping the tempo. PITCH buttons on the DDJ-FLX10, DDJ-1000, XDJ-R1, XDJ-RR, DDJ-RX/RZ/RZX/SZ and DDJ-800 pick it.
 - A hot cue or cue jump out of a playing loop now ends the loop.
@@ -37,7 +38,7 @@ openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidi
 
 - First steps of openDJ Studio, a clip-launching music app built on openDJ's engine: a Session grid of looping MIDI clips launched on the bar, in time over Ableton Link. It isn't in the downloads yet. Build it with `cargo run --profile fast --bin opendj-studio`.
 - In Studio, drag devices from the browser onto a track, reorder a track's chain in the device bar, or move a device to another track (Option/Alt copies it).
-- Studio gains Limiter, Auto Filter and Saturator devices, MIDI effects, Simpler, racks (with a Drum Rack, macros, and MIDI effects and plug-ins inside rack chains), plug-ins in the browser, and saving and opening sets.
+- Studio gains Limiter, Auto Filter and Saturator devices, MIDI effects, Simpler, racks (with a Drum Rack, macros, and MIDI effects and plug-ins inside rack chains), plug-ins in the browser, saving and opening sets, and note edits and a clip loop start in the piano roll.
 - **Session** (preview), in openDJ itself: **File › Open Live Set…** opens an Ableton Live set, and its clips and scenes launch from the Jam source in time with your decks, with a mixer strip per track (pan, fader, mute, solo) and a Session channel of their own in the mixer. Plug-in tracks stay silent for now.
 
 **Stems**
