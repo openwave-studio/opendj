@@ -71,11 +71,6 @@ KompleteKontrolM32.init = function(_id) {
     this.held = new Array(this.BUTTONS).fill(false);
     this.lastLights = "";
     this.lastScreen = ["", ""];
-    // The S-series MK2 waits for this report before it takes the host's
-    // lights (as published by the Encdr project); the M32 lists it too.
-    // Tried here to bring the M32 out of its own MIDI mode without NI's
-    // agent.
-    controller.sendOutputReport(0xa0, [0x00, 0x00], true);
     this.timer = engine.beginTimer(50, () => this.refresh());
     // The M32 writes its own "Template 1" over the screen at times (in its
     // MIDI mode): draw all of it again now and then.
