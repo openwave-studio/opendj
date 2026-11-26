@@ -296,7 +296,7 @@ impl Controls {
         }
     }
 
-    pub(crate) fn bump(&self) {
+    pub fn bump(&self) {
         self.version.fetch_add(1, Ordering::Relaxed);
     }
 

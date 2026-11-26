@@ -39,6 +39,9 @@ pub const BRANCH_PARAMS: usize = 4;
 /// names one setting of a device inside the rack.
 pub const INNER: usize = 1 << 22;
 
+/// The inner "setting" that switches a device inside on or off.
+pub const ON: usize = 0x1FF;
+
 /// The index [`RackSettings::set`] takes for a setting of a device inside.
 pub fn inner(branch: usize, device: usize, param: usize) -> usize {
     INNER | (branch & 0xFF) << 14 | (device & 0x1F) << 9 | (param & 0x1FF)
@@ -175,12 +178,12 @@ impl RackSettings {
     /// setting of a device inside (an [`inner`] index).
     pub fn set(&mut self, i: usize, v: f32) {
         if let Some((b, d, p)) = split(i) {
-            if let Some(s) = self
-                .branches
-                .get_mut(b)
-                .and_then(|b| b.devices.get_mut(d))
-                .and_then(|d| d.builtin.as_mut())
-            {
+            let Some(dev) = self.branches.get_mut(b).and_then(|b| b.devices.get_mut(d)) else {
+                return;
+            };
+            if p == ON {
+                dev.on = v >= 0.5;
+            } else if let Some(s) = dev.builtin.as_mut() {
                 s.set(p, v);
             }
             return;
@@ -206,6 +209,190 @@ impl RackSettings {
             1 => b.pan = v.clamp(-1.0, 1.0),
             2 => b.on = v >= 0.5,
             _ => b.solo = v >= 0.5,
+        }
+    }
+
+    /// Puts a device in chain `b` at `at` (clamped to its end). An
+    /// instrument takes the place of the chain's own. Returns where it went.
+    pub fn insert(&mut self, b: usize, at: usize, d: DeviceInfo) -> Option<usize> {
+        if !self.accepts(&d) {
+            return None;
+        }
+        let chain = &mut self.branches.get_mut(b)?.devices;
+        if chain.len() >= MAX_DEVICES {
+            return None;
+        }
+        let instrument = d.builtin.as_ref().is_some_and(Settings::plays_notes)
+            || d.plugin.as_ref().is_some_and(|p| p.instrument);
+        let is_instrument = |x: &DeviceInfo| {
+            x.builtin.as_ref().is_some_and(Settings::plays_notes)
+                || x.plugin.as_ref().is_some_and(|p| p.instrument)
+        };
+        let mut at = at.min(chain.len());
+        if instrument {
+            if let Some(i) = chain.iter().position(is_instrument) {
+                chain[i] = d;
+                self.shift_targets(b, |x| if x == i { None } else { Some(x) });
+                return Some(i);
+            }
+            at = 0;
+        } else if let Some(i) = chain.iter().position(is_instrument) {
+            // Effects go after the instrument.
+            at = at.max(i + 1);
+        }
+        chain.insert(at, d);
+        self.shift_targets(b, |x| Some(if x >= at { x + 1 } else { x }));
+        Some(at)
+    }
+
+    /// Takes device `d` out of chain `b`, with the macro mappings to it.
+    pub fn remove(&mut self, b: usize, d: usize) -> Option<DeviceInfo> {
+        let chain = &mut self.branches.get_mut(b)?.devices;
+        if d >= chain.len() {
+            return None;
+        }
+        let gone = chain.remove(d);
+        self.shift_targets(b, |x| match x.cmp(&d) {
+            std::cmp::Ordering::Less => Some(x),
+            std::cmp::Ordering::Equal => None,
+            std::cmp::Ordering::Greater => Some(x - 1),
+        });
+        Some(gone)
+    }
+
+    /// Moves device `from` of chain `b` to `to` (its place once moved),
+    /// keeping its macro mappings.
+    pub fn move_device(&mut self, b: usize, from: usize, to: usize) -> bool {
+        let Some(chain) = self.branches.get_mut(b).map(|b| &mut b.devices) else {
+            return false;
+        };
+        if from >= chain.len() {
+            return false;
+        }
+        let to = to.min(chain.len() - 1);
+        let d = chain.remove(from);
+        chain.insert(to, d);
+        self.shift_targets(b, |x| {
+            Some(if x == from {
+                to
+            } else if from < to && x > from && x <= to {
+                x - 1
+            } else if to < from && x >= to && x < from {
+                x + 1
+            } else {
+                x
+            })
+        });
+        true
+    }
+
+    /// Whether `d` can go in a chain: the studio's own audio devices, and
+    /// instruments in a rack that plays notes. MIDI effects, plug-ins and
+    /// racks inside racks come later.
+    pub fn accepts(&self, d: &DeviceInfo) -> bool {
+        let Some(s) = d.builtin.as_ref() else {
+            return false;
+        };
+        if s.is_midi_effect() || matches!(s, Settings::Rack(_) | Settings::External(_)) {
+            return false;
+        }
+        !s.plays_notes() || self.plays_notes()
+    }
+
+    /// A new chain with `d` in it, at the end. Returns its place.
+    pub fn add_chain(&mut self, d: Option<DeviceInfo>) -> Option<usize> {
+        if self.branches.len() >= MAX_BRANCHES || d.as_ref().is_some_and(|d| !self.accepts(d)) {
+            return None;
+        }
+        let n = self.branches.len();
+        let name = d
+            .as_ref()
+            .map_or_else(|| format!("Chain {}", n + 1), |d| d.name.clone());
+        self.branches.push(Branch {
+            name,
+            devices: d.into_iter().collect(),
+            note: (36 + n).min(127) as u8,
+            ..Default::default()
+        });
+        Some(n)
+    }
+
+    /// Takes chain `b` out, with the macro mappings into it.
+    pub fn remove_chain(&mut self, b: usize) -> Option<Branch> {
+        if b >= self.branches.len() {
+            return None;
+        }
+        let gone = self.branches.remove(b);
+        for m in self.macros.iter_mut() {
+            m.targets.retain(|t| t.branch as usize != b);
+            for t in m.targets.iter_mut().filter(|t| t.branch as usize > b) {
+                t.branch -= 1;
+            }
+        }
+        Some(gone)
+    }
+
+    /// Maps setting `param` of device `d` in chain `b` to macro `m`, over
+    /// the setting's whole range, or unmaps it if it was mapped. Returns
+    /// whether it is mapped now.
+    pub fn toggle_map(&mut self, m: usize, b: usize, d: usize, param: usize) -> bool {
+        let Some(p) = self
+            .branches
+            .get(b)
+            .and_then(|b| b.devices.get(d))
+            .and_then(|d| d.builtin.as_ref())
+            .and_then(|s| s.params().into_iter().nth(param))
+        else {
+            return false;
+        };
+        let Some(mac) = self.macros.get_mut(m) else {
+            return false;
+        };
+        let at = |t: &Target| {
+            t.branch as usize == b && t.device as usize == d && t.param as usize == param
+        };
+        if let Some(i) = mac.targets.iter().position(at) {
+            mac.targets.remove(i);
+            return false;
+        }
+        // A setting follows one macro.
+        for other in self.macros.iter_mut() {
+            other.targets.retain(|t| !at(t));
+        }
+        self.macros[m].targets.push(Target {
+            branch: b as u8,
+            device: d as u8,
+            param: param as u16,
+            low: p.min,
+            high: p.max,
+        });
+        true
+    }
+
+    /// The macro a setting inside follows, if any.
+    pub fn mapped(&self, b: usize, d: usize, param: usize) -> Option<usize> {
+        self.macros.iter().position(|m| {
+            m.targets.iter().any(|t| {
+                t.branch as usize == b && t.device as usize == d && t.param as usize == param
+            })
+        })
+    }
+
+    /// Renumbers the macro targets on chain `b`'s devices (None drops one).
+    fn shift_targets(&mut self, b: usize, f: impl Fn(usize) -> Option<usize>) {
+        for m in self.macros.iter_mut() {
+            m.targets.retain_mut(|t| {
+                if t.branch as usize != b {
+                    return true;
+                }
+                match f(t.device as usize) {
+                    Some(d) => {
+                        t.device = d as u8;
+                        true
+                    }
+                    None => false,
+                }
+            });
         }
     }
 
@@ -255,7 +442,15 @@ impl Rack {
                     .devices
                     .iter()
                     .take(MAX_DEVICES)
-                    .filter_map(|d| Some((d.on, Device::new(d.builtin.as_ref()?, rate))))
+                    .map(|d| match &d.builtin {
+                        Some(b) => (d.on, Device::new(b, rate)),
+                        // Plug-ins don't run inside racks yet: a silent
+                        // stand-in keeps the places in step.
+                        None => (
+                            false,
+                            Device::Utility(crate::devices::UtilitySettings::default()),
+                        ),
+                    })
                     .collect(),
                 buf: vec![[0.0; 2]; CHUNK],
                 notes: Vec::with_capacity(MAX_NOTES),
@@ -281,8 +476,12 @@ impl Rack {
     /// See [`RackSettings::set`]. Never allocates.
     pub fn set(&mut self, i: usize, v: f32) {
         if let Some((b, d, p)) = split(i) {
-            if let Some((_, dev)) = self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
-                dev.set(p, v);
+            if let Some((on, dev)) = self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
+                if p == ON {
+                    *on = v >= 0.5;
+                } else {
+                    dev.set(p, v);
+                }
             }
             return;
         }
@@ -824,6 +1023,65 @@ mod tests {
             panic!()
         };
         assert_eq!((s.transpose, s.mode), (3.0, 1));
+    }
+
+    #[test]
+    fn chains_are_edited_and_mappings_follow_their_devices() {
+        let mut r = RackSettings::new(Kind::Audio);
+        assert_eq!(r.add_chain(Some(utility(1.0))), Some(0));
+        assert_eq!(r.insert(0, 0, utility(0.5)), Some(0));
+        // Utility 1.0 is now second; map its gain to macro 2.
+        assert!(r.toggle_map(2, 0, 1, 0));
+        assert_eq!(r.mapped(0, 1, 0), Some(2));
+        // Mapping it to another macro moves it.
+        assert!(r.toggle_map(3, 0, 1, 0));
+        assert_eq!(r.mapped(0, 1, 0), Some(3));
+        assert!(r.macros[2].targets.is_empty());
+        // Moving it first takes its mapping along.
+        assert!(r.move_device(0, 1, 0));
+        assert_eq!(r.mapped(0, 0, 0), Some(3));
+        assert_eq!(r.mapped(0, 1, 0), None);
+        // Removing it drops the mapping.
+        r.remove(0, 0);
+        assert!(r.macros[3].targets.is_empty());
+        // Toggling again unmaps.
+        assert!(r.toggle_map(0, 0, 0, 0));
+        assert!(!r.toggle_map(0, 0, 0, 0));
+        // A device inside switches off.
+        r.set(inner(0, 0, ON), 0.0);
+        assert!(!r.branches[0].devices[0].on);
+        let mut x = Rack::new(&r, RATE);
+        let mut buf = vec![[0.3f32; 2]; 64];
+        x.process(&mut buf, 120.0);
+        assert!(
+            (buf[63][0] - 0.3).abs() < 1e-6,
+            "off still plays: {}",
+            buf[63][0]
+        );
+        assert_eq!(r.remove_chain(0).map(|b| b.name), Some("Utility".into()));
+    }
+
+    #[test]
+    fn an_instrument_takes_its_chains_first_place() {
+        let mut r = RackSettings::new(Kind::Instrument);
+        r.add_chain(None);
+        assert_eq!(r.insert(0, 0, utility(1.0)), Some(0));
+        // The instrument goes first; an effect dropped before it lands after.
+        assert_eq!(r.insert(0, 5, simpler(220.0, 0)), Some(0));
+        assert_eq!(r.insert(0, 0, utility(0.5)), Some(1));
+        // A second instrument replaces the first.
+        assert_eq!(r.insert(0, 2, simpler(440.0, 0)), Some(0));
+        assert_eq!(r.branches[0].devices.len(), 3);
+        // An effect rack plays no notes, and nothing takes a rack inside.
+        let mut fx = RackSettings::new(Kind::Audio);
+        assert_eq!(fx.add_chain(Some(simpler(220.0, 0))), None);
+        fx.add_chain(None);
+        assert_eq!(fx.insert(0, 0, simpler(220.0, 0)), None);
+        let rack = DeviceInfo {
+            builtin: Some(Settings::Rack(RackSettings::new(Kind::Audio))),
+            ..utility(1.0)
+        };
+        assert_eq!(fx.insert(0, 0, rack), None);
     }
 
     #[test]

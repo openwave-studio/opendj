@@ -84,12 +84,20 @@ A rack is a device in the chain that holds several chains side by side
   one note and plays it as its own note (C3), and a pad in a choke group
   stops the others with all-sound-off, which Simpler fades over 3 ms.
   Chains render in 512-frame chunks into their own buffers.
-- **Not yet.** Plug-ins and MIDI effects inside chains, dragging devices
-  into a chain (a change inside a rack replaces the rack for now), Live's
-  macro mappings, macros on Push. The window shows the chains (on, solo)
-  or a Drum Rack's 16 pads, which play on click and take a sample dropped
-  on them, beside the macros.
-
+- **In the window.** The chains (on, solo) or a Drum Rack's 16 pads (they
+  play on click and take a sample dropped on them) sit beside the macros.
+  A click on a chain (or a pad) opens it:
+  its devices show beside the rack in a frame, with a place at the end to
+  drop more. Devices dragged in from the browser, from the track's chain or
+  from another chain land where they're let go; a device dropped on the
+  chain list makes a new chain; one dragged out goes onto the track. An
+  instrument takes its chain's first place; an Audio Effect Rack takes no
+  instrument. Map (on the rack's title) then a macro, then knobs inside:
+  each click maps that setting over its whole range or unmaps it; a
+  setting follows one macro, and its knob shows the macro's number. Each
+  edit swaps the rack for the edited one, so its sound restarts.
+- **Not yet.** Plug-ins and MIDI effects inside chains, racks inside
+  racks, Live's macro mappings, macros on Push, a range per mapping.
 - **Kinds.** An *Audio Effect Rack* sits with the audio effects: its input
   goes to every branch and the branches are summed. An *Instrument Rack*
   sits in the instrument place: each branch has its own MIDI effects,

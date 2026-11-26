@@ -296,6 +296,12 @@ impl Plugins {
             });
     }
 
+    /// Swaps the device at `at` for `device` in the same place (a rack
+    /// whose chains changed). The track fades around it, as for any edit.
+    pub fn replace(&self, track: usize, at: usize, device: DeviceInfo) -> bool {
+        self.remove(track, at).is_some() && self.insert(track, at, device).is_some()
+    }
+
     /// Puts a device in `track`'s chain at `at` (clamped to its end): a
     /// built-in one plays at once, a plug-in starts a helper with the sound
     /// it carries. Returns where it went.
