@@ -44,6 +44,7 @@ pub mod rack;
 pub mod saturator;
 pub mod scale;
 pub mod session;
+pub mod set_file;
 pub mod simpler;
 pub mod sound;
 pub mod steps;

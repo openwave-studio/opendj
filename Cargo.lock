@@ -8373,6 +8373,7 @@ dependencies = [
  "opendj-plugin-host",
  "opendj-studio-engine",
  "png 0.18.1",
+ "rfd",
  "rtrb",
  "rusb",
  "rusty_link",
@@ -8386,6 +8387,7 @@ name = "opendj-studio-engine"
 version = "1.0.0-dev"
 dependencies = [
  "audio_thread_priority",
+ "base64 0.22.1",
  "flate2",
  "fundsp",
  "opendj-engine",
@@ -8394,6 +8396,8 @@ dependencies = [
  "roxmltree",
  "rtrb",
  "rusty_link",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

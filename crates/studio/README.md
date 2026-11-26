@@ -13,6 +13,7 @@ cargo run --release -p opendj-studio -- --render a.wav  # 32 bars through the sc
 cargo run --release -p opendj-studio -- --link-check    # joins a Link session, checks a launch lands on its bar
 cargo build --release -p opendj-plugin-host              # the plug-in helper, once (any profile; for plug-ins)
 cargo run --release -p opendj-studio -- path/to/set.als # opens an Ableton Live set
+cargo run --release -p opendj-studio -- song.odset      # opens a set saved by the studio
 cargo run --release -p opendj-studio -- --als-info set.als # prints what a set holds
 ```
 
@@ -20,6 +21,11 @@ Click a clip to launch it on the next bar (the **Launch** pill switches
 between 1 Bar, 1/4 and None); **▶ N** launches a whole scene and stops
 tracks with an empty slot in it; **■** stops a track on the next bar. Turn
 on **LINK** with openDJ's Link on, and launches land on the bars of the mix.
+
+**File** (top left) opens a set (the studio's own `.odset` or a Live set)
+and saves the one open: ⌘S / Ctrl+S saves, ⇧⌘S / Ctrl+Shift+S saves as. A
+saved set keeps the clips, devices (racks and plug-in sounds too), I/O,
+mixer, tempo and key; a Live set is never written over.
 
 ## Ableton Live sets
 
@@ -59,6 +65,7 @@ they're under `src/push/` or named as the app's.
 - `sound.rs`: the built-in drum kit and synth; fixed voice arrays.
 - `audio.rs`: the sound card through cpal, or a timer when there is none.
 - `als.rs`: reading Live sets (gzipped XML) into tracks and clips.
+- `set_file.rs`: the studio's own sets (`.odset`, JSON).
 - `plugins.rs`: finding and starting a set's plug-ins; the audio thread
   runs them as slots in each track's chain (`engine.rs`).
 - `devices.rs`: the studio's own devices matching Live's (Utility, EQ

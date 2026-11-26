@@ -142,3 +142,21 @@ A rack is a device in the chain that holds several chains side by side
 - **Order.** Audio Effect Rack with branches and macros first, then
   Instrument Rack with zones, then reading Live's racks, then Drum Rack on
   the rack engine.
+
+## Sets
+
+The studio saves its own set file, `.odset`: JSON, so a set can be read
+and compared as text. It holds the tracks with their clips (notes, stage
+clips, audio clips' files and warp markers), each track's devices as they
+are now (built-in settings, racks with their chains and macros, plug-ins
+with the sound they have when saved, as base64), I/O, mixer (volume, pan,
+sends), the built-in sound's knobs, and the tempo, key, Main fader and
+returns. Samples, recordings and reverb rooms stay where they are: the file
+names them and they load again on open. A `format` number guards against a
+file from a newer studio, which is refused rather than half read.
+
+File › Open… takes one of these or a Live set, and Save on a Live set (or
+the demo) asks for a name, so a Live set is never written over. Opening a
+set restarts the studio with it, so the sound card, Push and plug-ins start
+clean; with unsaved changes it asks first. Changes are told apart by
+comparing the set's text with the text last saved or opened.

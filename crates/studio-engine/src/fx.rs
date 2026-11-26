@@ -68,7 +68,7 @@ fn on(v: f32) -> bool {
 }
 
 /// Live's Delay or Echo.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DelaySettings {
     /// Echo rather than Delay (only the summary differs).
     pub echo: bool,
@@ -377,7 +377,7 @@ fn soft(x: f32) -> f32 {
 }
 
 /// Live's Reverb, or Hybrid Reverb's algorithmic side.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ReverbSettings {
     /// Hybrid Reverb (only the summary differs).
     pub hybrid: bool,
@@ -408,10 +408,11 @@ pub const HYBRID_ROUTINGS: &[&str] = &["Serial", "Parallel", "Algorithm", "Convo
 
 /// An impulse response: where it's from, and its frames at the engine's
 /// rate (empty until it's loaded).
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Ir {
     pub name: String,
     pub path: std::path::PathBuf,
+    #[serde(skip)]
     pub frames: std::sync::Arc<Vec<[f32; 2]>>,
 }
 
@@ -719,7 +720,7 @@ fn mix2(a: [f32; 2], b: [f32; 2], blend: f32) -> [f32; 2] {
 }
 
 /// Live's Gate.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct GateSettings {
     /// Linear level.
     pub threshold: f32,
@@ -868,7 +869,7 @@ impl Gate {
 }
 
 /// Live's Overdrive.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct OverdriveSettings {
     /// The band that's driven: centre Hz and width in octaves.
     pub mid_freq: f32,
@@ -989,7 +990,7 @@ impl Overdrive {
 
 /// Roar, approximated: its three shaper stages in series, each with its
 /// low-pass, then its compressor.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RoarSettings {
     pub input_db: f32,
     /// How the stages connect, in Live's order (see [`ROUTINGS`]).
@@ -1004,7 +1005,7 @@ pub struct RoarSettings {
     pub dry_wet: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct RoarStage {
     pub on: bool,
     /// 0..1.

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 /// A note in a clip, in beats from the clip's start.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Note {
     pub start: f64,
     pub length: f64,
@@ -19,7 +19,7 @@ pub struct Note {
 
 /// Where a stage clip sets the instrument's knobs: each lock or, for
 /// `None`, the knob as the track has it.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Lock {
     pub start: f64,
     pub values: [Option<f32>; PARAMS],
@@ -28,7 +28,7 @@ pub struct Lock {
 }
 
 /// A looping MIDI clip.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Clip {
     pub name: String,
     /// Loop length in beats.
@@ -47,10 +47,11 @@ pub struct Clip {
 
 /// An audio clip: a file played through a warp map, so its beats land on
 /// the set's beats at any tempo.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct AudioClip {
     pub path: PathBuf,
     /// Decoded before the set plays; None when the file is missing.
+    #[serde(skip)]
     pub data: Option<Arc<Audio>>,
     /// Warp markers: (beat in the clip, second in the file), sorted. With
     /// fewer than two, the file plays at its own speed.
@@ -108,7 +109,7 @@ pub enum Sound {
 }
 
 /// A device on a track, as a set lists it.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DeviceInfo {
     pub name: String,
     /// "Live", "AU", "VST3", "VST" or "Built-in".
@@ -122,7 +123,7 @@ pub struct DeviceInfo {
 }
 
 /// Which plug-in a device is, and the sound it was saved with.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct PluginRef {
     pub name: String,
     pub vendor: String,
@@ -132,10 +133,11 @@ pub struct PluginRef {
     /// The plug-in's own saved state, as the plug-in host loads it: an
     /// Audio Unit's ClassInfo property list, or a VST3's component and
     /// controller states packed together.
+    #[serde(default, with = "crate::set_file::bytes")]
     pub state: Option<Arc<Vec<u8>>>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum PluginFormat {
     /// An Audio Unit by its `type:subtype:manufacturer` codes.
     Au(String),
@@ -151,13 +153,13 @@ pub enum PluginFormat {
 }
 
 /// A Drum Rack: a sample on each pad.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Kit {
     pub pads: Vec<Pad>,
 }
 
 /// One pad of a Drum Rack, as Simpler plays its sample.
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Pad {
     pub note: u8,
     pub name: String,
@@ -178,6 +180,7 @@ pub struct Pad {
     /// Switched on and not muted.
     pub on: bool,
     /// Decoded at the engine's rate.
+    #[serde(skip)]
     pub sample: Option<Arc<opendj_engine::sampler::Sample>>,
 }
 
@@ -194,7 +197,7 @@ impl std::fmt::Debug for Pad {
 }
 
 /// When a track plays what comes in, as Live's Monitor switch.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Monitoring {
     /// Always, and an audio track's clips are quiet.
     In,
@@ -209,7 +212,7 @@ impl Monitoring {
 }
 
 /// Where a track's sound goes.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum AudioTo {
     #[default]
     Main,
@@ -220,7 +223,7 @@ pub enum AudioTo {
 }
 
 /// Where a track takes notes from.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum MidiFrom {
     /// Every MIDI input (but Push, which plays the selected track itself).
     #[default]
@@ -231,7 +234,7 @@ pub enum MidiFrom {
 }
 
 /// A track's inputs and outputs, as Live's I/O section.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Io {
     /// The sound card input: first channel (0-based) and whether it is a
     /// stereo pair. Audio tracks only.
@@ -287,7 +290,7 @@ impl Io {
 }
 
 /// A track: a column of clip slots.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Track {
     pub name: String,
     pub sound: Sound,
@@ -297,6 +300,12 @@ pub struct Track {
     /// Fader position (0..1) and pan (0..1), when the set gives them.
     pub volume: Option<f32>,
     pub pan: f32,
+    /// Send A and Send B (0..1).
+    #[serde(default)]
+    pub sends: [f32; 2],
+    /// The built-in sound's knobs, when the set gives them.
+    #[serde(default)]
+    pub params: Option<[f32; crate::sound::PARAMS]>,
     /// Its devices in order, for show until they can load.
     pub devices: Vec<DeviceInfo>,
     /// Where it listens and where its sound goes.
@@ -314,6 +323,8 @@ impl Track {
             color: None,
             volume: None,
             pan: 0.5,
+            sends: [0.0; 2],
+            params: None,
             devices: Vec::new(),
             io: Io::new(sound == Sound::Audio),
             kit: None,

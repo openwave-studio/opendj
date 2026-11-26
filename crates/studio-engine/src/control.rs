@@ -178,9 +178,9 @@ impl Controls {
             })
             .collect();
         let params = std::array::from_fn(|t| {
-            let defaults = set
-                .get(t)
-                .map_or([0.5; PARAMS], |tr| sound::default_params(tr.sound));
+            let defaults = set.get(t).map_or([0.5; PARAMS], |tr| {
+                tr.params.unwrap_or_else(|| sound::default_params(tr.sound))
+            });
             std::array::from_fn(|i| AtomicU32::new(defaults[i].to_bits()))
         });
         Controls {
@@ -193,6 +193,8 @@ impl Controls {
                 let track = set.get(t);
                 store(&v, track.and_then(|t| t.volume).unwrap_or(UNITY));
                 store(&p, track.map_or(0.5, |t| t.pan));
+                store(&a, track.map_or(0.0, |t| t.sends[0]));
+                store(&b, track.map_or(0.0, |t| t.sends[1]));
                 [v, p, a, b]
             }),
             main: AtomicU32::new(UNITY.to_bits()),
@@ -205,6 +207,31 @@ impl Controls {
             chains: Mutex::new(set.iter().map(|t| t.devices.clone()).collect()),
             version: AtomicU64::new(1),
         }
+    }
+
+    /// The set as it is now, for saving: the clips, each track's devices,
+    /// I/O, mixer and knobs. Plug-ins' sounds are as last kept (see
+    /// `Plugins::keep_sounds`).
+    pub fn snapshot(&self) -> Vec<Track> {
+        let mut set = self.set.lock().map(|s| s.clone()).unwrap_or_default();
+        let chains = self.chains.lock().map(|c| c.clone()).unwrap_or_default();
+        let io = self.io.lock().map(|c| c.clone()).unwrap_or_default();
+        for (t, track) in set.iter_mut().enumerate() {
+            if let Some(chain) = chains.get(t) {
+                track.devices = chain.clone();
+            }
+            if let Some(io) = io.get(t) {
+                track.io = io.clone();
+            }
+            track.volume = Some(self.mix(t, Mix::Volume));
+            track.pan = self.mix(t, Mix::Pan);
+            track.sends = [self.mix(t, Mix::SendA), self.mix(t, Mix::SendB)];
+            track.params = Some(std::array::from_fn(|i| self.param(t, i)));
+            if track.color.is_none() {
+                track.color = self.tracks.get(t).map(|i| i.color);
+            }
+        }
+        set
     }
 
     /// The note drum pad `i` (0..16, bottom left first) plays on a drum
@@ -799,5 +826,31 @@ mod tests {
         ));
         assert_eq!(c.param_name(0, 1), "Length");
         assert!(c.has_clip(0, 0));
+    }
+
+    #[test]
+    fn a_snapshot_keeps_the_mixer_and_knobs_and_opens_with_them() {
+        let set = crate::clip::demo_set();
+        let (tx, _rx) = rtrb::RingBuffer::new(64);
+        let monitor = crate::engine::Studio::new(&set, 48_000.0, 120.0).1.monitor;
+        let c = Controls::new(&set, &[0; 4], tx, monitor);
+        c.set_mix(2, Mix::Volume, 0.4);
+        c.set_mix(2, Mix::SendB, 0.6);
+        c.set_param(1, 3, 0.25);
+        c.edit_io(3, |io| io.armed = true);
+        let saved = c.snapshot();
+        assert_eq!(saved[2].volume, Some(0.4));
+        assert_eq!(saved[2].sends, [0.0, 0.6]);
+        assert_eq!(saved[1].params.map(|p| p[3]), Some(0.25));
+        assert!(saved[3].io.armed);
+
+        let (tx, _rx) = rtrb::RingBuffer::new(64);
+        let monitor = crate::engine::Studio::new(&saved, 48_000.0, 120.0)
+            .1
+            .monitor;
+        let again = Controls::new(&saved, &[0; 4], tx, monitor);
+        assert_eq!(again.mix(2, Mix::SendB), 0.6);
+        assert_eq!(again.param(1, 3), 0.25);
+        assert!(again.io(3).armed);
     }
 }

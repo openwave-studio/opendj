@@ -607,6 +607,93 @@ component SmallButton inherits Rectangle {
     ta := TouchArea { clicked => { root.clicked(); } }
 }
 
+// The File menu: Open…, Save and Save As….
+component FileMenu inherits Pill {
+    // "⌘" on macOS, "Ctrl+" elsewhere.
+    in property <string> mod-key;
+    callback action(int);
+    label: "File";
+    clicked => { popup.show(); }
+    popup := PopupWindow {
+        x: 0;
+        y: root.height + 2px;
+        width: 190px;
+        Rectangle {
+            background: Theme.panel-2;
+            border-width: 1px;
+            border-color: Theme.line;
+            VerticalLayout {
+                padding: 3px;
+                for item[i] in [
+                    { name: "Open…", keys: root.mod-key + "O" },
+                    { name: "Save", keys: root.mod-key + "S" },
+                    { name: "Save As…", keys: "⇧" + root.mod-key + "S" },
+                ]: Rectangle {
+                    height: 24px;
+                    background: ia.has-hover ? Theme.select : transparent;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        Text {
+                            text: item.name;
+                            color: Theme.text;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                            horizontal-stretch: 1;
+                        }
+                        Text {
+                            text: item.keys;
+                            color: Theme.dim;
+                            font-size: 10px;
+                            vertical-alignment: center;
+                        }
+                    }
+                    ia := TouchArea { clicked => { root.action(i); } }
+                }
+            }
+        }
+    }
+}
+
+// Asked before Open… when the set has changes that aren't saved.
+component UnsavedQuestion inherits Rectangle {
+    in property <string> name;
+    callback answer(int); // 0 save first, 1 don't save, 2 cancel
+    background: #000000a0;
+    TouchArea { }
+    Rectangle {
+        width: 380px;
+        height: 130px;
+        background: Theme.panel;
+        border-width: 1px;
+        border-color: Theme.line;
+        border-radius: 4px;
+        VerticalLayout {
+            padding: 16px;
+            spacing: 14px;
+            Text {
+                text: "Save the changes to " + root.name + " first?";
+                color: Theme.text;
+                font-size: 14px;
+                font-weight: 600;
+                wrap: word-wrap;
+            }
+            Text {
+                text: "Opening another set closes this one.";
+                color: Theme.dim;
+                font-size: 12px;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: end;
+                Pill { label: "Cancel"; clicked => { root.answer(2); } }
+                Pill { label: "Don't Save"; clicked => { root.answer(1); } }
+                Pill { label: "Save"; on: true; clicked => { root.answer(0); } }
+            }
+        }
+    }
+}
+
 // A drop-down: the current choice, and a list to pick from.
 component Picker inherits Rectangle {
     in property <string> text;
@@ -2044,6 +2131,14 @@ export component AppWindow inherits Window {
     in property <string> buffer-choice;
     in property <string> audio-info;
     in property <string> rate-note;
+    // The set: its name, and whether Open… waits on its unsaved changes.
+    in property <string> set-name;
+    in property <string> mod-key: "Ctrl+";
+    in-out property <bool> confirm-open;
+    // File menu: 0 Open…, 1 Save, 2 Save As…, 3 Open… without saving.
+    callback file(int);
+    callback save-to(string);
+    callback open-path(string);
 
     callback launch-clip(int, int);   // track, scene
     callback launch-scene(int);
@@ -2101,6 +2196,23 @@ export component AppWindow inherits Window {
     in property <[BrowserItem]> browser-all;
     in property <[BrowserItem]> browser-samples;
 
+    forward-focus: keys;
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (event.modifiers.control || event.modifiers.meta) && !event.modifiers.alt {
+                if event.text == "s" || event.text == "S" {
+                    root.file(event.modifiers.shift ? 2 : 1);
+                    return accept;
+                }
+                if event.text == "o" || event.text == "O" {
+                    root.file(0);
+                    return accept;
+                }
+            }
+            reject
+        }
+    }
+
     property <TrackData> track: tracks[selected-track];
     property <bool> has-clip: selected-scene >= 0
         && slots[selected-scene * tracks.length + selected-track].state != SlotState.empty;
@@ -2120,6 +2232,15 @@ export component AppWindow inherits Window {
                     font-size: 14px;
                     font-weight: 700;
                     vertical-alignment: center;
+                }
+                VerticalLayout { alignment: center; FileMenu { mod-key: root.mod-key; action(i) => { root.file(i); } } }
+                Text {
+                    text: root.set-name;
+                    color: Theme.dim;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    max-width: 180px;
                 }
                 Rectangle { width: 12px; }
                 VerticalLayout { alignment: center; Pill { label: "−"; clicked => { root.tempo-step(-1); } } }
@@ -2706,5 +2827,17 @@ export component AppWindow inherits Window {
         rate-note: root.rate-note;
         picked(field, i) => { root.settings-pick(field, i); }
         close => { root.settings-open = false; }
+    }
+    if root.confirm-open: UnsavedQuestion {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        name: root.set-name;
+        answer(a) => {
+            root.confirm-open = false;
+            if a == 0 { root.file(1); }
+            if a == 1 { root.file(3); }
+        }
     }
 }

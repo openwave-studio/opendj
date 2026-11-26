@@ -13,12 +13,13 @@
 
 // The engine's modules, under their old paths.
 pub use opendj_studio_engine::{
-    als, clip, control, conv, devices, engine, fx, link, plugins, rack, scale, simpler, sound,
-    steps,
+    als, clip, control, conv, devices, engine, fx, link, plugins, rack, scale, set_file, simpler,
+    sound, steps,
 };
 
 mod audio;
 mod check;
+mod dialog;
 mod midi;
 mod push;
 mod rack_ui;
@@ -36,9 +37,15 @@ use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use clip::{AudioTo, Io, MidiFrom, Monitoring, SCENES, TRACKS};
 use control::{Controls, Mix};
 use engine::{Quantize, Studio};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 slint::include_modules!();
+
+thread_local! {
+    /// A set to open once the window closes (Open… restarts the studio
+    /// with it, so the sound card, Push and plug-ins start clean).
+    static NEXT: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+}
 
 /// The demo set's tempo.
 const TEMPO: f64 = 124.0;
@@ -120,24 +127,101 @@ fn main() {
             tempo: TEMPO,
             returns: vec![("A Return".into(), 0), ("B Return".into(), 0)],
             note: String::new(),
+            doc: Doc::new("Untitled".into(), None),
         },
     };
     if let Err(e) = run_ui(opened) {
         eprintln!("openDJ Studio: {e}");
         std::process::exit(1);
     }
+    // Open…: the studio again, with the set picked.
+    if let Some(next) = NEXT.take() {
+        let started = std::env::current_exe()
+            .and_then(|exe| std::process::Command::new(exe).arg(next).spawn());
+        if let Err(e) = started {
+            eprintln!("openDJ Studio: can't open the set: {e}");
+            std::process::exit(1);
+        }
+    }
 }
 
-/// A set to play: the demo, or a Live set from the command line.
+/// A set to play: the demo, a Live set or one of the studio's own.
 struct Opened {
     tracks: Vec<clip::Track>,
     tempo: f64,
     returns: Vec<(String, u32)>,
     /// For the status line: what didn't come in.
     note: String,
+    doc: Doc,
+}
+
+/// Which set the window has, and what it was saved with.
+struct Doc {
+    /// Its name, for the title and Save As.
+    name: String,
+    /// The studio's own file it saves to (a Live set or the demo asks
+    /// where first).
+    path: Option<PathBuf>,
+    key: Option<scale::Key>,
+    main_volume: Option<f32>,
+}
+
+impl Doc {
+    fn new(name: String, path: Option<PathBuf>) -> Doc {
+        Doc {
+            name,
+            path,
+            key: None,
+            main_volume: None,
+        }
+    }
+}
+
+fn is_studio_set(path: &Path) -> bool {
+    path.extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case(set_file::EXTENSION))
+}
+
+fn set_name(path: &Path) -> String {
+    path.file_stem()
+        .map_or(String::new(), |n| n.to_string_lossy().into())
+}
+
+/// One of the studio's own sets: its recordings decoded (samples load
+/// with the window, as a Live set's).
+fn open_studio_set(path: &Path) -> Result<Opened, String> {
+    let set = set_file::read(path)?;
+    if let Some(folder) = path.parent() {
+        let _ = samples::SET_FOLDER.set(folder.to_path_buf());
+    }
+    let mut tracks = set.tracks;
+    let missing = als::decode_audio(&mut tracks);
+    for m in &missing {
+        eprintln!("not found: {m}");
+    }
+    let name = set_name(path);
+    let mut note = name.clone();
+    if !missing.is_empty() {
+        note += &format!(" · {} recordings not found", missing.len());
+    }
+    Ok(Opened {
+        tracks,
+        tempo: set.tempo,
+        returns: set.returns,
+        note,
+        doc: Doc {
+            name,
+            path: Some(path.to_path_buf()),
+            key: Some(set.key),
+            main_volume: Some(set.main_volume),
+        },
+    })
 }
 
 fn open_set(path: &Path) -> Result<Opened, String> {
+    if is_studio_set(path) {
+        return open_studio_set(path);
+    }
     let mut set = als::read(path)?;
     if let Some(folder) = path.parent() {
         let _ = samples::SET_FOLDER.set(folder.to_path_buf());
@@ -158,10 +242,8 @@ fn open_set(path: &Path) -> Result<Opened, String> {
     for l in &set.left_out {
         eprintln!("left out: {l}");
     }
-    let name = path
-        .file_stem()
-        .map_or(String::new(), |n| n.to_string_lossy().into());
-    let mut note = name;
+    let name = set_name(path);
+    let mut note = name.clone();
     if !missing.is_empty() {
         note += &format!(" · {} of {files} recordings not found", missing.len());
     }
@@ -173,6 +255,7 @@ fn open_set(path: &Path) -> Result<Opened, String> {
         tempo: set.tempo,
         returns: set.returns,
         note,
+        doc: Doc::new(name, None),
     })
 }
 
@@ -182,6 +265,7 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
         tempo,
         returns,
         note,
+        doc,
     } = opened;
     let chosen = settings::audio();
     let rate = audio::rate(&chosen);
@@ -224,7 +308,7 @@ fn run_ui(opened: Opened) -> Result<(), slint::PlatformError> {
                 .any(|d| matches!(d.builtin, Some(devices::Settings::External(_))))
     });
     let audio = audio::Audio::start(studio, &chosen, wants_input);
-    ui(set, &returns, audio, chosen, remote, link, note)
+    ui(set, &returns, audio, chosen, remote, link, note, doc)
 }
 
 /// The I/O pickers' channel lists for the sound card's channels.
@@ -402,6 +486,7 @@ fn ui(
     remote: engine::Remote,
     link: Arc<rusty_link::AblLink>,
     note: String,
+    doc: Doc,
 ) -> Result<(), slint::PlatformError> {
     let rate = audio.rate;
     let channels = Rc::new(Cell::new(Channels {
@@ -460,7 +545,102 @@ fn ui(
     window.set_slots(ModelRc::from(slots.clone()));
     window.set_scenes(SCENES as i32);
     window.set_quantize(Quantize::Bar.label().into());
+    if let Some(key) = doc.key {
+        controls.edit_key(|k| *k = key);
+    }
+    if let Some(v) = doc.main_volume {
+        controls.set_main_volume(v);
+    }
     window.set_main_volume(controls.main_volume());
+    // Save, Save As and Open.
+    let note = Rc::new(RefCell::new(note));
+    let returns_kept = returns.to_vec();
+    let file = Rc::new(RefCell::new(FileState {
+        saved: set_text(&controls, &returns_kept),
+        doc,
+    }));
+    window.set_set_name(file.borrow().doc.name.as_str().into());
+    window.set_mod_key(
+        if cfg!(target_os = "macos") {
+            "⌘"
+        } else {
+            "Ctrl+"
+        }
+        .into(),
+    );
+    {
+        let (c, p, w, f, n) = (
+            controls.clone(),
+            plugins.clone(),
+            window.as_weak(),
+            file.clone(),
+            note.clone(),
+        );
+        window.on_save_to(move |path| {
+            let Some(w) = w.upgrade() else { return };
+            let mut path = PathBuf::from(path.as_str());
+            if !is_studio_set(&path) {
+                let mut name = path.file_name().unwrap_or_default().to_os_string();
+                name.push(".");
+                name.push(set_file::EXTENSION);
+                path.set_file_name(name);
+            }
+            match save_set(&c, &p, &returns_kept, &path) {
+                Ok(text) => {
+                    let mut f = f.borrow_mut();
+                    f.saved = text;
+                    f.doc.name = set_name(&path);
+                    f.doc.path = Some(path);
+                    w.set_set_name(f.doc.name.as_str().into());
+                    *n.borrow_mut() = format!("{} saved", f.doc.name);
+                }
+                Err(e) => *n.borrow_mut() = format!("Not saved: {e}"),
+            }
+        });
+    }
+    {
+        let (c, w, f) = (controls.clone(), window.as_weak(), file.clone());
+        let returns = returns.to_vec();
+        window.on_file(move |action| {
+            let Some(win) = w.upgrade() else { return };
+            match action {
+                // Open…, unless there are changes to save first.
+                0 => {
+                    if f.borrow().saved != set_text(&c, &returns) {
+                        win.set_confirm_open(true);
+                    } else {
+                        ask_open(&w);
+                    }
+                }
+                // Save, or Save As… for a set that isn't one of ours yet.
+                1 if f.borrow().doc.path.is_some() => {
+                    let path = f.borrow().doc.path.clone().unwrap_or_default();
+                    win.invoke_save_to(path.to_string_lossy().as_ref().into());
+                }
+                1 | 2 => {
+                    let name = format!("{}.{}", f.borrow().doc.name, set_file::EXTENSION);
+                    let w = w.clone();
+                    dialog::save_file("Save the set as", &name, move |path| {
+                        let path = path.to_string_lossy().to_string();
+                        let _ = slint::invoke_from_event_loop(move || {
+                            if let Some(w) = w.upgrade() {
+                                w.invoke_save_to(path.into());
+                            }
+                        });
+                    });
+                }
+                // From the unsaved-changes question: open without saving.
+                3 => ask_open(&w),
+                _ => {}
+            }
+        });
+    }
+    {
+        window.on_open_path(move |path| {
+            NEXT.set(Some(PathBuf::from(path.as_str())));
+            let _ = slint::quit_event_loop();
+        });
+    }
     for (i, (name, rgb)) in returns.iter().take(2).enumerate() {
         let c = if *rgb == 0 { None } else { Some(color(*rgb)) };
         if i == 0 {
@@ -1061,6 +1241,7 @@ fn ui(
             w.set_peers(link.num_peers() as i32);
             w.set_load(format!("{:.0}%", monitor.load() * 100.0).into());
             let push = push_status.lock().map(|s| s.clone()).unwrap_or_default();
+            let note = note.borrow();
             let line = [note.as_str(), audio_status.borrow().as_str(), push.as_str()]
                 .into_iter()
                 .filter(|s| !s.is_empty())
@@ -1077,6 +1258,66 @@ fn ui(
     drop(push);
     drop(audio);
     result
+}
+
+/// The window's set and its text as last saved or opened, to tell when
+/// there are changes to save.
+struct FileState {
+    doc: Doc,
+    saved: String,
+}
+
+/// The set as the file would have it, without plug-ins' sounds (asking
+/// each helper for its sound is for saving only).
+fn set_text(c: &Controls, returns: &[(String, u32)]) -> String {
+    let set = set_file::SetFile {
+        format: set_file::FORMAT,
+        tempo: c.monitor.tempo(),
+        key: c.key(),
+        main_volume: c.main_volume(),
+        returns: returns.to_vec(),
+        tracks: c.snapshot(),
+    };
+    serde_json::to_string(&set).unwrap_or_default()
+}
+
+/// Writes the set to `path`, with each plug-in's sound as it is now.
+/// Returns the set's text without those sounds, as [`set_text`] makes it.
+fn save_set(
+    c: &Controls,
+    p: &plugins::Plugins,
+    returns: &[(String, u32)],
+    path: &Path,
+) -> Result<String, String> {
+    let mut tracks = c.snapshot();
+    for (t, track) in tracks.iter_mut().enumerate() {
+        for (d, info) in track.devices.iter_mut().enumerate() {
+            p.keep_sounds(t, d, info);
+        }
+    }
+    let set = set_file::SetFile {
+        format: set_file::FORMAT,
+        tempo: c.monitor.tempo(),
+        key: c.key(),
+        main_volume: c.main_volume(),
+        returns: returns.to_vec(),
+        tracks,
+    };
+    set_file::write(path, &set)?;
+    Ok(set_text(c, returns))
+}
+
+/// Asks for a set to open (one of ours or a Live set).
+fn ask_open(w: &slint::Weak<AppWindow>) {
+    let w = w.clone();
+    dialog::open_file("Open a set", move |path| {
+        let path = path.to_string_lossy().to_string();
+        let _ = slint::invoke_from_event_loop(move || {
+            if let Some(w) = w.upgrade() {
+                w.invoke_open_path(path.into());
+            }
+        });
+    });
 }
 
 /// Puts `new` in `old`'s model when it has as many rows, so the lists on

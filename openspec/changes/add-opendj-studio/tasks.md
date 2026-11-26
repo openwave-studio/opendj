@@ -13,7 +13,7 @@
 ## 2. Instruments and sets
 
 - [x] 2.1 Plugin instruments on tracks through `opendj-plugin-host`
-- [ ] 2.2 Save and open a set
+- [x] 2.2 Save and open a set
 - [x] 2.3 Ableton Push 2 without Live: User mode, pads launch clips (Session) or play the selected instrument (Note), scene, stop and track buttons, transport, lights in track colours kept in time by MIDI clock, encoders on the instrument knobs or the mixer, and the screen over USB (`opendj-studio --push-preview`)
 - [x] 2.4 Instrument knobs and pan work, shared by the window and Push
 - [x] 2.5 Try Push 2 on hardware (macOS)

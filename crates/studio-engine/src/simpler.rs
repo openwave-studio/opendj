@@ -21,10 +21,11 @@ pub const MODES: &[&str] = &["Classic", "One-Shot"];
 /// The most notes it plays at once.
 pub const MAX_VOICES: usize = 32;
 
-#[derive(Clone)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct SimplerSettings {
     /// The sample's file, and the sample decoded at the engine's rate.
     pub path: Option<PathBuf>,
+    #[serde(skip)]
     pub sample: Option<Arc<Sample>>,
     /// 0 Classic, 1 One-Shot.
     pub mode: u8,
