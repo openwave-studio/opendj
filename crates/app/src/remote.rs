@@ -59,6 +59,8 @@ struct Fade {
 
 pub struct Remote {
     server: Option<Server>,
+    /// The Deck page's controls and state.
+    deck: crate::remote_deck::DeckRemote,
     decks: [DeckHandles; DECKS],
     crossfader: ControlHandle,
     master: ControlHandle,
@@ -116,6 +118,7 @@ impl Remote {
         };
         Self {
             server: None,
+            deck: crate::remote_deck::DeckRemote::new(reg),
             decks: std::array::from_fn(|d| {
                 let g = deck_group(d);
                 DeckHandles {
@@ -332,7 +335,10 @@ impl Remote {
                     method,
                     params,
                 } => {
-                    let result = self.handle(&method, &params, app, automix, browser, tracks);
+                    let result = match self.deck.handle(&method, &params, browser) {
+                        Some(r) => r,
+                        None => self.handle(&method, &params, app, automix, browser, tracks),
+                    };
                     if let Some(s) = &self.server {
                         s.reply(client, id, result);
                     }
@@ -354,6 +360,7 @@ impl Remote {
             server.publish("automix", self.automix_state(app, automix, browser, tracks));
             server.publish("mixer", self.mixer_state(app));
         }
+        self.deck.publish(server, tracks, browser.camelot());
         if now.duration_since(self.last_decks) >= DECKS_EVERY {
             self.last_decks = now;
             server.publish("now", self.now_state(automix, browser, tracks));
