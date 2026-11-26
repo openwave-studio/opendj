@@ -701,7 +701,14 @@ fn watch_devices(
                         .map(|(p, _, m)| (p.clone(), pick_hid_mapping(p, &m.1, &dir, &choices))),
                 );
             }
-            *shared.keys_only.lock().unwrap() = keys_only(&ports, &found);
+            // Only while the HID mapping runs (as of the last scan): if it
+            // can't open, the knobs' own controllers are all there is.
+            let running: Vec<_> = found
+                .iter()
+                .filter(|(p, _, _)| devices.get(p).is_some_and(|d| !d.thread.is_finished()))
+                .cloned()
+                .collect();
+            *shared.keys_only.lock().unwrap() = keys_only(&ports, &running);
             *shared.hid_ports.lock().unwrap() = found
                 .iter()
                 .map(|(p, _, m)| (p.clone(), m.0.clone()))
