@@ -1156,7 +1156,29 @@ component ModeIcon inherits Path {
     fill: kind == 2 ? tint : transparent;
     commands: kind == 1 ? "M 2 13 L 6 13 L 6 9 L 10 9 L 10 5 L 14 5 L 14 3"
         : kind == 2 ? "M 3.5 12.5 a 2.2 1.8 0 1 0 4.4 0 a 2.2 1.8 0 1 0 -4.4 0 M 8.1 8 a 2.2 1.8 0 1 0 4.4 0 a 2.2 1.8 0 1 0 -4.4 0 M 3.5 3.5 a 2.2 1.8 0 1 0 4.4 0 a 2.2 1.8 0 1 0 -4.4 0"
+        // Clear: a cross (4 is DiceIcon).
+        : kind == 5 ? "M 4 4 L 12 12 M 12 4 L 4 12"
+        // Undo: an arrow turning back.
+        : kind == 6 ? "M 5.5 3.5 L 2.5 6.5 L 5.5 9.5 M 2.5 6.5 L 10 6.5 Q 13.5 6.5 13.5 10 Q 13.5 13.5 10 13.5 L 7 13.5"
         : "M 2 13 L 5 10 L 7 12 L 10 7 L 12 9 L 14 3 M 11 3 L 14 3 L 14 6";
+}
+
+// A die showing five, drawn (no font has a die everywhere): a thin
+// rounded outline and five pips, sharp at small sizes.
+component DiceIcon inherits Rectangle {
+    in property <color> tint;
+    property <length> pip: max(1.5px, root.width / 6);
+    border-width: 1px;
+    border-color: root.tint;
+    border-radius: root.width / 5;
+    for p in [{ x: 0.3, y: 0.3 }, { x: 0.7, y: 0.3 }, { x: 0.5, y: 0.5 }, { x: 0.3, y: 0.7 }, { x: 0.7, y: 0.7 }]: Rectangle {
+        x: root.width * p.x - root.pip / 2;
+        y: root.height * p.y - root.pip / 2;
+        width: root.pip;
+        height: root.pip;
+        border-radius: root.pip / 2;
+        background: root.tint;
+    }
 }
 
 component GrooveButton inherits Rectangle {
@@ -1191,7 +1213,8 @@ component GrooveButton inherits Rectangle {
         spacing: 4px;
         VerticalLayout {
             alignment: center;
-            ModeIcon { kind: root.icon; tint: lit ? Theme.lilac-text : Theme.text; width: 16px; height: 16px; }
+            if root.icon == 4: DiceIcon { tint: lit ? Theme.lilac-text : Theme.text; width: 14px; height: 14px; }
+            if root.icon != 4: ModeIcon { kind: root.icon; tint: lit ? Theme.lilac-text : Theme.text; width: 16px; height: 16px; }
         }
         Text {
             text: root.text;
@@ -3781,9 +3804,8 @@ component GrooveDice inherits GrooveButton {
     property <bool> pending: Controls.value(Controls.resolve(g, "dice_pending"), Controls.tick) > 0;
     property <bool> can-undo: Controls.value(Controls.resolve(g, "can_undo"), Controls.tick) > 0;
     property <bool> varying: Controls.value(Controls.resolve(g, "vary"), Controls.tick) > 0.01;
-    text: "⚄";
+    icon: 4;
     lit: varying;
-    font-size: 16px;
     blink: pending && Controls.blink;
     clicked => { dice-menu.show(); }
     dice-menu := PopupWindow {
@@ -4886,14 +4908,16 @@ component InstrumentScope inherits Rectangle {
     background: Theme.n-0c0c0e;
     if !InstrumentsUi.scope-freq: Rectangle { y: parent.height / 2; height: 1px; background: Theme.n-26262a; }
     Path {
-        // The same shape as the scope (160 by 40), so it fills it: a path
-        // keeps its viewbox's proportions.
+        // A path keeps its viewbox's proportions (4 by 1), so it is drawn
+        // at those and stretched across the scope, whatever its shape.
         viewbox-width: 128;
         viewbox-height: 32;
         x: 0;
         y: 0;
-        width: parent.width;
+        width: parent.height * 4;
         height: parent.height;
+        transform-origin: { x: 0px, y: 0px };
+        transform-scale-x: parent.width / max(1px, parent.height * 4);
         fill: root.tint.with-alpha(0.35);
         stroke: root.tint;
         stroke-width: 1px;
@@ -6893,7 +6917,7 @@ component NoteFxRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         name: "ARP";
         on: arp;
-        state: (arp ? "" : "Off · ") + ["↗", "↘", "⇅", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + " ×" + arp-octaves;
+        state: (arp ? "" : "Off · ") + ["Up", "Down", "Up/Dn", "Rand", "Order"][arp-mode] + " " + ["1/4", "1/8", "1/8T", "1/16", "1/16T", "1/32"][arp-rate] + " ×" + arp-octaves;
         toggled => { Controls.toggle(arp-index); }
         opened => { arp-menu.show(); }
         Rectangle {
@@ -7193,11 +7217,13 @@ component SeqLaneButtons inherits HorizontalLayout {
     in property <int> lane;
     width: 50px;
     spacing: 2px;
-    for tool[i] in ["⚄", "✕"]: Rectangle {
+    // Dice the lane, or clear it.
+    for kind[i] in [4, 5]: Rectangle {
         height: 16px;
         border-radius: 3px;
         background: tta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
-        Text { text: tool; color: tta.has-hover ? Theme.text : Theme.text-dim; font-size: 11px; }
+        if kind == 4: DiceIcon { tint: tta.has-hover ? Theme.text : Theme.text-dim; width: 11px; height: 11px; }
+        if kind != 4: ModeIcon { kind: kind; tint: tta.has-hover ? Theme.text : Theme.text-dim; width: 11px; height: 11px; }
         tta := TouchArea {
             mouse-cursor: pointer;
             clicked => { InstrumentsUi.seq-lane(root.slot, root.lane, i == 0); }
@@ -7427,7 +7453,15 @@ component SeqPanel inherits HorizontalLayout {
                 height: 16px;
                 border-radius: 3px;
                 background: dta.pressed ? root.hue : dta.has-hover ? Theme.n-2a2a2d : Theme.n-111114;
-                Text { text: "⚄ DICE"; color: Theme.text; font-size: 9px; font-weight: 600; }
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    VerticalLayout {
+                        alignment: center;
+                        DiceIcon { tint: Theme.text; width: 10px; height: 10px; }
+                    }
+                    Text { text: "DICE"; color: Theme.text; font-size: 9px; font-weight: 600; vertical-alignment: center; }
+                }
                 dta := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
@@ -7436,13 +7470,14 @@ component SeqPanel inherits HorizontalLayout {
                     }
                 }
             }
-            for tool[i] in ["↶", "✓"]: Rectangle {
+            for tool[i] in ["", "✓"]: Rectangle {
                 width: 16px;
                 height: 16px;
                 border-radius: 3px;
                 opacity: root.can-undo ? 1 : 0.35;
                 background: uta.has-hover && root.can-undo ? Theme.n-2a2a2d : Theme.n-111114;
-                Text { text: tool; color: Theme.text; font-size: 10px; }
+                if i == 0: ModeIcon { kind: 6; tint: Theme.text; width: 11px; height: 11px; }
+                if i == 1: Text { text: tool; color: Theme.text; font-size: 10px; }
                 uta := TouchArea {
                     enabled: root.can-undo;
                     mouse-cursor: pointer;
