@@ -17,7 +17,14 @@
 //! the beat, so their notes go out early and are heard on it. Played keys go
 //! out at once.
 //!
+//! MIDI clock and Start/Stop go to the synth too, following the deck the
+//! instrument plays to (its transport, as the arpeggiator follows) rather
+//! than the master deck, early by the same latency, so the synth's own
+//! sequencer and arpeggiator start on that deck's next bar and keep its
+//! tempo. `[Instrument1],hardware_clock` turns that off.
+//!
 //! Controls: `[Instrument1],hardware` (1 while a hardware synth is loaded),
+//! `[Instrument1],hardware_clock` (clock and Start/Stop to it, on),
 //! `[Instrument1],hardware_latency` (0 to [`MAX_LATENCY_MS`]) and
 //! `[Instrument1],hardware_open` (its MIDI port is open).
 
@@ -31,6 +38,7 @@ use opendj_plugin_host::shm::Midi;
 use rusty_link::AblLink;
 
 use crate::inputs::INSTRUMENT_PARAMETERS;
+use crate::midi_clock::{BeatClock, Generator, Message};
 
 pub const GROUP: &str = "[Instrument1]";
 
@@ -142,12 +150,16 @@ pub(crate) struct Out {
     tx: rtrb::Producer<Timed>,
     slots: rtrb::Consumer<Option<Slot>>,
     latency: ControlHandle,
+    /// The instrument's deck's beat as each buffer is heard, for the clock.
+    clock: Arc<BeatClock>,
 }
 
 /// The MIDI thread's half of [`Out`]'s queues, taken once.
 pub struct HardwareLink {
     pub(crate) rx: rtrb::Consumer<Timed>,
     pub(crate) slots: rtrb::Producer<Option<Slot>>,
+    pub(crate) clock: Arc<BeatClock>,
+    latency: ControlHandle,
 }
 
 impl Out {
@@ -162,17 +174,22 @@ impl Out {
             MAX_LATENCY_MS,
             Behavior::Linear,
         );
+        reg.create(GROUP, "hardware_clock", 1.0, 0.0, 1.0, Behavior::Toggle);
+        let clock = Arc::new(BeatClock::default());
         (
             Self {
                 slot: None,
                 sent: [UNSENT; INSTRUMENT_PARAMETERS],
                 tx,
                 slots,
-                latency,
+                latency: latency.clone(),
+                clock: clock.clone(),
             },
             HardwareLink {
                 rx,
                 slots: slots_tx,
+                clock,
+                latency,
             },
         )
     }
@@ -198,6 +215,15 @@ impl Out {
             return 0.0;
         }
         self.latency.get().clamp(0.0, MAX_LATENCY_MS) / 1000.0
+    }
+
+    /// Publishes the instrument's deck as this buffer is heard (`heard_at`,
+    /// µs): its beat, and its tempo while it plays (0 stopped), for the
+    /// synth's clock.
+    pub(crate) fn publish(&self, heard_at: i64, beat: f64, tempo: f64) {
+        if self.slot.is_some() {
+            self.clock.publish(heard_at, beat, tempo);
+        }
     }
 
     /// Queues this buffer's knobs and `notes` (frames into the buffer, at
@@ -262,6 +288,8 @@ struct Shared {
     config: Mutex<Option<HardwareConfig>>,
     generation: AtomicU64,
     stop: AtomicBool,
+    /// Messages the app sends at once (a program change), in order.
+    now: Mutex<Vec<Vec<u8>>>,
     /// The audio thread's queue of loaded synths.
     slots: Mutex<rtrb::Producer<Option<Slot>>>,
     thread: Mutex<Option<std::thread::JoinHandle<()>>>,
@@ -288,6 +316,20 @@ impl HardwareSynth {
         *self.shared.config.lock().unwrap() = config;
         self.shared.generation.fetch_add(1, Ordering::Relaxed);
         let _ = self.shared.slots.lock().unwrap().push(slot);
+    }
+
+    /// Picks the synth's preset `program` (0 to 127), after Bank Select
+    /// `bank` when it has banks. Nothing without a synth loaded.
+    pub fn program(&self, bank: Option<u8>, program: u8) {
+        let Some(ch) = self.config().map(|c| c.channel & 15) else {
+            return;
+        };
+        let mut now = self.shared.now.lock().unwrap();
+        if let Some(b) = bank {
+            now.push(vec![0xB0 | ch, 0, b & 127]);
+            now.push(vec![0xB0 | ch, 32, 0]);
+        }
+        now.push(vec![0xC0 | ch, program & 127]);
     }
 
     /// The synth loaded now.
@@ -408,11 +450,17 @@ pub(crate) fn start(
     clock: Arc<AblLink>,
     reg: &Arc<ControlRegistry>,
 ) -> HardwareSynth {
-    let HardwareLink { rx, slots } = link;
+    let HardwareLink {
+        rx,
+        slots,
+        clock: deck_clock,
+        latency,
+    } = link;
     let shared = Arc::new(Shared {
         config: Mutex::new(None),
         generation: AtomicU64::new(0),
         stop: AtomicBool::new(false),
+        now: Mutex::new(Vec::new()),
         slots: Mutex::new(slots),
         thread: Mutex::new(None),
     });
@@ -424,16 +472,47 @@ pub(crate) fn start(
             .expect("[Instrument1],instrument exists: the rack makes it"),
     };
     let open_shown = reg.indicator(GROUP, "hardware_open", 1.0);
+    let clock_on = reg
+        .get(GROUP, "hardware_clock")
+        .expect("[Instrument1],hardware_clock exists: the rack makes it");
     let weak = Arc::downgrade(reg);
     let s = synth.clone();
     let spawned = std::thread::Builder::new()
         .name("hardware-synth".into())
-        .spawn(move || run(rx, clock, weak, Arc::downgrade(&s.shared), s, open_shown));
+        .spawn(move || {
+            let c = Clocking {
+                deck: deck_clock,
+                on: clock_on,
+                latency,
+            };
+            run(rx, clock, weak, Arc::downgrade(&s.shared), s, open_shown, c)
+        });
     match spawned {
         Ok(t) => *shared.thread.lock().unwrap() = Some(t),
         Err(e) => eprintln!("could not start the hardware synth's MIDI thread: {e}"),
     }
     synth
+}
+
+/// What the MIDI thread needs for the synth's clock.
+struct Clocking {
+    deck: Arc<BeatClock>,
+    on: ControlHandle,
+    latency: ControlHandle,
+}
+
+/// Clock messages are worked out this far (µs) ahead of when they go out.
+const CLOCK_LOOKAHEAD: f64 = 3000.0;
+
+fn clock_message(t: f64, m: Message) -> Timed {
+    let b = m.bytes();
+    let mut data = [0; 3];
+    data[..b.len()].copy_from_slice(&b);
+    Timed {
+        at: t,
+        len: b.len() as u8,
+        data,
+    }
 }
 
 fn run(
@@ -443,7 +522,10 @@ fn run(
     shared: Weak<Shared>,
     synth: HardwareSynth,
     open_shown: ControlHandle,
+    clocking: Clocking,
 ) {
+    let mut generator = Generator::default();
+    let mut ticks = Vec::new();
     let HardwareSynth { loaded, choice, .. } = synth;
     let clock = move || link.clock_micros() as f64;
     let mut sender = Sender::default();
@@ -468,8 +550,12 @@ fn run(
         if g != generation {
             let wanted = sh.config.lock().unwrap().clone();
             if let (Some(old), Some(s)) = (&current, sink.as_mut()) {
+                if generator.running() {
+                    s.send(&Message::Stop.bytes());
+                }
                 silence(s.as_mut(), old.channel);
             }
+            generator = Generator::default();
             let same_port = matches!((&current, &wanted), (Some(a), Some(b)) if a.port == b.port);
             if !same_port {
                 sink = None;
@@ -486,10 +572,35 @@ fn run(
             sink = None;
         }
         open_shown.set_bool(sink.is_some());
+        let now_msgs = std::mem::take(&mut *sh.now.lock().unwrap());
+        if let Some(s) = sink.as_mut() {
+            for m in &now_msgs {
+                s.send(m);
+            }
+        }
         drop(sh);
         sender.take(&mut rx);
         if current.is_none() {
             sender.queue.clear();
+        }
+        // The synth's clock follows the instrument's deck, early by the
+        // latency; Stop goes out when it is turned off or unloaded.
+        let early = clocking.latency.get().clamp(0.0, MAX_LATENCY_MS) * 1000.0;
+        let enabled = current.is_some() && clocking.on.get_bool();
+        let now = clock();
+        ticks.clear();
+        generator.poll(
+            clocking.deck.read(),
+            enabled,
+            false,
+            now + early,
+            now + early + CLOCK_LOOKAHEAD,
+            &mut ticks,
+        );
+        for &(t, m) in &ticks {
+            let msg = clock_message(t - early, m);
+            let at = sender.queue.partition_point(|q| q.at <= msg.at);
+            sender.queue.insert(at, msg);
         }
         sender.send_due(sink.as_mut(), &clock);
         let wait = sender.idle_for(clock());
@@ -498,6 +609,9 @@ fn run(
         }
     }
     if let (Some(c), Some(s)) = (&current, sink.as_mut()) {
+        if generator.running() {
+            s.send(&Message::Stop.bytes());
+        }
         silence(s.as_mut(), c.channel);
     }
 }
@@ -603,6 +717,20 @@ mod tests {
         link.slots.push(None).unwrap();
         o.take_changes();
         assert_eq!(o.ahead(), 0.0);
+    }
+
+    #[test]
+    fn the_clock_follows_the_instruments_deck_only_with_a_synth() {
+        let (mut o, mut link) = out();
+        o.publish(1000, 4.0, 120.0);
+        assert!(link.clock.read().is_none());
+        link.slots.push(slot(0, &[])).unwrap();
+        o.take_changes();
+        o.publish(2000, 8.0, 124.0);
+        let snap = link.clock.read().unwrap();
+        assert_eq!((snap.heard_at, snap.beat, snap.tempo), (2000.0, 8.0, 124.0));
+        assert_eq!(clock_message(5.0, Message::Start).bytes(), [0xFA]);
+        assert_eq!(clock_message(5.0, Message::Clock).bytes(), [0xF8]);
     }
 
     #[test]

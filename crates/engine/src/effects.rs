@@ -2007,6 +2007,13 @@ impl EffectRack {
         // arpeggiator's notes on their steps: the plugin takes them in order.
         sort_by_frame(&mut self.notes_waiting);
         if self.hardware.active() {
+            let t = self.transport[target];
+            let tempo = if t.playing && t.bpm.is_finite() {
+                t.bpm
+            } else {
+                0.0
+            };
+            self.hardware.publish(self.heard_at, t.beat, tempo);
             self.hardware
                 .send(self.heard_at, self.sample_rate, params, &self.notes_waiting);
             return;
