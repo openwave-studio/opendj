@@ -167,20 +167,46 @@ export struct ParamMatch {
 // A hardware synth the instrument deck plays instead of a plugin (see
 // the engine's `hardware_synth`), set by the app: which bundled synth, its
 // presets and its setup.
+// One preset in the hardware synth picker: its place in the synth's list,
+// number ("042", or "3" in a bank) and name.
+export struct HwPreset {
+    index: int,
+    number: string,
+    name: string,
+}
+
 export global HardwareUi {
     // The synth on the deck, its place in the Jam list's Hardware synths
     // (-1 none), name and maker.
     in property <int> loaded: -1;
     in property <string> name;
     in property <string> maker;
-    // Its preset now: "012", the name, and every preset's name in order
-    // for the list (empty names show as the bank and number).
+    // Its preset now, for the deck bar: its bank or category dimmed
+    // ("Pad ›") then its number and name ("042 Glass Choir").
     in property <string> preset-number;
     in property <string> preset-name;
     in property <int> preset: -1;
-    in property <[string]> preset-names;
+    // ‹ › step through the picker's group only.
     callback step-preset(delta: int);
     callback pick-preset(index: int);
+    // The preset picker: its groups on the left (banks, or "All" and the
+    // categories; none for one bank), the group picked, and the presets
+    // listed on the right (the group's, or every one the search finds).
+    in property <[string]> groups;
+    in property <int> group;
+    in property <string> group-caption;
+    in property <string> list-caption;
+    in property <[HwPreset]> list;
+    in property <string> search;
+    callback set-group(index: int);
+    callback set-search(text: string);
+    // A synth that can tell its preset names: ↻ asks again, `reading` while
+    // it answers (with its progress, 0 to 1), and a note when it didn't.
+    in property <bool> can-read;
+    in property <bool> reading;
+    in property <float> read-progress;
+    in property <string> read-note;
+    callback read-names();
     // The setup panel: MIDI outputs, the one picked (-1 none found), the
     // channel (0 to 15), the audio inputs ("M4 · In 4") and the one picked
     // (-1 none). Latency and clock are `[Instrument1]` controls.

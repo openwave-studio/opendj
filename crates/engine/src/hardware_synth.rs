@@ -69,6 +69,9 @@ const IDLE: f64 = 1000.0;
 /// A closed port is tried again this often (µs): a synth plugged in later.
 const RETRY: f64 = 2e6;
 
+/// [`HardwareSynth::ask`] gives up when none of this many is answered.
+const FIRST_ANSWERS: usize = 4;
+
 /// What the app loads: where the synth is and which control change each
 /// knob sends.
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -348,6 +351,70 @@ impl HardwareSynth {
     /// The synth loaded now.
     pub fn config(&self) -> Option<HardwareConfig> {
         self.shared.config.lock().unwrap().clone()
+    }
+
+    /// Sends each of `requests` to the loaded synth in turn and waits up to
+    /// `wait` for the SysEx answer `fits` takes for it (its place and the
+    /// message) on the synth's MIDI input, the port named like its output.
+    /// `go_on` hears how many are done and stops early with false. The
+    /// answers come back in order, `None` for one not heard; nothing at all
+    /// without a synth, without its input, or when it doesn't answer the
+    /// first few.
+    pub fn ask(
+        &self,
+        requests: &[Vec<u8>],
+        wait: Duration,
+        fits: impl Fn(usize, &[u8]) -> bool,
+        mut go_on: impl FnMut(usize) -> bool,
+    ) -> Option<Vec<Option<Vec<u8>>>> {
+        let port = self.config()?.port;
+        let mut input = midir::MidiInput::new("openDJ").ok()?;
+        input.ignore(midir::Ignore::None);
+        let ports = input.ports();
+        let names: Vec<String> = ports
+            .iter()
+            .map(|p| input.port_name(p).unwrap_or_default())
+            .collect();
+        let at = find_port(&names, &port)?;
+        let (tx, rx) = std::sync::mpsc::channel::<Vec<u8>>();
+        let _conn = input
+            .connect(
+                &ports[at],
+                "openDJ synth presets",
+                move |_, msg, _| {
+                    if msg.first() == Some(&0xF0) {
+                        let _ = tx.send(msg.to_vec());
+                    }
+                },
+                (),
+            )
+            .map_err(|e| eprintln!("{port}: cannot open its MIDI input: {e}"))
+            .ok()?;
+        let mut out = Vec::with_capacity(requests.len());
+        for (i, r) in requests.iter().enumerate() {
+            while rx.try_recv().is_ok() {}
+            self.shared.now.lock().unwrap().push(r.clone());
+            let until = std::time::Instant::now() + wait;
+            let mut heard = None;
+            while let Some(left) = until.checked_duration_since(std::time::Instant::now()) {
+                match rx.recv_timeout(left) {
+                    Ok(m) if fits(i, &m) => {
+                        heard = Some(m);
+                        break;
+                    }
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+            out.push(heard);
+            if i + 1 == FIRST_ANSWERS && out.iter().all(Option::is_none) {
+                return None;
+            }
+            if !go_on(i + 1) {
+                break;
+            }
+        }
+        Some(out)
     }
 
     /// The MIDI outputs there are now, by name.

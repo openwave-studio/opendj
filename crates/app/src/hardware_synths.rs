@@ -4,27 +4,40 @@
 //! with its audio input routed as the instrument's, its presets stepped by
 //! name, and its setup (MIDI out, channel, audio input, latency, clock) kept
 //! per synth.
+//!
+//! The preset picker groups a synth's presets by category when it has them,
+//! else by bank. A synth that can tell its preset names and categories
+//! (`names_from` in its profile) is asked once in the background when it
+//! first loads; the answers are kept in `Instruments/Synth presets.json`
+//! and asked again from the picker's ↻.
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use opendj_control::ControlRegistry;
 use opendj_engine::AudioEngine;
 use opendj_engine::{input_devices, InputRole, InputRoute};
-use opendj_studio_engine::synth_profile::{self, SynthPreset, SynthProfile};
+use opendj_studio_engine::synth_profile::{self, ReadPreset, SynthPreset, SynthProfile};
 use serde_json::{json, Value};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use crate::instruments::{self, Synth};
-use crate::{settings, AppWindow, HardwareUi};
+use crate::{settings, AppWindow, HardwareUi, HwPreset};
 
 /// Settings: each synth's setup by its profile id.
 const KEY: &str = "hardware_synths";
 
 /// How often the Jam column checks which synths are plugged in.
 const WATCH: Duration = Duration::from_secs(3);
+
+/// How often a background read of preset names shows its progress.
+const READ_TICK: Duration = Duration::from_millis(200);
+
+/// How long the synth gets to answer for one preset's name.
+const READ_WAIT: Duration = Duration::from_millis(300);
 
 /// One synth's setup as kept in settings.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -100,21 +113,95 @@ fn port_index(ports: &[String], wanted: &str) -> Option<usize> {
     })
 }
 
-/// "012" for a preset, as the synth's own display counts (from 1, within
-/// its bank when it has more than one).
-fn preset_number(profile: &SynthProfile, p: &SynthPreset) -> String {
-    let banks = profile.presets.banks.len();
-    if banks > 1 {
-        let bank = profile
-            .presets
-            .banks
-            .iter()
-            .position(|b| b.name == p.bank)
-            .unwrap_or(0);
-        format!("B{}·{:03}", bank + 1, p.program as u16 + 1)
+/// The deck bar's text for preset `index`: its bank or category, dimmed
+/// ("Pad ›"), then its number and its own name if it has one ("042 Glass
+/// Choir"; "3" in a named bank).
+fn preset_bar(profile: &SynthProfile, index: usize, p: &SynthPreset) -> (String, String) {
+    let group = if profile.presets.categories.is_empty() {
+        (profile.presets.banks.len() > 1).then(|| p.bank.clone())
     } else {
-        format!("{:03}", p.program as u16 + 1)
+        (!p.category.is_empty()).then(|| p.category.clone())
+    };
+    let number = profile.preset_number(index, p);
+    let name = if p.named {
+        format!("{number} {}", p.name)
+    } else {
+        number
+    };
+    (group.map(|g| format!("{g} ›")).unwrap_or_default(), name)
+}
+
+/// The picker's presets in group `group` whose name holds `search` (any
+/// case), by their place in `presets`.
+fn listed(
+    profile: &SynthProfile,
+    presets: &[SynthPreset],
+    group: usize,
+    search: &str,
+) -> Vec<usize> {
+    let search = search.trim().to_lowercase();
+    presets
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| search.is_empty() || p.name.to_lowercase().contains(&search))
+        .filter(|(_, p)| !search.is_empty() || profile.in_group(p, group))
+        .map(|(i, _)| i)
+        .collect()
+}
+
+/// The group the picker opens on for preset `at`: its bank, or "All" for
+/// a synth grouped by category.
+fn group_of(profile: &SynthProfile, presets: &[SynthPreset], at: i32) -> usize {
+    let groups = profile.preset_groups();
+    match presets.get(at.max(0) as usize) {
+        Some(p) if at >= 0 && profile.presets.categories.is_empty() => {
+            groups.iter().position(|g| *g == p.bank).unwrap_or(0)
+        }
+        _ => 0,
     }
+}
+
+/// Where the names read from synths are kept.
+fn names_file() -> Option<std::path::PathBuf> {
+    Some(
+        settings::config_dir()?
+            .join("Instruments")
+            .join("Synth presets.json"),
+    )
+}
+
+/// The names and categories read from synth `id` before, one per preset.
+fn kept_names(id: &str) -> Option<Vec<Option<ReadPreset>>> {
+    let text = std::fs::read_to_string(names_file()?).ok()?;
+    let all: Value = serde_json::from_str(&text).ok()?;
+    serde_json::from_value(all.get(id)?.clone()).ok()
+}
+
+fn keep_names(id: &str, names: &[Option<ReadPreset>]) {
+    let Some(path) = names_file() else { return };
+    let mut all: Value = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| json!({}));
+    all[id] = json!(names);
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(text) = serde_json::to_string(&all) {
+        let _ = std::fs::write(&path, text);
+    }
+}
+
+/// A background read of a synth's preset names.
+#[derive(Default)]
+struct Reading {
+    running: AtomicBool,
+    done: AtomicUsize,
+    total: AtomicUsize,
+    /// The synth's id and its answers, once finished (`None` answers when
+    /// it didn't reply at all).
+    result: Mutex<Option<(String, Option<Vec<Option<ReadPreset>>>)>>,
 }
 
 /// What the module keeps between callbacks.
@@ -128,10 +215,16 @@ struct State {
     ports: Vec<String>,
     /// The audio interfaces with inputs, and how many each has.
     devices: Vec<(String, u16)>,
+    /// The picker's group and search, and the presets it lists now.
+    group: usize,
+    search: String,
+    shown: Vec<usize>,
+    reading: Arc<Reading>,
 }
 
 pub struct Watcher {
     _timer: slint::Timer,
+    _reader: slint::Timer,
 }
 
 pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistry>) -> Watcher {
@@ -142,6 +235,10 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
         setup: Setup::default(),
         ports: Vec::new(),
         devices: Vec::new(),
+        group: 0,
+        search: String::new(),
+        shown: Vec::new(),
+        reading: Arc::new(Reading::default()),
     }));
     let ui = app.global::<HardwareUi>();
 
@@ -156,21 +253,47 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
     let (weak, st, e) = (app.as_weak(), state.clone(), engine.clone());
     ui.on_step_preset(move |delta| {
         let mut s = st.borrow_mut();
-        let n = s.presets.len() as i32;
+        let Some(profile) = s.loaded.and_then(|i| s.profiles.get(i)) else {
+            return;
+        };
+        // Through the picked bank or category only.
+        let group = listed(profile, &s.presets, s.group, "");
+        let n = group.len() as i32;
         if n == 0 {
             return;
         }
-        let at = if s.setup.preset < 0 {
-            if delta > 0 {
-                0
-            } else {
-                n - 1
-            }
-        } else {
-            (s.setup.preset + delta).rem_euclid(n)
+        let here = group.iter().position(|&i| i as i32 == s.setup.preset);
+        let at = match here {
+            None if delta > 0 => 0,
+            None => n - 1,
+            Some(h) => (h as i32 + delta).rem_euclid(n),
         };
+        let at = group[at as usize] as i32;
         if let Some(app) = weak.upgrade() {
             pick(&app, &e, &mut s, at);
+        }
+    });
+    let (weak, st) = (app.as_weak(), state.clone());
+    ui.on_set_group(move |g| {
+        let mut s = st.borrow_mut();
+        s.group = g.max(0) as usize;
+        s.search.clear();
+        if let Some(app) = weak.upgrade() {
+            show_list(&app, &mut s);
+        }
+    });
+    let (weak, st) = (app.as_weak(), state.clone());
+    ui.on_set_search(move |text| {
+        let mut s = st.borrow_mut();
+        s.search = text.to_string();
+        if let Some(app) = weak.upgrade() {
+            show_list(&app, &mut s);
+        }
+    });
+    let (weak, st, e) = (app.as_weak(), state.clone(), engine.clone());
+    ui.on_read_names(move || {
+        if let Some(app) = weak.upgrade() {
+            read_names(&app, &e, &st.borrow());
         }
     });
     let (weak, st, e) = (app.as_weak(), state.clone(), engine.clone());
@@ -283,7 +406,97 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
             list();
         }
     });
-    Watcher { _timer: timer }
+    // A background read of preset names: its progress, then its answers.
+    let (weak, st) = (app.as_weak(), state.clone());
+    let reader = slint::Timer::default();
+    reader.start(slint::TimerMode::Repeated, READ_TICK, move || {
+        let Some(app) = weak.upgrade() else { return };
+        let mut s = st.borrow_mut();
+        let r = s.reading.clone();
+        let ui = app.global::<HardwareUi>();
+        let running = r.running.load(Ordering::Relaxed);
+        if running {
+            let total = r.total.load(Ordering::Relaxed).max(1);
+            ui.set_read_progress(r.done.load(Ordering::Relaxed) as f32 / total as f32);
+        }
+        if ui.get_reading() != running {
+            ui.set_reading(running);
+        }
+        let Some((id, answers)) = r.result.lock().unwrap().take() else {
+            return;
+        };
+        match answers {
+            Some(answers) => {
+                keep_names(&id, &answers);
+                let profile = s.loaded.and_then(|i| s.profiles.get(i)).cloned();
+                if let Some(profile) = profile.filter(|p| p.id == id) {
+                    let mut presets = profile.preset_list();
+                    profile.apply_names(&mut presets, &answers);
+                    s.presets = presets;
+                    ui.set_read_note("".into());
+                    show_list(&app, &mut s);
+                    show_preset(&app, &s);
+                }
+            }
+            None => ui.set_read_note(
+                "The synth didn't answer. Check it is plugged in by USB, then ↻.".into(),
+            ),
+        }
+    });
+    Watcher {
+        _timer: timer,
+        _reader: reader,
+    }
+}
+
+/// Asks the loaded synth for its preset names and categories in the
+/// background, if it can tell them and isn't being asked already.
+fn read_names(app: &AppWindow, engine: &AudioEngine, s: &State) {
+    let Some(profile) = s.loaded.and_then(|i| s.profiles.get(i)).cloned() else {
+        return;
+    };
+    let from = profile.presets.names_from.clone();
+    if from.is_empty() || s.reading.running.swap(true, Ordering::Relaxed) {
+        return;
+    }
+    app.global::<HardwareUi>().set_reading(true);
+    app.global::<HardwareUi>().set_read_progress(0.0);
+    let total = s.presets.len();
+    let r = s.reading.clone();
+    r.done.store(0, Ordering::Relaxed);
+    r.total.store(total, Ordering::Relaxed);
+    let synth = engine.hardware_synth().clone();
+    let id = profile.id.clone();
+    std::thread::spawn(move || {
+        // The MIDI thread opens the synth's port when it loads.
+        std::thread::sleep(Duration::from_millis(500));
+        let seq = |i: usize| (i % 128) as u8;
+        let requests: Vec<Vec<u8>> = (0..total)
+            .filter_map(|i| synth_profile::name_request(&from, seq(i), i))
+            .collect();
+        let answers = synth
+            .ask(
+                &requests,
+                READ_WAIT,
+                |i, m| synth_profile::read_name(&from, seq(i), m).is_some(),
+                |done| {
+                    r.done.store(done, Ordering::Relaxed);
+                    synth.config().is_some()
+                },
+            )
+            .map(|answers| {
+                answers
+                    .iter()
+                    .enumerate()
+                    .map(|(i, m)| {
+                        m.as_ref()
+                            .and_then(|m| synth_profile::read_name(&from, seq(i), m))
+                    })
+                    .collect::<Vec<_>>()
+            });
+        *r.result.lock().unwrap() = Some((id, answers));
+        r.running.store(false, Ordering::Relaxed);
+    });
 }
 
 /// Loads profile `index` onto the instrument deck with its kept setup.
@@ -300,6 +513,12 @@ fn load(app: &AppWindow, engine: &AudioEngine, reg: &ControlRegistry, s: &mut St
     });
     s.loaded = Some(index);
     s.presets = profile.preset_list();
+    let kept = kept_names(&profile.id);
+    if let Some(names) = &kept {
+        profile.apply_names(&mut s.presets, names);
+    }
+    s.group = group_of(&profile, &s.presets, s.setup.preset);
+    s.search.clear();
     apply(engine, s);
     let set = |item: &str, v: f64| {
         if let Some(c) = reg.get(opendj_engine::hardware_synth::GROUP, item) {
@@ -334,14 +553,69 @@ fn load(app: &AppWindow, engine: &AudioEngine, reg: &ControlRegistry, s: &mut St
     ui.set_loaded(index as i32);
     ui.set_name(profile.name.as_str().into());
     ui.set_maker(profile.maker.as_str().into());
-    let names: Vec<SharedString> = s.presets.iter().map(|p| p.name.as_str().into()).collect();
-    ui.set_preset_names(ModelRc::new(VecModel::from(names)));
+    ui.set_groups(ModelRc::new(VecModel::from(
+        profile
+            .preset_groups()
+            .into_iter()
+            .map(SharedString::from)
+            .collect::<Vec<_>>(),
+    )));
+    ui.set_group_caption(
+        if !profile.presets.categories.is_empty() {
+            "CATEGORIES"
+        } else {
+            "BANKS"
+        }
+        .into(),
+    );
+    ui.set_can_read(!profile.presets.names_from.is_empty());
+    ui.set_read_note("".into());
+    show_list(app, s);
     show_preset(app, s);
     show_setup(app, s);
     if first {
         save(s);
         ui.set_setup_open(true);
     }
+    // Names from the synth itself, the first time.
+    if kept.is_none() {
+        read_names(app, engine, s);
+    }
+}
+
+/// Fills the picker's right column: the group's presets, or every one
+/// whose name matches the search.
+fn show_list(app: &AppWindow, s: &mut State) {
+    let Some(profile) = s.loaded.and_then(|i| s.profiles.get(i)) else {
+        return;
+    };
+    s.shown = listed(profile, &s.presets, s.group, &s.search);
+    let rows: Vec<HwPreset> = s
+        .shown
+        .iter()
+        .map(|&i| {
+            let p = &s.presets[i];
+            HwPreset {
+                index: i as i32,
+                number: profile.preset_number(i, p).into(),
+                name: p.name.as_str().into(),
+            }
+        })
+        .collect();
+    let ui = app.global::<HardwareUi>();
+    ui.set_group(s.group as i32);
+    ui.set_search(s.search.as_str().into());
+    let title = if s.search.trim().is_empty() {
+        profile
+            .preset_groups()
+            .get(s.group)
+            .cloned()
+            .unwrap_or_else(|| "Presets".into())
+    } else {
+        format!("{} found", rows.len())
+    };
+    ui.set_list_caption(title.to_uppercase().into());
+    ui.set_list(ModelRc::new(VecModel::from(rows)));
 }
 
 /// Plays the loaded synth's setup on the engine: its port, channel and knobs.
@@ -391,9 +665,10 @@ fn show_preset(app: &AppWindow, s: &State) {
     let shown = profile.zip(s.presets.get(s.setup.preset.max(0) as usize));
     match shown.filter(|_| s.setup.preset >= 0) {
         Some((profile, p)) => {
+            let (group, name) = preset_bar(profile, s.setup.preset as usize, p);
             ui.set_preset(s.setup.preset);
-            ui.set_preset_number(preset_number(profile, p).into());
-            ui.set_preset_name(p.name.as_str().into());
+            ui.set_preset_number(group.into());
+            ui.set_preset_name(name.into());
         }
         None => {
             ui.set_preset(-1);
@@ -525,10 +800,40 @@ mod tests {
     }
 
     #[test]
-    fn presets_count_from_one_within_their_bank() {
-        let p = synth_profile::find("arturia-microfreak").unwrap();
+    fn a_banked_synths_bar_reads_bank_then_number() {
+        let p = synth_profile::find("moog-messenger").unwrap();
         let list = p.preset_list();
-        assert_eq!(preset_number(&p, &list[11]), "B1·012");
-        assert_eq!(preset_number(&p, &list[128]), "B2·001");
+        let (group, name) = preset_bar(&p, 18, &list[18]);
+        assert_eq!(group, "Classic Bass ›");
+        assert_eq!(name, "3");
+        assert_eq!(group_of(&p, &list, 18), 1);
+        assert_eq!(listed(&p, &list, 1, "").len(), 16);
+    }
+
+    #[test]
+    fn named_presets_group_by_category_and_search_by_name() {
+        let p = synth_profile::find("arturia-microfreak").unwrap();
+        let mut list = p.preset_list();
+        let mut reads = vec![None; list.len()];
+        reads[41] = Some(ReadPreset {
+            name: "Glass Choir".into(),
+            category: 5,
+            empty: false,
+        });
+        reads[300] = Some(ReadPreset {
+            name: "My pad".into(),
+            category: 5,
+            empty: false,
+        });
+        p.apply_names(&mut list, &reads);
+        let (group, name) = preset_bar(&p, 41, &list[41]);
+        assert_eq!(group, "Pad ›");
+        assert_eq!(name, "042 Glass Choir");
+        // "All", then Pad is the sixth category.
+        assert_eq!(listed(&p, &list, 6, ""), [41, 300]);
+        assert_eq!(listed(&p, &list, 0, "").len(), 512);
+        // A search looks through every group.
+        assert_eq!(listed(&p, &list, 1, "choir"), [41]);
+        assert_eq!(group_of(&p, &list, 41), 0);
     }
 }

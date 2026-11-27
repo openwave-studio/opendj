@@ -6833,7 +6833,7 @@ component InstrumentTitle inherits Rectangle {
                             if HardwareUi.preset-number != "": Text {
                                 text: HardwareUi.preset-number;
                                 color: Theme.text-dim;
-                                font-size: 10px;
+                                font-size: 12px;
                                 vertical-alignment: center;
                             }
                             Text {
@@ -6852,21 +6852,74 @@ component InstrumentTitle inherits Rectangle {
             }
         }
     }
+    // Banks or categories on the left, the presets in the one picked on the
+    // right; a search looks through them all.
     synth-presets := PopupWindow {
-        x: (root.width - 260px) / 2;
+        property <bool> grouped: HardwareUi.groups.length > 0;
+        x: (root.width - self.width) / 2;
         y: root.height + 2px;
-        width: 260px;
-        height: 360px;
+        width: grouped ? 420px : 280px;
+        height: 380px;
+        close-policy: close-on-click-outside;
         GrooveMenuBackground { }
-        ListView {
-            x: 4px;
-            y: 4px;
-            width: parent.width - 8px;
-            height: parent.height - 8px;
-            for name[i] in HardwareUi.preset-names: GrooveMenuItem {
-                text: name;
-                checked: i == HardwareUi.preset;
-                clicked => { HardwareUi.pick-preset(i); }
+        VerticalLayout {
+            padding: 6px;
+            spacing: 4px;
+            HorizontalLayout {
+                spacing: 6px;
+                LineEdit {
+                    text: HardwareUi.search;
+                    placeholder-text: "Search names";
+                    edited(t) => { HardwareUi.set-search(t); }
+                }
+                if HardwareUi.can-read: Rectangle {
+                    width: 28px;
+                    border-radius: 6px;
+                    background: rta.has-hover ? Theme.n-38373d : transparent;
+                    Text {
+                        text: HardwareUi.reading ? Math.round(HardwareUi.read-progress * 100) + "%" : "↻";
+                        color: Theme.text;
+                        font-size: HardwareUi.reading ? 9px : 14px;
+                    }
+                    rta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { HardwareUi.read-names(); }
+                    }
+                }
+            }
+            if HardwareUi.reading || HardwareUi.read-note != "": Text {
+                text: HardwareUi.reading ? "Reading the names and categories from the synth…" : HardwareUi.read-note;
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                if grouped: VerticalLayout {
+                    width: 140px;
+                    Text { text: HardwareUi.group-caption; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: center; x: 8px; }
+                    ListView {
+                        for g[i] in HardwareUi.groups: GrooveMenuItem {
+                            text: g;
+                            checked: i == HardwareUi.group && HardwareUi.search == "";
+                            clicked => { HardwareUi.set-group(i); }
+                        }
+                    }
+                }
+                if grouped: Rectangle { width: 1px; background: Theme.border; }
+                VerticalLayout {
+                    Text { text: HardwareUi.list-caption; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: center; x: 8px; overflow: elide; }
+                    ListView {
+                        for p in HardwareUi.list: GrooveMenuItem {
+                            text: p.number + "  " + p.name;
+                            checked: p.index == HardwareUi.preset;
+                            clicked => {
+                                HardwareUi.pick-preset(p.index);
+                                synth-presets.close();
+                            }
+                        }
+                    }
+                }
             }
         }
     }

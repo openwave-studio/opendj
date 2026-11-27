@@ -20,6 +20,7 @@
 ## 4. Presets, clock and transport
 
 - [x] 4.1 Program change and banks on the preset bar with factory names
+- [x] 4.4 Preset picker grouped by bank or by the synth's categories, with search; names and categories read from the synth over SysEx where the profile says how (MicroFreak)
 - [ ] 4.3 Deck presets keep the program and knob values
 - [x] 4.2 MIDI clock and Start/Stop to the synth following its deck, early by the latency
 
