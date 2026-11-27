@@ -187,10 +187,17 @@ export global HardwareUi {
     in property <[string]> ports;
     in property <int> port: -1;
     in property <int> channel;
+    // The audio interfaces with inputs and the one picked (-1 none), then
+    // that interface's inputs ("In 1") and the one picked (-1 none), as
+    // Settings › Audio picks them; `input-label` reads "M4 · In 4".
+    in property <[string]> devices;
+    in property <int> device: -1;
     in property <[string]> inputs;
     in property <int> input: -1;
+    in property <string> input-label;
     callback set-port(index: int);
     callback set-channel(channel: int);
+    callback set-device(index: int);
     callback set-input(index: int);
     // Asks for the lists again (a synth plugged in since), and keeps the
     // latency and clock as set when the panel closes.
@@ -206,7 +213,7 @@ export global HardwareUi {
         Controls.value(Controls.resolve("[Instrument1]", "hardware"), Controls.tick) > 0
     }
 
-    // The input's short name for the deck ("In 4"), "" for none.
+    // The input for the deck ("In 4"), "" for none.
     public pure function input-short() -> string {
         input >= 0 && input < inputs.length ? inputs[input] : ""
     }

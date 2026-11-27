@@ -6562,10 +6562,15 @@ component HardwareSetup inherits Rectangle {
     property <int> clock-index: Controls.resolve("[Instrument1]", "hardware_clock");
     property <bool> clock: Controls.value(clock-index, Controls.tick) > 0;
     property <bool> open: Controls.value(Controls.resolve("[Instrument1]", "hardware_open"), Controls.tick) > 0;
+    // Its input gain in whole dB (0 to +18), and the limiter after it.
+    property <int> gain-index: Controls.resolve("[Instrument1]", "hardware_gain");
+    property <int> gain-db: Math.round(20 * Math.log(max(0.001, Controls.value(gain-index, Controls.tick)), 10));
+    property <int> limit-index: Controls.resolve("[Instrument1]", "hardware_limit");
+    property <bool> limit: Controls.value(limit-index, Controls.tick) > 0;
     property <[string]> channels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"];
     init => { HardwareUi.refresh-setup(); }
     width: 330px;
-    height: 262px;
+    height: 338px;
     border-radius: 8px;
     background: Theme.pill-list;
     border-width: 1px;
@@ -6580,13 +6585,24 @@ component HardwareSetup inherits Rectangle {
         padding-right: 14px;
         spacing: 9px;
         HorizontalLayout {
-            height: 18px;
+            height: 26px;
             Text { horizontal-stretch: 1; text: HardwareUi.name + " setup"; color: Theme.text; font-size: 13px; font-weight: 700; vertical-alignment: center; }
-            Text {
-                text: "✕";
-                color: xta.has-hover ? Theme.text : Theme.text-dim;
-                font-size: 12px;
-                vertical-alignment: center;
+            // Settings' close button (CloseButton in preferences.slint).
+            Rectangle {
+                width: 26px;
+                height: 26px;
+                border-radius: 13px;
+                background: xta.has-hover ? Theme.n-38373d : transparent;
+                Path {
+                    width: 10px;
+                    height: 10px;
+                    viewbox-width: 10;
+                    viewbox-height: 10;
+                    commands: "M 1 1 L 9 9 M 9 1 L 1 9";
+                    stroke: xta.has-hover ? Theme.text : Theme.text-dim;
+                    stroke-width: 1.6px;
+                    fill: transparent;
+                }
                 xta := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
@@ -6611,11 +6627,42 @@ component HardwareSetup inherits Rectangle {
             chose(i) => { HardwareUi.set-channel(i); }
         }
         SetupChoice {
+            label: "Interface";
+            value: HardwareUi.device >= 0 && HardwareUi.device < HardwareUi.devices.length ? HardwareUi.devices[HardwareUi.device] : "Pick its interface";
+            options: HardwareUi.devices;
+            picked: HardwareUi.device;
+            chose(i) => { HardwareUi.set-device(i); }
+        }
+        SetupChoice {
             label: "Audio in";
             value: HardwareUi.input >= 0 ? HardwareUi.input-short() : "Pick its input";
             options: HardwareUi.inputs;
             picked: HardwareUi.input;
             chose(i) => { HardwareUi.set-input(i); }
+        }
+        HorizontalLayout {
+            height: 28px;
+            spacing: 10px;
+            Text { width: 70px; text: "Gain"; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; }
+            StepperPill {
+                horizontal-stretch: 2;
+                height: 28px;
+                prev-enabled: root.gain-db > 0;
+                next-enabled: root.gain-db < 18;
+                prev => { Controls.set-value(root.gain-index, Math.pow(10, max(0, root.gain-db - 1) / 20)); }
+                next => { Controls.set-value(root.gain-index, Math.pow(10, min(18, root.gain-db + 1) / 20)); }
+                Text { horizontal-stretch: 1; text: (root.gain-db > 0 ? "+" : "") + root.gain-db + " dB"; color: Theme.text; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            // The limiter after the gain, lit while on.
+            Rectangle {
+                horizontal-stretch: 1;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: root.limit ? Theme.accent : Theme.n-3a3a3d;
+                background: root.limit ? Theme.accent.with-alpha(0.18) : lta.has-hover ? Theme.control : transparent;
+                Text { text: "LIMIT"; color: root.limit ? Theme.text : Theme.text-dim; font-size: 11px; font-weight: 700; }
+                lta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.limit-index, root.limit ? 0 : 1); } }
+            }
         }
         HorizontalLayout {
             height: 28px;
@@ -6659,6 +6706,9 @@ component HardwareSetup inherits Rectangle {
 // then which keyboard plays it, its window and ⏏.
 component InstrumentTitle inherits Rectangle {
     in property <int> deck;
+    // The deck is on screen: a layout keeps its hidden decks, and only the
+    // shown one opens the hardware synth's setup panel.
+    in property <bool> shown: true;
     in property <color> tint;
     property <int> instrument: InstrumentsUi.instrument();
     property <bool> ready: Controls.value(Controls.resolve("[Instrument1]", "input_configured"), Controls.tick) > 0;
@@ -6822,7 +6872,7 @@ component InstrumentTitle inherits Rectangle {
     }
     // Over the deck: shown and hidden with SETUP (the app shows it the
     // first time a synth loads), closed with its ✕.
-    property <bool> setup-wanted: root.ready && root.hardware && HardwareUi.setup-open;
+    property <bool> setup-wanted: root.shown && root.ready && root.hardware && HardwareUi.setup-open;
     changed setup-wanted => {
         if setup-wanted { setup-popup.show(); } else { setup-popup.close(); }
     }
@@ -6831,7 +6881,7 @@ component InstrumentTitle inherits Rectangle {
         x: root.width - 330px - 40px;
         y: root.height + 4px;
         width: 330px;
-        height: 262px;
+        height: 338px;
         HardwareSetup { }
     }
     if root.ready && !root.hardware: HorizontalLayout {
@@ -7944,7 +7994,7 @@ component InstrumentRack inherits Rectangle {
                     padding-top: 2px;
                     Text {
                         property <bool> open: Controls.value(Controls.resolve("[Instrument1]", "hardware_open"), Controls.tick) > 0;
-                        text: (open ? "● MIDI" : "○ No MIDI") + (HardwareUi.input-short() != "" ? " · " + HardwareUi.input-short() : " · No input");
+                        text: (open ? "● MIDI" : "○ No MIDI") + (HardwareUi.input-label != "" ? " · " + HardwareUi.input-label : " · No input");
                         color: open ? Theme.text-dim : Theme.c-ff9f0a;
                         font-size: 10px;
                         overflow: elide;
@@ -8401,6 +8451,8 @@ export component LiveStrip inherits Rectangle {
 }
 
 export component Deck inherits Rectangle {
+    // On screen now: a layout keeps its hidden decks (see InstrumentTitle).
+    in property <bool> shown: true;
     // The beat counter and phase meter in a strip under the overview (2-Deck).
     in property <bool> beat-strip: false;
     in property <int> deck;
@@ -8473,7 +8525,7 @@ export component Deck inherits Rectangle {
         // row instead.
         header := Header { deck: deck; info: info; overview: overview; mirrored: mirrored; group: group; beat-strip: beat-strip; visible: !mixer && !plugin; height: mixer || plugin ? 0px : self.fixed-height; }
         // An instrument plugin: a slim title too.
-        if plugin: InstrumentTitle { deck: deck; tint: StripColors.palette(InstrumentsUi.color-index()); }
+        if plugin: InstrumentTitle { deck: deck; shown: root.shown; tint: StripColors.palette(InstrumentsUi.color-index()); }
         if mixer: MixerTitle { deck: deck; in-view: root.mixer-keys || root.mixer-groove-shown; view: root.mixer-groove-shown ? 2 : root.mixer-keys ? 1 : 0; }
 
         Rectangle {

@@ -13,7 +13,7 @@
 
 ## 3. Loading and setup
 
-- [x] 3.1 "Hardware synths" in the Jam list; SETUP panel over the deck (port, channel, input, latency, clock), kept per synth
+- [x] 3.1 "Hardware synths" in the Jam list; SETUP panel over the deck (port, channel, interface + input, gain + limiter, latency, clock), kept per synth
 - [ ] 3.3 Aux strip on the same input marked in use
 - [ ] 3.2 Measure latency from a test note's onset
 

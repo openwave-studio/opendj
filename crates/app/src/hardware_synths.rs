@@ -37,6 +37,9 @@ struct Setup {
     input: u16,
     latency: Option<f64>,
     clock: Option<bool>,
+    /// The input gain (linear) and whether the limiter is on.
+    gain: Option<f64>,
+    limit: Option<bool>,
     /// The preset picked last, -1 none.
     preset: i32,
 }
@@ -53,6 +56,8 @@ impl Setup {
             input: v["input"].as_u64().unwrap_or(0).min(u64::from(u16::MAX)) as u16,
             latency: v["latency"].as_f64(),
             clock: v["clock"].as_bool(),
+            gain: v["gain"].as_f64(),
+            limit: v["limit"].as_bool(),
             preset: v["preset"].as_i64().map_or(-1, |p| p as i32),
         })
     }
@@ -65,6 +70,8 @@ impl Setup {
             "input": self.input,
             "latency": self.latency,
             "clock": self.clock,
+            "gain": self.gain,
+            "limit": self.limit,
             "preset": self.preset,
         })
     }
@@ -119,7 +126,8 @@ struct State {
     setup: Setup,
     /// The lists the setup panel shows now.
     ports: Vec<String>,
-    inputs: Vec<(String, u16)>,
+    /// The audio interfaces with inputs, and how many each has.
+    devices: Vec<(String, u16)>,
 }
 
 pub struct Watcher {
@@ -133,7 +141,7 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
         presets: Vec::new(),
         setup: Setup::default(),
         ports: Vec::new(),
-        inputs: Vec::new(),
+        devices: Vec::new(),
     }));
     let ui = app.global::<HardwareUi>();
 
@@ -202,13 +210,29 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
         }
     });
     let (weak, st, e) = (app.as_weak(), state.clone(), engine.clone());
-    ui.on_set_input(move |i| {
+    ui.on_set_device(move |i| {
         let mut s = st.borrow_mut();
-        let Some((device, input)) = s.inputs.get(i.max(0) as usize).cloned() else {
+        let Some((device, channels)) = s.devices.get(i.max(0) as usize).cloned() else {
             return;
         };
+        // Another interface starts on its first input; the same keeps its.
+        if device != s.setup.device || s.setup.input >= channels {
+            s.setup.input = 0;
+        }
         s.setup.device = device;
-        s.setup.input = input;
+        save(&s);
+        if let Some(app) = weak.upgrade() {
+            route_input(&app, &e, &s);
+            show_setup(&app, &mut s);
+        }
+    });
+    let (weak, st, e) = (app.as_weak(), state.clone(), engine.clone());
+    ui.on_set_input(move |i| {
+        let mut s = st.borrow_mut();
+        if s.setup.device.is_empty() || i < 0 {
+            return;
+        }
+        s.setup.input = i as u16;
         save(&s);
         if let Some(app) = weak.upgrade() {
             route_input(&app, &e, &s);
@@ -224,6 +248,8 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
         };
         s.setup.latency = get("hardware_latency");
         s.setup.clock = get("hardware_clock").map(|v| v > 0.5);
+        s.setup.gain = get("hardware_gain");
+        s.setup.limit = get("hardware_limit").map(|v| v > 0.5);
         save(&s);
     });
 
@@ -289,6 +315,15 @@ fn load(app: &AppWindow, engine: &AudioEngine, reg: &ControlRegistry, s: &mut St
     set(
         "hardware_clock",
         if s.setup.clock.unwrap_or(profile.transport.clock) {
+            1.0
+        } else {
+            0.0
+        },
+    );
+    set("hardware_gain", s.setup.gain.unwrap_or(1.0));
+    set(
+        "hardware_limit",
+        if s.setup.limit.unwrap_or(true) {
             1.0
         } else {
             0.0
@@ -390,15 +425,18 @@ fn show_setup(app: &AppWindow, s: &mut State) {
             ports.len() as i32 - 1
         }
     };
-    s.inputs = input_devices()
+    s.devices = input_devices()
         .into_iter()
-        .flat_map(|d| (0..d.channels).map(move |c| (d.name.clone(), c)))
+        .map(|d| (d.name, d.channels))
         .collect();
-    let input = s
-        .inputs
-        .iter()
-        .position(|(d, c)| *d == s.setup.device && *c == s.setup.input)
-        .map_or(-1, |i| i as i32);
+    // An interface picked before that is gone still shows, to see what is
+    // missing.
+    if !s.setup.device.is_empty() && !s.devices.iter().any(|(d, _)| *d == s.setup.device) {
+        s.devices.push((s.setup.device.clone(), 0));
+    }
+    let device = s.devices.iter().position(|(d, _)| *d == s.setup.device);
+    let channels = device.map_or(0, |i| s.devices[i].1);
+    let input = (device.is_some() && s.setup.input < channels).then_some(s.setup.input);
     let ui = app.global::<HardwareUi>();
     let model = |v: Vec<String>| {
         ModelRc::new(VecModel::from(
@@ -408,10 +446,29 @@ fn show_setup(app: &AppWindow, s: &mut State) {
     ui.set_ports(model(ports));
     ui.set_port(port);
     ui.set_channel(i32::from(s.setup.channel));
-    ui.set_inputs(model(
-        s.inputs.iter().map(|(d, c)| input_label(d, *c)).collect(),
+    ui.set_devices(model(
+        s.devices
+            .iter()
+            .map(|(d, n)| {
+                if *n == 0 {
+                    format!("{} (not found)", short_device(d))
+                } else {
+                    short_device(d).to_string()
+                }
+            })
+            .collect(),
     ));
-    ui.set_input(input);
+    ui.set_device(device.map_or(-1, |i| i as i32));
+    ui.set_inputs(model(
+        (0..channels).map(|c| format!("In {}", c + 1)).collect(),
+    ));
+    ui.set_input(input.map_or(-1, i32::from));
+    ui.set_input_label(
+        input
+            .map(|c| input_label(&s.setup.device, c))
+            .unwrap_or_default()
+            .into(),
+    );
 }
 
 fn save(s: &State) {
@@ -458,6 +515,8 @@ mod tests {
             input: 3,
             latency: Some(12.5),
             clock: Some(false),
+            gain: Some(2.0),
+            limit: Some(true),
             preset: 40,
         };
         let v = json!({ "arturia-microfreak": s.write() });

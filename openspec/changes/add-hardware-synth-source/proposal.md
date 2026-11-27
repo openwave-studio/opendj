@@ -15,7 +15,7 @@ DJs and live players with hardware synths (first: Arturia MicroFreak and Moog Me
 - **Synth profiles**: a file per model with the MIDI port to match, channel, named and grouped CCs, 8 default macros, preset banks and factory preset names; shared with openDJ Studio's External Instrument in `opendj-studio-engine`. MicroFreak, MiniFreak and Moog Messenger ship first; any other synth starts from a generic profile and learns CCs.
 - **Presets**: the preset bar sends program change (and bank select) with the profile's factory names; deck presets keep the program, macros, Note FX and sequencer.
 - **Clock and transport**: MIDI clock and Start/Stop go to the synth's port following the deck it plays on (Start on the next bar), so its own sequencer and arpeggiator run with the mix, early by the same latency.
-- **Load and set up**: "Hardware synths" in the Jam list beside plugins. The synth lives on the deck only (nothing opens in the browser): the deck is the plugin deck with an HW chip, and SETUP (top right, in OPEN's place) opens a panel over the deck for port, channel, input, latency and clock.
+- **Load and set up**: "Hardware synths" in the Jam list beside plugins. The synth lives on the deck only (nothing opens in the browser): the deck is the plugin deck with an HW chip, and SETUP (top right, in OPEN's place) opens a panel over the deck for port, channel, interface and input, input gain (up to +18 dB) with a limiter, latency and clock.
 
 ## Out of scope
 
