@@ -213,6 +213,8 @@ fn read_track(
     if let Some(c) = chain {
         track.volume = number(c, "Mixer/Volume/Manual").map(fader);
         track.pan = number(c, "Mixer/Pan/Manual").map_or(0.5, |p| ((p + 1.0) / 2.0) as f32);
+        track.muted = value(c, "Mixer/Speaker/Manual") == Some("false");
+        track.solo = value(c, "Mixer/SoloSink") == Some("true");
         track.io = io(c, audio);
         // An External Instrument plays the track through its own routing.
         let ext = track.devices.iter().find_map(|d| match &d.builtin {
@@ -936,14 +938,25 @@ fn rack(d: Node, kind: crate::rack::Kind) -> crate::rack::RackSettings {
         ]
         .iter()
         .find_map(|c| at(b, &format!("DeviceChain/{c}/Devices")));
-        let devices = chain
-            .map(|c| {
-                c.children()
-                    .filter(Node::is_element)
-                    .flat_map(devices)
-                    .collect()
-            })
-            .unwrap_or_default();
+        let branch = r.branches.len();
+        let mut list: Vec<DeviceInfo> = Vec::new();
+        for n in chain
+            .into_iter()
+            .flat_map(|c| c.children().filter(Node::is_element))
+        {
+            let found = devices(n);
+            // Live keeps a macro's mappings on the settings it turns; a
+            // device read as one of ours learns which of its settings.
+            if let [info] = &found[..] {
+                for (m, target) in macro_targets(n, info, branch, list.len()) {
+                    if let Some(mac) = r.macros.get_mut(m) {
+                        mac.targets.push(target);
+                    }
+                }
+            }
+            list.extend(found);
+        }
+        let devices = list;
         let mixer = child(b, "MixerDevice");
         let mix = |p: &str| mixer.and_then(|m| number(m, &format!("{p}/Manual")));
         let zone = |p: &str, lo: u8, hi: u8| {
@@ -968,6 +981,116 @@ fn rack(d: Node, kind: crate::rack::Kind) -> crate::rack::RackSettings {
         });
     }
     r
+}
+
+/// The settings of the device at `d` (read as `info`) that a macro of the
+/// rack around it turns, with the macro's number. Live marks such a
+/// setting with a `KeyMidi` on channel 16 whose controller is the macro,
+/// and keeps the macro's range on it (`MidiControllerRange`, in the
+/// setting's own units). Which of our settings it is shows by reading the
+/// device again with that setting moved; the range's ends are read the
+/// same way, so they land in our units.
+fn macro_targets(
+    d: Node,
+    info: &DeviceInfo,
+    branch: usize,
+    device: usize,
+) -> Vec<(usize, crate::rack::Target)> {
+    let Some(settings) = info.builtin.as_ref() else {
+        return Vec::new();
+    };
+    let before: Vec<f32> = settings.params().iter().map(|p| p.value).collect();
+    let mut out = Vec::new();
+    for key in d.descendants().filter(|n| n.has_tag_name("KeyMidi")) {
+        if number(key, "Channel") != Some(16.0) {
+            continue;
+        }
+        let Some(m) = number(key, "NoteOrController").filter(|m| (0.0..8.0).contains(m)) else {
+            continue;
+        };
+        let Some(setting) = key.parent() else {
+            continue;
+        };
+        // One that belongs to a rack further in is that rack's.
+        if setting
+            .ancestors()
+            .take_while(|a| *a != d)
+            .any(|a| a.has_tag_name("Branches"))
+        {
+            continue;
+        }
+        let range = |e: &str| number(setting, &format!("MidiControllerRange/{e}"));
+        let (Some(lo), Some(hi)) = (range("Min"), range("Max")) else {
+            continue;
+        };
+        let (Ok(branch), Ok(device)) = (u8::try_from(branch), u8::try_from(device)) else {
+            continue;
+        };
+        // The device's own on switch.
+        if setting.has_tag_name("On") && setting.parent() == Some(d) {
+            out.push((
+                m as usize,
+                crate::rack::Target {
+                    branch,
+                    device,
+                    param: crate::rack::ON as u16,
+                    low: (lo > 0.5) as u8 as f32,
+                    high: (hi > 0.5) as u8 as f32,
+                },
+            ));
+            continue;
+        }
+        let Some(manual) = child(setting, "Manual") else {
+            continue;
+        };
+        let current = attr(manual, "Value").unwrap_or(lo);
+        let moved = |v: f64| reread(d, manual, v);
+        // Which setting: the first that moves with it.
+        let probe = if (current - hi).abs() > 1e-9 { hi } else { lo };
+        let Some(after) = moved(probe) else { continue };
+        let Some(param) =
+            (0..before.len().min(after.len())).find(|&i| (before[i] - after[i]).abs() > 1e-6)
+        else {
+            continue;
+        };
+        let at = |v: f64| moved(v).and_then(|x| x.get(param).copied());
+        let (Some(low), Some(high)) = (at(lo), at(hi)) else {
+            continue;
+        };
+        out.push((
+            m as usize,
+            crate::rack::Target {
+                branch,
+                device,
+                param: param as u16,
+                low,
+                high,
+            },
+        ));
+    }
+    out
+}
+
+/// The settings of the device at `d` read again with the `Manual` at
+/// `manual` set to `v`.
+fn reread(d: Node, manual: Node, v: f64) -> Option<Vec<f32>> {
+    let text = d.document().input_text();
+    let (dr, mr) = (d.range(), manual.range());
+    let piece = &text[dr.clone()];
+    let at = mr.start.checked_sub(dr.start)?;
+    let end = mr.end.checked_sub(dr.start)?;
+    let edited = format!("{}<Manual Value=\"{v}\" />{}", &piece[..at], &piece[end..]);
+    let doc = Document::parse_with_options(
+        &edited,
+        roxmltree::ParsingOptions {
+            allow_dtd: true,
+            nodes_limit: u32::MAX,
+            ..Default::default()
+        },
+    )
+    .ok()?;
+    let info = device(doc.root_element());
+    Some(info.builtin?.params().iter().map(|p| p.value).collect())
 }
 
 /// A Simpler's sample and settings; decoded later by `load_simplers`.
@@ -1335,20 +1458,19 @@ fn midi_clip(c: Node) -> Option<Clip> {
             .descendants()
             .filter(|n| n.has_tag_name("MidiNoteEvent"))
         {
-            if e.attribute("IsEnabled") == Some("false") {
-                continue;
-            }
             notes.push(Note {
-                start: attr(e, "Time").unwrap_or(0.0) - start,
+                start: attr(e, "Time").unwrap_or(0.0),
                 length: attr(e, "Duration").unwrap_or(0.25),
                 pitch,
                 velocity: (attr(e, "Velocity").unwrap_or(100.0) / 127.0).clamp(0.0, 1.0) as f32,
                 chance: attr(e, "Probability").unwrap_or(1.0).clamp(0.0, 1.0) as f32,
+                muted: e.attribute("IsEnabled") == Some("false"),
             });
         }
     }
-    Some(Clip::new(
+    Some(Clip::with_loop(
         if name.is_empty() { "MIDI" } else { &name },
+        start,
         beats,
         notes,
     ))
@@ -1631,7 +1753,11 @@ mod tests {
                 <InstrumentBranch Id="0">
                   <Name><EffectiveName Value="Low" /></Name>
                   <DeviceChain><MidiToAudioDeviceChain><Devices>
-                    <StereoGain Id="1"><Gain><Manual Value="0.5" /></Gain></StereoGain>
+                    <StereoGain Id="1">
+                      <On><KeyMidi><Channel Value="16" /><NoteOrController Value="1" /></KeyMidi><Manual Value="true" /><MidiControllerRange><Min Value="0" /><Max Value="1" /></MidiControllerRange></On>
+                      <Gain><KeyMidi><Channel Value="16" /><NoteOrController Value="0" /></KeyMidi><Manual Value="0.5" /><MidiControllerRange><Min Value="0.25" /><Max Value="1" /></MidiControllerRange></Gain>
+                      <Width><KeyMidi><Channel Value="3" /><NoteOrController Value="0" /></KeyMidi><Manual Value="1" /><MidiControllerRange><Min Value="0" /><Max Value="2" /></MidiControllerRange></Width>
+                    </StereoGain>
                   </Devices></MidiToAudioDeviceChain></DeviceChain>
                   <ZoneSettings><KeyRange><Min Value="0" /><Max Value="59" /></KeyRange></ZoneSettings>
                   <MixerDevice><Volume><Manual Value="0.5" /></Volume><Panorama><Manual Value="-0.5" /></Panorama></MixerDevice>
@@ -1662,6 +1788,23 @@ mod tests {
         assert_eq!(low.devices[0].name, "Utility");
         assert!((low.volume_db + 6.0206).abs() < 1e-3);
         assert_eq!(low.pan, -0.5);
+        // Macro 1 turns the Utility's gain over the range Live gave it (a
+        // MIDI mapping on another channel is no macro's); macro 2 its on
+        // switch.
+        let [gain] = &r.macros[0].targets[..] else {
+            panic!("{:?}", r.macros[0].targets);
+        };
+        let utility = low.devices[0].builtin.as_ref().unwrap().params();
+        assert_eq!((gain.branch, gain.device), (0, 0));
+        assert_eq!(utility[gain.param as usize].name, "Gain");
+        assert!(gain.low < utility[gain.param as usize].value && gain.high > gain.low);
+        let [on] = &r.macros[1].targets[..] else {
+            panic!("{:?}", r.macros[1].targets);
+        };
+        assert_eq!(
+            (on.param as usize, on.low, on.high),
+            (crate::rack::ON, 0.0, 1.0)
+        );
         assert_eq!(
             (high.keys, high.velocities, high.on),
             ((60, 127), (64, 127), false)
@@ -1874,10 +2017,13 @@ mod tests {
         let clip = kit.slots[0].as_ref().unwrap();
         assert_eq!(
             (clip.name.as_str(), clip.beats, clip.notes.len()),
-            ("MIDI", 4.0, 2)
+            ("MIDI", 4.0, 3)
         );
         assert_eq!(clip.notes[1].chance, 0.5);
         assert_eq!(clip.notes[0].velocity, 1.0);
+        // A deactivated note is kept, silent.
+        assert!(clip.notes[2].muted && !clip.notes[1].muted);
+        assert_eq!(clip.playable().notes.len(), 2);
     }
 
     #[test]

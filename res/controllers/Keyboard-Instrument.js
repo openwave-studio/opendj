@@ -92,6 +92,16 @@ KeyboardInstrument.turnKnob = function(k, amount) {
     this.touchedUntil = Date.now() + this.SHOW_MS;
 };
 
+// Where knob k (0-7) of the page shown is, 0-1, or null when it turns
+// nothing.
+KeyboardInstrument.knobValue = function(k) {
+    const n = this.page() * this.KNOBS + k + 1;
+    if (!this.deck() || n > this.count()) {
+        return null;
+    }
+    return Math.min(1, Math.max(0, engine.getValue(this.G, "parameter" + n)));
+};
+
 KeyboardInstrument.stepPage = function(by) {
     const page = Math.min(this.pages() - 1, Math.max(0, this.page() + by));
     engine.setValue(this.G, "knob_page", page);

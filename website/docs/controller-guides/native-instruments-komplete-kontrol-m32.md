@@ -4,13 +4,25 @@ Plug the M32 into the computer with its USB cable; openDJ picks this
 mapping by itself. No Native Instruments software is needed. Put an
 instrument on a deck, or turn the 4-D encoder to pick one, and play.
 
+On a Mac with Native Instruments' software installed, openDJ registers with
+its background agent (NIHostIntegrationAgent) as the M32's host. The M32
+then sends its knobs straight to openDJ: they turn smoothly, have no end
+stop, and the "Template 1" readout stays away. If you switch the M32 to
+Komplete Kontrol with **SHIFT** and **TRACK** (INSTANCE), press it again to
+come back to openDJ. Without the agent the M32 works in its MIDI mode, below.
+Windows support for the agent comes later. Thanks to Encdr
+(github.com/RufusIbiza/Encdr), which documented how hosts talk to the agent.
+
 The keys, the OCTAVE buttons, the pitch and modulation strips and a sustain
 pedal play the instrument deck over the M32's own MIDI port, as any
 keyboard does. When the M32's screen says "Template 1" (its own MIDI
-mode), the knobs send MIDI controllers 22 to 29 on that port too: openDJ
+mode), the knobs send MIDI controllers on that port too (14-21, 22-29, 102-109
+or 110-117, one set for each of its pages): openDJ
 gives those to this mapping, so they still turn the instrument's knobs and
 not the plugin's parameters in their own way. In that mode a knob stops at
-each end of its travel, so turn it back a little if it stops. Everything else is openDJ's own mapping. Nobody has tried it
+each end of its travel, so turn it back a little if it stops. The M32 also
+flashes its own "Template 1" readout when a knob turns or ◀ ▶ is pressed;
+openDJ draws its screen back over it straight away. Everything else is openDJ's own mapping. Nobody has tried it
 on the hardware yet, so tell us how it goes.
 
 - The **8 knobs** turn the instrument's knobs on the page the deck shows.

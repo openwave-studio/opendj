@@ -19,6 +19,7 @@ pub mod limiter;
 #[cfg(feature = "link")]
 pub mod link;
 pub mod midifx;
+pub mod note_edit;
 /// Without Ableton Link (openDJ's Session): a clock that can't exist, so
 /// the engine's Link paths compile away.
 #[cfg(not(feature = "link"))]
@@ -48,3 +49,4 @@ pub mod set_file;
 pub mod simpler;
 pub mod sound;
 pub mod steps;
+pub mod synth_profile;

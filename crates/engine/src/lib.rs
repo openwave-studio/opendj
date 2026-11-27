@@ -17,6 +17,7 @@ pub mod analysis;
 pub mod arp;
 mod auto_trim;
 pub mod background;
+pub mod bandwidth;
 pub mod beats;
 pub mod beatthis;
 pub mod cache;
@@ -33,6 +34,7 @@ pub mod groove_dice;
 pub mod groove_fills;
 pub mod groove_pads;
 pub mod growing;
+pub mod hardware_synth;
 pub mod import;
 pub mod inputs;
 pub mod key;
@@ -50,6 +52,7 @@ pub mod loudness;
 pub mod lyrics;
 pub mod meter;
 pub mod midi_clock;
+pub mod mix_order;
 mod output;
 pub mod paths;
 pub mod patterns;
@@ -178,6 +181,8 @@ pub struct AudioEngine {
     /// Picks the outputs MIDI clock goes to.
     midi_clock: midi_clock::MidiClock,
     beat_clock: Arc<midi_clock::BeatClock>,
+    /// A hardware synth the instrument deck plays instead of a plugin.
+    hardware_synth: hardware_synth::HardwareSynth,
 }
 
 /// The master output, for broadcasting: a copy of what the speakers get,
@@ -279,6 +284,11 @@ impl AudioEngine {
             engine.link_handle(),
             &registry,
         );
+        let hardware_synth = hardware_synth::start(
+            engine.take_hardware_link().expect("hardware link"),
+            engine.link_handle(),
+            &registry,
+        );
         let output = output::Outputs::new(engine, setup, output::Health::new(&registry));
 
         let loaded: LoadedTracks = Arc::new(RwLock::new(Default::default()));
@@ -314,7 +324,13 @@ impl AudioEngine {
             spectrum_feed: Mutex::new(spectrum_feed),
             midi_clock,
             beat_clock,
+            hardware_synth,
         }
+    }
+
+    /// Loads or unloads a hardware synth on the instrument deck.
+    pub fn hardware_synth(&self) -> hardware_synth::HardwareSynth {
+        self.hardware_synth.clone()
     }
 
     /// MIDI clock out: which outputs it sends to.

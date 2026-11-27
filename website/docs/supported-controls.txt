@@ -3767,6 +3767,8 @@
 [Instrument1],chord_strum_from
 [Instrument1],enabled
 [Instrument1],fx
+[Instrument1],hardware_clock
+[Instrument1],hardware_latency
 [Instrument1],input_configured
 [Instrument1],instrument
 [Instrument1],instrument_load

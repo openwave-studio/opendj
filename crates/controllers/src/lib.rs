@@ -22,6 +22,7 @@ pub mod layout;
 pub mod learn;
 mod manager;
 pub mod mapping;
+mod ni_agent;
 pub mod own;
 pub mod pickup;
 pub mod probe;

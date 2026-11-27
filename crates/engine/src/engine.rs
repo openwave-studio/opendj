@@ -3287,6 +3287,12 @@ impl Engine {
         self.fx.take_plugin_link()
     }
 
+    /// The hardware synth's MIDI thread's queues, for
+    /// [`crate::hardware_synth::start`]; there is one, taken once.
+    pub fn take_hardware_link(&mut self) -> Option<crate::hardware_synth::HardwareLink> {
+        self.fx.take_hardware_link()
+    }
+
     /// What the Instrument input plays, for its deck to show.
     pub fn instrument_view(&self) -> std::sync::Arc<crate::effects::InstrumentView> {
         self.fx.instrument_view()
@@ -3596,6 +3602,7 @@ impl Engine {
             .and_then(|k| Key::from_mixxx_number(self.decks[k].c.key.get()));
         // The instrument plugin gets its block now and plays while the decks
         // are worked out below; the inputs render once that is done.
+        self.fx.set_heard_at(self.link.heard_at);
         for (i, input) in self.inputs.iter_mut().enumerate() {
             input.set_master_key(master_key);
             let on_deck = live_on.contains(&(i + 1)) || looper_in.contains(&(i + 1));
@@ -8587,6 +8594,46 @@ mod tests {
         // Without a device it goes quiet and says so.
         assert!(engine.set_input(MICROPHONE, None).is_some());
         assert!(!mic("input_configured").get_bool());
+    }
+
+    #[test]
+    fn a_hardware_synth_plays_from_the_instrument_input() {
+        let (reg, mut engine, _input) = setup();
+        let ins = |k: &str| reg.get("[Instrument1]", k).unwrap();
+        let mut link = engine.take_hardware_link().expect("hardware link");
+        let mut notes = engine.take_note_input().expect("note input");
+        let (feed, mut tx) = mic_feed();
+        engine.set_input(INSTRUMENT, Some(feed));
+        // The instrument deck: deck 1 plays the Instrument input.
+        reg.get("[Channel1]", "live_input")
+            .unwrap()
+            .set((INSTRUMENT + 1) as f64);
+        // No synth: the input is read and let go, nothing is heard.
+        let none = talk(&mut engine, &mut tx, 0.2, sine(1000.0, 0.5));
+        assert!(peak(&none) < 1e-4, "{}", peak(&none));
+        assert!(!ins("input_configured").get_bool());
+        // With one, what comes in is the instrument's sound, and its notes
+        // and knobs go out on the synth's channel.
+        let config = crate::hardware_synth::HardwareConfig {
+            port: "Synth".into(),
+            channel: 2,
+            ccs: vec![Some(74)],
+            lsbs: Vec::new(),
+        };
+        let slot = crate::hardware_synth::Slot::for_test(&config);
+        link.slots.push(Some(slot)).unwrap();
+        ins("parameter1").set(1.0);
+        assert!(notes.send([0x90, 60, 100]));
+        let on = talk(&mut engine, &mut tx, 0.3, sine(1000.0, 0.5));
+        let level = level_at(&on[on.len() / 2..], 1000.0);
+        assert!((level - 0.5).abs() < 0.05, "{level}");
+        assert!(ins("input_configured").get_bool());
+        let mut sent = Vec::new();
+        while let Ok(m) = link.rx.pop() {
+            sent.push(m.data);
+        }
+        assert!(sent.contains(&[0xB2, 74, 127]), "{sent:?}");
+        assert!(sent.contains(&[0x92, 60, 100]), "{sent:?}");
     }
 
     #[test]

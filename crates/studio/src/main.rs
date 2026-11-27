@@ -21,6 +21,7 @@ mod audio;
 mod check;
 mod dialog;
 mod midi;
+mod piano;
 mod push;
 mod rack_ui;
 mod samples;
@@ -664,6 +665,16 @@ fn ui(
         let c = controls.clone();
         window.on_launch_clip(move |t, s| c.launch(t as usize, s as usize));
     }
+    // The piano roll in the bottom panel (or its own window).
+    let piano = piano::Ctx::new(controls.clone(), &window);
+    {
+        let p = Rc::downgrade(&piano);
+        window.on_open_notes(move |t, s| {
+            if let Some(p) = p.upgrade() {
+                p.open(t as usize, s as usize);
+            }
+        });
+    }
     {
         let c = controls.clone();
         window.on_select(move |t, s| c.select(t as usize, usize::try_from(s).ok()));
@@ -746,6 +757,23 @@ fn ui(
     {
         let c = controls.clone();
         window.on_toggle_arm(move |t| c.toggle_arm(t as usize));
+    }
+    {
+        let c = controls.clone();
+        window.on_record(move || {
+            let (t, s) = c.recording().unwrap_or_else(|| c.steps_slot());
+            c.record(t, s);
+        });
+        let c = controls.clone();
+        window.on_undo(move |redo| {
+            c.undo(redo);
+        });
+    }
+    {
+        let c = controls.clone();
+        window.on_toggle_mute(move |t| c.toggle_mute(t as usize));
+        let c = controls.clone();
+        window.on_toggle_solo(move |t| c.toggle_solo(t as usize, false));
     }
     {
         let c = controls.clone();
@@ -1166,6 +1194,10 @@ fn ui(
             }
             // Programs the audio thread replaced are dropped here.
             while trash.borrow_mut().pop().is_ok() {}
+            controls.record_tick();
+            let rec = controls.recording();
+            w.set_rec_track(rec.map_or(-1, |r| r.0 as i32));
+            w.set_rec_scene(rec.map_or(-1, |r| r.1 as i32));
             for s in 0..SCENES {
                 for t in 0..n {
                     let i = s * n + t;
@@ -1234,6 +1266,7 @@ fn ui(
                     }
                 }
             }
+            piano.tick(changed);
             w.set_main_level(meter(w.get_main_level(), monitor.take_main_peak()));
             let beat = monitor.beat();
             let bar = (beat / engine::QUANTUM).floor();
@@ -1648,7 +1681,7 @@ fn track_row(
                     o.chain.row_data(i - o.midi_count as usize)
                 }
             });
-            device_row(
+            let mut row = device_row(
                 DeviceData {
                     name: d.name.as_str().into(),
                     kind: d.kind.as_str().into(),
@@ -1663,7 +1696,13 @@ fn track_row(
                 },
                 builtin.as_ref(),
                 before.as_ref(),
-            )
+            );
+            if let (Some(m), Some(devices::Settings::Rack(r))) =
+                (rack_ui::mapping(t, i), builtin.as_ref())
+            {
+                row.ranges = rack_ui::ranges(r, m);
+            }
+            row
         })
         .collect();
     let (inner, chain_name) = open
@@ -1712,6 +1751,8 @@ fn track_row(
             .position(|&m| m == io.monitor)
             .unwrap_or(1) as i32,
         armed: io.armed,
+        muted: c.muted(t),
+        solo: c.soloed(t),
         audio_to: match io.audio_to {
             AudioTo::Main => "Main",
             AudioTo::Ext(_) => "Ext. Out",

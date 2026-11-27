@@ -89,6 +89,11 @@ fn plugins_of(d: &DeviceInfo) -> Vec<(Option<(usize, usize)>, PluginRef)> {
     list
 }
 
+/// Whether two devices are the same plug-in (whatever sound they carry).
+fn same_plugin(a: &PluginRef, b: &PluginRef) -> bool {
+    a.name == b.name && a.vendor == b.vendor && a.format == b.format && a.instrument == b.instrument
+}
+
 /// The plug-ins of a set.
 #[derive(Clone)]
 pub struct Plugins {
@@ -348,8 +353,90 @@ impl Plugins {
 
     /// Swaps the device at `at` for `device` in the same place (a rack
     /// whose chains changed). The track fades around it, as for any edit.
+    /// The plug-ins inside a rack that are in both keep running: each new
+    /// one takes over the first old one of the same plug-in, wherever its
+    /// chain or place moved to.
     pub fn replace(&self, track: usize, at: usize, device: DeviceInfo) -> bool {
-        self.remove(track, at).is_some() && self.insert(track, at, device).is_some()
+        use crate::devices::Settings;
+        let (Some(Settings::Rack(_)), Some(Settings::Rack(_))) = (
+            self.controls
+                .devices(track)
+                .get(at)
+                .and_then(|d| d.builtin.clone()),
+            device.builtin.as_ref(),
+        ) else {
+            return self.remove(track, at).is_some() && self.insert(track, at, device).is_some();
+        };
+        let Ok(mut book) = self.entries.lock() else {
+            return false;
+        };
+        let Some(before) = self.controls.devices(track).get(at).cloned() else {
+            return false;
+        };
+        let old: Vec<(Option<(usize, usize)>, PluginRef)> = plugins_of(&before);
+        let mut used = vec![false; old.len()];
+        // Each new plug-in: the old place it takes over, if any.
+        let mut keep = Vec::new();
+        let mut moves = Vec::new();
+        let mut fresh = Vec::new();
+        for (inner, p) in plugins_of(&device) {
+            let same = old
+                .iter()
+                .enumerate()
+                .find(|(i, (_, o))| !used[*i] && same_plugin(o, &p));
+            match same {
+                Some((i, (from, _))) => {
+                    used[i] = true;
+                    keep.push((*from, inner));
+                }
+                None => fresh.push((inner, p)),
+            }
+        }
+        // The old entries: kept ones move to their new places (running
+        // ones hand their slot over in the audio thread), the rest stop.
+        let (mine, others): (Vec<Entry>, Vec<Entry>) = std::mem::take(&mut book.entries)
+            .into_iter()
+            .partition(|e| e.track == track && e.device == at);
+        book.entries = others;
+        let mut gone = Vec::new();
+        for mut e in mine {
+            match keep.iter().find(|(from, _)| *from == e.inner) {
+                Some(&(from, to)) => {
+                    if let (true, Some(f), Some(t)) = (e.helper.is_some(), from, to) {
+                        moves.push((f, t));
+                    }
+                    e.inner = to;
+                    book.entries.push(e);
+                }
+                None => gone.push(e),
+            }
+        }
+        let slot = device.builtin.as_ref().map(|b| {
+            let mut d = crate::devices::Device::new(b, self.rate as f64);
+            if let crate::devices::Device::Rack(r) = &mut d {
+                r.keep(moves);
+            }
+            Box::new(PluginSlot::device(at, device.on, d))
+        });
+        if self
+            .controls
+            .edit_chains(|c| c.replace(track, at, device, slot))
+            .flatten()
+            .is_none()
+        {
+            return false;
+        }
+        let jobs: Vec<(u64, PluginRef)> = fresh
+            .into_iter()
+            .map(|(inner, p)| (book.add(track, at, inner, &p.name, self.first_state()), p))
+            .collect();
+        drop(book);
+        // Their helpers stop as they drop.
+        drop(gone);
+        for (id, p) in jobs {
+            self.launch(id, p);
+        }
+        true
     }
 
     /// Puts a device in `track`'s chain at `at` (clamped to its end): a

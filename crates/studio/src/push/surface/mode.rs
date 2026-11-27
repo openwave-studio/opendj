@@ -50,12 +50,7 @@ impl Surface {
                     return;
                 }
                 match self.mode {
-                    Mode::Device => {
-                        if i < PARAMS {
-                            let t = c.selected_track();
-                            c.set_param(t, i, c.param(t, i) + step);
-                        }
-                    }
+                    Mode::Device => self.device_encoder(i, step, c),
                     Mode::Mix(m) => {
                         let t = bank(c) + i;
                         if t < c.tracks.len() {
@@ -134,6 +129,9 @@ impl Surface {
     /// Labels for the buttons over and under the screen, when the mode
     /// gives them their own jobs.
     pub fn menus(&self, c: &Controls) -> Option<(Vec<Menu>, Vec<Menu>)> {
+        if self.mode == Mode::Device {
+            return Some(self.device_menus(c));
+        }
         if self.mode != Mode::Scales {
             return None;
         }
