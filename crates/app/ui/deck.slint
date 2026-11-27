@@ -6,13 +6,13 @@
 import { LibraryEdit, TrackDrag } from "library.slint";
 import { SamplerPanel } from "sampler.slint";
 import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint";
-import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
+import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, KnobTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
 import { ArcKnob, ListRow, MenuTitle, PillCaret, SectionTitle, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
 import { RemixMode, RemixPanel, RemixSource } from "remix.slint";
 import { DeckAuto } from "deck_auto.slint";
-import { InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
+import { InstrumentsUi, KnobLabel, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
 
@@ -197,16 +197,57 @@ export component Jog inherits Rectangle {
     property <int> last-cue: Controls.value(Controls.resolve(group, "hotcue_focus"), Controls.tick);
     property <color> sticker: last-cue >= 1 ? Theme.hotcues[last-cue - 1] : tint;
     property <length> centre: 74px * scale;
-    property <int> jog-index: Controls.resolve(group, "jog_search");
     property <int> bend-index: Controls.resolve(group, "jog_bend");
+    property <int> scratch-index: Controls.resolve(group, "jog_scratch");
+    property <int> touch-index: Controls.resolve(group, "scratch2_enable");
+    property <int> speed-index: Controls.resolve(group, "scratch2");
+    // Vinyl (on by default): the top holds the record. Off, it bends like
+    // the rim, as a CD player's jog.
+    property <bool> vinyl: Controls.value(Controls.resolve(group, "vinyl_mode"), Controls.tick) > 0;
     // Dragging round the black rim bends the speed like a controller's jog
     // rim: clockwise faster, counterclockwise slower, by how fast it turns.
+    // Dragging the grey top scratches: the record stops under the pointer
+    // and follows it round, a turn being 1.8 s of track as on a 33 rpm
+    // record. Letting go plays on (or snaps back, with Slip).
     property <bool> bending: false;
+    property <bool> scratching: false;
     property <angle> bend-angle;
-    // Scrolling over the jog nudges the track in fine steps: up runs it
-    // forward, down back, playing or paused.
+    // Two-finger scrolling anywhere over the jog scratches too, held for
+    // as long as the scroll keeps coming. Straight swipes: up or left runs
+    // the record forward, down or right back. Circles follow the fingers,
+    // clockwise forward: the pointer stays put while scrolling, so a
+    // circle shows as the swipe's direction turning a third of a turn
+    // one way while moving on both axes, and once that is seen
+    // the gesture stays a circle (a swipe back the other way reverses it)
+    // so the two rules never fight mid-gesture.
+    // A full-height swipe on a laptop trackpad is about one turn.
+    property <float> scroll-px-per-turn: 400;
+    property <bool> scroll-scratching: false;
+    property <duration> scroll-last;
+    property <float> scroll-dx;
+    property <float> scroll-dy;
+    property <float> scroll-gx;
+    property <float> scroll-gy;
+    property <float> scroll-curl;
+    property <float> scroll-span-x;
+    property <float> scroll-span-y;
+    property <int> scroll-circle: 0;
+    function move-record(degrees: float) {
+        if vinyl {
+            Controls.set-value(scratch-index, Controls.value(scratch-index, Controls.tick) + degrees);
+        } else {
+            // jog_bend counts rim ticks, 720 to a turn: two a degree.
+            Controls.set-value(bend-index, Controls.value(bend-index, Controls.tick) + degrees * 2);
+        }
+    }
+    function hold(on: bool) {
+        if on {
+            Controls.set-value(speed-index, 0);
+        }
+        Controls.set-value(touch-index, on ? 1 : 0);
+    }
     rim := TouchArea {
-        mouse-cursor: bending ? MouseCursor.grabbing : MouseCursor.default;
+        mouse-cursor: bending || scratching ? MouseCursor.grabbing : MouseCursor.default;
         pointer-event(e) => {
             if e.button == PointerEventButton.right && e.kind == PointerEventKind.down && !plain {
                 jog-menu.show();
@@ -220,13 +261,23 @@ export component Jog inherits Rectangle {
                 let dy = (self.mouse-y - root.height / 2) / 1px;
                 let r = sqrt(dx * dx + dy * dy) * 1px;
                 bending = info.loaded && r > centre / 2 && r <= root.width / 2;
+                scratching = info.loaded && r <= centre / 2 && vinyl;
+                // Without Vinyl the top bends as the rim does.
+                bending = bending || (info.loaded && r <= centre / 2 && !vinyl);
                 bend-angle = atan2(dy, dx);
+                if scratching && !scroll-scratching {
+                    hold(true);
+                }
             } else if e.kind == PointerEventKind.up || e.kind == PointerEventKind.cancel {
                 bending = false;
+                if scratching && !scroll-scratching {
+                    hold(false);
+                }
+                scratching = false;
             }
         }
         moved => {
-            if !bending {
+            if !bending && !scratching {
                 return;
             }
             let a = atan2((self.mouse-y - root.height / 2) / 1px, (self.mouse-x - root.width / 2) / 1px);
@@ -234,16 +285,90 @@ export component Jog inherits Rectangle {
                 : a - bend-angle < -180deg ? a - bend-angle + 360deg
                 : a - bend-angle;
             bend-angle = a;
-            // jog_bend counts rim ticks, 720 to a turn: two a degree.
-            Controls.set-value(bend-index, Controls.value(bend-index, Controls.tick) + d / 1deg * 2);
+            if scratching {
+                Controls.set-value(scratch-index, Controls.value(scratch-index, Controls.tick) + d / 1deg);
+            } else {
+                Controls.set-value(bend-index, Controls.value(bend-index, Controls.tick) + d / 1deg * 2);
+            }
         }
         scroll-event(e) => {
-            if !info.loaded || e.delta-y == 0 {
+            let dx = e.delta-x / 1px;
+            let dy = e.delta-y / 1px;
+            if !info.loaded || (dx == 0 && dy == 0) {
                 return reject;
             }
-            // One jog_search unit is 10 ms of track, so a pixel of scroll is 1 ms.
-            Controls.set-value(jog-index, Controls.value(jog-index, Controls.tick) + e.delta-y / 1px * 0.1);
+            let size = sqrt(dx * dx + dy * dy);
+            if !scroll-scratching {
+                scroll-dx = 0;
+                scroll-dy = 0;
+                scroll-gx = 0;
+                scroll-gy = 0;
+                scroll-curl = 0;
+                scroll-span-x = 0;
+                scroll-span-y = 0;
+                scroll-circle = 0;
+                if vinyl && !scratching {
+                    hold(true);
+                }
+                scroll-scratching = true;
+            }
+            // The record of the gesture fades with time (half gone in
+            // a second), so a slow circle counts as much as a quick one.
+            let fade = pow(0.5, (animation-tick() - scroll-last) / 1000ms);
+            scroll-curl = scroll-curl * fade;
+            scroll-span-x = scroll-span-x * fade + abs(dx);
+            scroll-span-y = scroll-span-y * fade + abs(dy);
+            // Small steps are gathered until they make a few pixels, so
+            // their direction is reliable at any size and speed (a slow
+            // turnaround of a back-and-forth swipe included). Each such
+            // step is compared with the last: how far the direction
+            // turned, clockwise on screen positive. A step straight back
+            // is a reversal, not a turn.
+            scroll-gx += dx;
+            scroll-gy += dy;
+            if sqrt(scroll-gx * scroll-gx + scroll-gy * scroll-gy) >= 3 {
+                if scroll-dx != 0 || scroll-dy != 0 {
+                    let t = atan2(scroll-dx * scroll-gy - scroll-dy * scroll-gx, scroll-dx * scroll-gx + scroll-dy * scroll-gy);
+                    if abs(t) > 120deg {
+                        scroll-curl = 0;
+                        scroll-circle = -scroll-circle;
+                    } else {
+                        scroll-curl += t / 1deg;
+                    }
+                }
+                scroll-dx = scroll-gx;
+                scroll-dy = scroll-gy;
+                scroll-gx = 0;
+                scroll-gy = 0;
+            }
+            // A circle needs the direction to keep turning one way for a
+            // third of a turn, less for a big one (its steps are long and
+            // steady), AND real movement on both axes: up and down with
+            // some drift sideways (or the reverse) stays a swipe.
+            let span = max(scroll-span-x, scroll-span-y);
+            let needed = span > 300 ? 90 : 120;
+            if scroll-circle == 0 && abs(scroll-curl) > needed
+                && min(scroll-span-x, scroll-span-y) > 0.5 * span {
+                scroll-circle = scroll-curl > 0 ? 1 : -1;
+            }
+            scroll-last = animation-tick();
+            let along = scroll-circle != 0 ? scroll-circle * size
+                : abs(dy) >= abs(dx) ? -dy : -dx;
+            move-record(along / scroll-px-per-turn * 360);
             accept
+        }
+    }
+    // The scroll's hold lets go once the scrolling stops.
+    Timer {
+        interval: 30ms;
+        running: scroll-scratching;
+        triggered => {
+            if animation-tick() - scroll-last > 120ms {
+                scroll-scratching = false;
+                if vinyl && !scratching {
+                    hold(false);
+                }
+            }
         }
     }
     // A thin track round a matte centre, as on the mixer's knobs: the
@@ -4839,8 +4964,17 @@ component ParamKnob inherits Rectangle {
     // instrument's color.
     in property <length> knob-size: 28px;
     property <bool> rack: knob-size > 30px;
+    // The name in the condensed title font: on the rack up to two lines,
+    // broken at a space, so long names show whole; a step or two smaller
+    // only when a word is too wide, and cut with "…" as a last resort,
+    // its full name then in a tooltip.
+    property <KnobLabel> label: InstrumentsUi.knob-label(index < count ? InstrumentsUi.param-names[index] : "", root.width - 2px, rack ? 11.5 : 10.5, rack ? 2 : 1);
+    property <length> line: rack ? 14px : 13px;
+    property <bool> tip-mine;
+    // This knob's value shows in the KnobTip callout.
+    property <bool> tip-owner;
     width: rack ? max(66px, knob-size + 30px) : 64px;
-    height: knob-size + (rack ? 28px : 24px);
+    height: knob-size + (rack ? 9px + 2 * line : 24px);
     if index < count: TouchArea {
         pointer-event(e) => {
             if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
@@ -4848,7 +4982,7 @@ component ParamKnob inherits Rectangle {
             }
         }
     }
-    if index < count: ControlKnob {
+    if index < count: knob := ControlKnob {
         x: (parent.width - self.width) / 2;
         y: 0;
         group: "[Instrument1]";
@@ -4857,15 +4991,88 @@ component ParamKnob inherits Rectangle {
         look: root.rack ? 4 : 0;
         arc-color: root.tint;
         right-clicked => { picker.show(); }
+        // Its value in a callout beside it while hovered or turned (by
+        // mouse or controller), and for a second after.
+        property <float> value: Controls.parameter(Controls.resolve(self.group, self.key), Controls.tick);
+        property <int> turned-index: -1;
+        property <bool> recent;
+        property <int> recent-age;
+        property <bool> show-value: self.touched || self.recent;
+        changed value => {
+            // A new page or instrument changes the value too: only a turn
+            // of the same knob counts.
+            if self.turned-index == root.index {
+                self.recent-age = 0;
+                self.recent = true;
+            }
+            self.turned-index = root.index;
+            if root.tip-owner {
+                KnobTip.text = round(clamp(self.value, 0, 1) * 100) + "%";
+            }
+        }
+        init => { self.turned-index = root.index; }
+        changed show-value => {
+            if self.show-value {
+                KnobTip.text = round(clamp(self.value, 0, 1) * 100) + "%";
+                KnobTip.left = self.absolute-position.x;
+                KnobTip.right = self.absolute-position.x + self.width - 4px;
+                KnobTip.middle = self.absolute-position.y + root.knob-size / 2;
+                KnobTip.shown = true;
+                root.tip-owner = true;
+            } else if root.tip-owner {
+                root.tip-owner = false;
+                KnobTip.shown = false;
+            }
+        }
+        Timer {
+            interval: 100ms;
+            running: knob.recent;
+            triggered => {
+                knob.recent-age += 1;
+                if knob.recent-age >= 10 {
+                    knob.recent = false;
+                }
+            }
+        }
     }
-    if index < count: Text {
+    if index < count: name := Text {
         y: root.knob-size + (root.rack ? 9px : 10px);
         width: parent.width;
-        text: InstrumentsUi.param-names[index];
+        height: root.rack ? 2 * root.line : root.line;
+        text: root.label.text;
         color: InstrumentsUi.knob-picked[index] ? root.tint : root.rack ? Theme.n-d8d8dc : Theme.text-dim;
-        font-size: root.rack ? 11px : 10px;
+        font-family: Theme.title-font;
+        font-weight: 500;
+        font-size: root.label.size * 1px;
         horizontal-alignment: center;
-        overflow: elide;
+        vertical-alignment: top;
+        overflow: clip;
+        TouchArea {
+            pointer-event(e) => {
+                if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                    picker.show();
+                }
+            }
+            changed has-hover => {
+                if !self.has-hover && root.tip-mine {
+                    root.tip-mine = false;
+                    HoverTip.shown = false;
+                }
+            }
+            Timer {
+                interval: 600ms;
+                running: root.label.cut && parent.has-hover && !root.tip-mine;
+                triggered => {
+                    root.tip-mine = true;
+                    HoverTip.title = "";
+                    HoverTip.body = InstrumentsUi.param-names[root.index];
+                    HoverTip.right-aligned = false;
+                    HoverTip.x = name.absolute-position.x;
+                    HoverTip.y = name.absolute-position.y + name.height + 4px;
+                    HoverTip.shown = true;
+                }
+            }
+        }
     }
     picker := KnobPicker { knob: index; x: 0; y: root.height; }
 }

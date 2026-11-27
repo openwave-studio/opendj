@@ -124,6 +124,12 @@ const JOG_SEARCH_SPEED: f64 = 8.0;
 /// How long a deck stays quiet after its last fast-search jog, in seconds,
 /// so it doesn't flutter between wheel steps.
 const JOG_SEARCH_HOLD: f64 = 0.15;
+/// Track seconds one degree of `jog_scratch` moves: a turn is 1.8 s, as a
+/// 33 rpm record under the hand.
+const SCRATCH_SECONDS_PER_DEGREE: f64 = 1.8 / 360.0;
+/// Seconds an on-screen scratch movement is spread over: short enough to
+/// follow the hand, long enough to smooth the pointer's frame-by-frame steps.
+const SCRATCH_GLIDE: f64 = 0.035;
 /// `jog_bend` comes in ticks of a jog's rim, 720 to a turn as on Pioneer
 /// controllers: each tick a second the rim turns adds 0.014% of normal speed
 /// (a quarter turn a second is about +2.5%, a turn a second +10%), gentle
@@ -243,6 +249,9 @@ struct Deck {
     /// Fast-search movement (`jog_search`) still to be applied, in track
     /// seconds.
     jog_pending: f64,
+    /// On-screen scratch movement (`jog_scratch`) still to be applied, in
+    /// track seconds.
+    scratch_pending: f64,
     /// `jog` units that came in since the last buffer.
     jog_in: f64,
     /// `jog`, smoothed, in units a second.
@@ -1135,6 +1144,16 @@ impl Deck {
             self.c.jog_search.set(0.0);
             self.jog_pending += search * JOG_SECONDS;
         }
+        let turned = self.c.jog_scratch.get();
+        if turned != 0.0 {
+            self.c.jog_scratch.set(0.0);
+            if self.c.scratch2_enable.get_bool() {
+                self.scratch_pending += turned * SCRATCH_SECONDS_PER_DEGREE;
+            }
+        }
+        if !self.c.scratch2_enable.get_bool() {
+            self.scratch_pending = 0.0;
+        }
 
         let enabled = self.c.loop_enabled.get_bool();
         // Any loop starting ends marking one out.
@@ -1341,7 +1360,10 @@ impl Deck {
             // Jog still counts while the wheel is touched, as in Mixxx;
             // mappings such as the DDJ-FLX4's send SHIFT + turn as fast
             // `jog_search` steps.
-            return self.c.scratch2.get() + self.jog_rate_step(dt, 1.0) + self.jog_step(dt);
+            return self.c.scratch2.get()
+                + self.jog_rate_step(dt, 1.0)
+                + self.jog_step(dt)
+                + self.scratch_step(dt);
         }
         let search = self.c.rate_search.get();
         if search != 0.0 {
@@ -1415,6 +1437,21 @@ impl Deck {
             BEND_PAUSED_SECONDS_PER_TURN
         };
         turn / RIM_TICKS_PER_TURN
+    }
+
+    /// The speed that moves on a share of the on-screen platter's pending
+    /// movement this buffer. Unlike a fast search it is never quiet: it is
+    /// a hand on the record.
+    fn scratch_step(&mut self, dt: f64) -> f64 {
+        if dt <= 0.0 {
+            return 0.0;
+        }
+        let moved = self.scratch_pending * (dt / SCRATCH_GLIDE).min(1.0);
+        self.scratch_pending -= moved;
+        if self.scratch_pending.abs() < 1e-7 {
+            self.scratch_pending = 0.0;
+        }
+        moved / dt
     }
 
     /// The speed that moves on a share of the pending jog this buffer.
@@ -2074,6 +2111,7 @@ impl Engine {
             click: None,
             velocity: 0.0,
             jog_pending: 0.0,
+            scratch_pending: 0.0,
             jog_in: 0.0,
             jog_rate: 0.0,
             search_quiet: 0.0,
@@ -2449,6 +2487,7 @@ impl Engine {
                     d.c.scrub_enable.set_bool(false);
                     d.velocity = 0.0;
                     d.jog_pending = 0.0;
+                    d.scratch_pending = 0.0;
                     d.jog_in = 0.0;
                     d.jog_rate = 0.0;
                     d.slip = None;
@@ -7447,6 +7486,39 @@ mod tests {
         ctl("play").set_bool(true);
         assert!(run(&mut engine, 0.1) > 0.01, "the new track plays");
         assert!(!ctl("seek_hold").get_bool());
+    }
+
+    #[test]
+    fn on_screen_platter_scratches_audibly_and_lets_go() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 10.0));
+        run(&mut engine, 0.01);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        let seconds = || ctl("playposition").get() * 10.0;
+        ctl("playposition").set(0.5);
+        ctl("play").set_bool(true);
+        run(&mut engine, 0.1);
+        // Holding the top stops the record under the hand.
+        ctl("scratch2_enable").set_bool(true);
+        run(&mut engine, 0.1);
+        let held = seconds();
+        run(&mut engine, 0.2);
+        assert!((seconds() - held).abs() < 1e-6, "still while held");
+        // A quick quarter turn back is 0.45 s of track, heard all the way
+        // (fast, but a hand on the record, not a quiet search).
+        ctl("jog_scratch").set(-90.0);
+        assert!(run(&mut engine, 0.05) > 0.01, "a fast scratch is heard");
+        run(&mut engine, 0.3);
+        assert_eq!(ctl("jog_scratch").get(), 0.0);
+        assert!((seconds() - (held - 0.45)).abs() < 0.01, "{}", seconds());
+        // Movement without the top held does nothing.
+        ctl("scratch2_enable").set_bool(false);
+        ctl("play").set_bool(false);
+        run(&mut engine, 0.05);
+        let free = seconds();
+        ctl("jog_scratch").set(90.0);
+        run(&mut engine, 0.3);
+        assert!((seconds() - free).abs() < 1e-6, "{}", seconds());
     }
 
     #[test]
