@@ -89,6 +89,7 @@ mod now_playing;
 mod now_playing_view;
 mod osc;
 mod osc_events;
+mod paging;
 mod plugin_display;
 mod prefs;
 mod prep_click;
@@ -1532,6 +1533,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
             step_lanes::GrooveHandles::new(&registry, d)
         }));
         let mut knobs = Some(macro_lanes::KnobHandles::new(&registry));
+        let mut paging = paging::Paging::new(&registry);
         let scale_mask = registry
             .get("[Instrument1]", "scale_mask")
             .expect("the instrument's scale mask");
@@ -1600,7 +1602,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         scale,
                         frame_timer,
                         clocks,
-                        ui_load::take_report,
+                        || format!("{}, {}", ui_load::take_report(), paging.report()),
                     );
                 }
                 (slint::RenderingState::AfterRendering, _) => {
