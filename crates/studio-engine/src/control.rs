@@ -778,6 +778,21 @@ impl ChainEdit<'_> {
         Some(d)
     }
 
+    /// Swaps the device at `at` for `device` in the same place; `slot`
+    /// plays it. Returns the one it replaced.
+    pub fn replace(
+        &mut self,
+        track: usize,
+        at: usize,
+        device: DeviceInfo,
+        slot: Option<Box<crate::engine::PluginSlot>>,
+    ) -> Option<DeviceInfo> {
+        let place = self.chains.get_mut(track)?.get_mut(at)?;
+        let old = std::mem::replace(place, device);
+        self.controls.send(Command::Replace { track, at, slot });
+        Some(old)
+    }
+
     /// Moves a device: to another place in its chain, or to `to_track`'s
     /// chain at `to`. `to` counts places once the device has left.
     pub fn move_device(&mut self, track: usize, from: usize, to_track: usize, to: usize) -> bool {

@@ -573,6 +573,9 @@ pub struct Rack {
     /// plug-ins inside are told (see [`Rack::until`]).
     playing: bool,
     deadline: Option<Instant>,
+    /// The running plug-ins to take over from the rack this one replaces:
+    /// (chain, place) there to (chain, place) here (see [`Rack::adopt`]).
+    keep: Vec<((usize, usize), (usize, usize))>,
 }
 
 impl Rack {
@@ -626,7 +629,35 @@ impl Rack {
             beat: 0.0,
             playing: false,
             deadline: None,
+            keep: Vec::new(),
         }
+    }
+
+    /// Before it plays: the plug-ins it takes over from the rack it
+    /// replaces, so their helpers keep running through an edit.
+    pub fn keep(&mut self, moves: Vec<((usize, usize), (usize, usize))>) {
+        self.keep = moves;
+    }
+
+    /// Takes the running plug-ins listed in [`Rack::keep`] from `old`, the
+    /// rack this one replaces. Never allocates.
+    pub fn adopt(&mut self, old: &mut Rack) {
+        for &((ob, od), (b, d)) in &self.keep {
+            let Some((_, Device::Plugin(from))) =
+                old.runs.get_mut(ob).and_then(|r| r.devices.get_mut(od))
+            else {
+                continue;
+            };
+            let Some(slot) = from.slot.take() else {
+                continue;
+            };
+            match self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
+                Some((_, Device::Plugin(to))) if to.slot.is_none() => to.slot = Some(slot),
+                // Nowhere for it: back where it was, to go with the old rack.
+                _ => from.slot = Some(slot),
+            }
+        }
+        self.keep.clear();
     }
 
     /// See [`RackSettings::set`]. Never allocates.
