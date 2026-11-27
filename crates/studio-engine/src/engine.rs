@@ -167,6 +167,14 @@ pub enum Command {
         track: usize,
         at: usize,
     },
+    /// The device at `at` is swapped for another in the same place (a
+    /// rack whose chains changed). A rack takes over the running plug-ins
+    /// it was told to keep (see [`crate::rack::Rack::keep`]).
+    Replace {
+        track: usize,
+        at: usize,
+        slot: Option<Box<PluginSlot>>,
+    },
     /// A device moves along its chain: it ends up at `to`, the others
     /// keep their order.
     Move {
@@ -317,6 +325,11 @@ enum Edit {
     Remove {
         track: usize,
         at: usize,
+    },
+    Replace {
+        track: usize,
+        at: usize,
+        slot: Option<Box<PluginSlot>>,
     },
     Move {
         track: usize,
@@ -1094,6 +1107,10 @@ impl Engine {
                 self.edit(Edit::Remove { track, at });
                 None
             }
+            Command::Replace { track, at, slot } => {
+                self.edit(Edit::Replace { track, at, slot });
+                None
+            }
             Command::Move { track, from, to } => {
                 self.edit(Edit::Move { track, from, to });
                 None
@@ -1483,9 +1500,10 @@ impl Engine {
     /// click.
     fn edit(&mut self, e: Edit) {
         let bits = match &e {
-            Edit::Insert { track, .. } | Edit::Remove { track, .. } | Edit::Move { track, .. } => {
-                bit(*track)
-            }
+            Edit::Insert { track, .. }
+            | Edit::Remove { track, .. }
+            | Edit::Replace { track, .. }
+            | Edit::Move { track, .. } => bit(*track),
             Edit::Transfer {
                 from_track,
                 to_track,
@@ -1545,6 +1563,38 @@ impl Engine {
             }
             Edit::Remove { track, at } => {
                 if let Some(s) = self.columns.get_mut(track).and_then(|c| c.take(at)) {
+                    let _ = self.trash.push(Trash::Device(s));
+                }
+            }
+            Edit::Replace { track, at, slot } => {
+                let Some(c) = self.columns.get_mut(track) else {
+                    if let Some(s) = slot {
+                        let _ = self.trash.push(Trash::Device(s));
+                    }
+                    return;
+                };
+                let old = c
+                    .slots
+                    .iter()
+                    .position(|s| s.device == at)
+                    .map(|i| c.slots.remove(i));
+                let left = match slot {
+                    Some(mut new) => {
+                        if let Some(mut o) = old {
+                            if let (
+                                SlotKind::Builtin(crate::devices::Device::Rack(from)),
+                                SlotKind::Builtin(crate::devices::Device::Rack(to)),
+                            ) = (&mut o.kind, &mut new.kind)
+                            {
+                                to.adopt(from);
+                            }
+                            let _ = self.trash.push(Trash::Device(o));
+                        }
+                        c.put(at, new)
+                    }
+                    None => old,
+                };
+                if let Some(s) = left {
                     let _ = self.trash.push(Trash::Device(s));
                 }
             }
@@ -2857,6 +2907,82 @@ mod tests {
         }
         assert!((level - want).abs() < 0.01, "{level} vs {want}");
         // Nothing went to the trash: it found its place.
+        assert!(r.trash.pop().is_err());
+    }
+
+    #[test]
+    fn a_racks_plugin_keeps_playing_when_its_chain_changes() {
+        use crate::rack::{Branch, Kind, RackSettings};
+        let mut set = one_note_set();
+        let synth = crate::clip::DeviceInfo {
+            name: "Synth".into(),
+            kind: "Test".into(),
+            on: true,
+            plugin: Some(crate::clip::PluginRef {
+                name: "Synth".into(),
+                vendor: String::new(),
+                format: crate::clip::PluginFormat::Named,
+                instrument: true,
+                state: None,
+            }),
+            builtin: None,
+        };
+        let mut rack = RackSettings::new(Kind::Instrument);
+        rack.branches.push(Branch {
+            devices: vec![synth.clone()],
+            ..Default::default()
+        });
+        set[0].devices = vec![builtin(
+            "Instrument Rack",
+            true,
+            crate::devices::Settings::Rack(rack.clone()),
+        )];
+        let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let (slot, _h) = slot("test-synth", 0, true);
+        r.commands
+            .push(Command::AttachInner {
+                track: 0,
+                device: 0,
+                branch: 0,
+                inner: 0,
+                slot,
+            })
+            .ok();
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        let want = soft_clip(60.0 / 127.0 * pan_gains(set[0].pan)[0] * MASTER);
+        let playing = |studio: &mut Studio, out: &mut Vec<[f32; 2]>| {
+            (0..40).any(|_| {
+                studio.process(out);
+                (out[BLOCK / 2][0] - want).abs() < 0.01
+            })
+        };
+        assert!(playing(&mut studio, &mut out));
+        // A Utility goes in ahead of it: the synth is now second in its
+        // chain, and its helper carries on there.
+        rack.branches[0]
+            .devices
+            .insert(0, builtin("Utility", true, utility(0.0)));
+        let mut d = crate::devices::Device::new(&crate::devices::Settings::Rack(rack), 48_000.0);
+        if let crate::devices::Device::Rack(r) = &mut d {
+            r.keep(vec![((0, 0), (0, 1))]);
+        }
+        r.commands
+            .push(Command::Replace {
+                track: 0,
+                at: 0,
+                slot: Some(Box::new(PluginSlot::device(0, true, d))),
+            })
+            .ok();
+        assert!(playing(&mut studio, &mut out));
+        // Only the old rack, without its plug-in, comes back to be dropped.
+        match r.trash.pop() {
+            Ok(Trash::Device(old)) => assert!(matches!(
+                old.kind,
+                SlotKind::Builtin(crate::devices::Device::Rack(_))
+            )),
+            _ => panic!("the old rack comes back"),
+        }
         assert!(r.trash.pop().is_err());
     }
 

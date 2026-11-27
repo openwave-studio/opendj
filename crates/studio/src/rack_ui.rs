@@ -10,7 +10,7 @@ use crate::control::{self, Controls};
 use crate::devices::Settings;
 use crate::plugins::{Plugins, State};
 use crate::rack::{self, RackSettings};
-use crate::{DeviceData, KnobData};
+use crate::{DeviceData, KnobData, RangeData};
 use slint::{Model, ModelRc};
 
 thread_local! {
@@ -342,6 +342,16 @@ pub fn drag_out(
 /// Setting `i` of a device: for a rack, one inside it when `i` is an
 /// inner index (its on switch included).
 pub fn param(s: &Settings, i: usize) -> Option<crate::devices::Param> {
+    if let (Settings::Rack(r), Some((m, k, end))) = (s, rack::split_range(i)) {
+        // One end of a macro's range: its setting, at that end.
+        let t = r.macros.get(m)?.targets.get(k)?;
+        let mut p = param(
+            s,
+            rack::inner(t.branch as usize, t.device as usize, t.param as usize),
+        )?;
+        p.value = if end == 0 { t.low } else { t.high };
+        return Some(p);
+    }
     match (s, rack::split(i)) {
         (Settings::Rack(r), Some((b, d, p))) => {
             let dev = r.branches.get(b)?.devices.get(d)?;
@@ -352,4 +362,45 @@ pub fn param(s: &Settings, i: usize) -> Option<crate::devices::Param> {
         }
         _ => s.params().into_iter().nth(i),
     }
+}
+
+/// The settings macro `m` of rack `r` turns, each with the ends of its
+/// range as two knobs (their indices are [`rack::range`] ones).
+pub fn ranges(r: &RackSettings, m: usize) -> ModelRc<RangeData> {
+    let s = Settings::Rack(r.clone());
+    let rows: Vec<RangeData> = r
+        .macros
+        .get(m)
+        .map(|mac| {
+            mac.targets
+                .iter()
+                .enumerate()
+                .filter_map(|(k, t)| {
+                    let (b, d) = (t.branch as usize, t.device as usize);
+                    let device = r.branches.get(b)?.devices.get(d)?;
+                    let knob = |end: usize| -> Option<KnobData> {
+                        let i = rack::range(m, k, end);
+                        let p = param(&s, i)?;
+                        Some(KnobData {
+                            index: i as i32,
+                            name: if end == 0 { "Min" } else { "Max" }.into(),
+                            value: p.norm(),
+                            text: p.text().into(),
+                            bipolar: false,
+                            toggle: p.is_switch(),
+                            on: p.value >= 0.5,
+                            mapped: 0,
+                        })
+                    };
+                    let setting = param(&s, rack::inner(b, d, t.param as usize))?;
+                    Some(RangeData {
+                        name: format!("{} · {}", device.name, setting.name).into(),
+                        low: knob(0)?,
+                        high: knob(1)?,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    ModelRc::new(slint::VecModel::from(rows))
 }

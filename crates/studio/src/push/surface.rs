@@ -13,10 +13,12 @@ use crate::scale::{LOWER_ROOTS, UPPER_ROOTS};
 use crate::sound::PARAMS;
 use crate::steps::{self, Layer, Stage};
 
+mod device;
 mod mode;
 mod sequencer;
 mod view;
 
+pub use device::Focus;
 pub use mode::{Menu, Mode};
 pub use sequencer::RESOLUTIONS;
 pub use view::View;
@@ -235,6 +237,11 @@ pub struct Surface {
     added: u64,
     /// Accent: pads play and steps add at full velocity.
     pub accent: bool,
+    /// Device mode: the device the encoders turn.
+    focus: Focus,
+    /// Stop Clip is held, and has stopped a track while held.
+    stop_held: bool,
+    stop_used: bool,
 }
 
 impl Default for Surface {
@@ -268,6 +275,9 @@ impl Surface {
             res: 4,
             added: 0,
             accent: false,
+            focus: Focus::default(),
+            stop_held: false,
+            stop_used: false,
         }
     }
 
@@ -358,7 +368,25 @@ impl Surface {
     fn button(&mut self, cc: u8, press: Press, c: &Controls) {
         let down = press == Press::Down;
         match (cc, press) {
-            (SHIFT, Press::Long) | (SELECT, Press::Long) => return,
+            (SHIFT, Press::Long) | (SELECT, Press::Long) | (STOP, Press::Long) => return,
+            // Stop Clip: held with a track's button, stops that track; on
+            // its own, the selected track; with Shift, every track.
+            (STOP, Press::Down) => {
+                self.stop_held = true;
+                self.stop_used = false;
+                return;
+            }
+            (STOP, _) => {
+                self.stop_held = false;
+                if !self.stop_used {
+                    if self.shift {
+                        c.stop_all();
+                    } else {
+                        c.stop(c.selected_track());
+                    }
+                }
+                return;
+            }
             (SHIFT, _) => {
                 self.shift = down;
                 return;
@@ -400,10 +428,20 @@ impl Surface {
         if self.mode == Mode::Scales && self.scale_button(cc, c) {
             return;
         }
+        if self.stop_held && (LOWER_FIRST..LOWER_FIRST + 8).contains(&cc) {
+            let t = bank(c) + (cc - LOWER_FIRST) as usize;
+            if t < c.tracks.len() {
+                c.stop(t);
+            }
+            self.stop_used = true;
+            return;
+        }
+        if self.mode == Mode::Device && self.device_button(cc, c) {
+            return;
+        }
         let tracks = c.tracks.len();
         match cc {
             PLAY => c.toggle_play(),
-            STOP => c.stop_all(),
             SESSION => {
                 self.back_view = Some(self.view);
                 self.set_view(View::Session, c);
@@ -602,9 +640,12 @@ impl Surface {
             v.push((SCENE_FIRST + s as u8, led));
         }
         let selected = c.selected_track();
-        let scales = self.mode == Mode::Scales;
-        if scales {
+        let scales = self.mode == Mode::Scales || self.mode == Mode::Device;
+        if self.mode == Mode::Scales {
             v.extend(self.scale_leds(c));
+        }
+        if self.mode == Mode::Device {
+            v.extend(self.device_leds(c));
         }
         for t in bank(c)..bank(c) + 8 {
             if scales {
@@ -658,9 +699,9 @@ impl Surface {
         v.push((ACCENT, white(self.accent)));
         v.push((MIX, white(matches!(self.mode, Mode::Mix(_)))));
         v.push((SHIFT, white(self.shift)));
-        let mix = matches!(self.mode, Mode::Mix(_));
+        let pages = matches!(self.mode, Mode::Mix(_) | Mode::Device);
         for cc in [PAGE_LEFT, PAGE_RIGHT] {
-            v.push((cc, Led::solid(if mix { W_DIM } else { W_OFF })));
+            v.push((cc, Led::solid(if pages { W_DIM } else { W_OFF })));
         }
         for cc in [LEFT, RIGHT, UP, DOWN, QUANTIZE] {
             v.push((cc, Led::solid(W_DIM)));
@@ -707,6 +748,76 @@ mod tests {
     }
 
     #[test]
+    fn device_mode_picks_devices_turns_macros_and_goes_into_chains() {
+        use crate::clip::DeviceInfo;
+        use crate::devices::{Settings, UtilitySettings};
+        use crate::rack::{Kind, RackSettings};
+        let utility = DeviceInfo {
+            name: "Utility".into(),
+            kind: "Built-in".into(),
+            on: true,
+            plugin: None,
+            builtin: Some(Settings::Utility(UtilitySettings::default())),
+        };
+        let mut rack = RackSettings::new(Kind::Audio);
+        rack.add_chain(Some(utility.clone()));
+        let mut set = crate::clip::demo_set();
+        set[0].devices = vec![
+            utility,
+            DeviceInfo {
+                name: "Audio Effect Rack".into(),
+                kind: "Built-in".into(),
+                on: true,
+                plugin: None,
+                builtin: Some(Settings::Rack(rack)),
+            },
+        ];
+        let (tx, mut rx) = rtrb::RingBuffer::new(64);
+        let monitor = Studio::new(&set, 48_000.0, 120.0).1.monitor;
+        let c = Controls::new(&set, &[0xff0000; 4], tx, monitor);
+        let mut s = Surface::new();
+        // Under the screen: the track's sound, then its two devices.
+        let (_, lower) = s.menus(&c).expect("device menus");
+        let names: Vec<&str> = lower.iter().map(|m| m.label.as_str()).collect();
+        assert_eq!(names, ["Drums", "Utility", "Audio Effect Rack"]);
+        assert!(lower[0].on);
+        // The rack: its macros on the encoders, its chain over the screen.
+        s.input(&[0xB0, LOWER_FIRST + 2, 127], &c);
+        let knobs = s.device_knobs(&c);
+        assert_eq!(knobs[0].name, "Macro 1");
+        let (upper, _) = s.menus(&c).unwrap();
+        assert_eq!(upper[0].label, "Utility");
+        s.input(&[0xB0, ENCODER_FIRST, 10], &c);
+        assert!(matches!(
+            rx.pop(),
+            Ok(Command::DeviceParam {
+                track: 0,
+                device: 1,
+                index: 0,
+                ..
+            })
+        ));
+        // Into the chain: the Utility's settings, as the rack's inner ones.
+        s.input(&[0xB0, UPPER_FIRST, 127], &c);
+        assert_eq!(s.device_knobs(&c)[0].name, "Gain");
+        let (_, lower) = s.menus(&c).unwrap();
+        assert_eq!(lower[0].label, "◀ Audio Effect Rack");
+        s.input(&[0xB0, ENCODER_FIRST, 10], &c);
+        let Ok(Command::DeviceParam {
+            device: 1, index, ..
+        }) = rx.pop()
+        else {
+            panic!("no inner change");
+        };
+        assert_eq!(crate::rack::split(index), Some((0, 0, 0)));
+        // Back out, and a new track starts on its sound again.
+        s.input(&[0xB0, LOWER_FIRST, 127], &c);
+        assert_eq!(s.device_knobs(&c)[0].name, "Macro 1");
+        c.select_track(1);
+        assert_eq!(s.focus(&c).device, None);
+    }
+
+    #[test]
     fn top_left_pad_launches_track_one_scene_one() {
         let (c, mut rx) = controls();
         let mut s = Surface::new();
@@ -736,17 +847,33 @@ mod tests {
         // Release does nothing.
         s.input(&[0xB0, SCENE_FIRST + 2, 0], &c);
         assert!(rx.pop().is_err());
+        // Stop Clip held with track 2's button stops it, and nothing more
+        // on release.
+        s.input(&[0xB0, STOP, 127], &c);
+        s.input(&[0xB0, LOWER_FIRST + 1, 127], &c);
+        s.input(&[0xB0, STOP, 0], &c);
+        assert!(matches!(rx.pop(), Ok(Command::Stop(1))));
+        assert!(rx.pop().is_err());
+        // On its own, the selected track; with Shift, all.
+        s.input(&[0xB0, STOP, 127], &c);
+        s.input(&[0xB0, STOP, 0], &c);
+        assert!(matches!(rx.pop(), Ok(Command::Stop(0))));
+        s.input(&[0xB0, SHIFT, 127], &c);
+        s.input(&[0xB0, STOP, 127], &c);
+        s.input(&[0xB0, STOP, 0], &c);
+        assert!(matches!(rx.pop(), Ok(Command::StopAll)));
+        s.input(&[0xB0, SHIFT, 0], &c);
+        // In Mix mode the buttons over the screen stop their tracks.
+        s.input(&[0xB0, MIX, 127], &c);
         s.input(&[0xB0, UPPER_FIRST + 1, 127], &c);
         assert!(matches!(rx.pop(), Ok(Command::Stop(1))));
-        s.input(&[0xB0, STOP, 127], &c);
-        assert!(matches!(rx.pop(), Ok(Command::StopAll)));
     }
 
     #[test]
     fn encoders_turn_device_knobs_and_mixer() {
         let (c, mut rx) = controls();
         let mut s = Surface::new();
-        s.input(&[0xB0, LOWER_FIRST + 1, 127], &c);
+        c.select_track(1);
         assert_eq!(c.selected_track(), 1);
         let before = c.param(1, 0);
         s.input(&[0xB0, ENCODER_FIRST, 4], &c);
@@ -791,7 +918,7 @@ mod tests {
             Ok(Command::Note { track: 0, pitch: 36, velocity }) if velocity == 0.0
         ));
         // Bass: bottom-left is A1, the next pad up a fourth (D2).
-        s.input(&[0xB0, LOWER_FIRST + 1, 127], &c);
+        c.select_track(1);
         s.input(&[0x90, 44, 90], &c);
         assert!(matches!(
             rx.pop(),
@@ -831,7 +958,7 @@ mod tests {
         tap(&mut s, LOWER_FIRST + 7);
         tap(&mut s, SCALE);
         assert_eq!(s.mode, Mode::Device);
-        tap(&mut s, LOWER_FIRST + 1);
+        c.select_track(1);
         tap(&mut s, NOTE);
         while rx.pop().is_ok() {}
         s.input(&[0x90, 44, 90], &c);
@@ -970,7 +1097,7 @@ mod tests {
             );
         };
         // Lead (track 3), scene 8 is empty: Steps makes a clip there.
-        press(&mut s, LOWER_FIRST + 3);
+        c.select_track(3);
         s.input(&[0xB0, SHIFT, 127], &c);
         press(&mut s, SCENE_FIRST + 7);
         s.input(&[0xB0, SHIFT, 0], &c);

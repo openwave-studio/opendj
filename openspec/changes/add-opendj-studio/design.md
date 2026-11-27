@@ -95,7 +95,7 @@ A rack is a device in the chain that holds several chains side by side
   instrument. Map (on the rack's title) then a macro, then knobs inside:
   each click maps that setting over its whole range or unmaps it; a
   setting follows one macro, and its knob shows the macro's number. Each
-  edit swaps the rack for the edited one, so its sound restarts.
+  edit swaps the rack for the edited one, with a short fade.
 - **MIDI effects in chains.** In an instrument or drum rack a chain can
   hold MIDI effects; they always lead it, before its instrument, as on a
   track. Each chain turns its notes into beats (the song's, from the
@@ -107,8 +107,12 @@ A rack is a device in the chain that holds several chains side by side
   the sound, an instrument is quiet) until the helper is up and joins it;
   the rack runs it chunk by chunk with the song's transport and what is
   left of the block's time. Racks never load plug-ins in the studio's own
-  process. A rack edit rebuilds the rack, so its plug-ins restart: their
-  sound is saved first and they start from it.
+  process. A rack edit rebuilds the rack, but its running plug-ins keep
+  going: each plug-in in the new rack takes over the first one of the same
+  plug-in in the old rack, wherever its chain or place moved to, and the
+  audio thread hands its slot across as the rack swaps (no allocation
+  there). Only plug-ins that were added start a helper, and only those
+  that were taken out stop.
 - **Plug-ins in the browser.** The browser's Plug-ins list is what
   openDJ's scan found (Settings › Plugins keeps it in `audio-plugins.json`),
   instruments then effects, each with its format and maker. The studio
@@ -160,3 +164,22 @@ the demo) asks for a name, so a Live set is never written over. Opening a
 set restarts the studio with it, so the sound card, Push and plug-ins start
 clean; with unsaved changes it asks first. Changes are told apart by
 comparing the set's text with the text last saved or opened.
+
+### Macro mappings and Push
+
+A Live set's macro mappings come in with it: Live marks a setting a macro
+turns with a `KeyMidi` on channel 16 whose controller is the macro, and
+keeps the range on it (`MidiControllerRange`, in the setting's units).
+Which of our settings it is shows by reading the device again with that
+setting moved, which also gives the range's ends in our units. In map mode
+the rack shows what the picked macro turns, each with Min and Max knobs;
+a range edit is a setting of the rack (`rack::range`), so it reaches the
+audio thread without rebuilding the rack.
+
+On Push, Device mode works as in Live: the buttons under the screen pick
+the track's sound or a device on it, the encoders turn eight settings at a
+time (pages over the screen, or Page left and right). A rack's first page
+is its macros, and the buttons over the screen go into its chains; the
+first button under the screen comes back out. Stop Clip held with a
+track's button stops that track, on its own the selected one, with Shift
+all of them.

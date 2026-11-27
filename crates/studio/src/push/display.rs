@@ -271,12 +271,14 @@ impl Renderer {
             }
             Mode::Device => {
                 let rgb = color(c.tracks[selected].color);
-                (0..PARAMS)
-                    .map(|i| PushKnob {
-                        name: c.param_name(selected, i).into(),
-                        text: c.param_text(selected, i).into(),
-                        value: c.param(selected, i),
-                        bipolar: false,
+                surface
+                    .device_knobs(c)
+                    .into_iter()
+                    .map(|k| PushKnob {
+                        name: k.name.into(),
+                        text: k.text.into(),
+                        value: k.value,
+                        bipolar: k.bipolar,
                         color: rgb,
                     })
                     .collect()
@@ -414,7 +416,7 @@ impl Renderer {
                 surface.layer.label(),
                 sc + 1
             ),
-            (_, Mode::Device) => format!("Device · {name}"),
+            (_, Mode::Device) => surface.device_title(c),
             (_, Mode::Mix(mix)) => format!("Mix · {}", mix.label()),
         };
         let page = (surface.view, surface.mode, surface.layer);
