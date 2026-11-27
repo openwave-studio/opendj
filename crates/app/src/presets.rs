@@ -61,7 +61,7 @@ pub fn tags() -> impl Iterator<Item = &'static str> {
 }
 
 /// A preset as listed: what the browser and ‹ › need, without its sound.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Preset {
     pub name: String,
     /// [`GROOVE`] or the plugin's key.
@@ -77,6 +77,11 @@ pub struct Preset {
     /// A preset the plugin listed itself (CLAP, AU factory), as it gave it
     /// (`path` is then this too, to tell presets apart); empty for a file.
     pub reference: String,
+    /// Genres and styles its maker's library gives it (Arturia's).
+    pub genres: Vec<String>,
+    pub styles: Vec<String>,
+    /// Liked in its maker's library.
+    pub liked: bool,
 }
 
 /// An instrument plugin the Instrument input lists.
@@ -154,7 +159,7 @@ fn list_in(root: &Path) -> Vec<Preset> {
                     })
                     .unwrap_or_default(),
                 from_plugin: false,
-                reference: String::new(),
+                ..Preset::default()
             });
         }
     }
@@ -167,6 +172,7 @@ fn list_in(root: &Path) -> Vec<Preset> {
 fn plugins_own(
     plugins: &[Instrument],
     listed: &HashMap<String, Vec<(String, String)>>,
+    arturia: &[crate::arturia::Found],
 ) -> Vec<Preset> {
     let mut out = Vec::new();
     for p in plugins {
@@ -179,6 +185,7 @@ fn plugins_own(
                 tags: Vec::new(),
                 from_plugin: true,
                 reference: reference.clone(),
+                ..Preset::default()
             });
         }
         let Some((format, class)) = format_of(&p.key) else {
@@ -192,11 +199,79 @@ fn plugins_own(
                 path: f.path,
                 tags: Vec::new(),
                 from_plugin: true,
-                reference: String::new(),
+                ..Preset::default()
             });
+        }
+        if is_arturia(p) {
+            for f in arturia.iter().filter(|f| arturia_plays(p, f)) {
+                out.push(Preset {
+                    name: f.name.clone(),
+                    instrument: p.key.clone(),
+                    instrument_name: p.name.clone(),
+                    path: f.path.clone(),
+                    tags: f.types.iter().chain(&f.characters).cloned().collect(),
+                    from_plugin: true,
+                    genres: f.genres.clone(),
+                    styles: f.styles.clone(),
+                    liked: f.liked,
+                    ..Preset::default()
+                });
+            }
         }
     }
     out
+}
+
+/// Whether `p` is one of Arturia's, whose presets its library lists.
+fn is_arturia(p: &Instrument) -> bool {
+    p.maker.to_lowercase().contains("arturia")
+}
+
+/// Whether Arturia instrument `p` plays library preset `f`: those in its
+/// own folder, and for Analog Lab those made for it too.
+fn arturia_plays(p: &Instrument, f: &crate::arturia::Found) -> bool {
+    f.folder.eq_ignore_ascii_case(p.plugin_name.trim())
+        || (f.analog_lab && p.plugin_name.to_lowercase().starts_with("analog lab"))
+}
+
+/// Reads Arturia's library in the background when an Arturia instrument
+/// is listed and the library changed since it was last read; its presets
+/// show once read.
+fn read_arturia(app: &AppWindow, plugins: &[Instrument]) {
+    if !plugins.iter().any(is_arturia) {
+        return;
+    }
+    let Some(dir) = crate::arturia::library() else {
+        return;
+    };
+    let changed = crate::arturia::changed(&dir);
+    let stale = STATE.with_borrow_mut(|s| {
+        let stale = changed.is_none() || s.arturia_read != changed;
+        s.arturia_read = changed;
+        stale
+    });
+    if !stale {
+        return;
+    }
+    let weak = app.as_weak();
+    let _ = std::thread::Builder::new()
+        .name("arturia presets".into())
+        .spawn(move || {
+            let found = match crate::arturia::read(&dir) {
+                Ok(found) => found,
+                Err(e) => {
+                    eprintln!("Arturia presets: {e}");
+                    return;
+                }
+            };
+            let _ = slint::invoke_from_event_loop(move || {
+                STATE.with_borrow_mut(|s| s.arturia = std::rc::Rc::new(found));
+                if let Some(app) = weak.upgrade() {
+                    rescan();
+                    crate::instruments::presets_changed(&app);
+                }
+            });
+        });
 }
 
 /// The plugin a key names, for the formats that list their own presets:
@@ -306,6 +381,10 @@ fn format_of(key: &str) -> Option<(&'static str, &str)> {
 /// The sound a plugin's own preset file holds, as the plugin host takes it.
 fn file_state(preset: &Preset) -> Result<Vec<u8>, String> {
     let bytes = std::fs::read(&preset.path).map_err(|e| format!("can't read it ({e})"))?;
+    // An Arturia preset is the instrument's own saved sound.
+    if crate::arturia::is_preset(&bytes) {
+        return crate::arturia::plugin_state(&preset.instrument, &bytes, &preset.name);
+    }
     match format_of(&preset.instrument) {
         Some(("vst3", _)) => plugin_presets::vst3_state(&bytes),
         // An `.aupreset` is the unit's class info, as the AU helper keeps it.
@@ -469,6 +548,9 @@ struct State {
     listed: HashMap<String, Vec<(String, String)>>,
     /// The plugins asked for their list this run.
     asked: HashSet<String>,
+    /// Arturia's library, as last read, and when it had last changed then.
+    arturia: std::rc::Rc<Vec<crate::arturia::Found>>,
+    arturia_read: Option<std::time::SystemTime>,
     /// Each deck's Groove Box preset.
     groove: Vec<Option<PathBuf>>,
     /// The Instrument input's preset.
@@ -520,7 +602,7 @@ pub fn all() -> Vec<Preset> {
 /// Lists the presets again from the folder.
 fn rescan() {
     let mut presets = root().map(|r| list_in(&r)).unwrap_or_default();
-    presets.extend(STATE.with_borrow(|s| plugins_own(&s.plugins, &s.listed)));
+    presets.extend(STATE.with_borrow(|s| plugins_own(&s.plugins, &s.listed, &s.arturia)));
     sort(&mut presets);
     STATE.with_borrow_mut(|s| s.presets = presets);
 }
@@ -529,6 +611,7 @@ fn rescan() {
 /// own presets are listed again, and CLAP plugins asked for theirs.
 pub fn set_plugins(app: &AppWindow, plugins: Vec<Instrument>) {
     ask_plugins(app, &plugins);
+    read_arturia(app, &plugins);
     STATE.with_borrow_mut(|s| s.plugins = plugins);
     rescan();
 }
@@ -1166,7 +1249,7 @@ mod tests {
             path: PathBuf::new(),
             tags: Vec::new(),
             from_plugin,
-            reference: String::new(),
+            ..Preset::default()
         };
         let mut list = vec![
             preset("Airy", true),
@@ -1204,6 +1287,64 @@ mod tests {
             ..preset("Warm", true)
         };
         assert_eq!(file_state(&au).unwrap(), b"<plist/>");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn arturia_instruments_list_their_library_presets() {
+        let found = |name: &str, folder: &str, analog_lab: bool| crate::arturia::Found {
+            name: name.into(),
+            path: PathBuf::from(format!("/lib/{folder}/Factory/{name}")),
+            folder: folder.into(),
+            analog_lab,
+            types: vec!["Bass".into()],
+            genres: vec!["Techno".into()],
+            styles: vec!["Warm".into()],
+            characters: vec!["Warm".into()],
+            liked: true,
+        };
+        let library = [
+            found("Kick", "Mini V4", false),
+            found("Tines", "Stage-73 V2", true),
+        ];
+        let plugin = |key: &str, name: &str, maker: &str| Instrument {
+            key: key.into(),
+            name: name.into(),
+            plugin_name: name.into(),
+            maker: maker.into(),
+        };
+        let plugins = [
+            plugin("au:aumu:MIN4:Artu", "Mini V4", "Arturia"),
+            plugin("vst3:/x/Analog Lab V.vst3#A", "Analog Lab V", "Arturia"),
+            plugin("vst3:/x/Mini V4.vst3#B", "Mini V4", "Someone else"),
+        ];
+        let listed = plugins_own(&plugins, &HashMap::new(), &library);
+        let names: Vec<(&str, &str)> = listed
+            .iter()
+            .map(|p| (p.instrument_name.as_str(), p.name.as_str()))
+            .collect();
+        assert_eq!(names, [("Mini V4", "Kick"), ("Analog Lab V", "Tines")]);
+        let kick = &listed[0];
+        assert!(kick.from_plugin && kick.liked);
+        assert_eq!(kick.tags, ["Bass", "Warm"]);
+        assert_eq!(
+            (kick.genres.as_slice(), kick.styles.as_slice()),
+            (&["Techno".to_string()][..], &["Warm".to_string()][..])
+        );
+        // Its file loads as the plugin's sound.
+        let root = temp("arturia-load");
+        std::fs::create_dir_all(&root).unwrap();
+        let path = root.join("Kick");
+        std::fs::write(&path, b"22 serialization::archive 10 0 7").unwrap();
+        let vst3 = Preset {
+            instrument: "vst3:/x/Mini V4.vst3#B".into(),
+            path,
+            ..kick.clone()
+        };
+        let state = file_state(&vst3).unwrap();
+        let (a, b) = plugin_presets::unpack_states(&state).unwrap();
+        assert_eq!(a, b"22 serialization::archive 10 0 7");
+        assert_eq!(a, b);
         let _ = std::fs::remove_dir_all(&root);
     }
 

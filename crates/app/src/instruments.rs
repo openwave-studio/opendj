@@ -317,6 +317,45 @@ pub fn modwheel_message(value: f32) -> [u8; 3] {
 const KEYBOARD_SIZE: &str = "instrument_keyboard";
 /// Settings: the starred presets and instruments, by [`recent_key`].
 const STARRED: &str = "jam_starred";
+/// Settings: the presets liked in a maker's library (Arturia's) that were
+/// starred for it, so each is starred once and unstarring it sticks.
+const LIKED_SEEN: &str = "jam_liked_seen";
+
+/// Stars the presets liked in their maker's library that weren't yet.
+fn star_liked(s: &mut State) {
+    let liked: Vec<String> = s
+        .presets
+        .iter()
+        .filter(|p| p.liked)
+        .map(|p| format!("preset:{}", p.path.display()))
+        .collect();
+    if liked.is_empty() {
+        return;
+    }
+    let mut seen: HashSet<String> = crate::settings::load()[LIKED_SEEN]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|k| k.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    let new: Vec<String> = liked.into_iter().filter(|k| !seen.contains(k)).collect();
+    if new.is_empty() {
+        return;
+    }
+    for k in new {
+        s.starred.insert(k.clone());
+        seen.insert(k);
+    }
+    let sorted = |set: &HashSet<String>| {
+        let mut keys: Vec<String> = set.iter().cloned().collect();
+        keys.sort();
+        serde_json::json!(keys)
+    };
+    crate::settings::set(STARRED, sorted(&s.starred));
+    crate::settings::set(LIKED_SEEN, sorted(&seen));
+}
 const COLORS: &str = "instrument_colors";
 
 /// How many colors the Mixer strips' palette has; the last is grey, which
@@ -447,7 +486,16 @@ const INSTRUMENTS: i32 = 1;
 
 /// Each side's filter menus, in order. Genre and Style join Presets once
 /// presets carry them (`redesign-jam-browser` step 2).
-const PRESET_FACETS: [&str; 4] = ["Sound type", "Character", "Instrument", "Maker"];
+/// Genre and Style come from makers' libraries (Arturia's) and show only
+/// when some preset has one.
+const PRESET_FACETS: [&str; 6] = [
+    "Sound type",
+    "Genre",
+    "Style",
+    "Character",
+    "Instrument",
+    "Maker",
+];
 const INSTRUMENT_FACETS: [&str; 2] = ["Kind", "Maker"];
 
 fn facet_names(view: i32) -> &'static [&'static str] {
@@ -606,6 +654,8 @@ fn entries(s: &State) -> Vec<Entry> {
                     },
                     facets: vec![
                         tagged(&presets::TYPES),
+                        p.genres.clone(),
+                        p.styles.clone(),
                         tagged(&presets::CHARACTERS),
                         vec![p.instrument_name.clone()],
                         if maker_name.is_empty() {
@@ -630,7 +680,7 @@ fn entries(s: &State) -> Vec<Entry> {
 fn value_order(view: i32, facet: usize) -> &'static [&'static str] {
     match (view, facet) {
         (PRESETS, 0) => &presets::TYPES,
-        (PRESETS, 1) => &presets::CHARACTERS,
+        (PRESETS, 3) => &presets::CHARACTERS,
         (INSTRUMENTS, 0) => &KINDS,
         _ => &[],
     }
@@ -764,6 +814,7 @@ fn refresh(app: &AppWindow) {
     let found = presets::all();
     STATE.with_borrow_mut(|s| {
         s.presets = found;
+        star_liked(s);
         s.picks.resize(facet_names(s.view).len(), HashSet::new());
         let (rows, facets) = filtered(s);
         let picked = s.picks.iter().any(|p| !p.is_empty());
@@ -790,6 +841,7 @@ fn refresh(app: &AppWindow) {
             .enumerate()
             .map(|(f, facet)| JamFacet {
                 name: facet.name.into(),
+                shown: !facet.values.is_empty(),
                 open: s.open_facet == Some(f),
                 picked: facet.values.iter().filter(|(_, _, on)| *on).count() as i32,
                 picks: ModelRc::new(VecModel::from(
@@ -1008,7 +1060,7 @@ mod tests {
             path: format!("/p/{name}.json").into(),
             tags: tags.iter().map(|t| t.to_string()).collect(),
             from_plugin: false,
-            reference: String::new(),
+            ..Preset::default()
         };
         State {
             plugins: vec![
