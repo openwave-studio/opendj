@@ -14,11 +14,11 @@
 
 ## 3. Editing
 
-- [ ] 3.1 Draw, select, box select, move, resize, delete, duplicate, copy and paste, undo and redo
-- [ ] 3.2 Hear notes (headphones) from keys and edits
-- [ ] 3.3 Velocity and Chance lanes
-- [ ] 3.4 The tools and the right-click menu with Live's shortcuts, Quantize Settings
-- [ ] 3.5 Drum mode on Drum Rack tracks
+- [x] 3.1 Draw, select, box select, move, resize, delete, duplicate, copy and paste, undo and redo
+- [x] 3.2 Hear notes (headphones) from keys and edits
+- [x] 3.3 Velocity and Chance lanes
+- [x] 3.4 The tools and the right-click menu with Live's shortcuts, Quantize Settings
+- [x] 3.5 Drum mode on Drum Rack tracks
 
 ## 4. Check
 
