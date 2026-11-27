@@ -374,6 +374,12 @@ pub struct Track {
     /// Send A and Send B (0..1).
     #[serde(default)]
     pub sends: [f32; 2],
+    /// Its activator is off: the track is quiet.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub muted: bool,
+    /// Soloed: while any track is, only soloed ones sound.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub solo: bool,
     /// The built-in sound's knobs, when the set gives them.
     #[serde(default)]
     pub params: Option<[f32; crate::sound::PARAMS]>,
@@ -395,6 +401,8 @@ impl Track {
             volume: None,
             pan: 0.5,
             sends: [0.0; 2],
+            muted: false,
+            solo: false,
             params: None,
             devices: Vec::new(),
             io: Io::new(sound == Sound::Audio),

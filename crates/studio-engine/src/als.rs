@@ -213,6 +213,8 @@ fn read_track(
     if let Some(c) = chain {
         track.volume = number(c, "Mixer/Volume/Manual").map(fader);
         track.pan = number(c, "Mixer/Pan/Manual").map_or(0.5, |p| ((p + 1.0) / 2.0) as f32);
+        track.muted = value(c, "Mixer/Speaker/Manual") == Some("false");
+        track.solo = value(c, "Mixer/SoloSink") == Some("true");
         track.io = io(c, audio);
         // An External Instrument plays the track through its own routing.
         let ext = track.devices.iter().find_map(|d| match &d.builtin {
