@@ -99,6 +99,7 @@ mod put_back;
 mod quality;
 mod quick_search;
 mod remote;
+mod remote_deck;
 mod room_eq;
 mod sampler;
 mod scrobble;
