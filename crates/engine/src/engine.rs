@@ -8619,6 +8619,7 @@ mod tests {
             channel: 2,
             ccs: vec![Some(74)],
             lsbs: Vec::new(),
+            ..Default::default()
         };
         let slot = crate::hardware_synth::Slot::for_test(&config);
         link.slots.push(Some(slot)).unwrap();
@@ -8634,6 +8635,14 @@ mod tests {
         }
         assert!(sent.contains(&[0xB2, 74, 127]), "{sent:?}");
         assert!(sent.contains(&[0x92, 60, 100]), "{sent:?}");
+        // Its gain turned up past full scale: the limiter holds it at
+        // -1 dBFS, under the master's own ceiling.
+        ins("hardware_gain").set(4.0);
+        let loud = talk(&mut engine, &mut tx, 0.3, sine(1000.0, 0.5));
+        let peak = loud[loud.len() / 2..]
+            .iter()
+            .fold(0.0f32, |m, s| m.max(s.abs()));
+        assert!(peak > 0.8 && peak <= 0.9, "{peak}");
     }
 
     #[test]

@@ -17,3 +17,15 @@ The deck SHALL take a hardware latency of 0 to 200 ms for a hardware synth, and 
 #### Scenario: Sequencer on the beat
 - **WHEN** the latency is 12 ms and the step sequencer plays a step on a downbeat
 - **THEN** the note goes out 12 ms before the downbeat is heard
+
+### Requirement: Hardware synth presets by bank or category
+The preset picker SHALL group a hardware synth's presets by its named banks, or by its own categories when its profile has them, with a search by name; the deck's ‹ › SHALL step through the picked group only. When the profile says how, openDJ SHALL read the preset names and categories from the synth itself, keep them, and read them again on request.
+
+#### Scenario: Pick a pad on the MicroFreak
+- **WHEN** the MicroFreak loads for the first time
+- **THEN** openDJ reads its 512 preset names and categories in the background
+- **AND** picking Pad in the picker lists only its pads, factory and the user's own, and ‹ › step through them
+
+#### Scenario: Pick a preset in a named bank
+- **WHEN** the user picks the Messenger's Classic Bass bank and its third preset
+- **THEN** the synth gets Bank Select and Program Change for it and the deck bar reads "Classic Bass › 3"
