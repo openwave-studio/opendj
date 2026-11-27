@@ -6,8 +6,8 @@ export { PushScreen, PushTrack, PushKnob, PushMenu }
 
 import { Theme, Pill, Picker } from "theme.slint";
 export { Theme }
-import { Piano, PianoRoll, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend } from "piano_roll.slint";
-export { Piano, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend }
+import { Piano, PianoRoll, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend, PianoLane, PianoMenuItem } from "piano_roll.slint";
+export { Piano, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend, PianoLane, PianoMenuItem }
 
 // Slot states, as the audio thread reports them.
 export enum SlotState { empty, stopped, queued, playing, stopping }
@@ -39,6 +39,13 @@ export struct KnobData {
     on: bool,
     // Inside a rack: the macro it follows, plus one (0 for none).
     mapped: int,
+}
+
+// A setting a macro turns, with its range's two ends as knobs.
+export struct RangeData {
+    name: string,
+    low: KnobData,
+    high: KnobData,
 }
 
 // An EQ Eight band on its graph: place across and down, 0..1.
@@ -104,6 +111,8 @@ export struct DeviceData {
     // the macro being mapped (-1 when not mapping).
     open-chain: int,
     mapping: int,
+    // In map mode: what the macro being mapped turns, and over what range.
+    ranges: [RangeData],
     // A device inside a rack: the setting that switches it on.
     on-index: int,
 }
@@ -133,6 +142,9 @@ export struct TrackData {
     // 0 In, 1 Auto, 2 Off.
     monitor: int,
     armed: bool,
+    // The activator is off; soloed.
+    muted: bool,
+    solo: bool,
     audio-to: string,
     // Shown when the sound goes to Ext. Out.
     out-channel: string,
@@ -765,13 +777,20 @@ component Strip inherits Rectangle {
     in property <float> send-a;
     in property <float> send-b;
     in property <bool> armed;
+    in property <bool> active: true;
+    in property <bool> solo;
     // Which control (0 volume, 1 pan, 2 send A, 3 send B) and its value.
     callback changed(int, float);
     callback arm-toggled();
+    callback active-toggled();
+    callback solo-toggled();
     property <float> fader: free ? local-volume : volume;
     property <float> local-volume: 60 / 66;
-    property <bool> active: true;
-    property <bool> solo;
+    // Returns aren't connected yet: their buttons keep their own state.
+    property <bool> local-active: true;
+    property <bool> local-solo;
+    property <bool> is-active: free ? local-active : active;
+    property <bool> is-solo: free ? local-solo : solo;
     background: tint.with-alpha(0.10);
     VerticalLayout {
         padding: 4px;
@@ -838,11 +857,22 @@ component Strip inherits Rectangle {
                 width: 26px;
                 height: 18px;
                 border-radius: 2px;
-                background: active ? Theme.accent : Theme.slot;
-                Text { text: number; color: active ? #101112 : Theme.dim; font-size: 10px; font-weight: 700; }
-                TouchArea { clicked => { root.active = !root.active; } }
+                background: is-active ? Theme.accent : Theme.slot;
+                Text { text: number; color: is-active ? #101112 : Theme.dim; font-size: 10px; font-weight: 700; }
+                TouchArea {
+                    clicked => {
+                        if root.free { root.local-active = !root.local-active; } else { root.active-toggled(); }
+                    }
+                }
             }
-            SmallButton { label: "S"; on: solo; on-color: Theme.return-b; clicked => { root.solo = !root.solo; } }
+            SmallButton {
+                label: "S";
+                on: is-solo;
+                on-color: Theme.return-b;
+                clicked => {
+                    if root.free { root.local-solo = !root.local-solo; } else { root.solo-toggled(); }
+                }
+            }
             if arm: SmallButton { label: "●"; on: armed; on-color: #ff6b6b; clicked => { root.arm-toggled(); } }
         }
     }
@@ -853,10 +883,13 @@ component ClipSlot inherits Rectangle {
     in property <bool> blink;
     in property <float> progress: -1;
     in property <bool> selected;
+    // Notes played go into it.
+    in property <bool> recording;
     callback launch;
     // Double-click: the clip's notes (an empty slot gets a new clip).
     callback open;
-    background: data.state == SlotState.empty
+    background: recording ? #d0453a
+        : data.state == SlotState.empty
         ? (ta.has-hover ? Theme.slot-hover : Theme.slot)
         : (data.state == SlotState.playing ? data.color : data.color.with-alpha(ta.has-hover ? 0.5 : 0.34));
     border-width: data.state == SlotState.queued ? 1px : (selected ? 1px : 0px);
@@ -871,14 +904,20 @@ component ClipSlot inherits Rectangle {
         width: parent.width * progress;
         background: #101112aa;
     }
-    if data.state == SlotState.empty: Rectangle {
+    if recording: Text {
+        x: 6px;
+        text: "●";
+        color: #101112;
+        font-size: 10px;
+    }
+    if data.state == SlotState.empty && !recording: Rectangle {
         x: 6px;
         width: 6px;
         height: 6px;
         border-width: 1px;
         border-color: Theme.faint;
     }
-    if data.state != SlotState.empty: HorizontalLayout {
+    if data.state != SlotState.empty && !recording: HorizontalLayout {
         padding-left: 6px;
         padding-right: 6px;
         spacing: 5px;
@@ -1316,6 +1355,53 @@ component Graph inherits Rectangle {
 }
 
 // One of the studio's own devices: its switches, knobs and graph.
+// Map mode on a rack: the settings the picked macro turns, each with the
+// setting at the macro's bottom (Min) and top (Max).
+component MacroRanges inherits VerticalLayout {
+    in property <DeviceData> d;
+    in property <color> tint;
+    callback param(int, float);
+    width: 210px;
+    padding: 6px;
+    spacing: 2px;
+    Text {
+        text: d.ranges.length == 0 ? "Click knobs in the open chain to map them" : "Mapped";
+        color: Theme.dim;
+        font-size: 10px;
+        wrap: word-wrap;
+    }
+    for r in d.ranges: HorizontalLayout {
+        height: 50px;
+        spacing: 2px;
+        Text {
+            text: r.name;
+            color: Theme.text;
+            font-size: 10px;
+            wrap: word-wrap;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+        Knob {
+            width: 46px;
+            size: 22px;
+            label: r.low.name;
+            display: r.low.text;
+            value: r.low.value;
+            tint: root.tint;
+            changed(v) => { root.param(r.low.index, v); }
+        }
+        Knob {
+            width: 46px;
+            size: 22px;
+            label: r.high.name;
+            display: r.high.text;
+            value: r.high.value;
+            tint: root.tint;
+            changed(v) => { root.param(r.high.index, v); }
+        }
+    }
+}
+
 component KnobPanel inherits HorizontalLayout {
     in property <DeviceData> d;
     in property <color> tint;
@@ -1672,7 +1758,8 @@ component ChainDevice inherits Device {
     // A plug-in inside a rack: its window opened or closed.
     callback open-inner(int, int, int, int);
 
-    width: d.builtin ? d.panel-width * 1px : 150px;
+    // Map mode on a rack adds the macro's ranges beside its knobs.
+    width: d.builtin ? (d.panel-width + (d.rack > 0 && d.mapping >= 0 ? 214 : 0)) * 1px : 150px;
     title: d.name;
     on: d.on;
     track: track-index;
@@ -1735,6 +1822,11 @@ component ChainDevice inherits Device {
             param(k, v) => { root.device-param(track-index, at, k, v); }
             click(k) => { root.device-click(track-index, at, k); }
             pressed(k) => { root.pick-macro(track-index, at, k); }
+        }
+        if d.mapping >= 0: MacroRanges {
+            d: d;
+            tint: d.rack == 1 ? Theme.effect : root.track-color;
+            param(k, v) => { root.device-param(track-index, at, k, v); }
         }
     }
     if d.builtin && !d.eq && d.rack == 0: KnobPanel {
@@ -2052,11 +2144,15 @@ export component AppWindow inherits Window {
     callback launch-clip(int, int);   // track, scene
     // Double-click on a slot: its notes in the bottom panel.
     callback open-notes(int, int);   // track, scene
-    // ⌘Z and ⇧⌘Z while the piano roll shows.
-    callback piano-undo(bool);
+    // Record on the selected slot (or stop recording), and the set's undo.
+    callback record();
+    callback undo(bool);
+    // The slot being recorded, -1 for none.
+    in property <int> rec-track: -1;
+    in property <int> rec-scene: -1;
     // The piano roll instead of the devices along the bottom, and its height.
     in-out property <bool> notes-shown;
-    in-out property <length> panel-height: 320px;
+    in-out property <length> panel-height: 390px;
     callback launch-scene(int);
     callback stop-track(int);
     callback stop-all();
@@ -2086,6 +2182,8 @@ export component AppWindow inherits Window {
     // Track, 0 In, 1 Auto, 2 Off.
     callback set-monitor(int, int);
     callback toggle-arm(int);
+    callback toggle-mute(int);
+    callback toggle-solo(int);
     // Settings opened (the device lists are read again); a setting picked
     // (0 output, 1 input, 2 sample rate, 3 buffer) and its option.
     callback settings-opened();
@@ -2124,10 +2222,15 @@ export component AppWindow inherits Window {
                     root.file(0);
                     return accept;
                 }
-                if root.notes-shown && (event.text == "z" || event.text == "Z") {
-                    root.piano-undo(event.modifiers.shift);
+                if event.text == "z" || event.text == "Z" {
+                    root.undo(event.modifiers.shift);
                     return accept;
                 }
+            }
+            // The piano roll's shortcuts while it shows.
+            if root.notes-shown && Piano.key(event.text, event.modifiers.shift,
+                    event.modifiers.control || event.modifiers.meta, event.modifiers.alt) {
+                return accept;
             }
             // Tab: the clip's notes or the track's devices.
             if event.text == Key.Tab && !event.modifiers.control && !event.modifiers.meta {
@@ -2193,7 +2296,14 @@ export component AppWindow inherits Window {
                     alignment: center;
                     Pill { label: "■"; clicked => { if root.playing { root.toggle-play(); } } }
                 }
-                VerticalLayout { alignment: center; Pill { label: "●"; enabled: false; } }
+                VerticalLayout {
+                    alignment: center;
+                    Pill {
+                        label: "●";
+                        on: root.rec-track >= 0;
+                        clicked => { root.record(); }
+                    }
+                }
                 Readout { title: ""; value: root.position; value-width: 52px; }
                 Rectangle { horizontal-stretch: 1; }
                 Readout { title: "CPU"; value: root.load; value-width: 36px; }
@@ -2302,6 +2412,7 @@ export component AppWindow inherits Window {
                             blink: root.blink;
                             progress: t.progress;
                             selected: i == selected-track && s == selected-scene;
+                            recording: i == root.rec-track && s == root.rec-scene;
                             launch => { root.launch-clip(i, s); }
                             open => { root.open-notes(i, s); }
                         }
@@ -2351,6 +2462,10 @@ export component AppWindow inherits Window {
                             level: t.level;
                             armed: t.armed;
                             arm-toggled => { root.toggle-arm(i); }
+                            active: !t.muted;
+                            solo: t.solo;
+                            active-toggled => { root.toggle-mute(i); }
+                            solo-toggled => { root.toggle-solo(i); }
                             volume: t.volume;
                             pan: t.pan;
                             pan-text: t.pan-text;

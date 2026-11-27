@@ -728,7 +728,20 @@ impl Input {
         }
         let buf = &mut self.buf[..frames];
         let source = if self.index == INSTRUMENT {
-            let playing = fx.finish_instrument(buf);
+            // A hardware synth's sound comes in on the Instrument input
+            // route; with a plugin that input is read and let go, so it
+            // never stands in the queue.
+            let got = match &mut self.feed {
+                Some(feed) => pull(feed, &mut self.queue, buf),
+                None => 0,
+            };
+            let playing = if fx.plays_hardware() {
+                buf[got..].fill([0.0; 2]);
+                fx.finish_hardware(buf);
+                true
+            } else {
+                fx.finish_instrument(buf)
+            };
             self.c.configured.set_bool(fx.has_instrument());
             playing
         } else if let Some(source) = &mut self.source {

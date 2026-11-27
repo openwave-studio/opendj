@@ -4017,6 +4017,15 @@ impl Browser {
         crate::settings::set_open_folders(&open);
     }
 
+    /// A command or the MCP server (`opendj tag …`, an assistant) changed
+    /// the library from outside: read tracks, tags and lists again, so
+    /// nothing saves over the change from the copy held here.
+    pub fn changed_outside(&mut self) {
+        self.reload_library();
+        self.reload_tree(None);
+        self.refresh_rows_keeping_current();
+    }
+
     /// Rebuilds the tree from the database, keeping the selection where it can.
     fn reload_tree(&mut self, select: Option<i64>) {
         if self.tree != COLLECTION {

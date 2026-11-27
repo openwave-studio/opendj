@@ -43,7 +43,10 @@ export default defineConfig({
       favicon: '/favicon.png',
       components: { SiteTitle: './src/components/SiteTitle.astro' },
       customCss: ['./src/styles/opendj.css'],
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/openwave-studio/opendj' }],
+      social: [
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/openwave-studio/opendj' },
+        { icon: 'discord', label: 'Discord', href: 'https://discord.gg/Q628RYTCy' },
+      ],
       editLink: { baseUrl: 'https://github.com/openwave-studio/opendj/edit/main/website/docs/' },
       plugins: [linksValidator({ errorOnRelativeLinks: false })],
       sidebar: [
@@ -79,6 +82,7 @@ export default defineConfig({
               items: [{ label: 'All controllers', link: '/controllers' }, ...controllers],
             },
             'guide/osc',
+            'guide/command-line',
             'guide/link',
             'guide/midi-clock',
             'guide/deck-outputs',

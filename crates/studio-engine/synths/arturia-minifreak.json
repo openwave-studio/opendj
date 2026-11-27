@@ -1,0 +1,256 @@
+{
+ "id": "arturia-minifreak",
+ "name": "MiniFreak",
+ "maker": "Arturia",
+ "source": "https://support.arturia.com/hc/en-us/articles/6316523876764-MiniFreak-MIDI-Implementation-Chart",
+ "port": "MiniFreak",
+ "channel": 0,
+ "audio": "mono",
+ "controls": [
+  {
+   "group": "Glide",
+   "name": "Glide",
+   "cc": 5
+  },
+  {
+   "group": "VCO 1",
+   "name": "Tune",
+   "cc": 70
+  },
+  {
+   "group": "VCO 1",
+   "name": "Wave",
+   "cc": 14
+  },
+  {
+   "group": "VCO 1",
+   "name": "Timbre",
+   "cc": 15
+  },
+  {
+   "group": "VCO 1",
+   "name": "Shape",
+   "cc": 16
+  },
+  {
+   "group": "VCO 1",
+   "name": "Volume",
+   "cc": 17
+  },
+  {
+   "group": "VCO 2",
+   "name": "Tune",
+   "cc": 73
+  },
+  {
+   "group": "VCO 2",
+   "name": "Wave",
+   "cc": 18
+  },
+  {
+   "group": "VCO 2",
+   "name": "Timbre",
+   "cc": 19
+  },
+  {
+   "group": "VCO 2",
+   "name": "Shape",
+   "cc": 20
+  },
+  {
+   "group": "VCO 2",
+   "name": "Volume",
+   "cc": 21
+  },
+  {
+   "group": "Filter",
+   "name": "Cutoff",
+   "cc": 74
+  },
+  {
+   "group": "Filter",
+   "name": "Resonance",
+   "cc": 71
+  },
+  {
+   "group": "Filter",
+   "name": "Env Amount",
+   "cc": 24
+  },
+  {
+   "group": "Filter",
+   "name": "Velocity Env",
+   "cc": 94
+  },
+  {
+   "group": "Cycling Env",
+   "name": "Rise Shape",
+   "cc": 68
+  },
+  {
+   "group": "Cycling Env",
+   "name": "Rise",
+   "cc": 76
+  },
+  {
+   "group": "Cycling Env",
+   "name": "Fall",
+   "cc": 77
+  },
+  {
+   "group": "Cycling Env",
+   "name": "Hold",
+   "cc": 78
+  },
+  {
+   "group": "Cycling Env",
+   "name": "Fall Shape",
+   "cc": 69
+  },
+  {
+   "group": "Envelope",
+   "name": "Attack",
+   "cc": 80
+  },
+  {
+   "group": "Envelope",
+   "name": "Decay",
+   "cc": 81
+  },
+  {
+   "group": "Envelope",
+   "name": "Sustain",
+   "cc": 82
+  },
+  {
+   "group": "Envelope",
+   "name": "Release",
+   "cc": 83
+  },
+  {
+   "group": "LFO",
+   "name": "LFO 1 Rate",
+   "cc": 85
+  },
+  {
+   "group": "LFO",
+   "name": "LFO 2 Rate",
+   "cc": 87
+  },
+  {
+   "group": "FX",
+   "name": "FX 1 Time",
+   "cc": 22
+  },
+  {
+   "group": "FX",
+   "name": "FX 1 Intensity",
+   "cc": 23
+  },
+  {
+   "group": "FX",
+   "name": "FX 1 Amount",
+   "cc": 25
+  },
+  {
+   "group": "FX",
+   "name": "FX 2 Time",
+   "cc": 26
+  },
+  {
+   "group": "FX",
+   "name": "FX 2 Intensity",
+   "cc": 27
+  },
+  {
+   "group": "FX",
+   "name": "FX 2 Amount",
+   "cc": 28
+  },
+  {
+   "group": "FX",
+   "name": "FX 3 Time",
+   "cc": 29
+  },
+  {
+   "group": "FX",
+   "name": "FX 3 Intensity",
+   "cc": 30
+  },
+  {
+   "group": "FX",
+   "name": "FX 3 Amount",
+   "cc": 31
+  },
+  {
+   "group": "Sequencer",
+   "name": "Gate",
+   "cc": 115
+  },
+  {
+   "group": "Sequencer",
+   "name": "Spice",
+   "cc": 116
+  },
+  {
+   "group": "Macros",
+   "name": "Macro 1",
+   "cc": 117
+  },
+  {
+   "group": "Macros",
+   "name": "Macro 2",
+   "cc": 118
+  }
+ ],
+ "macros": [
+  74,
+  71,
+  24,
+  80,
+  81,
+  82,
+  83,
+  5,
+  14,
+  15,
+  16,
+  18,
+  19,
+  20,
+  117,
+  118,
+  25,
+  28,
+  31,
+  85,
+  87,
+  76,
+  77,
+  116
+ ],
+ "presets": {
+  "bank_select": "msb",
+  "banks": [
+   {
+    "name": "Bank 1",
+    "msb": 0,
+    "count": 128
+   },
+   {
+    "name": "Bank 2",
+    "msb": 1,
+    "count": 128
+   },
+   {
+    "name": "Bank 3",
+    "msb": 2,
+    "count": 128
+   }
+  ]
+ },
+ "transport": {
+  "clock": true,
+  "start_stop": true
+ }
+}

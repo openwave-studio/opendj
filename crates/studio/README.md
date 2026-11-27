@@ -22,6 +22,12 @@ between 1 Bar, 1/4 and None); **▶ N** launches a whole scene and stops
 tracks with an empty slot in it; **■** stops a track on the next bar. Turn
 on **LINK** with openDJ's Link on, and launches land on the bars of the mix.
 
+**●** (by the transport) records the notes you play into the selected
+slot: a new clip from the next bar, or over a clip as it loops. Press it
+again to stop; the clip plays on. ⌘Z / Ctrl+Z undoes clip and mixer edits
+(add Shift to redo). The mixer strip's number switches a track off and
+**S** solos it.
+
 **File** (top left) opens a set (the studio's own `.odset` or a Live set)
 and saves the one open: ⌘S / Ctrl+S saves, ⇧⌘S / Ctrl+Shift+S saves as. A
 saved set keeps the clips, devices (racks and plug-in sounds too), I/O,
@@ -138,11 +144,19 @@ or Live takes the lights back.
   amount. Hold stages and turn encoders to lock knobs on them; Delete
   while holding clears their locks. An empty slot becomes a stage clip on
   the first tap; Up/Down or Shift + scene button choose the slot.
-- Scene buttons right of the pads launch scenes; Stop stops every clip.
-- Buttons over the screen stop a track; buttons under it select one.
-- Encoders: the selected instrument's eight knobs (Device), or volume, pan
-  and sends across the tracks (Mix; press Mix again or use Page for the
-  next control). The master encoder is the main volume, the tempo encoder
+- Scene buttons right of the pads launch scenes.
+- Stop Clip, Mute and Solo: held with buttons under the screen, they act
+  on those tracks (which light up to show what they'd do); on their own,
+  on the selected track. Shift + Stop Clip stops every clip. Solo on its
+  own takes the other solos off; hold it to solo several.
+- Device: the buttons under the screen pick the track's sound or one of
+  its devices, the encoders turn eight of its settings (pages over the
+  screen, or Page left and right). On a rack the encoders turn its macros
+  and the buttons over the screen go into its chains; the first button
+  under the screen comes back out.
+- Mix: the encoders turn volume, pan and sends across the tracks (press
+  Mix again or use Page for the next control); the buttons over the screen
+  stop a track and those under it select one. The master encoder is the main volume, the tempo encoder
   the tempo; hold Shift for fine steps.
 - Scale (tap to open and close, hold to peek): the key the keyboard plays
   and stage clips are written in. Over the screen: previous scale, the
@@ -151,7 +165,18 @@ or Live takes the lights back.
   dark). The first four encoders turn scale (32 of them), root, layout
   (4th up, 4th right, 3rd up, octave up, sequential) and in key or
   chromatic.
-- Play starts and stops the transport; Quantize steps the launch quantise.
+- Play starts and stops the transport; Quantize steps the launch quantise;
+  Metronome clicks on the beat; Tap Tempo sets the tempo from your taps.
+- Record on the selected slot: an empty one records a new clip from the
+  next bar (the song starts if it was stopped); a note clip records over
+  itself as it loops. Record again stops, and the clip plays on. Fixed
+  Length (tap for on or off; hold and pick 1 to 128 bars with the buttons
+  under the screen) stops a new recording at that length. Undo takes back
+  the last clip or mixer edit; Shift + Undo redoes it.
+- New stops the selected track on its next empty slot. Duplicate copies
+  the selected clip to the next empty slot below it; held, tap a clip and
+  then other slots to copy it there. Double Loop doubles the selected
+  clip's loop, notes and all.
 
 `opendj-studio --push-preview push.png` draws what the screen shows.
 Code: `src/push/` (`surface.rs` for the controls and lights, with

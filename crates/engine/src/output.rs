@@ -29,7 +29,9 @@ use cpal::{BufferSize, ErrorKind, FromSample, SampleFormat, SizedSample, Support
 use opendj_control::{ControlHandle, ControlRegistry};
 
 use crate::engine::{Engine, MIX_CHANNELS, OUTPUT_CHANNELS};
-use crate::inputs::{InputFeed, AUXILIARIES, GROOVE_BOX, MICROPHONE, NUM_AUXILIARIES, NUM_INPUTS};
+use crate::inputs::{
+    InputFeed, AUXILIARIES, GROOVE_BOX, INSTRUMENT, MICROPHONE, NUM_AUXILIARIES, NUM_INPUTS,
+};
 
 /// What an output plays, each a stereo pair of the buffer the engine
 /// renders: the mixes, or one deck or the sampler on its own (for a DAW or
@@ -121,10 +123,14 @@ pub enum InputRole {
     Auxiliary6,
     Auxiliary7,
     Auxiliary8,
+    /// A hardware synth the instrument deck plays (see
+    /// [`crate::hardware_synth`]): its sound comes back here. Mono or a
+    /// pair, as the auxiliary inputs. Last, so the others keep their place.
+    Instrument,
 }
 
 impl InputRole {
-    pub const ALL: [InputRole; 9] = [
+    pub const ALL: [InputRole; 10] = [
         InputRole::Microphone,
         InputRole::Auxiliary,
         InputRole::Auxiliary2,
@@ -134,6 +140,7 @@ impl InputRole {
         InputRole::Auxiliary6,
         InputRole::Auxiliary7,
         InputRole::Auxiliary8,
+        InputRole::Instrument,
     ];
 
     /// The auxiliary inputs, in order.
@@ -159,6 +166,7 @@ impl InputRole {
             InputRole::Auxiliary6 => "auxiliary6",
             InputRole::Auxiliary7 => "auxiliary7",
             InputRole::Auxiliary8 => "auxiliary8",
+            InputRole::Instrument => "instrument",
         }
     }
 
@@ -170,6 +178,7 @@ impl InputRole {
     pub fn index(self) -> usize {
         match self.aux_number() {
             Some(n) => AUXILIARIES[n - 1],
+            None if self == InputRole::Instrument => INSTRUMENT,
             None => MICROPHONE,
         }
     }

@@ -26,7 +26,22 @@ impl Surface {
                 if track >= c.tracks.len() || scene >= SCENES {
                     return;
                 }
-                if self.shift {
+                // Duplicate held: the first pad picks the clip, the next
+                // ones copy it there.
+                if let Some(from) = self.dup {
+                    match from {
+                        Some((ft, fs)) => {
+                            if c.copy_clip(ft, fs, track, scene) {
+                                self.dup_used = true;
+                            }
+                        }
+                        None if c.has_clip(track, scene) => {
+                            self.dup = Some(Some((track, scene)));
+                            self.dup_used = true;
+                        }
+                        None => {}
+                    }
+                } else if self.shift {
                     c.select(track, Some(scene));
                 } else {
                     c.launch(track, scene);
@@ -115,6 +130,9 @@ impl Surface {
                 let (t, s) = (bank(c) + col, 7 - row);
                 if t >= c.tracks.len() {
                     return Led::OFF;
+                }
+                if c.recording() == Some((t, s)) {
+                    return Led::animate(RED_DIM, PULSE_QUARTER, RED);
                 }
                 match m.slot(t, s) {
                     // Before the audio thread's first report.

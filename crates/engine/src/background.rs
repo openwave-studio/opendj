@@ -202,6 +202,65 @@ pub fn playing() -> bool {
     PLAYING.load(Ordering::Relaxed)
 }
 
+/// The file a running openDJ keeps fresh while a deck plays, so other
+/// openDJ processes (the command line, the MCP server) can tell.
+fn playing_file() -> Option<std::path::PathBuf> {
+    Some(crate::cache::cache_dir()?.join("deck-playing"))
+}
+
+/// How long after its last touch the playing file still counts: the app
+/// touches it every second ([`publish_playing`]), so a crash or a hang
+/// stops counting soon.
+const PLAYING_FRESH: Duration = Duration::from_secs(5);
+
+/// Shares [`playing`] with other openDJ processes: touches the playing file
+/// while a deck plays, removes it when none does. The app calls it about
+/// once a second.
+pub fn publish_playing() {
+    let Some(file) = playing_file() else { return };
+    if playing() {
+        if let Some(dir) = file.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        let _ = std::fs::write(&file, b"");
+    } else if file.exists() {
+        let _ = std::fs::remove_file(&file);
+    }
+}
+
+/// Whether a deck plays in this process or in a running openDJ: heavy
+/// work started from the command line waits while it does.
+pub fn playing_anywhere() -> bool {
+    playing()
+        || playing_file()
+            .and_then(|f| std::fs::metadata(f).ok()?.modified().ok())
+            .and_then(|t| t.elapsed().ok())
+            .is_some_and(|age| age < PLAYING_FRESH)
+}
+
+/// Held while memory-heavy work (high-quality stem separation) runs, in
+/// this process and across openDJ processes, so the app and the command
+/// line never separate at the same time. Dropping it lets the next one in.
+pub struct HeavyLock {
+    _file: std::fs::File,
+}
+
+/// Waits for the heavy-work lock (an OS lock on `heavy.lock` in the cache
+/// folder); None when the file can't be opened, so work goes ahead as
+/// before rather than never.
+pub fn heavy_lock() -> Option<HeavyLock> {
+    let path = crate::cache::cache_dir()?.join("heavy.lock");
+    let _ = std::fs::create_dir_all(path.parent()?);
+    let file = std::fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(path)
+        .ok()?;
+    file.lock().ok()?;
+    Some(HeavyLock { _file: file })
+}
+
 /// How many threads background work may share a step out to, from `most`:
 /// one while a deck plays (unless the DJ chose Keep going).
 pub fn threads(most: usize) -> usize {
