@@ -1,5 +1,14 @@
 use super::*;
 use opendj_engine::beats::BeatGrid;
+use std::sync::{Mutex, MutexGuard};
+
+/// Searches read the tag group names from one global that [`Ctx::new`]
+/// sets, so tests that open a library take turns: otherwise one test's
+/// library (without a Mood group) can replace another's names mid-test.
+fn names_lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
 
 fn track(path: &str, artist: &str, title: &str, bpm: f64, genre: &str) -> Track {
     Track {
@@ -47,6 +56,7 @@ fn setup() -> (Ctx, Vec<usize>, PathBuf) {
 
 #[test]
 fn search_uses_the_browser_syntax() {
+    let _names = names_lock();
     let (mut cx, _, _) = setup();
     let v = call(
         &mut cx,
@@ -69,6 +79,7 @@ fn search_uses_the_browser_syntax() {
 
 #[test]
 fn lists_are_made_and_filled_once() {
+    let _names = names_lock();
     let (mut cx, ids, marker) = setup();
     let made = call(&mut cx, "create_list", &json!({"name": "Friday"})).unwrap();
     assert!(marker.exists(), "a write tells the app");
@@ -107,6 +118,7 @@ fn lists_are_made_and_filled_once() {
 
 #[test]
 fn a_name_two_lists_share_needs_an_id() {
+    let _names = names_lock();
     let (mut cx, ids, _) = setup();
     call(&mut cx, "create_list", &json!({"name": "Dup"})).unwrap();
     call(&mut cx, "create_list", &json!({"name": "dup"})).unwrap();
@@ -121,6 +133,7 @@ fn a_name_two_lists_share_needs_an_id() {
 
 #[test]
 fn dry_run_changes_nothing() {
+    let _names = names_lock();
     let (mut cx, ids, marker) = setup();
     let v = call(
         &mut cx,
@@ -144,6 +157,7 @@ fn dry_run_changes_nothing() {
 
 #[test]
 fn writes_are_capped_and_checked() {
+    let _names = names_lock();
     let (mut cx, ids, _) = setup();
     let many: Vec<usize> = std::iter::repeat_n(ids[0], MAX_TRACKS + 1).collect();
     let e = call(
@@ -171,6 +185,7 @@ fn writes_are_capped_and_checked() {
 
 #[test]
 fn tags_go_in_and_come_off() {
+    let _names = names_lock();
     let (mut cx, ids, _) = setup();
     let v = call(
         &mut cx,
@@ -209,6 +224,7 @@ fn tags_go_in_and_come_off() {
 
 #[test]
 fn track_text_is_cleaned() {
+    let _names = names_lock();
     let mut lib = Library::in_memory().unwrap();
     let t = lib
         .add_file(&track("/m/x.flac", "Bad\nArtist", "Title", 0.0, ""))
@@ -230,6 +246,7 @@ fn track_text_is_cleaned() {
 
 #[test]
 fn server_speaks_mcp() {
+    let _names = names_lock();
     let (mut cx, ids, _) = setup();
     let init = crate::server::handle(&mut cx, r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}"#).unwrap();
     assert_eq!(init["result"]["protocolVersion"], "2025-03-26");
@@ -266,6 +283,7 @@ fn server_speaks_mcp() {
 
 #[test]
 fn serve_answers_line_by_line() {
+    let _names = names_lock();
     let (mut cx, _, _) = setup();
     let input = b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}\n\n{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}\n";
     let mut out = Vec::new();
