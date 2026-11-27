@@ -146,7 +146,7 @@ impl NoteRoll {
         let landed_in = bits(pressed).any(|n| side(n) == 0);
         // Out there: a note just played or still held past the rows (the
         // last one if some went each way).
-        let out = bits(self.held).map(side).filter(|&s| s != 0).last();
+        let out = bits(self.held).map(side).filter(|&s| s != 0).next_back();
         match (out, self.out) {
             (Some(dir), Some((since, d, _))) if d == dir => self.out = Some((since, d, at)),
             (Some(dir), _) => self.out = Some((at, dir, at)),
