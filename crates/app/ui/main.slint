@@ -71,17 +71,23 @@ export { RemixUi }
 export { BrowserFocus, BrowserPane }
 export { InstrumentsUi, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, FxGroup, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, BrowserPanels, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
 
-// Macro lanes: an instrument deck's knobs drawn as lines on its scrolling
-// waveform instead of its note roll (2-Deck Basic only), a colour each.
+// An instrument deck's large waveform: its view and look, and its macro
+// lanes (its knobs drawn as lines, 2-Deck Basic only, a colour each).
 export global MacroLanes {
-    // `shown[d]`: deck d shows them. Set by the app; `toggle` flips one.
-    in property <[bool]> shown: [false, false, false, false];
+    // `view[d]`: what deck d's large waveform shows: 0 its sound (Wave),
+    // 1 its knobs as macro lanes (Knobs), 2 its notes (Notes). Set by the
+    // app; `cycle` steps one on.
+    in property <[int]> view: [0, 0, 0, 0];
+    // `look[d]`: 0 lilac, 1 an outline in the instrument's color. Set by
+    // the app; `choose-look` picks one.
+    in property <[int]> look: [0, 0, 0, 0];
     // Which of the page's eight knobs moved in view and so draw a line.
     // Set by the app.
     in property <[bool]> moved: [false, false, false, false, false, false, false, false];
     // Each knob's line colour, as the waveform draws it (LEVEL_COLORS).
     out property <[color]> colors: [Theme.f-ff6b6b, Theme.f-ffb347, Theme.f-ffe066, Theme.f-7be495, Theme.f-4fd1c5, Theme.f-63b3ed, Theme.f-b69cff, Theme.f-f78fb3];
-    callback toggle(deck: int);
+    callback cycle(deck: int);
+    callback choose-look(deck: int, look: int);
 }
 
 // One knob's colour, name and value, beside the play line; dimmed while
@@ -218,7 +224,8 @@ component Waveform inherits Rectangle {
     property <bool> groove: deck >= 0 && Controls.value(Controls.resolve("[Groove" + (deck + 1) + "]", "enabled"), Controls.tick) > 0;
     property <bool> live-knobs: deck >= 0 && !groove && Controls.value(duration-index, Controls.tick) <= 0
         && InstrumentsUi.live(deck) == 3;
-    property <bool> macros: live-knobs && MacroLanes.shown[deck];
+    property <int> live-view: live-knobs ? MacroLanes.view[deck] : 0;
+    property <bool> macros: live-view == 1;
     property <int> page: InstrumentsUi.knob-page;
     background: Theme.well;
     clip: true;
@@ -332,7 +339,7 @@ component Waveform inherits Rectangle {
     // Right-click: zoom every scrolling waveform.
     wave-menu := PopupWindow {
         x: min(menu-x, root.width - 130px);
-        y: min(menu-y, root.height - 134px);
+        y: min(menu-y, root.height - (live-knobs ? 208px : 134px));
         width: 130px;
         Rectangle {
             background: Theme.panel-raised;
@@ -412,6 +419,47 @@ component Waveform inherits Rectangle {
                     hta := TouchArea {
                         enabled: enabled;
                         clicked => { WaveHeight.step(b.by); }
+                    }
+                }
+            }
+            // An instrument deck's look: lilac, or an outline in the
+            // instrument's own color.
+            if live-knobs: Rectangle {
+                height: 22px;
+                Text {
+                    x: 10px;
+                    text: "Look";
+                    color: Theme.text-dim;
+                    font-size: 10px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+            }
+            if live-knobs: VerticalLayout {
+                for item[i] in ["Lilac", "Instrument color"]: Rectangle {
+                    height: 24px;
+                    background: lta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
+                    border-radius: 4px;
+                    Text {
+                        x: 10px;
+                        text: item;
+                        color: Theme.text;
+                        font-size: 11px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+                    if MacroLanes.look[deck] == i: Text {
+                        x: parent.width - self.width - 10px;
+                        text: "✓";
+                        color: Theme.accent;
+                        font-size: 11px;
+                        vertical-alignment: center;
+                    }
+                    lta := TouchArea {
+                        clicked => {
+                            MacroLanes.choose-look(deck, i);
+                            wave-menu.close();
+                        }
                     }
                 }
             }
@@ -529,8 +577,11 @@ component Waveform inherits Rectangle {
             }
         }
     }
-    // The switch between the note roll and the macro lanes.
+    // The switch between the instrument deck's views: Wave, Knobs, Notes.
+    // Its icon shows the view now (each icon its own Path: a Path doesn't
+    // redraw when its commands change).
     if live-knobs: Rectangle {
+        property <color> ink: live-view > 0 ? Theme.accent : kta.has-hover ? Theme.text : Theme.text-dim;
         x: parent.width - self.width - 6px;
         y: 4px;
         width: 24px;
@@ -538,21 +589,43 @@ component Waveform inherits Rectangle {
         border-radius: 4px;
         background: kta.pressed ? Theme.control-pressed : kta.has-hover ? Theme.n-2a2b2e : Theme.s-000000a0;
         border-width: 1px;
-        border-color: macros ? Theme.accent : transparent;
-        // Three sliders: knobs as lines.
-        Path {
+        border-color: live-view > 0 ? Theme.accent : transparent;
+        // Wave: a waveform.
+        if live-view == 0: Path {
             width: 14px;
             height: 12px;
             viewbox-width: 14;
             viewbox-height: 12;
-            stroke: macros ? Theme.accent : kta.has-hover ? Theme.text : Theme.text-dim;
+            stroke: ink;
+            stroke-width: 1.3px;
+            fill: transparent;
+            commands: "M 0 6 L 2 6 M 2 4 L 2 8 M 4.5 1 L 4.5 11 M 7 3 L 7 9 M 9.5 0.5 L 9.5 11.5 M 12 4.5 L 12 7.5 M 12 6 L 14 6";
+        }
+        // Knobs: three sliders.
+        if live-view == 1: Path {
+            width: 14px;
+            height: 12px;
+            viewbox-width: 14;
+            viewbox-height: 12;
+            stroke: ink;
             stroke-width: 1.3px;
             fill: transparent;
             commands: "M 0 2 L 14 2 M 0 6 L 14 6 M 0 10 L 14 10 M 4 0.5 L 4 3.5 M 10 4.5 L 10 7.5 M 6 8.5 L 6 11.5";
         }
+        // Notes: notes as capsules on rows.
+        if live-view == 2: Path {
+            width: 14px;
+            height: 12px;
+            viewbox-width: 14;
+            viewbox-height: 12;
+            stroke: ink;
+            stroke-width: 2.2px;
+            fill: transparent;
+            commands: "M 1.5 10 L 6 10 M 5 6 L 12.5 6 M 8 2 L 11 2";
+        }
         kta := TouchArea {
             mouse-cursor: pointer;
-            clicked => { MacroLanes.toggle(deck); }
+            clicked => { MacroLanes.cycle(deck); }
         }
     }
     // A streamed track downloading to load here: its name and how far

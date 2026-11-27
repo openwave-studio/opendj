@@ -10,6 +10,7 @@ use opendj_engine::track::{Track, Waveform, WaveformBin, WAVEFORM_RATE};
 use opendj_engine::NUM_DECKS;
 use opendj_waveform::{
     GridSection, Lanes, Mark, MarkKind, PhraseKind, GRID_SECTIONS, MAX_MARKS, MAX_PHRASES,
+    NOTE_ROWS, SCOPE_POINTS,
 };
 
 use crate::smooth::SmoothClock;
@@ -35,15 +36,17 @@ pub fn bin(s: &LiveSlice) -> WaveformBin {
     })
 }
 
-/// Seconds of the note roll on either side of the play line whose notes set
-/// the rows: half the scrolling waveform at normal speed.
-const ROLL_SECONDS: f64 = 5.0;
-/// The fewest rows the note roll shows, so a few notes don't fill the lane.
-const MIN_ROWS: u32 = 8;
-/// How opaque the sound is under the note roll.
-const UNDER_NOTES: f32 = 0.3;
-/// Held notes are outlined in Electric Lilac.
+/// Notes played out past the Notes view's rows for this long (about two
+/// bars at 120 BPM) move its window an octave that way.
+const SLIDE_AFTER: f64 = 4.0;
+/// Notes out there stop counting once none has landed for this long.
+const OUT_FORGET: f64 = 2.0;
+/// The window glides an octave in this long, never jumping.
+const SLIDE_SECONDS: f64 = 0.3;
+/// Held notes glow in Electric Lilac.
 const LILAC: [f32; 4] = [0.714, 0.612, 1.0, 1.0];
+/// Samples the scope spans: about 21 ms at 48 kHz, a few cycles of a note.
+pub const SCOPE_SPAN: usize = 1024;
 
 /// One deck's sound so far.
 #[derive(Default)]
@@ -65,14 +68,28 @@ struct Note {
     end: Option<f64>,
 }
 
-/// The notes an instrument deck plays, as they start and end.
+/// The notes an instrument deck plays, as they start and end, for its
+/// Notes view: two octaves of fixed rows (so they never rescale), from a C,
+/// that move an octave at a time when the playing stays out past them.
 #[derive(Default)]
 struct NoteRoll {
     held: u128,
     notes: VecDeque<Note>,
-    /// The scale now, a bit per pitch class from C (0 for none): its rows
-    /// are tinted.
-    scale: u16,
+    /// The rows' lowest note, a C, once a note has played.
+    bottom: Option<i32>,
+    /// Where the rows were drawn from when they last moved, and when, as
+    /// they glide to `bottom`.
+    slide: Option<(f64, f64)>,
+    /// Notes landing past the rows: since when, which way (1 up, -1
+    /// down), and the latest.
+    out: Option<(f64, i32, f64)>,
+}
+
+/// The rows a first note starts: from the C at or below the F# under it,
+/// so the note sits in the upper octave or high in the lower one, clear
+/// of the edges.
+fn first_bottom(note: u8) -> i32 {
+    (12 * (note as i32 - 6).div_euclid(12)).clamp(0, 96)
 }
 
 impl NoteRoll {
@@ -93,6 +110,7 @@ impl NoteRoll {
                 end: None,
             });
         }
+        self.follow(pressed, at);
         // Notes let go before the window are gone from it.
         let keep = at - WINDOW as f64 / WAVEFORM_RATE;
         while self
@@ -104,25 +122,73 @@ impl NoteRoll {
         }
     }
 
-    /// The notes as lanes over a window that starts at `start` on the
-    /// deck's clock, with the play line at `at`; none until a note shows.
-    fn lanes(&self, start: f64, at: f64, color: [f32; 4]) -> Option<Lanes> {
-        let shown = || {
-            self.notes
-                .iter()
-                .filter(move |n| n.end.unwrap_or(at) >= at - ROLL_SECONDS)
+    /// Moves the rows when the playing stays out past them: notes
+    /// `pressed` at `at`, with those still held.
+    fn follow(&mut self, pressed: u128, at: f64) {
+        if self.bottom.is_none() {
+            let Some(first) = (0..128u8).find(|&n| pressed >> n & 1 == 1) else {
+                return;
+            };
+            self.bottom = Some(first_bottom(first));
+        }
+        let bottom = self.bottom.unwrap_or(0);
+        let side = |n: u8| {
+            let n = n as i32;
+            if n < bottom {
+                -1
+            } else if n >= bottom + NOTE_ROWS as i32 {
+                1
+            } else {
+                0
+            }
         };
-        let lo = shown().map(|n| n.note).min()? as i32;
-        let hi = shown().map(|n| n.note).max()? as i32;
-        // Rows for the notes in view, centred in at least MIN_ROWS.
-        let count = ((hi - lo + 1) as u32).max(MIN_ROWS);
-        let bottom = lo - (count as i32 - (hi - lo + 1)) / 2;
-        let mut marks: Vec<Mark> = shown()
-            .filter(|n| n.note as i32 >= bottom && (n.note as i32) < bottom + count as i32)
+        let bits = |m: u128| (0..128u8).filter(move |&n| m >> n & 1 == 1);
+        let landed_in = bits(pressed).any(|n| side(n) == 0);
+        // Out there: a note just played or still held past the rows (the
+        // last one if some went each way).
+        let out = bits(self.held).map(side).filter(|&s| s != 0).last();
+        match (out, self.out) {
+            (Some(dir), Some((since, d, _))) if d == dir => self.out = Some((since, d, at)),
+            (Some(dir), _) => self.out = Some((at, dir, at)),
+            // Back inside the rows: they stay.
+            (None, _) if landed_in => self.out = None,
+            (None, Some((_, _, last))) if at - last > OUT_FORGET => self.out = None,
+            (None, _) => {}
+        }
+        if let Some((since, dir, _)) = self.out {
+            if at - since >= SLIDE_AFTER {
+                self.slide = Some((self.base(at), at));
+                self.bottom = Some((bottom + 12 * dir).clamp(0, 96));
+                self.out = None;
+            }
+        }
+    }
+
+    /// The rows' lowest note as drawn at `at`: between whole notes while
+    /// gliding an octave.
+    fn base(&self, at: f64) -> f64 {
+        let to = self.bottom.unwrap_or(48) as f64;
+        match self.slide {
+            Some((from, t0)) => {
+                let u = ((at - t0) / SLIDE_SECONDS).clamp(0.0, 1.0);
+                from + (to - from) * u * u * (3.0 - 2.0 * u)
+            }
+            None => to,
+        }
+    }
+
+    /// The Notes view over a window that starts at `start` on the deck's
+    /// clock, with the play line at `at`; none until a note has played.
+    fn lanes(&self, start: f64, at: f64, color: [f32; 4]) -> Option<Lanes> {
+        self.bottom?;
+        let mut marks: Vec<Mark> = self
+            .notes
+            .iter()
+            .filter(|n| n.end.unwrap_or(at) >= start)
             .map(|n| Mark {
                 start: n.start - start,
                 end: n.end.unwrap_or(at) - start,
-                lane: (n.note as i32 - bottom) as u32,
+                lane: n.note as u32,
                 kind: if n.end.is_some() {
                     MarkKind::Played
                 } else {
@@ -134,18 +200,42 @@ impl NoteRoll {
         if marks.len() > MAX_MARKS {
             marks.drain(..marks.len() - MAX_MARKS);
         }
-        let tinted = (0..count.min(128))
-            .filter(|&r| self.scale >> (bottom + r as i32).rem_euclid(12) & 1 == 1)
-            .fold(0u128, |t, r| t | 1 << r);
         Some(Lanes {
-            count,
-            tinted,
+            count: NOTE_ROWS,
+            tinted: 0,
             marks,
-            trace: UNDER_NOTES,
+            trace: 0.0,
             color,
             lit: LILAC,
+            notes: Some(self.base(at) as f32),
         })
     }
+}
+
+/// The scope a live instrument deck draws right of its play line, from the
+/// latest samples `wave` (oldest first): the last [`SCOPE_SPAN`] samples up
+/// to the latest rising zero crossing, so a steady note stands still, in
+/// [`SCOPE_POINTS`] points, each the sample furthest from zero in its
+/// stretch (keeping its sign), so a high note's peaks stay. None until
+/// there are enough samples.
+pub fn scope_points(wave: &[f32]) -> Option<[f32; SCOPE_POINTS]> {
+    if wave.len() < SCOPE_SPAN {
+        return None;
+    }
+    // The latest rising zero crossing with a whole span before it, else
+    // the newest samples.
+    let end = (SCOPE_SPAN..wave.len())
+        .rev()
+        .find(|&i| wave[i - 1] < 0.0 && wave[i] >= 0.0)
+        .unwrap_or(wave.len());
+    let span = &wave[end - SCOPE_SPAN..end];
+    let per = SCOPE_SPAN / SCOPE_POINTS;
+    Some(std::array::from_fn(|i| {
+        span[i * per..(i + 1) * per]
+            .iter()
+            .copied()
+            .fold(0.0f32, |a, v| if v.abs() > a.abs() { v } else { a })
+    }))
 }
 
 /// What a live deck's scrolling waveform draws this frame.
@@ -157,7 +247,8 @@ pub struct Window {
     pub play_seconds: f64,
     /// The play line on the deck's live clock: seconds since it went live.
     pub clock: f64,
-    /// An instrument deck's note roll, once it has notes in view.
+    /// What lies over the waveform: an instrument deck's Notes view, once
+    /// it has played a note (the app swaps in other lanes or none).
     pub lanes: Option<Lanes>,
 }
 
@@ -195,13 +286,7 @@ impl LiveTraces {
 
     /// Deck `d`'s waveform to draw at `now`, once anything has come in.
     /// `held`: the notes an instrument deck holds now (bit `n` for MIDI
-    /// note `n`), for its note roll in `color`; None on other decks.
-    /// The scale an instrument deck's note roll tints, a bit per pitch
-    /// class from C (0 for none).
-    pub fn set_scale(&mut self, d: usize, scale: u16) {
-        self.decks[d].notes.scale = scale;
-    }
-
+    /// note `n`), for its Notes view in `color`; None on other decks.
     pub fn window(
         &mut self,
         d: usize,
@@ -436,57 +521,141 @@ mod tests {
         assert!(leader_grid(0.0, 20.0, 1.0, 8.192)[0].is_none());
     }
 
+    fn bit(n: u8) -> u128 {
+        1u128 << n
+    }
+
     #[test]
-    fn notes_play_on_rows_fitted_to_the_range() {
+    fn notes_play_on_two_fixed_octaves() {
         let mut roll = NoteRoll::default();
-        let bit = |n: u8| 1u128 << n;
+        assert!(roll.lanes(0.0, 1.0, [1.0; 4]).is_none());
         // C4 at 1 s, E4 joins at 1.5 s, C4 let go at 2 s; drawn at 2.5 s.
         roll.update(bit(60), 1.0);
         roll.update(bit(60) | bit(64), 1.5);
         roll.update(bit(64), 2.0);
         let lanes = roll.lanes(0.0, 2.5, [1.0; 4]).unwrap();
-        // Five notes' range, centred in eight rows: C4 on row 1.
-        assert_eq!(lanes.count, MIN_ROWS);
-        assert_eq!(lanes.trace, UNDER_NOTES);
+        // C3 to B4, whatever is played: the rows never rescale.
+        assert_eq!(lanes.count, NOTE_ROWS);
+        assert_eq!(lanes.notes, Some(48.0));
+        assert_eq!(lanes.trace, 0.0, "no waveform under the notes");
         let c = lanes.marks[0];
         assert_eq!(
             (c.start, c.end, c.lane, c.kind),
-            (1.0, 2.0, 1, MarkKind::Played)
+            (1.0, 2.0, 60, MarkKind::Played)
         );
         let e = lanes.marks[1];
         assert_eq!(
             (e.start, e.end, e.lane, e.kind),
-            (1.5, 2.5, 5, MarkKind::Held)
+            (1.5, 2.5, 64, MarkKind::Held)
         );
-        // Two octaves apart, a row each.
+        // A note far above stays on the rows' top edge (the shader puts
+        // it there); the rows stay.
         roll.update(bit(64) | bit(88), 3.0);
-        assert_eq!(roll.lanes(0.0, 3.0, [1.0; 4]).unwrap().count, 29);
+        let lanes = roll.lanes(0.0, 3.0, [1.0; 4]).unwrap();
+        assert_eq!((lanes.count, lanes.notes), (NOTE_ROWS, Some(48.0)));
+        assert!(lanes.marks.iter().any(|m| m.lane == 88));
     }
 
     #[test]
-    fn the_scale_rows_are_tinted() {
-        let mut roll = NoteRoll::default();
-        roll.update(1 << 60 | 1 << 64, 1.0);
-        assert_eq!(roll.lanes(0.0, 2.0, [1.0; 4]).unwrap().tinted, 0);
-        // C major; rows from B3 (C4 on row 1): B C . D . E F .
-        roll.scale = 0b1010_1011_0101;
-        let lanes = roll.lanes(0.0, 2.0, [1.0; 4]).unwrap();
-        assert_eq!(lanes.tinted, 0b0110_1011);
+    fn the_first_note_sits_clear_of_the_edges() {
+        assert_eq!(first_bottom(60), 48, "C4: C3 to B4");
+        assert_eq!(first_bottom(64), 48, "E4: C3 to B4");
+        assert_eq!(first_bottom(69), 60, "A4: C4 to B5");
+        assert_eq!(first_bottom(2), 0);
+        assert_eq!(first_bottom(127), 96);
     }
 
     #[test]
-    fn no_notes_in_view_shows_the_sound_alone() {
+    fn playing_out_past_the_rows_slides_them_an_octave() {
         let mut roll = NoteRoll::default();
-        assert!(roll.lanes(0.0, 1.0, [1.0; 4]).is_none());
+        roll.update(bit(60), 0.0);
+        roll.update(0, 0.5);
+        // A stray note above, then back inside: the rows stay.
+        roll.update(bit(76), 1.0);
+        roll.update(0, 1.2);
+        roll.update(bit(62), 1.5);
+        roll.update(0, 1.7);
+        roll.update(0, 6.0);
+        assert_eq!(roll.bottom, Some(48));
+        // A melody up there, a note every half second for over 4 s.
+        let mut t = 7.0;
+        while t < 11.6 {
+            roll.update(bit(74 + (t * 2.0) as u8 % 3), t);
+            roll.update(0, t + 0.25);
+            t += 0.5;
+        }
+        assert_eq!(roll.bottom, Some(60), "up an octave");
+        // It glides there.
+        let (from, t0) = roll.slide.unwrap();
+        assert_eq!(from, 48.0);
+        let mid = roll.base(t0 + SLIDE_SECONDS / 2.0);
+        assert!(mid > 50.0 && mid < 58.0, "half way: {mid}");
+        assert_eq!(roll.base(t0 + SLIDE_SECONDS), 60.0);
+    }
+
+    #[test]
+    fn a_note_held_out_there_slides_them_too() {
+        let mut roll = NoteRoll::default();
+        roll.update(bit(60), 0.0);
+        roll.update(0, 0.5);
+        // C2 held below the rows.
+        let mut t = 1.0;
+        while t < 5.5 {
+            roll.update(bit(36), t);
+            t += 0.1;
+        }
+        assert_eq!(roll.bottom, Some(36), "down an octave");
+    }
+
+    #[test]
+    fn stray_notes_are_forgotten() {
+        let mut roll = NoteRoll::default();
+        roll.update(bit(60), 0.0);
+        roll.update(0, 0.5);
+        // Two notes up there 3 s apart, with nothing between: no slide.
+        roll.update(bit(80), 1.0);
+        roll.update(0, 1.1);
+        let mut t = 1.2;
+        while t < 4.0 {
+            roll.update(0, t);
+            t += 0.1;
+        }
+        roll.update(bit(80), 4.0);
+        roll.update(0, 4.1);
+        roll.update(0, 6.0);
+        assert_eq!(roll.bottom, Some(48));
+    }
+
+    #[test]
+    fn notes_long_gone_are_dropped() {
+        let mut roll = NoteRoll::default();
         roll.update(1 << 60, 1.0);
         roll.update(0, 1.2);
-        // Long gone from view.
-        assert!(roll
-            .lanes(0.0, 1.2 + ROLL_SECONDS + 1.0, [1.0; 4])
-            .is_none());
-        // And from memory once past the window.
         roll.update(0, 20.0);
         assert!(roll.notes.is_empty());
+        // The rows stay where they were.
+        assert_eq!(roll.lanes(12.0, 20.0, [1.0; 4]).unwrap().marks.len(), 0);
+    }
+
+    #[test]
+    fn the_scope_stands_still_on_a_steady_note() {
+        assert!(scope_points(&[0.0; 100]).is_none());
+        // A sine 64 samples a cycle: the scope ends on a rising crossing,
+        // whatever the phase the samples end on.
+        let sine = |phase: usize| -> Vec<f32> {
+            (0..8192)
+                .map(|i| ((i + phase) as f32 * std::f32::consts::TAU / 64.0).sin())
+                .collect()
+        };
+        let a = scope_points(&sine(0)).unwrap();
+        let b = scope_points(&sine(23)).unwrap();
+        for (x, y) in a.iter().zip(&b) {
+            assert!((x - y).abs() < 0.15, "{x} vs {y}");
+        }
+        // Its peaks keep their height and sign.
+        let top = a.iter().cloned().fold(f32::MIN, f32::max);
+        let bottom = a.iter().cloned().fold(f32::MAX, f32::min);
+        assert!(top > 0.95 && bottom < -0.95, "{top} {bottom}");
     }
 
     /// The leader's phrases land on the live deck the same beats away from

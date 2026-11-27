@@ -27,8 +27,8 @@ use opendj_engine::{
 use opendj_library::Library;
 use opendj_plugins::source::{QueryKind, SourceQuery};
 use opendj_waveform::{
-    steady_grid, wgpu, Extras, Frame, GpuTrack, GridSection, Mode, Palette, PhraseKind, TempoLabel,
-    WaveformRenderer, WaveformView, GRID_SECTIONS, MAX_TEMPOS,
+    steady_grid, wgpu, Extras, Frame, GpuTrack, GridSection, LiveLook, Mode, Palette, PhraseKind,
+    TempoLabel, WaveformRenderer, WaveformView, GRID_SECTIONS, MAX_TEMPOS,
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use smooth::{FrameStats, FrameTimer, SmoothClock};
@@ -635,6 +635,21 @@ const DECK_COLORS: [[f32; 4]; NUM_DECKS] = [
     [0.188, 0.820, 0.345, 1.0],
     [1.0, 0.839, 0.039, 1.0],
 ];
+
+/// The Mixer strips' palette (StripColors.palette in deck.slint), as sRGB:
+/// an instrument's own color is a place in it.
+const STRIP_PALETTE: [u32; 16] = [
+    0xff6b5e, 0xff9f0a, 0xffd60a, 0x30d158, 0x64d2ff, 0x5e5ce6, 0xbf5af2, 0xff375f, 0xff8fab,
+    0xc9a27e, 0xb4e05a, 0x63e6be, 0x7cc4ff, 0xb69cff, 0xff7ae1, 0x98989d,
+];
+
+/// A place in [`STRIP_PALETTE`] as RGBA from 0 to 1 (wrapping, as the
+/// palette does).
+fn strip_color(index: i32) -> [f32; 4] {
+    let hex = STRIP_PALETTE[index.rem_euclid(16) as usize];
+    let c = |shift: u32| ((hex >> shift) & 0xff) as f32 / 255.0;
+    [c(16), c(8), c(0), 1.0]
+}
 
 /// Seconds shown across a live deck's scrolling waveform (an input, an
 /// instrument, the Groove Box), whose trace keeps about this much. Track
@@ -1566,21 +1581,56 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let loaded = engine.loaded_tracks();
     let visual = engine.visual_positions();
 
-    // The switch on an instrument or Groove Box deck's waveform between its
-    // notes or steps and its knobs as macro lanes.
+    // An instrument deck's large waveform: its view (Wave, Knobs or Notes,
+    // the button at its top right steps through them) and its look (from
+    // its right-click menu), a deck each, kept in the settings.
     {
-        let app_weak = app.as_weak();
-        app.global::<MacroLanes>().on_toggle(move |deck| {
-            let Some(app) = app_weak.upgrade() else {
-                return;
-            };
+        const VIEW_KEY: &str = "instrument_wave_view";
+        const LOOK_KEY: &str = "instrument_wave_look";
+        let saved = |key: &str, choices: i32| -> Vec<i32> {
+            let v = settings::load()[key].clone();
+            (0..NUM_DECKS)
+                .map(|d| {
+                    v[d].as_i64()
+                        .map_or(0, |n| (n as i32).clamp(0, choices - 1))
+                })
+                .collect()
+        };
+        let ui = app.global::<MacroLanes>();
+        ui.set_view(ModelRc::new(VecModel::from(saved(VIEW_KEY, 3))));
+        ui.set_look(ModelRc::new(VecModel::from(saved(LOOK_KEY, 2))));
+        // Sets deck `deck`'s entry in one of the lists, and saves it.
+        let pick = |app: &AppWindow, key: &str, deck: i32, to: &dyn Fn(i32) -> i32| {
             let ui = app.global::<MacroLanes>();
-            let mut shown: Vec<bool> = ui.get_shown().iter().collect();
-            if let Some(s) = shown.get_mut(deck.max(0) as usize) {
-                *s = !*s;
+            let model = if key == VIEW_KEY {
+                ui.get_view()
+            } else {
+                ui.get_look()
+            };
+            let mut list: Vec<i32> = model.iter().collect();
+            if let Some(v) = list.get_mut(deck.max(0) as usize) {
+                *v = to(*v);
             }
-            ui.set_shown(ModelRc::new(VecModel::from(shown)));
+            settings::set(key, serde_json::json!(list));
+            let list = ModelRc::new(VecModel::from(list));
+            if key == VIEW_KEY {
+                ui.set_view(list);
+            } else {
+                ui.set_look(list);
+            }
             app.window().request_redraw();
+        };
+        let app_weak = app.as_weak();
+        ui.on_cycle(move |deck| {
+            if let Some(app) = app_weak.upgrade() {
+                pick(&app, VIEW_KEY, deck, &|v| (v + 1) % 3);
+            }
+        });
+        let app_weak = app.as_weak();
+        ui.on_choose_look(move |deck, look| {
+            if let Some(app) = app_weak.upgrade() {
+                pick(&app, LOOK_KEY, deck, &|_| look.clamp(0, 1));
+            }
         });
     }
 
@@ -1602,9 +1652,6 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         }));
         let mut knobs = Some(macro_lanes::KnobHandles::new(&registry));
         let mut paging = paging::Paging::new(&registry);
-        let scale_mask = registry
-            .get("[Instrument1]", "scale_mask")
-            .expect("the instrument's scale mask");
         app.window()
             .set_rendering_notifier(move |state, api| match (state, api) {
                 (
@@ -1637,7 +1684,6 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
                         steps: steps.take(),
                         grooves: grooves.take().expect("groove handles"),
                         knobs: knobs.take().expect("knob handles"),
-                        scale_mask: scale_mask.clone(),
                         macros: Default::default(),
                         knobs_moved: Default::default(),
                         live_tracks: Default::default(),
@@ -3126,15 +3172,14 @@ struct Gpu {
     frame_stats: FrameStats,
     /// The sound of decks playing live, and each one's waveform on the GPU.
     live: Option<live_trace::LiveTraces>,
-    /// The notes the Instrument input holds, for its deck's note roll.
+    /// The notes the Instrument input holds and its sound, for its deck's
+    /// Notes view and scope.
     instrument: Arc<opendj_engine::InstrumentView>,
     /// The Groove Box decks' step lanes, and their Groove Boxes' controls.
     steps: Option<step_lanes::StepLanes>,
     grooves: [step_lanes::GrooveHandles; NUM_DECKS],
     /// The knobs the macro lanes follow, and their values so far.
     knobs: macro_lanes::KnobHandles,
-    /// The instrument's scale now, whose rows its note roll tints.
-    scale_mask: ControlHandle,
     macros: macro_lanes::MacroLanes,
     /// Which of the knobs drew a line last, as the list beside them shows.
     knobs_moved: [bool; macro_lanes::KNOBS],
@@ -3250,7 +3295,10 @@ impl Gpu {
         let mut changed = !self.images_set;
         self.moving = false;
         let four = app.get_layout() == FOUR_DECK_LAYOUT;
-        let macros_shown = app.global::<MacroLanes>().get_shown();
+        let views = app.global::<MacroLanes>().get_view();
+        let looks = app.global::<MacroLanes>().get_look();
+        // The instrument's own color, for the outline look.
+        let own_color = strip_color(app.global::<InstrumentsUi>().invoke_color_index());
         // The large waveforms' shared zoom, gliding to a new step: the next
         // frame comes at once until it gets there.
         let (zoom, gliding) = waveform_zoom::now(now);
@@ -3451,12 +3499,11 @@ impl Gpu {
             if d >= 2 && !four {
                 continue;
             }
-            // An instrument deck's notes, for its note roll.
+            // An instrument deck's notes, for its Notes view.
             let held = (decks.0[d].live_input.get().round() == INSTRUMENT_INPUT)
                 .then(|| self.instrument.held());
-            if let (Some(_), Some(traces)) = (held, self.live.as_mut()) {
-                traces.set_scale(d, self.scale_mask.get().round() as u16);
-            }
+            // Its view: 0 the waveform (Wave), 1 its knobs, 2 its notes.
+            let view = views.row_data(d).unwrap_or(0);
             let window = live[d]
                 .then(|| {
                     let color = DECK_COLORS[d];
@@ -3465,8 +3512,12 @@ impl Gpu {
                         .and_then(|t| t.window(d, now, held, color))
                 })
                 .flatten();
-            // A Groove Box deck's step lanes, in place of a note roll.
+            // A Groove Box deck's step lanes; an instrument deck's notes in
+            // its Notes view only.
             let window = window.map(|mut w| {
+                if view != 2 || groove[d] {
+                    w.lanes = None;
+                }
                 if let (true, Some(steps)) = (groove[d], self.steps.as_mut()) {
                     let state = self.grooves[d].state();
                     let start = w.clock - w.play_seconds;
@@ -3479,7 +3530,7 @@ impl Gpu {
             // is on (2-Deck Basic only).
             let page = (held.is_some() && !groove[d] && !four)
                 .then(|| app.global::<InstrumentsUi>().get_knob_page().max(0) as usize)
-                .filter(|_| macros_shown.row_data(d).unwrap_or(false));
+                .filter(|_| view == 1);
             let window = match (window, page) {
                 (Some(mut w), Some(page)) => {
                     let values = self.knobs.values(page);
@@ -3501,6 +3552,19 @@ impl Gpu {
                 }
             };
             self.scrolling[d].set_live(window.is_some());
+            // An instrument deck in its own look, with its scope right of
+            // the play line.
+            let instrument = window.is_some() && held.is_some() && !groove[d];
+            self.scrolling[d].set_live_look(match (instrument, looks.row_data(d)) {
+                (false, _) => LiveLook::Track,
+                (true, Some(1)) => LiveLook::Outline(own_color),
+                (true, _) => LiveLook::Lilac,
+            });
+            self.scrolling[d].set_scope(
+                instrument
+                    .then(|| live_trace::scope_points(&self.instrument.wave()))
+                    .flatten(),
+            );
             // Grid edit mode (Prep's deck 1 always), while the grid is unlocked.
             let prep_deck = prep_shown && d == 0;
             let h = &decks.0[d];

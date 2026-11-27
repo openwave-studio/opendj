@@ -17,7 +17,7 @@ use opendj_waveform::{Lanes, Mark, MarkKind, MAX_MARKS};
 /// Knobs a page shows, each a colour (`MarkKind::Level`'s 1 to 8).
 pub const KNOBS: usize = 8;
 /// How opaque the sound is under the lines.
-const UNDER_LINES: f32 = 0.25;
+const UNDER_LINES: f32 = 0.3;
 /// Values are kept this long behind the play line, in seconds.
 const KEEP_SECONDS: f64 = 10.0;
 /// A value is noted at most this often, in seconds.
@@ -156,6 +156,7 @@ impl MacroLanes {
             trace: UNDER_LINES,
             color,
             lit: LILAC,
+            notes: None,
         };
         (lanes, moved)
     }
