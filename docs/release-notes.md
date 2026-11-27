@@ -32,6 +32,10 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 - **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
 
+**Stems**
+
+- On Macs with Apple Silicon, **instant stems** run on the Neural Engine, about 6× faster (a 6-minute track separates in about 4 seconds), with the CPU as a fallback.
+
 **Phone remote**
 
 - A new **Deck** tab turns an iPad or phone into any deck (deck 3 at first) with a scrolling waveform, hot cue, loop and beat jump pads, pitch and the channel strip, over Wi-Fi with nothing to map.
