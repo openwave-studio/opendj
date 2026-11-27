@@ -1,0 +1,293 @@
+{
+ "id": "moog-messenger",
+ "name": "Messenger",
+ "maker": "Moog",
+ "source": "https://cdn.inmusicbrands.com/Moog/Messenger/Messenger_Manual.pdf",
+ "port": "Messenger",
+ "channel": 0,
+ "audio": "mono",
+ "controls": [
+  {
+   "group": "Oscillators",
+   "name": "OSC 1 Wave",
+   "cc": 9,
+   "lsb": 41
+  },
+  {
+   "group": "Oscillators",
+   "name": "OSC 2 Wave",
+   "cc": 14,
+   "lsb": 46
+  },
+  {
+   "group": "Oscillators",
+   "name": "OSC 1 Level",
+   "cc": 15,
+   "lsb": 47
+  },
+  {
+   "group": "Oscillators",
+   "name": "OSC 2 Level",
+   "cc": 16,
+   "lsb": 48
+  },
+  {
+   "group": "Oscillators",
+   "name": "Sub Level",
+   "cc": 17,
+   "lsb": 49
+  },
+  {
+   "group": "Oscillators",
+   "name": "Noise",
+   "cc": 8,
+   "lsb": 40
+  },
+  {
+   "group": "Oscillators",
+   "name": "OSC Tune",
+   "cc": 10,
+   "lsb": 42,
+   "bipolar": true
+  },
+  {
+   "group": "Oscillators",
+   "name": "OSC 2 Freq",
+   "cc": 12,
+   "lsb": 44,
+   "bipolar": true
+  },
+  {
+   "group": "Oscillators",
+   "name": "OSC Mod Amount",
+   "cc": 13,
+   "lsb": 45,
+   "bipolar": true
+  },
+  {
+   "group": "Oscillators",
+   "name": "FB / Ext In",
+   "cc": 18,
+   "lsb": 50
+  },
+  {
+   "group": "Filter",
+   "name": "Cutoff",
+   "cc": 19,
+   "lsb": 51
+  },
+  {
+   "group": "Filter",
+   "name": "Resonance",
+   "cc": 21,
+   "lsb": 53
+  },
+  {
+   "group": "Filter",
+   "name": "OSC 2 to Cutoff",
+   "cc": 20,
+   "lsb": 52
+  },
+  {
+   "group": "Filter",
+   "name": "EG Amount",
+   "cc": 22,
+   "lsb": 54,
+   "bipolar": true
+  },
+  {
+   "group": "Filter EG",
+   "name": "Attack",
+   "cc": 23,
+   "lsb": 55
+  },
+  {
+   "group": "Filter EG",
+   "name": "Decay",
+   "cc": 24,
+   "lsb": 56
+  },
+  {
+   "group": "Filter EG",
+   "name": "Sustain",
+   "cc": 25,
+   "lsb": 57
+  },
+  {
+   "group": "Filter EG",
+   "name": "Release",
+   "cc": 26,
+   "lsb": 58
+  },
+  {
+   "group": "Amp EG",
+   "name": "Attack",
+   "cc": 28,
+   "lsb": 60
+  },
+  {
+   "group": "Amp EG",
+   "name": "Decay",
+   "cc": 29,
+   "lsb": 61
+  },
+  {
+   "group": "Amp EG",
+   "name": "Sustain",
+   "cc": 30,
+   "lsb": 62
+  },
+  {
+   "group": "Amp EG",
+   "name": "Release",
+   "cc": 31,
+   "lsb": 63
+  },
+  {
+   "group": "LFO",
+   "name": "LFO 1 Rate",
+   "cc": 3,
+   "lsb": 35
+  },
+  {
+   "group": "LFO",
+   "name": "LFO 1 Depth",
+   "cc": 4,
+   "lsb": 36,
+   "bipolar": true
+  },
+  {
+   "group": "LFO",
+   "name": "LFO 2 Rate",
+   "cc": 27,
+   "lsb": 59
+  },
+  {
+   "group": "Glide",
+   "name": "Glide",
+   "cc": 5,
+   "lsb": 37
+  },
+  {
+   "group": "Output",
+   "name": "Volume",
+   "cc": 7,
+   "lsb": 39
+  }
+ ],
+ "macros": [
+  19,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  5,
+  9,
+  14,
+  15,
+  16,
+  17,
+  8,
+  13,
+  12,
+  28,
+  29,
+  30,
+  31,
+  3,
+  4,
+  27,
+  18
+ ],
+ "presets": {
+  "bank_select": "msb",
+  "banks": [
+   {
+    "name": "Messenger",
+    "msb": 0,
+    "count": 16
+   },
+   {
+    "name": "Classic Bass",
+    "msb": 1,
+    "count": 16
+   },
+   {
+    "name": "Modern Bass",
+    "msb": 2,
+    "count": 16
+   },
+   {
+    "name": "Sub Bass",
+    "msb": 3,
+    "count": 16
+   },
+   {
+    "name": "Hard Lead",
+    "msb": 4,
+    "count": 16
+   },
+   {
+    "name": "Soft Lead",
+    "msb": 5,
+    "count": 16
+   },
+   {
+    "name": "Arps",
+    "msb": 6,
+    "count": 16
+   },
+   {
+    "name": "Orchestral",
+    "msb": 7,
+    "count": 16
+   },
+   {
+    "name": "Keys",
+    "msb": 8,
+    "count": 16
+   },
+   {
+    "name": "Pads",
+    "msb": 9,
+    "count": 16
+   },
+   {
+    "name": "Mallets and Metal",
+    "msb": 10,
+    "count": 16
+   },
+   {
+    "name": "Sweeps",
+    "msb": 11,
+    "count": 16
+   },
+   {
+    "name": "Drones",
+    "msb": 12,
+    "count": 16
+   },
+   {
+    "name": "Percussion",
+    "msb": 13,
+    "count": 16
+   },
+   {
+    "name": "FX",
+    "msb": 14,
+    "count": 16
+   },
+   {
+    "name": "User",
+    "msb": 15,
+    "count": 16
+   }
+  ]
+ },
+ "transport": {
+  "clock": true,
+  "start_stop": true
+ }
+}

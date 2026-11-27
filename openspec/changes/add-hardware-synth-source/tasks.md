@@ -7,7 +7,7 @@
 
 ## 2. Synth profiles
 
-- [ ] 2.1 Profile format in `opendj-studio-engine` (port match, channel, named/grouped CCs, 8 macros, banks, factory names); MiniFreak and Moog Messenger profiles
+- [x] 2.1 Profile format in `opendj-studio-engine` (port match, channel, named/grouped CCs, 8 macros, banks, factory names); MiniFreak and Moog Messenger profiles
 - [ ] 2.2 Macros and panel CONTROLS from the profile; generic profile with CC learn
 
 ## 3. Loading and setup
@@ -18,7 +18,7 @@
 ## 4. Presets, clock and transport
 
 - [ ] 4.1 Program change and banks on the preset bar with factory names; deck presets keep the program
-- [ ] 4.2 MIDI clock and Start/Stop to the synth following its deck, early by the latency
+- [x] 4.2 MIDI clock and Start/Stop to the synth following its deck, early by the latency
 
 ## 5. Studio
 
