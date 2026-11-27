@@ -30,6 +30,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 
 - **Knob names**: instrument deck knobs show long names in full on up to two lines, and a knob's value pops up beside it while you hover or turn it.
 - **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth.
+- **Arturia presets**: Arturia instruments list their own factory and user presets in the Jam column, on the deck and on controller preset buttons, tagged by sound type, genre, style and character, with your Arturia likes starred.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
 
 **Stems**
