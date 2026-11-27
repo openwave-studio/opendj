@@ -1199,6 +1199,117 @@ mod tests {
         assert_eq!(ch, [0.25, 1.0]);
     }
 
+    /// Plays the Lead track's "Hook" alone for `beats`, running `edit`
+    /// through the piano roll once the clock passes beat 1. Returns the
+    /// audio and the frames per beat.
+    fn play_hook(beats: f64, edit: impl FnOnce(&Controls, &mut Editor)) -> (Vec<[f32; 2]>, f64) {
+        let set = crate::clip::demo_set();
+        let rate = 48_000.0;
+        let (mut studio, r) = Studio::new(&set, rate, 120.0);
+        let c = Controls::new(&set, &[0xff0000; 4], r.commands, r.monitor.clone());
+        let (t, s) = (0..c.tracks.len())
+            .flat_map(|t| (0..crate::SCENES).map(move |s| (t, s)))
+            .find(|&(t, s)| c.clip_info(t, s).is_some_and(|(n, _)| n == "Hook"))
+            .expect("the demo set's Hook clip");
+        let mut ed = Editor::default();
+        ed.open(t, s);
+        c.launch(t, s);
+        let mut out = vec![[0.0f32; 2]; 64];
+        let mut audio = Vec::new();
+        let mut edit = Some(edit);
+        while studio.clock.beat_now() < beats {
+            if studio.clock.beat_now() >= 1.0 {
+                if let Some(f) = edit.take() {
+                    f(&c, &mut ed);
+                }
+            }
+            studio.process(&mut out);
+            audio.extend_from_slice(&out);
+        }
+        (audio, rate * 60.0 / 120.0)
+    }
+
+    /// Step 4.1's check, offline: an edit while the clip plays changes
+    /// nothing before the edited place (no click, no cut note), and the
+    /// new note sounds where it was drawn.
+    #[test]
+    fn editing_while_playing_is_seamless() {
+        let (plain, fpb) = play_hook(6.0, |_, _| {});
+        let (edited, _) = play_hook(6.0, |c, ed| {
+            ed.edit(c, |notes, _, ls, _| {
+                notes.push(Note::new(*ls + 3.0, 0.5, 84, 0.9));
+            });
+        });
+        let (moved, _) = play_hook(6.0, |c, ed| {
+            ed.action(c, "select-all");
+            ed.action(c, "transpose-up");
+        });
+        assert_eq!(plain.len(), edited.len());
+        // Where Hook's loop starts playing from, in frames: the launch
+        // lands on the first beat.
+        let start = plain
+            .iter()
+            .position(|f| f[0] != 0.0 || f[1] != 0.0)
+            .unwrap();
+        let new_note = start + (3.0 * fpb) as usize;
+        let same = |a: &[[f32; 2]], b: &[[f32; 2]]| {
+            a.iter().zip(b).position(|(x, y)| x != y).unwrap_or(a.len())
+        };
+        let differs = same(&plain, &edited);
+        assert!(
+            differs >= new_note - 64,
+            "the sound changed at frame {differs}, before the new note at {new_note}"
+        );
+        assert!(differs < plain.len(), "the new note sounded");
+        // Transposing every note at beat 1: nothing before the edit
+        // changes, and the notes after it play moved.
+        let moved_at = same(&plain, &moved);
+        assert!(moved_at >= fpb as usize, "changed at {moved_at}");
+        assert!(moved_at < plain.len());
+        // No sample jumps from the edits: the largest step between frames
+        // stays within what the clip makes anyway.
+        let step = |a: &[[f32; 2]]| {
+            a.windows(2)
+                .map(|w| (w[1][0] - w[0][0]).abs().max((w[1][1] - w[0][1]).abs()))
+                .fold(0.0f32, f32::max)
+        };
+        assert!(step(&edited) <= step(&plain) * 1.5 + 0.01);
+        assert!(step(&moved) <= step(&plain) * 1.5 + 0.01);
+    }
+
+    /// Step 4.1's save check: what the piano roll edits survives saving
+    /// and opening the set.
+    #[test]
+    fn edits_survive_save_and_open() {
+        let (c, _rx, mut ed) = open();
+        ed.edit(&c, |notes, _, ls, beats| {
+            notes.extend([
+                Note {
+                    chance: 0.6,
+                    ..Note::new(0.5, 0.25, 60, 0.4)
+                },
+                Note {
+                    muted: true,
+                    ..Note::new(1.0, 0.5, 64, 0.9)
+                },
+                Note::new(2.0, 1.0, 67, 1.0),
+            ]);
+            *ls = 1.0;
+            *beats = 8.0;
+        });
+        let (t, s) = ed.open.unwrap();
+        let file = crate::set_file::SetFile::new(c.snapshot(), 120.0);
+        let text = serde_json::to_string(&file).unwrap();
+        let back = crate::set_file::from_str(&text).unwrap();
+        let clip = back.tracks[t].slots[s].as_ref().unwrap();
+        let (beats, notes) = c.notes(t, s).unwrap();
+        assert_eq!(clip.notes, notes);
+        assert_eq!(clip.loop_start, 1.0);
+        assert_eq!(clip.beats, beats);
+        assert!(clip.notes.iter().any(|n| n.muted));
+        assert!(clip.notes.iter().any(|n| (n.chance - 0.6).abs() < 1e-6));
+    }
+
     #[test]
     fn menu_follows_the_selection() {
         let (c, _rx, mut ed) = open();
