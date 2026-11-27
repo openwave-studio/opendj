@@ -109,23 +109,24 @@ mod tests {
             let started = std::time::Instant::now();
             let got = net.separate_segment(&l, &r).unwrap();
             let took = started.elapsed().as_secs_f64();
+            // Errors against the mix's level: the loop has next to no
+            // Other or Vocals, so their own level would make tiny
+            // differences look large.
+            let mix: f64 = l.iter().chain(&r).map(|x| (*x as f64).powi(2)).sum();
             for (a, b) in want.iter().zip(&got) {
-                let (mut s, mut e) = (0f64, 0f64);
-                for (x, y) in a
+                let e: f64 = a
                     .left
                     .iter()
                     .zip(&b.left)
                     .chain(a.right.iter().zip(&b.right))
-                {
-                    s += (*x as f64).powi(2);
-                    e += (*x as f64 - *y as f64).powi(2);
-                }
-                let snr = 10.0 * (s / e.max(1e-30)).log10();
+                    .map(|(x, y)| (*x as f64 - *y as f64).powi(2))
+                    .sum();
+                let snr = 10.0 * (mix / e.max(1e-30)).log10();
                 println!(
-                    "{units:?} {:?}: {snr:.1} dB against burn ({took:.2} s a segment)",
+                    "{units:?} {:?}: {snr:.1} dB against burn, of the mix ({took:.2} s a segment)",
                     a.id
                 );
-                assert!(snr > 20.0, "{units:?} {:?}: only {snr:.1} dB", a.id);
+                assert!(snr > 30.0, "{units:?} {:?}: only {snr:.1} dB", a.id);
             }
         }
         let _ = std::fs::remove_dir_all(cache);
