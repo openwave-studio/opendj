@@ -331,12 +331,20 @@ pub fn separate_segment_with(
 
     let (mut freq_out, mut time_out) = net(freq, time)?;
     let n_sources = info.stems.len();
-    if freq_out.len() != n_sources * 4 * bins * n_frames || time_out.len() != n_sources * 2 * padded_len {
-        return Err(DemucsError::Internal("the network gave the wrong sizes".into()));
+    if freq_out.len() != n_sources * 4 * bins * n_frames
+        || time_out.len() != n_sources * 2 * padded_len
+    {
+        return Err(DemucsError::Internal(
+            "the network gave the wrong sizes".into(),
+        ));
     }
     // Denormalized by the raw std, as `HTDemucs::forward` does.
-    freq_out.iter_mut().for_each(|v| *v = *v * freq_std + freq_mean);
-    time_out.iter_mut().for_each(|v| *v = *v * time_std + time_mean);
+    freq_out
+        .iter_mut()
+        .for_each(|v| *v = *v * freq_std + freq_mean);
+    time_out
+        .iter_mut()
+        .for_each(|v| *v = *v * time_std + time_mean);
 
     let cac_stride = 4 * bins * n_frames;
     let ch_stride = 2 * bins * n_frames;
@@ -351,8 +359,16 @@ pub fn separate_segment_with(
         let (lt, rt) = t.split_at(padded_len);
         stems.push(Stem {
             id: stem_id,
-            left: left_wav[..n_samples].iter().zip(lt).map(|(a, b)| a + b).collect(),
-            right: right_wav[..n_samples].iter().zip(rt).map(|(a, b)| a + b).collect(),
+            left: left_wav[..n_samples]
+                .iter()
+                .zip(lt)
+                .map(|(a, b)| a + b)
+                .collect(),
+            right: right_wav[..n_samples]
+                .iter()
+                .zip(rt)
+                .map(|(a, b)| a + b)
+                .collect(),
         });
     }
     Ok(stems)
@@ -366,10 +382,8 @@ impl<B: Backend> Demucs<B> {
             TensorData::new(freq, [1, 4, N_FFT / 2, frames]),
             &self.device,
         );
-        let time = Tensor::<B, 3>::from_data(
-            TensorData::new(time, [1, 2, TRAINING_LENGTH]),
-            &self.device,
-        );
+        let time =
+            Tensor::<B, 3>::from_data(TensorData::new(time, [1, 2, TRAINING_LENGTH]), &self.device);
         let (f, t) = self.models[0].forward_normalized(freq, time)?;
         let read = |d: TensorData| {
             d.to_vec::<f32>()
