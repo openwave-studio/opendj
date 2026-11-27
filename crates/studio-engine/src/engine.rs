@@ -128,6 +128,10 @@ pub enum Command {
     },
     /// The main fader, as a linear gain.
     MainVolume(f32),
+    /// The tracks that sound (by bit), after their activators and solos.
+    Audible(u32),
+    /// The metronome clicks on each beat while the song plays.
+    Metronome(bool),
     /// A track's pan knob, 0 (left) to 1 (right).
     Pan {
         track: usize,
@@ -540,6 +544,10 @@ struct Column {
     held_len: usize,
     instrument: Instrument,
     gain: f32,
+    /// Whether it sounds (activator and solo), and the level it is at on
+    /// its way there: it fades rather than clicks.
+    audible: bool,
+    level: f32,
     /// Left and right gains from the pan knob.
     pan: [f32; 2],
     /// The instrument's knobs as the track has them, under any lock.
@@ -776,6 +784,54 @@ pub struct Engine {
     out_channels: usize,
     /// Notes for tracks that play external instruments.
     midi_out: Option<rtrb::Producer<MidiOut>>,
+    metronome: bool,
+    click: Click,
+}
+
+/// The metronome's click: a short sine that dies away, higher on the bar.
+#[derive(Clone, Copy, Default)]
+struct Click {
+    /// Frames left of it, its phase and phase step a frame.
+    left: usize,
+    phase: f32,
+    step: f32,
+}
+
+/// How long a click lasts.
+const CLICK_FRAMES: usize = 1_200;
+
+impl Click {
+    fn start(&mut self, bar: bool, rate: f64) {
+        let hz = if bar { 1_760.0 } else { 1_320.0 };
+        *self = Click {
+            left: CLICK_FRAMES,
+            phase: 0.0,
+            step: (std::f64::consts::TAU * hz / rate) as f32,
+        };
+    }
+
+    fn add(&mut self, o: &mut [f32; 2]) {
+        if self.left == 0 {
+            return;
+        }
+        let env = self.left as f32 / CLICK_FRAMES as f32;
+        let v = self.phase.sin() * env * env * 0.35;
+        self.phase += self.step;
+        self.left -= 1;
+        o[0] += v;
+        o[1] += v;
+    }
+}
+
+/// The tracks that sound, by bit: activator on and, while any track is
+/// soloed, soloed.
+pub fn audible(tracks: &[Track]) -> u32 {
+    let any_solo = tracks.iter().any(|t| t.solo);
+    tracks
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| !t.muted && (!any_solo || t.solo))
+        .fold(0, |m, (i, _)| m | bit(i))
 }
 
 /// Frames an audio clip fades in or out over where it starts or stops.
@@ -809,6 +865,12 @@ impl Engine {
                 held: [Held { pitch: 0, off: 0.0 }; MAX_HELD],
                 held_len: 0,
                 gain: t.volume.map_or(1.0, crate::control::fader_gain),
+                audible: audible(tracks) & bit(i) != 0,
+                level: if audible(tracks) & bit(i) != 0 {
+                    1.0
+                } else {
+                    0.0
+                },
                 pan: pan_gains(t.pan),
                 base: sound::default_params(t.sound),
                 locked: 0,
@@ -876,6 +938,8 @@ impl Engine {
             fade_out: 0,
             fade_in: 0,
             log: None,
+            metronome: false,
+            click: Click::default(),
             input: Vec::new(),
             in_channels: 0,
             ext: Vec::new(),
@@ -1012,6 +1076,16 @@ impl Engine {
             }
             Command::MainVolume(gain) => {
                 self.main_gain = gain.max(0.0);
+                None
+            }
+            Command::Audible(bits) => {
+                for (t, c) in self.columns.iter_mut().enumerate() {
+                    c.audible = bits & bit(t) != 0;
+                }
+                None
+            }
+            Command::Metronome(on) => {
+                self.metronome = on;
                 None
             }
             Command::Pan { track, pan } => {
@@ -1400,6 +1474,11 @@ impl Engine {
             self.fade_for_edit(t, frames);
             let gain = self.columns[t].gain;
             let [pl, pr] = self.columns[t].pan;
+            let (mut level, target) = {
+                let c = &self.columns[t];
+                (c.level, if c.audible { 1.0f32 } else { 0.0 })
+            };
+            let ramp = 1.0 / FADE as f32;
             let mut peak = 0.0f32;
             let ext = match routing.audio_to {
                 AudioTo::Ext(first) if (first as usize) < self.out_channels => Some((
@@ -1414,7 +1493,15 @@ impl Engine {
                 .zip(self.scratch[..frames].iter())
                 .enumerate()
             {
-                let (l, r) = (s[0] * gain * pl, s[1] * gain * pr);
+                if level != target {
+                    level = if level < target {
+                        (level + ramp).min(target)
+                    } else {
+                        (level - ramp).max(target)
+                    };
+                }
+                let g = gain * level;
+                let (l, r) = (s[0] * g * pl, s[1] * g * pr);
                 peak = peak.max(l.abs()).max(r.abs());
                 match (routing.audio_to, ext) {
                     (AudioTo::Main, _) => {
@@ -1428,8 +1515,16 @@ impl Engine {
                     _ => {}
                 }
             }
+            self.columns[t].level = level;
             // Positive floats order like their bits.
             self.monitor.peaks[t].fetch_max(peak.to_bits(), Ordering::Relaxed);
+        }
+        if self.metronome && self.playing && end > start {
+            self.metronome_clicks(start, beats_per_frame, out);
+        } else {
+            for o in out.iter_mut() {
+                self.click.add(o);
+            }
         }
         // Chain edits land between blocks, while their tracks are silent.
         self.fade_in = self.fade_out;
@@ -1451,6 +1546,20 @@ impl Engine {
             .fetch_max(peak.to_bits(), Ordering::Relaxed);
         self.frames_done += frames as u64;
         self.publish(end, span.tempo);
+    }
+
+    /// Adds the metronome's clicks to a block that starts on `start`: one
+    /// on each beat, higher on the first of a bar.
+    fn metronome_clicks(&mut self, start: f64, beats_per_frame: f64, out: &mut [[f32; 2]]) {
+        let mut next = start.ceil();
+        for (i, o) in out.iter_mut().enumerate() {
+            let beat = start + i as f64 * beats_per_frame;
+            if beat >= next {
+                self.click.start(next.rem_euclid(4.0) < 0.5, self.rate);
+                next += 1.0;
+            }
+            self.click.add(o);
+        }
     }
 
     /// Adds what comes in to an audio track that is listening: with Monitor
@@ -2908,6 +3017,67 @@ mod tests {
         assert!((level - want).abs() < 0.01, "{level} vs {want}");
         // Nothing went to the trash: it found its place.
         assert!(r.trash.pop().is_err());
+    }
+
+    /// The loudest sample over `blocks` blocks.
+    fn loudest(studio: &mut Studio, blocks: usize) -> f32 {
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let mut max = 0.0f32;
+        for _ in 0..blocks {
+            studio.process(&mut out);
+            max = out.iter().fold(max, |m, f| m.max(f[0].abs()));
+        }
+        max
+    }
+
+    #[test]
+    fn muted_and_unsoloed_tracks_go_quiet() {
+        let mut set = one_note_set();
+        set[0].muted = true;
+        assert_eq!(audible(&set) & 1, 0);
+        let (mut studio, mut r) = Studio::new(&set, RATE, 120.0);
+        r.commands.push(Command::Launch { track: 0, scene: 0 }).ok();
+        assert!(loudest(&mut studio, 40) < 1e-6, "a muted track is quiet");
+        // On again: it plays.
+        r.commands.push(Command::Audible(1)).ok();
+        assert!(loudest(&mut studio, 40) > 0.01);
+        // Another track soloed: this one goes quiet.
+        set[0].muted = false;
+        set[1].solo = true;
+        assert_eq!(audible(&set), 0b10);
+        r.commands.push(Command::Audible(audible(&set))).ok();
+        run(&mut studio, 2);
+        assert!(loudest(&mut studio, 40) < 1e-6);
+    }
+
+    #[test]
+    fn the_metronome_clicks_on_the_beat() {
+        let set: Vec<Track> = one_note_set()
+            .into_iter()
+            .map(|mut t| {
+                t.muted = true;
+                t
+            })
+            .collect();
+        let (mut studio, mut r) = Studio::new(&set, RATE, 120.0);
+        r.commands.push(Command::Play(true)).ok();
+        assert!(loudest(&mut studio, 20) < 1e-6, "no click while it's off");
+        r.commands.push(Command::Metronome(true)).ok();
+        // A beat at 120 BPM is 24,000 frames: about 94 blocks.
+        let mut out = vec![[0.0f32; 2]; BLOCK];
+        let mut clicks = Vec::new();
+        let mut was = false;
+        for b in 0..400 {
+            studio.process(&mut out);
+            let on = out.iter().any(|f| f[0].abs() > 0.01);
+            if on && !was {
+                clicks.push(b);
+            }
+            was = on;
+        }
+        assert!(clicks.len() >= 4, "{clicks:?}");
+        let gaps: Vec<usize> = clicks.windows(2).map(|w| w[1] - w[0]).collect();
+        assert!(gaps.iter().all(|&g| (93..=95).contains(&g)), "{gaps:?}");
     }
 
     #[test]

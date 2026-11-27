@@ -182,4 +182,19 @@ time (pages over the screen, or Page left and right). A rack's first page
 is its macros, and the buttons over the screen go into its chains; the
 first button under the screen comes back out. Stop Clip held with a
 track's button stops that track, on its own the selected one, with Shift
-all of them.
+all of them; Mute and Solo work the same way, and while one is held the
+buttons under the screen show the tracks' state.
+
+The other buttons Live gives Push, as far as the studio has what they
+drive: Metronome (a click on each beat while the song plays, higher on the
+bar, mixed after the tracks), Tap Tempo (the last few taps, a two-second
+pause starts again), New (the next empty slot on the selected track),
+Duplicate (the selected clip to the next empty slot; held, clip then
+slots) and Double Loop (a note clip's loop and its notes twice over).
+Record, Fixed Length, Automate and Undo wait for recording into slots and
+undo; Convert has nothing to convert to yet.
+
+Tracks have an activator and a solo, saved in the set and read from a
+Live set's mixer. While any track is soloed only soloed ones sound; the
+audio thread gets the tracks that sound as one mask and fades each track
+over 128 frames when it changes.

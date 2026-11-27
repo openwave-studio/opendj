@@ -69,6 +69,13 @@ pub const DELETE: u8 = 118;
 pub const LAYOUT: u8 = 31;
 pub const SCALE: u8 = 58;
 pub const ACCENT: u8 = 57;
+pub const TAP_TEMPO: u8 = 3;
+pub const METRONOME: u8 = 9;
+pub const MUTE: u8 = 60;
+pub const SOLO: u8 = 61;
+pub const NEW: u8 = 87;
+pub const DUPLICATE: u8 = 88;
+pub const DOUBLE_LOOP: u8 = 117;
 /// Scene buttons right of the pads, top (1/4) to bottom (1/32t).
 pub const SCENE_FIRST: u8 = 36;
 /// Buttons under the display, left to right.
@@ -239,9 +246,14 @@ pub struct Surface {
     pub accent: bool,
     /// Device mode: the device the encoders turn.
     focus: Focus,
-    /// Stop Clip is held, and has stopped a track while held.
-    stop_held: bool,
-    stop_used: bool,
+    /// Stop Clip, Mute or Solo held, for the buttons under the screen to
+    /// act on tracks; and whether they have while it is held.
+    held_mod: Option<u8>,
+    mod_used: bool,
+    /// Duplicate is held: the clip picked to copy, and whether one was
+    /// pasted while it was held.
+    dup: Option<Option<(usize, usize)>>,
+    dup_used: bool,
 }
 
 impl Default for Surface {
@@ -276,8 +288,10 @@ impl Surface {
             added: 0,
             accent: false,
             focus: Focus::default(),
-            stop_held: false,
-            stop_used: false,
+            held_mod: None,
+            mod_used: false,
+            dup: None,
+            dup_used: false,
         }
     }
 
@@ -368,22 +382,41 @@ impl Surface {
     fn button(&mut self, cc: u8, press: Press, c: &Controls) {
         let down = press == Press::Down;
         match (cc, press) {
-            (SHIFT, Press::Long) | (SELECT, Press::Long) | (STOP, Press::Long) => return,
-            // Stop Clip: held with a track's button, stops that track; on
-            // its own, the selected track; with Shift, every track.
-            (STOP, Press::Down) => {
-                self.stop_held = true;
-                self.stop_used = false;
+            (SHIFT | SELECT | STOP | MUTE | SOLO | DUPLICATE, Press::Long) => return,
+            // Stop Clip, Mute and Solo: held with a track's button, act on
+            // that track; on their own, on the selected track. Stop Clip
+            // with Shift stops every track.
+            (STOP | MUTE | SOLO, Press::Down) => {
+                self.held_mod = Some(cc);
+                self.mod_used = false;
                 return;
             }
-            (STOP, _) => {
-                self.stop_held = false;
-                if !self.stop_used {
-                    if self.shift {
-                        c.stop_all();
-                    } else {
-                        c.stop(c.selected_track());
+            (STOP | MUTE | SOLO, _) => {
+                if self.held_mod == Some(cc) {
+                    self.held_mod = None;
+                }
+                if !self.mod_used {
+                    let t = c.selected_track();
+                    match cc {
+                        STOP if self.shift => c.stop_all(),
+                        STOP => c.stop(t),
+                        MUTE => c.toggle_mute(t),
+                        _ => c.toggle_solo(t, self.shift),
                     }
+                }
+                return;
+            }
+            // Duplicate: held, a clip's pad then another's copies it there;
+            // on its own, the selected clip goes to the next empty slot.
+            (DUPLICATE, Press::Down) => {
+                self.dup = Some(None);
+                self.dup_used = false;
+                return;
+            }
+            (DUPLICATE, _) => {
+                self.dup = None;
+                if !self.dup_used {
+                    self.duplicate_selected(c);
                 }
                 return;
             }
@@ -428,12 +461,17 @@ impl Surface {
         if self.mode == Mode::Scales && self.scale_button(cc, c) {
             return;
         }
-        if self.stop_held && (LOWER_FIRST..LOWER_FIRST + 8).contains(&cc) {
+        if let (Some(m), true) = (self.held_mod, (LOWER_FIRST..LOWER_FIRST + 8).contains(&cc)) {
             let t = bank(c) + (cc - LOWER_FIRST) as usize;
             if t < c.tracks.len() {
-                c.stop(t);
+                match m {
+                    STOP => c.stop(t),
+                    MUTE => c.toggle_mute(t),
+                    // Picking tracks while Solo is held solos them all.
+                    _ => c.toggle_solo(t, self.shift || self.mod_used),
+                }
             }
-            self.stop_used = true;
+            self.mod_used = true;
             return;
         }
         if self.mode == Mode::Device && self.device_button(cc, c) {
@@ -506,6 +544,24 @@ impl Surface {
             OCTAVE_UP => self.octave = (self.octave + 1).min(3),
             OCTAVE_DOWN => self.octave = (self.octave - 1).max(-3),
             ACCENT => self.accent = !self.accent,
+            METRONOME => c.toggle_metronome(),
+            TAP_TEMPO => {
+                c.tap_tempo(Instant::now());
+            }
+            // New: the selected track stops, on the next empty slot, ready
+            // for a new clip.
+            NEW => {
+                let t = c.selected_track();
+                let from = c.selected_scene().unwrap_or(0);
+                if let Some(s) = c.next_empty(t, from).or_else(|| c.next_empty(t, 0)) {
+                    c.stop(t);
+                    c.select(t, Some(s));
+                }
+            }
+            DOUBLE_LOOP => {
+                let (t, s) = c.steps_slot();
+                c.double_loop(t, s);
+            }
             QUANTIZE => {
                 c.next_quantize();
             }
@@ -710,7 +766,57 @@ impl Surface {
         for cc in [OCTAVE_DOWN, OCTAVE_UP] {
             v.push((cc, Led::solid(if note { W_DIM } else { W_OFF })));
         }
+        let t = c.selected_track();
+        v.push((METRONOME, white(c.metronome())));
+        v.push((
+            TAP_TEMPO,
+            if m.playing() {
+                Led::animate(W_DIM, PULSE_QUARTER, W_ON)
+            } else {
+                Led::solid(W_DIM)
+            },
+        ));
+        v.push((MUTE, white(c.muted(t))));
+        v.push((SOLO, white(c.soloed(t))));
+        v.push((DUPLICATE, white(self.dup.is_some())));
+        for cc in [NEW, DOUBLE_LOOP] {
+            v.push((cc, Led::solid(W_DIM)));
+        }
+        // Stop Clip, Mute or Solo held: the buttons under the screen show
+        // which tracks it would act on.
+        if let Some(held) = self.held_mod {
+            v.retain(|(cc, _)| !(LOWER_FIRST..LOWER_FIRST + 8).contains(cc));
+            for t in bank(c)..bank(c) + 8 {
+                let lit = t < tracks
+                    && match held {
+                        STOP => m.progress(t) >= 0.0,
+                        MUTE => !c.muted(t),
+                        _ => c.soloed(t),
+                    };
+                let led = match (t < tracks, lit, held) {
+                    (false, _, _) => Led::OFF,
+                    (_, true, STOP) => Led::solid(RED),
+                    (_, true, _) => Led::solid(track_color(t)),
+                    (_, false, _) => Led::solid(track_dim(t)),
+                };
+                v.push((LOWER_FIRST + (t % 8) as u8, led));
+            }
+        }
         v
+    }
+
+    /// Duplicate on its own: the selected clip (or the one the track
+    /// plays) goes to the next empty slot below it, which is then selected.
+    fn duplicate_selected(&mut self, c: &Controls) {
+        let (t, s) = c.steps_slot();
+        if !c.has_clip(t, s) {
+            return;
+        }
+        if let Some(to) = c.next_empty(t, s + 1) {
+            if c.copy_clip(t, s, t, to) {
+                c.select(t, Some(to));
+            }
+        }
     }
 
     /// Messages turning every light off, for when the studio lets go.
@@ -815,6 +921,91 @@ mod tests {
         assert_eq!(s.device_knobs(&c)[0].name, "Macro 1");
         c.select_track(1);
         assert_eq!(s.focus(&c).device, None);
+    }
+
+    #[test]
+    fn mute_solo_metronome_tap_new_duplicate_and_double() {
+        let mut set = crate::clip::demo_set();
+        for t in &mut set {
+            for slot in &mut t.slots[4..] {
+                *slot = None;
+            }
+        }
+        let (tx, _rx) = rtrb::RingBuffer::new(256);
+        let monitor = Studio::new(&set, 48_000.0, 120.0).1.monitor;
+        let c = Controls::new(&set, &[0xff0000; 4], tx, monitor);
+        let mut s = Surface::new();
+        let press = |s: &mut Surface, cc: u8, on: bool| {
+            s.input(&[0xB0, cc, if on { 127 } else { 0 }], &c);
+        };
+        let tap = |s: &mut Surface, cc: u8| {
+            s.input(&[0xB0, cc, 127], &c);
+            s.input(&[0xB0, cc, 0], &c);
+        };
+        // Mute on its own: the selected track; held, the tracks picked.
+        c.select_track(2);
+        tap(&mut s, MUTE);
+        assert!(c.muted(2));
+        press(&mut s, MUTE, true);
+        press(&mut s, LOWER_FIRST, true);
+        press(&mut s, LOWER_FIRST + 2, true);
+        press(&mut s, MUTE, false);
+        assert!(c.muted(0) && !c.muted(2), "{:?}", (c.muted(0), c.muted(2)));
+        // While held, the buttons under the screen show what sounds.
+        press(&mut s, MUTE, true);
+        let leds = s.button_leds(&c);
+        let lower = |i: u8| {
+            leds.iter()
+                .find(|(cc, _)| *cc == LOWER_FIRST + i)
+                .map(|l| l.1)
+        };
+        assert_eq!(lower(0), Some(Led::solid(track_dim(0))));
+        assert_eq!(lower(1), Some(Led::solid(track_color(1))));
+        press(&mut s, MUTE, false);
+
+        // Solo on its own takes the other solos off; held, it adds them up.
+        tap(&mut s, SOLO);
+        assert!(c.soloed(2));
+        press(&mut s, SOLO, true);
+        press(&mut s, LOWER_FIRST + 1, true);
+        press(&mut s, LOWER_FIRST + 3, true);
+        press(&mut s, SOLO, false);
+        assert!(!c.soloed(2) && c.soloed(1) && c.soloed(3));
+
+        tap(&mut s, METRONOME);
+        assert!(c.metronome());
+
+        // Duplicate on its own: the selected clip, to the next empty slot.
+        let t = (0..c.tracks.len())
+            .find(|&t| c.has_clip(t, 0) && c.next_empty(t, 1).is_some())
+            .expect("a track with a clip and room");
+        let to = c.next_empty(t, 1).expect("room");
+        c.select(t, Some(0));
+        tap(&mut s, DUPLICATE);
+        assert!(c.has_clip(t, to));
+        assert_eq!(c.selected_scene(), Some(to));
+        // Held: a clip's pad, then another's (scene 7 is the bottom row).
+        let pad = |t: usize, scene: usize| 36 + ((7 - scene) * 8 + t) as u8;
+        press(&mut s, DUPLICATE, true);
+        s.input(&[0x90, pad(t, 0), 100], &c);
+        s.input(&[0x90, pad(t, 7), 100], &c);
+        press(&mut s, DUPLICATE, false);
+        assert!(c.has_clip(t, 7));
+
+        // Double: the selected clip's loop, twice as long.
+        let beats = c.clip_info(t, 7).map(|i| i.1);
+        c.select(t, Some(7));
+        tap(&mut s, DOUBLE_LOOP);
+        assert_eq!(c.clip_info(t, 7).map(|i| i.1), beats.map(|b| b * 2.0));
+
+        // New: on the next empty slot.
+        c.select(t, Some(0));
+        tap(&mut s, NEW);
+        let picked = c.selected_scene().expect("a slot");
+        assert!(!c.has_clip(t, picked));
+
+        // Tap Tempo doesn't set anything from one tap.
+        tap(&mut s, TAP_TEMPO);
     }
 
     #[test]

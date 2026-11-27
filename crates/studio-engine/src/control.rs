@@ -3,7 +3,9 @@
 //! stores the new value for the other side to show and sends the matching
 //! command to the audio thread.
 
-use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering};
+use std::sync::atomic::{
+    AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering,
+};
 use std::sync::{Arc, Mutex};
 
 use crate::clip::{Clip, DeviceInfo, Io, Note, Sound, Track, MAX_TRACKS, SCENES};
@@ -149,7 +151,13 @@ pub struct Controls {
     chains: Mutex<Vec<Vec<DeviceInfo>>>,
     /// Goes up on every change, so a screen can tell when to redraw.
     version: AtomicU64,
+    metronome: AtomicBool,
+    /// Tap Tempo's taps, latest last.
+    taps: Mutex<Vec<std::time::Instant>>,
 }
+
+/// Taps further apart than this start a new count.
+const TAP_GAP: std::time::Duration = std::time::Duration::from_secs(2);
 
 impl Controls {
     pub fn new(
@@ -206,6 +214,8 @@ impl Controls {
             io: Mutex::new(set.iter().map(|t| t.io.clone()).collect()),
             chains: Mutex::new(set.iter().map(|t| t.devices.clone()).collect()),
             version: AtomicU64::new(1),
+            metronome: AtomicBool::new(false),
+            taps: Mutex::new(Vec::new()),
         }
     }
 
@@ -603,6 +613,180 @@ impl Controls {
         self.send(Command::Tempo(bpm.clamp(40.0, 250.0)));
     }
 
+    /// Sets the tempo, in BPM (40 to 250, to a tenth).
+    pub fn set_tempo(&self, bpm: f64) {
+        let bpm = (bpm * 10.0).round() / 10.0;
+        self.send(Command::Tempo(bpm.clamp(40.0, 250.0)));
+        self.bump();
+    }
+
+    /// A Tap Tempo tap at `now`. From the second tap on, the tempo follows
+    /// the last few taps; a pause of two seconds starts a new count.
+    /// Returns the tempo it set.
+    pub fn tap_tempo(&self, now: std::time::Instant) -> Option<f64> {
+        let mut taps = self.taps.lock().ok()?;
+        if taps
+            .last()
+            .is_some_and(|&last| now.saturating_duration_since(last) > TAP_GAP)
+        {
+            taps.clear();
+        }
+        taps.push(now);
+        if taps.len() > 5 {
+            taps.remove(0);
+        }
+        if taps.len() < 2 {
+            return None;
+        }
+        let span = taps[taps.len() - 1].saturating_duration_since(taps[0]);
+        let beat = span.as_secs_f64() / (taps.len() - 1) as f64;
+        if beat <= 0.0 {
+            return None;
+        }
+        let bpm = (60.0 / beat).clamp(40.0, 250.0);
+        drop(taps);
+        self.set_tempo(bpm);
+        Some(bpm)
+    }
+
+    pub fn metronome(&self) -> bool {
+        self.metronome.load(Ordering::Relaxed)
+    }
+
+    pub fn toggle_metronome(&self) {
+        let on = !self.metronome();
+        self.metronome.store(on, Ordering::Relaxed);
+        self.send(Command::Metronome(on));
+        self.bump();
+    }
+
+    // ------------------------------------------------- mute and solo
+
+    /// Whether the track's activator is off.
+    pub fn muted(&self, track: usize) -> bool {
+        self.set
+            .lock()
+            .ok()
+            .and_then(|s| s.get(track).map(|t| t.muted))
+            .unwrap_or(false)
+    }
+
+    pub fn soloed(&self, track: usize) -> bool {
+        self.set
+            .lock()
+            .ok()
+            .and_then(|s| s.get(track).map(|t| t.solo))
+            .unwrap_or(false)
+    }
+
+    /// Whether any track is soloed.
+    pub fn any_solo(&self) -> bool {
+        self.set.lock().is_ok_and(|s| s.iter().any(|t| t.solo))
+    }
+
+    /// Switches the track's activator.
+    pub fn toggle_mute(&self, track: usize) {
+        self.edit_mixer(|set| {
+            if let Some(t) = set.get_mut(track) {
+                t.muted = !t.muted;
+            }
+        });
+    }
+
+    /// Solos the track or takes its solo off. `add` keeps the other solos;
+    /// otherwise soloing a track takes theirs off.
+    pub fn toggle_solo(&self, track: usize, add: bool) {
+        self.edit_mixer(|set| {
+            let Some(on) = set.get(track).map(|t| !t.solo) else {
+                return;
+            };
+            if !add {
+                for t in set.iter_mut() {
+                    t.solo = false;
+                }
+            }
+            set[track].solo = on;
+        });
+    }
+
+    fn edit_mixer(&self, f: impl FnOnce(&mut Vec<Track>)) {
+        let Ok(mut set) = self.set.lock() else {
+            return;
+        };
+        f(&mut set);
+        self.send(Command::Audible(crate::engine::audible(&set)));
+        drop(set);
+        self.bump();
+    }
+
+    // -------------------------------------------------------- clips
+
+    /// The first empty slot on the track from `from` down.
+    pub fn next_empty(&self, track: usize, from: usize) -> Option<usize> {
+        let set = self.set.lock().ok()?;
+        let slots = &set.get(track)?.slots;
+        (from..slots.len()).find(|&s| slots[s].is_none())
+    }
+
+    /// Copies the clip in `from_track`'s slot `from` to `to_track`'s slot
+    /// `to`, over what is there. Recordings only go to audio tracks, and
+    /// note clips only to the others.
+    pub fn copy_clip(&self, from_track: usize, from: usize, to_track: usize, to: usize) -> bool {
+        if (from_track, from) == (to_track, to) {
+            return false;
+        }
+        let Ok(mut set) = self.set.lock() else {
+            return false;
+        };
+        let Some(clip) = set
+            .get(from_track)
+            .and_then(|t| t.slots.get(from).cloned().flatten())
+        else {
+            return false;
+        };
+        let Some(t) = set.get_mut(to_track) else {
+            return false;
+        };
+        if (t.sound == Sound::Audio) != clip.audio.is_some() {
+            return false;
+        }
+        let Some(slot) = t.slots.get_mut(to) else {
+            return false;
+        };
+        *slot = Some(clip);
+        self.send(Command::Program(Program::compile(&set)));
+        drop(set);
+        self.bump();
+        true
+    }
+
+    /// Doubles a note clip's loop: what plays in it is copied after it,
+    /// over any notes there.
+    pub fn double_loop(&self, track: usize, scene: usize) -> bool {
+        if !self
+            .with_clip(track, scene, |c| c.stages.is_none() && c.audio.is_none())
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        self.edit_notes(track, scene, |c| {
+            let (from, len) = (c.loop_start, c.beats);
+            let (to, end) = (from + len, from + 2.0 * len);
+            c.notes.retain(|n| n.start < to || n.start >= end);
+            let copies: Vec<Note> = c
+                .notes
+                .iter()
+                .filter(|n| n.start >= from && n.start < to)
+                .map(|n| Note {
+                    start: n.start + len,
+                    ..*n
+                })
+                .collect();
+            c.notes.extend(copies);
+            c.beats = 2.0 * len;
+        })
+    }
+
     pub fn quantize(&self) -> Quantize {
         match self.quantize.load(Ordering::Relaxed) {
             1 => Quantize::Beat,
@@ -853,6 +1037,54 @@ mod tests {
         ));
         assert_eq!(c.param_name(0, 1), "Length");
         assert!(c.has_clip(0, 0));
+    }
+
+    #[test]
+    fn mute_solo_tap_tempo_and_clip_copies() {
+        let mut set = crate::clip::demo_set();
+        set[0].slots[6] = None;
+        set[0].slots[7] = None;
+        let (tx, mut rx) = rtrb::RingBuffer::new(64);
+        let monitor = crate::engine::Studio::new(&set, 48_000.0, 120.0).1.monitor;
+        let c = Controls::new(&set, &[0; 4], tx, monitor);
+        c.toggle_mute(1);
+        assert!(c.muted(1));
+        assert!(matches!(rx.pop(), Ok(Command::Audible(0b1101))));
+        c.toggle_solo(2, false);
+        c.toggle_solo(3, true);
+        assert!(c.soloed(2) && c.soloed(3) && c.any_solo());
+        // Soloing alone takes the others' solos off.
+        c.toggle_solo(0, false);
+        assert!(c.soloed(0) && !c.soloed(2) && !c.soloed(3));
+        assert!(c.snapshot()[1].muted && c.snapshot()[0].solo);
+
+        // Taps half a second apart: 120 BPM.
+        let t0 = std::time::Instant::now();
+        let half = std::time::Duration::from_millis(500);
+        assert_eq!(c.tap_tempo(t0), None);
+        assert_eq!(c.tap_tempo(t0 + half).map(|b| b.round()), Some(120.0));
+        assert_eq!(c.tap_tempo(t0 + half * 2).map(|b| b.round()), Some(120.0));
+        // After a long pause the count starts again.
+        assert_eq!(c.tap_tempo(t0 + half * 10), None);
+
+        c.toggle_metronome();
+        assert!(c.metronome());
+
+        // Copy into the first empty slot, then double its loop.
+        let (beats, notes) = c.notes(0, 0).expect("a note clip");
+        let to = c.next_empty(0, 0).expect("an empty slot");
+        assert!(c.copy_clip(0, 0, 0, to));
+        assert!(!c.copy_clip(0, 0, 0, 0), "not onto itself");
+        assert_eq!(
+            c.notes(0, to).map(|(b, n)| (b, n.len())),
+            Some((beats, notes.len()))
+        );
+        assert!(c.double_loop(0, to));
+        let (b2, n2) = c.notes(0, to).expect("still a note clip");
+        assert_eq!(b2, beats * 2.0);
+        assert_eq!(n2.len(), notes.len() * 2);
+        assert!(n2.iter().any(|n| n.start >= beats));
+        assert!(!c.double_loop(0, c.next_empty(0, 0).expect("empty")));
     }
 
     #[test]

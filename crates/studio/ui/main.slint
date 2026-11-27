@@ -142,6 +142,9 @@ export struct TrackData {
     // 0 In, 1 Auto, 2 Off.
     monitor: int,
     armed: bool,
+    // The activator is off; soloed.
+    muted: bool,
+    solo: bool,
     audio-to: string,
     // Shown when the sound goes to Ext. Out.
     out-channel: string,
@@ -774,13 +777,20 @@ component Strip inherits Rectangle {
     in property <float> send-a;
     in property <float> send-b;
     in property <bool> armed;
+    in property <bool> active: true;
+    in property <bool> solo;
     // Which control (0 volume, 1 pan, 2 send A, 3 send B) and its value.
     callback changed(int, float);
     callback arm-toggled();
+    callback active-toggled();
+    callback solo-toggled();
     property <float> fader: free ? local-volume : volume;
     property <float> local-volume: 60 / 66;
-    property <bool> active: true;
-    property <bool> solo;
+    // Returns aren't connected yet: their buttons keep their own state.
+    property <bool> local-active: true;
+    property <bool> local-solo;
+    property <bool> is-active: free ? local-active : active;
+    property <bool> is-solo: free ? local-solo : solo;
     background: tint.with-alpha(0.10);
     VerticalLayout {
         padding: 4px;
@@ -847,11 +857,22 @@ component Strip inherits Rectangle {
                 width: 26px;
                 height: 18px;
                 border-radius: 2px;
-                background: active ? Theme.accent : Theme.slot;
-                Text { text: number; color: active ? #101112 : Theme.dim; font-size: 10px; font-weight: 700; }
-                TouchArea { clicked => { root.active = !root.active; } }
+                background: is-active ? Theme.accent : Theme.slot;
+                Text { text: number; color: is-active ? #101112 : Theme.dim; font-size: 10px; font-weight: 700; }
+                TouchArea {
+                    clicked => {
+                        if root.free { root.local-active = !root.local-active; } else { root.active-toggled(); }
+                    }
+                }
             }
-            SmallButton { label: "S"; on: solo; on-color: Theme.return-b; clicked => { root.solo = !root.solo; } }
+            SmallButton {
+                label: "S";
+                on: is-solo;
+                on-color: Theme.return-b;
+                clicked => {
+                    if root.free { root.local-solo = !root.local-solo; } else { root.solo-toggled(); }
+                }
+            }
             if arm: SmallButton { label: "●"; on: armed; on-color: #ff6b6b; clicked => { root.arm-toggled(); } }
         }
     }
@@ -2148,6 +2169,8 @@ export component AppWindow inherits Window {
     // Track, 0 In, 1 Auto, 2 Off.
     callback set-monitor(int, int);
     callback toggle-arm(int);
+    callback toggle-mute(int);
+    callback toggle-solo(int);
     // Settings opened (the device lists are read again); a setting picked
     // (0 output, 1 input, 2 sample rate, 3 buffer) and its option.
     callback settings-opened();
@@ -2413,6 +2436,10 @@ export component AppWindow inherits Window {
                             level: t.level;
                             armed: t.armed;
                             arm-toggled => { root.toggle-arm(i); }
+                            active: !t.muted;
+                            solo: t.solo;
+                            active-toggled => { root.toggle-mute(i); }
+                            solo-toggled => { root.toggle-solo(i); }
                             volume: t.volume;
                             pan: t.pan;
                             pan-text: t.pan-text;

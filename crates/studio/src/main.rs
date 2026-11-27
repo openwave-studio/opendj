@@ -766,6 +766,12 @@ fn ui(
     }
     {
         let c = controls.clone();
+        window.on_toggle_mute(move |t| c.toggle_mute(t as usize));
+        let c = controls.clone();
+        window.on_toggle_solo(move |t| c.toggle_solo(t as usize, false));
+    }
+    {
+        let c = controls.clone();
         window.on_device_param(move |t, d, i, n| {
             let (t, d, i) = (t as usize, d as usize, i as usize);
             if let Some(p) = c.builtin(t, d).and_then(|s| rack_ui::param(&s, i)) {
@@ -1736,6 +1742,8 @@ fn track_row(
             .position(|&m| m == io.monitor)
             .unwrap_or(1) as i32,
         armed: io.armed,
+        muted: c.muted(t),
+        solo: c.soloed(t),
         audio_to: match io.audio_to {
             AudioTo::Main => "Main",
             AudioTo::Ext(_) => "Ext. Out",
