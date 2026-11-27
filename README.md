@@ -57,7 +57,7 @@ it felt to use. In the app, **Settings › Help** has links to report a
 problem or suggest a feature, with your version already filled in, and opens
 the folder with your logs to attach. You can also
 [open an issue](https://github.com/openwave-studio/opendj/issues/new/choose)
-directly.
+directly, or come chat on [Discord](https://discord.gg/Q628RYTCy).
 
 What testers get:
 
