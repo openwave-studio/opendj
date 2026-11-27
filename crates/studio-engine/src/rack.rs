@@ -53,6 +53,20 @@ pub fn inner(branch: usize, device: usize, param: usize) -> usize {
     INNER | (branch & 0xFF) << 14 | (device & 0x1F) << 9 | (param & 0x1FF)
 }
 
+/// The index [`RackSettings::set`] takes for one end of a macro's range on
+/// its `k`th setting (`end` 0 for the macro's bottom, 1 for its top), in
+/// that setting's own units.
+pub fn range(m: usize, k: usize, end: usize) -> usize {
+    RANGE | (m & 0x7) << 10 | (k & 0x1FF) << 1 | (end & 1)
+}
+
+const RANGE: usize = 1 << 23;
+
+/// (macro, its setting, end) of a [`range`] index.
+pub fn split_range(i: usize) -> Option<(usize, usize, usize)> {
+    (i & RANGE != 0).then_some(((i >> 10) & 0x7, (i >> 1) & 0x1FF, i & 1))
+}
+
 /// (branch, device, param) of an inner index.
 pub fn split(i: usize) -> Option<(usize, usize, usize)> {
     (i & INNER != 0).then_some(((i >> 14) & 0xFF, (i >> 9) & 0x1F, i & 0x1FF))
@@ -183,6 +197,27 @@ impl RackSettings {
     /// Changes a macro (moving its targets), a branch's setting, or one
     /// setting of a device inside (an [`inner`] index).
     pub fn set(&mut self, i: usize, v: f32) {
+        if let Some((m, k, end)) = split_range(i) {
+            let Some(mac) = self.macros.get_mut(m) else {
+                return;
+            };
+            let Some(t) = mac.targets.get_mut(k) else {
+                return;
+            };
+            if end == 0 {
+                t.low = v;
+            } else {
+                t.high = v;
+            }
+            // The setting moves to where the macro now puts it.
+            let t = *t;
+            let to = t.low + (t.high - t.low) * mac.value;
+            self.set(
+                inner(t.branch as usize, t.device as usize, t.param as usize),
+                to,
+            );
+            return;
+        }
         if let Some((b, d, p)) = split(i) {
             let Some(dev) = self.branches.get_mut(b).and_then(|b| b.devices.get_mut(d)) else {
                 return;
@@ -538,6 +573,9 @@ pub struct Rack {
     /// plug-ins inside are told (see [`Rack::until`]).
     playing: bool,
     deadline: Option<Instant>,
+    /// The running plug-ins to take over from the rack this one replaces:
+    /// (chain, place) there to (chain, place) here (see [`Rack::adopt`]).
+    keep: Vec<((usize, usize), (usize, usize))>,
 }
 
 impl Rack {
@@ -591,11 +629,59 @@ impl Rack {
             beat: 0.0,
             playing: false,
             deadline: None,
+            keep: Vec::new(),
         }
+    }
+
+    /// Before it plays: the plug-ins it takes over from the rack it
+    /// replaces, so their helpers keep running through an edit.
+    pub fn keep(&mut self, moves: Vec<((usize, usize), (usize, usize))>) {
+        self.keep = moves;
+    }
+
+    /// Takes the running plug-ins listed in [`Rack::keep`] from `old`, the
+    /// rack this one replaces. Never allocates.
+    pub fn adopt(&mut self, old: &mut Rack) {
+        for &((ob, od), (b, d)) in &self.keep {
+            let Some((_, Device::Plugin(from))) =
+                old.runs.get_mut(ob).and_then(|r| r.devices.get_mut(od))
+            else {
+                continue;
+            };
+            let Some(slot) = from.slot.take() else {
+                continue;
+            };
+            match self.runs.get_mut(b).and_then(|r| r.devices.get_mut(d)) {
+                Some((_, Device::Plugin(to))) if to.slot.is_none() => to.slot = Some(slot),
+                // Nowhere for it: back where it was, to go with the old rack.
+                _ => from.slot = Some(slot),
+            }
+        }
+        self.keep.clear();
     }
 
     /// See [`RackSettings::set`]. Never allocates.
     pub fn set(&mut self, i: usize, v: f32) {
+        if let Some((m, k, end)) = split_range(i) {
+            let Some(mac) = self.macros.get_mut(m) else {
+                return;
+            };
+            let Some(t) = mac.targets.get_mut(k) else {
+                return;
+            };
+            if end == 0 {
+                t.low = v;
+            } else {
+                t.high = v;
+            }
+            let t = *t;
+            let to = t.low + (t.high - t.low) * mac.value;
+            self.set(
+                inner(t.branch as usize, t.device as usize, t.param as usize),
+                to,
+            );
+            return;
+        }
         if let Some((b, d, p)) = split(i) {
             if let Some(r) = self.runs.get_mut(b) {
                 let Some((on, dev)) = r.devices.get_mut(d) else {
@@ -1306,6 +1392,32 @@ mod tests {
             panic!()
         };
         assert_eq!((s.transpose, s.mode), (3.0, 1));
+    }
+
+    #[test]
+    fn a_macros_range_sets_where_its_settings_go() {
+        let mut r = RackSettings::new(Kind::Audio);
+        r.add_chain(Some(utility(1.0)));
+        assert!(r.toggle_map(0, 0, 0, 0));
+        let mut x = Rack::new(&r, RATE);
+        let gain =
+            |r: &RackSettings| r.branches[0].devices[0].builtin.as_ref().unwrap().params()[0].value;
+        r.set(0, 0.5);
+        r.set(range(0, 0, 0), -12.0);
+        r.set(range(0, 0, 1), 0.0);
+        assert!((gain(&r) + 6.0).abs() < 1e-4, "{}", gain(&r));
+        assert_eq!(r.macros[0].targets[0].low, -12.0);
+        r.set(0, 1.0);
+        assert!(gain(&r).abs() < 1e-4);
+        // The sound follows: at the bottom of a -12..0 dB range, a quarter
+        // of the level.
+        x.set(range(0, 0, 0), -12.0);
+        x.set(range(0, 0, 1), 0.0);
+        x.set(0, 0.0);
+        let mut buf = vec![[0.5f32; 2]; 4096];
+        x.process(&mut buf, 120.0);
+        let out = buf[4095][0];
+        assert!((out - 0.5 * 10f32.powf(-12.0 / 20.0)).abs() < 0.01, "{out}");
     }
 
     #[test]

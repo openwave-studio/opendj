@@ -3,7 +3,9 @@
 //! stores the new value for the other side to show and sends the matching
 //! command to the audio thread.
 
-use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering};
+use std::sync::atomic::{
+    AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicU8, AtomicUsize, Ordering,
+};
 use std::sync::{Arc, Mutex};
 
 use crate::clip::{Clip, DeviceInfo, Io, Note, Sound, Track, MAX_TRACKS, SCENES};
@@ -149,7 +151,63 @@ pub struct Controls {
     chains: Mutex<Vec<Vec<DeviceInfo>>>,
     /// Goes up on every change, so a screen can tell when to redraw.
     version: AtomicU64,
+    metronome: AtomicBool,
+    /// Tap Tempo's taps, latest last.
+    taps: Mutex<Vec<std::time::Instant>>,
+    /// The slot being recorded into, if any.
+    recording: Mutex<Option<Recording>>,
+    /// Bars a new recording stops at, 0 for none (Fixed Length off).
+    fixed_bars: AtomicU32,
+    /// The set before each clip or mixer edit, latest last, and the ones
+    /// undone.
+    undo: Mutex<History>,
 }
+
+/// Recording notes into a slot.
+#[derive(Clone, Debug)]
+struct Recording {
+    track: usize,
+    scene: usize,
+    /// The beat the clip starts playing on.
+    start: f64,
+    /// A new clip (rather than overdubbing one), and its length when Fixed
+    /// Length is on.
+    new: bool,
+    fixed: Option<f64>,
+    /// Notes down: pitch, where in the clip, velocity, the song's beat.
+    held: Vec<(u8, f64, f32, f64)>,
+}
+
+/// How long a new clip being recorded is, until recording stops and it
+/// takes its real length.
+const OPEN_LENGTH: f64 = 1024.0;
+
+#[derive(Default)]
+struct History {
+    undo: Vec<Vec<Track>>,
+    redo: Vec<Vec<Track>>,
+    /// What the last checkpoint was for and when: edits to the same thing
+    /// close together are one step (a knob drag, notes being drawn).
+    last: Option<(Edit, std::time::Instant)>,
+}
+
+/// What an edit changed, so edits close together to the same thing undo
+/// as one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Edit {
+    Clip(usize, usize),
+    Mixer,
+    Record,
+    Other,
+}
+
+/// Steps of undo kept.
+const UNDO_STEPS: usize = 64;
+/// Edits to the same thing closer together than this undo as one.
+const UNDO_JOIN: std::time::Duration = std::time::Duration::from_millis(1200);
+
+/// Taps further apart than this start a new count.
+const TAP_GAP: std::time::Duration = std::time::Duration::from_secs(2);
 
 impl Controls {
     pub fn new(
@@ -206,6 +264,11 @@ impl Controls {
             io: Mutex::new(set.iter().map(|t| t.io.clone()).collect()),
             chains: Mutex::new(set.iter().map(|t| t.devices.clone()).collect()),
             version: AtomicU64::new(1),
+            metronome: AtomicBool::new(false),
+            taps: Mutex::new(Vec::new()),
+            recording: Mutex::new(None),
+            fixed_bars: AtomicU32::new(0),
+            undo: Mutex::new(History::default()),
         }
     }
 
@@ -377,13 +440,19 @@ impl Controls {
         let Ok(mut set) = self.set.lock() else {
             return false;
         };
+        let editable = match set.get(track).and_then(|t| t.slots.get(scene)) {
+            None => false,
+            Some(None) => true,
+            Some(Some(c)) => c.stages.is_none() && c.audio.is_none(),
+        };
+        if !editable {
+            return false;
+        }
+        self.checkpoint(&set, Edit::Clip(track, scene));
         let Some(slot) = set.get_mut(track).and_then(|t| t.slots.get_mut(scene)) else {
             return false;
         };
         let clip = slot.get_or_insert_with(|| Clip::new("Clip", 4.0, Vec::new()));
-        if clip.stages.is_some() || clip.audio.is_some() {
-            return false;
-        }
         f(clip);
         clip.notes.sort_by(|a, b| a.start.total_cmp(&b.start));
         self.send(Command::Program(Program::compile(&set)));
@@ -441,7 +510,9 @@ impl Controls {
         if slot.is_some() && stages == before {
             return true;
         }
-        *slot = Some(stages.clip(&name, sound, &self.key()));
+        let clip = stages.clip(&name, sound, &self.key());
+        self.checkpoint(&set, Edit::Clip(track, scene));
+        set[track].slots[scene] = Some(clip);
         self.send(Command::Program(Program::compile(&set)));
         drop(set);
         self.bump();
@@ -603,6 +674,444 @@ impl Controls {
         self.send(Command::Tempo(bpm.clamp(40.0, 250.0)));
     }
 
+    /// Sets the tempo, in BPM (40 to 250, to a tenth).
+    pub fn set_tempo(&self, bpm: f64) {
+        let bpm = (bpm * 10.0).round() / 10.0;
+        self.send(Command::Tempo(bpm.clamp(40.0, 250.0)));
+        self.bump();
+    }
+
+    /// A Tap Tempo tap at `now`. From the second tap on, the tempo follows
+    /// the last few taps; a pause of two seconds starts a new count.
+    /// Returns the tempo it set.
+    pub fn tap_tempo(&self, now: std::time::Instant) -> Option<f64> {
+        let mut taps = self.taps.lock().ok()?;
+        if taps
+            .last()
+            .is_some_and(|&last| now.saturating_duration_since(last) > TAP_GAP)
+        {
+            taps.clear();
+        }
+        taps.push(now);
+        if taps.len() > 5 {
+            taps.remove(0);
+        }
+        if taps.len() < 2 {
+            return None;
+        }
+        let span = taps[taps.len() - 1].saturating_duration_since(taps[0]);
+        let beat = span.as_secs_f64() / (taps.len() - 1) as f64;
+        if beat <= 0.0 {
+            return None;
+        }
+        let bpm = (60.0 / beat).clamp(40.0, 250.0);
+        drop(taps);
+        self.set_tempo(bpm);
+        Some(bpm)
+    }
+
+    pub fn metronome(&self) -> bool {
+        self.metronome.load(Ordering::Relaxed)
+    }
+
+    pub fn toggle_metronome(&self) {
+        let on = !self.metronome();
+        self.metronome.store(on, Ordering::Relaxed);
+        self.send(Command::Metronome(on));
+        self.bump();
+    }
+
+    // ------------------------------------------------------------ undo
+
+    /// Keeps the set as it is before an edit, for undo. Edits to the same
+    /// thing close together are one step.
+    fn checkpoint(&self, set: &[Track], what: Edit) {
+        let Ok(mut h) = self.undo.lock() else {
+            return;
+        };
+        let now = std::time::Instant::now();
+        let joined = what != Edit::Other
+            && h.last
+                .is_some_and(|(w, at)| w == what && now.duration_since(at) < UNDO_JOIN);
+        h.last = Some((what, now));
+        if joined {
+            return;
+        }
+        h.undo.push(set.to_vec());
+        if h.undo.len() > UNDO_STEPS {
+            h.undo.remove(0);
+        }
+        h.redo.clear();
+    }
+
+    pub fn can_undo(&self) -> bool {
+        self.undo.lock().is_ok_and(|h| !h.undo.is_empty())
+    }
+
+    pub fn can_redo(&self) -> bool {
+        self.undo.lock().is_ok_and(|h| !h.redo.is_empty())
+    }
+
+    /// Takes back the last clip or mixer edit (or, with `redo`, puts back
+    /// the last one taken back). Device edits aren't in it. Returns whether
+    /// there was one.
+    pub fn undo(&self, redo: bool) -> bool {
+        self.end_recording(false);
+        let Ok(mut set) = self.set.lock() else {
+            return false;
+        };
+        let Ok(mut h) = self.undo.lock() else {
+            return false;
+        };
+        let Some(back) = (if redo { h.redo.pop() } else { h.undo.pop() }) else {
+            return false;
+        };
+        let now = std::mem::replace(&mut *set, back);
+        if redo {
+            h.undo.push(now);
+        } else {
+            h.redo.push(now);
+        }
+        h.last = None;
+        drop(h);
+        self.send(Command::Program(Program::compile(&set)));
+        self.send(Command::Audible(crate::engine::audible(&set)));
+        drop(set);
+        self.bump();
+        true
+    }
+
+    // ------------------------------------------------------- recording
+
+    /// The slot being recorded into: track and scene.
+    pub fn recording(&self) -> Option<(usize, usize)> {
+        self.recording
+            .lock()
+            .ok()
+            .and_then(|r| r.as_ref().map(|r| (r.track, r.scene)))
+    }
+
+    /// Bars a new recording stops at (Fixed Length), None when it is off.
+    pub fn fixed_length(&self) -> Option<u32> {
+        match self.fixed_bars.load(Ordering::Relaxed) {
+            0 => None,
+            n => Some(n),
+        }
+    }
+
+    pub fn set_fixed_length(&self, bars: Option<u32>) {
+        self.fixed_bars.store(bars.unwrap_or(0), Ordering::Relaxed);
+        self.bump();
+    }
+
+    /// Record on a slot: into an empty one a new clip, from the next launch
+    /// point (the song starts if it was stopped); on a note clip, notes
+    /// played are added to it as it loops (overdub). On the slot being
+    /// recorded, recording stops and the clip plays on. False when the slot
+    /// can't take notes (a stage or audio clip, an audio track).
+    pub fn record(&self, track: usize, scene: usize) -> bool {
+        if self.recording() == Some((track, scene)) {
+            self.end_recording(true);
+            return true;
+        }
+        self.end_recording(true);
+        let Some(info) = self.tracks.get(track) else {
+            return false;
+        };
+        if info.sound == Sound::Audio || scene >= SCENES {
+            return false;
+        }
+        let new = !self.has_clip(track, scene);
+        if !new && self.notes(track, scene).is_none() {
+            return false;
+        }
+        let playing = self.monitor.playing();
+        // Overdubbing a clip that already plays starts at once.
+        let already = self.monitor.slot(track, scene) == crate::engine::SlotState::Playing;
+        let start = if already {
+            self.monitor.beat()
+        } else if playing {
+            crate::engine::next_launch(self.monitor.beat(), self.quantize())
+        } else {
+            0.0
+        };
+        let fixed = self.fixed_length().map(|b| b as f64 * 4.0);
+        if new {
+            let Ok(mut set) = self.set.lock() else {
+                return false;
+            };
+            self.checkpoint(&set, Edit::Record);
+            set[track].slots[scene] = Some(Clip::new(
+                "Recording",
+                fixed.unwrap_or(OPEN_LENGTH),
+                Vec::new(),
+            ));
+            self.send(Command::Program(Program::compile(&set)));
+        } else if let Ok(set) = self.set.lock() {
+            self.checkpoint(&set, Edit::Record);
+        }
+        if !already {
+            if !playing {
+                self.set_playing(true);
+            }
+            self.launch(track, scene);
+        }
+        if let Ok(mut r) = self.recording.lock() {
+            *r = Some(Recording {
+                track,
+                scene,
+                start,
+                new,
+                fixed: fixed.filter(|_| new),
+                held: Vec::new(),
+            });
+        }
+        self.bump();
+        true
+    }
+
+    /// Stops recording. A new clip takes its length: the bars recorded
+    /// (at least one), or Fixed Length's. `keep` false drops a new clip
+    /// (undo while recording).
+    fn end_recording(&self, keep: bool) {
+        let Some(mut r) = self.recording.lock().ok().and_then(|mut r| r.take()) else {
+            return;
+        };
+        let beat = self.monitor.beat();
+        // Notes still held end now.
+        for (pitch, at, velocity, on) in std::mem::take(&mut r.held) {
+            self.add_recorded(&r, pitch, at, velocity, (beat - on).max(0.05));
+        }
+        if r.new && keep {
+            let elapsed = (beat - r.start).max(0.0);
+            let beats = r
+                .fixed
+                .unwrap_or_else(|| ((elapsed / 4.0).ceil().max(1.0)) * 4.0);
+            if let Ok(mut set) = self.set.lock() {
+                if let Some(Some(c)) = set.get_mut(r.track).and_then(|t| t.slots.get_mut(r.scene)) {
+                    c.beats = beats;
+                    c.name = "Clip".into();
+                    for n in &mut c.notes {
+                        n.length = n.length.min(beats - n.start).max(0.01);
+                    }
+                    c.notes.retain(|n| n.start < beats);
+                }
+                self.send(Command::Program(Program::compile(&set)));
+            }
+        }
+        self.bump();
+    }
+
+    /// Stops recording when a fixed-length recording has its length, or
+    /// its clip stopped; called every few milliseconds.
+    pub fn record_tick(&self) {
+        let beat = self.monitor.beat();
+        let done = self.recording.lock().ok().is_some_and(|r| {
+            r.as_ref().is_some_and(|r| {
+                let full = r.fixed.is_some_and(|len| beat >= r.start + len - 1e-6);
+                // The clip was stopped, or the song.
+                let stopped = beat > r.start + 0.5
+                    && self.monitor.slot(r.track, r.scene) != crate::engine::SlotState::Playing;
+                full || stopped
+            })
+        });
+        if done {
+            self.end_recording(true);
+        }
+    }
+
+    /// A live note on `track`, into the slot being recorded.
+    fn record_note(&self, track: usize, pitch: u8, velocity: f32) {
+        let Ok(mut guard) = self.recording.lock() else {
+            return;
+        };
+        let Some(r) = guard.as_mut().filter(|r| r.track == track) else {
+            return;
+        };
+        let beat = self.monitor.beat();
+        if velocity > 0.0 {
+            // Before the clip starts (the count to the launch point): not
+            // recorded.
+            let state = self.monitor.slot(r.track, r.scene);
+            if state != crate::engine::SlotState::Playing || beat < r.start - 0.05 {
+                return;
+            }
+            let Some(at) = self.clip_position(r) else {
+                return;
+            };
+            r.held.retain(|h| h.0 != pitch);
+            r.held.push((pitch, at, velocity, beat));
+            return;
+        }
+        let Some(i) = r.held.iter().position(|h| h.0 == pitch) else {
+            return;
+        };
+        let (_, at, v, on) = r.held.remove(i);
+        let r = r.clone();
+        drop(guard);
+        self.add_recorded(&r, pitch, at, v, (beat - on).max(0.05));
+    }
+
+    /// Where in the recorded clip the song is now, in clip beats.
+    fn clip_position(&self, r: &Recording) -> Option<f64> {
+        let (beats, start) = self.with_clip(r.track, r.scene, |c| (c.beats, c.loop_start))?;
+        let p = self.monitor.progress(r.track) as f64;
+        if r.new {
+            Some((self.monitor.beat() - r.start).max(0.0))
+        } else if p >= 0.0 {
+            Some(start + p * beats)
+        } else {
+            None
+        }
+    }
+
+    fn add_recorded(&self, r: &Recording, pitch: u8, at: f64, velocity: f32, length: f64) {
+        let Ok(mut set) = self.set.lock() else {
+            return;
+        };
+        let Some(Some(c)) = set.get_mut(r.track).and_then(|t| t.slots.get_mut(r.scene)) else {
+            return;
+        };
+        c.notes.push(Note {
+            start: at,
+            length,
+            pitch,
+            velocity: velocity.clamp(0.0, 1.0),
+            chance: 1.0,
+            muted: false,
+        });
+        c.notes.sort_by(|a, b| a.start.total_cmp(&b.start));
+        self.send(Command::Program(Program::compile(&set)));
+        drop(set);
+        self.bump();
+    }
+
+    // ------------------------------------------------- mute and solo
+
+    /// Whether the track's activator is off.
+    pub fn muted(&self, track: usize) -> bool {
+        self.set
+            .lock()
+            .ok()
+            .and_then(|s| s.get(track).map(|t| t.muted))
+            .unwrap_or(false)
+    }
+
+    pub fn soloed(&self, track: usize) -> bool {
+        self.set
+            .lock()
+            .ok()
+            .and_then(|s| s.get(track).map(|t| t.solo))
+            .unwrap_or(false)
+    }
+
+    /// Whether any track is soloed.
+    pub fn any_solo(&self) -> bool {
+        self.set.lock().is_ok_and(|s| s.iter().any(|t| t.solo))
+    }
+
+    /// Switches the track's activator.
+    pub fn toggle_mute(&self, track: usize) {
+        self.edit_mixer(|set| {
+            if let Some(t) = set.get_mut(track) {
+                t.muted = !t.muted;
+            }
+        });
+    }
+
+    /// Solos the track or takes its solo off. `add` keeps the other solos;
+    /// otherwise soloing a track takes theirs off.
+    pub fn toggle_solo(&self, track: usize, add: bool) {
+        self.edit_mixer(|set| {
+            let Some(on) = set.get(track).map(|t| !t.solo) else {
+                return;
+            };
+            if !add {
+                for t in set.iter_mut() {
+                    t.solo = false;
+                }
+            }
+            set[track].solo = on;
+        });
+    }
+
+    fn edit_mixer(&self, f: impl FnOnce(&mut Vec<Track>)) {
+        let Ok(mut set) = self.set.lock() else {
+            return;
+        };
+        self.checkpoint(&set, Edit::Mixer);
+        f(&mut set);
+        self.send(Command::Audible(crate::engine::audible(&set)));
+        drop(set);
+        self.bump();
+    }
+
+    // -------------------------------------------------------- clips
+
+    /// The first empty slot on the track from `from` down.
+    pub fn next_empty(&self, track: usize, from: usize) -> Option<usize> {
+        let set = self.set.lock().ok()?;
+        let slots = &set.get(track)?.slots;
+        (from..slots.len()).find(|&s| slots[s].is_none())
+    }
+
+    /// Copies the clip in `from_track`'s slot `from` to `to_track`'s slot
+    /// `to`, over what is there. Recordings only go to audio tracks, and
+    /// note clips only to the others.
+    pub fn copy_clip(&self, from_track: usize, from: usize, to_track: usize, to: usize) -> bool {
+        if (from_track, from) == (to_track, to) {
+            return false;
+        }
+        let Ok(mut set) = self.set.lock() else {
+            return false;
+        };
+        let Some(clip) = set
+            .get(from_track)
+            .and_then(|t| t.slots.get(from).cloned().flatten())
+        else {
+            return false;
+        };
+        let fits = set.get(to_track).is_some_and(|t| {
+            (t.sound == Sound::Audio) == clip.audio.is_some() && to < t.slots.len()
+        });
+        if !fits {
+            return false;
+        }
+        self.checkpoint(&set, Edit::Other);
+        set[to_track].slots[to] = Some(clip);
+        self.send(Command::Program(Program::compile(&set)));
+        drop(set);
+        self.bump();
+        true
+    }
+
+    /// Doubles a note clip's loop: what plays in it is copied after it,
+    /// over any notes there.
+    pub fn double_loop(&self, track: usize, scene: usize) -> bool {
+        if !self
+            .with_clip(track, scene, |c| c.stages.is_none() && c.audio.is_none())
+            .unwrap_or(false)
+        {
+            return false;
+        }
+        self.edit_notes(track, scene, |c| {
+            let (from, len) = (c.loop_start, c.beats);
+            let (to, end) = (from + len, from + 2.0 * len);
+            c.notes.retain(|n| n.start < to || n.start >= end);
+            let copies: Vec<Note> = c
+                .notes
+                .iter()
+                .filter(|n| n.start >= from && n.start < to)
+                .map(|n| Note {
+                    start: n.start + len,
+                    ..*n
+                })
+                .collect();
+            c.notes.extend(copies);
+            c.beats = 2.0 * len;
+        })
+    }
+
     pub fn quantize(&self) -> Quantize {
         match self.quantize.load(Ordering::Relaxed) {
             1 => Quantize::Beat,
@@ -634,6 +1143,7 @@ impl Controls {
                 pitch,
                 velocity,
             });
+            self.record_note(track, pitch, velocity);
         }
     }
 
@@ -778,6 +1288,21 @@ impl ChainEdit<'_> {
         Some(d)
     }
 
+    /// Swaps the device at `at` for `device` in the same place; `slot`
+    /// plays it. Returns the one it replaced.
+    pub fn replace(
+        &mut self,
+        track: usize,
+        at: usize,
+        device: DeviceInfo,
+        slot: Option<Box<crate::engine::PluginSlot>>,
+    ) -> Option<DeviceInfo> {
+        let place = self.chains.get_mut(track)?.get_mut(at)?;
+        let old = std::mem::replace(place, device);
+        self.controls.send(Command::Replace { track, at, slot });
+        Some(old)
+    }
+
     /// Moves a device: to another place in its chain, or to `to_track`'s
     /// chain at `to`. `to` counts places once the device has left.
     pub fn move_device(&mut self, track: usize, from: usize, to_track: usize, to: usize) -> bool {
@@ -838,6 +1363,149 @@ mod tests {
         ));
         assert_eq!(c.param_name(0, 1), "Length");
         assert!(c.has_clip(0, 0));
+    }
+
+    #[test]
+    fn mute_solo_tap_tempo_and_clip_copies() {
+        let mut set = crate::clip::demo_set();
+        set[0].slots[6] = None;
+        set[0].slots[7] = None;
+        let (tx, mut rx) = rtrb::RingBuffer::new(64);
+        let monitor = crate::engine::Studio::new(&set, 48_000.0, 120.0).1.monitor;
+        let c = Controls::new(&set, &[0; 4], tx, monitor);
+        c.toggle_mute(1);
+        assert!(c.muted(1));
+        assert!(matches!(rx.pop(), Ok(Command::Audible(0b1101))));
+        c.toggle_solo(2, false);
+        c.toggle_solo(3, true);
+        assert!(c.soloed(2) && c.soloed(3) && c.any_solo());
+        // Soloing alone takes the others' solos off.
+        c.toggle_solo(0, false);
+        assert!(c.soloed(0) && !c.soloed(2) && !c.soloed(3));
+        assert!(c.snapshot()[1].muted && c.snapshot()[0].solo);
+
+        // Taps half a second apart: 120 BPM.
+        let t0 = std::time::Instant::now();
+        let half = std::time::Duration::from_millis(500);
+        assert_eq!(c.tap_tempo(t0), None);
+        assert_eq!(c.tap_tempo(t0 + half).map(|b| b.round()), Some(120.0));
+        assert_eq!(c.tap_tempo(t0 + half * 2).map(|b| b.round()), Some(120.0));
+        // After a long pause the count starts again.
+        assert_eq!(c.tap_tempo(t0 + half * 10), None);
+
+        c.toggle_metronome();
+        assert!(c.metronome());
+
+        // Copy into the first empty slot, then double its loop.
+        let (beats, notes) = c.notes(0, 0).expect("a note clip");
+        let to = c.next_empty(0, 0).expect("an empty slot");
+        assert!(c.copy_clip(0, 0, 0, to));
+        assert!(!c.copy_clip(0, 0, 0, 0), "not onto itself");
+        assert_eq!(
+            c.notes(0, to).map(|(b, n)| (b, n.len())),
+            Some((beats, notes.len()))
+        );
+        assert!(c.double_loop(0, to));
+        let (b2, n2) = c.notes(0, to).expect("still a note clip");
+        assert_eq!(b2, beats * 2.0);
+        assert_eq!(n2.len(), notes.len() * 2);
+        assert!(n2.iter().any(|n| n.start >= beats));
+        assert!(!c.double_loop(0, c.next_empty(0, 0).expect("empty")));
+    }
+
+    /// A studio and its controls, with the audio thread run by hand.
+    fn live(set: &[Track]) -> (crate::engine::Studio, Controls) {
+        let (studio, r) = crate::engine::Studio::new(set, 48_000.0, 120.0);
+        let c = Controls::new(set, &[0; 4], r.commands, r.monitor);
+        (studio, c)
+    }
+
+    /// Runs the studio on until the song's beat is past `beat`.
+    fn until(studio: &mut crate::engine::Studio, c: &Controls, beat: f64) {
+        let mut out = vec![[0.0f32; 2]; 256];
+        for _ in 0..20_000 {
+            studio.process(&mut out);
+            c.record_tick();
+            if c.monitor.beat() >= beat {
+                return;
+            }
+        }
+        panic!("the song never got to beat {beat}");
+    }
+
+    #[test]
+    fn recording_makes_a_clip_of_the_bars_played() {
+        let mut set = crate::clip::demo_set();
+        set[0].slots[7] = None;
+        let (mut studio, c) = live(&set);
+        assert!(c.record(0, 7));
+        assert_eq!(c.recording(), Some((0, 7)));
+        until(&mut studio, &c, 1.0);
+        c.note(0, 60, 0.8);
+        until(&mut studio, &c, 1.5);
+        c.note(0, 60, 0.0);
+        until(&mut studio, &c, 5.0);
+        c.note(0, 64, 0.5);
+        until(&mut studio, &c, 5.25);
+        c.note(0, 64, 0.0);
+        // Record again: it stops and the clip takes two bars.
+        assert!(c.record(0, 7));
+        assert_eq!(c.recording(), None);
+        let (beats, notes) = c.notes(0, 7).expect("a note clip");
+        assert_eq!(beats, 8.0);
+        assert_eq!(notes.len(), 2);
+        assert!((notes[0].start - 1.0).abs() < 0.05, "{:?}", notes[0]);
+        assert!((notes[0].length - 0.5).abs() < 0.05, "{:?}", notes[0]);
+        assert_eq!(notes[1].pitch, 64);
+        assert!((notes[1].start - 5.0).abs() < 0.05);
+        // Undo takes the recording away; redo brings it back.
+        assert!(c.undo(false));
+        assert!(!c.has_clip(0, 7));
+        assert!(c.undo(true));
+        assert_eq!(c.notes(0, 7).map(|n| n.1.len()), Some(2));
+    }
+
+    #[test]
+    fn fixed_length_stops_the_recording_and_overdub_adds_notes() {
+        let mut set = crate::clip::demo_set();
+        set[0].slots[7] = None;
+        let (mut studio, c) = live(&set);
+        c.set_fixed_length(Some(1));
+        assert!(c.record(0, 7));
+        until(&mut studio, &c, 2.0);
+        c.note(0, 62, 1.0);
+        until(&mut studio, &c, 2.5);
+        c.note(0, 62, 0.0);
+        until(&mut studio, &c, 4.1);
+        assert_eq!(c.recording(), None, "a bar in, it stopped");
+        assert_eq!(c.notes(0, 7).map(|n| (n.0, n.1.len())), Some((4.0, 1)));
+        // Overdub: the clip loops on, and a note played lands in it.
+        assert!(c.record(0, 7));
+        until(&mut studio, &c, 7.0);
+        c.note(0, 67, 1.0);
+        until(&mut studio, &c, 7.5);
+        c.note(0, 67, 0.0);
+        assert!(c.record(0, 7));
+        let (beats, notes) = c.notes(0, 7).expect("still there");
+        assert_eq!(beats, 4.0);
+        let n = notes.iter().find(|n| n.pitch == 67).expect("overdubbed");
+        assert!((n.start - 3.0).abs() < 0.05, "{n:?}");
+    }
+
+    #[test]
+    fn undo_joins_quick_edits_to_the_same_clip() {
+        let set = crate::clip::demo_set();
+        let (_studio, c) = live(&set);
+        let before = c.notes(0, 0).map(|n| n.1.len());
+        for _ in 0..3 {
+            c.edit_notes(0, 0, |clip| clip.notes.pop().map(|_| ()).unwrap_or(()));
+        }
+        c.toggle_mute(1);
+        assert!(c.undo(false), "the mute");
+        assert!(!c.muted(1));
+        assert!(c.undo(false), "the three edits, as one");
+        assert_eq!(c.notes(0, 0).map(|n| n.1.len()), before);
+        assert!(!c.undo(false));
     }
 
     #[test]

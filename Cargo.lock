@@ -8140,6 +8140,7 @@ dependencies = [
  "opendj-engine",
  "opendj-export",
  "opendj-library",
+ "opendj-mcp",
  "opendj-osc",
  "opendj-plugins",
  "opendj-remote",
@@ -8275,6 +8276,15 @@ dependencies = [
  "regex",
  "roxmltree",
  "rusqlite",
+]
+
+[[package]]
+name = "opendj-mcp"
+version = "0.9.6-dev"
+dependencies = [
+ "opendj-engine",
+ "opendj-library",
+ "serde_json",
 ]
 
 [[package]]

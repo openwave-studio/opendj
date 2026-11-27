@@ -49,3 +49,4 @@ pub mod set_file;
 pub mod simpler;
 pub mod sound;
 pub mod steps;
+pub mod synth_profile;
