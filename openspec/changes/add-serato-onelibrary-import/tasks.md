@@ -1,11 +1,13 @@
 # Tasks
 
-## 1. Serato
+## 1. Serato (DJ Pro 4 and 5)
 
-- [ ] 1.1 Read `database V2` (tracks and paths) on the music drive and external drives, with a fixture
-- [ ] 1.2 Read `Serato Markers2`, `Serato Markers_` and `Serato BeatGrid` from MP3, M4A, FLAC and Ogg tags: hot cues, loops, colors, grid
-- [ ] 1.3 Crates and subcrates, smart crates where their rules map, and History sessions
-- [ ] 1.4 Settings › Collection › Import row and wizard; screenshot
+- [ ] 1.1 Map `master.sqlite` from a copy of a real Serato 5 library (tracks, crates, smart crates, History tables) and record the layout in design.md; cut a small fixture from it
+- [ ] 1.2 Tag reader: `Serato Markers2`, `Serato BeatGrid` and `Serato Autotags` from ID3 GEOB, MP4 freeform and Vorbis comments: hot cues, loops, colors, track color, grid, gain; byte fixtures; MP3/M4A timing checked against Serato on real files
+- [ ] 1.3 Serato 5 specifics on real files: Cue Loops, Lucid Beatgrids with tempo changes, Serato's pad color palette
+- [ ] 1.4 Read tracks, crates and subcrates, smart crates and History from `master.sqlite` (copied first), on the music drive and external drives; streamed tracks as placeholders
+- [ ] 1.5 Fallback to `database V2` and `Subcrates/*.crate` when `master.sqlite` can't be read, with the preview line saying History is left out
+- [ ] 1.6 Settings › Collection › Import row and wizard in place of the Coming soon row; "open in Serato 4 or newer first" hint; screenshot
 
 ## 2. OneLibrary
 
