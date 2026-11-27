@@ -267,6 +267,118 @@ impl<B: Backend> Demucs<B> {
     }
 }
 
+/// The 4-stem network's inputs and outputs as plain arrays, for running it
+/// outside burn (openDJ: Core ML). Inputs: the normalized CaC spectrogram
+/// `[1, 4, N_FFT / 2, frames]` and waveform `[1, 2, TRAINING_LENGTH]`;
+/// outputs, before denormalizing: `[1, stems * 4, N_FFT / 2, frames]` and
+/// `[1, stems * 2, TRAINING_LENGTH]`.
+pub type Network<'a> = dyn FnMut(Vec<f32>, Vec<f32>) -> Result<(Vec<f32>, Vec<f32>)> + 'a;
+
+/// The STFT frames of a padded segment, the network's spectrogram width.
+pub fn segment_frames() -> usize {
+    TRAINING_LENGTH.div_ceil(HOP_LENGTH)
+}
+
+/// Global mean and standard deviation (unbiased, as burn's and PyTorch's),
+/// and `data` normalized by them in place (`(x - mean) / (std + 1e-5)`).
+fn normalize(data: &mut [f32]) -> (f32, f32) {
+    let n = data.len() as f64;
+    let mean = data.iter().map(|&v| v as f64).sum::<f64>() / n;
+    let var = data.iter().map(|&v| (v as f64 - mean).powi(2)).sum::<f64>() / (n - 1.0).max(1.0);
+    let (mean, std) = (mean as f32, var.sqrt() as f32);
+    for v in data.iter_mut() {
+        *v = (*v - mean) / (std + 1e-5);
+    }
+    (mean, std)
+}
+
+/// As [`Demucs::separate_segment`] for the 4-stem model, with `net` running
+/// the network ([`Network`]); the spectrograms and normalizing stay here,
+/// in fp32.
+pub fn separate_segment_with(
+    left: &[f32],
+    right: &[f32],
+    net: &mut Network<'_>,
+) -> Result<Vec<Stem>> {
+    let info = &HTDEMUCS;
+    let n_samples = left.len().min(right.len()).min(TRAINING_LENGTH);
+    let padded_len = TRAINING_LENGTH;
+    let mut left_padded = vec![0.0f32; padded_len];
+    let mut right_padded = vec![0.0f32; padded_len];
+    left_padded[..n_samples].copy_from_slice(&left[..n_samples]);
+    right_padded[..n_samples].copy_from_slice(&right[..n_samples]);
+
+    let mut stft = Stft::new(N_FFT, HOP_LENGTH);
+    let bins = N_FFT / 2;
+    let mut freq = Vec::new();
+    let mut n_frames = 0;
+    for channel in [&left_padded, &right_padded] {
+        let spec = stft.forward(channel)?;
+        n_frames = spec.len() / bins;
+        let at = freq.len();
+        freq.resize(at + 2 * bins * n_frames, 0.0);
+        for bin in 0..bins {
+            for frame in 0..n_frames {
+                let c = spec[frame * bins + bin];
+                freq[at + bin * n_frames + frame] = c.re;
+                freq[at + (bins + bin) * n_frames + frame] = c.im;
+            }
+        }
+    }
+    let mut time = [left_padded, right_padded].concat();
+    let (freq_mean, freq_std) = normalize(&mut freq);
+    let (time_mean, time_std) = normalize(&mut time);
+
+    let (mut freq_out, mut time_out) = net(freq, time)?;
+    let n_sources = info.stems.len();
+    if freq_out.len() != n_sources * 4 * bins * n_frames || time_out.len() != n_sources * 2 * padded_len {
+        return Err(DemucsError::Internal("the network gave the wrong sizes".into()));
+    }
+    // Denormalized by the raw std, as `HTDemucs::forward` does.
+    freq_out.iter_mut().for_each(|v| *v = *v * freq_std + freq_mean);
+    time_out.iter_mut().for_each(|v| *v = *v * time_std + time_mean);
+
+    let cac_stride = 4 * bins * n_frames;
+    let ch_stride = 2 * bins * n_frames;
+    let mut stems = Vec::with_capacity(n_sources);
+    for (i, &stem_id) in info.stems.iter().enumerate() {
+        let f = &freq_out[i * cac_stride..][..cac_stride];
+        let left_spec = cac_data_to_complex(&f[..ch_stride], bins, n_frames);
+        let right_spec = cac_data_to_complex(&f[ch_stride..], bins, n_frames);
+        let left_wav = stft.inverse(&left_spec, padded_len)?;
+        let right_wav = stft.inverse(&right_spec, padded_len)?;
+        let t = &time_out[i * 2 * padded_len..][..2 * padded_len];
+        let (lt, rt) = t.split_at(padded_len);
+        stems.push(Stem {
+            id: stem_id,
+            left: left_wav[..n_samples].iter().zip(lt).map(|(a, b)| a + b).collect(),
+            right: right_wav[..n_samples].iter().zip(rt).map(|(a, b)| a + b).collect(),
+        });
+    }
+    Ok(stems)
+}
+
+impl<B: Backend> Demucs<B> {
+    /// The 4-stem network on burn, as a [`Network`].
+    pub fn run_network(&self, freq: Vec<f32>, time: Vec<f32>) -> Result<(Vec<f32>, Vec<f32>)> {
+        let frames = freq.len() / (4 * (N_FFT / 2));
+        let freq = Tensor::<B, 4>::from_data(
+            TensorData::new(freq, [1, 4, N_FFT / 2, frames]),
+            &self.device,
+        );
+        let time = Tensor::<B, 3>::from_data(
+            TensorData::new(time, [1, 2, TRAINING_LENGTH]),
+            &self.device,
+        );
+        let (f, t) = self.models[0].forward_normalized(freq, time)?;
+        let read = |d: TensorData| {
+            d.to_vec::<f32>()
+                .map_err(|e| DemucsError::Tensor(format!("{e:?}")))
+        };
+        Ok((read(f.into_data())?, read(t.into_data())?))
+    }
+}
+
 pub enum ModelOptions {
     FourStem,
     SixStem,

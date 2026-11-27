@@ -7,10 +7,10 @@
 //!                   are (default: models/)
 //!   --spleeter / --htdemucs   run only that model (default: both)
 //!   --gpu / --cpu   run only on that backend (default: both)
-//!   --coreml        (macOS) run Spleeter through Core ML instead, on the
+//!   --coreml        (macOS) run the models through Core ML instead, on the
 //!                   Neural Engine, the GPU and the CPU in turn, from
-//!                   spleeter-4stems.mlpackage in the weights folder
-//!                   (scripts/models/convert_spleeter_coreml.py)
+//!                   spleeter-4stems.mlpackage and htdemucs.mlpackage in the
+//!                   weights folder (scripts/models/convert_*_coreml.py)
 //!   --from SECONDS  where Spleeter starts, as if cued there (default: 0)
 //!   --seconds N     use only the first N seconds of the track
 //!   --out DIR       write the stems as WAV files
@@ -78,10 +78,7 @@ fn options() -> Result<Options, String> {
         o.spleeter = true;
         o.htdemucs = true;
     }
-    if o.coreml {
-        o.spleeter = true;
-        o.htdemucs = false;
-    } else if !o.gpu && !o.cpu {
+    if !o.coreml && !o.gpu && !o.cpu {
         o.gpu = true;
         o.cpu = true;
     }
@@ -210,35 +207,93 @@ fn htdemucs_run<B: opendj_separation::burn::prelude::Backend>(
 
 #[cfg(target_vendor = "apple")]
 fn coreml(audio: [&[f32]; 2], o: &Options) -> Result<(), String> {
-    use opendj_separation::spleeter::coreml::{Net, Units};
-    println!("Spleeter through Core ML (instant stems):");
-    let package = o.weights.join("spleeter-4stems.mlpackage");
-    if !package.is_dir() {
-        return Err(format!(
-            "{}: missing\n  make it with: scripts/models/convert_spleeter_coreml.py",
-            package.display()
-        ));
-    }
-    let compiled = std::env::temp_dir()
-        .join(format!("stem-bench-{}", std::process::id()))
-        .join("spleeter-4stems.mlmodelc");
-    let t = Instant::now();
-    Net::compile(&package, &compiled)?;
-    println!(
-        "  compiled for this Mac in {:.2} s",
-        t.elapsed().as_secs_f64()
-    );
-    for (label, units) in [
+    use opendj_separation::coreml::Units;
+    let package = |name: &str, script: &str| {
+        let p = o.weights.join(name);
+        if p.is_dir() {
+            Ok(p)
+        } else {
+            Err(format!(
+                "{}: missing\n  make it with: scripts/models/{script}",
+                p.display()
+            ))
+        }
+    };
+    let temp = std::env::temp_dir().join(format!("stem-bench-{}", std::process::id()));
+    let units = [
         ("neural-engine", Units::NeuralEngine),
         ("gpu", Units::Gpu),
         ("cpu", Units::Cpu),
-    ] {
+    ];
+    if o.spleeter {
+        use opendj_separation::spleeter::coreml::Net;
+        println!("Spleeter through Core ML (instant stems):");
+        let package = package("spleeter-4stems.mlpackage", "convert_spleeter_coreml.py")?;
+        let compiled = temp.join("spleeter-4stems.mlmodelc");
         let t = Instant::now();
-        let model = Net::load(&compiled, units)?;
-        println!("  {label}: loaded in {:.2} s", t.elapsed().as_secs_f64());
-        spleeter_run(&format!("coreml-{label}"), &model, audio, o)?;
+        Net::compile(&package, &compiled)?;
+        println!(
+            "  compiled for this Mac in {:.2} s",
+            t.elapsed().as_secs_f64()
+        );
+        for (label, units) in units {
+            let t = Instant::now();
+            let model = Net::load(&compiled, units)?;
+            println!("  {label}: loaded in {:.2} s", t.elapsed().as_secs_f64());
+            spleeter_run(&format!("coreml-{label}"), &model, audio, o)?;
+        }
     }
-    let _ = std::fs::remove_dir_all(compiled.parent().unwrap());
+    if o.htdemucs {
+        use opendj_separation::htdemucs::coreml::Net;
+        println!("HTDemucs through Core ML (high quality):");
+        let package = package("htdemucs.mlpackage", "convert_htdemucs_coreml.py")?;
+        let compiled = temp.join("htdemucs.mlmodelc");
+        let t = Instant::now();
+        Net::compile(&package, &compiled)?;
+        println!(
+            "  compiled for this Mac in {:.2} s",
+            t.elapsed().as_secs_f64()
+        );
+        let length = audio[0].len() as f64 / SAMPLE_RATE as f64;
+        for (label, units) in units {
+            let t = Instant::now();
+            let model = Net::load(&compiled, units)?;
+            println!("  {label}: loaded in {:.2} s", t.elapsed().as_secs_f64());
+            for run in ["first run", "second run"] {
+                let t = Instant::now();
+                let mut first = None;
+                let stems = htdemucs::separate_from(
+                    &model,
+                    audio,
+                    0,
+                    &mut |done, _| {
+                        if done == 1 {
+                            first = Some(t.elapsed().as_secs_f64());
+                        }
+                    },
+                    &|| true,
+                    &mut |_, _| {},
+                )?;
+                let total = t.elapsed().as_secs_f64();
+                println!(
+                    "  coreml-{label} {run}: first chunk (~7.8 s of audio) {:.2} s, whole track {total:.1} s ({:.1}x real time)",
+                    first.unwrap_or(total),
+                    length / total
+                );
+                if run == "second run" {
+                    if let Some(dir) = &o.out {
+                        write_stems(
+                            dir,
+                            &format!("htdemucs-coreml-{label}"),
+                            &htdemucs::STEMS,
+                            &stems,
+                        );
+                    }
+                }
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(temp);
     Ok(())
 }
 
