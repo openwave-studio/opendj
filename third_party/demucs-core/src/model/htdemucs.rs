@@ -144,14 +144,43 @@ impl<B: Backend> HTDemucs<B> {
         time: Tensor<B, 3>, // [1, 2, samples] — raw stereo waveform
         listener: &mut impl ForwardListener,
     ) -> crate::Result<(Tensor<B, 4>, Tensor<B, 3>)> {
-        let device = freq.device();
-        let depth = self.encoders.len();
-
         // 1. Normalize inputs
-        let (mut freq, freq_mean, freq_std) = Self::normalize_freq(freq);
-        let (mut time, time_mean, time_std) = Self::normalize_time(time);
+        let (freq, freq_mean, freq_std) = Self::normalize_freq(freq);
+        let (time, time_mean, time_std) = Self::normalize_time(time);
 
         listener.on_event(ForwardEvent::Normalized);
+
+        let (freq, time) = self.forward_normalized_with_listener(freq, time, listener)?;
+
+        // 7. Denormalize outputs
+        // Python uses raw std (not std + eps) for denormalization, matching the
+        // trained behavior even though it's not a perfect inverse of normalization.
+        let freq = freq * freq_std + freq_mean;
+        let time = time * time_std + time_mean;
+
+        listener.on_event(ForwardEvent::Denormalized);
+
+        Ok((freq, time))
+    }
+
+    /// The network between normalizing its inputs and denormalizing its
+    /// outputs (openDJ: so another runtime can be checked against it).
+    pub fn forward_normalized(
+        &self,
+        freq: Tensor<B, 4>,
+        time: Tensor<B, 3>,
+    ) -> crate::Result<(Tensor<B, 4>, Tensor<B, 3>)> {
+        self.forward_normalized_with_listener(freq, time, &mut NoOpListener)
+    }
+
+    fn forward_normalized_with_listener(
+        &self,
+        mut freq: Tensor<B, 4>,
+        mut time: Tensor<B, 3>,
+        listener: &mut impl ForwardListener,
+    ) -> crate::Result<(Tensor<B, 4>, Tensor<B, 3>)> {
+        let device = freq.device();
+        let depth = self.encoders.len();
 
         // Report normalized CaC stats (input to freq encoder[0])
         listener.on_event(ForwardEvent::NormalizedCac {
@@ -266,14 +295,6 @@ impl<B: Backend> HTDemucs<B> {
                 stats: maybe_stats(&time, listener),
             });
         }
-
-        // 7. Denormalize outputs
-        // Python uses raw std (not std + eps) for denormalization, matching the
-        // trained behavior even though it's not a perfect inverse of normalization.
-        let freq = freq * freq_std + freq_mean;
-        let time = time * time_std + time_mean;
-
-        listener.on_event(ForwardEvent::Denormalized);
 
         Ok((freq, time))
     }

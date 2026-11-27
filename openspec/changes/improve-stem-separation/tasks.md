@@ -5,6 +5,7 @@
 - [x] 1.1 Spleeter 4stems in Rust (`crates/separation`): weights converted to safetensors (`scripts/models/convert_spleeter.py`), STFT/iSTFT and masking in Rust; burn and CPU versions match a TensorFlow reference built from the original checkpoint to 69–78 dB SDR. HTDemucs through demucs-rs's burn port (vendored as `third_party/demucs-core`); no ONNX export needed
 - [ ] 1.2 Time both with `stem-bench` (burn GPU: Metal and Vulkan; CPU) on a test Mac and on CI (Linux and Apple Silicon runners, `.github/workflows/stems-bench.yml`); `ort` + CoreML only if burn misses the bars
 - [ ] 1.3 Pick the runtime; record the numbers in this design.md
+- [x] 1.4 Neural Engine spike (Apple machines): Spleeter as one fp16 Core ML program (`scripts/models/convert_spleeter_coreml.py`, built with Core ML's MIL builder from the same safetensors), run through `objc2-core-ml` (`spleeter::coreml::Net`, Neural Engine / GPU / CPU); `stem-bench --coreml` and an ignored test against the CPU path; time it on a Mac with a Neural Engine (CI's Macs have none): on an Apple Silicon Mac a 6-minute track takes 4.2 s on the Neural Engine (85x real time, first window 0.09 s) against 27.8 s on the CPU path (13x)
 
 ## 2. Separation crate
 
@@ -13,6 +14,8 @@
   - v0.4: Spleeter on load runs one track at a time on half the cores, from the cue point outwards, a chunk at a time (`spleeter::separate_in_chunks`); HQ jobs run one at a time. No playhead-first HQ or pausing yet
   - v1.0: tracks not at 44.1 kHz also get Spleeter stems a chunk at a time from the cue (resampled per chunk, `opendj_separation::rates`), instead of after the whole track
   - v1.0: HQ for a track on a deck runs playhead-first: HTDemucs takes its chunks from the deck's play position outwards, three ahead for each behind (`HtDemucs::separate_from`), with the same result as the whole track at once. Pausing is the background tasks panel's (#1008); no automatic pause on underruns yet
+- [x] 2.3 Instant stems on the Neural Engine by default on Apple machines when 1.4 pays off: the Core ML package from the `stem-models` release (SHA-256 pinned), compiled once into the cache, CPU path as the fallback
+- [ ] 2.4 High-quality stems on the Neural Engine (Apple machines): the HTDemucs network as one fp16 Core ML program (`scripts/models/convert_htdemucs_coreml.py`, spectrograms and normalizing kept in Rust in fp32, `htdemucs::coreml::Net`), checked against burn and timed on a Mac with a Neural Engine, then used by default with burn on the GPU as the fallback
 
 ## 3. Engine
 
