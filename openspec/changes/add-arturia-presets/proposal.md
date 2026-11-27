@@ -1,6 +1,6 @@
 # Proposal
 
-Planned for: **v0.9.5**. Issue #1161, a user request (2026-11-26).
+Planned for: **v0.9.6**. Issue #1161, a user request (2026-11-26).
 
 ## Why
 
