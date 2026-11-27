@@ -82,6 +82,7 @@ export default defineConfig({
               items: [{ label: 'All controllers', link: '/controllers' }, ...controllers],
             },
             'guide/osc',
+            'guide/command-line',
             'guide/link',
             'guide/midi-clock',
             'guide/deck-outputs',
