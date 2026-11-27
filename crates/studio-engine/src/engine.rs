@@ -786,6 +786,8 @@ pub struct Engine {
     midi_out: Option<rtrb::Producer<MidiOut>>,
     metronome: bool,
     click: Click,
+    /// The share of a block's time plug-ins have to answer in.
+    budget: f64,
 }
 
 /// The metronome's click: a short sine that dies away, higher on the bar.
@@ -940,6 +942,7 @@ impl Engine {
             log: None,
             metronome: false,
             click: Click::default(),
+            budget: 0.75,
             input: Vec::new(),
             in_channels: 0,
             ext: Vec::new(),
@@ -1002,6 +1005,14 @@ impl Engine {
     }
 
     /// Keeps every note event, up to `capacity`, for [`Engine::log`].
+    /// Tests: plug-in helpers get as long as they need, so a busy machine
+    /// running tests side by side doesn't make one miss its block (these
+    /// tests render blocks faster than real time).
+    #[cfg(test)]
+    fn patient(&mut self) {
+        self.budget = 1_000.0;
+    }
+
     pub fn keep_log(&mut self, capacity: usize) {
         self.log = Some(Vec::with_capacity(capacity));
     }
@@ -1318,7 +1329,8 @@ impl Engine {
         };
         // Plug-ins have until three quarters of the block's time is gone;
         // one that is later plays its block dry.
-        let deadline = Instant::now() + Duration::from_secs_f64(frames as f64 / self.rate * 0.75);
+        let deadline =
+            Instant::now() + Duration::from_secs_f64(frames as f64 / self.rate * self.budget);
         let transport = Transport {
             bpm: span.tempo,
             beat: start,
@@ -2876,6 +2888,7 @@ mod tests {
             builtin: None,
         }];
         let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        studio.engine.patient();
         // Sends back each note it's sent, an octave up.
         let (arp, _h) = slot("test-arp", 0, true);
         r.commands
@@ -2922,6 +2935,7 @@ mod tests {
             2
         ];
         let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        studio.engine.patient();
         let (synth, _h1) = slot("test-synth", 0, true);
         let (gain, _h2) = slot("test-gain", 1, false);
         r.commands
@@ -2992,6 +3006,7 @@ mod tests {
             crate::devices::Settings::Rack(rack),
         )];
         let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        studio.engine.patient();
         let mut out = vec![[0.0f32; 2]; BLOCK];
         let (slot, _h) = slot("test-synth", 0, true);
         r.commands
@@ -3108,6 +3123,7 @@ mod tests {
             crate::devices::Settings::Rack(rack.clone()),
         )];
         let (mut studio, mut r) = Studio::new(&set, 48_000.0, 120.0);
+        studio.engine.patient();
         let mut out = vec![[0.0f32; 2]; BLOCK];
         let (slot, _h) = slot("test-synth", 0, true);
         r.commands

@@ -883,10 +883,13 @@ component ClipSlot inherits Rectangle {
     in property <bool> blink;
     in property <float> progress: -1;
     in property <bool> selected;
+    // Notes played go into it.
+    in property <bool> recording;
     callback launch;
     // Double-click: the clip's notes (an empty slot gets a new clip).
     callback open;
-    background: data.state == SlotState.empty
+    background: recording ? #d0453a
+        : data.state == SlotState.empty
         ? (ta.has-hover ? Theme.slot-hover : Theme.slot)
         : (data.state == SlotState.playing ? data.color : data.color.with-alpha(ta.has-hover ? 0.5 : 0.34));
     border-width: data.state == SlotState.queued ? 1px : (selected ? 1px : 0px);
@@ -901,14 +904,20 @@ component ClipSlot inherits Rectangle {
         width: parent.width * progress;
         background: #101112aa;
     }
-    if data.state == SlotState.empty: Rectangle {
+    if recording: Text {
+        x: 6px;
+        text: "●";
+        color: #101112;
+        font-size: 10px;
+    }
+    if data.state == SlotState.empty && !recording: Rectangle {
         x: 6px;
         width: 6px;
         height: 6px;
         border-width: 1px;
         border-color: Theme.faint;
     }
-    if data.state != SlotState.empty: HorizontalLayout {
+    if data.state != SlotState.empty && !recording: HorizontalLayout {
         padding-left: 6px;
         padding-right: 6px;
         spacing: 5px;
@@ -2137,6 +2146,12 @@ export component AppWindow inherits Window {
     callback open-notes(int, int);   // track, scene
     // ⌘Z and ⇧⌘Z while the piano roll shows.
     callback piano-undo(bool);
+    // Record on the selected slot (or stop recording), and the set's undo.
+    callback record();
+    callback undo(bool);
+    // The slot being recorded, -1 for none.
+    in property <int> rec-track: -1;
+    in property <int> rec-scene: -1;
     // The piano roll instead of the devices along the bottom, and its height.
     in-out property <bool> notes-shown;
     in-out property <length> panel-height: 320px;
@@ -2213,6 +2228,10 @@ export component AppWindow inherits Window {
                     root.piano-undo(event.modifiers.shift);
                     return accept;
                 }
+                if event.text == "z" || event.text == "Z" {
+                    root.undo(event.modifiers.shift);
+                    return accept;
+                }
             }
             // Tab: the clip's notes or the track's devices.
             if event.text == Key.Tab && !event.modifiers.control && !event.modifiers.meta {
@@ -2278,7 +2297,14 @@ export component AppWindow inherits Window {
                     alignment: center;
                     Pill { label: "■"; clicked => { if root.playing { root.toggle-play(); } } }
                 }
-                VerticalLayout { alignment: center; Pill { label: "●"; enabled: false; } }
+                VerticalLayout {
+                    alignment: center;
+                    Pill {
+                        label: "●";
+                        on: root.rec-track >= 0;
+                        clicked => { root.record(); }
+                    }
+                }
                 Readout { title: ""; value: root.position; value-width: 52px; }
                 Rectangle { horizontal-stretch: 1; }
                 Readout { title: "CPU"; value: root.load; value-width: 36px; }
@@ -2387,6 +2413,7 @@ export component AppWindow inherits Window {
                             blink: root.blink;
                             progress: t.progress;
                             selected: i == selected-track && s == selected-scene;
+                            recording: i == root.rec-track && s == root.rec-scene;
                             launch => { root.launch-clip(i, s); }
                             open => { root.open-notes(i, s); }
                         }

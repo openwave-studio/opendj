@@ -191,8 +191,29 @@ bar, mixed after the tracks), Tap Tempo (the last few taps, a two-second
 pause starts again), New (the next empty slot on the selected track),
 Duplicate (the selected clip to the next empty slot; held, clip then
 slots) and Double Loop (a note clip's loop and its notes twice over).
-Record, Fixed Length, Automate and Undo wait for recording into slots and
-undo; Convert has nothing to convert to yet.
+Automate waits for clips to carry knob automation; Convert has nothing to
+convert to yet.
+
+### Recording and undo
+
+Record works on a slot as in Live's Session view. On an empty slot of a
+note track the clip starts at the next launch point (the song starts on
+bar 1 if it was stopped) and grows while it records; notes played on the
+track before then aren't kept. Pressing Record again stops it: the clip
+takes the bars recorded (at least one) and loops on, playing what was
+recorded. With Fixed Length on (1 to 128 bars) recording stops by itself
+at that length. On a note clip, Record overdubs: notes played land where
+the clip is as it loops. Recording happens on the UI side from the notes
+the track gets (from Push, the window or a MIDI input), timed by the beat
+the audio thread last reported, so a note lands within a block of where it
+was played. Stopping the clip or the song stops recording.
+
+The set keeps undo steps (64) of its clips, mute and solo: each step is
+the set as it was before an edit. Edits to the same clip, or to the mixer,
+less than 1.2 s apart are one step, so drawing notes or a recording undoes
+in one go. Device chain edits aren't in it yet. Ctrl/⌘+Z undoes (Shift
+redoes) when the piano roll isn't open (it keeps its own), as do Undo and
+Shift + Undo on Push.
 
 Tracks have an activator and a solo, saved in the set and read from a
 Live set's mixer. While any track is soloed only soloed ones sound; the

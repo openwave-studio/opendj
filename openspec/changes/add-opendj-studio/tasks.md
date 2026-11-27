@@ -65,13 +65,14 @@
 - [x] 2.51 Plug-ins in the browser (openDJ's scanned list), to drag onto tracks and into chains
 - [x] 2.52 Racks, next: Live's macro mappings, macros on Push's encoders, macro ranges, keeping plug-ins running through a rack edit
 - [x] 2.53 Track activators and solos (window and Push); Push's Mute, Solo, Metronome, Tap Tempo, New, Duplicate and Double Loop
-- [ ] 2.54 Push's Record, Fixed Length, Automate and Undo, once the studio records into slots and has undo
+- [x] 2.54 Push's Record, Fixed Length and Undo (on recording into slots and the set's undo)
+- [ ] 2.55 Push's Automate, once clips carry knob automation
 
 ## 3. Clip editing
 
 - [ ] 3.1 New and duplicate clips, clip length
 - [ ] 3.2 Piano roll
-- [ ] 3.3 Record MIDI into a slot
+- [x] 3.3 Record MIDI into a slot
 
 ## 4. Audio clips
 

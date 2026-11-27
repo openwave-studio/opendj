@@ -766,6 +766,17 @@ fn ui(
     }
     {
         let c = controls.clone();
+        window.on_record(move || {
+            let (t, s) = c.recording().unwrap_or_else(|| c.steps_slot());
+            c.record(t, s);
+        });
+        let c = controls.clone();
+        window.on_undo(move |redo| {
+            c.undo(redo);
+        });
+    }
+    {
+        let c = controls.clone();
         window.on_toggle_mute(move |t| c.toggle_mute(t as usize));
         let c = controls.clone();
         window.on_toggle_solo(move |t| c.toggle_solo(t as usize, false));
@@ -1189,6 +1200,10 @@ fn ui(
             }
             // Programs the audio thread replaced are dropped here.
             while trash.borrow_mut().pop().is_ok() {}
+            controls.record_tick();
+            let rec = controls.recording();
+            w.set_rec_track(rec.map_or(-1, |r| r.0 as i32));
+            w.set_rec_scene(rec.map_or(-1, |r| r.1 as i32));
             for s in 0..SCENES {
                 for t in 0..n {
                     let i = s * n + t;
