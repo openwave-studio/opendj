@@ -5093,6 +5093,21 @@ impl Browser {
         self.library.get(index).is_some_and(|t| !t.info.missing)
     }
 
+    /// Loads the collection track with id `id` onto `deck`, as the LOAD
+    /// buttons do (for the phone remote). False when it isn't there or its
+    /// file is missing.
+    pub fn load_id_onto(&mut self, deck: usize, id: usize) -> bool {
+        let Some(&index) = self.index_of.get(&id) else {
+            return false;
+        };
+        if deck >= NUM_DECKS || !self.playable(index) {
+            return false;
+        }
+        self.adopt(&[index]);
+        self.engine.load_track(deck, self.library[index].clone());
+        true
+    }
+
     fn load_to_free_deck(&self, id: usize) {
         if !self.playable(id) {
             return;

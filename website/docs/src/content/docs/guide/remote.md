@@ -4,7 +4,9 @@ title: Phone remote
 
 Control Automix from your phone while you're away from the laptop: see
 what's playing, change what comes next, skip a track or turn the music
-down. Your phone opens a page openDJ serves, so there's no app to install.
+down. Or put an iPad beside your controller and play it as an extra deck
+(see [Use an iPad as a deck](#use-an-ipad-as-a-deck)). Your phone or tablet
+opens a page openDJ serves, so there's no app to install.
 
 ## Pair your phone
 
@@ -85,6 +87,39 @@ the search clears itself for next time.
 
 Everything the phone does shows in openDJ straight away, and the other way
 round.
+
+## Use an iPad as a deck
+
+The **Deck** tab turns a tablet or phone into one of openDJ's decks: for
+example deck 3 beside a two-channel controller such as the DDJ-FLX4. It
+talks to openDJ directly, so there's nothing to map and no MIDI to set up.
+
+The tabs sit along the bottom on a phone and in the top bar on an iPad or a
+phone on its side. A tablet opens on **Deck**, a phone on **Automix**; the
+page remembers the tab you used last.
+
+- **1 2 3 4** at the top pick the deck. It starts on deck 3. A green line
+  under a number means that deck is playing.
+- **LOAD** opens search; **Load 3** on a track puts it on the deck. If the
+  deck is playing, the button asks again (**Load anyway**).
+- The waveform scrolls with the music: low, mid and high in red, green and
+  blue, beats and bars, hot cues and the loop shaded. The overview above
+  shows the whole track. The tag on the waveform shows the bar and beat.
+- **CUE** and **▶❙❙**, **SYNC**, **Q** (quantize), **SLIP**, **REV** (held)
+  and **NUDGE** (hold ◀ or ▶ to slow down or speed up a moment). The
+  waveform's play position drifts by 10 to 30 ms over Wi-Fi, fine for
+  buttons and pads; there's no scratching from the page.
+- **Pads**: **Hot Cue** (tap an empty pad to set one, hold a set one for a
+  second to clear it), **Loop** (1/4 to 32 beats) and **Beat Jump** (back on
+  the top row, forward on the bottom).
+- Under the pads: loop **IN** and **OUT**, the loop size (‹ › halve and
+  double, the middle starts a loop), **RELOOP**, and beat jump (the middle
+  changes the jump size).
+- The channel strip: **TRIM**, **HI**, **MID**, **LOW**, **FILTER**
+  (double tap a knob for the middle), **CUE** for headphones, the volume
+  fader and the level meter. On a phone it's a row under the transport.
+- The pitch fader, down for faster as on a player, with **KEY** (key lock)
+  and **RESET**. On a phone it's a slider: right is faster.
 
 ## Phones and safety
 
