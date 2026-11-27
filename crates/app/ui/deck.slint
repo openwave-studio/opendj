@@ -4904,28 +4904,138 @@ component InstrumentKnobs inherits HorizontalLayout {
     }
 }
 
-// What the instrument plays, as a scope: each bin's lowest to highest
-// sample over the last few tens of milliseconds.
+// What the instrument plays, as a scope: the wave (OSC), steady and sized
+// to its recent loudest, or its spectrum (FREQ) in the style picked from
+// the right-click menu. The app draws both as path commands (see
+// instrument_scope.rs): an area to fill and the line along its edge.
 component InstrumentScope inherits Rectangle {
     in property <color> tint;
-    border-radius: 4px;
-    background: Theme.n-0c0c0e;
-    if !InstrumentsUi.scope-freq: Rectangle { y: parent.height / 2; height: 1px; background: Theme.n-26262a; }
+    // The deck's own scope: its line glows, it shows the Hz labels and grid
+    // lines when they are on, and a right-click picks the look. The small
+    // scopes elsewhere show the shape alone.
+    in property <bool> full;
+    property <bool> freq: InstrumentsUi.scope-freq;
+    property <int> style: InstrumentsUi.scope-style;
+    property <bool> bars: freq && style == 1;
+    property <length> line-width: freq ? 1.25px : 1px;
+    property <length> glow: !full || bars ? 0px : freq ? 5px : 4px;
+    // The paths' 160 by 30 box is stretched over the whole scope. A stroked
+    // path fits its box inside half its stroke from each edge, so each
+    // reaches out by that much to line up with the fill.
+    // Where a level line sits: `share` of the way up (see instrument_scope.rs).
+    function level-y(share: float) -> length {
+        return root.height - (root.height - root.height * 1.5 / 30) * share;
+    }
+    border-radius: full ? 13px : 4px;
+    background: full ? transparent : Theme.n-0c0c0e;
+    if full && freq && InstrumentsUi.scope-grid: Rectangle {
+        // 50, 100, 200, 500 Hz, 1, 2, 5 and 10 kHz on the 30 Hz to 16 kHz
+        // scale, and -24 and -48 dB.
+        for f in [0.0814, 0.1917, 0.3021, 0.4480, 0.5585, 0.6689, 0.8148, 0.9252]: Rectangle {
+            x: parent.width * f;
+            width: 1px;
+            background: #ffffff12;
+        }
+        for share in [0.667, 0.333]: Rectangle {
+            y: root.level-y(share);
+            height: 1px;
+            background: #ffffff0d;
+        }
+    }
+    if !freq: Rectangle { y: parent.height / 2; height: 1px; background: Theme.n-26262a; }
     Path {
-        // A path keeps its viewbox's proportions (4 by 1), so it is drawn
-        // at those and stretched across the scope, whatever its shape.
-        viewbox-width: 128;
-        viewbox-height: 32;
+        viewbox-width: 160;
+        viewbox-height: 30;
+        fit: fill;
         x: 0;
         y: 0;
-        width: parent.height * 4;
+        width: parent.width;
         height: parent.height;
-        transform-origin: { x: 0px, y: 0px };
-        transform-scale-x: parent.width / max(1px, parent.height * 4);
-        fill: root.tint.with-alpha(0.35);
-        stroke: root.tint;
-        stroke-width: 1px;
+        fill: !root.freq ? @linear-gradient(180deg, root.tint.with-alpha(0.5) 0%, root.tint.with-alpha(0.12) 50%, root.tint.with-alpha(0.5) 100%)
+            : root.style == 1 ? @linear-gradient(180deg, root.tint 0%, root.tint.with-alpha(0.35) 100%)
+            : root.style == 2 ? @linear-gradient(180deg, root.tint.with-alpha(0.05) 0%, root.tint.with-alpha(0.7) 50%, root.tint.with-alpha(0.05) 100%)
+            : @linear-gradient(180deg, root.tint.with-alpha(0.55) 0%, root.tint.with-alpha(0.06) 100%);
         commands: InstrumentsUi.scope;
+    }
+    // The line's glow: two wider, fainter strokes under it.
+    for g in [0.8, 0.4]: Path {
+        visible: root.glow > 0;
+        viewbox-width: 160;
+        viewbox-height: 30;
+        fit: fill;
+        x: -self.stroke-width / 2;
+        y: -self.stroke-width / 2;
+        width: parent.width + self.stroke-width;
+        height: parent.height + self.stroke-width;
+        stroke: root.tint.with-alpha(g > 0.5 ? 0.1 : 0.2);
+        stroke-width: root.line-width + root.glow * g;
+        commands: InstrumentsUi.scope-line;
+    }
+    Path {
+        viewbox-width: 160;
+        viewbox-height: 30;
+        fit: fill;
+        x: -self.stroke-width / 2;
+        y: -self.stroke-width / 2;
+        width: parent.width + self.stroke-width;
+        height: parent.height + self.stroke-width;
+        stroke: root.bars ? #ffffffcc : root.tint;
+        stroke-width: root.bars ? 1.5px : root.line-width;
+        commands: InstrumentsUi.scope-line;
+    }
+    if full && freq && InstrumentsUi.scope-labels: Rectangle {
+        for mark[i] in [{ at: 0.1917, text: "100" }, { at: 0.5585, text: "1k" }, { at: 0.9252, text: "10k" }]: Text {
+            // Kept clear of the rounded corner on the right.
+            x: min(parent.width * mark.at + 2px, parent.width - 10px - self.width);
+            y: parent.height - self.height - 1px;
+            text: mark.text;
+            color: #ffffff73;
+            font-size: 7px;
+            font-weight: 600;
+        }
+    }
+    if full: TouchArea {
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                look-menu.show();
+            }
+        }
+    }
+    look-menu := PopupWindow {
+        x: root.width - 60px;
+        y: root.height / 2;
+        width: 170px;
+        height: 5 * 24px + 9px + 8px;
+        GrooveMenuBackground { }
+        VerticalLayout {
+            padding: 4px;
+            for name[i] in ["Smooth glow", "Bars", "Mirror"]: GrooveMenuItem {
+                text: name;
+                checked: root.freq && root.style == i;
+                clicked => {
+                    InstrumentsUi.scope-style = i;
+                    InstrumentsUi.scope-freq = true;
+                    InstrumentsUi.scope-look-changed();
+                }
+            }
+            Rectangle { height: 9px; Rectangle { height: 1px; background: Theme.border; } }
+            GrooveMenuItem {
+                text: "Hz labels";
+                checked: InstrumentsUi.scope-labels;
+                clicked => {
+                    InstrumentsUi.scope-labels = !InstrumentsUi.scope-labels;
+                    InstrumentsUi.scope-look-changed();
+                }
+            }
+            GrooveMenuItem {
+                text: "Grid lines";
+                checked: InstrumentsUi.scope-grid;
+                clicked => {
+                    InstrumentsUi.scope-grid = !InstrumentsUi.scope-grid;
+                    InstrumentsUi.scope-look-changed();
+                }
+            }
+        }
     }
 }
 
@@ -7662,14 +7772,25 @@ component InstrumentRack inherits Rectangle {
                 picked: InstrumentsUi.scope-freq ? 1 : 0;
                 chose(i) => { InstrumentsUi.scope-freq = i == 1; }
             }
+            // A thin edge in the instrument's color with a soft glow, like
+            // the deck's own frame.
             Rectangle {
                 width: root.scope-width;
-                border-radius: 6px;
+                border-radius: 14px;
                 background: Theme.f-08080a;
                 border-width: 1px;
-                border-color: Theme.n-1c1c1e;
-                clip: true;
-                InstrumentScope { tint: root.hue; width: parent.width; height: parent.height; }
+                border-color: root.hue.with-alpha(0.6);
+                drop-shadow-blur: 10px;
+                drop-shadow-color: root.hue.with-alpha(0.25);
+                Rectangle {
+                    x: 1px;
+                    y: 1px;
+                    width: parent.width - 2px;
+                    height: parent.height - 2px;
+                    border-radius: 13px;
+                    clip: true;
+                    InstrumentScope { tint: root.hue; full: true; width: parent.width; height: parent.height; }
+                }
             }
             ScopeChoice {
                 options: ["PRE", "POST"];

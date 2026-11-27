@@ -261,13 +261,22 @@ export global InstrumentsUi {
     in property <[string]> plugin-names;
     // What the instrument plays, set by the app while a deck shows it: the
     // notes held (`held[n]` is MIDI note 36 + n, C2 up) and its scope as
-    // path commands in a 128 by 32 box.
+    // path commands in a 160 by 30 box: the area to fill and the line
+    // along its edge (for bars, their caps).
     in property <[bool]> held;
     in property <string> scope;
+    in property <string> scope-line;
     // The scope draws the spectrum instead of the wave, and follows the
     // deck after its effects instead of the instrument itself.
     in-out property <bool> scope-freq;
     in-out property <bool> scope-post;
+    // How the spectrum looks, from the scope's right-click menu: 0 Smooth
+    // glow, 1 Bars, 2 Mirror; and whether it shows Hz labels and grid
+    // lines. Kept by the app (`scope-look-changed` saves them).
+    in-out property <int> scope-style;
+    in-out property <bool> scope-labels: true;
+    in-out property <bool> scope-grid;
+    callback scope-look-changed();
     // Which MIDI keyboard and channel play the instrument: `midi-device` 0
     // any, else 1 + its place in `keyboards`; `midi-channel` 0 any, else 1
     // to 16. Set by the app; `set-midi-from` picks.
