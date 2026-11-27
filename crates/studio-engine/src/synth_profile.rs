@@ -4,7 +4,7 @@
 //!
 //! A profile names the synth's MIDI port (or part of it), its channel, its
 //! control changes grouped as on its panel (14-bit ones with their low CC),
-//! the 24 knobs the deck's macro pages start with (8 a page), its preset
+//! the knobs (up to 24) the deck's macro pages start with (8 a page), its preset
 //! banks with bank select and factory names, and whether it follows MIDI
 //! clock and Start/Stop. The bundled ones are JSON files in `synths/`,
 //! written from each maker's published MIDI chart (`source`).
@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 use opendj_engine::hardware_synth::HardwareConfig;
 
 /// The bundled profiles' files, in the order they are listed.
-const BUNDLED: [&str; 2] = [
+const BUNDLED: [&str; 3] = [
+    include_str!("../synths/arturia-microfreak.json"),
     include_str!("../synths/arturia-minifreak.json"),
     include_str!("../synths/moog-messenger.json"),
 ];
@@ -38,7 +39,8 @@ pub struct SynthProfile {
     #[serde(default = "mono")]
     pub audio: String,
     pub controls: Vec<SynthControl>,
-    /// The control change each knob of the deck's three macro pages turns.
+    /// The control change each knob of the deck's macro pages turns (up to
+    /// 24, three pages).
     pub macros: Vec<u8>,
     #[serde(default)]
     pub presets: Presets,
@@ -124,6 +126,9 @@ impl SynthProfile {
         let bad = |n: u8| n > 127;
         if self.channel > 15 {
             return Err(format!("{}: channel {} is past 15", self.id, self.channel));
+        }
+        if self.macros.len() > 24 {
+            return Err(format!("{}: more than 24 macro knobs", self.id));
         }
         for c in &self.controls {
             if bad(c.cc) || c.lsb.is_some_and(bad) {
@@ -224,11 +229,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_bundled_profiles_read_and_fill_three_macro_pages() {
+    fn the_bundled_profiles_read_and_fill_their_macro_pages() {
         let all = bundled();
-        assert_eq!(all.len(), 2);
+        assert_eq!(all.len(), 3);
         for p in &all {
-            assert_eq!(p.macros.len(), 24, "{}", p.id);
+            assert!((17..=24).contains(&p.macros.len()), "{}", p.id);
             for cc in &p.macros {
                 assert!(p.control(*cc).is_some(), "{}: macro CC {cc}", p.id);
             }
@@ -254,6 +259,26 @@ mod tests {
         assert_eq!(presets.len(), 384);
         assert_eq!(presets[128].bank_msb, Some(1));
         assert_eq!(presets[128].program, 0);
+    }
+
+    #[test]
+    fn the_microfreak_turns_its_filter_from_the_first_knobs() {
+        let p = find("arturia-microfreak").unwrap();
+        let names = p.macro_names();
+        assert_eq!(names[..3], ["Cutoff", "Resonance", "Filter Amount"]);
+        // Two Holds: the group tells them apart.
+        assert!(
+            names.contains(&"Cycling Envelope Hold".to_string()),
+            "{names:?}"
+        );
+        assert!(names.contains(&"Keyboard Hold".to_string()), "{names:?}");
+        let c = p.hardware_config("", 0);
+        assert_eq!(c.port, "MicroFreak");
+        assert_eq!(c.ccs[0], Some(23));
+        // 512 presets in four banks of 128.
+        let presets = p.preset_list();
+        assert_eq!(presets.len(), 512);
+        assert_eq!(presets[384].bank_msb, Some(3));
     }
 
     #[test]
