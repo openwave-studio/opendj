@@ -28,6 +28,31 @@ export struct PianoNote {
     muted: bool,
     // Outside the loop: kept but not played.
     outside: bool,
+    // 0..1: the fill is fainter for quieter notes.
+    velocity: float,
+    // "60%" when it may not play each time round (and there is room).
+    chance: string,
+    // Plays by chance: drawn fainter.
+    dim: bool,
+}
+
+// A note's marker in the velocity or chance lane.
+export struct PianoLane {
+    x: length,
+    w: length,
+    value: float,
+    selected: bool,
+}
+
+// A line of the right-click menu.
+export struct PianoMenuItem {
+    id: string,
+    label: string,
+    keys: string,
+    ticked: bool,
+    enabled: bool,
+    // A line above it.
+    line: bool,
 }
 
 // Another clip's note, shown under the clip's own.
@@ -76,6 +101,24 @@ export global Piano {
     in-out property <length> loop-x;
     in-out property <length> loop-w;
     in-out property <length> playhead: -1px;
+    // The box being drawn to select (w below 0: none).
+    in-out property <length> box-x;
+    in-out property <length> box-y;
+    in-out property <length> box-w: -1px;
+    in-out property <length> box-h;
+    // Under the pointer: 0 grid, 1 a note's end, 2 a note.
+    in-out property <int> cursor;
+    // The lane under the notes: 0 Velocity, 1 Chance.
+    in-out property <[PianoLane]> lane;
+    in-out property <int> lane-mode;
+    // Quantize Settings.
+    in-out property <bool> quantize-open;
+    in-out property <string> q-grid;
+    in-out property <[string]> q-grids;
+    in-out property <bool> q-start: true;
+    in-out property <bool> q-end;
+    in-out property <string> q-amount;
+    in-out property <string> q-swing;
 
     // Clip column.
     in-out property <string> start-text;
@@ -121,6 +164,22 @@ export global Piano {
     callback nudge(int, int);
     callback close();
     callback pop-out();
+    // The grid: 0 press, 1 release, 2 move; x, y, Shift, Alt, button down.
+    callback pointer(int, length, length, bool, bool, bool);
+    callback double(length, length);
+    // A right-click at x, y: the menu for it.
+    callback context(length, length) -> [PianoMenuItem];
+    // A menu line (by id) or a shortcut's action.
+    callback action(string);
+    // A key: its text, Shift, ⌘ (or Ctrl), Alt. True when used.
+    callback key(string, bool, bool, bool) -> bool;
+    // A press (true) or release on the keys at y.
+    callback audition(length, bool);
+    // The lane: 0 press, 1 release, 2 move; x, y, the lane's height.
+    callback lane-pointer(int, length, length, length);
+    callback set-lane(int);
+    // Quantize Settings (see Editor::quantize_settings).
+    callback quantize(int, int);
 }
 
 // A row of buttons, one lit.
@@ -273,6 +332,92 @@ component SnapMenu inherits Rectangle {
     }
 }
 
+// The right-click menu: Live's basics, with their shortcuts.
+component ContextMenu inherits Rectangle {
+    in property <[PianoMenuItem]> items;
+    callback picked(string);
+    width: 250px;
+    background: Theme.panel-2;
+    border-width: 1px;
+    border-color: #3a3d41;
+    border-radius: 4px;
+    drop-shadow-blur: 16px;
+    drop-shadow-color: #00000080;
+    VerticalLayout {
+        padding-top: 3px;
+        padding-bottom: 3px;
+        for it in root.items: VerticalLayout {
+            if it.line: Rectangle { height: 7px; Rectangle { height: 1px; background: Theme.line; } }
+            Rectangle {
+                height: 20px;
+                background: ia.has-hover && it.enabled ? Theme.select : transparent;
+                opacity: it.enabled ? 1 : 0.4;
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 10px;
+                    spacing: 4px;
+                    Text { width: 12px; text: it.ticked ? "✓" : ""; color: Theme.accent; font-size: 11px; vertical-alignment: center; }
+                    Text { text: it.label; color: Theme.text; font-size: 11.5px; vertical-alignment: center; horizontal-stretch: 1; }
+                    Text { text: it.keys; color: Theme.dim; font-size: 10.5px; vertical-alignment: center; }
+                }
+                ia := TouchArea {
+                    enabled: it.enabled;
+                    clicked => { root.picked(it.id); }
+                }
+            }
+        }
+    }
+}
+
+// Quantize Settings (⇧⌘U): the grid, starts and ends, amount and swing.
+component QuantizeSettings inherits Rectangle {
+    width: 260px;
+    height: q-lay.preferred-height;
+    background: Theme.panel-2;
+    border-width: 1px;
+    border-color: #3a3d41;
+    border-radius: 4px;
+    drop-shadow-blur: 16px;
+    drop-shadow-color: #00000080;
+    TouchArea { }
+    q-lay := VerticalLayout {
+        padding: 12px;
+        spacing: 8px;
+        Text { text: "Quantize Settings"; color: Theme.text; font-size: 12px; font-weight: 600; }
+        HorizontalLayout {
+            spacing: 8px;
+            Dim { width: 70px; text: "Grid"; vertical-alignment: center; }
+            Picker {
+                text: Piano.q-grid;
+                options: Piano.q-grids;
+                picked(i) => { Piano.quantize(0, i); }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Dim { width: 70px; text: "Adjust"; vertical-alignment: center; }
+            Btn { label: "Note start"; on: Piano.q-start; clicked => { Piano.quantize(1, 0); } }
+            Btn { label: "Note end"; on: Piano.q-end; clicked => { Piano.quantize(2, 0); } }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Dim { width: 70px; text: "Amount"; vertical-alignment: center; }
+            Stepper { value: Piano.q-amount; step(d) => { Piano.quantize(3, d); } }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Dim { width: 70px; text: "Swing"; vertical-alignment: center; }
+            Stepper { value: Piano.q-swing; step(d) => { Piano.quantize(4, d); } }
+        }
+        HorizontalLayout {
+            spacing: 6px;
+            alignment: end;
+            Btn { label: "Cancel"; clicked => { Piano.quantize(6, 0); } }
+            Btn { label: "Quantize"; on: true; clicked => { Piano.quantize(5, 0); } }
+        }
+    }
+}
+
 // The clip's settings and the tools, left of the keys.
 component ClipColumn inherits Rectangle {
     background: Theme.panel;
@@ -374,6 +519,9 @@ component ClipColumn inherits Rectangle {
 
 // The keys, the ruler and the grid with the clip's notes.
 export component PianoRoll inherits Rectangle {
+    property <length> menu-x;
+    property <length> menu-y;
+    property <[PianoMenuItem]> menu-items;
     background: Theme.panel;
     clip: true;
     VerticalLayout {
@@ -530,6 +678,14 @@ export component PianoRoll inherits Rectangle {
                             }
                         }
                         TouchArea {
+                            pointer-event(e) => {
+                                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                                    Piano.audition(self.mouse-y, true);
+                                }
+                                if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                                    Piano.audition(self.mouse-y, false);
+                                }
+                            }
                             scroll-event(e) => {
                                 Piano.scroll(0, e.delta-y, false, 0);
                                 accept
@@ -607,27 +763,148 @@ export component PianoRoll inherits Rectangle {
                             width: max(2px, n.w - 2px);
                             height: max(2px, n.h - 2px);
                             border-radius: 2px;
-                            background: n.muted ? Theme.faint : n.color;
-                            border-width: 1px;
+                            background: n.muted ? Theme.faint
+                                : (n.selected ? n.color.brighter(0.35) : n.color.with-alpha(0.45 + 0.55 * n.velocity));
+                            border-width: n.selected ? 1.5px : 1px;
                             border-color: n.selected ? #ffffff : #00000073;
-                            opacity: n.outside ? 0.45 : 1;
+                            opacity: n.outside ? 0.45 : (n.dim ? 0.6 : 1);
+                            if n.chance != "": Text {
+                                x: 3px;
+                                text: n.chance;
+                                color: #101112;
+                                font-size: 9px;
+                                vertical-alignment: center;
+                            }
                         }
                         if Piano.playhead >= 0: Rectangle {
                             x: Piano.playhead;
                             width: 1px;
                             background: Theme.queued;
                         }
-                        TouchArea {
+                        if Piano.box-w >= 0: Rectangle {
+                            x: Piano.box-x;
+                            y: Piano.box-y;
+                            width: Piano.box-w;
+                            height: Piano.box-h;
+                            background: Theme.accent.with-alpha(0.12);
+                            border-width: 1px;
+                            border-color: Theme.accent;
+                        }
+                        grid-ta := TouchArea {
+                            mouse-cursor: Piano.cursor == 1 ? MouseCursor.ew-resize
+                                : (Piano.cursor == 2 ? MouseCursor.pointer
+                                    : (Piano.draw ? MouseCursor.crosshair : MouseCursor.default));
+                            pointer-event(e) => {
+                                if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                                    menu-x = self.mouse-x;
+                                    menu-y = self.mouse-y;
+                                    menu-items = Piano.context(self.mouse-x, self.mouse-y);
+                                    menu.show();
+                                } else if e.kind == PointerEventKind.down && e.button == PointerEventButton.left {
+                                    Piano.pointer(0, self.mouse-x, self.mouse-y, e.modifiers.shift, e.modifiers.alt, true);
+                                } else if e.kind == PointerEventKind.up && e.button == PointerEventButton.left {
+                                    Piano.pointer(1, self.mouse-x, self.mouse-y, e.modifiers.shift, e.modifiers.alt, false);
+                                } else if e.kind == PointerEventKind.move {
+                                    Piano.pointer(2, self.mouse-x, self.mouse-y, e.modifiers.shift, e.modifiers.alt, self.pressed);
+                                }
+                            }
+                            double-clicked => { Piano.double(self.mouse-x, self.mouse-y); }
                             scroll-event(e) => {
                                 Piano.scroll(e.delta-x, e.delta-y,
                                     e.modifiers.control || e.modifiers.meta, self.mouse-x);
                                 accept
                             }
                         }
+                        menu := PopupWindow {
+                            x: menu-x;
+                            y: menu-y;
+                            ContextMenu {
+                                items: menu-items;
+                                picked(id) => { Piano.action(id); }
+                            }
+                        }
+                    }
+                }
+                // ------------------------------------------ lane
+                Rectangle { height: 1px; background: Theme.line; }
+                Rectangle {
+                    height: 22px;
+                    background: Theme.panel-2;
+                    HorizontalLayout {
+                        padding-left: Piano.keys-width + 8px;
+                        spacing: 10px;
+                        alignment: start;
+                        VerticalLayout {
+                            alignment: center;
+                            Seg {
+                                options: ["Velocity", "Chance"];
+                                current: Piano.lane-mode;
+                                picked(i) => { Piano.set-lane(i); }
+                            }
+                        }
+                        Dim {
+                            text: Piano.draw ? "Drag across the notes to set them" : "Drag a marker up or down; the selection moves together";
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    height: 64px;
+                    Rectangle {
+                        width: Piano.keys-width;
+                        background: Theme.panel-2;
+                        Text { x: parent.width - self.width - 6px; y: 3px; text: Piano.lane-mode == 0 ? "127" : "100%"; color: Theme.dim; font-size: 9px; }
+                        Text { x: parent.width - self.width - 6px; y: parent.height - self.height - 3px; text: "0"; color: Theme.dim; font-size: 9px; }
+                    }
+                    Rectangle { width: 1px; background: Theme.line; }
+                    lane-area := Rectangle {
+                        background: #131415;
+                        clip: true;
+                        for v in Piano.lane: Rectangle {
+                            property <color> c: v.selected ? #ffffff : (Piano.lane-mode == 0 ? Piano.track-color : Theme.accent);
+                            property <length> hh: max(3px, v.value * (parent.height - 8px));
+                            if Piano.lane-mode == 1: Rectangle {
+                                x: v.x + 1px;
+                                y: parent.height - parent.hh;
+                                width: max(3px, v.w - 3px);
+                                height: parent.hh;
+                                background: v.value < 0.995 ? parent.c.with-alpha(0.7) : Theme.select;
+                            }
+                            if Piano.lane-mode == 0: Rectangle {
+                                x: v.x + 2px;
+                                y: parent.height - parent.hh;
+                                width: 2px;
+                                height: parent.hh;
+                                background: parent.c;
+                            }
+                            if Piano.lane-mode == 0: Rectangle {
+                                x: v.x;
+                                y: parent.height - parent.hh - 3px;
+                                width: 6px;
+                                height: 6px;
+                                border-radius: 3px;
+                                background: parent.c;
+                            }
+                        }
+                        TouchArea {
+                            pointer-event(e) => {
+                                if e.button == PointerEventButton.left && e.kind == PointerEventKind.down {
+                                    Piano.lane-pointer(0, self.mouse-x, self.mouse-y, lane-area.height);
+                                } else if e.button == PointerEventButton.left && e.kind == PointerEventKind.up {
+                                    Piano.lane-pointer(1, self.mouse-x, self.mouse-y, lane-area.height);
+                                } else if e.kind == PointerEventKind.move && self.pressed {
+                                    Piano.lane-pointer(2, self.mouse-x, self.mouse-y, lane-area.height);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+    if Piano.quantize-open: QuantizeSettings {
+        x: (parent.width - self.width) / 2;
+        y: 40px;
     }
 }
 
@@ -639,11 +916,9 @@ export component PianoWindow inherits Window {
     min-width: 700px;
     min-height: 280px;
     background: Theme.bg;
-    callback undo(bool);
     FocusScope {
         key-pressed(e) => {
-            if (e.modifiers.control || e.modifiers.meta) && (e.text == "z" || e.text == "Z") {
-                root.undo(e.modifiers.shift);
+            if Piano.key(e.text, e.modifiers.shift, e.modifiers.control || e.modifiers.meta, e.modifiers.alt) {
                 return accept;
             }
             reject
