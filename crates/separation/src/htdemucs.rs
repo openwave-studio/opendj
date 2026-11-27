@@ -2,6 +2,9 @@
 //! (third_party/demucs-core). Weights are the safetensors conversion
 //! `htdemucs.safetensors` (84 MB).
 
+#[cfg(target_vendor = "apple")]
+pub mod coreml;
+
 use std::ops::Range;
 
 use burn::prelude::Backend;
@@ -68,14 +71,35 @@ impl<B: Backend> HtDemucs<B> {
     }
 }
 
+/// Runs HTDemucs on one segment of at most a training length at 44.1 kHz,
+/// as [`demucs_core::Demucs::separate_segment`] does: on burn
+/// ([`HtDemucs`]) or elsewhere (Core ML on Macs).
+pub trait SegmentNet {
+    fn separate_segment(&self, left: &[f32], right: &[f32]) -> Result<Vec<Stem>, String>;
+}
+
+pub use demucs_core::Stem;
+
+impl<B: Backend> SegmentNet for HtDemucs<B> {
+    fn separate_segment(&self, left: &[f32], right: &[f32]) -> Result<Vec<Stem>, String> {
+        pollster::block_on(self.model.separate_segment(left, right)).map_err(|e| e.to_string())
+    }
+}
+
 impl<B: Backend> HtDemucs<B> {
-    /// As [`Self::separate_watched`], for audio at the model's 44.1 kHz
-    /// ([`crate::SAMPLE_RATE`]), taking the model's chunks from the one
-    /// holding sample `from` outwards (see [`outwards`]) instead of from the
-    /// start. Each time a stretch of samples has all the chunks over it,
-    /// its stems are final and `ready` gets it with every stem so far
-    /// (`[stem][channel][sample]`, only that stretch to be read). The stems
-    /// it returns are the same as [`Self::separate`]'s, sample for sample.
+    /// The 4-stem network on burn, for checking another runtime against
+    /// (see [`demucs_core::Network`]).
+    pub fn run_network(
+        &self,
+        freq: Vec<f32>,
+        time: Vec<f32>,
+    ) -> Result<(Vec<f32>, Vec<f32>), String> {
+        self.model
+            .run_network(freq, time)
+            .map_err(|e| e.to_string())
+    }
+
+    /// See [`separate_from`].
     pub fn separate_from(
         &self,
         channels: [&[f32]; 2],
@@ -84,84 +108,98 @@ impl<B: Backend> HtDemucs<B> {
         keep_going: &dyn Fn() -> bool,
         ready: &mut Ready,
     ) -> Result<Vec<[Vec<f32>; 2]>, String> {
-        let n = channels[0].len().min(channels[1].len());
-        let spans = chunk_spans(n);
-        let mut out = vec![[vec![0.0f32; n], vec![0.0f32; n]]; STEMS.len()];
-        if spans.is_empty() {
-            return Ok(out);
-        }
-        // As `separate` does: one chunk as it is, longer audio as chunks
-        // blended by a triangular window and divided by the weights.
-        let windowed = spans.len() > 1;
-        let mut weight = vec![0.0f32; n];
-        let pieces = Pieces::new(&spans);
-        let mut emitted = vec![false; pieces.ranges.len()];
-        let mut done = vec![false; spans.len()];
-        // The chunks over `from` first: where neighbours overlap, its
-        // stems need both.
-        let at = from.min(n - 1);
-        let over: Vec<usize> = (0..spans.len())
-            .filter(|&c| spans[c].contains(&at))
-            .collect();
-        let mut order = outwards(spans.len(), *over.last().unwrap_or(&0));
-        if let [before, _] = over[..] {
-            order.retain(|&c| c != before);
-            order.insert(1, before);
-        }
-        for (k, &c) in order.iter().enumerate() {
-            if !keep_going() {
-                return Err(STOPPED.into());
-            }
-            let span = spans[c].clone();
-            let stems = pollster::block_on(
-                self.model
-                    .separate_segment(&channels[0][span.clone()], &channels[1][span.clone()]),
-            )
-            .map_err(|e| e.to_string())?;
-            let window = if windowed {
-                demucs_core::triangular_window(span.len())
-            } else {
-                vec![1.0; span.len()]
-            };
-            for stem in &stems {
-                let Some(s) = HTDEMUCS.stems.iter().position(|&id| id == stem.id) else {
-                    continue;
-                };
-                for (i, w) in window.iter().enumerate() {
-                    out[s][0][span.start + i] += w * stem.left[i];
-                    out[s][1][span.start + i] += w * stem.right[i];
-                }
-            }
-            for (i, w) in window.iter().enumerate() {
-                weight[span.start + i] += w;
-            }
-            done[c] = true;
-            for p in pieces.of(&span) {
-                if emitted[p] || !pieces.covers[p].iter().all(|&c| done[c]) {
-                    continue;
-                }
-                let range = pieces.ranges[p].clone();
-                if windowed {
-                    for i in range.clone() {
-                        let w = weight[i];
-                        if w > 0.0 {
-                            for stem in out.iter_mut() {
-                                stem[0][i] /= w;
-                                stem[1][i] /= w;
-                            }
-                        }
-                    }
-                }
-                emitted[p] = true;
-                ready(range, &out);
-            }
-            progress(k + 1, spans.len());
-        }
+        separate_from(self, channels, from, progress, keep_going, ready)
+    }
+}
+
+/// As [`HtDemucs::separate_watched`], for audio at the model's 44.1 kHz
+/// ([`crate::SAMPLE_RATE`]), taking the model's chunks from the one
+/// holding sample `from` outwards (see [`outwards`]) instead of from the
+/// start. Each time a stretch of samples has all the chunks over it,
+/// its stems are final and `ready` gets it with every stem so far
+/// (`[stem][channel][sample]`, only that stretch to be read). The stems
+/// it returns are the same as [`Self::separate`]'s, sample for sample.
+pub fn separate_from(
+    net: &(impl SegmentNet + ?Sized),
+    channels: [&[f32]; 2],
+    from: usize,
+    progress: &mut dyn FnMut(usize, usize),
+    keep_going: &dyn Fn() -> bool,
+    ready: &mut Ready,
+) -> Result<Vec<[Vec<f32>; 2]>, String> {
+    let n = channels[0].len().min(channels[1].len());
+    let spans = chunk_spans(n);
+    let mut out = vec![[vec![0.0f32; n], vec![0.0f32; n]]; STEMS.len()];
+    if spans.is_empty() {
+        return Ok(out);
+    }
+    // As `separate` does: one chunk as it is, longer audio as chunks
+    // blended by a triangular window and divided by the weights.
+    let windowed = spans.len() > 1;
+    let mut weight = vec![0.0f32; n];
+    let pieces = Pieces::new(&spans);
+    let mut emitted = vec![false; pieces.ranges.len()];
+    let mut done = vec![false; spans.len()];
+    // The chunks over `from` first: where neighbours overlap, its
+    // stems need both.
+    let at = from.min(n - 1);
+    let over: Vec<usize> = (0..spans.len())
+        .filter(|&c| spans[c].contains(&at))
+        .collect();
+    let mut order = outwards(spans.len(), *over.last().unwrap_or(&0));
+    if let [before, _] = over[..] {
+        order.retain(|&c| c != before);
+        order.insert(1, before);
+    }
+    for (k, &c) in order.iter().enumerate() {
         if !keep_going() {
             return Err(STOPPED.into());
         }
-        Ok(out)
+        let span = spans[c].clone();
+        let stems = net.separate_segment(&channels[0][span.clone()], &channels[1][span.clone()])?;
+        let window = if windowed {
+            demucs_core::triangular_window(span.len())
+        } else {
+            vec![1.0; span.len()]
+        };
+        for stem in &stems {
+            let Some(s) = HTDEMUCS.stems.iter().position(|&id| id == stem.id) else {
+                continue;
+            };
+            for (i, w) in window.iter().enumerate() {
+                out[s][0][span.start + i] += w * stem.left[i];
+                out[s][1][span.start + i] += w * stem.right[i];
+            }
+        }
+        for (i, w) in window.iter().enumerate() {
+            weight[span.start + i] += w;
+        }
+        done[c] = true;
+        for p in pieces.of(&span) {
+            if emitted[p] || !pieces.covers[p].iter().all(|&c| done[c]) {
+                continue;
+            }
+            let range = pieces.ranges[p].clone();
+            if windowed {
+                for i in range.clone() {
+                    let w = weight[i];
+                    if w > 0.0 {
+                        for stem in out.iter_mut() {
+                            stem[0][i] /= w;
+                            stem[1][i] /= w;
+                        }
+                    }
+                }
+            }
+            emitted[p] = true;
+            ready(range, &out);
+        }
+        progress(k + 1, spans.len());
     }
+    if !keep_going() {
+        return Err(STOPPED.into());
+    }
+    Ok(out)
 }
 
 /// The samples each of the model's chunks covers, for `n` samples at
@@ -407,5 +445,66 @@ mod tests {
         eprintln!("residual: aligned {aligned:.3}, stretched {drifted:.3}");
         assert!(aligned < 0.2, "{aligned}");
         assert!(drifted > 0.5, "{drifted}");
+    }
+
+    /// The network on its own, with the spectrograms and normalizing done
+    /// outside it (as Core ML runs it), gives the same stems. Needs the
+    /// weights: `OPENDJ_MODELS=<folder with htdemucs.safetensors> cargo test
+    /// -p opendj-separation --release -- --ignored network_on_its_own`.
+    #[test]
+    #[ignore]
+    fn the_network_on_its_own_gives_the_same_stems() {
+        let dir = std::env::var("OPENDJ_MODELS").expect("OPENDJ_MODELS");
+        let bytes = std::fs::read(std::path::Path::new(&dir).join("htdemucs.safetensors")).unwrap();
+        let model = HtDemucs::<crate::Cpu>::load(&bytes, &Default::default()).unwrap();
+        let track = loop_at(crate::SAMPLE_RATE, 6.0);
+        let want = model.separate_segment(&track[0], &track[1]).unwrap();
+        let got = demucs_core::separate_segment_with(&track[0], &track[1], &mut |f, t| {
+            model
+                .run_network(f, t)
+                .map_err(demucs_core::DemucsError::Internal)
+        })
+        .unwrap();
+        for (a, b) in want.iter().zip(&got) {
+            assert_eq!(a.id, b.id);
+            for (x, y) in [(&a.left, &b.left), (&a.right, &b.right)] {
+                let err = x
+                    .iter()
+                    .zip(y)
+                    .map(|(p, q)| (p - q).abs())
+                    .fold(0.0, f32::max);
+                assert!(err < 1e-4, "{:?}: {err}", a.id);
+            }
+        }
+    }
+
+    /// Writes the network's inputs and outputs on burn for a test loop to
+    /// `OPENDJ_DUMP` (`freq.f32`, `time.f32`, `freq_out.f32`,
+    /// `time_out.f32`, little-endian), which
+    /// `scripts/models/convert_htdemucs_coreml.py --check` runs its graph on.
+    #[test]
+    #[ignore]
+    fn the_network_matches_its_dump() {
+        let dir = std::env::var("OPENDJ_MODELS").expect("OPENDJ_MODELS");
+        let out = std::path::PathBuf::from(std::env::var("OPENDJ_DUMP").expect("OPENDJ_DUMP"));
+        let bytes = std::fs::read(std::path::Path::new(&dir).join("htdemucs.safetensors")).unwrap();
+        let model = HtDemucs::<crate::Cpu>::load(&bytes, &Default::default()).unwrap();
+        let track = loop_at(crate::SAMPLE_RATE, 6.0);
+        std::fs::create_dir_all(&out).unwrap();
+        let write = |name: &str, data: &[f32]| {
+            let raw: Vec<u8> = data.iter().flat_map(|v| v.to_le_bytes()).collect();
+            std::fs::write(out.join(format!("{name}.f32")), raw).unwrap();
+        };
+        demucs_core::separate_segment_with(&track[0], &track[1], &mut |f, t| {
+            write("freq", &f);
+            write("time", &t);
+            let (fo, to) = model
+                .run_network(f, t)
+                .map_err(demucs_core::DemucsError::Internal)?;
+            write("freq_out", &fo);
+            write("time_out", &to);
+            Ok((fo, to))
+        })
+        .unwrap();
     }
 }

@@ -54,6 +54,10 @@ cpal = { version = "0.18", features = ["realtime"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 whisper-rs = { version = "0.16", features = ["metal"], optional = true }
 
+# Spleeter's Core ML package arrives zipped.
+[target.'cfg(target_vendor = "apple")'.dependencies]
+zip = { version = "9", default-features = false, features = ["deflate"] }
+
 [target.'cfg(windows)'.dependencies]
 # ASIO drivers next to Windows Audio. The build downloads Steinberg's ASIO
 # SDK (GPLv3), so Windows builds are distributed under GPLv3.

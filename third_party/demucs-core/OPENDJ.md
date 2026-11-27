@@ -14,3 +14,9 @@ In `src/lib.rs`, openDJ also added `Demucs::separate_segment` and the
 `CHUNK_STRIDE` constant, and made `triangular_window` public, so the app can
 separate a long track's chunks in its own order (from the play position
 outwards) and blend them exactly as `separate` does.
+
+To run the network outside burn (Core ML on Macs), openDJ also split
+`HTDemucs::forward` into normalizing, `forward_normalized` and
+denormalizing, and added `separate_segment_with` (the spectrograms and
+normalizing on plain arrays around any network), `Demucs::run_network`,
+`segment_frames` and the `Network` type.
