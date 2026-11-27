@@ -1402,6 +1402,9 @@ pub const SCOPE_SAMPLES: usize = SCOPE_BINS * 16;
 /// Samples the spectrum looks at: about 170 ms at 48 kHz, so its lowest
 /// bands (6 Hz apart) still tell the bass notes apart.
 pub const WAVE_SAMPLES: usize = 8192;
+/// How far either side of its frequency each point of
+/// [`InstrumentView::spectrum`] reaches: a twelfth of an octave each way.
+const SPECTRUM_SPREAD: f32 = 1.059_463_1;
 
 /// What the instrument plays, written on the audio thread each buffer for
 /// the app to show: the notes held and a scope of its sound.
@@ -1457,53 +1460,16 @@ impl InstrumentView {
             .collect()
     }
 
-    /// The spectrum of [`InstrumentView::wave`] in `bands` bands spaced
-    /// evenly in pitch from 30 Hz to 16 kHz, low first, each 0 (-84 dB or
-    /// quieter) to 1 (full scale). Tilted up 3 dB an octave about 1 kHz,
-    /// as analysers show it, so a mix reads level rather than falling to
-    /// the right.
-    pub fn spectrum(&self, bands: usize) -> Vec<f32> {
-        use rustfft::num_complex::Complex;
-        let wave = self.wave();
-        let n = wave.len();
-        let rate = f32::from_bits(self.rate.load(Ordering::Relaxed)).max(1.0);
-        let mut buf: Vec<Complex<f32>> = wave
-            .iter()
-            .enumerate()
-            .map(|(i, &x)| {
-                let w = 0.5 - 0.5 * (std::f32::consts::TAU * i as f32 / n as f32).cos();
-                Complex::new(x * w, 0.0)
-            })
-            .collect();
-        rustfft::FftPlanner::new()
-            .plan_fft_forward(n)
-            .process(&mut buf);
-        // A full-scale sine through the Hann window peaks at n / 4.
-        let norm = 4.0 / n as f32;
-        let mag: Vec<f32> = buf[..n / 2].iter().map(|c| c.norm() * norm).collect();
-        let (lo, hi) = (30.0f32, 16_000.0f32.min(rate / 2.0));
-        let bin = |f: f32| (f * n as f32 / rate).clamp(1.0, (n / 2 - 2) as f32);
-        (0..bands)
-            .map(|b| {
-                let at = |t: f32| lo * (hi / lo).powf(t / bands as f32);
-                let (f0, f1) = (at(b as f32), at(b as f32 + 1.0));
-                let (a, z) = (bin(f0), bin(f1));
-                // A band narrower than a bin reads the bins about its
-                // middle (interpolated); a wider one its loudest bin.
-                let peak = if z - a < 1.0 {
-                    let c = bin((f0 * f1).sqrt());
-                    let (i, t) = (c.floor() as usize, c.fract());
-                    mag[i] * (1.0 - t) + mag[i + 1] * t
-                } else {
-                    (a.ceil() as usize..=z.floor() as usize)
-                        .map(|k| mag[k])
-                        .fold(0.0, f32::max)
-                };
-                let tilt = 3.0 * ((f0 * f1).sqrt() / 1000.0).log2();
-                let db = 20.0 * peak.max(1e-9).log10() + tilt;
-                ((db + 84.0) / 84.0).clamp(0.0, 1.0)
-            })
-            .collect()
+    /// The spectrum of [`InstrumentView::wave`] at `points` frequencies
+    /// spaced evenly in pitch from 30 Hz to 16 kHz, low first, in dB. Each
+    /// point is the power averaged over about a sixth of an octave around it (never under three FFT bins), so the
+    /// bass harmonics show as rounded hills and the top as one smooth
+    /// slope rather than a spike per bin. Tilted up 3 dB an octave about
+    /// 1 kHz, as analysers show it, so a mix reads level rather than
+    /// falling to the right.
+    pub fn spectrum(&self, points: usize) -> Vec<f32> {
+        let rate = f32::from_bits(self.rate.load(Ordering::Relaxed));
+        spectrum_of(&self.wave(), rate, points)
     }
 
     /// Whether the scope follows the deck after its effects (true) or the
@@ -1520,6 +1486,59 @@ impl InstrumentView {
         self.held[0].store(held as u64, Ordering::Relaxed);
         self.held[1].store((held >> 64) as u64, Ordering::Relaxed);
     }
+}
+
+/// [`InstrumentView::spectrum`] of any `wave` at `rate`.
+pub fn spectrum_of(wave: &[f32], rate: f32, points: usize) -> Vec<f32> {
+    use rustfft::num_complex::Complex;
+    let n = wave.len();
+    let rate = rate.max(1.0);
+    let mut buf: Vec<Complex<f32>> = wave
+        .iter()
+        .enumerate()
+        .map(|(i, &x)| {
+            let w = 0.5 - 0.5 * (std::f32::consts::TAU * i as f32 / n as f32).cos();
+            Complex::new(x * w, 0.0)
+        })
+        .collect();
+    rustfft::FftPlanner::new()
+        .plan_fft_forward(n)
+        .process(&mut buf);
+    // A full-scale sine through the Hann window peaks at n / 4.
+    let norm = 4.0 / n as f32;
+    let power: Vec<f32> = buf[..n / 2]
+        .iter()
+        .map(|c| (c.norm() * norm).powi(2))
+        .collect();
+    let (lo, hi) = (30.0f32, 16_000.0f32.min(rate / 2.0));
+    let hz_per_bin = rate / n as f32;
+    let last = (n / 2 - 1) as f32;
+    let bin = |f: f32| (f / hz_per_bin).clamp(1.0, last);
+    let steps = points.saturating_sub(1).max(1) as f32;
+    (0..points)
+        .map(|p| {
+            let f = lo * (hi / lo).powf(p as f32 / steps);
+            let below = (f * SPECTRUM_SPREAD.recip()).min(f - 1.5 * hz_per_bin);
+            let above = (f * SPECTRUM_SPREAD).max(f + 1.5 * hz_per_bin);
+            // A Gaussian in pitch, falling to a third at the window's edges.
+            let sigma = (above / f).log2() / 1.2;
+            let (mut sum, mut weights) = (0.0f32, 0.0f32);
+            let (first, last) = (
+                bin(below.max(1.0)).floor() as usize,
+                bin(above).ceil() as usize,
+            );
+            for (k, &p) in power.iter().enumerate().take(last + 1).skip(first) {
+                let octaves = ((k as f32 * hz_per_bin).max(1.0) / f).log2() / sigma;
+                let w = (-0.5 * octaves * octaves).exp();
+                sum += w * p;
+                weights += w;
+            }
+            let tilt = 3.0 * (f / 1000.0).log2();
+            // A lone tone's power spreads over the window, so it reads a
+            // little under its level; 3 dB back makes up some of that.
+            10.0 * (2.0 * sum / weights.max(1e-9)).max(1e-12).log10() + tilt
+        })
+        .collect()
 }
 
 /// `held` after the note messages in `notes` (any channel); All Notes Off
@@ -4287,38 +4306,53 @@ mod bench;
 mod tests {
     use super::*;
 
-    #[test]
-    fn the_spectrum_peaks_at_a_sine() {
+    fn sine_view(hz: f32, level: f32) -> InstrumentView {
         let view = InstrumentView::default();
         for (i, v) in view.wave.iter().enumerate() {
-            let x = 0.5 * (std::f32::consts::TAU * 1000.0 * i as f32 / 48_000.0).sin();
+            let x = level * (std::f32::consts::TAU * hz * i as f32 / 48_000.0).sin();
             v.store(x.to_bits(), Ordering::Relaxed);
         }
-        let bands = view.spectrum(64);
-        let peak = (0..64)
-            .max_by(|&a, &b| bands[a].total_cmp(&bands[b]))
-            .unwrap();
-        // 30 Hz to 16 kHz in 64 steps: 1 kHz falls in band 35.
-        assert!((34..=36).contains(&peak), "peak in band {peak}");
-        assert!(bands[peak] > 0.85, "about -6 dB: {}", bands[peak]);
-        assert!(bands[5] < 0.5, "quiet far from it");
+        view
+    }
+
+    fn loudest(points: &[f32]) -> usize {
+        (0..points.len())
+            .max_by(|&a, &b| points[a].total_cmp(&points[b]))
+            .unwrap()
+    }
+
+    #[test]
+    fn the_spectrum_peaks_at_a_sine() {
+        let points = sine_view(1000.0, 0.5).spectrum(160);
+        let peak = loudest(&points);
+        // 30 Hz to 16 kHz over 160 points: 1 kHz is point 89.
+        assert!((88..=90).contains(&peak), "peak at point {peak}");
+        // A -6 dB tone, spread over a sixth of an octave (no tilt at 1 kHz).
+        assert!(
+            (-18.0..=-8.0).contains(&points[peak]),
+            "level {}",
+            points[peak]
+        );
+        assert!(points[10] < points[peak] - 40.0, "quiet far from it");
     }
 
     #[test]
     fn the_spectrum_shows_the_bass() {
-        let view = InstrumentView::default();
-        for (i, v) in view.wave.iter().enumerate() {
-            let x = 0.5 * (std::f32::consts::TAU * 60.0 * i as f32 / 48_000.0).sin();
-            v.store(x.to_bits(), Ordering::Relaxed);
-        }
-        let bands = view.spectrum(64);
-        let peak = (0..64)
-            .max_by(|&a, &b| bands[a].total_cmp(&bands[b]))
-            .unwrap();
-        // 60 Hz is one octave above 30 Hz: band 7 of 64.
-        assert!((6..=8).contains(&peak), "peak in band {peak}");
-        assert!(bands[peak] > 0.7, "loud: {}", bands[peak]);
-        assert!(bands[30] < 0.3, "quiet far above it: {}", bands[30]);
+        let points = sine_view(60.0, 0.5).spectrum(160);
+        let peak = loudest(&points);
+        // 60 Hz is one octave above 30 Hz: point 18 of 160.
+        assert!((16..=20).contains(&peak), "peak at point {peak}");
+        assert!(points[80] < points[peak] - 30.0, "quiet far above it");
+    }
+
+    #[test]
+    fn the_spectrum_rounds_each_harmonic() {
+        // Neighbours of a peak fall off smoothly rather than jumping
+        // between a bin and the gap beside it.
+        let points = sine_view(440.0, 0.5).spectrum(160);
+        let peak = loudest(&points);
+        assert!(points[peak - 1] > points[peak] - 12.0);
+        assert!(points[peak + 1] > points[peak] - 12.0);
     }
 
     #[test]

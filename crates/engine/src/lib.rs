@@ -97,9 +97,10 @@ pub use controls::{
     NUM_EFFECT_UNITS, NUM_HOTCUES, XFADER_CUT_IN,
 };
 pub use effects::{
-    color_fx_name, effect_name, parameter_names, plugin_index, step_effect, InstrumentView,
-    NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
-    MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    color_fx_name, effect_name, parameter_names, plugin_index, spectrum_of, step_effect,
+    InstrumentView, NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS,
+    EFFECT_MENU_ORDER, MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    SCOPE_SAMPLES,
 };
 /// The Remix deck's effect and scene names, as its controls number them.
 pub mod remix {
