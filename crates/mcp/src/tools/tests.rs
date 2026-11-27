@@ -297,3 +297,146 @@ fn serve_answers_line_by_line() {
     assert_eq!(lines[0]["id"], 1);
     assert_eq!(lines[1]["id"], 2);
 }
+
+#[test]
+fn plan_puts_tracks_in_mixing_order_and_saves_it() {
+    let _names = names_lock();
+    let mut lib = Library::in_memory().unwrap();
+    let mut a = track("/m/1.flac", "A", "One", 124.0, "House");
+    a.key = "8A".into();
+    let mut b = track("/m/2.flac", "B", "Two", 120.0, "House");
+    b.key = "3B".into();
+    let mut c = track("/m/3.flac", "C", "Three", 122.0, "House");
+    c.key = "9A".into();
+    let added = lib.add_files(&[a, b, c]).unwrap();
+    for t in &added {
+        lib.save_analysis(t.id, t).unwrap();
+    }
+    let ids: Vec<usize> = added.iter().map(|t| t.id).collect();
+    let mut cx = Ctx::new(lib, None, "").assume_files_exist();
+    let v = call(
+        &mut cx,
+        "plan_set",
+        &json!({"track_ids": ids, "order": "bpm_up"}),
+    )
+    .unwrap();
+    let titles: Vec<&str> = v["tracks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["title"].as_str().unwrap())
+        .collect();
+    assert_eq!(titles, ["Two", "Three", "One"]);
+    assert!(v["tracks"][0]["from_previous"].is_null());
+    assert_eq!(
+        v["tracks"][2]["from_previous"]["key_steps"], 1,
+        "9A into 8A"
+    );
+    assert_eq!(v["total_minutes"], 15.0);
+    let v = call(
+        &mut cx,
+        "plan_set",
+        &json!({"track_ids": ids, "first": ids[0], "save_as": "Warm-up"}),
+    )
+    .unwrap();
+    assert_eq!(v["tracks"][0]["title"], "One", "first stays first");
+    assert_eq!(v["tracks"][1]["title"], "Three", "8A goes to 9A before 3B");
+    let saved = call(&mut cx, "get_list", &json!({"list": "Warm-up"})).unwrap();
+    assert_eq!(saved["total"], 3);
+    let e = call(&mut cx, "plan_set", &json!({})).unwrap_err();
+    assert!(e.contains("list or track_ids"), "{e}");
+}
+
+#[test]
+fn next_ranks_by_key_and_tempo() {
+    let _names = names_lock();
+    let mut lib = Library::in_memory().unwrap();
+    let mut a = track("/m/1.flac", "A", "Now", 124.0, "House");
+    a.key = "8A".into();
+    let mut far = track("/m/2.flac", "B", "Far", 140.0, "Techno");
+    far.key = "2B".into();
+    let mut near = track("/m/3.flac", "C", "Near", 123.0, "House");
+    near.key = "8A".into();
+    let mut half = track("/m/4.flac", "D", "Half", 62.0, "Dub");
+    half.key = "9A".into();
+    let added = lib.add_files(&[a, far, near, half]).unwrap();
+    let mut cx = Ctx::new(lib, None, "").assume_files_exist();
+    let v = call(&mut cx, "suggest_next", &json!({"track_id": added[0].id})).unwrap();
+    let titles: Vec<&str> = v["suggestions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["title"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        titles,
+        ["Near", "Half", "Far"],
+        "half time counts as the same tempo"
+    );
+    let v = call(
+        &mut cx,
+        "suggest_next",
+        &json!({"track_id": added[0].id, "query": "genre:house"}),
+    )
+    .unwrap();
+    assert_eq!(v["suggestions"].as_array().unwrap().len(), 1);
+}
+
+#[test]
+fn analysis_never_runs_while_a_deck_plays() {
+    let _names = names_lock();
+    let (mut cx, ids, _) = setup();
+    opendj_engine::background::set_playing(true);
+    let v = call(&mut cx, "analyze_tracks", &json!({"track_ids": ids}));
+    opendj_engine::background::set_playing(false);
+    let v = v.unwrap();
+    assert_eq!(v["stopped"], "a deck is playing");
+    assert_eq!(v["analysed"], 0);
+    assert_eq!(v["left"], 3);
+    // Quiet decks: it goes ahead (these files don't exist, so each fails).
+    let v = call(&mut cx, "analyze_tracks", &json!({"track_ids": [ids[0]]})).unwrap();
+    assert_eq!(v["stopped"], Value::Null);
+    assert_eq!(v["failed"].as_array().unwrap().len(), 1);
+}
+
+#[test]
+fn stems_are_capped_and_dry_run() {
+    let _names = names_lock();
+    let (mut cx, ids, _) = setup();
+    let many: Vec<usize> = std::iter::repeat_n(ids[0], crate::prep::STEMS_MAX + 1).collect();
+    let e = call(&mut cx, "separate_stems", &json!({"track_ids": many})).unwrap_err();
+    assert!(e.contains("At most"), "{e}");
+    let v = call(
+        &mut cx,
+        "separate_stems",
+        &json!({"track_ids": ids, "dry_run": true}),
+    )
+    .unwrap();
+    assert_eq!(v["would_separate"], 3);
+}
+
+#[test]
+fn health_counts_what_is_missing() {
+    let _names = names_lock();
+    let (mut cx, ids, _) = setup();
+    call(
+        &mut cx,
+        "set_rating",
+        &json!({"track_ids": [ids[0]], "rating": 4}),
+    )
+    .unwrap();
+    let v = call(&mut cx, "health_report", &json!({})).unwrap();
+    let check = |name: &str| {
+        v["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["check"] == name)
+            .unwrap()["tracks"]
+            .as_u64()
+            .unwrap()
+    };
+    assert_eq!(check("no rating"), 2);
+    assert_eq!(check("not analysed"), 3);
+    assert_eq!(check("file not found"), 0);
+}

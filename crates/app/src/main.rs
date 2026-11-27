@@ -1483,7 +1483,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         timer
     };
     // Library commands and the MCP server (`opendj tag …`) touch a marker
-    // file after a change; the browser reads the library again when it moves.
+    // file after a change; the browser reads the library again when it
+    // moves. They also learn here whether a deck plays.
     let _library_marker_timer = settings::config_dir().map(|dir| {
         let marker = opendj_mcp::change_marker(&dir);
         let modified = |p: &std::path::Path| std::fs::metadata(p).and_then(|m| m.modified()).ok();
@@ -1494,6 +1495,8 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
             slint::TimerMode::Repeated,
             std::time::Duration::from_secs(1),
             move || {
+                // Command-line stems and analysis wait while a deck plays.
+                opendj_engine::background::publish_playing();
                 let now = modified(&marker);
                 // Busy (a menu open): try again on the next tick.
                 if now != seen {

@@ -10,11 +10,11 @@
 
 ## 2. Prep batches
 
-- [ ] 2.1 `analyze` and `stems` commands and tools with progress and cancel, sharing a heavy-job lock with the app; always wait while a deck plays (the app keeps a playing marker fresh)
+- [x] 2.1 `analyze` and `stems` commands and tools with progress and cancel, sharing a heavy-job lock with the app; always wait while a deck plays (the app keeps a playing marker fresh); `health` report
 
 ## 3. Set planning
 
-- [ ] 3.1 `plan_set` and `suggest_next` tools on Set Builder and Automix ordering (tempo path, key, energy, played marks)
+- [x] 3.1 `plan_set` and `suggest_next` tools on Automix ordering (tempo path and key; the ordering moved to `opendj_engine::mix_order`)
 
 ## Workflow follow-up
 
