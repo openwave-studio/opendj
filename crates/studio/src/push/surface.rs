@@ -76,6 +76,12 @@ pub const SOLO: u8 = 61;
 pub const NEW: u8 = 87;
 pub const DUPLICATE: u8 = 88;
 pub const DOUBLE_LOOP: u8 = 117;
+pub const RECORD: u8 = 86;
+pub const FIXED_LENGTH: u8 = 90;
+pub const UNDO: u8 = 119;
+
+/// Fixed Length's choices, in bars, on the buttons under the screen.
+pub const FIXED_BARS: [u32; 8] = [1, 2, 4, 8, 16, 32, 64, 128];
 /// Scene buttons right of the pads, top (1/4) to bottom (1/32t).
 pub const SCENE_FIRST: u8 = 36;
 /// Buttons under the display, left to right.
@@ -254,6 +260,8 @@ pub struct Surface {
     /// pasted while it was held.
     dup: Option<Option<(usize, usize)>>,
     dup_used: bool,
+    /// The length Fixed Length turns on with, in bars.
+    fixed_bars: u32,
 }
 
 impl Default for Surface {
@@ -292,6 +300,7 @@ impl Surface {
             mod_used: false,
             dup: None,
             dup_used: false,
+            fixed_bars: 1,
         }
     }
 
@@ -382,7 +391,24 @@ impl Surface {
     fn button(&mut self, cc: u8, press: Press, c: &Controls) {
         let down = press == Press::Down;
         match (cc, press) {
-            (SHIFT | SELECT | STOP | MUTE | SOLO | DUPLICATE, Press::Long) => return,
+            (SHIFT | SELECT | STOP | MUTE | SOLO | DUPLICATE | FIXED_LENGTH, Press::Long) => return,
+            // Fixed Length: tap to switch it on or off; held, the buttons
+            // under the screen pick the bars.
+            (FIXED_LENGTH, Press::Down) => {
+                self.held_mod = Some(cc);
+                self.mod_used = false;
+                return;
+            }
+            (FIXED_LENGTH, _) => {
+                if self.held_mod == Some(cc) {
+                    self.held_mod = None;
+                }
+                if !self.mod_used {
+                    let on = c.fixed_length().is_none();
+                    c.set_fixed_length(on.then_some(self.fixed_bars));
+                }
+                return;
+            }
             // Stop Clip, Mute and Solo: held with a track's button, act on
             // that track; on their own, on the selected track. Stop Clip
             // with Shift stops every track.
@@ -463,7 +489,10 @@ impl Surface {
         }
         if let (Some(m), true) = (self.held_mod, (LOWER_FIRST..LOWER_FIRST + 8).contains(&cc)) {
             let t = bank(c) + (cc - LOWER_FIRST) as usize;
-            if t < c.tracks.len() {
+            if m == FIXED_LENGTH {
+                self.fixed_bars = FIXED_BARS[(cc - LOWER_FIRST) as usize];
+                c.set_fixed_length(Some(self.fixed_bars));
+            } else if t < c.tracks.len() {
                 match m {
                     STOP => c.stop(t),
                     MUTE => c.toggle_mute(t),
@@ -557,6 +586,19 @@ impl Surface {
                     c.stop(t);
                     c.select(t, Some(s));
                 }
+            }
+            // Record: on the selected slot, a new clip if it's empty, else
+            // overdub; again, recording stops and the clip plays on.
+            RECORD => {
+                let (t, s) = match c.recording() {
+                    Some(r) => r,
+                    None => c.steps_slot(),
+                };
+                c.record(t, s);
+            }
+            // Undo; with Shift, redo.
+            UNDO => {
+                c.undo(self.shift);
             }
             DOUBLE_LOOP => {
                 let (t, s) = c.steps_slot();
@@ -782,9 +824,28 @@ impl Surface {
         for cc in [NEW, DOUBLE_LOOP] {
             v.push((cc, Led::solid(W_DIM)));
         }
+        v.push((
+            RECORD,
+            if c.recording().is_some() {
+                Led::solid(RED)
+            } else {
+                Led::solid(RED_DIM)
+            },
+        ));
+        v.push((FIXED_LENGTH, white(c.fixed_length().is_some())));
+        v.push((UNDO, Led::solid(if c.can_undo() { W_DIM } else { W_OFF })));
+        // Fixed Length held: the buttons under the screen are its lengths.
+        if self.held_mod == Some(FIXED_LENGTH) {
+            v.retain(|(cc, _)| !(LOWER_FIRST..LOWER_FIRST + 8).contains(cc));
+            let now = c.fixed_length();
+            for (i, &bars) in FIXED_BARS.iter().enumerate() {
+                let led = if now == Some(bars) { WHITE } else { SOFT };
+                v.push((LOWER_FIRST + i as u8, Led::solid(led)));
+            }
+        }
         // Stop Clip, Mute or Solo held: the buttons under the screen show
         // which tracks it would act on.
-        if let Some(held) = self.held_mod {
+        if let Some(held) = self.held_mod.filter(|&h| h != FIXED_LENGTH) {
             v.retain(|(cc, _)| !(LOWER_FIRST..LOWER_FIRST + 8).contains(cc));
             for t in bank(c)..bank(c) + 8 {
                 let lit = t < tracks
@@ -1006,6 +1067,53 @@ mod tests {
 
         // Tap Tempo doesn't set anything from one tap.
         tap(&mut s, TAP_TEMPO);
+    }
+
+    #[test]
+    fn record_fixed_length_and_undo() {
+        let mut set = crate::clip::demo_set();
+        set[0].slots[7] = None;
+        let (mut studio, r) = Studio::new(&set, 48_000.0, 120.0);
+        let c = Controls::new(&set, &[0xff0000; 4], r.commands, r.monitor);
+        let mut s = Surface::new();
+        let tap = |s: &mut Surface, cc: u8| {
+            s.input(&[0xB0, cc, 127], &c);
+            s.input(&[0xB0, cc, 0], &c);
+        };
+        // Fixed Length held: the buttons under the screen pick 2 bars.
+        s.input(&[0xB0, FIXED_LENGTH, 127], &c);
+        s.input(&[0xB0, LOWER_FIRST + 1, 127], &c);
+        s.input(&[0xB0, FIXED_LENGTH, 0], &c);
+        assert_eq!(c.fixed_length(), Some(2));
+        // Tapped: off, and on again at the same length.
+        tap(&mut s, FIXED_LENGTH);
+        assert_eq!(c.fixed_length(), None);
+        tap(&mut s, FIXED_LENGTH);
+        assert_eq!(c.fixed_length(), Some(2));
+        // Record on the selected empty slot: it records, its pad pulses red.
+        c.select(0, Some(7));
+        tap(&mut s, RECORD);
+        assert_eq!(c.recording(), Some((0, 7)));
+        // Scene 8 is the bottom row: its first pad is index 0.
+        let pad = 0;
+        assert_eq!(
+            s.pad_led(pad, &c, None, None),
+            Led::animate(RED_DIM, PULSE_QUARTER, RED)
+        );
+        let mut out = vec![[0.0f32; 2]; 256];
+        while c.monitor.beat() < 1.0 {
+            studio.process(&mut out);
+        }
+        tap(&mut s, RECORD);
+        assert_eq!(c.recording(), None);
+        assert_eq!(c.notes(0, 7).map(|n| n.0), Some(8.0));
+        // Undo takes the new clip away; Shift + Undo puts it back.
+        tap(&mut s, UNDO);
+        assert!(!c.has_clip(0, 7));
+        s.input(&[0xB0, SHIFT, 127], &c);
+        tap(&mut s, UNDO);
+        s.input(&[0xB0, SHIFT, 0], &c);
+        assert!(c.has_clip(0, 7));
     }
 
     #[test]

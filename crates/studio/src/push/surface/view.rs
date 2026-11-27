@@ -131,6 +131,9 @@ impl Surface {
                 if t >= c.tracks.len() {
                     return Led::OFF;
                 }
+                if c.recording() == Some((t, s)) {
+                    return Led::animate(RED_DIM, PULSE_QUARTER, RED);
+                }
                 match m.slot(t, s) {
                     // Before the audio thread's first report.
                     SlotState::Empty if c.has_clip(t, s) => Led::solid(track_dim(t)),

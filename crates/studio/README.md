@@ -22,6 +22,12 @@ between 1 Bar, 1/4 and None); **▶ N** launches a whole scene and stops
 tracks with an empty slot in it; **■** stops a track on the next bar. Turn
 on **LINK** with openDJ's Link on, and launches land on the bars of the mix.
 
+**●** (by the transport) records the notes you play into the selected
+slot: a new clip from the next bar, or over a clip as it loops. Press it
+again to stop; the clip plays on. ⌘Z / Ctrl+Z undoes clip and mixer edits
+(add Shift to redo). The mixer strip's number switches a track off and
+**S** solos it.
+
 **File** (top left) opens a set (the studio's own `.odset` or a Live set)
 and saves the one open: ⌘S / Ctrl+S saves, ⇧⌘S / Ctrl+Shift+S saves as. A
 saved set keeps the clips, devices (racks and plug-in sounds too), I/O,
@@ -161,6 +167,12 @@ or Live takes the lights back.
   chromatic.
 - Play starts and stops the transport; Quantize steps the launch quantise;
   Metronome clicks on the beat; Tap Tempo sets the tempo from your taps.
+- Record on the selected slot: an empty one records a new clip from the
+  next bar (the song starts if it was stopped); a note clip records over
+  itself as it loops. Record again stops, and the clip plays on. Fixed
+  Length (tap for on or off; hold and pick 1 to 128 bars with the buttons
+  under the screen) stops a new recording at that length. Undo takes back
+  the last clip or mixer edit; Shift + Undo redoes it.
 - New stops the selected track on its next empty slot. Duplicate copies
   the selected clip to the next empty slot below it; held, tap a clip and
   then other slots to copy it there. Double Loop doubles the selected
