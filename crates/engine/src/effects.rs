@@ -1344,6 +1344,13 @@ pub(crate) struct EffectRack {
     legacy: LegacyFlanger,
     /// The Instrument input's plugin, as the plugin host attached it.
     instrument: Option<Box<Attached>>,
+    /// A hardware synth playing as the instrument instead of the plugin
+    /// (see [`crate::hardware_synth`]).
+    hardware: crate::hardware_synth::Out,
+    /// The MIDI thread's half of `hardware`'s queues, until it is taken.
+    hardware_link: Option<crate::hardware_synth::HardwareLink>,
+    /// Host time (µs) the buffer being worked out is heard.
+    heard_at: i64,
     /// Notes for the instrument, from [`NoteInput`], and those waiting to
     /// reach it (kept while it is late, so no note-off is lost).
     notes: rtrb::Consumer<Midi>,
@@ -1690,6 +1697,7 @@ impl EffectRack {
         let (to_engine, from_host) = rtrb::RingBuffer::new(2 * n);
         let (to_host, from_engine) = rtrb::RingBuffer::new(2 * n);
         let (notes_tx, notes) = rtrb::RingBuffer::new(opendj_plugin_host::shm::MAX_EVENTS);
+        let (hardware, hardware_link) = crate::hardware_synth::Out::new(reg);
         let units: [UnitControls; NUM_EFFECT_UNITS] =
             std::array::from_fn(|u| UnitControls::create(reg, u));
         reg.indicator("[Master]", "num_effectsavailable", KINDS.len() as f64)
@@ -1735,6 +1743,9 @@ impl EffectRack {
             }),
             legacy: LegacyFlanger::create(reg),
             instrument: None,
+            hardware,
+            hardware_link: Some(hardware_link),
+            heard_at: 0,
             notes,
             notes_waiting: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             note_input: Some(NoteInput { tx: notes_tx }),
@@ -1879,7 +1890,7 @@ impl EffectRack {
         seq.process(
             frames,
             self.sample_rate,
-            self.transport[target],
+            self.note_transport(target),
             self.scale_root,
             self.scale_mask,
             &self.keys,
@@ -1922,7 +1933,36 @@ impl EffectRack {
     }
 
     pub(crate) fn has_instrument(&self) -> bool {
-        self.instrument.is_some()
+        self.instrument.is_some() || self.hardware.active()
+    }
+
+    /// A hardware synth plays as the instrument: its sound is the
+    /// Instrument input's audio input, not a plugin's.
+    pub(crate) fn plays_hardware(&self) -> bool {
+        self.hardware.active()
+    }
+
+    /// The MIDI thread's half of the hardware synth's queues, once.
+    pub(crate) fn take_hardware_link(&mut self) -> Option<crate::hardware_synth::HardwareLink> {
+        self.hardware_link.take()
+    }
+
+    /// Host time (µs) the buffer about to be worked out is heard, for the
+    /// hardware synth's notes.
+    pub(crate) fn set_heard_at(&mut self, heard_at: i64) {
+        self.heard_at = heard_at;
+    }
+
+    /// The transport the step sequencer and arpeggiator of the instrument
+    /// follow: `target`'s, but ahead by a hardware synth's latency, so its
+    /// notes go out early and are heard on the beat.
+    fn note_transport(&self, target: usize) -> Transport {
+        let mut t = self.transport[target];
+        let ahead = self.hardware.ahead();
+        if ahead > 0.0 && t.bpm.is_finite() && t.bpm > 0.0 {
+            t.beat += ahead * t.bpm / 60.0;
+        }
+        t
     }
 
     /// The first half of playing the instrument: takes the notes that came
@@ -1956,7 +1996,7 @@ impl EffectRack {
                 &self.arp_in,
                 frames,
                 self.sample_rate,
-                self.transport[target],
+                self.note_transport(target),
                 &mut self.notes_waiting,
             );
         } else {
@@ -1966,6 +2006,11 @@ impl EffectRack {
         // Keys come at the buffer's start, the sequencer's and the
         // arpeggiator's notes on their steps: the plugin takes them in order.
         sort_by_frame(&mut self.notes_waiting);
+        if self.hardware.active() {
+            self.hardware
+                .send(self.heard_at, self.sample_rate, params, &self.notes_waiting);
+            return;
+        }
         let Some(a) = self.instrument.as_deref_mut() else {
             self.notes_waiting.clear();
             return;
@@ -1997,6 +2042,14 @@ impl EffectRack {
         self.instrument.is_some()
             && !self.instrument_sent
             && self.instrument_quiet as f32 >= SLEEP_AFTER * self.sample_rate
+    }
+
+    /// The second half for a hardware synth: `buf` holds what came in on
+    /// its input; shows it and the notes it was sent.
+    pub(crate) fn finish_hardware(&mut self, buf: &[[f32; 2]]) {
+        let held = held_after(self.view.held(), &self.notes_waiting);
+        self.notes_waiting.clear();
+        self.show_instrument(Some(buf), held);
     }
 
     /// The second half: the instrument's sound for this buffer into `buf`,
@@ -2094,6 +2147,7 @@ impl EffectRack {
     pub(crate) fn prepare(&mut self, beat_seconds: [f64; TARGETS], now: f64) {
         self.block_start = std::time::Instant::now();
         self.take_plugin_messages();
+        self.hardware.take_changes();
         self.legacy.update(&self.units, &self.slots);
         // `fx_release` lets go of every unit at once, and starts the main
         // mix's brake, spin or cut.
@@ -4597,6 +4651,32 @@ mod tests {
         set("loaded_effect", 2.0);
         slot.update();
         assert_eq!(get("beats"), 0.0);
+    }
+
+    #[test]
+    fn a_hardware_synths_sequencer_and_arp_run_its_latency_ahead() {
+        let reg = ControlRegistry::new();
+        let mut rack = EffectRack::new(&reg, SR as f64);
+        let mut link = rack.take_hardware_link().unwrap();
+        let mut t = [Transport::default(); TARGETS];
+        t[0] = Transport {
+            bpm: 120.0,
+            beat: 8.0,
+            playing: true,
+        };
+        rack.set_transport(t);
+        assert_eq!(rack.note_transport(0).beat, 8.0);
+        let config = crate::hardware_synth::HardwareConfig::default();
+        link.slots
+            .push(Some(crate::hardware_synth::Slot::for_test(&config)))
+            .unwrap();
+        reg.get("[Instrument1]", "hardware_latency")
+            .unwrap()
+            .set(25.0);
+        rack.prepare([0.5; TARGETS], 0.0);
+        // 25 ms at 120 BPM is a twentieth of a beat.
+        assert!((rack.note_transport(0).beat - 8.05).abs() < 1e-9);
+        assert!(rack.plays_hardware() && rack.has_instrument());
     }
 
     #[test]
