@@ -216,8 +216,8 @@ export component Jog inherits Rectangle {
     // as long as the scroll keeps coming. Straight swipes: up or left runs
     // the record forward, down or right back. Circles follow the fingers,
     // clockwise forward: the pointer stays put while scrolling, so a
-    // circle shows as the swipe's direction turning most of a turn one
-    // way while moving on both axes, and once that is seen
+    // circle shows as the swipe's direction turning a third of a turn
+    // one way while moving on both axes, and once that is seen
     // the gesture stays a circle (a swipe back the other way reverses it)
     // so the two rules never fight mid-gesture.
     // A full-height swipe on a laptop trackpad is about one turn.
@@ -226,6 +226,8 @@ export component Jog inherits Rectangle {
     property <duration> scroll-last;
     property <float> scroll-dx;
     property <float> scroll-dy;
+    property <float> scroll-gx;
+    property <float> scroll-gy;
     property <float> scroll-curl;
     property <float> scroll-span-x;
     property <float> scroll-span-y;
@@ -299,6 +301,8 @@ export component Jog inherits Rectangle {
             if !scroll-scratching {
                 scroll-dx = 0;
                 scroll-dy = 0;
+                scroll-gx = 0;
+                scroll-gy = 0;
                 scroll-curl = 0;
                 scroll-span-x = 0;
                 scroll-span-y = 0;
@@ -308,32 +312,45 @@ export component Jog inherits Rectangle {
                 }
                 scroll-scratching = true;
             }
-            // How far the swipe's direction turned since the last step,
-            // clockwise on screen positive. Slow steps (the turnaround of
-            // a back-and-forth swipe) have no reliable direction and are
-            // left out; a swipe straight back is a reversal, not a turn.
-            let prev = sqrt(scroll-dx * scroll-dx + scroll-dy * scroll-dy);
-            if prev >= 3 && size >= 3 {
-                let t = atan2(scroll-dx * dy - scroll-dy * dx, scroll-dx * dx + scroll-dy * dy);
-                if abs(t) > 120deg {
-                    scroll-curl = 0;
-                    scroll-circle = -scroll-circle;
-                } else {
-                    scroll-curl = scroll-curl * 0.97 + t / 1deg;
+            // The record of the gesture fades with time (half gone in
+            // a second), so a slow circle counts as much as a quick one.
+            let fade = pow(0.5, (animation-tick() - scroll-last) / 1000ms);
+            scroll-curl = scroll-curl * fade;
+            scroll-span-x = scroll-span-x * fade + abs(dx);
+            scroll-span-y = scroll-span-y * fade + abs(dy);
+            // Small steps are gathered until they make a few pixels, so
+            // their direction is reliable at any size and speed (a slow
+            // turnaround of a back-and-forth swipe included). Each such
+            // step is compared with the last: how far the direction
+            // turned, clockwise on screen positive. A step straight back
+            // is a reversal, not a turn.
+            scroll-gx += dx;
+            scroll-gy += dy;
+            if sqrt(scroll-gx * scroll-gx + scroll-gy * scroll-gy) >= 3 {
+                if scroll-dx != 0 || scroll-dy != 0 {
+                    let t = atan2(scroll-dx * scroll-gy - scroll-dy * scroll-gx, scroll-dx * scroll-gx + scroll-dy * scroll-gy);
+                    if abs(t) > 120deg {
+                        scroll-curl = 0;
+                        scroll-circle = -scroll-circle;
+                    } else {
+                        scroll-curl += t / 1deg;
+                    }
                 }
+                scroll-dx = scroll-gx;
+                scroll-dy = scroll-gy;
+                scroll-gx = 0;
+                scroll-gy = 0;
             }
-            // How much the swipe moved across and up and down lately.
-            scroll-span-x = scroll-span-x * 0.95 + abs(dx);
-            scroll-span-y = scroll-span-y * 0.95 + abs(dy);
-            // A circle needs the direction to keep turning one way for
-            // most of a turn AND real movement on both axes: up and down
-            // with some drift sideways (or the reverse) stays a swipe.
-            if scroll-circle == 0 && abs(scroll-curl) > 200
-                && min(scroll-span-x, scroll-span-y) > 0.5 * max(scroll-span-x, scroll-span-y) {
+            // A circle needs the direction to keep turning one way for a
+            // third of a turn, less for a big one (its steps are long and
+            // steady), AND real movement on both axes: up and down with
+            // some drift sideways (or the reverse) stays a swipe.
+            let span = max(scroll-span-x, scroll-span-y);
+            let needed = span > 300 ? 90 : 120;
+            if scroll-circle == 0 && abs(scroll-curl) > needed
+                && min(scroll-span-x, scroll-span-y) > 0.5 * span {
                 scroll-circle = scroll-curl > 0 ? 1 : -1;
             }
-            scroll-dx = dx;
-            scroll-dy = dy;
             scroll-last = animation-tick();
             let along = scroll-circle != 0 ? scroll-circle * size
                 : abs(dy) >= abs(dx) ? -dy : -dx;
