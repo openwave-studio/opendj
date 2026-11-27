@@ -1,14 +1,16 @@
-//! The piano roll (OpenSpec change add-studio-piano-roll, step 2): the open
-//! clip, the view (zoom and scroll), fold, ghost notes and the grid, and
-//! building what `ui/piano_roll.slint` draws. Only what is in view becomes
-//! a Slint element; grid lines are three paths.
+//! The piano roll (OpenSpec change add-studio-piano-roll): the open clip,
+//! the view (zoom and scroll), fold, ghost notes and the grid, and building
+//! what `ui/piano_roll.slint` draws. Only what is in view becomes a Slint
+//! element; grid lines are three paths. Editing is in [`edit`].
+
+mod edit;
 
 use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use opendj_studio_engine::note_edit::{self, Density, Grid, GridSettings, FIXED};
+use opendj_studio_engine::note_edit::{Density, Grid, GridSettings, Quantize, FIXED};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use crate::clip::Note;
@@ -16,8 +18,10 @@ use crate::control::Controls;
 use crate::engine::SlotState;
 use crate::scale::{Key, NOTE_NAMES, SCALES};
 use crate::{
-    color, AppWindow, Piano, PianoGhost, PianoLegend, PianoMark, PianoNote, PianoRow, PianoWindow,
+    color, AppWindow, Piano, PianoGhost, PianoLane, PianoLegend, PianoMark, PianoMenuItem,
+    PianoNote, PianoRow, PianoWindow,
 };
+use edit::Drag;
 
 /// The keys' width, and a Drum Rack's pad names'.
 pub const KEYS_W: f64 = 38.0;
@@ -30,6 +34,17 @@ const MIN_PPB: f64 = 2.0;
 const MAX_PPB: f64 = 640.0;
 /// Edits kept for undo.
 const UNDO_DEPTH: usize = 200;
+/// Quantize Settings' own grids (after "Current grid").
+const QUANTIZE_GRIDS: [f64; 5] = [1.0, 0.5, 0.25, 0.125, 0.0625];
+const QUANTIZE_GRID_NAMES: [&str; 6] = ["Current grid", "1/4", "1/8", "1/16", "1/32", "1/64"];
+
+/// What the lane under the notes shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Lane {
+    #[default]
+    Velocity,
+    Chance,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Fold {
@@ -324,6 +339,21 @@ pub fn legend(sources: &[Source]) -> Vec<(String, u32)> {
     out.into_iter().map(|(l, c, _)| (l, c)).collect()
 }
 
+/// A note in view: where it is drawn and how.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct NoteRect {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub selected: bool,
+    pub muted: bool,
+    /// Outside the loop.
+    pub outside: bool,
+    pub velocity: f32,
+    pub chance: f32,
+}
+
 /// What the panel draws, built from the clip and the view.
 #[derive(Clone, Debug, Default)]
 pub struct Frame {
@@ -333,8 +363,8 @@ pub struct Frame {
     pub drums: bool,
     /// Rows in view: y, height, pitch, label.
     pub rows: Vec<(f64, f64, u8, String)>,
-    /// Notes in view: x, y, w, h, muted, outside the loop.
-    pub notes: Vec<(f64, f64, f64, f64, bool, bool)>,
+    /// Notes in view.
+    pub notes: Vec<NoteRect>,
     /// Ghosts in view: x, y, w, h, colour.
     pub ghosts: Vec<(f64, f64, f64, f64, u32)>,
     pub legend: Vec<(String, u32)>,
@@ -345,6 +375,9 @@ pub struct Frame {
     pub start_text: String,
     pub length_text: String,
     pub count: usize,
+    pub selected: usize,
+    /// The lane's markers: x, width, value 0..1, selected.
+    pub lane: Vec<(f64, f64, f32, bool)>,
 }
 
 /// A clip's notes and loop, as undo keeps them.
@@ -361,10 +394,34 @@ pub struct Editor {
     pub hear: bool,
     pub draw: bool,
     pub view: View,
+    /// The lane under the notes.
+    pub lane: Lane,
+    /// A Drum Rack track: its own fold, folded to the pads in use at first.
+    drums: bool,
+    drum_fold: Fold,
     /// Zoom to the clip once the panel has a size.
     fit: bool,
     undo: Vec<Snapshot>,
     redo: Vec<Snapshot>,
+    /// Which of the clip's notes are selected (by index).
+    sel: Vec<bool>,
+    /// The rows' pitches top to bottom and their height, as last drawn.
+    layout: Vec<u8>,
+    rh: f64,
+    /// The rows while a drag runs, so they hold still.
+    frozen: Option<Vec<u8>>,
+    drag: Option<Drag>,
+    clipboard: Vec<Note>,
+    /// Where Paste puts notes, in beats.
+    insert: f64,
+    /// The note playing because of the pointer.
+    sounding: Option<u8>,
+    /// What the pointer is over: 0 grid, 1 a note's end, 2 a note.
+    pub cursor: i32,
+    quantize: Quantize,
+    /// Quantize Settings' grid; None follows the piano roll's.
+    quantize_grid: Option<f64>,
+    pub quantize_open: bool,
 }
 
 impl Default for Editor {
@@ -378,9 +435,24 @@ impl Default for Editor {
             hear: true,
             draw: false,
             view: View::default(),
+            lane: Lane::Velocity,
+            drums: false,
+            drum_fold: Fold::Used,
             fit: true,
             undo: Vec::new(),
             redo: Vec::new(),
+            sel: Vec::new(),
+            layout: Vec::new(),
+            rh: ROW_H,
+            frozen: None,
+            drag: None,
+            clipboard: Vec::new(),
+            insert: 0.0,
+            sounding: None,
+            cursor: 0,
+            quantize: Quantize::default(),
+            quantize_grid: None,
+            quantize_open: false,
         }
     }
 }
@@ -400,9 +472,30 @@ impl Editor {
         if self.open != Some((track, scene)) {
             self.undo.clear();
             self.redo.clear();
+            self.sel.clear();
+            self.insert = 0.0;
         }
+        self.drag = None;
+        self.frozen = None;
         self.open = Some((track, scene));
         self.fit = true;
+    }
+
+    /// The fold in use: a drum track keeps its own.
+    pub fn fold(&self) -> Fold {
+        if self.drums {
+            self.drum_fold
+        } else {
+            self.fold
+        }
+    }
+
+    pub fn set_fold(&mut self, f: Fold) {
+        if self.drums {
+            self.drum_fold = f;
+        } else {
+            self.fold = f;
+        }
     }
 
     /// The rows for the open clip, and the pitches it and its ghosts use.
@@ -416,7 +509,23 @@ impl Editor {
             .chain(ghosts.iter().map(|(n, _)| n.pitch))
             .collect();
         let pads = drum_pads(c, t);
-        rows(self.fold, &c.key(), pads.as_deref(), &used)
+        let rows = rows(self.fold(), &c.key(), pads.as_deref(), &used);
+        match &self.frozen {
+            // Mid-drag: the rows the drag started with, renamed.
+            Some(f) => f
+                .iter()
+                .map(|&p| {
+                    rows.iter()
+                        .find(|r| r.pitch == p)
+                        .cloned()
+                        .unwrap_or_else(|| Row {
+                            pitch: p,
+                            label: note_name(p),
+                        })
+                })
+                .collect(),
+            None => rows,
+        }
     }
 
     /// The clips whose notes show as ghosts.
@@ -469,7 +578,10 @@ impl Editor {
         if info.audio() {
             return None;
         }
-        let (beats, notes) = c.notes(t, s)?;
+        self.drums = info.drums();
+        c.notes(t, s)?;
+        let notes = self.notes(c);
+        let beats = c.clip_info(t, s).map_or(4.0, |(_, b)| b);
         let loop_start = c.loop_start(t, s);
         let end = extent(&notes, loop_start, beats);
         let v = &mut self.view;
@@ -506,6 +618,8 @@ impl Editor {
         }
         v.clamp_top(rows.len());
         let v = self.view;
+        self.layout = rows.iter().map(|r| r.pitch).collect();
+        self.rh = rh;
         let index: HashMap<u8, usize> =
             rows.iter().enumerate().map(|(i, r)| (r.pitch, i)).collect();
         let row_y = |p: u8| index.get(&p).map(|&i| i as f64 * rh - v.top);
@@ -535,12 +649,34 @@ impl Editor {
                 .rows
                 .push((i as f64 * rh - v.top, rh, r.pitch, r.label.clone()));
         }
-        for n in &notes {
+        for (n, &selected) in notes.iter().zip(&self.sel) {
             let Some(y) = row_y(n.pitch) else { continue };
             let (x, w) = (v.x(n.start), n.length * v.ppb);
             if visible(x, w, y) {
                 let outside = n.start < loop_start - 1e-9 || n.start >= loop_start + beats - 1e-9;
-                frame.notes.push((x, y, w, rh, n.muted, outside));
+                frame.notes.push(NoteRect {
+                    x,
+                    y,
+                    w,
+                    h: rh,
+                    selected,
+                    muted: n.muted,
+                    outside,
+                    velocity: n.velocity,
+                    chance: n.chance,
+                });
+            }
+        }
+        frame.selected = self.selected();
+        for (n, &selected) in notes.iter().zip(&self.sel) {
+            let (x, w) = (v.x(n.start), n.length * v.ppb);
+            if x + w >= 0.0 && x <= v.w && !(self.fold() == Fold::Used && row_y(n.pitch).is_none())
+            {
+                let value = match self.lane {
+                    Lane::Velocity => n.velocity,
+                    Lane::Chance => n.chance,
+                };
+                frame.lane.push((x, w, value, selected));
             }
         }
         for (n, col) in &ghosts {
@@ -576,80 +712,26 @@ impl Editor {
         }
     }
 
-    /// Changes the open clip, keeping its notes and loop for undo.
-    pub fn edit(&mut self, c: &Controls, f: impl FnOnce(&mut Vec<Note>, &mut f64, &mut f64)) {
-        let Some((t, s)) = self.open else { return };
-        let mut before = None;
-        c.edit_notes(t, s, |clip| {
-            before = Some((clip.notes.clone(), clip.loop_start, clip.beats));
-            f(&mut clip.notes, &mut clip.loop_start, &mut clip.beats);
-        });
-        if let Some(b) = before {
-            self.undo.push(b);
-            if self.undo.len() > UNDO_DEPTH {
-                self.undo.remove(0);
-            }
-            self.redo.clear();
-        }
-    }
-
-    /// Undo (or redo) the last edit.
-    pub fn undo(&mut self, c: &Controls, redo: bool) {
-        let Some((t, s)) = self.open else { return };
-        let (from, to) = if redo {
-            (&mut self.redo, &mut self.undo)
-        } else {
-            (&mut self.undo, &mut self.redo)
-        };
-        let Some((notes, ls, beats)) = from.pop() else {
-            return;
-        };
-        c.edit_notes(t, s, |clip| {
-            to.push((clip.notes.clone(), clip.loop_start, clip.beats));
-            clip.notes = notes;
-            clip.loop_start = ls;
-            clip.beats = beats;
-        });
-    }
-
-    /// A tool from the clip column on every note (selecting comes next).
+    /// A tool from the clip column, on the selection (or every note).
     pub fn tool(&mut self, c: &Controls, which: i32) {
-        let step = self.grid.step(self.view.ppb);
-        let key = c.key();
-        let fold = self.fold;
-        self.edit(c, |notes, ls, beats| {
-            let mut sel = vec![true; notes.len()];
-            match which {
-                0 => note_edit::quantize(
-                    notes,
-                    &mut sel,
-                    &note_edit::Quantize {
-                        step,
-                        ..Default::default()
-                    },
-                ),
-                1 => note_edit::legato(notes, &sel, *ls + *beats),
-                2 | 3 => {
-                    let d = if which == 2 { -1 } else { 1 };
-                    if fold == Fold::Scale {
-                        note_edit::transpose_in_scale(notes, &sel, d, &key);
-                    } else {
-                        note_edit::transpose(notes, &mut sel, d);
-                    }
-                }
-                4 => note_edit::reverse(notes, &mut sel),
-                5 => note_edit::scale_time(notes, &mut sel, 2.0),
-                6 => note_edit::scale_time(notes, &mut sel, 0.5),
-                _ => {}
-            }
-        });
+        let id = match which {
+            0 => "quantize",
+            1 => "legato",
+            2 => "transpose-down",
+            3 => "transpose-up",
+            4 => "reverse",
+            5 => "double",
+            6 => "half",
+            _ => return,
+        };
+        self.action(c, id);
     }
 
     /// The loop start (by a beat) or length (by a bar, or a beat when a bar
     /// or shorter) one step along.
     pub fn nudge(&mut self, c: &Controls, which: i32, dir: i32) {
         let d = dir.signum() as f64;
-        self.edit(c, |_, ls, beats| {
+        self.edit(c, |_, _, ls, beats| {
             if which == 0 {
                 *ls = (*ls + d).max(0.0);
             } else {
@@ -762,6 +844,9 @@ impl Ctx {
         let p = main.global::<Piano>();
         p.set_root_names(ModelRc::from(Rc::new(VecModel::from(names))));
         p.set_scale_names(ModelRc::from(Rc::new(VecModel::from(scales))));
+        p.set_q_grids(model(
+            QUANTIZE_GRID_NAMES.iter().map(|&n| n.into()).collect(),
+        ));
         ctx
     }
 
@@ -791,11 +876,6 @@ impl Ctx {
             }
         }
         true
-    }
-
-    pub fn undo(&self, redo: bool) {
-        self.editor.borrow_mut().undo(&self.controls, redo);
-        self.dirty.set(true);
     }
 
     /// Follows the selected slot when it holds a note clip.
@@ -845,6 +925,17 @@ impl Ctx {
             }
         }
         p.set_playhead(ed.playhead(&self.controls) as f32);
+        p.set_cursor(ed.cursor);
+        p.set_quantize_open(ed.quantize_open);
+        match ed.box_rect() {
+            Some((x, y, w, h)) => {
+                p.set_box_w(w as f32);
+                p.set_box_h(h as f32);
+                p.set_box_x(x as f32);
+                p.set_box_y(y as f32);
+            }
+            None => p.set_box_w(-1.0),
+        }
     }
 
     /// Pops the piano roll out into its own window, or docks it back.
@@ -865,14 +956,8 @@ impl Ctx {
                 let p = w.global::<Piano>();
                 p.set_root_names(from.get_root_names());
                 p.set_scale_names(from.get_scale_names());
+                p.set_q_grids(from.get_q_grids());
                 p.set_popped(true);
-                let ctx = Rc::downgrade(self);
-                w.on_undo(move |redo| {
-                    if let Some(ctx) = ctx.upgrade() {
-                        ctx.editor.borrow_mut().undo(&ctx.controls, redo);
-                        ctx.dirty.set(true);
-                    }
-                });
                 let ctx = Rc::downgrade(self);
                 w.window().on_close_requested(move || {
                     if let Some(ctx) = ctx.upgrade() {
@@ -903,9 +988,10 @@ fn show(p: &Piano, ed: &Editor, f: &Frame, key: &Key) {
     p.set_drums(f.drums);
     p.set_keys_width(px(if f.drums { PADS_W } else { KEYS_W }));
     p.set_sel_info(
-        match f.count {
-            1 => "1 note".to_string(),
-            n => format!("{n} notes"),
+        match (f.selected, f.count) {
+            (0, 1) => "1 note".to_string(),
+            (0, n) => format!("{n} notes"),
+            (s, n) => format!("{s} of {n} selected"),
         }
         .into(),
     );
@@ -937,18 +1023,40 @@ fn show(p: &Piano, ed: &Editor, f: &Frame, key: &Key) {
     p.set_notes(model(
         f.notes
             .iter()
-            .map(|&(x, y, w, h, muted, outside)| PianoNote {
-                x: px(x),
-                y: px(y),
-                w: px(w),
-                h: px(h),
+            .map(|n| PianoNote {
+                x: px(n.x),
+                y: px(n.y),
+                w: px(n.w),
+                h: px(n.h),
                 color: col,
-                selected: false,
-                muted,
-                outside,
+                selected: n.selected,
+                muted: n.muted,
+                outside: n.outside,
+                velocity: n.velocity,
+                chance: if n.chance < 0.995 && n.w >= 28.0 && n.h >= 11.0 {
+                    format!("{:.0}%", n.chance * 100.0).into()
+                } else {
+                    SharedString::new()
+                },
+                dim: n.chance < 0.995,
             })
             .collect(),
     ));
+    p.set_lane(model(
+        f.lane
+            .iter()
+            .map(|&(x, w, value, selected)| PianoLane {
+                x: px(x),
+                w: px(w),
+                value,
+                selected,
+            })
+            .collect(),
+    ));
+    p.set_lane_mode(match ed.lane {
+        Lane::Velocity => 0,
+        Lane::Chance => 1,
+    });
     p.set_ghosts(model(
         f.ghosts
             .iter()
@@ -989,7 +1097,7 @@ fn show(p: &Piano, ed: &Editor, f: &Frame, key: &Key) {
     p.set_draw(ed.draw);
     p.set_highlight(ed.highlight);
     p.set_hear(ed.hear);
-    p.set_fold(match ed.fold {
+    p.set_fold(match ed.fold() {
         Fold::Off => 0,
         Fold::Scale => 1,
         Fold::Used => 2,
@@ -1007,6 +1115,18 @@ fn show(p: &Piano, ed: &Editor, f: &Frame, key: &Key) {
     let (a, x) = ed.grid_ticks();
     p.set_adaptive(a);
     p.set_fixed(x);
+    let q = ed.quantize;
+    p.set_q_grid(
+        QUANTIZE_GRID_NAMES[ed
+            .quantize_grid
+            .and_then(|g| QUANTIZE_GRIDS.iter().position(|&x| (x - g).abs() < 1e-9))
+            .map_or(0, |i| i + 1)]
+        .into(),
+    );
+    p.set_q_start(q.start);
+    p.set_q_end(q.end);
+    p.set_q_amount(format!("{:.0}%", q.amount * 100.0).into());
+    p.set_q_swing(format!("{:.0}%", q.swing * 100.0).into());
 }
 
 fn model<T: Clone + 'static>(v: Vec<T>) -> ModelRc<T> {
@@ -1046,11 +1166,11 @@ fn wire(p: &Piano, ctx: &Rc<Ctx>) {
     let weak = Rc::downgrade(ctx);
     p.on_set_fold(move |i| {
         if let Some(ctx) = weak.upgrade() {
-            ctx.editor.borrow_mut().fold = match i {
+            ctx.editor.borrow_mut().set_fold(match i {
                 1 => Fold::Scale,
                 2 => Fold::Used,
                 _ => Fold::Off,
-            };
+            });
             ctx.dirty.set(true);
         }
     });
@@ -1107,6 +1227,113 @@ fn wire(p: &Piano, ctx: &Rc<Ctx>) {
     p.on_nudge(move |which, d| {
         if let Some(ctx) = weak.upgrade() {
             ctx.editor.borrow_mut().nudge(&ctx.controls, which, d);
+            ctx.dirty.set(true);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_pointer(move |kind, x, y, shift, alt, pressed| {
+        if let Some(ctx) = weak.upgrade() {
+            let c = &ctx.controls;
+            let mut ed = ctx.editor.borrow_mut();
+            let (x, y) = (x as f64, y as f64);
+            match kind {
+                0 => ed.press(c, x, y, shift),
+                1 => ed.release(c),
+                _ if pressed => ed.drag_to(c, x, y, shift, alt),
+                _ => {
+                    ed.hover(c, x, y);
+                    return;
+                }
+            }
+            ctx.dirty.set(true);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_double(move |x, y| {
+        if let Some(ctx) = weak.upgrade() {
+            ctx.editor
+                .borrow_mut()
+                .double(&ctx.controls, x as f64, y as f64);
+            ctx.dirty.set(true);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_context(move |x, y| {
+        let Some(ctx) = weak.upgrade() else {
+            return ModelRc::default();
+        };
+        let mut ed = ctx.editor.borrow_mut();
+        ed.context(&ctx.controls, x as f64, y as f64);
+        ctx.dirty.set(true);
+        model(
+            ed.menu(&ctx.controls)
+                .into_iter()
+                .map(|m| PianoMenuItem {
+                    id: m.id.into(),
+                    label: m.label.into(),
+                    keys: m.keys.into(),
+                    ticked: m.ticked,
+                    enabled: m.enabled,
+                    line: m.line,
+                })
+                .collect(),
+        )
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_action(move |id| {
+        if let Some(ctx) = weak.upgrade() {
+            ctx.editor.borrow_mut().action(&ctx.controls, id.as_str());
+            ctx.dirty.set(true);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_key(move |text, shift, cmd, alt| {
+        let Some(ctx) = weak.upgrade() else {
+            return false;
+        };
+        let used = ctx
+            .editor
+            .borrow_mut()
+            .key(&ctx.controls, text.as_str(), shift, cmd, alt);
+        if used {
+            ctx.dirty.set(true);
+        }
+        used
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_audition(move |y, down| {
+        if let Some(ctx) = weak.upgrade() {
+            ctx.editor
+                .borrow_mut()
+                .audition(&ctx.controls, y as f64, down);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_lane_pointer(move |kind, x, y, h| {
+        if let Some(ctx) = weak.upgrade() {
+            let c = &ctx.controls;
+            let mut ed = ctx.editor.borrow_mut();
+            match kind {
+                0 => ed.lane_press(c, x as f64, y as f64, h as f64),
+                1 => ed.release(c),
+                _ => ed.lane_drag(c, x as f64, y as f64),
+            }
+            ctx.dirty.set(true);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_set_lane(move |i| {
+        if let Some(ctx) = weak.upgrade() {
+            ctx.editor.borrow_mut().lane = if i == 1 { Lane::Chance } else { Lane::Velocity };
+            ctx.dirty.set(true);
+        }
+    });
+    let weak = Rc::downgrade(ctx);
+    p.on_quantize(move |what, value| {
+        if let Some(ctx) = weak.upgrade() {
+            ctx.editor
+                .borrow_mut()
+                .quantize_settings(&ctx.controls, what, value);
             ctx.dirty.set(true);
         }
     });
