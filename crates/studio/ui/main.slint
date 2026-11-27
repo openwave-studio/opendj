@@ -6,8 +6,8 @@ export { PushScreen, PushTrack, PushKnob, PushMenu }
 
 import { Theme, Pill, Picker } from "theme.slint";
 export { Theme }
-import { Piano, PianoRoll, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend } from "piano_roll.slint";
-export { Piano, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend }
+import { Piano, PianoRoll, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend, PianoLane, PianoMenuItem } from "piano_roll.slint";
+export { Piano, PianoWindow, PianoRow, PianoNote, PianoGhost, PianoMark, PianoLegend, PianoLane, PianoMenuItem }
 
 // Slot states, as the audio thread reports them.
 export enum SlotState { empty, stopped, queued, playing, stopping }
@@ -2144,8 +2144,6 @@ export component AppWindow inherits Window {
     callback launch-clip(int, int);   // track, scene
     // Double-click on a slot: its notes in the bottom panel.
     callback open-notes(int, int);   // track, scene
-    // ⌘Z and ⇧⌘Z while the piano roll shows.
-    callback piano-undo(bool);
     // Record on the selected slot (or stop recording), and the set's undo.
     callback record();
     callback undo(bool);
@@ -2154,7 +2152,7 @@ export component AppWindow inherits Window {
     in property <int> rec-scene: -1;
     // The piano roll instead of the devices along the bottom, and its height.
     in-out property <bool> notes-shown;
-    in-out property <length> panel-height: 320px;
+    in-out property <length> panel-height: 390px;
     callback launch-scene(int);
     callback stop-track(int);
     callback stop-all();
@@ -2224,14 +2222,15 @@ export component AppWindow inherits Window {
                     root.file(0);
                     return accept;
                 }
-                if root.notes-shown && (event.text == "z" || event.text == "Z") {
-                    root.piano-undo(event.modifiers.shift);
-                    return accept;
-                }
                 if event.text == "z" || event.text == "Z" {
                     root.undo(event.modifiers.shift);
                     return accept;
                 }
+            }
+            // The piano roll's shortcuts while it shows.
+            if root.notes-shown && Piano.key(event.text, event.modifiers.shift,
+                    event.modifiers.control || event.modifiers.meta, event.modifiers.alt) {
+                return accept;
             }
             // Tab: the clip's notes or the track's devices.
             if event.text == Key.Tab && !event.modifiers.control && !event.modifiers.meta {

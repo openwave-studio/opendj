@@ -1,22 +1,24 @@
 # Proposal
 
-Planned for: **v1.0 · Ready for any DJ switching over**
+Planned for: **v0.9.6 · More test releases before 1.0**
 
 ## Why
 
-No other DJ app can be driven from an AI assistant. openDJ's control names and library crate make a local MCP server straightforward.
+Library work (finding tracks, building lists, tagging, overnight prep) is slow by hand and easy to describe in words. A command line and a local Model Context Protocol server let scripts and AI assistants do it, without touching the decks. Live deck control is its own change, `add-live-mcp`, because it needs on-air safety rules first.
 
 ## What Changes
 
-- A local Model Context Protocol server, off by default.
-- Tools: search the library, build and edit lists, tag tracks, load, play, cue and sync decks, set FX and loops, record, read what's playing.
-- A library-only mode that can't touch the decks.
+- `opendj <command>`: headless commands on the same binary, for search, track details, lists, ratings and tags, with `--json` output for scripts. They open the library directly and never start audio, the window or controllers.
+- `opendj mcp`: the same commands as MCP tools over stdio. The assistant launches it; it opens no network port and can't reach the decks.
+- A running openDJ reloads the library when a command changed it (a change marker file it watches).
+- Bulk writes take `dry_run` and are capped per call. Track text (comments, tags, names) comes back as plain data fields, cut to a length, with control characters removed.
+- Later steps: prep batches (analysis, stems) that share a heavy-job lock with the app and always wait while a deck plays; set planning tools.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `mcp-server`: control openDJ from an AI assistant over MCP
+- `mcp-server`: a command line and a local MCP server for library work
 
 ### Modified Capabilities
 
@@ -24,9 +26,10 @@ None.
 
 ## Out of Scope
 
-- Cloud access.
-- Voice control.
+- Deck control (see `add-live-mcp`).
+- Network transports and cloud access.
+- Deleting files.
 
 ## Impact
 
-New crate or app module; uses the control registry and library.
+New crate `crates/mcp` (opendj-mcp) on the library crate; the app binary hands its first argument to it; the browser reloads on the change marker.

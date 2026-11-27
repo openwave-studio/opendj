@@ -52,6 +52,7 @@ pub mod loudness;
 pub mod lyrics;
 pub mod meter;
 pub mod midi_clock;
+pub mod mix_order;
 mod output;
 pub mod paths;
 pub mod patterns;

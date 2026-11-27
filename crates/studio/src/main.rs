@@ -674,12 +674,6 @@ fn ui(
                 p.open(t as usize, s as usize);
             }
         });
-        let p = Rc::downgrade(&piano);
-        window.on_piano_undo(move |redo| {
-            if let Some(p) = p.upgrade() {
-                p.undo(redo);
-            }
-        });
     }
     {
         let c = controls.clone();
