@@ -1,0 +1,10 @@
+[package]
+name = "beat-bench"
+description = "Scores openDJ's beat grids against tracks whose beats are known"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+opendj-engine = { path = "../engine" }
