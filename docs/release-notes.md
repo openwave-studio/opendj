@@ -11,6 +11,10 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 - **Never while you play**: analysis and stems from the command line or an assistant wait while any deck plays, and only one stem separation runs at a time across the app and the command line.
 - The user guide has a new **Command line** page with setup steps.
 
+**Decks**
+
+- **Scratch with the on-screen jog**: drag its top, or move two fingers anywhere over it on a trackpad (up or left forward, down or right back, circles follow your fingers). The rim still bends the speed.
+
 **openDJ Studio (preview)**
 
 - **Piano roll editing**: draw, select, move and resize notes, Velocity and Chance lanes, hear notes as you edit, a right-click menu with Quantize, Chop, Join and Fold to Scale, Live's shortcuts, and a drum mode with pad names. Edits while a clip plays swap in without a click.
@@ -23,6 +27,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 
 **Instruments and controllers**
 
+- **Knob names**: instrument deck knobs show long names in full on up to two lines, and a knob's value pops up beside it while you hover or turn it.
 - **Hardware synths** (engine, no screen yet): the instrument deck can play a synth over USB MIDI and hear it back on an audio input, with notes sent early by the synth's latency, program changes, and MIDI clock and Start/Stop following its deck. Profiles for the Arturia MicroFreak, Arturia MiniFreak and Moog Messenger are built in.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
 
