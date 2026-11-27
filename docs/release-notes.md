@@ -14,6 +14,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 **Decks**
 
 - **Scratch with the on-screen jog**: drag its top, or move two fingers anywhere over it on a trackpad (up or left forward, down or right back, circles follow your fingers). The rim still bends the speed.
+- **Mixer**: the EQ / STEMS / SCULPT knob mode button opens a working drop-down again, now with an icon per mode and a check on the current one.
 
 **openDJ Studio (preview)**
 
@@ -30,6 +31,10 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 - **Knob names**: instrument deck knobs show long names in full on up to two lines, and a knob's value pops up beside it while you hover or turn it.
 - **Hardware synths** (engine, no screen yet): the instrument deck can play a synth over USB MIDI and hear it back on an audio input, with notes sent early by the synth's latency, program changes, and MIDI clock and Start/Stop following its deck. Profiles for the Arturia MicroFreak, Arturia MiniFreak and Moog Messenger are built in.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
+
+**Phone remote**
+
+- A new **Deck** tab turns an iPad or phone into any deck (deck 3 at first) with a scrolling waveform, hot cue, loop and beat jump pads, pitch and the channel strip, over Wi-Fi with nothing to map.
 
 **Fixes and checks**
 
