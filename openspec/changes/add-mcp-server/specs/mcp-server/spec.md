@@ -1,33 +1,58 @@
 ## Purpose
 
-Letting an AI assistant search and organise the library and, when allowed, drive the decks, through a local Model Context Protocol server.
+Letting scripts and AI assistants search and organise the library through a command line and a local Model Context Protocol server, without touching the decks.
 
 ## ADDED Requirements
 
-### Requirement: Off by default, local only
-The MCP server SHALL be off until turned on in Settings, and SHALL only accept connections from the same computer.
+### Requirement: Headless commands
+The app binary SHALL run library commands given as arguments (`opendj search`, `opendj track`, `opendj lists`, `opendj list`, `opendj rate`, `opendj tag`) without opening a window, audio or controllers, and SHALL print JSON with `--json`.
 
-#### Scenario: Remote refused
-- **WHEN** a connection comes from another machine
-- **THEN** it is refused
+#### Scenario: Search from a terminal
+- **WHEN** `opendj search 'bpm:120-124 genre:house' --json` runs
+- **THEN** it prints the matching tracks as JSON and exits
+
+#### Scenario: No library
+- **WHEN** a command runs and there is no library yet
+- **THEN** it says so and exits without creating one
+
+### Requirement: Local MCP server over stdio
+`opendj mcp` SHALL serve the same commands as MCP tools over stdin and stdout, and SHALL open no network port.
+
+#### Scenario: Assistant lists tools
+- **WHEN** an assistant starts `opendj mcp` and asks for its tools
+- **THEN** it gets the library tools with their input schemas and read-only or destructive hints
 
 ### Requirement: Library tools
-The server SHALL offer tools to search tracks, read and edit tags and ratings, and create and fill lists.
+The server SHALL offer tools to search tracks, read a track, list lists, read a list, create a list, add tracks to a list, set ratings and add or remove tags.
 
 #### Scenario: Warm-up list
-- **WHEN** an assistant asks for 118-122 BPM house tracks as a new list
-- **THEN** the list appears in the tree
+- **WHEN** an assistant searches for 118-122 BPM house tracks and adds them to a new list
+- **THEN** the list appears in a running openDJ's tree within a few seconds
 
-### Requirement: Deck tools
-The server SHALL offer tools to load, play, cue, sync, set loops and effects, record, and read deck state, through the same controls as controllers.
+### Requirement: No deck control
+The commands and the MCP server SHALL NOT load, play or change anything on a deck.
 
-#### Scenario: Load and play
-- **WHEN** an assistant loads a track on deck 2 and plays it
-- **THEN** deck 2 plays it
+#### Scenario: Deck untouched
+- **WHEN** any tool is called while a deck plays
+- **THEN** the deck plays on unchanged
 
-### Requirement: Library-only mode
-In library-only mode, deck tools SHALL be refused, so the decks can't be touched during a live set.
+### Requirement: Safe writes
+A write SHALL take at most 500 tracks per call, SHALL accept `dry_run` to report the change without making it, and no tool SHALL delete tracks, files or lists.
 
-#### Scenario: Refused
-- **WHEN** library-only is on and a play tool is called
-- **THEN** the call is refused and the deck is untouched
+#### Scenario: Dry run
+- **WHEN** `opendj tag add Mood Peak --where 'rating:5' --dry-run` runs
+- **THEN** it reports how many tracks would be tagged and changes none
+
+### Requirement: Track text is data
+Results SHALL return track text in named fields, cut to a set length and stripped of control characters.
+
+#### Scenario: Long comment
+- **WHEN** a track's comment is 5,000 characters of instructions
+- **THEN** the result carries its first 300 characters in the `comment` field
+
+### Requirement: App reloads
+A running openDJ SHALL reload its library when a command changed it.
+
+#### Scenario: Rating from the terminal
+- **WHEN** `opendj rate 1234 5` runs while openDJ is open
+- **THEN** the browser shows five stars on that track within a few seconds

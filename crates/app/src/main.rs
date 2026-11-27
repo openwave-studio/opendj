@@ -665,6 +665,14 @@ fn main() {
         list_controls();
         return;
     }
+    // `opendj search …`, `opendj mcp`: library commands, run headless
+    // before the single-instance check, so they work beside a running app.
+    if let Some(command) = std::env::args()
+        .nth(1)
+        .filter(|a| opendj_mcp::is_command(a))
+    {
+        std::process::exit(library_command(&command));
+    }
     // Before the log opens: a second openDJ would start a new log over the
     // running one's, then fight it for the audio interface.
     if !single_instance::check() {
@@ -677,6 +685,39 @@ fn main() {
         diagnostics::startup_failed(&e, graphics.pending());
         std::process::exit(1);
     }
+}
+
+/// Runs a library command from [`opendj_mcp`] and returns its exit code.
+fn library_command(command: &str) -> i32 {
+    // A release build on Windows has no console of its own; print into the
+    // terminal that started it, unless output already goes to a pipe (an
+    // assistant running `opendj mcp`).
+    #[cfg(windows)]
+    if command != "mcp" {
+        use windows_sys::Win32::System::Console::{
+            AttachConsole, GetStdHandle, ATTACH_PARENT_PROCESS, STD_OUTPUT_HANDLE,
+        };
+        // SAFETY: plain system calls on this process's own handles.
+        unsafe {
+            let out = GetStdHandle(STD_OUTPUT_HANDLE);
+            if out.is_null() || out == windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE {
+                AttachConsole(ATTACH_PARENT_PROCESS);
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = command;
+    let Some(dir) = settings::config_dir() else {
+        eprintln!("Can't find openDJ's settings folder");
+        return 1;
+    };
+    let config = opendj_mcp::Config {
+        library: opendj_library::default_path(&dir),
+        marker: Some(opendj_mcp::change_marker(&dir)),
+        grouping: settings::field_names().grouping,
+    };
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    opendj_mcp::cli::run(&args, &config)
 }
 
 fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>> {
@@ -1441,6 +1482,30 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
         );
         timer
     };
+    // Library commands and the MCP server (`opendj tag …`) touch a marker
+    // file after a change; the browser reads the library again when it moves.
+    let _library_marker_timer = settings::config_dir().map(|dir| {
+        let marker = opendj_mcp::change_marker(&dir);
+        let modified = |p: &std::path::Path| std::fs::metadata(p).and_then(|m| m.modified()).ok();
+        let mut seen = modified(&marker);
+        let browser = browser.clone();
+        let timer = slint::Timer::default();
+        timer.start(
+            slint::TimerMode::Repeated,
+            std::time::Duration::from_secs(1),
+            move || {
+                let now = modified(&marker);
+                // Busy (a menu open): try again on the next tick.
+                if now != seen {
+                    if let Ok(mut b) = browser.try_borrow_mut() {
+                        seen = now;
+                        b.changed_outside();
+                    }
+                }
+            },
+        );
+        timer
+    });
     // For the system's Now Playing (installed with the mini player below).
     let media_tracks = engine.loaded_tracks();
     // For Player's Now Playing view (installed with the mini player below).
