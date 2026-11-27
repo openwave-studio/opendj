@@ -7,7 +7,7 @@
 
 ## 2. Synth profiles
 
-- [x] 2.1 Profile format in `opendj-studio-engine` (port match, channel, named/grouped CCs, 8 macros, banks, factory names); MiniFreak and Moog Messenger profiles
+- [x] 2.1 Profile format in `opendj-studio-engine` (port match, channel, named/grouped CCs, 8 macros, banks, factory names); MicroFreak, MiniFreak and Moog Messenger profiles
 - [ ] 2.2 Macros and panel CONTROLS from the profile; generic profile with CC learn
 
 ## 3. Loading and setup

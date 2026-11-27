@@ -1,0 +1,168 @@
+{
+ "id": "arturia-microfreak",
+ "name": "MicroFreak",
+ "maker": "Arturia",
+ "source": "https://www.arturia.com/products/hardware-synths/microfreak/resources (user manual MIDI chart; also midi.guide)",
+ "port": "MicroFreak",
+ "channel": 0,
+ "audio": "mono",
+ "controls": [
+  {
+   "group": "Main",
+   "name": "Glide",
+   "cc": 5
+  },
+  {
+   "group": "Main",
+   "name": "Spice",
+   "cc": 2
+  },
+  {
+   "group": "Oscillator",
+   "name": "Type",
+   "cc": 9
+  },
+  {
+   "group": "Oscillator",
+   "name": "Wave",
+   "cc": 10
+  },
+  {
+   "group": "Oscillator",
+   "name": "Timbre",
+   "cc": 12
+  },
+  {
+   "group": "Oscillator",
+   "name": "Shape",
+   "cc": 13
+  },
+  {
+   "group": "Filter",
+   "name": "Cutoff",
+   "cc": 23
+  },
+  {
+   "group": "Filter",
+   "name": "Resonance",
+   "cc": 83
+  },
+  {
+   "group": "Envelope",
+   "name": "Attack",
+   "cc": 105
+  },
+  {
+   "group": "Envelope",
+   "name": "Decay",
+   "cc": 106
+  },
+  {
+   "group": "Envelope",
+   "name": "Sustain",
+   "cc": 29
+  },
+  {
+   "group": "Envelope",
+   "name": "Filter Amount",
+   "cc": 26
+  },
+  {
+   "group": "Cycling Envelope",
+   "name": "Rise",
+   "cc": 102
+  },
+  {
+   "group": "Cycling Envelope",
+   "name": "Fall",
+   "cc": 103
+  },
+  {
+   "group": "Cycling Envelope",
+   "name": "Hold",
+   "cc": 28
+  },
+  {
+   "group": "Cycling Envelope",
+   "name": "Amount",
+   "cc": 24
+  },
+  {
+   "group": "LFO",
+   "name": "Rate",
+   "cc": 93
+  },
+  {
+   "group": "LFO",
+   "name": "Rate Sync",
+   "cc": 94
+  },
+  {
+   "group": "Arp/Seq",
+   "name": "Rate",
+   "cc": 91
+  },
+  {
+   "group": "Arp/Seq",
+   "name": "Rate Sync",
+   "cc": 92
+  },
+  {
+   "group": "Keyboard",
+   "name": "Hold",
+   "cc": 64
+  }
+ ],
+ "macros": [
+  23,
+  83,
+  26,
+  105,
+  106,
+  29,
+  5,
+  2,
+  9,
+  10,
+  12,
+  13,
+  102,
+  103,
+  28,
+  24,
+  93,
+  94,
+  91,
+  92,
+  64
+ ],
+ "presets": {
+  "bank_select": "msb",
+  "banks": [
+   {
+    "name": "Bank 1",
+    "msb": 0,
+    "count": 128
+   },
+   {
+    "name": "Bank 2",
+    "msb": 1,
+    "count": 128
+   },
+   {
+    "name": "Bank 3",
+    "msb": 2,
+    "count": 128
+   },
+   {
+    "name": "Bank 4",
+    "msb": 3,
+    "count": 128
+   }
+  ]
+ },
+ "transport": {
+  "clock": true,
+  "start_stop": true
+ }
+}
