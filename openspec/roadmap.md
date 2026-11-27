@@ -118,6 +118,7 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [improve-p2p-sources](changes/improve-p2p-sources/proposal.md) (Soulseek results ranked and shown by readiness (estimated wait, measured speed, recent failures), karaoke/sped-up copies folded away, downloads paused through a Soulseek sign-out, a fake-lossless check with a Health list, and similar artists' songs from music servers; a user request after comparing other music tools, issue #1149, 2026-11-26; moved to v0.9.6 2026-11-26)
 - [add-mcp-server](changes/add-mcp-server/proposal.md) (`opendj <command>` and `opendj mcp` over stdio for library work, no deck control; then prep batches that wait while a deck plays, and set planning; moved from v1.0 and the deck tools split into add-live-mcp, a user request, 2026-11-27)
 - [add-arturia-presets](changes/add-arturia-presets/proposal.md) (Arturia instruments' presets listed and loaded as the plugin's own: read from Arturia's preset library with sound type, genre, style and character tags and likes, loaded as the plugin's state; a user request, issue #1161, 2026-11-26; moved to v0.9.6 2026-11-27)
+- [add-remote-deck-pages](changes/add-remote-deck-pages/proposal.md) (the phone remote's Deck page: an iPad or phone as any deck, deck 3 at first, beside a two-channel controller, with the waveform drawn on the page, pads, loops, pitch and the channel strip; then a Player look, a library panel and an FX page with X-Y pads; a user request after mockups, issue #1155, 2026-11-26)
 
 ## v1.0 · Ready for any DJ switching over
 

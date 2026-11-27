@@ -248,3 +248,33 @@ fn serves_art_to_paired_phones_only() {
     assert!(ask(&format!("/art/fff?s=96&k={key}")).starts_with("HTTP/1.1 404"));
     assert!(ask(&format!("/art/abc123?s=5000&k={key}")).starts_with("HTTP/1.1 404"));
 }
+
+#[test]
+fn serves_deck_waveforms_to_paired_phones_only() {
+    let server = start();
+    server.set_waves(vec![("a1b2".into(), Arc::new(b"ODW1 wave".to_vec()))]);
+    let mut ws = connect(server.port(), None).unwrap();
+    let (code, _) = server.pair_code();
+    send(
+        &mut ws,
+        json!({"id": 1, "method": "pair", "params": {"code": code, "name": "P"}}),
+    );
+    let key = recv(&mut ws)["result"]["art_key"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let port = server.port();
+    let ask = |path: &str| {
+        get(
+            port,
+            &format!("GET {path} HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"),
+        )
+    };
+    let ok = ask(&format!("/wave/a1b2?k={key}"));
+    assert!(ok.starts_with("HTTP/1.1 200"), "{ok}");
+    assert!(ok.ends_with("ODW1 wave"));
+    assert!(ask("/wave/a1b2?k=nope").starts_with("HTTP/1.1 404"));
+    // A track that left the decks.
+    server.set_waves(Vec::new());
+    assert!(ask(&format!("/wave/a1b2?k={key}")).starts_with("HTTP/1.1 404"));
+}

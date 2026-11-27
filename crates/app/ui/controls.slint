@@ -156,6 +156,8 @@ export component ControlKnob inherits Rectangle {
     // the arc thickens under the pointer.
     property <bool> thin: look == 4;
     property <bool> lit: touch.has-hover || touch.pressed;
+    // Under the pointer or being dragged.
+    out property <bool> touched: lit;
     // What the label says under the pointer: 0 nothing new, 1 the gain in
     // dB (EQs, volumes), 2 the filter's side and amount.
     in property <int> readout: 0;
@@ -970,6 +972,55 @@ export component HoverTipView inherits Rectangle {
             spacing: 2px;
             if HoverTip.title != "": Text { text: HoverTip.title; color: Theme.text; font-size: 12px; font-weight: 700; }
             if HoverTip.body != "": Text { text: HoverTip.body; color: HoverTip.title != "" ? Theme.text-dim : Theme.text; font-size: 12px; }
+        }
+    }
+}
+
+// A knob's value in a callout beside it, above everything else (see
+// KnobTipView in the main window), while the knob is hovered or turned.
+export global KnobTip {
+    in-out property <bool> shown;
+    in-out property <string> text;
+    // The knob's left and right edges and its middle, in window
+    // coordinates: the callout points at the right edge, or at the left
+    // one when there is no room on the right.
+    in-out property <length> left;
+    in-out property <length> right;
+    in-out property <length> middle;
+}
+
+export component KnobTipView inherits Rectangle {
+    if KnobTip.shown: Rectangle {
+        property <bool> flip: KnobTip.right + 6px + self.width > root.absolute-position.x + root.width;
+        x: (flip ? KnobTip.left - 6px - self.width : KnobTip.right + 6px) - root.absolute-position.x;
+        y: KnobTip.middle - self.height / 2 - root.absolute-position.y;
+        width: tip.preferred-width + 16px;
+        height: 22px;
+        // The little arrow, pointing at the knob.
+        Path {
+            x: flip ? parent.width - 1px : -5px;
+            y: (parent.height - 12px) / 2;
+            width: 6px;
+            height: 12px;
+            viewbox-width: 6;
+            viewbox-height: 12;
+            fill: Theme.n-2a2b2e;
+            commands: flip ? "M 0 0 L 6 6 L 0 12 Z" : "M 6 0 L 0 6 L 6 12 Z";
+        }
+        Rectangle {
+            border-radius: 5px;
+            background: Theme.n-2a2b2e;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: Theme.s-000000a0;
+        }
+        tip := Text {
+            text: KnobTip.text;
+            color: Theme.text;
+            font-family: Theme.title-font;
+            font-weight: 500;
+            font-size: 13px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
         }
     }
 }
