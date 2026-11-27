@@ -35,12 +35,25 @@ to `~/.zshrc` to type `opendj` alone.
 | `opendj rate 5 1234 1240` | Sets star ratings. |
 | `opendj tag add Mood Peak 1234` | Adds a tag in a tag group; `tag remove` takes it off. |
 
+| `opendj analyze --missing` | Finds tempo, grid and key for every track that still needs it. Or give ids, or `--where`; `--fresh` analyses again. |
+| `opendj stems --list Friday` | Makes high-quality stems ahead of a gig, or for ids or `--where`. |
+| `opendj health` | Counts files not found, tracks not analysed, no genre, no rating and duplicates. |
+| `opendj plan Friday --save "Friday order"` | Puts a list in mixing order and saves it as a new list. `--order` is `flow` (key and tempo, the default), `harmonic`, `bpm_up` or `bpm_down`; `--first 1234` starts with that track. |
+| `opendj next 1234` | Tracks that mix well after this one, best first. `--where` or `--from <list>` picks from fewer. |
+
 Instead of track ids, `list add`, `rate` and `tag` take `--where` and a
 search: `opendj tag add Mood Peak --where "rating:5 genre:techno"`. Add
 `--dry-run` to see how many tracks would change first. One command changes
 at most 500 tracks.
 
 Add `--json` to any command for output a script can read.
+
+### Analysis and stems wait while you play
+
+`analyze` and `stems` never run while a deck plays in openDJ. Start a batch
+before a set and it pauses as soon as you press play, then carries on when
+the decks stop; a track half separated is started again. Only one stem
+separation runs at a time, whether openDJ or a command asked for it.
 
 ## AI assistants
 
@@ -64,9 +77,13 @@ In Claude Desktop, add it to `claude_desktop_config.json`:
 In Claude Code: `claude mcp add opendj -- /Applications/openDJ.app/Contents/MacOS/opendj mcp`.
 
 The assistant can then search, read tracks, make lists and crates, add
-tracks to them, set ratings and tag tracks. Ask it things like "make a crate
+tracks to them, set ratings and tag tracks, analyse tracks and make stems,
+check the collection's health, put a list in mixing order and suggest what
+to play next. Analysis and stems asked for by an assistant stop as soon as
+a deck plays and say how far they got, so ask again after the set. Ask it things like "make a crate
 of my 4- and 5-star house tracks between 120 and 124 BPM" or "which tracks
-in Friday have no Mood tag?".
+in Friday have no Mood tag?" or "plan Friday as a warm-up from 118 to 124
+BPM and save it".
 
 ## Things to know
 

@@ -1053,6 +1053,9 @@ fn separate_queued() {
         if !keep_going() {
             continue;
         }
+        // One heavy job across openDJ processes: a command-line batch
+        // finishes its track first (it stops as soon as a deck plays).
+        let _heavy = background::heavy_lock();
         set_job(&path, Separation::Running);
         *RUNNING.lock().unwrap() = Some((path.clone(), 0.0));
         let mut progress = |done: usize, total: usize| {

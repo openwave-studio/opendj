@@ -56,3 +56,17 @@ A running openDJ SHALL reload its library when a command changed it.
 #### Scenario: Rating from the terminal
 - **WHEN** `opendj rate 1234 5` runs while openDJ is open
 - **THEN** the browser shows five stars on that track within a few seconds
+
+### Requirement: Prep never during a set
+Analysis and stem separation started from a command or the MCP server SHALL NOT run while a deck plays in openDJ: a command SHALL wait for the decks to stop, an MCP call SHALL stop and report how far it got, and a separation in progress SHALL give up and start again later. Only one stem separation SHALL run at a time across openDJ and its commands.
+
+#### Scenario: Deck starts during a batch
+- **WHEN** `opendj stems --list Friday` runs and the DJ presses play
+- **THEN** the separation stops at once and resumes after the decks stop
+
+### Requirement: Set planning
+The server SHALL put a list or tracks in mixing order (flow, harmonic, tempo up or down) with the key steps and tempo change between each pair, optionally saved as a new list, and SHALL suggest tracks that mix well after a given one.
+
+#### Scenario: Plan a list
+- **WHEN** `opendj plan Friday --save 'Friday order'` runs
+- **THEN** a new list holds Friday's tracks in the smoothest key and tempo order

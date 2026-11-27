@@ -7,11 +7,14 @@ use std::io::Write;
 
 use serde_json::{json, Value};
 
-use crate::tools::{self, Ctx};
+use crate::tools::{self, Ctx, Job};
 use crate::Config;
 
 /// The commands the app binary hands to [`run`].
-pub const COMMANDS: [&str; 7] = ["search", "track", "lists", "list", "rate", "tag", "mcp"];
+pub const COMMANDS: [&str; 12] = [
+    "search", "track", "lists", "list", "rate", "tag", "analyze", "stems", "health", "plan",
+    "next", "mcp",
+];
 
 const HELP: &str = "openDJ library commands (they never touch the decks)
 
@@ -23,12 +26,18 @@ const HELP: &str = "openDJ library commands (they never touch the decks)
   opendj list add <list> <ids…> | --where <search>
   opendj rate <0-5> <ids…> | --where <search>
   opendj tag add|remove <group> <tag> <ids…> | --where <search>
+  opendj analyze <ids…> | --where <search> | --missing [--fresh]
+  opendj stems <ids…> | --where <search> | --list <list>
+  opendj health                            what the collection is missing
+  opendj plan <list> [--order flow|harmonic|bpm_up|bpm_down] [--first <id>] [--save <name>]
+  opendj next <id> [--where <search> | --from <list>] [--limit N]
   opendj mcp                               MCP server on stdin/stdout for AI assistants
 
   --json       print the result as JSON
   --dry-run    say what a change would do without making it
 
-Searches use the browser's syntax: bpm:120-124 key:8A genre:house rating:4+";
+Searches use the browser's syntax: bpm:120-124 key:8A genre:house rating:4+
+analyze and stems wait while a deck plays in openDJ.";
 
 /// Runs a command; returns the process exit code.
 pub fn run(args: &[String], config: &Config) -> i32 {
@@ -50,8 +59,9 @@ pub fn run(args: &[String], config: &Config) -> i32 {
         }
     };
     if command == "mcp" {
-        let stdin = std::io::stdin().lock();
-        return match crate::server::serve(&mut cx, stdin, out) {
+        drop(out);
+        let stdin = std::io::BufReader::new(std::io::stdin());
+        return match crate::server::serve(&mut cx, stdin, std::io::stdout()) {
             Ok(()) => 0,
             Err(e) => {
                 let _ = writeln!(err, "{e}");
@@ -61,7 +71,12 @@ pub fn run(args: &[String], config: &Config) -> i32 {
     }
     let words = Words::new(&args[1..]);
     let json_out = words.flag("--json");
-    match execute(&mut cx, command, words) {
+    let result = if matches!(command, "analyze" | "stems") {
+        batch(&mut cx, command, &words)
+    } else {
+        execute(&mut cx, command, words)
+    };
+    match result {
         Ok((tool, v)) => {
             let _ = if json_out {
                 writeln!(
@@ -88,7 +103,9 @@ struct Words {
 }
 
 /// Flags that take the next word as their value.
-const VALUED: [&str; 3] = ["--limit", "--where", "--in"];
+const VALUED: [&str; 8] = [
+    "--limit", "--where", "--in", "--list", "--order", "--first", "--save", "--from",
+];
 
 impl Words {
     fn new(args: &[String]) -> Self {
@@ -220,9 +237,120 @@ fn execute(cx: &mut Ctx, command: &str, w: Words) -> Result<(&'static str, Value
                 json!({"group": group, "tag": tag, "remove": remove, "track_ids": ids, "dry_run": dry}),
             )
         }
+        "health" => {
+            w.unknown_flag(&[])?;
+            ("health_report", json!({}))
+        }
+        "plan" => {
+            w.unknown_flag(&["--order", "--first", "--save"])?;
+            let [list] = p.as_slice() else {
+                return Err(
+                    "Usage: opendj plan <list> [--order flow] [--first <id>] [--save <name>]"
+                        .into(),
+                );
+            };
+            let mut a =
+                json!({"list": list_value(list), "order": w.value("--order")?.unwrap_or("flow")});
+            if let Some(f) = w.value("--first")? {
+                a["first"] = json!(number(f)?);
+            }
+            if let Some(name) = w.value("--save")? {
+                a["save_as"] = json!(name);
+            }
+            ("plan_set", a)
+        }
+        "next" => {
+            w.unknown_flag(&["--where", "--from", "--limit"])?;
+            let [id] = p.as_slice() else {
+                return Err("Usage: opendj next <id> [--where <search> | --from <list>]".into());
+            };
+            let mut a = json!({"track_id": number(id)?});
+            if let Some(q) = w.value("--where")? {
+                a["query"] = json!(q);
+            }
+            if let Some(l) = w.value("--from")? {
+                a["list"] = list_value(l);
+            }
+            if let Some(n) = w.value("--limit")? {
+                a["limit"] = json!(number(n)?);
+            }
+            ("suggest_next", a)
+        }
         _ => return Err(format!("Unknown command {command}; try opendj help")),
     };
     Ok((tool, tools::call(cx, tool, &args)?))
+}
+
+/// `analyze` and `stems`: any number of tracks, a tool call per chunk,
+/// waiting while a deck plays, with progress on stderr.
+fn batch(cx: &mut Ctx, command: &str, w: &Words) -> Result<(&'static str, Value), String> {
+    w.unknown_flag(&["--where", "--missing", "--fresh", "--list", "--dry-run"])?;
+    let p = &w.plain;
+    let (tool, chunk) = if command == "analyze" {
+        ("analyze_tracks", tools::MAX_TRACKS)
+    } else {
+        ("separate_stems", crate::prep::STEMS_MAX)
+    };
+    let ids: Vec<i64> = if let Some(l) = w.value("--list")? {
+        let v = tools::call(
+            cx,
+            "get_list",
+            &json!({"list": list_value(l), "limit": tools::MAX_RESULTS}),
+        )?;
+        v["tracks"]
+            .as_array()
+            .map(|a| a.iter().filter_map(|t| t["id"].as_i64()).collect())
+            .unwrap_or_default()
+    } else if w.flag("--missing") {
+        if !p.is_empty() || w.value("--where")?.is_some() {
+            return Err("Give track ids, --where or --missing".into());
+        }
+        tools::search(cx, "")?
+            .iter()
+            .filter(|t| t.bpm <= 0.0 || t.key.is_empty() || t.grid.is_empty())
+            .map(|t| t.id as i64)
+            .collect()
+    } else if let Some(q) = w.value("--where")? {
+        if !p.is_empty() {
+            return Err("Give track ids or --where, not both".into());
+        }
+        tools::search(cx, q)?.iter().map(|t| t.id as i64).collect()
+    } else {
+        p.iter().map(|s| number(s)).collect::<Result<_, _>>()?
+    };
+    if ids.is_empty() {
+        return Err("No tracks to do".into());
+    }
+    let progress = |done: f64, total: f64, what: &str| {
+        eprint!("\r\x1b[2K{:.0}/{:.0}  {what}", done.floor(), total);
+    };
+    let job = Job {
+        progress: &progress,
+        cancelled: &|| false,
+        wait_while_playing: true,
+    };
+    let mut sum = json!({});
+    for (n, part) in ids.chunks(chunk).enumerate() {
+        let args =
+            json!({"track_ids": part, "fresh": w.flag("--fresh"), "dry_run": w.flag("--dry-run")});
+        if n > 0 {
+            eprintln!();
+        }
+        let v = tools::call_with(cx, tool, &args, &job)?;
+        for (k, x) in v.as_object().into_iter().flatten() {
+            match (x, sum.get(k)) {
+                (Value::Number(a), Some(Value::Number(b))) => {
+                    sum[k] = json!(a.as_u64().unwrap_or(0) + b.as_u64().unwrap_or(0))
+                }
+                (Value::Array(a), Some(Value::Array(b))) => {
+                    sum[k] = json!(b.iter().chain(a).cloned().collect::<Vec<_>>())
+                }
+                _ => sum[k] = x.clone(),
+            }
+        }
+    }
+    eprintln!();
+    Ok((tool, sum))
 }
 
 /// The tracks a write names: ids, or `--where` with a search.
@@ -251,6 +379,19 @@ fn number(s: &str) -> Result<i64, String> {
 /// A list named on the command line: its id when it's a number.
 fn list_value(s: &str) -> Value {
     s.parse::<i64>().map_or_else(|_| json!(s), |n| json!(n))
+}
+
+/// Failures and why a batch stopped, for its summary line.
+fn failures(v: &Value) -> String {
+    let mut out = String::new();
+    let failed = v["failed"].as_array().map_or(0, Vec::len);
+    if failed > 0 {
+        out.push_str(&format!(", {failed} failed"));
+    }
+    if let Some(why) = v["stopped"].as_str() {
+        out.push_str(&format!(" (stopped: {why}, {} left)", v["left"]));
+    }
+    out
 }
 
 /// A result as a person reads it.
@@ -360,6 +501,63 @@ fn text(tool: &str, v: &Value) -> String {
             v["unchanged"],
             dry(v)
         ),
+        "analyze_tracks" => format!(
+            "Analysed {}, {} already analysed{}",
+            v["analysed"],
+            v["already_analysed"],
+            failures(v)
+        ),
+        "separate_stems" if v["dry_run"].as_bool() == Some(true) => format!(
+            "Would separate {}, {} have stems (dry run)",
+            v["would_separate"], v["have_stems"]
+        ),
+        "separate_stems" => format!(
+            "Separated {}, {} had stems{}",
+            v["separated"],
+            v["have_stems"],
+            failures(v)
+        ),
+        "health_report" => v["checks"]
+            .as_array()
+            .map(|a| {
+                a.iter()
+                    .map(|c| format!("{:>6}  {}", c["tracks"], s(c, "check")))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
+            .unwrap_or_default(),
+        "plan_set" | "suggest_next" => {
+            let rows = v["tracks"].as_array().or(v["suggestions"].as_array());
+            let mut out: Vec<String> = rows
+                .map(|a| {
+                    a.iter()
+                        .map(|t| {
+                            let step = &t["from_previous"];
+                            let how = if step.is_null() {
+                                String::new()
+                            } else {
+                                format!(
+                                    "   [{} key steps, {}% tempo]",
+                                    step["key_steps"], step["bpm_change_pct"]
+                                )
+                            };
+                            format!("{}{how}", track_line(t))
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            if let Some(m) = v["total_minutes"].as_f64() {
+                out.push(format!("{m:.0} minutes"));
+            }
+            if v["saved_as"].is_object() {
+                out.push(format!(
+                    "Saved as {} ({})",
+                    s(&v["saved_as"], "name"),
+                    v["saved_as"]["id"]
+                ));
+            }
+            out.join("\n")
+        }
         _ => v.to_string(),
     }
 }

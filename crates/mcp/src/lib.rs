@@ -16,6 +16,8 @@
 //! app watches, so it reloads rather than saving over the change.
 
 pub mod cli;
+mod plan;
+mod prep;
 pub mod server;
 pub mod tools;
 

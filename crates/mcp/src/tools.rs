@@ -23,7 +23,7 @@ pub const MAX_TRACKS: usize = 500;
 /// The most tracks a search or list returns at once.
 pub const MAX_RESULTS: usize = 500;
 /// Names and titles are cut to this many characters.
-const NAME_LEN: usize = 200;
+pub(crate) const NAME_LEN: usize = 200;
 /// Comments are cut to this many characters.
 const COMMENT_LEN: usize = 300;
 
@@ -62,16 +62,20 @@ impl Ctx {
         self
     }
 
-    fn tracks(&self) -> Result<Vec<Track>> {
+    pub(crate) fn tracks(&self) -> Result<Vec<Track>> {
         self.lib.tracks(self.exists).map_err(db)
     }
 
-    fn by_id(&self) -> Result<HashMap<usize, Track>> {
+    pub(crate) fn by_id(&self) -> Result<HashMap<usize, Track>> {
         Ok(self.tracks()?.into_iter().map(|t| (t.id, t)).collect())
     }
 
     /// Tells a running app to read the library again.
-    fn changed(&self) {
+    pub(crate) fn exists_fn(&self) -> fn(&Path) -> bool {
+        self.exists
+    }
+
+    pub(crate) fn changed(&self) {
         if let Some(m) = &self.marker {
             let _ = std::fs::write(m, now().to_string());
         }
@@ -193,26 +197,57 @@ pub fn tools() -> Vec<Tool> {
             read_only: false,
         },
     ]
+    .into_iter()
+    .chain(crate::prep::tools())
+    .chain(crate::plan::tools())
+    .collect()
 }
 
-fn schema(props: Value, required: &[&str]) -> Value {
+pub(crate) fn schema(props: Value, required: &[&str]) -> Value {
     json!({"type": "object", "properties": props, "required": required, "additionalProperties": false})
 }
 
-fn list_arg() -> Value {
+pub(crate) fn list_arg() -> Value {
     json!({"type": ["integer", "string"], "description": "List id (from list_lists) or exact name."})
 }
 
-fn ids_arg() -> Value {
+pub(crate) fn ids_arg() -> Value {
     json!({"type": "array", "items": {"type": "integer"}, "maxItems": MAX_TRACKS, "description": "Track ids (from search_tracks)."})
 }
 
-fn dry_run_arg() -> Value {
+pub(crate) fn dry_run_arg() -> Value {
     json!({"type": "boolean", "description": "Report what would change without changing it."})
+}
+
+/// How a long tool call reports and is stopped.
+pub struct Job<'a> {
+    /// Done so far, out of a total, and what is happening.
+    pub progress: &'a dyn Fn(f64, f64, &str),
+    /// The caller gave up on the call.
+    pub cancelled: &'a dyn Fn() -> bool,
+    /// While a deck plays: wait for it to stop (the command line), or stop
+    /// and say so (an assistant, which shouldn't hang for a whole set).
+    pub wait_while_playing: bool,
+}
+
+impl Job<'_> {
+    /// A job nobody watches or stops, which stops while a deck plays.
+    pub fn quiet() -> Job<'static> {
+        Job {
+            progress: &|_, _, _| {},
+            cancelled: &|| false,
+            wait_while_playing: false,
+        }
+    }
 }
 
 /// Runs one tool.
 pub fn call(cx: &mut Ctx, name: &str, args: &Value) -> Result<Value> {
+    call_with(cx, name, args, &Job::quiet())
+}
+
+/// Runs one tool, reporting a long one's progress to `job`.
+pub fn call_with(cx: &mut Ctx, name: &str, args: &Value, job: &Job) -> Result<Value> {
     let empty = Map::new();
     let a = args.as_object().unwrap_or(&empty);
     match name {
@@ -233,6 +268,11 @@ pub fn call(cx: &mut Ctx, name: &str, args: &Value) -> Result<Value> {
         "add_to_list" => add_to_list(cx, a),
         "set_rating" => set_rating(cx, a),
         "tag_tracks" => tag_tracks(cx, a),
+        "analyze_tracks" => crate::prep::analyze(cx, a, job),
+        "separate_stems" => crate::prep::stems(cx, a, job),
+        "health_report" => crate::prep::health(cx),
+        "plan_set" => crate::plan::plan_set(cx, a),
+        "suggest_next" => crate::plan::suggest_next(cx, a),
         _ => Err(format!("There's no tool called {name}")),
     }
 }
@@ -338,7 +378,7 @@ fn get_track(cx: &Ctx, id: i64) -> Result<Value> {
     Ok(v)
 }
 
-fn kind_name(k: PlaylistKind) -> &'static str {
+pub(crate) fn kind_name(k: PlaylistKind) -> &'static str {
     match k {
         PlaylistKind::List => "list",
         PlaylistKind::Folder => "folder",
@@ -378,7 +418,7 @@ fn list_lists(cx: &Ctx, history: bool) -> Result<Value> {
 
 /// A list by id or by its exact name (any case); a name more than one list
 /// has is an error, so a write never lands in the wrong one.
-fn find_list(cx: &Ctx, arg: &Value) -> Result<Playlist> {
+pub(crate) fn find_list(cx: &Ctx, arg: &Value) -> Result<Playlist> {
     let lists = cx.lib.playlists().map_err(db)?;
     if let Some(id) = arg.as_i64() {
         return lists
@@ -477,7 +517,7 @@ fn create_list(cx: &mut Ctx, a: &Map<String, Value>) -> Result<Value> {
 
 /// The tracks a write names, checked: every id must be a track, and at
 /// most [`MAX_TRACKS`].
-fn named_tracks(cx: &Ctx, a: &Map<String, Value>) -> Result<Vec<Track>> {
+pub(crate) fn named_tracks(cx: &Ctx, a: &Map<String, Value>) -> Result<Vec<Track>> {
     let ids = a
         .get("track_ids")
         .and_then(Value::as_array)
@@ -653,38 +693,38 @@ pub fn clean(s: &str, max: usize) -> String {
     out.trim().to_string()
 }
 
-fn r1(x: f64) -> f64 {
+pub(crate) fn r1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
 }
 
-fn now() -> i64 {
+pub(crate) fn now() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
 }
 
-fn db(e: opendj_library::Error) -> String {
+pub(crate) fn db(e: opendj_library::Error) -> String {
     format!("Library error: {e}")
 }
 
-fn str_arg<'a>(a: &'a Map<String, Value>, k: &str) -> Result<&'a str> {
+pub(crate) fn str_arg<'a>(a: &'a Map<String, Value>, k: &str) -> Result<&'a str> {
     a.get(k)
         .and_then(Value::as_str)
         .ok_or_else(|| format!("missing `{k}`"))
 }
 
-fn int_arg(a: &Map<String, Value>, k: &str) -> Result<i64> {
+pub(crate) fn int_arg(a: &Map<String, Value>, k: &str) -> Result<i64> {
     a.get(k)
         .and_then(Value::as_i64)
         .ok_or_else(|| format!("missing `{k}` (a number)"))
 }
 
-fn bool_arg(a: &Map<String, Value>, k: &str) -> bool {
+pub(crate) fn bool_arg(a: &Map<String, Value>, k: &str) -> bool {
     a.get(k).and_then(Value::as_bool).unwrap_or(false)
 }
 
-fn limit(a: &Map<String, Value>) -> Result<usize> {
+pub(crate) fn limit(a: &Map<String, Value>) -> Result<usize> {
     match a.get("limit") {
         None | Some(Value::Null) => Ok(50),
         Some(v) => {
