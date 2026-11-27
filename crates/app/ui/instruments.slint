@@ -164,6 +164,13 @@ export struct ParamMatch {
     name: string,
 }
 
+// A knob's name laid out to fit under it (see `knob-label`).
+export struct KnobLabel {
+    text: string,
+    size: float,
+    cut: bool,
+}
+
 export global InstrumentsUi {
     // The Jam column, set by the app: the side shown (0 presets,
     // 1 instruments), the rows it leaves, the filter menus, starred only,
@@ -209,6 +216,10 @@ export global InstrumentsUi {
     // The instrument's parameter names, for its knobs
     // (`[Instrument1],parameterN` is the N-th). Set by the app.
     in property <[string]> param-names;
+    // `name` laid out for a knob label `width` wide: one line if it fits,
+    // else up to `lines` lines broken at spaces, in the condensed title
+    // font at `size` px or a step or two smaller. Set by the app.
+    pure callback knob-label(name: string, width: length, size: float, lines: int) -> KnobLabel;
     // A name for each page of 8 knobs, from the plugin's maker ("" for
     // none: the tab says PAGE n). Set by the app.
     in property <[string]> page-names;
