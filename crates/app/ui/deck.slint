@@ -6,13 +6,13 @@
 import { LibraryEdit, TrackDrag } from "library.slint";
 import { SamplerPanel } from "sampler.slint";
 import { Theme, KeyNotation, EdgeLine, EdgeVLine, CloseIcon } from "theme.slint";
-import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
+import { Caption, ControlButton, ControlFader, ControlKnob, Controls, HoverTip, KnobTip, MasterBadge, PitchReset, Switch, SyncButton, VuMeter } from "controls.slint";
 import { TourMark } from "tourmark.slint";
 import { MapMark } from "mapmark.slint";
 import { ArcKnob, ListRow, MenuTitle, PillCaret, SectionTitle, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
 import { RemixMode, RemixPanel, RemixSource } from "remix.slint";
 import { DeckAuto } from "deck_auto.slint";
-import { HardwareUi, InstrumentsUi, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
+import { HardwareUi, InstrumentsUi, KnobLabel, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
 
@@ -4839,8 +4839,17 @@ component ParamKnob inherits Rectangle {
     // instrument's color.
     in property <length> knob-size: 28px;
     property <bool> rack: knob-size > 30px;
+    // The name in the condensed title font: on the rack up to two lines,
+    // broken at a space, so long names show whole; a step or two smaller
+    // only when a word is too wide, and cut with "…" as a last resort,
+    // its full name then in a tooltip.
+    property <KnobLabel> label: InstrumentsUi.knob-label(index < count ? InstrumentsUi.param-names[index] : "", root.width - 2px, rack ? 11.5 : 10.5, rack ? 2 : 1);
+    property <length> line: rack ? 14px : 13px;
+    property <bool> tip-mine;
+    // This knob's value shows in the KnobTip callout.
+    property <bool> tip-owner;
     width: rack ? max(66px, knob-size + 30px) : 64px;
-    height: knob-size + (rack ? 28px : 24px);
+    height: knob-size + (rack ? 9px + 2 * line : 24px);
     if index < count: TouchArea {
         pointer-event(e) => {
             if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
@@ -4848,7 +4857,7 @@ component ParamKnob inherits Rectangle {
             }
         }
     }
-    if index < count: ControlKnob {
+    if index < count: knob := ControlKnob {
         x: (parent.width - self.width) / 2;
         y: 0;
         group: "[Instrument1]";
@@ -4857,15 +4866,88 @@ component ParamKnob inherits Rectangle {
         look: root.rack ? 4 : 0;
         arc-color: root.tint;
         right-clicked => { picker.show(); }
+        // Its value in a callout beside it while hovered or turned (by
+        // mouse or controller), and for a second after.
+        property <float> value: Controls.parameter(Controls.resolve(self.group, self.key), Controls.tick);
+        property <int> turned-index: -1;
+        property <bool> recent;
+        property <int> recent-age;
+        property <bool> show-value: self.touched || self.recent;
+        changed value => {
+            // A new page or instrument changes the value too: only a turn
+            // of the same knob counts.
+            if self.turned-index == root.index {
+                self.recent-age = 0;
+                self.recent = true;
+            }
+            self.turned-index = root.index;
+            if root.tip-owner {
+                KnobTip.text = round(clamp(self.value, 0, 1) * 100) + "%";
+            }
+        }
+        init => { self.turned-index = root.index; }
+        changed show-value => {
+            if self.show-value {
+                KnobTip.text = round(clamp(self.value, 0, 1) * 100) + "%";
+                KnobTip.left = self.absolute-position.x;
+                KnobTip.right = self.absolute-position.x + self.width - 4px;
+                KnobTip.middle = self.absolute-position.y + root.knob-size / 2;
+                KnobTip.shown = true;
+                root.tip-owner = true;
+            } else if root.tip-owner {
+                root.tip-owner = false;
+                KnobTip.shown = false;
+            }
+        }
+        Timer {
+            interval: 100ms;
+            running: knob.recent;
+            triggered => {
+                knob.recent-age += 1;
+                if knob.recent-age >= 10 {
+                    knob.recent = false;
+                }
+            }
+        }
     }
-    if index < count: Text {
+    if index < count: name := Text {
         y: root.knob-size + (root.rack ? 9px : 10px);
         width: parent.width;
-        text: InstrumentsUi.param-names[index];
+        height: root.rack ? 2 * root.line : root.line;
+        text: root.label.text;
         color: InstrumentsUi.knob-picked[index] ? root.tint : root.rack ? Theme.n-d8d8dc : Theme.text-dim;
-        font-size: root.rack ? 11px : 10px;
+        font-family: Theme.title-font;
+        font-weight: 500;
+        font-size: root.label.size * 1px;
         horizontal-alignment: center;
-        overflow: elide;
+        vertical-alignment: top;
+        overflow: clip;
+        TouchArea {
+            pointer-event(e) => {
+                if e.kind == PointerEventKind.down && e.button == PointerEventButton.right {
+                    picker.show();
+                }
+            }
+            changed has-hover => {
+                if !self.has-hover && root.tip-mine {
+                    root.tip-mine = false;
+                    HoverTip.shown = false;
+                }
+            }
+            Timer {
+                interval: 600ms;
+                running: root.label.cut && parent.has-hover && !root.tip-mine;
+                triggered => {
+                    root.tip-mine = true;
+                    HoverTip.title = "";
+                    HoverTip.body = InstrumentsUi.param-names[root.index];
+                    HoverTip.right-aligned = false;
+                    HoverTip.x = name.absolute-position.x;
+                    HoverTip.y = name.absolute-position.y + name.height + 4px;
+                    HoverTip.shown = true;
+                }
+            }
+        }
     }
     picker := KnobPicker { knob: index; x: 0; y: root.height; }
 }

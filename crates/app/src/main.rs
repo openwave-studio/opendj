@@ -66,6 +66,7 @@ mod instrument_seq;
 mod instruments;
 mod karaoke_look;
 mod keep_going;
+mod knob_label;
 mod lastfm;
 mod layouts;
 mod list_picker;
