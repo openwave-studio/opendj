@@ -1,4 +1,4 @@
-openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command line and an MCP server, so you can search, tag and sort your library, analyse tracks, make stems and plan a set from a terminal or an AI assistant, and none of it runs while a deck plays. openDJ Studio gets a piano roll you can edit in, records MIDI into clips, has undo, and drives more of Ableton Push. The engine learns to play a hardware synth as the instrument.
+openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command line and an MCP server, so you can search, tag and sort your library, analyse tracks, make stems and plan a set from a terminal or an AI assistant, and none of it runs while a deck plays. openDJ Studio gets a piano roll you can edit in, records MIDI into clips, has undo, and drives more of Ableton Push. Instrument decks can play a hardware synth.
 
 ## What's new
 
@@ -29,7 +29,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 **Instruments and controllers**
 
 - **Knob names**: instrument deck knobs show long names in full on up to two lines, and a knob's value pops up beside it while you hover or turn it.
-- **Hardware synths** (engine, no screen yet): the instrument deck can play a synth over USB MIDI and hear it back on an audio input, with notes sent early by the synth's latency, program changes, and MIDI clock and Start/Stop following its deck. Profiles for the Arturia MicroFreak, Arturia MiniFreak and Moog Messenger are built in.
+- **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
 
 **Phone remote**
