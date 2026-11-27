@@ -12,7 +12,7 @@ import { MapMark } from "mapmark.slint";
 import { ArcKnob, ListRow, MenuTitle, PillCaret, SectionTitle, StepperPill, SwitchPill, TitledList, ValuePill } from "pills.slint";
 import { RemixMode, RemixPanel, RemixSource } from "remix.slint";
 import { DeckAuto } from "deck_auto.slint";
-import { InstrumentsUi, KnobLabel, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
+import { HardwareUi, InstrumentsUi, KnobLabel, LiveIcon, MixerStripInfo, PickerRow, PresetUi, TagChip } from "instruments.slint";
 import { LineEdit } from "std-widgets.slint";
 import { ListView, ScrollView } from "scroll.slint";
 
@@ -6713,15 +6713,215 @@ component PresetHeart inherits Rectangle {
     }
 }
 
+// One line of a hardware synth's setup: its name, then what is picked,
+// which lists the choices.
+component SetupChoice inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <[string]> options;
+    in property <int> picked;
+    callback chose(index: int);
+    height: 28px;
+    HorizontalLayout {
+        spacing: 10px;
+        Text { width: 70px; text: root.label; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; }
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: 6px;
+            border-width: 1px;
+            border-color: Theme.n-3a3a3d;
+            background: cta.has-hover ? Theme.control : Theme.panel;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                Text { horizontal-stretch: 1; text: root.value; color: Theme.text; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                Text { text: "▾"; color: Theme.text-dim; font-size: 10px; vertical-alignment: center; }
+            }
+            cta := TouchArea { mouse-cursor: pointer; clicked => { list.show(); } }
+            list := PopupWindow {
+                y: parent.height + 2px;
+                width: max(parent.width, 200px);
+                height: min(root.options.length * 24px + 8px, 300px);
+                GrooveMenuBackground { }
+                ListView {
+                    x: 4px;
+                    y: 4px;
+                    width: parent.width - 8px;
+                    height: parent.height - 8px;
+                    for o[i] in root.options: GrooveMenuItem {
+                        text: o;
+                        checked: i == root.picked;
+                        clicked => { root.chose(i); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A hardware synth's setup, over the deck from the title's SETUP: the MIDI
+// output and channel it plays on, the audio input its sound comes back
+// on, how late that sound is (the step sequencer and arpeggiator run that
+// far ahead), and whether its clock and Start/Stop follow the deck.
+component HardwareSetup inherits Rectangle {
+    property <int> latency-index: Controls.resolve("[Instrument1]", "hardware_latency");
+    property <float> latency: Controls.value(latency-index, Controls.tick);
+    property <int> clock-index: Controls.resolve("[Instrument1]", "hardware_clock");
+    property <bool> clock: Controls.value(clock-index, Controls.tick) > 0;
+    property <bool> open: Controls.value(Controls.resolve("[Instrument1]", "hardware_open"), Controls.tick) > 0;
+    // Its input gain in whole dB (0 to +18), and the limiter after it.
+    property <int> gain-index: Controls.resolve("[Instrument1]", "hardware_gain");
+    property <int> gain-db: Math.round(20 * Math.log(max(0.001, Controls.value(gain-index, Controls.tick)), 10));
+    property <int> limit-index: Controls.resolve("[Instrument1]", "hardware_limit");
+    property <bool> limit: Controls.value(limit-index, Controls.tick) > 0;
+    property <[string]> channels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"];
+    init => { HardwareUi.refresh-setup(); }
+    width: 330px;
+    height: 338px;
+    border-radius: 8px;
+    background: Theme.pill-list;
+    border-width: 1px;
+    border-color: Theme.border;
+    drop-shadow-blur: 18px;
+    drop-shadow-color: Theme.s-000000a0;
+    // Clicks on the panel stay on it.
+    TouchArea { }
+    VerticalLayout {
+        padding: 12px;
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 9px;
+        HorizontalLayout {
+            height: 26px;
+            Text { horizontal-stretch: 1; text: HardwareUi.name + " setup"; color: Theme.text; font-size: 13px; font-weight: 700; vertical-alignment: center; }
+            // Settings' close button (CloseButton in preferences.slint).
+            Rectangle {
+                width: 26px;
+                height: 26px;
+                border-radius: 13px;
+                background: xta.has-hover ? Theme.n-38373d : transparent;
+                Path {
+                    width: 10px;
+                    height: 10px;
+                    viewbox-width: 10;
+                    viewbox-height: 10;
+                    commands: "M 1 1 L 9 9 M 9 1 L 1 9";
+                    stroke: xta.has-hover ? Theme.text : Theme.text-dim;
+                    stroke-width: 1.6px;
+                    fill: transparent;
+                }
+                xta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        HardwareUi.save-setup();
+                        HardwareUi.setup-open = false;
+                    }
+                }
+            }
+        }
+        SetupChoice {
+            label: "MIDI out";
+            value: HardwareUi.port >= 0 && HardwareUi.port < HardwareUi.ports.length ? HardwareUi.ports[HardwareUi.port] + (root.open ? "  ●" : "") : "None found";
+            options: HardwareUi.ports;
+            picked: HardwareUi.port;
+            chose(i) => { HardwareUi.set-port(i); }
+        }
+        SetupChoice {
+            label: "Channel";
+            value: HardwareUi.channel + 1;
+            options: root.channels;
+            picked: HardwareUi.channel;
+            chose(i) => { HardwareUi.set-channel(i); }
+        }
+        SetupChoice {
+            label: "Interface";
+            value: HardwareUi.device >= 0 && HardwareUi.device < HardwareUi.devices.length ? HardwareUi.devices[HardwareUi.device] : "Pick its interface";
+            options: HardwareUi.devices;
+            picked: HardwareUi.device;
+            chose(i) => { HardwareUi.set-device(i); }
+        }
+        SetupChoice {
+            label: "Audio in";
+            value: HardwareUi.input >= 0 ? HardwareUi.input-short() : "Pick its input";
+            options: HardwareUi.inputs;
+            picked: HardwareUi.input;
+            chose(i) => { HardwareUi.set-input(i); }
+        }
+        HorizontalLayout {
+            height: 28px;
+            spacing: 10px;
+            Text { width: 70px; text: "Gain"; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; }
+            StepperPill {
+                horizontal-stretch: 2;
+                height: 28px;
+                prev-enabled: root.gain-db > 0;
+                next-enabled: root.gain-db < 18;
+                prev => { Controls.set-value(root.gain-index, Math.pow(10, max(0, root.gain-db - 1) / 20)); }
+                next => { Controls.set-value(root.gain-index, Math.pow(10, min(18, root.gain-db + 1) / 20)); }
+                Text { horizontal-stretch: 1; text: (root.gain-db > 0 ? "+" : "") + root.gain-db + " dB"; color: Theme.text; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            // The limiter after the gain, lit while on.
+            Rectangle {
+                horizontal-stretch: 1;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: root.limit ? Theme.accent : Theme.n-3a3a3d;
+                background: root.limit ? Theme.accent.with-alpha(0.18) : lta.has-hover ? Theme.control : transparent;
+                Text { text: "LIMIT"; color: root.limit ? Theme.text : Theme.text-dim; font-size: 11px; font-weight: 700; }
+                lta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.limit-index, root.limit ? 0 : 1); } }
+            }
+        }
+        HorizontalLayout {
+            height: 28px;
+            spacing: 10px;
+            Text { width: 70px; text: "Latency"; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; }
+            StepperPill {
+                horizontal-stretch: 1;
+                height: 28px;
+                prev-enabled: root.latency > 0;
+                next-enabled: root.latency < 200;
+                prev => { Controls.set-value(root.latency-index, max(0, Math.round(root.latency) - 1)); }
+                next => { Controls.set-value(root.latency-index, min(200, Math.round(root.latency) + 1)); }
+                Text { horizontal-stretch: 1; text: Math.round(root.latency) + " ms"; color: Theme.text; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+        }
+        HorizontalLayout {
+            height: 28px;
+            spacing: 10px;
+            Text { width: 70px; text: "Clock"; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; }
+            for c[i] in ["Follow this deck", "Off"]: Rectangle {
+                horizontal-stretch: i == 0 ? 2 : 1;
+                border-radius: 6px;
+                border-width: 1px;
+                border-color: (i == 0) == root.clock ? Theme.accent : Theme.n-3a3a3d;
+                background: (i == 0) == root.clock ? Theme.accent.with-alpha(0.18) : kta.has-hover ? Theme.control : transparent;
+                Text { text: c; color: (i == 0) == root.clock ? Theme.text : Theme.text-dim; font-size: 12px; }
+                kta := TouchArea { mouse-cursor: pointer; clicked => { Controls.set-value(root.clock-index, i == 0 ? 1 : 0); } }
+            }
+        }
+        Text {
+            text: "Kept for this synth. Its sequencer and arpeggiator follow the deck's clock and Start/Stop.";
+            color: Theme.text-dim;
+            font-size: 11px;
+            wrap: word-wrap;
+        }
+    }
+}
+
 // An instrument deck's slim title, as the Mixer's and the Groove Box's:
 // ☰, the plugin's name and format; its preset with ‹ › and the heart;
 // then which keyboard plays it, its window and ⏏.
 component InstrumentTitle inherits Rectangle {
     in property <int> deck;
+    // The deck is on screen: a layout keeps its hidden decks, and only the
+    // shown one opens the hardware synth's setup panel.
+    in property <bool> shown: true;
     in property <color> tint;
     property <int> instrument: InstrumentsUi.instrument();
     property <bool> ready: Controls.value(Controls.resolve("[Instrument1]", "input_configured"), Controls.tick) > 0;
-    property <string> name: instrument > 0 && instrument <= EffectList.instruments.length ? EffectList.instruments[instrument - 1] : "Instrument";
+    // A hardware synth plays instead of a plugin (see HardwareUi).
+    property <bool> hardware: HardwareUi.playing();
+    property <string> name: hardware ? HardwareUi.name : instrument > 0 && instrument <= EffectList.instruments.length ? EffectList.instruments[instrument - 1] : "Instrument";
     property <string> preset: PresetUi.name(deck);
     // Its knobs moved since it was loaded or saved.
     property <bool> changed: PresetUi.is-changed(deck);
@@ -6760,13 +6960,31 @@ component InstrumentTitle inherits Rectangle {
             vertical-alignment: center;
             overflow: elide;
         }
-        if InstrumentsUi.format() != "": VerticalLayout {
+        if root.hardware || InstrumentsUi.format() != "": VerticalLayout {
             alignment: center;
-            FormatChip { text: InstrumentsUi.format(); tint: root.tint; compact: true; }
+            FormatChip { text: root.hardware ? "HW" : InstrumentsUi.format(); tint: root.tint; compact: true; }
         }
         Rectangle { horizontal-stretch: 1; }
         VerticalLayout { alignment: center; MidiFromButton { tint: root.tint; size: 22px; } }
-        if root.ready: VerticalLayout {
+        // A hardware synth's setup: its MIDI out, channel, audio input,
+        // latency and clock, in a panel over the deck.
+        if root.ready && root.hardware: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 52px;
+                height: 22px;
+                border-radius: 4px;
+                border-width: 1px;
+                border-color: HardwareUi.setup-open ? Theme.accent : Theme.n-3a3a3d;
+                background: HardwareUi.setup-open ? Theme.accent.with-alpha(0.18) : sta.has-hover ? Theme.control : transparent;
+                Text { text: "SETUP"; color: HardwareUi.setup-open ? Theme.text : Theme.text-dim; font-size: 10px; font-weight: 700; }
+                sta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { HardwareUi.setup-open = !HardwareUi.setup-open; }
+                }
+            }
+        }
+        if root.ready && !root.hardware: VerticalLayout {
             alignment: center;
             // Opens the plugin in the browser's plugin panel, lit while it
             // shows; the panel's own header opens its window.
@@ -6801,7 +7019,132 @@ component InstrumentTitle inherits Rectangle {
     }
     // The preset (‹ name › and its heart) on the deck's centre line,
     // whatever sits left and right of it.
-    if root.ready: HorizontalLayout {
+    // A hardware synth's own presets: ‹ › step them, the name lists them.
+    if root.ready && root.hardware: HorizontalLayout {
+        x: (root.width - root.box) / 2;
+        height: root.height;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: root.box;
+                height: 22px;
+                border-radius: 4px;
+                background: Theme.control;
+                HorizontalLayout {
+                    PresetStep { text: "‹"; clicked => { HardwareUi.step-preset(-1); } }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 6px;
+                            if HardwareUi.preset-number != "": Text {
+                                text: HardwareUi.preset-number;
+                                color: Theme.text-dim;
+                                font-size: 12px;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                text: HardwareUi.preset >= 0 ? HardwareUi.preset-name : "Pick a preset";
+                                color: HardwareUi.preset >= 0 ? Theme.text : Theme.text-dim;
+                                font-size: 12px;
+                                font-weight: 500;
+                                vertical-alignment: center;
+                                overflow: elide;
+                            }
+                        }
+                        TouchArea { mouse-cursor: pointer; clicked => { synth-presets.show(); } }
+                    }
+                    PresetStep { text: "›"; clicked => { HardwareUi.step-preset(1); } }
+                }
+            }
+        }
+    }
+    // Banks or categories on the left, the presets in the one picked on the
+    // right; a search looks through them all.
+    synth-presets := PopupWindow {
+        property <bool> grouped: HardwareUi.groups.length > 0;
+        x: (root.width - self.width) / 2;
+        y: root.height + 2px;
+        width: grouped ? 420px : 280px;
+        height: 380px;
+        close-policy: close-on-click-outside;
+        GrooveMenuBackground { }
+        VerticalLayout {
+            padding: 6px;
+            spacing: 4px;
+            HorizontalLayout {
+                spacing: 6px;
+                LineEdit {
+                    text: HardwareUi.search;
+                    placeholder-text: "Search names";
+                    edited(t) => { HardwareUi.set-search(t); }
+                }
+                if HardwareUi.can-read: Rectangle {
+                    width: 28px;
+                    border-radius: 6px;
+                    background: rta.has-hover ? Theme.n-38373d : transparent;
+                    Text {
+                        text: HardwareUi.reading ? Math.round(HardwareUi.read-progress * 100) + "%" : "↻";
+                        color: Theme.text;
+                        font-size: HardwareUi.reading ? 9px : 14px;
+                    }
+                    rta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { HardwareUi.read-names(); }
+                    }
+                }
+            }
+            if HardwareUi.reading || HardwareUi.read-note != "": Text {
+                text: HardwareUi.reading ? "Reading the names and categories from the synth…" : HardwareUi.read-note;
+                color: Theme.text-dim;
+                font-size: 10px;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: 4px;
+                if grouped: VerticalLayout {
+                    width: 140px;
+                    Text { text: HardwareUi.group-caption; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: center; x: 8px; }
+                    ListView {
+                        for g[i] in HardwareUi.groups: GrooveMenuItem {
+                            text: g;
+                            checked: i == HardwareUi.group && HardwareUi.search == "";
+                            clicked => { HardwareUi.set-group(i); }
+                        }
+                    }
+                }
+                if grouped: Rectangle { width: 1px; background: Theme.border; }
+                VerticalLayout {
+                    Text { text: HardwareUi.list-caption; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: center; x: 8px; overflow: elide; }
+                    ListView {
+                        for p in HardwareUi.list: GrooveMenuItem {
+                            text: p.number + "  " + p.name;
+                            checked: p.index == HardwareUi.preset;
+                            clicked => {
+                                HardwareUi.pick-preset(p.index);
+                                synth-presets.close();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Over the deck: shown and hidden with SETUP (the app shows it the
+    // first time a synth loads), closed with its ✕.
+    property <bool> setup-wanted: root.shown && root.ready && root.hardware && HardwareUi.setup-open;
+    changed setup-wanted => {
+        if setup-wanted { setup-popup.show(); } else { setup-popup.close(); }
+    }
+    setup-popup := PopupWindow {
+        close-policy: no-auto-close;
+        x: root.width - 330px - 40px;
+        y: root.height + 4px;
+        width: 330px;
+        height: 338px;
+        HardwareSetup { }
+    }
+    if root.ready && !root.hardware: HorizontalLayout {
         // The name box centred, the heart beside it.
         x: (root.width - root.box) / 2;
         height: root.height;
@@ -7904,6 +8247,19 @@ component InstrumentRack inherits Rectangle {
                         }
                     }
                 }
+                // A hardware synth: whether its MIDI port is open, and the
+                // input its sound comes back on.
+                if HardwareUi.playing(): HorizontalLayout {
+                    alignment: end;
+                    padding-top: 2px;
+                    Text {
+                        property <bool> open: Controls.value(Controls.resolve("[Instrument1]", "hardware_open"), Controls.tick) > 0;
+                        text: (open ? "● MIDI" : "○ No MIDI") + (HardwareUi.input-label != "" ? " · " + HardwareUi.input-label : " · No input");
+                        color: open ? Theme.text-dim : Theme.c-ff9f0a;
+                        font-size: 10px;
+                        overflow: elide;
+                    }
+                }
             }
         }
         // The eight macros: the knob page, bigger.
@@ -8355,6 +8711,8 @@ export component LiveStrip inherits Rectangle {
 }
 
 export component Deck inherits Rectangle {
+    // On screen now: a layout keeps its hidden decks (see InstrumentTitle).
+    in property <bool> shown: true;
     // The beat counter and phase meter in a strip under the overview (2-Deck).
     in property <bool> beat-strip: false;
     in property <int> deck;
@@ -8427,7 +8785,7 @@ export component Deck inherits Rectangle {
         // row instead.
         header := Header { deck: deck; info: info; overview: overview; mirrored: mirrored; group: group; beat-strip: beat-strip; visible: !mixer && !plugin; height: mixer || plugin ? 0px : self.fixed-height; }
         // An instrument plugin: a slim title too.
-        if plugin: InstrumentTitle { deck: deck; tint: StripColors.palette(InstrumentsUi.color-index()); }
+        if plugin: InstrumentTitle { deck: deck; shown: root.shown; tint: StripColors.palette(InstrumentsUi.color-index()); }
         if mixer: MixerTitle { deck: deck; in-view: root.mixer-keys || root.mixer-groove-shown; view: root.mixer-groove-shown ? 2 : root.mixer-keys ? 1 : 0; }
 
         Rectangle {

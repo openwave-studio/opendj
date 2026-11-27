@@ -138,6 +138,8 @@
  ],
  "presets": {
   "bank_select": "msb",
+  "names_from": "arturia-microfreak",
+  "categories": ["Bass", "Brass", "Keys", "Lead", "Organ", "Pad", "Percussion", "Sequence", "SFX", "Strings", "Template", "Vocoder"],
   "banks": [
    {
     "name": "Bank 1",
