@@ -84,6 +84,8 @@ pub struct HardwareConfig {
     /// For a knob with 14-bit resolution, the control change its low 7 bits
     /// go on (usually its CC + 32), sent after the high ones.
     pub lsbs: Vec<Option<u8>>,
+    /// Each knob's name, as the deck shows it.
+    pub names: Vec<String>,
 }
 
 /// The audio thread's copy of a [`HardwareConfig`]: no heap, so it goes
@@ -301,6 +303,8 @@ pub struct HardwareSynth {
     shared: Arc<Shared>,
     loaded: ControlHandle,
     choice: ControlHandle,
+    /// `[Instrument1],num_parameters`: how many knobs the synth's has.
+    count: ControlHandle,
 }
 
 impl HardwareSynth {
@@ -313,6 +317,10 @@ impl HardwareSynth {
             self.choice.set(0.0);
         }
         self.loaded.set_bool(config.is_some());
+        let knobs = config
+            .as_ref()
+            .map_or(0, |c| c.ccs.len().min(INSTRUMENT_PARAMETERS));
+        self.count.set(knobs as f64);
         *self.shared.config.lock().unwrap() = config;
         self.shared.generation.fetch_add(1, Ordering::Relaxed);
         let _ = self.shared.slots.lock().unwrap().push(slot);
@@ -330,6 +338,11 @@ impl HardwareSynth {
             now.push(vec![0xB0 | ch, 32, 0]);
         }
         now.push(vec![0xC0 | ch, program & 127]);
+    }
+
+    /// The loaded synth's knob names, empty without one.
+    pub fn names(&self) -> Vec<String> {
+        self.config().map(|c| c.names).unwrap_or_default()
     }
 
     /// The synth loaded now.
@@ -470,6 +483,9 @@ pub(crate) fn start(
         choice: reg
             .get(GROUP, "instrument")
             .expect("[Instrument1],instrument exists: the rack makes it"),
+        count: reg
+            .get(GROUP, "num_parameters")
+            .expect("[Instrument1],num_parameters exists: the input makes it"),
     };
     let open_shown = reg.indicator(GROUP, "hardware_open", 1.0);
     let clock_on = reg
@@ -639,6 +655,7 @@ mod tests {
             channel,
             ccs: ccs.to_vec(),
             lsbs: Vec::new(),
+            ..Default::default()
         }))
     }
 
@@ -650,6 +667,7 @@ mod tests {
             channel: 0,
             ccs: vec![Some(19)],
             lsbs: vec![Some(51)],
+            ..Default::default()
         };
         link.slots.push(Some(Slot::from_config(&config))).unwrap();
         o.take_changes();

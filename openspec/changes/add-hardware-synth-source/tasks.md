@@ -8,16 +8,19 @@
 ## 2. Synth profiles
 
 - [x] 2.1 Profile format in `opendj-studio-engine` (port match, channel, named/grouped CCs, 8 macros, banks, factory names); MicroFreak, MiniFreak and Moog Messenger profiles
-- [ ] 2.2 Macros and panel CONTROLS from the profile; generic profile with CC learn
+- [x] 2.2 Macro knobs named and sent from the profile
+- [ ] 2.3 Right-click a knob to put any of the synth's controls on it; generic profile with CC learn
 
 ## 3. Loading and setup
 
-- [ ] 3.1 "Hardware synths" in the Jam tree; setup sheet (port, channel, input, latency); Aux strip on the same input marked in use
+- [x] 3.1 "Hardware synths" in the Jam list; SETUP panel over the deck (port, channel, input, latency, clock), kept per synth
+- [ ] 3.3 Aux strip on the same input marked in use
 - [ ] 3.2 Measure latency from a test note's onset
 
 ## 4. Presets, clock and transport
 
-- [ ] 4.1 Program change and banks on the preset bar with factory names; deck presets keep the program
+- [x] 4.1 Program change and banks on the preset bar with factory names
+- [ ] 4.3 Deck presets keep the program and knob values
 - [x] 4.2 MIDI clock and Start/Stop to the synth following its deck, early by the latency
 
 ## 5. Studio

@@ -184,6 +184,7 @@ impl SynthProfile {
                 .iter()
                 .map(|&cc| self.control(cc).and_then(|c| c.lsb))
                 .collect(),
+            names: self.macro_names(),
         }
     }
 

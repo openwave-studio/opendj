@@ -464,6 +464,9 @@ struct InstrumentState {
     /// `[Instrument1],parameterN` and `num_parameters`.
     params: Vec<ControlHandle>,
     num_parameters: ControlHandle,
+    /// `[Instrument1],hardware`: a hardware synth plays instead, so its
+    /// knob count stays.
+    hardware: ControlHandle,
     /// Following the plugin's own changes to its parameters.
     follow: ParamFollow,
     policies: HashMap<u16, Policy>,
@@ -708,6 +711,7 @@ impl Supervisor {
                     .map(|k| get(reg, INSTRUMENT_GROUP, &format!("parameter{k}")))
                     .collect(),
                 num_parameters: get(reg, INSTRUMENT_GROUP, "num_parameters"),
+                hardware: reg.indicator(INSTRUMENT_GROUP, "hardware", 1.0),
                 follow: ParamFollow::default(),
                 policies: HashMap::new(),
                 disabled: HashSet::new(),
@@ -1194,7 +1198,8 @@ impl Supervisor {
                 let n = ins.follow.seen.len();
                 ins.follow.step(&ins.params[..n], seq, &values);
             }
-            None if ins.num_parameters.get() != 0.0 => {
+            // A hardware synth's knobs are its own (see `hardware_synth`).
+            None if ins.num_parameters.get() != 0.0 && !ins.hardware.get_bool() => {
                 ins.num_parameters.set(0.0);
                 ins.follow = ParamFollow::default();
                 let mut list = self.list.lock().unwrap();

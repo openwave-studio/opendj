@@ -8547,6 +8547,7 @@ mod tests {
             channel: 2,
             ccs: vec![Some(74)],
             lsbs: Vec::new(),
+            ..Default::default()
         };
         let slot = crate::hardware_synth::Slot::for_test(&config);
         link.slots.push(Some(slot)).unwrap();

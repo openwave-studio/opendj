@@ -57,6 +57,7 @@ mod file_drop;
 mod files;
 mod graphics;
 mod groove_box;
+mod hardware_synths;
 mod inbox;
 mod instrument_art;
 mod instrument_knobs;
@@ -863,6 +864,7 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     mixer_picker::install(&app, engine.clone());
     presets::install(&app, engine.clone(), registry.clone());
     instrument_knobs::install(&app, engine.clone());
+    let _hardware_synths = hardware_synths::install(&app, engine.clone(), registry.clone());
     let _knob_page = instrument_knobs::follow_page(&app, &registry);
     let _preset_keys = presets::follow_controllers(&app);
     instrument_seq::install(&app, registry.clone());

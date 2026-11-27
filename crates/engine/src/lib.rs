@@ -427,6 +427,10 @@ impl AudioEngine {
     /// The playing instrument's parameter names, for its knobs
     /// (`[Instrument1],parameterN` is the N-th); empty while none plays.
     pub fn instrument_parameters(&self) -> Vec<String> {
+        let names = self.hardware_synth.names();
+        if !names.is_empty() {
+            return names;
+        }
         self.plugins
             .as_ref()
             .map_or_else(Vec::new, |p| p.instrument_parameters())
