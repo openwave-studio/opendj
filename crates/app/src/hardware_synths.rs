@@ -193,6 +193,9 @@ fn keep_names(id: &str, names: &[Option<ReadPreset>]) {
     }
 }
 
+/// One read's answers, one per preset; `None` when the synth didn't reply.
+type Answers = Option<Vec<Option<ReadPreset>>>;
+
 /// A background read of a synth's preset names.
 #[derive(Default)]
 struct Reading {
@@ -201,7 +204,7 @@ struct Reading {
     total: AtomicUsize,
     /// The synth's id and its answers, once finished (`None` answers when
     /// it didn't reply at all).
-    result: Mutex<Option<(String, Option<Vec<Option<ReadPreset>>>)>>,
+    result: Mutex<Option<(String, Answers)>>,
 }
 
 /// What the module keeps between callbacks.
