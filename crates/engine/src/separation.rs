@@ -25,15 +25,22 @@ use crate::track::Audio;
 
 /// The Spleeter weights (`scripts/models/convert_spleeter.py`).
 pub const SPLEETER: &str = "spleeter-4stems.safetensors";
+/// Spleeter as a Core ML package for the Neural Engine, zipped
+/// (`scripts/models/convert_spleeter_coreml.py`, from [`SPLEETER`]).
+pub const SPLEETER_COREML: &str = "spleeter-4stems.mlpackage.zip";
 /// The HTDemucs weights.
 pub const HTDEMUCS: &str = "htdemucs.safetensors";
 
 /// Each model file and its SHA-256, as the `stem-models` release of openDJ
 /// has them (`.github/workflows/stem-models.yml`).
-pub const MODELS: [(&str, &str); 2] = [
+pub const MODELS: [(&str, &str); 3] = [
     (
         SPLEETER,
         "4f3c1011feda8f2cccaef9735fad04f272c87bd5ad0a93dd53a3d622c4ed31c5",
+    ),
+    (
+        SPLEETER_COREML,
+        "16e9e37311bf76f96d2277ede599f8831b7b5c2eb7d4b3a3d3f4fc81f6414ee9",
     ),
     (
         HTDEMUCS,
@@ -142,21 +149,97 @@ const SPLIT_LEAD: usize = 8192;
 /// each of ours (drums, bass, other, vocals).
 const FROM_SPLEETER: [usize; 4] = [1, 2, 3, 0];
 
-/// The Spleeter networks, loaded once.
-pub(crate) fn spleeter_net() -> Result<Arc<spleeter::cpu::Net>, String> {
-    static NET: Mutex<Option<Arc<spleeter::cpu::Net>>> = Mutex::new(None);
-    let mut net = NET.lock().unwrap();
+/// Spleeter's networks on whichever back end loaded.
+pub(crate) enum SpleeterNet {
+    /// Plain CPU matrix products.
+    Cpu(spleeter::cpu::Net),
+    /// Core ML on the Neural Engine (Macs), several times faster.
+    #[cfg(target_vendor = "apple")]
+    CoreMl(spleeter::coreml::Net),
+}
+
+impl spleeter::Net for SpleeterNet {
+    fn estimate(&self, magnitudes: Vec<f32>) -> Vec<f32> {
+        match self {
+            SpleeterNet::Cpu(n) => spleeter::Net::estimate(n, magnitudes),
+            #[cfg(target_vendor = "apple")]
+            SpleeterNet::CoreMl(n) => spleeter::Net::estimate(n, magnitudes),
+        }
+    }
+}
+
+impl spleeter::OneStem for SpleeterNet {
+    fn estimate_stem(&self, stem: usize, magnitudes: &[f32]) -> Vec<f32> {
+        match self {
+            SpleeterNet::Cpu(n) => spleeter::OneStem::estimate_stem(n, stem, magnitudes),
+            // One program holds all four U-Nets; on the Neural Engine all
+            // four still beat one on the CPU.
+            #[cfg(target_vendor = "apple")]
+            SpleeterNet::CoreMl(n) => {
+                let size = 2 * spleeter::T * spleeter::F;
+                let all = spleeter::Net::estimate(n, magnitudes.to_vec());
+                all[stem * size..][..size].to_vec()
+            }
+        }
+    }
+}
+
+/// The Spleeter networks, loaded once: through Core ML on Macs (unless
+/// `OPENDJ_SPLEETER_CPU` is set), else, or if that fails, on the CPU.
+pub(crate) fn spleeter_net() -> Result<Arc<SpleeterNet>, String> {
+    static NET: Mutex<Option<Arc<SpleeterNet>>> = Mutex::new(None);
+    let mut net = NET.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(n) = net.as_ref() {
         return Ok(n.clone());
     }
+    #[cfg(target_vendor = "apple")]
+    if std::env::var_os("OPENDJ_SPLEETER_CPU").is_none() {
+        match coreml_net() {
+            Ok(n) => {
+                let n = Arc::new(SpleeterNet::CoreMl(n));
+                *net = Some(n.clone());
+                return Ok(n);
+            }
+            Err(e) => eprintln!("Spleeter through Core ML: {e}; using the CPU"),
+        }
+    }
     let path = model_or_fetch(SPLEETER, &MODELS)?;
     let bytes = std::fs::read(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-    let n = Arc::new(spleeter::cpu::Net::load(&bytes)?);
+    let n = Arc::new(SpleeterNet::Cpu(spleeter::cpu::Net::load(&bytes)?));
     // Half the cores, so a playing deck keeps its share.
     let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
     spleeter::cpu::set_threads((cores / 2).max(1));
     *net = Some(n.clone());
     Ok(n)
+}
+
+/// Spleeter through Core ML: the published package, unzipped and compiled
+/// for this Mac once (a folder named after the package's checksum, so a new
+/// package is compiled afresh), then loaded for the Neural Engine.
+#[cfg(target_vendor = "apple")]
+fn coreml_net() -> Result<spleeter::coreml::Net, String> {
+    use spleeter::coreml::{Net, Units};
+    let zipped = model_or_fetch(SPLEETER_COREML, &MODELS)?;
+    let sha = MODELS
+        .iter()
+        .find(|(n, _)| *n == SPLEETER_COREML)
+        .map_or("", |(_, s)| *s);
+    let dir = zipped.parent().ok_or("no folder for the models")?;
+    let compiled = dir.join(format!("spleeter-4stems-{}.mlmodelc", &sha[..12]));
+    if let Ok(n) = Net::load(&compiled, Units::NeuralEngine) {
+        return Ok(n);
+    }
+    // Not compiled yet, or this macOS can't read what an older one compiled.
+    let work = dir.join("spleeter-4stems-unzipped");
+    let _ = std::fs::remove_dir_all(&work);
+    let file = std::fs::File::open(&zipped).map_err(|e| format!("{}: {e}", zipped.display()))?;
+    zip::ZipArchive::new(file)
+        .and_then(|mut a| a.extract(&work))
+        .map_err(|e| format!("{}: {e}", zipped.display()))?;
+    let result = Net::compile(&work.join("spleeter-4stems.mlpackage"), &compiled);
+    let _ = std::fs::remove_dir_all(&work);
+    result?;
+    Net::load(&compiled, Units::NeuralEngine)
 }
 
 /// The track's channels, whole.
