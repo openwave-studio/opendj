@@ -111,7 +111,7 @@ impl Link {
         })
     }
 
-    fn quantum(&self) -> f64 {
+    pub(crate) fn quantum(&self) -> f64 {
         self.c.quantum.get().max(1.0)
     }
 

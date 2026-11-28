@@ -2005,6 +2005,25 @@ pub struct Engine {
 /// it is pulled back.
 const LINK_PHASE_TOLERANCE: f64 = 0.01;
 
+/// Whether the Link session at `link_beat` has drifted from the master
+/// deck at `deck_beat` and needs pulling back. The session counts bars of
+/// `quantum` beats, so a jump of whole beats (a beat jump, a hot cue a beat
+/// away) puts it off too. While the deck loops `loop_beats` that aren't
+/// whole bars, each pass would pull the session's bar around, so only the
+/// beat is kept and the session counts on; leaving the loop lines the bar
+/// up again.
+fn link_off_beat(deck_beat: f64, link_beat: f64, quantum: f64, loop_beats: Option<f64>) -> bool {
+    let whole_bars = |beats: f64| {
+        let bars = beats / quantum;
+        bars >= 1.0 - 1e-3 && (bars - bars.round()).abs() < 1e-3
+    };
+    let span = match loop_beats {
+        Some(beats) if !whole_bars(beats) => 1.0,
+        _ => quantum,
+    };
+    span * phase_error(deck_beat / span, link_beat / span).abs() > LINK_PHASE_TOLERANCE
+}
+
 /// What a synced deck follows this buffer: another deck, the Link
 /// session or the clock coming in.
 #[derive(Clone, Copy, Debug)]
@@ -3207,7 +3226,9 @@ impl Engine {
         let Some(track) = &d.track else { return };
         let tempo = d.effective_bpm();
         let beat = track.beat_at(d.seconds());
-        let off_beat = phase_error(beat, m.beat).abs() > LINK_PHASE_TOLERANCE;
+        let looping = d.c.loop_enabled.get_bool() && d.loop_end > d.loop_start;
+        let loop_beats = looping.then(|| track.beat_at(d.loop_end) - track.beat_at(d.loop_start));
+        let off_beat = link_off_beat(beat, m.beat, self.link.quantum(), loop_beats);
         let align = changed || m.just_enabled || off_beat;
         if align || (tempo - m.tempo).abs() > 1e-6 {
             self.link.lead(tempo, align.then_some(beat));
@@ -4928,6 +4949,22 @@ mod tests {
     }
 
     #[test]
+    fn link_is_off_beat_by_whole_beats_within_the_bar() {
+        // A beat or two away is off; a whole bar away is not.
+        assert!(link_off_beat(9.0, 8.0, 4.0, None));
+        assert!(link_off_beat(10.0, 8.0, 4.0, None));
+        assert!(!link_off_beat(12.0, 8.0, 4.0, None));
+        assert!(!link_off_beat(8.005, 8.0, 4.0, None));
+        assert!(link_off_beat(8.1, 8.0, 4.0, None));
+        // Loops of whole bars keep the bar; shorter ones only the beat.
+        assert!(link_off_beat(9.0, 8.0, 4.0, Some(8.0)));
+        assert!(!link_off_beat(9.0, 8.0, 4.0, Some(1.0)));
+        assert!(!link_off_beat(10.0, 8.0, 4.0, Some(2.0)));
+        assert!(!link_off_beat(10.0, 8.0, 4.0, Some(6.0)));
+        assert!(link_off_beat(8.1, 8.0, 4.0, Some(2.0)));
+    }
+
+    #[test]
     fn ableton_link_follows_the_master_deck() {
         let (reg, mut engine, mut input) = setup();
         let link = engine.link_handle();
@@ -4962,9 +4999,14 @@ mod tests {
             let track = d.track.clone().unwrap();
             // The next buffer starts where the deck is now.
             let heard = engine.link.heard_at + (512.0 / SR * 1e6) as i64;
-            let e = phase_error(track.beat_at(d.seconds()), s.beat_at_time(heard, 4.0));
-            assert!(e.abs() < 0.05, "phase error {e}");
+            // Within the bar: other apps count the session's bars.
+            let e = bar_error(track.beat_at(d.seconds()), s.beat_at_time(heard, 4.0));
+            assert!(e.abs() < 0.05, "bar error {e}");
         };
+        check_phase(&mut engine, 0);
+        // A jump of one beat moves the session's bar with the deck.
+        c("[Channel1]", "beatjump").set(1.0);
+        run_live(&mut engine, 0.03);
         check_phase(&mut engine, 0);
         // Moving the master's tempo moves the session's.
         let rate = c("[Channel1]", "rate");
