@@ -28,12 +28,15 @@ pub const SPLEETER: &str = "spleeter-4stems.safetensors";
 /// Spleeter as a Core ML package for the Neural Engine, zipped
 /// (`scripts/models/convert_spleeter_coreml.py`, from [`SPLEETER`]).
 pub const SPLEETER_COREML: &str = "spleeter-4stems.mlpackage.zip";
+/// HTDemucs's network as a Core ML package for the Neural Engine, zipped
+/// (`scripts/models/convert_htdemucs_coreml.py`, from [`HTDEMUCS`]).
+pub const HTDEMUCS_COREML: &str = "htdemucs.mlpackage.zip";
 /// The HTDemucs weights.
 pub const HTDEMUCS: &str = "htdemucs.safetensors";
 
 /// Each model file and its SHA-256, as the `stem-models` release of openDJ
 /// has them (`.github/workflows/stem-models.yml`).
-pub const MODELS: [(&str, &str); 3] = [
+pub const MODELS: [(&str, &str); 4] = [
     (
         SPLEETER,
         "4f3c1011feda8f2cccaef9735fad04f272c87bd5ad0a93dd53a3d622c4ed31c5",
@@ -46,6 +49,7 @@ pub const MODELS: [(&str, &str); 3] = [
         HTDEMUCS,
         "8193504cdfb3943adaf039b8acb524a46e87ebf232c383ac7a32c80a6578423e",
     ),
+    (HTDEMUCS_COREML, "PENDING_HTDEMUCS_COREML_SHA256"),
 ];
 
 /// Downloads a model file: `(name, sha256, to)`. The app sets it, so the
@@ -219,27 +223,41 @@ pub(crate) fn spleeter_net() -> Result<Arc<SpleeterNet>, String> {
 #[cfg(target_vendor = "apple")]
 fn coreml_net() -> Result<spleeter::coreml::Net, String> {
     use spleeter::coreml::{Net, Units};
-    let zipped = model_or_fetch(SPLEETER_COREML, &MODELS)?;
+    let compiled = coreml_compiled(SPLEETER_COREML, "spleeter-4stems", false)?;
+    Net::load(&compiled, Units::NeuralEngine).or_else(|_| {
+        // This macOS can't read what an older one compiled.
+        let compiled = coreml_compiled(SPLEETER_COREML, "spleeter-4stems", true)?;
+        Net::load(&compiled, Units::NeuralEngine)
+    })
+}
+
+/// The Core ML model in the published zip `zipped` (holding
+/// `<name>.mlpackage`), compiled for this Mac once into the models folder
+/// under a name from its checksum, so a new package is compiled afresh;
+/// `again` compiles it even if it was.
+#[cfg(target_vendor = "apple")]
+fn coreml_compiled(zipped: &str, name: &str, again: bool) -> Result<PathBuf, String> {
+    let zip_path = model_or_fetch(zipped, &MODELS)?;
     let sha = MODELS
         .iter()
-        .find(|(n, _)| *n == SPLEETER_COREML)
+        .find(|(n, _)| *n == zipped)
         .map_or("", |(_, s)| *s);
-    let dir = zipped.parent().ok_or("no folder for the models")?;
-    let compiled = dir.join(format!("spleeter-4stems-{}.mlmodelc", &sha[..12]));
-    if let Ok(n) = Net::load(&compiled, Units::NeuralEngine) {
-        return Ok(n);
+    let dir = zip_path.parent().ok_or("no folder for the models")?;
+    let compiled = dir.join(format!("{name}-{}.mlmodelc", &sha[..12]));
+    if compiled.is_dir() && !again {
+        return Ok(compiled);
     }
-    // Not compiled yet, or this macOS can't read what an older one compiled.
-    let work = dir.join("spleeter-4stems-unzipped");
+    let work = dir.join(format!("{name}-unzipped"));
     let _ = std::fs::remove_dir_all(&work);
-    let file = std::fs::File::open(&zipped).map_err(|e| format!("{}: {e}", zipped.display()))?;
+    let file =
+        std::fs::File::open(&zip_path).map_err(|e| format!("{}: {e}", zip_path.display()))?;
     zip::ZipArchive::new(file)
         .and_then(|mut a| a.extract(&work))
-        .map_err(|e| format!("{}: {e}", zipped.display()))?;
-    let result = Net::compile(&work.join("spleeter-4stems.mlpackage"), &compiled);
+        .map_err(|e| format!("{}: {e}", zip_path.display()))?;
+    let result =
+        opendj_separation::coreml::compile(&work.join(format!("{name}.mlpackage")), &compiled);
     let _ = std::fs::remove_dir_all(&work);
-    result?;
-    Net::load(&compiled, Units::NeuralEngine)
+    result.map(|()| compiled)
 }
 
 /// The track's channels, whole.
@@ -428,13 +446,31 @@ pub fn separate_hq_watched(
     keep_going: &dyn Fn() -> bool,
 ) -> Result<StemSource, String> {
     use opendj_separation::htdemucs::{HtDemucs, STOPPED};
+    let track = crate::decode::decode(path)?;
+    let live = attach(live, &track);
+    let live = live.as_ref().map(|(up, from)| (&**up, *from));
+    // On Macs, the Neural Engine first: faster than the GPU, and it leaves
+    // the GPU to the waveforms.
+    #[cfg(target_vendor = "apple")]
+    if coreml_hq_wanted() {
+        let result = caught(|| {
+            with_coreml_hq(|model| htdemucs(path, &track, model, live, &mut *progress, keep_going))
+        });
+        if !keep_going() {
+            return Err(STOPPED.into());
+        }
+        match result {
+            Ok(s) => return Ok(s),
+            Err(e) => {
+                eprintln!("HTDemucs through Core ML: {e}; using the GPU");
+                COREML_HQ_FAILED.store(true, Ordering::Relaxed);
+            }
+        }
+    }
     let weights = match model_or_fetch(HTDEMUCS, &MODELS) {
         Ok(w) => w,
         Err(e) => return crate::stems::run_demucs(path).map_err(|_| e),
     };
-    let track = crate::decode::decode(path)?;
-    let live = attach(live, &track);
-    let live = live.as_ref().map(|(up, from)| (&**up, *from));
     let mut result = Err(String::new());
     if !GPU_FAILED.load(Ordering::Relaxed) {
         result = caught(|| {
@@ -468,6 +504,44 @@ pub fn separate_hq_watched(
     }
 }
 
+/// Set once HTDemucs has failed through Core ML; the GPU does the
+/// separating after that.
+#[cfg(target_vendor = "apple")]
+static COREML_HQ_FAILED: AtomicBool = AtomicBool::new(false);
+
+/// HTDemucs through Core ML, loaded once and kept: the first load on a Mac
+/// compiles it for the Neural Engine, which takes seconds.
+#[cfg(target_vendor = "apple")]
+static COREML_HQ: Mutex<Option<opendj_separation::htdemucs::coreml::Net>> = Mutex::new(None);
+
+/// Whether high-quality stems go through Core ML: unless it has failed or
+/// `OPENDJ_HTDEMUCS_GPU` is set.
+#[cfg(target_vendor = "apple")]
+fn coreml_hq_wanted() -> bool {
+    !COREML_HQ_FAILED.load(Ordering::Relaxed) && std::env::var_os("OPENDJ_HTDEMUCS_GPU").is_none()
+}
+
+/// Runs `f` with HTDemucs through Core ML on the Neural Engine, loading it
+/// first (downloading and compiling the package if needed) if it isn't yet.
+/// One at a time.
+#[cfg(target_vendor = "apple")]
+fn with_coreml_hq<T>(
+    f: impl FnOnce(&opendj_separation::htdemucs::coreml::Net) -> Result<T, String>,
+) -> Result<T, String> {
+    use opendj_separation::htdemucs::coreml::{Net, Units};
+    let mut model = COREML_HQ.lock().unwrap_or_else(|e| e.into_inner());
+    if model.is_none() {
+        let compiled = coreml_compiled(HTDEMUCS_COREML, "htdemucs", false)?;
+        let net = Net::load(&compiled, Units::NeuralEngine).or_else(|_| {
+            // This macOS can't read what an older one compiled.
+            let compiled = coreml_compiled(HTDEMUCS_COREML, "htdemucs", true)?;
+            Net::load(&compiled, Units::NeuralEngine)
+        })?;
+        *model = Some(net);
+    }
+    f(model.as_ref().expect("loaded above"))
+}
+
 /// Set once HTDemucs has failed on the GPU: a failure can leave burn's
 /// locks poisoned for the rest of the run, so after one the CPU does the
 /// separating.
@@ -498,13 +572,25 @@ fn with_gpu_model<T>(
     f(model.as_ref().expect("loaded above"))
 }
 
-/// Gets HTDemucs ready on the GPU: loads it and compiles its kernels for
-/// the model's shapes, which otherwise happens during the first separation
+/// Gets HTDemucs ready: on Macs through Core ML (loading it compiles it for
+/// the Neural Engine), else on the GPU, where it loads and compiles its
+/// kernels for the model's shapes, which otherwise happens during the first separation
 /// and holds back its first stems by seconds. Does nothing without the
 /// downloaded model (it isn't downloaded for this) or once the GPU has
 /// failed; a failure here sends separations to the CPU straight away.
 /// Takes a few seconds; see [`crate::stems::warm_up_when_idle`].
 pub fn warm_up() {
+    // On Macs, high-quality stems go through Core ML: loading it is the
+    // slow part (compiling for the Neural Engine, the first time).
+    #[cfg(target_vendor = "apple")]
+    if coreml_hq_wanted() && model(HTDEMUCS_COREML).is_some() {
+        if let Err(e) = caught(|| with_coreml_hq(|_| Ok(()))) {
+            eprintln!("HTDemucs through Core ML: {e}; separations will use the GPU");
+            COREML_HQ_FAILED.store(true, Ordering::Relaxed);
+        } else {
+            return;
+        }
+    }
     if GPU_FAILED.load(Ordering::Relaxed) {
         return;
     }
@@ -595,10 +681,10 @@ impl Stretches {
     }
 }
 
-fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
+fn htdemucs(
     path: &Path,
     track: &Audio,
-    model: &opendj_separation::htdemucs::HtDemucs<B>,
+    model: &(impl opendj_separation::htdemucs::SegmentNet + ?Sized),
     live: Option<(&Stems, usize)>,
     progress: &mut dyn FnMut(usize, usize),
     keep_going: &dyn Fn() -> bool,
@@ -642,8 +728,13 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
     let from = live.map_or(0, |(_, f)| {
         (f as f64 * model_rate as f64 / rate as f64) as usize
     });
-    let stems =
-        model.separate_from([&ml, &mr], from, progress, keep_going, &mut |range, out| {
+    let stems = opendj_separation::htdemucs::separate_from(
+        model,
+        [&ml, &mr],
+        from,
+        progress,
+        keep_going,
+        &mut |range, out| {
             let Some((up, _)) = live else {
                 return;
             };
@@ -683,7 +774,8 @@ fn htdemucs<B: opendj_separation::burn::prelude::Backend>(
                 up.fill(t, stem_frames(&views, [0, 1, 2, 3], lead, rate));
                 *done = true;
             }
-        })?;
+        },
+    )?;
     if let Some((up, _)) = live {
         if filled.iter().all(|f| *f) {
             up.finish();
