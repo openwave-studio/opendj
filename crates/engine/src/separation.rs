@@ -49,7 +49,10 @@ pub const MODELS: [(&str, &str); 4] = [
         HTDEMUCS,
         "8193504cdfb3943adaf039b8acb524a46e87ebf232c383ac7a32c80a6578423e",
     ),
-    (HTDEMUCS_COREML, "PENDING_HTDEMUCS_COREML_SHA256"),
+    (
+        HTDEMUCS_COREML,
+        "09938c394c803ad1f1c9cbe7756be8bafb4e92a98ccf5a4208a5836b993580cf",
+    ),
 ];
 
 /// Downloads a model file: `(name, sha256, to)`. The app sets it, so the
