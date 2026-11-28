@@ -15,7 +15,7 @@
   - v1.0: tracks not at 44.1 kHz also get Spleeter stems a chunk at a time from the cue (resampled per chunk, `opendj_separation::rates`), instead of after the whole track
   - v1.0: HQ for a track on a deck runs playhead-first: HTDemucs takes its chunks from the deck's play position outwards, three ahead for each behind (`HtDemucs::separate_from`), with the same result as the whole track at once. Pausing is the background tasks panel's (#1008); no automatic pause on underruns yet
 - [x] 2.3 Instant stems on the Neural Engine by default on Apple machines when 1.4 pays off: the Core ML package from the `stem-models` release (SHA-256 pinned), compiled once into the cache, CPU path as the fallback
-- [ ] 2.4 High-quality stems on the Neural Engine (Apple machines): the HTDemucs network as one fp16 Core ML program (`scripts/models/convert_htdemucs_coreml.py`, spectrograms and normalizing kept in Rust in fp32, `htdemucs::coreml::Net`), checked against burn and timed on a Mac with a Neural Engine, then used by default with burn on the GPU as the fallback
+- [x] 2.4 High-quality stems on the Neural Engine (Apple machines): the HTDemucs network as one fp16 Core ML program (`scripts/models/convert_htdemucs_coreml.py`, spectrograms and normalizing kept in Rust in fp32, `htdemucs::coreml::Net`), checked against burn and timed on a Mac with a Neural Engine, then used by default with burn on the GPU as the fallback
 
 ## 3. Engine
 
