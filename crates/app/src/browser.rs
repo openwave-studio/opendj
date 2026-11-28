@@ -5207,7 +5207,15 @@ impl Browser {
             let entry = &self.library[i];
             // An analysed grid arrives with the analysis; a fixed grid that
             // differs from the library's was edited on the deck.
-            let analysed = !t.info.fixed_grid && !t.grid.is_empty() && t.grid != entry.grid;
+            // Reset can give back the same grid the library keeps as the
+            // DJ's or an import's (an edit that ended where analysis had it):
+            // it still goes back to being the analysed grid.
+            let back_to_analysis = t.info.grid_analysed
+                && t.info.grid_from == "analysis"
+                && !matches!(entry.info.grid_from.as_str(), "" | "analysis");
+            let analysed = !t.info.fixed_grid
+                && !t.grid.is_empty()
+                && (t.grid != entry.grid || back_to_analysis);
             let edited = t.info.fixed_grid && t.grid != entry.grid && !t.grid.is_empty();
             let key_changed = entry.key != t.key || entry.info.key_detected != t.info.key_detected;
             let lock_changed = entry.info.grid_locked != t.info.grid_locked;
