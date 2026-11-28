@@ -14,6 +14,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. Instrument decks get a n
 **Decks**
 
 - **Scratch with the on-screen jog**: drag its top, or move two fingers anywhere over it on a trackpad (up or left forward, down or right back, circles follow your fingers). The rim still bends the speed.
+- **Ableton Link**: the Link session's bar stays with the master deck after a beat jump or a hot cue a beat away, so OSC and the beat counter stay in step.
 - **Mixer**: the EQ / STEMS / SCULPT knob mode button opens a working drop-down again, now with an icon per mode and a check on the current one.
 
 **openDJ Studio (preview)**
@@ -49,6 +50,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. Instrument decks get a n
 
 - **rekordbox and MP3s**: beat grids, cues and loops on MP3s no longer land 25 or 51 ms off on USB and XML export and on rekordbox imports. openDJ now shifts them by each file's gapless trim, and by one more frame when the file starts with an Info header (thanks @M-Igashi).
 - **rekordbox import**: bar 1 lands where rekordbox has it when a grid starts mid-bar, a track left on a deck no longer saves its old grid over an import, and Reset back to analysis clears the edited mark.
+- The developer docs have a new page on writing a controller mapping.
 - The 10-second frame log line also counts page faults and audio dropouts, to find what causes a dropout.
 - The website and README link the openDJ Discord.
 
