@@ -669,6 +669,10 @@ pub struct Browser {
     db: Option<Library>,
     /// Where each track id is in `library`.
     index_of: HashMap<usize, usize>,
+    /// The decks' tracks as [`Browser::learn_analysis`] last saw them: one
+    /// still here unchanged holds nothing new, even if the library's copy
+    /// has moved on since (an import, a sync), so it isn't saved back.
+    learned: Vec<Arc<Track>>,
     /// Where each file is in `library`, for Files.
     path_index: HashMap<PathBuf, usize>,
     files: FilesState,
@@ -1425,6 +1429,7 @@ impl Browser {
             picks: Default::default(),
             db,
             index_of: HashMap::new(),
+            learned: Vec::new(),
             path_index: HashMap::new(),
             files: FilesState {
                 reader: files::Reader::start(),
@@ -5185,6 +5190,8 @@ impl Browser {
     pub fn learn_analysis(&mut self, loaded: &[Option<Arc<Track>>]) {
         let mut changed = HashSet::new();
         let saved = self.saved();
+        // Forget tracks no deck holds any more.
+        self.learned.retain(|s| Arc::strong_count(s) > 1);
         for t in loaded.iter().flatten() {
             // Its mini waveform, filling in as the deck analyses it, in its
             // row and in Info.
@@ -5198,12 +5205,16 @@ impl Browser {
                     self.fill_info_wave(&app);
                 }
             }
-            if t.bpm <= 0.0 {
+            // A deck's track only changes when it loads, is analysed or the
+            // DJ edits it; the same one again is not an edit, though the
+            // library may have taken a newer grid from an import meanwhile.
+            if t.bpm <= 0.0 || self.learned.iter().any(|s| Arc::ptr_eq(s, t)) {
                 continue;
             }
             let Some(&i) = self.index_of.get(&t.id) else {
                 continue;
             };
+            self.learned.push(t.clone());
             let entry = &self.library[i];
             // An analysed grid arrives with the analysis; a fixed grid that
             // differs from the library's was edited on the deck.
@@ -5216,7 +5227,12 @@ impl Browser {
             let analysed = !t.info.fixed_grid
                 && !t.grid.is_empty()
                 && (t.grid != entry.grid || back_to_analysis);
-            let edited = t.info.fixed_grid && t.grid != entry.grid && !t.grid.is_empty();
+            // Only a deck edit marks the grid as the DJ's: an imported grid a
+            // deck still holds is not one.
+            let edited = t.info.fixed_grid
+                && t.info.grid_from == "user"
+                && t.grid != entry.grid
+                && !t.grid.is_empty();
             let key_changed = entry.key != t.key || entry.info.key_detected != t.info.key_detected;
             let lock_changed = entry.info.grid_locked != t.info.grid_locked;
             let mode_changed = entry.info.grid_mode != t.info.grid_mode;
