@@ -2,7 +2,8 @@ name: Publish stem models
 
 # Builds the stem separation models openDJ downloads the first time it needs
 # them (Spleeter converted from Deezer's checkpoint, also as a Core ML package
-# for the Neural Engine on Macs, HTDemucs as safetensors),
+# for the Neural Engine on Macs, HTDemucs as safetensors and as a Core ML
+# package),
 # and fetches the Beat This! beat detection models (ONNX, from beat-this-rs)
 # and the Whisper model for word timing (whisper.cpp's large-v3-turbo-q5_0),
 # checks them against scripts/models/SHA256SUMS and SHA1SUMS (Whisper's,
@@ -52,6 +53,15 @@ jobs:
           mkdir -p work
           python3 scripts/models/convert_spleeter_coreml.py models/spleeter-4stems.safetensors work/spleeter-4stems.mlpackage
           (cd work && zip -qr -X ../models/spleeter-4stems.mlpackage.zip spleeter-4stems.mlpackage)
+      - name: Convert HTDemucs for Core ML (Neural Engine on Macs)
+        # The network only, from the published safetensors; kept once made,
+        # like Spleeter's package.
+        if: hashFiles('models/htdemucs.mlpackage.zip') == ''
+        run: |
+          pip install coremltools==9.0 numpy==2.5.4 safetensors==0.8.0
+          mkdir -p work
+          python3 scripts/models/convert_htdemucs_coreml.py models/htdemucs.safetensors work/htdemucs.mlpackage
+          (cd work && zip -qr -X ../models/htdemucs.mlpackage.zip htdemucs.mlpackage)
       - name: Fetch Beat This!
         if: hashFiles('models/beat-this-mel.onnx') == '' || hashFiles('models/beat-this-small.onnx') == ''
         run: |
