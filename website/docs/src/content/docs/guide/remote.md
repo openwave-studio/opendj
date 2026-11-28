@@ -94,32 +94,45 @@ The **Deck** tab turns a tablet or phone into one of openDJ's decks: for
 example deck 3 beside a two-channel controller such as the DDJ-FLX4. It
 talks to openDJ directly, so there's nothing to map and no MIDI to set up.
 
-The tabs sit along the bottom on a phone and in the top bar on an iPad or a
-phone on its side. A tablet opens on **Deck**, a phone on **Automix**; the
-page remembers the tab you used last.
+On an iPad, or a phone on its side, a top bar like openDJ's sits along the
+top: the page picker on the left (Automix and Deck), the logo in the
+middle, and on the Deck page the deck buttons, **LOAD** and the time on the
+right. On a phone upright, the pages are tabs along the bottom. A tablet
+opens on **Deck**, a phone on **Automix**; the page remembers the one you
+used last.
 
-- **1 2 3 4** at the top pick the deck. It starts on deck 3. A green line
-  under a number means that deck is playing.
-- **LOAD** opens search; **Load 3** on a track puts it on the deck. If the
-  deck is playing, the button asks again (**Load anyway**).
-- The waveform scrolls with the music: low, mid and high in red, green and
-  blue, beats and bars, hot cues and the loop shaded. The overview above
-  shows the whole track. The tag on the waveform shows the bar and beat.
-- **CUE** and **▶❙❙**, **SYNC**, **Q** (quantize), **SLIP**, **REV** (held)
-  and **NUDGE** (hold ◀ or ▶ to slow down or speed up a moment). The
-  waveform's play position drifts by 10 to 30 ms over Wi-Fi, fine for
-  buttons and pads; there's no scratching from the page.
+- **1 2 3 4** pick the deck. It starts on deck 3. A green line under a
+  number means that deck is playing.
+- The header shows the deck as openDJ does: cover, title and artist, bar
+  and beat, time left, tempo and key. **‹ ›** beside the key shift it a
+  semitone, **MATCH** matches it to the other deck and **RESET** puts it
+  back. The key turns green when it mixes with the deck playing.
+- **LOAD** lists your collection. Tap a track to load it onto the deck. If
+  the deck is playing with its fader up, tap it a second time to load it
+  anyway. On an iPad the list shows tempo, key and time beside each title;
+  keys that mix with the deck playing are green. The buttons over the list
+  narrow it down: **Mixes with deck**, the playing track's **Key** or
+  **BPM**, **★★★ and up** and **Not played**.
+- The waveforms use the colours picked in openDJ (RGB or 3-Band). The big
+  one scrolls with the music, with beats and bars, hot cues and the loop
+  shaded; the overview under the title shows the whole track. Its play
+  position drifts by 10 to 30 ms over Wi-Fi, fine for buttons and pads;
+  there's no scratching from the page.
+- The tempo fader is on the left, down for faster as on a player, with
+  **KEY** (key lock) and **RESET**. On a phone it's a slider: right is
+  faster.
+- **SYNC**, **Q** (quantize), **SLIP**, **REV** (held), **NUDGE** (hold ◀
+  or ▶ to slow down or speed up a moment), **▶❙❙** and **CUE**.
 - **Pads**: **Hot Cue** (tap an empty pad to set one, hold a set one for a
   second to clear it), **Loop** (1/4 to 32 beats) and **Beat Jump** (back on
   the top row, forward on the bottom).
 - Under the pads: loop **IN** and **OUT**, the loop size (‹ › halve and
   double, the middle starts a loop), **RELOOP**, and beat jump (the middle
   changes the jump size).
-- The channel strip: **TRIM**, **HI**, **MID**, **LOW**, **FILTER**
-  (double tap a knob for the middle), **CUE** for headphones, the volume
-  fader and the level meter. On a phone it's a row under the transport.
-- The pitch fader, down for faster as on a player, with **KEY** (key lock)
-  and **RESET**. On a phone it's a slider: right is faster.
+- The channel strip on the right is one side of the 2-Deck mixer: **HI**,
+  **MID**, **LOW** and **FILTER** (double tap a knob for the middle),
+  **GAIN**, the volume fader, the level meter and 🎧 for headphones. On a
+  phone it's a row at the bottom.
 
 ## Phones and safety
 
