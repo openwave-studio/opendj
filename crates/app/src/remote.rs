@@ -360,7 +360,9 @@ impl Remote {
             server.publish("automix", self.automix_state(app, automix, browser, tracks));
             server.publish("mixer", self.mixer_state(app));
         }
-        self.deck.publish(server, tracks, browser.camelot());
+        let art = &self.art;
+        self.deck
+            .publish(server, tracks, browser.camelot(), &|t| art_id(art, t));
         if now.duration_since(self.last_decks) >= DECKS_EVERY {
             self.last_decks = now;
             server.publish("now", self.now_state(automix, browser, tracks));
@@ -600,16 +602,7 @@ impl Remote {
     /// An id for the track's album art that the phone puts in the art
     /// address; the app remembers which file it stands for.
     fn art_id(&self, t: &Track) -> Option<String> {
-        let key = crate::art::Art::key(t)?;
-        let opendj_engine::Source::File(path) = &t.source else {
-            return None;
-        };
-        let digest = Sha256::digest(key.as_bytes());
-        let id: String = digest[..8].iter().map(|b| format!("{b:02x}")).collect();
-        let mut map = self.art.lock().unwrap_or_else(|e| e.into_inner());
-        map.entry(id.clone())
-            .or_insert_with(|| (path.clone(), t.album.clone()));
-        Some(id)
+        art_id(&self.art, t)
     }
 
     fn track_json(&self, t: &Track, camelot: bool) -> Value {
@@ -639,6 +632,8 @@ impl Remote {
             .map(|t| {
                 let mut v = self.track_json(t, camelot);
                 v["queued"] = json!(queued.contains(&t.id));
+                // Its key mixes with the track playing now's.
+                v["mix"] = json!(!t.key.is_empty() && browser.mixes_with_deck(&t.key));
                 v
             })
             .collect();
@@ -831,4 +826,19 @@ pub(crate) fn held_count(
         .map_while(|i| browser.automix_at(i))
         .take_while(|t| Some(t.id) == playing || Some(t.id) == waiting)
         .count()
+}
+
+/// The id the phone asks `/art/` for a track's cover by, remembered with
+/// where to read the cover from; `None` for a track with no cover to find.
+fn art_id(art: &ArtMap, t: &Track) -> Option<String> {
+    let key = crate::art::Art::key(t)?;
+    let opendj_engine::Source::File(path) = &t.source else {
+        return None;
+    };
+    let digest = Sha256::digest(key.as_bytes());
+    let id: String = digest[..8].iter().map(|b| format!("{b:02x}")).collect();
+    let mut map = art.lock().unwrap_or_else(|e| e.into_inner());
+    map.entry(id.clone())
+        .or_insert_with(|| (path.clone(), t.album.clone()));
+    Some(id)
 }

@@ -5763,7 +5763,7 @@ impl Browser {
     }
 
     /// Whether a key mixes harmonically with the track playing now's.
-    fn mixes_with_deck(&self, key: &str) -> bool {
+    pub(crate) fn mixes_with_deck(&self, key: &str) -> bool {
         self.deck_ref
             .and_then(|(_, k)| k)
             .zip(Key::parse(key))

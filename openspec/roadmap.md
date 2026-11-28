@@ -120,6 +120,10 @@ Released so far: v0.1.0 and v0.2.0 (2026-10-15, 2026-10-20) and v0.3.0 (prepared
 - [add-arturia-presets](changes/add-arturia-presets/proposal.md) (Arturia instruments' presets listed and loaded as the plugin's own: read from Arturia's preset library with sound type, genre, style and character tags and likes, loaded as the plugin's state; a user request, issue #1161, 2026-11-26; moved to v0.9.6 2026-11-27)
 - [add-remote-deck-pages](changes/add-remote-deck-pages/proposal.md) (the phone remote's Deck page: an iPad or phone as any deck, deck 3 at first, beside a two-channel controller, with the waveform drawn on the page, pads, loops, pitch and the channel strip; then a Player look, a library panel and an FX page with X-Y pads; a user request after mockups, issue #1155, 2026-11-26)
 
+## v0.9.7 · More test releases before 1.0
+
+- [add-remote-deck-pages](changes/add-remote-deck-pages/proposal.md) (the phone remote's Deck page: an iPad or phone as any deck, deck 3 at first, beside a two-channel controller, with the waveform drawn on the page, pads, loops, pitch and the channel strip; then a Player look, a library panel and an FX page with X-Y pads; a user request after mockups, issue #1155, 2026-11-26)
+
 ## v1.0 · Ready for any DJ switching over
 
 - [add-layout-customization](changes/add-layout-customization/proposal.md)

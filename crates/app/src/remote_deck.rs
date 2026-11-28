@@ -6,10 +6,16 @@
 //!
 //! - `decks`: buttons, knobs and faders of all four decks, ten times a second.
 //! - `deck_pos`: where each deck is and how fast it moves, twenty times a
-//!   second; the page moves its waveform on its own clock in between.
-//! - `track1` to `track4`: the track on each deck (title, beats, hot cue
-//!   names), only when it changes, with the id of its waveform, which the
-//!   page fetches once from `/wave/<id>`.
+//!   second, stamped with the app's clock; the page moves its waveform on its
+//!   own clock in between, steered by the stamps rather than by when each
+//!   update happened to arrive over Wi-Fi.
+//! - `wave_look`: the waveform colour scheme picked in the app, so the page
+//!   draws the same colours.
+//! - `track1` to `track4`: the track on each deck (title, cover, beats, hot
+//!   cue names), only when it changes, with the id of its waveform, which the
+//!   page fetches once from `/wave/<id>`. While a track is still being
+//!   analysed its waveform grows; it is sent again at most every
+//!   [`GROWING_EVERY`], since encoding it is the heaviest thing here.
 //!
 //! A phone may only set the controls in [`DECK_KEYS`] and the EQ and filter
 //! knobs: the things on the Deck page, nothing that edits the collection.
@@ -19,14 +25,17 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use opendj_control::{ControlHandle, ControlRegistry};
+use opendj_engine::key::Key;
 use opendj_engine::{deck_group, eq_group, quick_effect_group, Track, NUM_DECKS, NUM_HOTCUES};
 use opendj_remote::Server;
+use opendj_waveform::{Style, BAND_PALETTES, RGB_PALETTES};
 use serde_json::{json, Value};
 
 use crate::browser::Browser;
 
 const DECKS_EVERY: Duration = Duration::from_millis(100);
 const POS_EVERY: Duration = Duration::from_millis(50);
+const GROWING_EVERY: Duration = Duration::from_secs(2);
 
 /// The deck controls a phone may set, by their Mixxx names.
 const DECK_KEYS: &[&str] = &[
@@ -53,6 +62,10 @@ const DECK_KEYS: &[&str] = &[
     "beatjump_forward",
     "beatjump_backward",
     "beatjump_size",
+    "pitch_up",
+    "pitch_down",
+    "reset_key",
+    "sync_key",
 ];
 
 /// Knobs a phone sets by a short name: the EQ's three bands and the filter.
@@ -79,6 +92,8 @@ struct Deck {
     loop_start: ControlHandle,
     loop_end: ControlHandle,
     vu: ControlHandle,
+    /// The key the deck plays in now (shifted or sped up), as Mixxx's number.
+    key: ControlHandle,
     /// Per hot cue: status (0 empty, 1 set, 2 held), position in seconds,
     /// and its type (1 cue, 4 loop).
     hotcues: Vec<(ControlHandle, ControlHandle, ControlHandle)>,
@@ -90,8 +105,12 @@ pub struct DeckRemote {
     last_pos: Instant,
     /// The track and waveform length each deck's `track` topic was sent for.
     sent: [Option<(usize, usize)>; NUM_DECKS],
+    /// When each deck's track was last sent, to hold back a growing waveform.
+    sent_at: [Option<Instant>; NUM_DECKS],
     /// Encoded waveforms of the tracks on the decks, by wave id.
     waves: [Option<(String, Arc<Vec<u8>>)>; NUM_DECKS],
+    /// The app's clock for the `deck_pos` stamps.
+    start: Instant,
 }
 
 impl DeckRemote {
@@ -129,6 +148,7 @@ impl DeckRemote {
                     loop_start: get(&g, "loop_start_position"),
                     loop_end: get(&g, "loop_end_position"),
                     vu: get(&g, "vu_meter"),
+                    key: get(&g, "key"),
                     hotcues: (1..=NUM_HOTCUES)
                         .map(|n| {
                             (
@@ -146,7 +166,9 @@ impl DeckRemote {
             last_decks: Instant::now(),
             last_pos: Instant::now(),
             sent: Default::default(),
+            sent_at: Default::default(),
             waves: Default::default(),
+            start: Instant::now(),
         }
     }
 
@@ -179,9 +201,11 @@ impl DeckRemote {
             }),
             "deck.load" => deck().and_then(|d| {
                 let id = params["id"].as_u64().ok_or("Missing track")? as usize;
-                if self.decks[d].keys["play"].get_bool()
-                    && !params["force"].as_bool().unwrap_or(false)
-                {
+                // A deck that plays to the room asks once more; one that's
+                // playing with its fader down is being cued, so it loads.
+                let heard = self.decks[d].keys["play"].get_bool()
+                    && self.decks[d].keys["volume"].get() > 0.0;
+                if heard && !params["force"].as_bool().unwrap_or(false) {
                     return Err("That deck is playing.".into());
                 }
                 if browser.load_id_onto(d, id) {
@@ -201,6 +225,7 @@ impl DeckRemote {
         server: &Server,
         tracks: &[Option<Arc<Track>>; NUM_DECKS],
         camelot: bool,
+        art: &dyn Fn(&Track) -> Option<String>,
     ) {
         let now = Instant::now();
         let mut waves_changed = false;
@@ -208,23 +233,32 @@ impl DeckRemote {
             let sent = track
                 .as_ref()
                 .map(|t| (t.id, t.waveform.levels.first().map_or(0, Vec::len)));
-            // A track still being analysed is sent again as its waveform grows.
             if sent == self.sent[d] {
                 continue;
             }
+            // A track still being analysed is sent again as its waveform
+            // grows, but not every frame.
+            let same_track = sent.map(|s| s.0) == self.sent[d].map(|s| s.0);
+            if same_track
+                && self.sent_at[d].is_some_and(|at| now.duration_since(at) < GROWING_EVERY)
+            {
+                continue;
+            }
             self.sent[d] = sent;
+            self.sent_at[d] = Some(now);
             let wave = track.as_deref().and_then(|t| {
                 let bytes = encode_wave(t)?;
                 Some((wave_id(t, d), Arc::new(bytes)))
             });
-            server.publish(
-                &format!("track{}", d + 1),
-                track_json(
-                    track.as_deref(),
-                    wave.as_ref().map(|w| w.0.as_str()),
-                    camelot,
-                ),
+            let mut json = track_json(
+                track.as_deref(),
+                wave.as_ref().map(|w| w.0.as_str()),
+                camelot,
             );
+            if let Some(t) = track.as_deref() {
+                json["art"] = json!(art(t));
+            }
+            server.publish(&format!("track{}", d + 1), json);
             self.waves[d] = wave;
             waves_changed = true;
         }
@@ -235,8 +269,9 @@ impl DeckRemote {
             self.last_decks = now;
             server.publish(
                 "decks",
-                Value::Array(self.decks.iter().map(deck_json).collect()),
+                Value::Array(self.decks.iter().map(|d| deck_json(d, camelot)).collect()),
             );
+            server.publish("wave_look", wave_look());
         }
         if now.duration_since(self.last_pos) >= POS_EVERY {
             self.last_pos = now;
@@ -266,7 +301,8 @@ impl DeckRemote {
                     ])
                 })
                 .collect();
-            server.publish("deck_pos", Value::Array(pos));
+            let at = now.duration_since(self.start).as_secs_f64() * 1000.0;
+            server.publish("deck_pos", json!({"at": at.round(), "decks": pos}));
         }
     }
 }
@@ -280,9 +316,41 @@ fn round4(v: f64) -> f64 {
 }
 
 /// One deck's buttons, knobs and loop for the page.
-fn deck_json(d: &Deck) -> Value {
-    let k = |key: &str| d.keys[key].get();
+/// The waveform colours the app draws with: RGB colours each slice by the
+/// balance of its bands, 3-Band layers them. Stems has no stems to show
+/// over the network, so it draws as RGB.
+fn wave_look() -> Value {
+    let hex = |c: [f32; 4]| {
+        let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u32;
+        format!("#{:02x}{:02x}{:02x}", b(c[0]), b(c[1]), b(c[2]))
+    };
+    let (style, colors) = match crate::wave_look::style() {
+        Style::Bands => (
+            "bands",
+            BAND_PALETTES[crate::wave_look::palette_index().min(BAND_PALETTES.len() - 1)],
+        ),
+        _ => {
+            let p = crate::wave_look::palette();
+            let rgb = if matches!(crate::wave_look::style(), Style::Rgb) {
+                [p.low, p.mid, p.high]
+            } else {
+                RGB_PALETTES[0]
+            };
+            ("rgb", rgb)
+        }
+    };
     json!({
+        "style": style,
+        "colors": colors.map(hex),
+        "half": crate::wave_look::half(),
+    })
+}
+
+fn deck_json(d: &Deck, camelot: bool) -> Value {
+    let k = |key: &str| d.keys[key].get();
+    let key = Key::from_mixxx_number(d.key.get()).map(|k| k.label(camelot));
+    json!({
+        "key": key,
         "play": k("play") > 0.0,
         "sync": k("sync_enabled") > 0.0,
         "keylock": k("keylock") > 0.0,
@@ -362,19 +430,21 @@ fn wave_id(t: &Track, deck: usize) -> String {
     format!("{:x}{:x}{:x}", deck + 1, t.id, len)
 }
 
-/// The track's waveform as the page reads it: `ODW1`, slices a second
-/// (f32), the slice count (u32), four spare bytes, then each slice's
-/// low, mid and high peaks (0 to 255) at full resolution.
+/// The track's waveform as the page reads it: `ODW2`, slices a second
+/// (f32), the slice count (u32), four spare bytes, then each slice as
+/// analysed at full resolution: the peaks of the low, mid and high bands and
+/// of the whole signal, then their RMS (each 0 to 255, the square root of
+/// the level), so the page can draw it as the app does.
 pub fn encode_wave(t: &Track) -> Option<Vec<u8>> {
     let w = &t.waveform;
     let bins = w.levels.first().filter(|l| !l.is_empty())?;
-    let mut out = Vec::with_capacity(16 + bins.len() * 3);
-    out.extend_from_slice(b"ODW1");
+    let mut out = Vec::with_capacity(16 + bins.len() * 8);
+    out.extend_from_slice(b"ODW2");
     out.extend_from_slice(&(w.bins_per_second as f32).to_le_bytes());
     out.extend_from_slice(&(bins.len() as u32).to_le_bytes());
     out.extend_from_slice(&[0; 4]);
     for b in bins {
-        out.extend_from_slice(&b[..3]);
+        out.extend_from_slice(b);
     }
     Some(out)
 }
@@ -415,10 +485,11 @@ mod tests {
             ..blank()
         };
         let bytes = encode_wave(&t).unwrap();
-        assert_eq!(&bytes[..4], b"ODW1");
+        assert_eq!(&bytes[..4], b"ODW2");
         assert_eq!(f32::from_le_bytes(bytes[4..8].try_into().unwrap()), 1000.0);
         assert_eq!(u32::from_le_bytes(bytes[8..12].try_into().unwrap()), 2);
-        assert_eq!(&bytes[16..], &[10, 20, 30, 50, 60, 70]);
+        assert_eq!(&bytes[16..24], &[10, 20, 30, 40, 1, 2, 3, 4]);
+        assert_eq!(bytes.len(), 16 + 2 * 8);
         assert!(encode_wave(&blank()).is_none());
     }
 
