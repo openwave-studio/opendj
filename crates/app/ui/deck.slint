@@ -1105,32 +1105,32 @@ export global GrooveUi {
     in property <[GrooveGenre]> genres;
 }
 
-// A preset's tags, for the browser's chips: what it is (TYPE) and how it
-// sounds (CHARACTER), switched on and off.
+// A preset's tags, for the browser's menus: what it is (TYPE), its
+// genres, style and character, switched on and off.
 component PresetTagger inherits PopupWindow {
     in property <int> deck;
     width: 300px;
-    height: 2 * 18px + 4 * 28px + 16px;
+    height: 300px;
     close-policy: close-on-click-outside;
     GrooveMenuBackground { }
-    VerticalLayout {
-        padding: 8px;
-        spacing: 0px;
-        for group[g] in ["TYPE", "CHARACTER"]: VerticalLayout {
-            property <int> from: g == 0 ? 0 : PresetUi.type-count;
-            property <int> to: g == 0 ? PresetUi.type-count : PresetUi.tag-names.length;
-            Text { text: group; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: center; }
-            for row in 2: HorizontalLayout {
-                spacing: 4px;
-                padding-top: 3px;
-                padding-bottom: 3px;
-                height: 28px;
-                alignment: start;
-                for k in max(0, min(5, to - from - row * 5)): TagChip {
-                    property <int> tag: from + row * 5 + k;
-                    text: PresetUi.tag-names[tag];
-                    on: PresetUi.has-tag(deck, tag);
-                    clicked => { PresetUi.toggle-tag(deck, tag); }
+    ScrollView {
+        VerticalLayout {
+            padding: 8px;
+            spacing: 0px;
+            alignment: start;
+            for group in PresetUi.tag-groups: VerticalLayout {
+                Text { text: group.name; color: Theme.text-dim; font-size: 10px; height: 18px; vertical-alignment: center; }
+                for line in group.lines: HorizontalLayout {
+                    spacing: 4px;
+                    padding-top: 3px;
+                    padding-bottom: 3px;
+                    height: 28px;
+                    alignment: start;
+                    for tag in line.tags: TagChip {
+                        text: PresetUi.tag-names[tag];
+                        on: PresetUi.has-tag(deck, tag);
+                        clicked => { PresetUi.toggle-tag(deck, tag); }
+                    }
                 }
             }
         }
