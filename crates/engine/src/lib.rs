@@ -97,9 +97,10 @@ pub use controls::{
     NUM_EFFECT_UNITS, NUM_HOTCUES, XFADER_CUT_IN,
 };
 pub use effects::{
-    color_fx_name, effect_name, parameter_names, plugin_index, step_effect, InstrumentView,
-    NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
-    MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    color_fx_name, effect_name, parameter_names, plugin_index, spectrum_of, step_effect,
+    InstrumentView, NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS,
+    EFFECT_MENU_ORDER, MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    SCOPE_SAMPLES,
 };
 /// The Remix deck's effect and scene names, as its controls number them.
 pub mod remix {
@@ -428,6 +429,10 @@ impl AudioEngine {
     /// The playing instrument's parameter names, for its knobs
     /// (`[Instrument1],parameterN` is the N-th); empty while none plays.
     pub fn instrument_parameters(&self) -> Vec<String> {
+        let names = self.hardware_synth.names();
+        if !names.is_empty() {
+            return names;
+        }
         self.plugins
             .as_ref()
             .map_or_else(Vec::new, |p| p.instrument_parameters())

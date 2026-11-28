@@ -432,6 +432,41 @@ impl InputControls {
     }
 }
 
+/// The hardware synth limiter's ceiling: -1 dBFS, as a live input's.
+const HARDWARE_CEILING: f32 = 0.891_250_9;
+
+/// The most a hardware synth's input gain lifts it: +18 dB.
+pub const HARDWARE_GAIN_MAX: f64 = 7.943;
+
+/// A hardware synth's sound as it comes in on the Instrument input:
+/// `[Instrument1],hardware_gain` (linear, 1 = 0 dB) then a limiter at
+/// -1 dBFS while `[Instrument1],hardware_limit` is on.
+struct HardwareInput {
+    gain_control: ControlHandle,
+    gain: f32,
+    on: ControlHandle,
+    limiter: crate::dsp::Limiter,
+}
+
+impl HardwareInput {
+    fn new(reg: &ControlRegistry, sample_rate: f64) -> Self {
+        let g = input_group(INSTRUMENT);
+        Self {
+            gain_control: reg.create(
+                g,
+                "hardware_gain",
+                1.0,
+                0.0,
+                HARDWARE_GAIN_MAX,
+                Behavior::Linear,
+            ),
+            gain: 1.0,
+            on: reg.create(g, "hardware_limit", 1.0, 0.0, 1.0, Behavior::Toggle),
+            limiter: crate::dsp::Limiter::new(sample_rate, HARDWARE_CEILING),
+        }
+    }
+}
+
 /// One input channel.
 pub(crate) struct Input {
     c: InputControls,
@@ -452,6 +487,8 @@ pub(crate) struct Input {
     arp: Option<[ControlHandle; 7]>,
     /// Its step sequencer (see [`crate::seq`]).
     seq: Option<crate::seq::Seq>,
+    /// The instrument's: a hardware synth's input gain and limiter.
+    limit: Option<HardwareInput>,
     /// The master deck's key, for Auto.
     master_key: Option<crate::key::Key>,
     feed: Option<InputFeed>,
@@ -546,6 +583,7 @@ impl Input {
             seq: (input == INSTRUMENT).then(|| {
                 crate::seq::Seq::new(crate::seq::SeqControls::new(reg, input_group(input)))
             }),
+            limit: (input == INSTRUMENT).then(|| HardwareInput::new(reg, sample_rate)),
             master_key: None,
             params: if input == INSTRUMENT {
                 (1..=INSTRUMENT_PARAMETERS)
@@ -737,6 +775,22 @@ impl Input {
             };
             let playing = if fx.plays_hardware() {
                 buf[got..].fill([0.0; 2]);
+                // Its own gain (an interface's line input can come in
+                // low) and a limiter after it, before the deck or the strip
+                // hears it.
+                if let Some(h) = &mut self.limit {
+                    let gain = (h.gain, h.gain_control.get() as f32);
+                    h.gain = gain.1;
+                    let on = h.on.get_bool();
+                    for (f, s) in buf.iter_mut().enumerate() {
+                        let r = (f + 1) as f32 / frames as f32;
+                        let g = gain.0 + (gain.1 - gain.0) * r;
+                        *s = [s[0] * g, s[1] * g];
+                        if on {
+                            *s = h.limiter.process(*s);
+                        }
+                    }
+                }
                 fx.finish_hardware(buf);
                 true
             } else {

@@ -546,20 +546,89 @@ export component ModeMenu inherits Rectangle {
     }
 }
 
-// The knob mode over the middle of the 2-Deck mixer: a pill naming the
-// mode; a press drops down EQ, STEMS and SCULPT to pick from.
+// A knob mode's icon, 16 px: faders for EQ, a drum for stems, a contour
+// knob (ticks over a pointer knob) for sculpt.
+component ModeIcon inherits Rectangle {
+    in property <int> mode;
+    in property <color> ink;
+    width: 16px;
+    height: 16px;
+    if mode == 0: Path {
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
+        commands: "M 3.5 2 L 3.5 14 M 8 2 L 8 14 M 12.5 2 L 12.5 14";
+        stroke: ink;
+        stroke-width: 1.4px;
+        stroke-line-cap: round;
+    }
+    if mode == 0: Path {
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
+        commands: "M 1.8 8.6 L 5.2 8.6 L 5.2 11.2 L 1.8 11.2 Z M 6.3 3.6 L 9.7 3.6 L 9.7 6.2 L 6.3 6.2 Z M 10.8 6.4 L 14.2 6.4 L 14.2 9 L 10.8 9 Z";
+        fill: ink;
+    }
+    if mode == 1: Path {
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
+        commands: "M 2 7.2 A 6 2.2 0 1 0 14 7.2 A 6 2.2 0 1 0 2 7.2 M 2 7.2 L 2 11.8 A 6 2.2 0 0 0 14 11.8 L 14 7.2 M 5.2 5.4 L 2.4 1.6 M 10.8 5.4 L 13.6 1.6";
+        stroke: ink;
+        stroke-width: 1.3px;
+        stroke-line-cap: round;
+    }
+    if mode == 1: Path {
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
+        commands: "M 4.5 9.2 L 4.5 13.4 M 8 9.4 L 8 14 M 11.5 9.2 L 11.5 13.4";
+        stroke: ink;
+        stroke-width: 1px;
+        stroke-line-cap: round;
+    }
+    if mode == 2: Path {
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
+        commands: "M 3.6 9 A 4.4 4.4 0 1 0 12.4 9 A 4.4 4.4 0 1 0 3.6 9 M 10.4 12.4 L 11.9 14.8";
+        stroke: ink;
+        stroke-width: 1.7px;
+        stroke-line-cap: round;
+    }
+    if mode == 2: Path {
+        width: 16px;
+        height: 16px;
+        viewbox-width: 16;
+        viewbox-height: 16;
+        commands: "M 1.6 9.6 L 2.6 9.6 M 2.6 5.2 L 3.4 5.7 M 5.2 2.4 L 5.6 3.2 M 8 1.4 L 8 2.4 M 10.8 2.4 L 10.4 3.2 M 13.4 5.2 L 12.6 5.7 M 14.4 9.6 L 13.4 9.6";
+        stroke: ink;
+        stroke-width: 1.1px;
+        stroke-line-cap: round;
+    }
+}
+
+// The knob mode over the middle of the 2-Deck mixer: a dark pill naming
+// the mode in caps; a press drops a list of EQ, STEMS and SCULPT, each with
+// its icon, straight down from the pill, a check on the current one.
 component ModeStack inherits Rectangle {
     width: 58px;
     height: 22px;
     border-radius: 7px;
     border-width: 1px;
-    border-color: Theme.lilac;
-    background: pill-ta.has-hover ? Theme.pill-on-fill.brighter(0.15) : Theme.pill-on-fill;
+    border-color: pill-ta.has-hover ? Theme.n-6e58a8 : Theme.n-2c2c31;
+    background: pill-ta.has-hover ? Theme.pill-hover : Theme.pill;
+    animate border-color { duration: 120ms; }
     Text {
         text: MixerMode.names[MixerMode.mode].to-uppercase();
         font-family: Theme.title-font;
         font-size: 11px;
-        font-weight: 500;
+        font-weight: 700;
         letter-spacing: 0.8px;
         color: Theme.text;
         horizontal-alignment: center;
@@ -570,43 +639,56 @@ component ModeStack inherits Rectangle {
         clicked => { list.show(); }
     }
     list := PopupWindow {
-        x: 0px;
+        x: (root.width - 128px) / 2;
         y: root.height + 4px;
-        width: root.width;
+        width: 128px;
         close-policy: close-on-click-outside;
         Rectangle {
-            height: 3 * 20px + 4px;
-            border-radius: 7px;
+            background: Theme.pill-list;
+            border-radius: 9px;
             border-width: 1px;
             border-color: Theme.border;
-            background: Theme.pill-list;
-            drop-shadow-blur: 12px;
+            drop-shadow-blur: 14px;
             drop-shadow-color: Theme.s-000000a0;
-            for name[i] in MixerMode.names: Rectangle {
-                property <bool> on: MixerMode.mode == i;
-                x: 2px;
-                y: 2px + i * 20px;
-                width: parent.width - 4px;
-                height: 20px;
-                border-radius: 5px;
-                background: on ? Theme.pill-on-fill : ta.has-hover ? Theme.pill-hover : transparent;
-                Text {
-                    text: name.to-uppercase();
-                    font-family: Theme.title-font;
-                    font-size: 10px;
-                    font-weight: 500;
-                    letter-spacing: 0.8px;
-                    color: on ? Theme.text : ta.has-hover ? Theme.lilac-text : Theme.pill-off-text;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
+        }
+        VerticalLayout {
+            padding: 4px;
+            spacing: 1px;
+            for name[i] in MixerMode.names: row := ListRow {
+                selected: MixerMode.mode == i;
+                clicked => {
+                    MixerMode.mode = i;
+                    // Controllers' EQ knobs follow the mode.
+                    Controls.set-value(Controls.resolve("[Mixer]", "knob_mode"), i);
+                    list.close();
                 }
-                ta := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => {
-                        MixerMode.mode = i;
-                        // Controllers' EQ knobs follow the mode.
-                        Controls.set-value(Controls.resolve("[Mixer]", "knob_mode"), i);
-                        list.close();
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 10px;
+                    spacing: 10px;
+                    VerticalLayout { alignment: center; ModeIcon { mode: i; ink: row.ink; } }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: name.to-uppercase();
+                        font-family: Theme.title-font;
+                        font-size: 12px;
+                        font-weight: 700;
+                        letter-spacing: 0.8px;
+                        color: row.ink;
+                        vertical-alignment: center;
+                    }
+                    if MixerMode.mode == i: VerticalLayout {
+                        alignment: center;
+                        Path {
+                            width: 10px;
+                            height: 8px;
+                            viewbox-width: 10;
+                            viewbox-height: 8;
+                            commands: "M 1 4.2 L 3.8 7 L 9 1";
+                            stroke: Theme.lilac-text;
+                            stroke-width: 1.5px;
+                            stroke-line-cap: round;
+                        }
                     }
                 }
             }

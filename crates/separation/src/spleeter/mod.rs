@@ -4,10 +4,13 @@
 //!
 //! Weights come from `scripts/models/convert_spleeter.py`. The network follows
 //! `spleeter/model/functions/unet.py` with the 4-stem settings (ELU in both
-//! halves, TensorFlow "same" padding). It runs on burn ([`gpu::Net`]) or on
+//! halves, TensorFlow "same" padding). It runs on burn ([`gpu::Net`]), on
 //! plain CPU matrix products ([`cpu::Net`]), which are much faster than
-//! burn's CPU backend for these convolutions.
+//! burn's CPU backend for these convolutions, or on Apple machines through
+//! Core ML (`coreml::Net`), which can use the Neural Engine.
 
+#[cfg(target_vendor = "apple")]
+pub mod coreml;
 pub mod cpu;
 pub mod gpu;
 

@@ -38,7 +38,10 @@ const MIXER: i32 = 7;
 /// The Remix deck (`[RemixN],enabled`): another deck played through
 /// band effects and scenes.
 const REMIX: i32 = 8;
-const LAST_KIND: i32 = 8;
+/// A hardware synth (see `crate::hardware_synths`), by its place in the
+/// bundled profiles.
+const HARDWARE: i32 = 9;
+const LAST_KIND: i32 = 9;
 
 fn payload(kind: i32, index: i32) -> String {
     format!("{LIVE_PAYLOAD}{kind}:{index}")
@@ -74,6 +77,17 @@ struct State {
     starred_only: bool,
     /// What went onto a deck lately, newest first (see [`recent_key`]).
     recent: Vec<String>,
+    /// The hardware synths: id, name, maker, and whether its MIDI port is
+    /// there now.
+    synths: Vec<Synth>,
+}
+
+/// A hardware synth as the Jam list shows it.
+pub struct Synth {
+    pub id: String,
+    pub name: String,
+    pub maker: String,
+    pub plugged_in: bool,
 }
 
 /// How many items Recently played keeps.
@@ -88,6 +102,7 @@ fn recent_key(s: &State, kind: i32, index: i32) -> Option<String> {
         LOOPER => Some("looper".into()),
         REMIX => Some("remix".into()),
         PLUGIN => s.plugins.get(i).map(|p| format!("plugin:{}", p.key)),
+        HARDWARE => s.synths.get(i).map(|h| format!("hardware:{}", h.id)),
         PRESET => s
             .presets
             .get(i)
@@ -279,6 +294,12 @@ pub fn install(app: &AppWindow) {
     refresh(app);
 }
 
+/// Lists the hardware synths in the Jam column.
+pub fn show_synths(app: &AppWindow, synths: Vec<Synth>) {
+    STATE.with_borrow_mut(|s| s.synths = synths);
+    refresh(app);
+}
+
 /// A pitch bend message for `value` -1 (down) to 1 (up), 0 the middle.
 pub fn bend_message(value: f32) -> [u8; 3] {
     let v = ((value.clamp(-1.0, 1.0) + 1.0) * 8191.5).round() as u16;
@@ -296,6 +317,45 @@ pub fn modwheel_message(value: f32) -> [u8; 3] {
 const KEYBOARD_SIZE: &str = "instrument_keyboard";
 /// Settings: the starred presets and instruments, by [`recent_key`].
 const STARRED: &str = "jam_starred";
+/// Settings: the presets liked in a maker's library (Arturia's) that were
+/// starred for it, so each is starred once and unstarring it sticks.
+const LIKED_SEEN: &str = "jam_liked_seen";
+
+/// Stars the presets liked in their maker's library that weren't yet.
+fn star_liked(s: &mut State) {
+    let liked: Vec<String> = s
+        .presets
+        .iter()
+        .filter(|p| p.liked)
+        .map(|p| format!("preset:{}", p.path.display()))
+        .collect();
+    if liked.is_empty() {
+        return;
+    }
+    let mut seen: HashSet<String> = crate::settings::load()[LIKED_SEEN]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|k| k.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    let new: Vec<String> = liked.into_iter().filter(|k| !seen.contains(k)).collect();
+    if new.is_empty() {
+        return;
+    }
+    for k in new {
+        s.starred.insert(k.clone());
+        seen.insert(k);
+    }
+    let sorted = |set: &HashSet<String>| {
+        let mut keys: Vec<String> = set.iter().cloned().collect();
+        keys.sort();
+        serde_json::json!(keys)
+    };
+    crate::settings::set(STARRED, sorted(&s.starred));
+    crate::settings::set(LIKED_SEEN, sorted(&seen));
+}
 const COLORS: &str = "instrument_colors";
 
 /// How many colors the Mixer strips' palette has; the last is grey, which
@@ -426,7 +486,16 @@ const INSTRUMENTS: i32 = 1;
 
 /// Each side's filter menus, in order. Genre and Style join Presets once
 /// presets carry them (`redesign-jam-browser` step 2).
-const PRESET_FACETS: [&str; 4] = ["Sound type", "Character", "Instrument", "Maker"];
+/// Genre and Style come from makers' libraries (Arturia's) and show only
+/// when some preset has one.
+const PRESET_FACETS: [&str; 6] = [
+    "Sound type",
+    "Genre",
+    "Style",
+    "Character",
+    "Instrument",
+    "Maker",
+];
 const INSTRUMENT_FACETS: [&str; 2] = ["Kind", "Maker"];
 
 fn facet_names(view: i32) -> &'static [&'static str] {
@@ -444,13 +513,15 @@ const TINT_KEYS: i32 = 2;
 const TINT_TOOLS: i32 = 3;
 const TINT_PD: i32 = 4;
 const TINT_INPUTS: i32 = 5;
-const KINDS: [&str; 6] = [
+const TINT_HARDWARE: i32 = 6;
+const KINDS: [&str; 7] = [
     "Synths",
     "Drums",
     "Keys and samplers",
     "Tools",
     "Pd patches",
     "Inputs",
+    "Hardware synths",
 ];
 
 fn plugin_tint(p: &Plugin) -> i32 {
@@ -507,6 +578,23 @@ fn entries(s: &State) -> Vec<Entry> {
             facets: vec![
                 vec![KINDS[plugin_tint(p) as usize].into()],
                 vec![maker(p).into()],
+            ],
+        }));
+        out.extend(s.synths.iter().enumerate().map(|(i, h)| Entry {
+            item: LiveItem {
+                kind: HARDWARE,
+                index: i as i32,
+                name: h.name.as_str().into(),
+                r#type: "Hardware synth".into(),
+                problem: if h.plugged_in { "" } else { "Not plugged in" }.into(),
+                maker: h.maker.as_str().into(),
+                format: "MIDI".into(),
+                tint: TINT_HARDWARE,
+                ..LiveItem::default()
+            },
+            facets: vec![
+                vec![KINDS[TINT_HARDWARE as usize].into()],
+                vec![h.maker.clone()],
             ],
         }));
         out.extend(live_inputs().map(|&(kind, index, input, name)| {
@@ -566,6 +654,8 @@ fn entries(s: &State) -> Vec<Entry> {
                     },
                     facets: vec![
                         tagged(&presets::TYPES),
+                        p.genres.clone(),
+                        p.styles.clone(),
                         tagged(&presets::CHARACTERS),
                         vec![p.instrument_name.clone()],
                         if maker_name.is_empty() {
@@ -590,7 +680,7 @@ fn entries(s: &State) -> Vec<Entry> {
 fn value_order(view: i32, facet: usize) -> &'static [&'static str] {
     match (view, facet) {
         (PRESETS, 0) => &presets::TYPES,
-        (PRESETS, 1) => &presets::CHARACTERS,
+        (PRESETS, 3) => &presets::CHARACTERS,
         (INSTRUMENTS, 0) => &KINDS,
         _ => &[],
     }
@@ -724,6 +814,7 @@ fn refresh(app: &AppWindow) {
     let found = presets::all();
     STATE.with_borrow_mut(|s| {
         s.presets = found;
+        star_liked(s);
         s.picks.resize(facet_names(s.view).len(), HashSet::new());
         let (rows, facets) = filtered(s);
         let picked = s.picks.iter().any(|p| !p.is_empty());
@@ -750,6 +841,7 @@ fn refresh(app: &AppWindow) {
             .enumerate()
             .map(|(f, facet)| JamFacet {
                 name: facet.name.into(),
+                shown: !facet.values.is_empty(),
                 open: s.open_facet == Some(f),
                 picked: facet.values.iter().filter(|(_, _, on)| *on).count() as i32,
                 picks: ModelRc::new(VecModel::from(
@@ -947,8 +1039,9 @@ mod tests {
         assert_eq!(parse(&payload(2, 0)), Some(2000));
         assert_eq!(parse(&payload(MIXER, 0)), Some(7000));
         assert_eq!(parse(&payload(REMIX, 0)), Some(8000));
+        assert_eq!(parse(&payload(HARDWARE, 1)), Some(9001));
         assert_eq!(parse("opendj-row:3"), None);
-        assert_eq!(parse("opendj-live:9:0"), None);
+        assert_eq!(parse("opendj-live:10:0"), None);
         assert_eq!(parse("opendj-live:1:x"), None);
     }
 
@@ -967,7 +1060,7 @@ mod tests {
             path: format!("/p/{name}.json").into(),
             tags: tags.iter().map(|t| t.to_string()).collect(),
             from_plugin: false,
-            reference: String::new(),
+            ..Preset::default()
         };
         State {
             plugins: vec![
@@ -1056,6 +1149,36 @@ mod tests {
         s.picks.clear();
         s.search = "vital".into();
         assert_eq!(names(&s), ["Vital"]);
+    }
+
+    #[test]
+    fn hardware_synths_list_with_the_instruments_under_their_own_kind() {
+        let mut s = state(INSTRUMENTS);
+        s.synths = vec![
+            Synth {
+                id: "arturia-microfreak".into(),
+                name: "MicroFreak".into(),
+                maker: "Arturia".into(),
+                plugged_in: true,
+            },
+            Synth {
+                id: "moog-messenger".into(),
+                name: "Messenger".into(),
+                maker: "Moog".into(),
+                plugged_in: false,
+            },
+        ];
+        pick(&mut s, "Kind", "Hardware synths");
+        assert_eq!(names(&s), ["MicroFreak", "Messenger"]);
+        let rows = filtered(&s).0;
+        assert_eq!(rows[0].problem, "");
+        assert_eq!(rows[1].problem, "Not plugged in");
+        assert_eq!(rows[0].kind * 1000 + rows[0].index, 9000);
+        assert_eq!(
+            recent_key(&s, HARDWARE, 1).unwrap(),
+            "hardware:moog-messenger"
+        );
+        assert_eq!(parse(&payload(HARDWARE, 1)), Some(9001));
     }
 
     #[test]

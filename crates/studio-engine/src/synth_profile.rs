@@ -75,6 +75,15 @@ pub struct Presets {
     pub bank_select: String,
     #[serde(default)]
     pub banks: Vec<Bank>,
+    /// The synth's own sound categories ("Bass", "Pad"), by the number its
+    /// presets carry. With them the picker groups presets by category
+    /// instead of by bank.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub categories: Vec<String>,
+    /// How openDJ reads preset names and categories from the synth itself
+    /// ("arturia-microfreak"); empty when it can't.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub names_from: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -104,7 +113,11 @@ pub struct SynthTransport {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SynthPreset {
     pub name: String,
+    /// The name is the preset's own, not its bank and number.
+    pub named: bool,
     pub bank: String,
+    /// Its category's name, empty without one.
+    pub category: String,
     /// Bank Select to send first, if the synth takes one.
     pub bank_msb: Option<u8>,
     /// 0 to 127.
@@ -184,6 +197,7 @@ impl SynthProfile {
                 .iter()
                 .map(|&cc| self.control(cc).and_then(|c| c.lsb))
                 .collect(),
+            names: self.macro_names(),
         }
     }
 
@@ -193,21 +207,156 @@ impl SynthProfile {
         let mut out = Vec::new();
         for b in &self.presets.banks {
             for p in 0..b.count {
-                let name = b
-                    .names
-                    .get(p as usize)
-                    .filter(|n| !n.is_empty())
+                let own = b.names.get(p as usize).filter(|n| !n.is_empty());
+                let name = own
                     .cloned()
                     .unwrap_or_else(|| format!("{} {}", b.name, p as u16 + 1));
                 out.push(SynthPreset {
                     name,
+                    named: own.is_some(),
                     bank: b.name.clone(),
+                    category: String::new(),
                     bank_msb: bank_select.then_some(b.msb),
                     program: p,
                 });
             }
         }
         out
+    }
+
+    /// The groups the preset picker shows on its left: "All" then the
+    /// categories when the synth has them, else its banks when there is
+    /// more than one, else none.
+    pub fn preset_groups(&self) -> Vec<String> {
+        if !self.presets.categories.is_empty() {
+            std::iter::once("All".to_string())
+                .chain(self.presets.categories.iter().cloned())
+                .collect()
+        } else if self.presets.banks.len() > 1 {
+            self.presets.banks.iter().map(|b| b.name.clone()).collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// Whether preset `p` is in group `group` of [`Self::preset_groups`].
+    pub fn in_group(&self, p: &SynthPreset, group: usize) -> bool {
+        let groups = self.preset_groups();
+        match groups.get(group) {
+            None => true,
+            Some(_) if !self.presets.categories.is_empty() => {
+                group == 0 || p.category == groups[group]
+            }
+            Some(g) => &p.bank == g,
+        }
+    }
+
+    /// The preset's number as the picker shows it: within its bank for a
+    /// synth with named banks ("3"), else counted through all of them
+    /// ("042").
+    pub fn preset_number(&self, index: usize, p: &SynthPreset) -> String {
+        if self.presets.categories.is_empty() && self.presets.banks.len() > 1 {
+            format!("{}", p.program as u16 + 1)
+        } else {
+            format!("{:03}", index + 1)
+        }
+    }
+
+    /// Fills `list` with the names and categories the synth told
+    /// ([`read_name`]), one per preset in order; `None` keeps the
+    /// profile's.
+    pub fn apply_names(&self, list: &mut [SynthPreset], read: &[Option<ReadPreset>]) {
+        for (p, r) in list.iter_mut().zip(read) {
+            let Some(r) = r else { continue };
+            if r.empty || r.name.trim().is_empty() {
+                p.name = "Init".into();
+                p.named = true;
+            } else {
+                p.name = r.name.trim().to_string();
+                p.named = true;
+            }
+            p.category = self
+                .presets
+                .categories
+                .get(r.category as usize)
+                .cloned()
+                .unwrap_or_default();
+        }
+    }
+}
+
+/// A preset's name and category as the synth reports them.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ReadPreset {
+    pub name: String,
+    pub category: u8,
+    /// An empty slot (the synth shows "Init").
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub empty: bool,
+}
+
+/// The SysEx that asks the synth for preset `index`'s name (counted from 0
+/// through all banks), with `seq` (0 to 127) to match its answer; `None`
+/// when `names_from` names no protocol openDJ knows.
+///
+/// "arturia-microfreak": `F0 00 20 6B 07 01 seq 03 19 bank program 00 F7`
+/// asks for the preset's header, as Arturia's own editor does.
+pub fn name_request(names_from: &str, seq: u8, index: usize) -> Option<Vec<u8>> {
+    match names_from {
+        "arturia-microfreak" => {
+            let (bank, program) = ((index / 128) as u8, (index % 128) as u8);
+            Some(vec![
+                0xF0,
+                0x00,
+                0x20,
+                0x6B,
+                0x07,
+                0x01,
+                seq & 127,
+                0x03,
+                0x19,
+                bank & 127,
+                program,
+                0x00,
+                0xF7,
+            ])
+        }
+        _ => None,
+    }
+}
+
+/// Reads the synth's answer to [`name_request`] `seq`, or `None` when
+/// `reply` is something else.
+///
+/// The MicroFreak answers with operation 0x52 and a 35-byte header: byte 3
+/// bit 0x08 marks an empty slot, byte 10 is the category and bytes 12 to 25
+/// the name, NUL padded.
+pub fn read_name(names_from: &str, seq: u8, reply: &[u8]) -> Option<ReadPreset> {
+    match names_from {
+        "arturia-microfreak" => {
+            if reply.len() < 10 || reply[..6] != [0xF0, 0x00, 0x20, 0x6B, 0x07, 0x01] {
+                return None;
+            }
+            if reply[6] != seq & 127 || reply[8] != 0x52 {
+                return None;
+            }
+            let len = reply[7] as usize;
+            let payload = reply.get(9..9 + len)?;
+            if payload.len() < 26 {
+                return None;
+            }
+            let name: String = payload[12..26]
+                .iter()
+                .take_while(|&&c| c != 0)
+                .map(|&c| (c & 0x7F) as char)
+                .collect();
+            Some(ReadPreset {
+                name,
+                category: payload[10],
+                empty: payload[3] & 0x08 != 0,
+            })
+        }
+        _ => None,
     }
 }
 
@@ -295,6 +444,56 @@ mod tests {
         let presets = p.preset_list();
         assert_eq!(presets.len(), 256);
         assert_eq!(presets[16].name, "Classic Bass 1");
+        assert!(!presets[16].named);
+        // The picker groups by bank and counts within it.
+        let groups = p.preset_groups();
+        assert_eq!(groups.len(), 16);
+        assert_eq!(groups[1], "Classic Bass");
+        assert!(p.in_group(&presets[18], 1));
+        assert!(!p.in_group(&presets[2], 1));
+        assert_eq!(p.preset_number(18, &presets[18]), "3");
+    }
+
+    #[test]
+    fn the_microfreak_names_its_presets_and_their_categories() {
+        let p = find("arturia-microfreak").unwrap();
+        let ask = name_request(&p.presets.names_from, 5, 130).unwrap();
+        assert_eq!(
+            ask,
+            [0xF0, 0x00, 0x20, 0x6B, 0x07, 0x01, 5, 3, 0x19, 1, 2, 0, 0xF7]
+        );
+        // Its answer: a 35-byte header with the category at 10 and the name
+        // from 12.
+        let mut header = vec![0u8; 35];
+        header[10] = 5;
+        header[12..23].copy_from_slice(b"Glass Choir");
+        let mut reply = vec![0xF0, 0x00, 0x20, 0x6B, 0x07, 0x01, 5, 35, 0x52];
+        reply.extend(&header);
+        reply.push(0xF7);
+        let read = read_name(&p.presets.names_from, 5, &reply).unwrap();
+        assert_eq!(read.name, "Glass Choir");
+        assert!(!read.empty);
+        // Another request's answer is not this one.
+        assert_eq!(read_name(&p.presets.names_from, 6, &reply), None);
+        let mut presets = p.preset_list();
+        let mut reads = vec![None; 512];
+        reads[41] = Some(read);
+        reads[42] = Some(ReadPreset {
+            name: String::new(),
+            category: 10,
+            empty: true,
+        });
+        p.apply_names(&mut presets, &reads);
+        assert_eq!(presets[41].name, "Glass Choir");
+        assert_eq!(presets[41].category, "Pad");
+        assert_eq!(presets[42].name, "Init");
+        // "All" then the categories; numbers count through every bank.
+        let groups = p.preset_groups();
+        assert_eq!(groups[0], "All");
+        assert_eq!(groups[6], "Pad");
+        assert!(p.in_group(&presets[41], 6) && p.in_group(&presets[41], 0));
+        assert!(!p.in_group(&presets[0], 6));
+        assert_eq!(p.preset_number(41, &presets[41]), "042");
     }
 
     #[test]

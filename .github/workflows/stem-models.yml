@@ -1,7 +1,8 @@
 name: Publish stem models
 
 # Builds the stem separation models openDJ downloads the first time it needs
-# them (Spleeter converted from Deezer's checkpoint, HTDemucs as safetensors),
+# them (Spleeter converted from Deezer's checkpoint, also as a Core ML package
+# for the Neural Engine on Macs, HTDemucs as safetensors),
 # and fetches the Beat This! beat detection models (ONNX, from beat-this-rs)
 # and the Whisper model for word timing (whisper.cpp's large-v3-turbo-q5_0),
 # checks them against scripts/models/SHA256SUMS and SHA1SUMS (Whisper's,
@@ -41,6 +42,16 @@ jobs:
           tar xzf work/4stems.tar.gz -C work/4stems
           python3 scripts/models/convert_spleeter.py work/4stems/model models/spleeter-4stems.safetensors
           curl -sSfL -o models/htdemucs.safetensors https://huggingface.co/set-soft/audio_separation/resolve/main/Demucs/htdemucs.safetensors
+      - name: Convert Spleeter for Core ML (Neural Engine on Macs)
+        # Built from the published safetensors, so both back ends run the
+        # same weights. Not byte-for-byte repeatable (Core ML packages carry
+        # random ids), so like Spleeter it is made once and then kept.
+        if: hashFiles('models/spleeter-4stems.mlpackage.zip') == ''
+        run: |
+          pip install coremltools==9.0 numpy==2.5.4 safetensors==0.8.0
+          mkdir -p work
+          python3 scripts/models/convert_spleeter_coreml.py models/spleeter-4stems.safetensors work/spleeter-4stems.mlpackage
+          (cd work && zip -qr -X ../models/spleeter-4stems.mlpackage.zip spleeter-4stems.mlpackage)
       - name: Fetch Beat This!
         if: hashFiles('models/beat-this-mel.onnx') == '' || hashFiles('models/beat-this-small.onnx') == ''
         run: |
@@ -66,4 +77,4 @@ jobs:
               --title "Stem separation models" \
               --notes "Models openDJ downloads the first time it needs them: Spleeter 4stems (MIT, Deezer) for stems on load, HTDemucs (MIT, Meta) for high-quality stems, Beat This! (MIT, JKU Linz) for beats and downbeats, and Whisper large-v3-turbo (MIT, OpenAI; ggml from whisper.cpp) for word timing. Not an app release."
           fi
-          gh release upload stem-models models/*.safetensors models/*.onnx models/*.bin --clobber
+          gh release upload stem-models models/*.safetensors models/*.onnx models/*.bin models/*.zip --clobber

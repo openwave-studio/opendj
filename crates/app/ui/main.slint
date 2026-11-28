@@ -36,7 +36,7 @@ import { FxBar } from "fxbar.slint";
 import { FxDisplay, FxDisplayPanel } from "plugin_display.slint";
 export { FxDisplay }
 import { RemixUi } from "remix.slint";
-import { InstrumentsUi, KnobLabel, LiveItem, ParamMatch, PresetItem, PresetUi } from "instruments.slint";
+import { HardwareUi, HwPreset, InstrumentsUi, KnobLabel, LiveItem, ParamMatch, PresetItem, PresetUi } from "instruments.slint";
 import { Browser, BrowserPanels, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, DragGrip, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, ColumnUi, ListColumn, ListText, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow } from "library.slint";
 import { Preferences, PreferencesOverlay, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart } from "preferences.slint";
 import { UsbExport, UsbExportDialog } from "usb_export.slint";
@@ -69,7 +69,7 @@ export { MixerMode, InputSettings, InputRow }
 export { BroadcastState, BroadcastStation }
 export { RemixUi }
 export { BrowserFocus, BrowserPane }
-export { InstrumentsUi, KnobLabel, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, FxGroup, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, BrowserPanels, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
+export { HardwareUi, HwPreset, InstrumentsUi, KnobLabel, LiveItem, ParamMatch, PresetItem, PresetUi, Theme, Controls, DeckActions, PhraseView, PhraseTip, BeatCounter, BeatCount, GrooveUi, GrooveKit, GrooveGenre, GrooveName, AudioSettings, OutputRow, EffectList, FxRow, FxGroup, KeyNotation, DeckInfo, KeyItem, Folder, TrackRow, SideRow, SideTab, SideTabs, RailOrder, BrowserPanels, TrackDrag, LibraryEdit, MoveTarget, SidelistUi, Choice, KeepGoingUi, UpNextUi, MenuListRow, MenuTag, StoreUi, StreamMatch, CatalogSearch, CatalogRow, WantedUi, FilesUi, AlbumsUi, AlbumTile, HealthUi, HealthCard, HealthStage, HealthLine, HealthArea, HealthHold, HealthStep, HealthChip, HealthReview, CleanupUi, CleanupRow, FixNamesUi, GenreRow, TagGroupCard, ListIssueRow, ListsUi, BuyUi, BuyGroup, BuyRow, Preferences, PrefItem, ImportWizard, PluginErrors, StorageUi, StoragePart, ControllerEditor, EditorRow, EditorPart, EditorPanel, EditorOption, EditorSetting, UsbExport }
 
 // An instrument deck's large waveform: its view and look, and its macro
 // lanes (its knobs drawn as lines, 2-Deck Basic only, a colour each).
@@ -2398,10 +2398,10 @@ export component AppWindow inherits Window {
                     // The decks share the room equally whatever they show: sized by
                     // their contents, a changing time or title would nudge the
                     // mixer sideways every frame.
-                    deck-a := Deck { beat-strip: true; deck: 0; info: decks[0]; spin: spin-1; overview: overview-1; horizontal-stretch: 1; min-width: 400px; preferred-width: 400px; }
+                    deck-a := Deck { shown: !library-expanded && layout == 0; beat-strip: true; deck: 0; info: decks[0]; spin: spin-1; overview: overview-1; horizontal-stretch: 1; min-width: 400px; preferred-width: 400px; }
                     if !external-mixer: Mixer { }
                     if external-mixer: ExternalMixer { }
-                    deck-b := Deck { beat-strip: true; deck: 1; info: decks[1]; spin: spin-2; overview: overview-2; mirrored: true; horizontal-stretch: 1; min-width: 400px; preferred-width: 400px; }
+                    deck-b := Deck { shown: !library-expanded && layout == 0; beat-strip: true; deck: 1; info: decks[1]; spin: spin-2; overview: overview-2; mirrored: true; horizontal-stretch: 1; min-width: 400px; preferred-width: 400px; }
                 }
 
                 // 2-Deck Basic: the lighter decks either side of the slim mixer, each
@@ -2421,7 +2421,7 @@ export component AppWindow inherits Window {
                         Rectangle {
                             height: lite-row;
                             lite-a := LiteDeck { width: parent.width; height: parent.height; visible: !lite-full-a; deck: 0; info: decks[0]; overview: overview-1; spin: spin-1; }
-                            if lite-full-a: Deck { width: parent.width; height: parent.height; deck: 0; info: decks[0]; spin: spin-1; overview: overview-1; }
+                            if lite-full-a: Deck { shown: lite; width: parent.width; height: parent.height; deck: 0; info: decks[0]; spin: spin-1; overview: overview-1; }
                         }
                         if PadsUi.visible: PadBarHalf { height: LiteUi.bar-height; deck: 0; info: decks[0]; }
                     }
@@ -2445,7 +2445,7 @@ export component AppWindow inherits Window {
                         Rectangle {
                             height: lite-row;
                             LiteDeck { width: parent.width; height: parent.height; visible: !lite-full-b; deck: 1; info: decks[1]; overview: overview-2; mirrored: true; spin: spin-2; }
-                            if lite-full-b: Deck { width: parent.width; height: parent.height; deck: 1; info: decks[1]; spin: spin-2; overview: overview-2; mirrored: true; }
+                            if lite-full-b: Deck { shown: lite; width: parent.width; height: parent.height; deck: 1; info: decks[1]; spin: spin-2; overview: overview-2; mirrored: true; }
                         }
                         if PadsUi.visible: PadBarHalf { height: LiteUi.bar-height; deck: 1; info: decks[1]; mirrored: true; }
                     }

@@ -7841,6 +7841,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "objc2-core-ml"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "201b055e6acfa0f9f15568255d3f03ce2b54bc86d1814442dc69138e36813e18"
+dependencies = [
+ "objc2 0.6.5",
+ "objc2-foundation 0.3.2",
+]
+
+[[package]]
 name = "objc2-core-text"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8147,10 +8157,12 @@ dependencies = [
  "opendj-script",
  "opendj-studio-engine",
  "opendj-waveform",
+ "plist",
  "read-fonts",
  "rfd",
  "ring",
  "rtrb",
+ "rusqlite",
  "rusty-chromaprint",
  "serde_json",
  "sha1 0.11.0",
@@ -8233,6 +8245,7 @@ dependencies = [
  "symphonia",
  "whisper-rs",
  "windows-sys 0.61.2",
+ "zip 9.4.2",
 ]
 
 [[package]]
@@ -8369,6 +8382,9 @@ dependencies = [
  "demucs-core",
  "half",
  "matrixmultiply",
+ "objc2 0.6.5",
+ "objc2-core-ml",
+ "objc2-foundation 0.3.2",
  "pollster",
  "realfft",
  "safetensors 0.8.0",

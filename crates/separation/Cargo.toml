@@ -21,3 +21,9 @@ burn = { version = "0.20.1", default-features = false, features = ["metal"] }
 # iPadOS: plain wgpu (WGSL on Metal); cubecl's MSL path is macOS only.
 [target.'cfg(not(any(target_os = "macos", target_os = "ios")))'.dependencies]
 burn = { version = "0.20.1", default-features = false, features = ["vulkan"] }
+
+# The Neural Engine is reached only through Core ML (macOS and iPadOS).
+[target.'cfg(target_vendor = "apple")'.dependencies]
+objc2 = "0.6"
+objc2-core-ml = { version = "0.3", default-features = false, features = ["std", "MLModel", "MLModelConfiguration", "MLMultiArray", "MLFeatureValue", "MLFeatureProvider", "MLDictionaryFeatureProvider", "MLModel_MLModelCompilation", "MLNeuralEngineComputeDevice", "MLAllComputeDevices", "MLComputeDeviceProtocol"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSError", "NSDictionary", "NSArray", "NSValue", "NSFileManager"] }

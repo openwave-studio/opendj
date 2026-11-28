@@ -98,6 +98,8 @@ export struct JamLine {
 // closed, and every value in lines.
 export struct JamFacet {
     name: string,
+    // Some row has a value for it (a maker's Genre or Style may not).
+    shown: bool,
     open: bool,
     picked: int,
     picks: [JamChip],
@@ -162,6 +164,87 @@ export global PresetUi {
 export struct ParamMatch {
     id: int,
     name: string,
+}
+
+// One preset in the hardware synth picker: its place in the synth's list,
+// number ("042", or "3" in a bank) and name.
+export struct HwPreset {
+    index: int,
+    number: string,
+    name: string,
+}
+
+// A hardware synth the instrument deck plays instead of a plugin (see
+// the engine's `hardware_synth`), set by the app: which bundled synth, its
+// presets and its setup.
+export global HardwareUi {
+    // The synth on the deck, its place in the Jam list's Hardware synths
+    // (-1 none), name and maker.
+    in property <int> loaded: -1;
+    in property <string> name;
+    in property <string> maker;
+    // Its preset now, for the deck bar: its bank or category dimmed
+    // ("Pad ›") then its number and name ("042 Glass Choir").
+    in property <string> preset-number;
+    in property <string> preset-name;
+    in property <int> preset: -1;
+    // ‹ › step through the picker's group only.
+    callback step-preset(delta: int);
+    callback pick-preset(index: int);
+    // The preset picker: its groups on the left (banks, or "All" and the
+    // categories; none for one bank), the group picked, and the presets
+    // listed on the right (the group's, or every one the search finds).
+    in property <[string]> groups;
+    in property <int> group;
+    in property <string> group-caption;
+    in property <string> list-caption;
+    in property <[HwPreset]> list;
+    in property <string> search;
+    callback set-group(index: int);
+    callback set-search(text: string);
+    // A synth that can tell its preset names: ↻ asks again, `reading` while
+    // it answers (with its progress, 0 to 1), and a note when it didn't.
+    in property <bool> can-read;
+    in property <bool> reading;
+    in property <float> read-progress;
+    in property <string> read-note;
+    callback read-names();
+    // The setup panel: MIDI outputs, the one picked (-1 none found), the
+    // channel (0 to 15), the audio inputs ("M4 · In 4") and the one picked
+    // (-1 none). Latency and clock are `[Instrument1]` controls.
+    in property <[string]> ports;
+    in property <int> port: -1;
+    in property <int> channel;
+    // The audio interfaces with inputs and the one picked (-1 none), then
+    // that interface's inputs ("In 1") and the one picked (-1 none), as
+    // Settings › Audio picks them; `input-label` reads "M4 · In 4".
+    in property <[string]> devices;
+    in property <int> device: -1;
+    in property <[string]> inputs;
+    in property <int> input: -1;
+    in property <string> input-label;
+    callback set-port(index: int);
+    callback set-channel(channel: int);
+    callback set-device(index: int);
+    callback set-input(index: int);
+    // Asks for the lists again (a synth plugged in since), and keeps the
+    // latency and clock as set when the panel closes.
+    callback refresh-setup();
+    callback save-setup();
+    // The setup panel is open; the app opens it the first time a synth
+    // loads.
+    in-out property <bool> setup-open;
+    // Loads Hardware synths' row `index` (see the engine's deck drop).
+    callback load(index: int);
+
+    public pure function playing() -> bool {
+        Controls.value(Controls.resolve("[Instrument1]", "hardware"), Controls.tick) > 0
+    }
+
+    // The input for the deck ("In 4"), "" for none.
+    public pure function input-short() -> string {
+        input >= 0 && input < inputs.length ? inputs[input] : ""
+    }
 }
 
 // A knob's name laid out to fit under it (see `knob-label`).
@@ -272,13 +355,22 @@ export global InstrumentsUi {
     in property <[string]> plugin-names;
     // What the instrument plays, set by the app while a deck shows it: the
     // notes held (`held[n]` is MIDI note 36 + n, C2 up) and its scope as
-    // path commands in a 128 by 32 box.
+    // path commands in a 160 by 30 box: the area to fill and the line
+    // along its edge (for bars, their caps).
     in property <[bool]> held;
     in property <string> scope;
+    in property <string> scope-line;
     // The scope draws the spectrum instead of the wave, and follows the
     // deck after its effects instead of the instrument itself.
     in-out property <bool> scope-freq;
     in-out property <bool> scope-post;
+    // How the spectrum looks, from the scope's right-click menu: 0 Smooth
+    // glow, 1 Bars, 2 Mirror; and whether it shows Hz labels and grid
+    // lines. Kept by the app (`scope-look-changed` saves them).
+    in-out property <int> scope-style;
+    in-out property <bool> scope-labels: true;
+    in-out property <bool> scope-grid;
+    callback scope-look-changed();
     // Which MIDI keyboard and channel play the instrument: `midi-device` 0
     // any, else 1 + its place in `keyboards`; `midi-channel` 0 any, else 1
     // to 16. Set by the app; `set-midi-from` picks.
@@ -451,11 +543,12 @@ export global InstrumentsUi {
     // The item is playing on deck `deck`.
     public pure function on-deck(deck: int, kind: int, index: int) -> bool {
         kind == 1 ? groove(deck) && Controls.value(Controls.resolve("[Groove" + (deck + 1) + "]", "kit"), Controls.tick) == index
-            : kind == 2 ? live(deck) == 3 && instrument() == index + 1
+            : kind == 2 ? live(deck) == 3 && !HardwareUi.playing() && instrument() == index + 1
             : kind == 3 ? live(deck) == 1
             : kind == 6 ? looper(deck)
             : kind == 8 ? remix(deck)
             : kind == 7 ? live(deck) == mixer-live
+            : kind == 9 ? live(deck) == 3 && HardwareUi.playing() && HardwareUi.loaded == index
             : false
     }
 
@@ -520,6 +613,11 @@ export global InstrumentsUi {
             // One Remix deck at a time: the engine moves it here, with
             // its settings.
             Controls.set-value(Controls.resolve("[Remix" + (deck + 1) + "]", "enabled"), 1);
+        } else if item >= 9000 && item < 10000 {
+            // A hardware synth plays as the instrument: the app loads it
+            // (which unloads the plugin) and routes its audio input.
+            HardwareUi.load(Math.mod(item, 1000));
+            Controls.set-value(Controls.resolve("[Channel" + (deck + 1) + "]", "live_input"), 3);
         } else if item >= 7000 && item < 8000 {
             // The engine takes the Mixer off any other deck.
             Controls.set-value(Controls.resolve("[Channel" + (deck + 1) + "]", "live_input"), mixer-live);
@@ -716,6 +814,7 @@ component JamRow inherits Rectangle {
                     : item.tint == 3 ? Theme.automix
                     : item.tint == 4 ? Theme.text-dim
                     : item.tint == 5 ? Theme.stage-ready
+                    : item.tint == 6 ? Theme.c-ff9f0a
                     : Theme.lilac;
             }
         }
@@ -890,78 +989,81 @@ export component JamColumn inherits Rectangle {
             vertical-stretch: 0;
             for facet[f] in InstrumentsUi.facets: VerticalLayout {
                 vertical-stretch: 0;
-                Rectangle {
-                    height: 1px;
-                    background: f == 0 ? transparent : Theme.separator;
-                }
-                Rectangle {
-                    height: 28px;
-                    HorizontalLayout {
-                        padding-left: 4px;
-                        padding-right: 4px;
-                        spacing: 4px;
-                        alignment: stretch;
-                        Text {
-                            text: facet.name;
-                            color: Theme.text;
-                            font-size: 12.5px;
-                            font-weight: 500;
-                            vertical-alignment: center;
-                        }
-                        if !facet.open: HorizontalLayout {
-                            horizontal-stretch: 1;
-                            spacing: 3px;
+                if facet.shown: VerticalLayout {
+                    vertical-stretch: 0;
+                    Rectangle {
+                        height: 1px;
+                        background: f == 0 ? transparent : Theme.separator;
+                    }
+                    Rectangle {
+                        height: 28px;
+                        HorizontalLayout {
                             padding-left: 4px;
-                            alignment: start;
-                            for chip in facet.picks: VerticalLayout {
+                            padding-right: 4px;
+                            spacing: 4px;
+                            alignment: stretch;
+                            Text {
+                                text: facet.name;
+                                color: Theme.text;
+                                font-size: 12.5px;
+                                font-weight: 500;
+                                vertical-alignment: center;
+                            }
+                            if !facet.open: HorizontalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 3px;
+                                padding-left: 4px;
+                                alignment: start;
+                                for chip in facet.picks: VerticalLayout {
+                                    alignment: center;
+                                    JamChipButton {
+                                        chip: chip;
+                                        clicked => { InstrumentsUi.toggle-value(f, chip.name); }
+                                    }
+                                }
+                            }
+                            if facet.open: Rectangle { horizontal-stretch: 1; }
+                            VerticalLayout {
                                 alignment: center;
-                                JamChipButton {
+                                Path {
+                                    width: 10px;
+                                    height: 10px;
+                                    viewbox-width: 10;
+                                    viewbox-height: 10;
+                                    stroke: facet.open ? Theme.text : Theme.text-dim;
+                                    stroke-width: 1.6px;
+                                    stroke-line-cap: round;
+                                    fill: transparent;
+                                    commands: facet.open ? "M 2 6.5 L 5 3.5 L 8 6.5" : "M 2 3.5 L 5 6.5 L 8 3.5";
+                                }
+                            }
+                        }
+                        TouchArea {
+                            z: -1;
+                            mouse-cursor: pointer;
+                            clicked => { InstrumentsUi.toggle-facet(f); }
+                        }
+                    }
+                    if facet.open: ScrollView {
+                        height: min(facet.lines.length * 25px + 6px, 132px);
+                        VerticalLayout {
+                            padding-left: 4px;
+                            padding-bottom: 6px;
+                            spacing: 3px;
+                            alignment: start;
+                            for line in facet.lines: HorizontalLayout {
+                                spacing: 4px;
+                                alignment: start;
+                                for chip in line.chips: JamChipButton {
                                     chip: chip;
                                     clicked => { InstrumentsUi.toggle-value(f, chip.name); }
                                 }
                             }
-                        }
-                        if facet.open: Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout {
-                            alignment: center;
-                            Path {
-                                width: 10px;
-                                height: 10px;
-                                viewbox-width: 10;
-                                viewbox-height: 10;
-                                stroke: facet.open ? Theme.text : Theme.text-dim;
-                                stroke-width: 1.6px;
-                                stroke-line-cap: round;
-                                fill: transparent;
-                                commands: facet.open ? "M 2 6.5 L 5 3.5 L 8 6.5" : "M 2 3.5 L 5 6.5 L 8 3.5";
+                            if facet.lines.length == 0: Text {
+                                text: "Nothing to pick here yet.";
+                                color: Theme.text-dim;
+                                font-size: 11px;
                             }
-                        }
-                    }
-                    TouchArea {
-                        z: -1;
-                        mouse-cursor: pointer;
-                        clicked => { InstrumentsUi.toggle-facet(f); }
-                    }
-                }
-                if facet.open: ScrollView {
-                    height: min(facet.lines.length * 25px + 6px, 132px);
-                    VerticalLayout {
-                        padding-left: 4px;
-                        padding-bottom: 6px;
-                        spacing: 3px;
-                        alignment: start;
-                        for line in facet.lines: HorizontalLayout {
-                            spacing: 4px;
-                            alignment: start;
-                            for chip in line.chips: JamChipButton {
-                                chip: chip;
-                                clicked => { InstrumentsUi.toggle-value(f, chip.name); }
-                            }
-                        }
-                        if facet.lines.length == 0: Text {
-                            text: "Nothing to pick here yet.";
-                            color: Theme.text-dim;
-                            font-size: 11px;
                         }
                     }
                 }
