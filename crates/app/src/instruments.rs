@@ -448,6 +448,17 @@ pub fn show_plugins(app: &AppWindow, instruments: &[Found], names: &[String]) {
     refresh(app);
 }
 
+/// The paths of the presets starred in the Jam column.
+pub fn starred_presets() -> HashSet<std::path::PathBuf> {
+    STATE.with_borrow(|s| {
+        s.starred
+            .iter()
+            .filter_map(|k| k.strip_prefix("preset:"))
+            .map(std::path::PathBuf::from)
+            .collect()
+    })
+}
+
 /// Lists the presets again, after one was saved or renamed.
 pub fn presets_changed(app: &AppWindow) {
     refresh(app);

@@ -27,6 +27,10 @@ pub struct Found {
     pub analog_lab: bool,
     /// Sound types, as `crate::presets::TYPES` names them.
     pub types: Vec<String>,
+    /// The library's own type and sub-type, as it writes them ("Keys",
+    /// "Bells"); empty for none.
+    pub arturia_type: String,
+    pub arturia_subtype: String,
     pub genres: Vec<String>,
     pub styles: Vec<String>,
     /// Its characteristics and styles that `crate::presets::CHARACTERS`
@@ -102,6 +106,8 @@ pub fn read(dir: &Path) -> Result<Vec<Found>, String> {
                 folder,
                 analog_lab: analog_lab != 0,
                 types: sound_types(&kind, &subtype),
+                arturia_type: kind,
+                arturia_subtype: subtype,
                 liked: liked != 0,
                 ..Found::default()
             });
@@ -314,6 +320,10 @@ mod tests {
         assert_eq!(kick.folder, "Mini V4");
         assert_eq!(kick.path, dir.join("Mini V4/Factory/Factory/Kick Bass"));
         assert_eq!(kick.types, ["Bass", "Pluck"]);
+        assert_eq!(
+            (kick.arturia_type.as_str(), kick.arturia_subtype.as_str()),
+            ("Bass", "Plucked Bass")
+        );
         assert_eq!(kick.genres, ["Dub / Reggae"]);
         assert_eq!(kick.styles, ["Warm"]);
         assert_eq!(kick.characters, ["Warm"]);

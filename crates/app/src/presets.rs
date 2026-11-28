@@ -82,6 +82,10 @@ pub struct Preset {
     pub styles: Vec<String>,
     /// Liked in its maker's library.
     pub liked: bool,
+    /// Arturia's own type and sub-type for one of its presets ("Keys",
+    /// "Bells"); empty for every other preset.
+    pub arturia_type: String,
+    pub arturia_subtype: String,
 }
 
 /// An instrument plugin the Instrument input lists.
@@ -214,6 +218,8 @@ fn plugins_own(
                     genres: f.genres.clone(),
                     styles: f.styles.clone(),
                     liked: f.liked,
+                    arturia_type: f.arturia_type.clone(),
+                    arturia_subtype: f.arturia_subtype.clone(),
                     ..Preset::default()
                 });
             }
@@ -561,6 +567,13 @@ struct State {
     shown_tags: Vec<bool>,
     shown_changed: Vec<bool>,
     shown_own: Vec<bool>,
+    /// The preset picker: the deck it was opened for, its group (see
+    /// [`in_group`]; empty for all) and its search.
+    picker_deck: usize,
+    picker_group: String,
+    picker_search: String,
+    /// The picker's groups as shown, by row.
+    picker_groups: Vec<String>,
     /// Each deck's knob values when its preset was loaded or saved, to
     /// tell when the sound changed (see [`Baseline`]).
     baselines: Vec<Option<Baseline>>,
@@ -835,6 +848,15 @@ impl Ctx {
         if mine.is_empty() {
             return Err(format!("{name} has no presets yet: SAVE makes one"));
         }
+        // Within the picker's group, while it has any of these.
+        let group = STATE.with_borrow(|s| s.picker_group.clone());
+        let starred = crate::instruments::starred_presets();
+        let grouped: Vec<Preset> = mine
+            .iter()
+            .filter(|p| in_group(p, &group, &starred))
+            .cloned()
+            .collect();
+        let mine = if grouped.is_empty() { mine } else { grouped };
         let n = mine.len() as i32;
         let next = match self
             .current(deck)
@@ -846,6 +868,101 @@ impl Ctx {
         };
         self.load(deck, &mine[next as usize])
     }
+}
+
+/// The picker's groups before the sound types.
+const ALL: &str = "";
+const STARRED: &str = "Starred";
+const MINE: &str = "Mine";
+
+/// Whether `p` is in the picker's group `group`: every preset for
+/// [`ALL`], the starred ones (`starred` holds their paths), the user's, or
+/// those with a sound type.
+fn in_group(p: &Preset, group: &str, starred: &HashSet<PathBuf>) -> bool {
+    match group {
+        ALL => true,
+        STARRED => starred.contains(&p.path),
+        MINE => !p.from_plugin,
+        t => p.tags.iter().any(|x| x == t),
+    }
+}
+
+/// The picker's groups for presets `of`, with how many each holds: All,
+/// Starred and Mine, then the sound types any of them has.
+fn groups(of: &[Preset], starred: &HashSet<PathBuf>) -> Vec<(String, usize)> {
+    [ALL, STARRED, MINE]
+        .into_iter()
+        .chain(TYPES)
+        .map(|g| {
+            let n = of.iter().filter(|p| in_group(p, g, starred)).count();
+            (g.to_string(), n)
+        })
+        .filter(|(g, n)| g.is_empty() || *n > 0)
+        .collect()
+}
+
+/// Fills the preset picker for its deck's instrument: its groups, and the
+/// presets in the picked one (or, while searching, every one matching).
+fn show_picker(app: &AppWindow) {
+    let Some(ctx) = ctx() else {
+        return;
+    };
+    let (deck, mut group, search) = STATE.with_borrow(|s| {
+        (
+            s.picker_deck,
+            s.picker_group.clone(),
+            s.picker_search.clone(),
+        )
+    });
+    let key = ctx.instrument(deck).map(|(k, _)| k).unwrap_or_default();
+    let found = all();
+    let mine: Vec<(usize, &Preset)> = found
+        .iter()
+        .enumerate()
+        .filter(|(_, p)| p.instrument == key)
+        .collect();
+    let starred = crate::instruments::starred_presets();
+    let list: Vec<Preset> = mine.iter().map(|(_, p)| (*p).clone()).collect();
+    let groups = groups(&list, &starred);
+    if !groups.iter().any(|(g, _)| *g == group) {
+        group = ALL.to_string();
+        STATE.with_borrow_mut(|s| s.picker_group = group.clone());
+    }
+    let words: Vec<String> = search.split_whitespace().map(str::to_lowercase).collect();
+    let items: Vec<PresetItem> = mine
+        .iter()
+        .filter(|(_, p)| {
+            if words.is_empty() {
+                in_group(p, &group, &starred)
+            } else {
+                let name = p.name.to_lowercase();
+                words.iter().all(|w| name.contains(w.as_str()))
+            }
+        })
+        .map(|(i, p)| PresetItem {
+            name: p.name.as_str().into(),
+            index: *i as i32,
+        })
+        .collect();
+    let current = ctx
+        .current(deck)
+        .and_then(|c| found.iter().position(|p| *p == c))
+        .map_or(-1, |i| i as i32);
+    let labels: Vec<SharedString> = groups
+        .iter()
+        .map(|(g, n)| {
+            let name = if g.is_empty() { "All" } else { g.as_str() };
+            format!("{name}  {n}").into()
+        })
+        .collect();
+    let ui = app.global::<PresetUi>();
+    ui.set_picker_groups(ModelRc::new(VecModel::from(labels)));
+    ui.set_picker_group(groups.iter().position(|(g, _)| *g == group).unwrap_or(0) as i32);
+    ui.set_picker_list(ModelRc::new(VecModel::from(items)));
+    ui.set_picker_search(search.as_str().into());
+    ui.set_picker_current(current);
+    // The group's key by row, to pick one by its row.
+    STATE.with_borrow_mut(|s| s.picker_groups = groups.into_iter().map(|(g, _)| g).collect());
 }
 
 thread_local! {
@@ -880,6 +997,7 @@ pub fn install(
         if let Some(app) = weak.upgrade() {
             show_list(&app);
             show(&app);
+            show_picker(&app);
             crate::instruments::presets_changed(&app);
         }
     };
@@ -919,6 +1037,35 @@ pub fn install(
             let tag = tags().nth(tag as usize).ok_or("no such tag")?;
             toggle_tag(&preset.path, tag)
         })
+    });
+    let weak = app.as_weak();
+    ui.on_picker_open(move |deck| {
+        STATE.with_borrow_mut(|s| {
+            s.picker_deck = deck.max(0) as usize;
+            s.picker_search.clear();
+        });
+        if let Some(app) = weak.upgrade() {
+            show_picker(&app);
+        }
+    });
+    let weak = app.as_weak();
+    ui.on_picker_set_group(move |row| {
+        STATE.with_borrow_mut(|s| {
+            if let Some(g) = s.picker_groups.get(row.max(0) as usize).cloned() {
+                s.picker_group = g;
+            }
+            s.picker_search.clear();
+        });
+        if let Some(app) = weak.upgrade() {
+            show_picker(&app);
+        }
+    });
+    let weak = app.as_weak();
+    ui.on_picker_set_search(move |text| {
+        STATE.with_borrow_mut(|s| s.picker_search = text.to_string());
+        if let Some(app) = weak.upgrade() {
+            show_picker(&app);
+        }
     });
     let a = act;
     ui.on_load(move |deck, index| {
@@ -1302,6 +1449,8 @@ mod tests {
             styles: vec!["Warm".into()],
             characters: vec!["Warm".into()],
             liked: true,
+            arturia_type: "Bass".into(),
+            arturia_subtype: "Bass Line".into(),
         };
         let library = [
             found("Kick", "Mini V4", false),
@@ -1326,6 +1475,7 @@ mod tests {
         assert_eq!(names, [("Mini V4", "Kick"), ("Analog Lab V", "Tines")]);
         let kick = &listed[0];
         assert!(kick.from_plugin && kick.liked);
+        assert_eq!(kick.arturia_subtype, "Bass Line");
         assert_eq!(kick.tags, ["Bass", "Warm"]);
         assert_eq!(
             (kick.genres.as_slice(), kick.styles.as_slice()),
@@ -1346,6 +1496,46 @@ mod tests {
         assert_eq!(a, b"22 serialization::archive 10 0 7");
         assert_eq!(a, b);
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_picker_groups_by_starred_mine_and_sound_type() {
+        let preset = |name: &str, from_plugin: bool, tags: &[&str]| Preset {
+            name: name.into(),
+            instrument: "vst3:/x/Mini V4.vst3#B".into(),
+            path: PathBuf::from(format!("/p/{name}")),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+            from_plugin,
+            ..Preset::default()
+        };
+        let list = [
+            preset("Mine", false, &[]),
+            preset("Kick", true, &["Drums"]),
+            preset("Wash", true, &["Pad", "Warm"]),
+            preset("Glass", true, &["Pad"]),
+        ];
+        let starred: HashSet<PathBuf> = [PathBuf::from("/p/Glass")].into();
+        let shown: Vec<(String, usize)> = groups(&list, &starred);
+        let names: Vec<(&str, usize)> = shown.iter().map(|(g, n)| (g.as_str(), *n)).collect();
+        assert_eq!(
+            names,
+            [
+                ("", 4),
+                ("Starred", 1),
+                ("Mine", 1),
+                ("Pad", 2),
+                ("Drums", 1)
+            ],
+            "All first, then only the groups with presets, in the types' order"
+        );
+        let pads: Vec<&str> = list
+            .iter()
+            .filter(|p| in_group(p, "Pad", &starred))
+            .map(|p| p.name.as_str())
+            .collect();
+        assert_eq!(pads, ["Wash", "Glass"]);
+        assert!(in_group(&list[3], STARRED, &starred) && !in_group(&list[2], STARRED, &starred));
+        assert!(in_group(&list[0], MINE, &starred) && !in_group(&list[1], MINE, &starred));
     }
 
     #[test]
