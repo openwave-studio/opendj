@@ -161,6 +161,22 @@ pub fn install() {
             })
             .clone()
     });
+    // Its Quit (⌘Q) would end the app at once; send it through
+    // Action::Quit instead, which asks first mid-set (see quit_prompt).
+    for i in 0..app_menu.numberOfItems() {
+        let Some(item) = app_menu.itemAtIndex(i) else {
+            continue;
+        };
+        if item.action() == Some(sel!(terminate:)) {
+            // SAFETY: as in new_item: a selector MenuTarget implements, on
+            // a target kept alive in TARGET.
+            unsafe {
+                item.setAction(Some(sel!(runMenuAction:)));
+                item.setTarget(Some(&target));
+            }
+            item.setTag(Action::Quit.id() as isize);
+        }
+    }
     // About, then a line, then Settings… and the update tick and a line, as
     // in other Mac apps.
     let settings = new_item(mtm, &target, Action::Settings, "Settings…", ",");

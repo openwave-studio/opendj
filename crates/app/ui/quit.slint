@@ -1,0 +1,64 @@
+import { Theme } from "theme.slint";
+import { Button } from "preferences.slint";
+
+// Asking before quitting (see quit_prompt.rs): closing the window or
+// picking Quit while something would stop. `title` and `body` come from
+// quit_prompt.rs; Cancel is the default, so Return or Esc keeps openDJ open.
+export global QuitPrompt {
+    in-out property <bool> open;
+    in property <string> title: "Quit openDJ?";
+    in property <string> body;
+    // Quit was picked from the menu or its key: asks if it should.
+    callback request();
+    callback quit();
+    callback cancel();
+}
+
+export component QuitDialog inherits Rectangle {
+    background: Theme.s-000000a0;
+    // The app behind waits; clicks there do nothing.
+    TouchArea { }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape || event.text == Key.Return) {
+                QuitPrompt.cancel();
+            }
+            // Every other key stops here: no shortcut acts behind the question.
+            return accept;
+        }
+    }
+    init => { keys.focus(); }
+    Rectangle {
+        width: min(420px, root.width - 64px);
+        height: box.preferred-height;
+        border-radius: 12px;
+        background: Theme.panel;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 40px;
+        drop-shadow-color: Theme.s-000000c0;
+        TouchArea { }
+        box := VerticalLayout {
+            padding: 20px;
+            spacing: 12px;
+            Text {
+                text: QuitPrompt.title;
+                color: Theme.text;
+                font-size: 16px;
+                font-weight: 700;
+            }
+            if QuitPrompt.body != "": Text {
+                text: QuitPrompt.body;
+                color: Theme.n-c8c8cd;
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 8px;
+                Button { text: "Quit"; clicked => { QuitPrompt.quit(); } }
+                Button { text: "Cancel"; primary: true; clicked => { QuitPrompt.cancel(); } }
+            }
+        }
+    }
+}

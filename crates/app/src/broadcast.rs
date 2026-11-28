@@ -399,6 +399,11 @@ impl Broadcast {
         *self.shown.borrow_mut() = now;
     }
 
+    /// Whether a station is being sent to now, for asking before quitting.
+    pub fn is_on_air(&self) -> bool {
+        self.broadcaster.is_on_air()
+    }
+
     /// Off air and passwords saved, at quit.
     pub fn shut_down(&self) {
         self.broadcaster.stop();
