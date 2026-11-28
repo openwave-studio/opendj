@@ -26,6 +26,112 @@ pub fn decode(path: &Path) -> Result<Audio, String> {
     Ok(Arc::try_unwrap(audio).unwrap_or_else(|_| unreachable!("the writer is gone")))
 }
 
+/// How much later the same sound is in rekordbox than in openDJ, in
+/// seconds, for the file at `path`: what to add to a time going to
+/// rekordbox (a stick, its XML) and take off one coming from it. Only MP3s
+/// differ. openDJ decodes them gaplessly, cutting the encoder and decoder
+/// delay a LAME tag names (1105 samples for LAME's usual 576); rekordbox
+/// keeps it, and also plays an `Info` header frame with a table of contents
+/// (LAME's and ffmpeg's CBR) as a frame of silence, where it skips a `Xing`
+/// frame as openDJ does. Measured against rekordbox 7's own waveforms by
+/// Bake'n Deck (MIT licence, Copyright (c) Masanari Higashi). 0 for other
+/// files and for files that can't be read.
+pub fn rekordbox_offset(path: &Path) -> f64 {
+    rekordbox_lead(path).map_or(0.0, |(frames, rate)| frames as f64 / rate as f64)
+}
+
+/// [`rekordbox_offset`] in frames, with the sample rate.
+fn rekordbox_lead(path: &Path) -> Option<(u32, u32)> {
+    use std::io::{Seek, SeekFrom};
+    use symphonia::core::codecs::audio::well_known::CODEC_ID_MP3;
+    let ext = path.extension().and_then(|e| e.to_str())?;
+    if !ext.eq_ignore_ascii_case("mp3") {
+        return None;
+    }
+    let mut file = File::open(path).ok()?;
+    let info_frame = info_frame_samples(&mut file).unwrap_or(0);
+    file.seek(SeekFrom::Start(0)).ok()?;
+    let mss = MediaSourceStream::new(Box::new(file), MediaSourceStreamOptions::default());
+    let mut hint = Hint::new();
+    hint.with_extension(ext);
+    let format = symphonia::default::get_probe()
+        .probe(
+            &hint,
+            mss,
+            FormatOptions::default(),
+            MetadataOptions::default(),
+        )
+        .ok()?;
+    let track = format.default_track(TrackType::Audio)?;
+    let Some(CodecParameters::Audio(params)) = &track.codec_params else {
+        return None;
+    };
+    let rate = params.sample_rate.filter(|&r| r > 0)?;
+    (params.codec == CODEC_ID_MP3).then(|| (track.delay.unwrap_or(0) + info_frame, rate))
+}
+
+/// The samples of an MP3's first frame when it is an `Info` header with a
+/// table of contents: 1152 for MPEG-1, 576 for MPEG-2 and 2.5.
+fn info_frame_samples(file: &mut File) -> Option<u32> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut head = |at: u64| -> Option<Vec<u8>> {
+        file.seek(SeekFrom::Start(at)).ok()?;
+        let mut buf = Vec::new();
+        file.by_ref().take(64 * 1024).read_to_end(&mut buf).ok()?;
+        Some(buf)
+    };
+    let mut buf = head(0)?;
+    if buf.starts_with(b"ID3") && buf.len() >= 10 {
+        let size = buf[6..10]
+            .iter()
+            .fold(0u64, |n, &b| n << 7 | u64::from(b & 0x7f));
+        let footer = if buf[5] & 0x10 != 0 { 10 } else { 0 };
+        buf = head(10 + size + footer)?;
+    }
+    // The first frame that another follows, so a stray sync isn't taken for it.
+    let start = (0..buf.len()).find(|&i| {
+        mp3_frame(&buf[i..])
+            .is_some_and(|(len, _)| buf.get(i + len..).and_then(mp3_frame).is_some())
+    })?;
+    let (_, side_info) = mp3_frame(&buf[start..])?;
+    let tag = buf.get(start + 4 + side_info..start + 12 + side_info)?;
+    let toc = tag[7] & 4 != 0;
+    let mpeg1 = (buf[start + 1] >> 3) & 3 == 3;
+    (&tag[..4] == b"Info" && toc).then_some(if mpeg1 { 1152 } else { 576 })
+}
+
+/// The length and side information size of the MPEG Layer III frame that
+/// `b` starts with.
+fn mp3_frame(b: &[u8]) -> Option<(usize, usize)> {
+    const MPEG1: [usize; 15] = [
+        0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320,
+    ];
+    const MPEG2: [usize; 15] = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
+    if b.len() < 4 || b[0] != 0xff || b[1] & 0xe0 != 0xe0 {
+        return None;
+    }
+    let version = (b[1] >> 3) & 3; // 3 MPEG-1, 2 MPEG-2, 0 MPEG-2.5
+    let layer3 = (b[1] >> 1) & 3 == 1;
+    let bitrate = (b[2] >> 4) as usize;
+    let rate = ((b[2] >> 2) & 3) as usize;
+    if version == 1 || !layer3 || bitrate == 0 || bitrate == 15 || rate == 3 {
+        return None;
+    }
+    let (kbps, rates, per_kbit) = match version {
+        3 => (MPEG1[bitrate], [44100, 48000, 32000], 144),
+        2 => (MPEG2[bitrate], [22050, 24000, 16000], 72),
+        _ => (MPEG2[bitrate], [11025, 12000, 8000], 72),
+    };
+    let len = per_kbit * kbps * 1000 / rates[rate] + ((b[2] >> 1) & 1) as usize;
+    let mono = b[3] >> 6 == 3;
+    let side_info = match (version == 3, mono) {
+        (true, false) => 32,
+        (true, true) | (false, false) => 17,
+        (false, true) => 9,
+    };
+    Some((len, side_info))
+}
+
 /// An opened file, ready to decode into an [`Audio`] that can play while the
 /// rest is still decoding.
 pub struct Decoder {
@@ -61,6 +167,7 @@ impl Decoder {
     /// Reads the headers of `source`, the bytes of `path`.
     fn open_source(path: &Path, source: Box<dyn MediaSource>) -> Result<Decoder, String> {
         let err = |e: Error| format!("{}: {e}", path.display());
+        let source = pad_short_aiff(source).map_err(|e| format!("{}: {e}", path.display()))?;
         let mss = MediaSourceStream::new(source, MediaSourceStreamOptions::default());
         let mut hint = Hint::new();
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
@@ -242,6 +349,84 @@ impl Decoder {
     }
 }
 
+/// AIFF files whose last chunk has an odd length often leave out the pad
+/// byte the FORM length counts (some taggers write them like that), and
+/// Symphonia then fails with an unexpected end of file. If an AIFF source is
+/// shorter than its FORM header says, this reads the missing tail as zeros.
+fn pad_short_aiff(mut source: Box<dyn MediaSource>) -> std::io::Result<Box<dyn MediaSource>> {
+    use std::io::{Read, Seek, SeekFrom};
+    let Some(real) = source.byte_len() else {
+        return Ok(source);
+    };
+    if real < 12 || !source.is_seekable() {
+        return Ok(source);
+    }
+    let mut head = [0u8; 12];
+    source.read_exact(&mut head)?;
+    source.seek(SeekFrom::Start(0))?;
+    let total = 8 + u64::from(u32::from_be_bytes([head[4], head[5], head[6], head[7]]));
+    let aiff = &head[..4] == b"FORM" && matches!(&head[8..], b"AIFF" | b"AIFC");
+    if !aiff || total <= real {
+        return Ok(source);
+    }
+    Ok(Box::new(ZeroTail {
+        inner: source,
+        real,
+        total,
+        pos: 0,
+    }))
+}
+
+/// A source that goes on past its real end with zeros up to `total` bytes.
+struct ZeroTail {
+    inner: Box<dyn MediaSource>,
+    real: u64,
+    total: u64,
+    pos: u64,
+}
+
+impl std::io::Read for ZeroTail {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let n = if self.pos < self.real {
+            let want = buf.len().min((self.real - self.pos) as usize);
+            self.inner.read(&mut buf[..want])?
+        } else {
+            let n = buf.len().min(self.total.saturating_sub(self.pos) as usize);
+            buf[..n].fill(0);
+            n
+        };
+        self.pos += n as u64;
+        Ok(n)
+    }
+}
+
+impl std::io::Seek for ZeroTail {
+    fn seek(&mut self, to: std::io::SeekFrom) -> std::io::Result<u64> {
+        use std::io::SeekFrom;
+        let pos = match to {
+            SeekFrom::Start(p) => Some(p),
+            SeekFrom::End(d) => self.total.checked_add_signed(d),
+            SeekFrom::Current(d) => self.pos.checked_add_signed(d),
+        }
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "seek before start")
+        })?;
+        self.inner.seek(SeekFrom::Start(pos.min(self.real)))?;
+        self.pos = pos;
+        Ok(pos)
+    }
+}
+
+impl MediaSource for ZeroTail {
+    fn is_seekable(&self) -> bool {
+        true
+    }
+
+    fn byte_len(&self) -> Option<u64> {
+        Some(self.total)
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
@@ -288,6 +473,60 @@ pub(crate) mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
+    /// Writes a 16-bit stereo AIFF with a trailing odd-length ID3 chunk whose
+    /// pad byte is left out, like files some taggers write.
+    fn write_aiff_missing_pad(path: &Path, rate: u32, frames: &[[i16; 2]]) {
+        let mut comm = Vec::new();
+        comm.extend_from_slice(&2u16.to_be_bytes());
+        comm.extend_from_slice(&(frames.len() as u32).to_be_bytes());
+        comm.extend_from_slice(&16u16.to_be_bytes());
+        // Sample rate as an 80-bit extended float.
+        let exp = 31 - rate.leading_zeros();
+        comm.extend_from_slice(&((16_383 + exp) as u16).to_be_bytes());
+        comm.extend_from_slice(&((u64::from(rate)) << (63 - exp)).to_be_bytes());
+        let mut ssnd = vec![0u8; 8];
+        for f in frames {
+            ssnd.extend_from_slice(&f[0].to_be_bytes());
+            ssnd.extend_from_slice(&f[1].to_be_bytes());
+        }
+        // An ID3v2.4 tag with one TIT2 frame, 23 bytes long in all.
+        let mut id3 = b"ID3\x04\x00\x00\x00\x00\x00\x0d".to_vec();
+        id3.extend_from_slice(b"TIT2\x00\x00\x00\x03\x00\x00\x03Hi");
+        assert_eq!(id3.len() % 2, 1);
+        let mut body = b"AIFF".to_vec();
+        for (tag, data) in [(b"COMM", &comm), (b"SSND", &ssnd), (b"ID3 ", &id3)] {
+            body.extend_from_slice(tag);
+            body.extend_from_slice(&(data.len() as u32).to_be_bytes());
+            body.extend_from_slice(data);
+        }
+        // The FORM length counts the pad byte, which isn't written.
+        let mut f = File::create(path).unwrap();
+        f.write_all(b"FORM").unwrap();
+        f.write_all(&(body.len() as u32 + 1).to_be_bytes()).unwrap();
+        f.write_all(&body).unwrap();
+    }
+
+    #[test]
+    fn decodes_aiff_missing_last_pad_byte() {
+        let dir = std::env::temp_dir().join(format!("opendj-aiff-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("short.aiff");
+        let frames: Vec<[i16; 2]> = (0..44_100)
+            .map(|i| {
+                let v = ((i as f32 / 30.0).sin() * 16_000.0) as i16;
+                [v, -v]
+            })
+            .collect();
+        write_aiff_missing_pad(&path, 44_100, &frames);
+        let audio = decode(&path).unwrap();
+        assert_eq!(audio.sample_rate, 44_100);
+        assert_eq!(audio.len(), 44_100);
+        let f = audio.frame(1_000);
+        assert_eq!(f[0], frames[1_000][0] as f32 / 32_768.0);
+        assert_eq!(f[1], frames[1_000][1] as f32 / 32_768.0);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
     #[test]
     fn audio_plays_while_decoding() {
         let dir = std::env::temp_dir().join(format!("opendj-stream-{}", std::process::id()));
@@ -322,6 +561,56 @@ pub(crate) mod tests {
         assert!(Arc::ptr_eq(&done, &audio) && audio.is_complete());
         let last = audio.frame(440_999);
         assert_eq!(last[1], samples[2 * 440_999 + 1] as f32 / 32_768.0);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// An MP3 of 40 silent frames (MPEG-1 Layer III, 44.1 kHz, 128 kb/s)
+    /// after an ID3v2 tag, led by a `Xing` or `Info` frame (`tag`) with a
+    /// table of contents and a LAME tag naming LAME's usual encoder delay.
+    fn write_mp3(path: &Path, tag: Option<&[u8; 4]>) {
+        let frame = || {
+            let mut f = vec![0u8; 417];
+            f[..4].copy_from_slice(&[0xff, 0xfb, 0x90, 0x00]);
+            f
+        };
+        let mut data = b"ID3\x04\0\0\0\0\0\x20".to_vec();
+        data.resize(10 + 32, 0);
+        if let Some(tag) = tag {
+            let mut t = tag.to_vec();
+            t.extend(5u32.to_be_bytes()); // a frame count and a table of contents
+            t.extend(40u32.to_be_bytes());
+            t.extend([0; 100]);
+            t.extend(b"LAME3.100");
+            t.extend([0; 12]);
+            t.extend([0x24, 0x03, 0xe8]); // delay 576, padding 1000
+            let mut f = frame();
+            f[36..36 + t.len()].copy_from_slice(&t);
+            data.extend(f);
+        }
+        for _ in 0..40 {
+            data.extend(frame());
+        }
+        std::fs::write(path, data).unwrap();
+    }
+
+    #[test]
+    fn rekordbox_runs_later_for_lame_tagged_mp3s() {
+        let dir = std::env::temp_dir().join(format!("opendj-rb-offset-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let offset = |name: &str, tag: Option<&[u8; 4]>| {
+            let path = dir.join(name);
+            write_mp3(&path, tag);
+            (rekordbox_offset(&path) * 44_100.0).round()
+        };
+        // The 576 the LAME tag names and the decoder's 529, which openDJ cuts.
+        assert_eq!(offset("xing.mp3", Some(b"Xing")), 1105.0);
+        // And a frame of silence for the Info frame.
+        assert_eq!(offset("info.mp3", Some(b"Info")), 2257.0);
+        assert_eq!(offset("plain.mp3", None), 0.0);
+        let wav = dir.join("a.wav");
+        write_wav(&wav, 44_100, 2, &[0; 64]);
+        assert_eq!(rekordbox_offset(&wav), 0.0);
+        assert_eq!(rekordbox_offset(&dir.join("gone.mp3")), 0.0);
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }

@@ -11,7 +11,7 @@ use opendj_control::ControlRegistry;
 use opendj_engine::AudioEngine;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
-use crate::{AppWindow, InstrumentsUi, ParamMatch};
+use crate::{AppWindow, InstrumentsUi, KnobLabel, ParamMatch};
 
 /// The most parameters a search lists.
 const SHOWN: usize = 300;
@@ -32,6 +32,14 @@ fn matches(all: &[(u32, String)], text: &str) -> Vec<(u32, String)> {
 
 pub fn install(app: &AppWindow, engine: Rc<AudioEngine>) {
     let ui = app.global::<InstrumentsUi>();
+    ui.on_knob_label(|name, width, size, lines| {
+        let l = crate::knob_label::layout(&name, width, size, lines.max(1) as usize);
+        KnobLabel {
+            text: l.text.into(),
+            size: l.size,
+            cut: l.cut,
+        }
+    });
     let weak = app.as_weak();
     let e = engine.clone();
     ui.on_search_params(move |text| {

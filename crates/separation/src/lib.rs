@@ -3,6 +3,8 @@
 //! background. Both run on burn, on the GPU (Metal on macOS, Vulkan on Linux)
 //! or on the CPU. See openspec/changes/improve-stem-separation.
 
+#[cfg(target_vendor = "apple")]
+pub mod coreml;
 pub mod htdemucs;
 pub mod rates;
 pub mod spleeter;

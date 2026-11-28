@@ -24,6 +24,9 @@ jobs:
           tar xzf work/4stems.tar.gz -C work/4stems
           python3 scripts/models/convert_spleeter.py work/4stems/model models/spleeter-4stems.safetensors
           curl -sSfL -o models/htdemucs.safetensors https://huggingface.co/set-soft/audio_separation/resolve/main/Demucs/htdemucs.safetensors
+          pip install coremltools==9.0
+          python3 scripts/models/convert_spleeter_coreml.py models/spleeter-4stems.safetensors models/spleeter-4stems.mlpackage
+          python3 scripts/models/convert_htdemucs_coreml.py models/htdemucs.safetensors models/htdemucs.mlpackage
           python3 scripts/models/make_test_mix.py models/test-mix-6min.wav 360
           sha256sum models/*.safetensors | tee models/SHA256SUMS
       - uses: actions/upload-artifact@v7
@@ -67,6 +70,26 @@ jobs:
         if: runner.os == 'macOS'
         continue-on-error: true
         run: target/release/stem-bench models/test-mix-6min.wav --gpu | tee -a bench.txt
+      - name: Core ML gives the same Spleeter and HTDemucs results as the other paths
+        # GitHub's Macs are virtual machines without the Neural Engine, so
+        # Core ML falls back to the CPU or GPU there; this checks the model
+        # and the Rust side, and the Neural Engine numbers come from a real Mac.
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        env:
+          SPLEETER_WEIGHTS: ${{ github.workspace }}/models/spleeter-4stems.safetensors
+          SPLEETER_MLPACKAGE: ${{ github.workspace }}/models/spleeter-4stems.mlpackage
+          OPENDJ_MODELS: ${{ github.workspace }}/models
+          HTDEMUCS_MLPACKAGE: ${{ github.workspace }}/models/htdemucs.mlpackage
+        run: cargo test --release -p opendj-separation core_ml -- --ignored --nocapture | tee -a bench.txt
+      - name: Spleeter through Core ML, whole 6-minute mix
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: target/release/stem-bench models/test-mix-6min.wav --coreml --spleeter --from 120 | tee -a bench.txt
+      - name: HTDemucs through Core ML, first 2 minutes
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: target/release/stem-bench models/test-mix-6min.wav --coreml --htdemucs --seconds 120 | tee -a bench.txt
       - name: HTDemucs on the CPU, first minute
         continue-on-error: true
         run: target/release/stem-bench models/test-mix-6min.wav --htdemucs --cpu --seconds 60 | tee -a bench.txt

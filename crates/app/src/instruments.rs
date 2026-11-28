@@ -1,23 +1,23 @@
 //! The Jam source (formerly Instruments) in the library rail (`ui/instruments.slint`):
-//! a tree (everything, the Groove Box, plugins by maker, inputs) and a
-//! list of what the selected node holds, dragged onto a deck to play
-//! through its channel. Dropping is handled on
+//! one column (a Presets / Instruments switch, search, a star, filter menus
+//! of chips and the rows they leave) and the rows again as a wide list,
+//! dragged onto a deck to play through its channel. Dropping is handled on
 //! the screen (`InstrumentsUi.drop`), which sets the deck's controls; the
 //! engine does the rest (`[ChannelN],live_input`, `[GrooveN],enabled`).
 
 use std::cell::RefCell;
 use std::collections::HashSet;
 
-use slint::{ComponentHandle, DataTransfer, Model, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, DataTransfer, ModelRc, SharedString, VecModel};
 
 use opendj_engine::{inputs, remix};
 
 use crate::audio_plugins::Found;
 use crate::presets::{self, Preset, GROOVE};
-use crate::tree_navigation::{self, Action, Direction, Row};
+use crate::tree_navigation::Direction;
 use crate::{
-    settings, AppWindow, InstrumentNode, InstrumentsUi, LiveItem, MixerStripInfo, Preferences,
-    RemixUi,
+    settings, AppWindow, InstrumentsUi, JamChip, JamFacet, JamLine, LiveItem, MixerStripInfo,
+    Preferences, RemixUi,
 };
 use crate::{BrowserFocus, BrowserPane};
 
@@ -38,7 +38,10 @@ const MIXER: i32 = 7;
 /// The Remix deck (`[RemixN],enabled`): another deck played through
 /// band effects and scenes.
 const REMIX: i32 = 8;
-const LAST_KIND: i32 = 8;
+/// A hardware synth (see `crate::hardware_synths`), by its place in the
+/// bundled profiles.
+const HARDWARE: i32 = 9;
+const LAST_KIND: i32 = 9;
 
 fn payload(kind: i32, index: i32) -> String {
     format!("{LIVE_PAYLOAD}{kind}:{index}")
@@ -59,23 +62,32 @@ struct State {
     plugins: Vec<Plugin>,
     /// Each input's device and channels, by the engine's input index.
     routes: Vec<String>,
-    /// Nodes opened, by key; Plugins starts open.
-    open: HashSet<String>,
-    /// The selected node's key.
-    current: String,
+    /// The side the column shows: [`PRESETS`] or [`INSTRUMENTS`].
+    view: i32,
     search: String,
-    /// The keys of the nodes as last shown, by row.
-    keys: Vec<String>,
     /// The presets, as `crate::presets::all` lists them.
     presets: Vec<Preset>,
-    /// The tag chips on, as `crate::presets::tags` numbers them: the list
-    /// then shows only presets with every one.
-    chips: Vec<bool>,
+    /// The values picked in each of the side's filter menus.
+    picks: Vec<HashSet<String>>,
+    /// The filter menu open, if any: one at a time.
+    open_facet: Option<usize>,
+    /// Starred items, by [`recent_key`], kept in settings.
+    starred: HashSet<String>,
+    /// Only starred items show.
+    starred_only: bool,
     /// What went onto a deck lately, newest first (see [`recent_key`]).
     recent: Vec<String>,
-    /// The column the list is sorted by (0 name, 1 type, 2 maker,
-    /// 3 format) and whether it is the other way round; none as listed.
-    sort: Option<(i32, bool)>,
+    /// The hardware synths: id, name, maker, and whether its MIDI port is
+    /// there now.
+    synths: Vec<Synth>,
+}
+
+/// A hardware synth as the Jam list shows it.
+pub struct Synth {
+    pub id: String,
+    pub name: String,
+    pub maker: String,
+    pub plugged_in: bool,
 }
 
 /// How many items Recently played keeps.
@@ -90,6 +102,7 @@ fn recent_key(s: &State, kind: i32, index: i32) -> Option<String> {
         LOOPER => Some("looper".into()),
         REMIX => Some("remix".into()),
         PLUGIN => s.plugins.get(i).map(|p| format!("plugin:{}", p.key)),
+        HARDWARE => s.synths.get(i).map(|h| format!("hardware:{}", h.id)),
         PRESET => s
             .presets
             .get(i)
@@ -119,8 +132,10 @@ struct Plugin {
 
 thread_local! {
     static STATE: RefCell<State> = RefCell::new(State {
-        open: HashSet::from(["plugins".to_string()]),
-        current: "all".to_string(),
+        starred: crate::settings::load()[STARRED]
+            .as_array()
+            .map(|a| a.iter().filter_map(|k| k.as_str().map(String::from)).collect())
+            .unwrap_or_default(),
         recent: crate::settings::load()["instruments_recent"]
             .as_array()
             .map(|a| a.iter().filter_map(|k| k.as_str().map(String::from)).collect())
@@ -139,65 +154,21 @@ const MIXER_ROUTE: usize = inputs::MIXER - 1;
 const INPUTS: [(i32, i32, usize, &str); 2] =
     [(MIC, 0, 0, "Microphone"), (MIXER, 0, MIXER_ROUTE, "Mixer")];
 
-fn select_node(app: &AppWindow, row: i32) {
-    let Ok(row) = usize::try_from(row) else {
-        return;
-    };
-    STATE.with_borrow_mut(|s| {
-        if let Some(key) = s.keys.get(row).cloned() {
-            s.current = key;
-        }
-    });
-    refresh(app);
-}
-
-fn toggle_node(app: &AppWindow, row: i32) {
-    let Ok(index) = usize::try_from(row) else {
-        return;
-    };
-    let ui = app.global::<InstrumentsUi>();
-    if !ui
-        .get_nodes()
-        .row_data(index)
-        .is_some_and(|n| n.children > 0)
-    {
-        return;
+/// ← in the column goes back to the rail.
+/// ↑ and ↓ move through its rows (see `browser::navigation`).
+pub(crate) fn navigate_column(app: &AppWindow, code: i32) {
+    if let Some(Direction::Left) = Direction::from_code(code) {
+        app.global::<BrowserFocus>()
+            .invoke_focus(BrowserPane::Sources);
     }
-    STATE.with_borrow_mut(|s| {
-        if let Some(key) = s.keys.get(index).cloned() {
-            if !s.open.remove(&key) {
-                s.open.insert(key);
-            }
-        }
-    });
-    // Refresh after releasing the borrow of STATE.
-    refresh(app);
 }
 
-pub(crate) fn navigate_nodes(app: &AppWindow, code: i32) {
-    let Some(direction) = Direction::from_code(code) else {
-        return;
-    };
-    let ui = app.global::<InstrumentsUi>();
-    let rows: Vec<Row> = ui
-        .get_nodes()
-        .iter()
-        .map(|n| Row {
-            depth: n.depth,
-            children: n.children,
-        })
-        .collect();
-    let current = usize::try_from(ui.get_current_node()).ok();
-    match tree_navigation::navigate(&rows, current, direction) {
-        Some(Action::Select(row)) => select_node(app, row as i32),
-        Some(Action::Toggle(row)) => toggle_node(app, row as i32),
-        Some(Action::EnterContent) => app
-            .global::<BrowserFocus>()
-            .invoke_focus(BrowserPane::Content),
-        Some(Action::ExitToSources) => app
-            .global::<BrowserFocus>()
-            .invoke_focus(BrowserPane::Sources),
-        None => {}
+/// Changes the state, then shows it.
+fn update(app: &slint::Weak<AppWindow>, change: impl FnOnce(&mut State)) {
+    STATE.with_borrow_mut(change);
+    if let Some(app) = app.upgrade() {
+        app.global::<InstrumentsUi>().set_current_item(-1);
+        refresh(&app);
     }
 }
 
@@ -229,24 +200,6 @@ pub fn install(app: &AppWindow) {
         }
     });
     let weak = app.as_weak();
-    ui.on_select_node(move |row| {
-        if let Some(app) = weak.upgrade() {
-            select_node(&app, row);
-        }
-    });
-    let weak = app.as_weak();
-    ui.on_toggle_node(move |row| {
-        if let Some(app) = weak.upgrade() {
-            toggle_node(&app, row);
-        }
-    });
-    let weak = app.as_weak();
-    ui.on_navigate_node(move |code| {
-        if let Some(app) = weak.upgrade() {
-            navigate_nodes(&app, code);
-        }
-    });
-    let weak = app.as_weak();
     ui.on_played(move |item| {
         STATE.with_borrow_mut(|s| {
             if let Some(key) = recent_key(s, item / 1000, item % 1000) {
@@ -259,36 +212,51 @@ pub fn install(app: &AppWindow) {
         }
     });
     let weak = app.as_weak();
-    ui.on_sort_by(move |column| {
-        STATE.with_borrow_mut(|s| {
-            s.sort = match s.sort {
-                Some((c, down)) if c == column => Some((column, !down)),
-                _ => Some((column, false)),
-            };
-        });
-        if let Some(app) = weak.upgrade() {
-            refresh(&app);
-        }
-    });
+    ui.on_search(move |text| update(&weak, |s| s.search = text.to_string()));
     let weak = app.as_weak();
-    ui.on_toggle_chip(move |tag| {
-        STATE.with_borrow_mut(|s| {
-            let n = presets::tags().count();
-            s.chips.resize(n, false);
-            if let Some(on) = s.chips.get_mut(tag as usize) {
-                *on = !*on;
+    ui.on_set_view(move |view| {
+        update(&weak, |s| {
+            if s.view != view {
+                s.view = view;
+                s.picks.clear();
+                s.open_facet = None;
             }
-        });
-        if let Some(app) = weak.upgrade() {
-            refresh(&app);
-        }
+        })
     });
     let weak = app.as_weak();
-    ui.on_search(move |text| {
-        STATE.with_borrow_mut(|s| s.search = text.to_string());
-        if let Some(app) = weak.upgrade() {
-            refresh(&app);
-        }
+    ui.on_toggle_starred_only(move || update(&weak, |s| s.starred_only = !s.starred_only));
+    let weak = app.as_weak();
+    ui.on_toggle_facet(move |facet| {
+        update(&weak, |s| {
+            let f = facet as usize;
+            s.open_facet = (s.open_facet != Some(f)).then_some(f);
+        })
+    });
+    let weak = app.as_weak();
+    ui.on_toggle_value(move |facet, value| {
+        update(&weak, |s| {
+            s.picks.resize(facet_names(s.view).len(), HashSet::new());
+            if let Some(p) = s.picks.get_mut(facet as usize) {
+                if !p.remove(value.as_str()) {
+                    p.insert(value.to_string());
+                }
+            }
+        })
+    });
+    let weak = app.as_weak();
+    ui.on_clear_filters(move || update(&weak, |s| s.picks.clear()));
+    let weak = app.as_weak();
+    ui.on_toggle_star(move |kind, index| {
+        update(&weak, |s| {
+            if let Some(key) = recent_key(s, kind, index) {
+                if !s.starred.remove(&key) {
+                    s.starred.insert(key);
+                }
+                let mut keys: Vec<&String> = s.starred.iter().collect();
+                keys.sort();
+                crate::settings::set(STARRED, serde_json::json!(keys));
+            }
+        })
     });
     // The instrument deck's keyboard size, kept.
     ui.set_keyboard_size(
@@ -326,6 +294,12 @@ pub fn install(app: &AppWindow) {
     refresh(app);
 }
 
+/// Lists the hardware synths in the Jam column.
+pub fn show_synths(app: &AppWindow, synths: Vec<Synth>) {
+    STATE.with_borrow_mut(|s| s.synths = synths);
+    refresh(app);
+}
+
 /// A pitch bend message for `value` -1 (down) to 1 (up), 0 the middle.
 pub fn bend_message(value: f32) -> [u8; 3] {
     let v = ((value.clamp(-1.0, 1.0) + 1.0) * 8191.5).round() as u16;
@@ -341,6 +315,47 @@ pub fn modwheel_message(value: f32) -> [u8; 3] {
 /// Settings: the instrument deck's keyboard size, and the colors picked
 /// for instruments, by plugin key.
 const KEYBOARD_SIZE: &str = "instrument_keyboard";
+/// Settings: the starred presets and instruments, by [`recent_key`].
+const STARRED: &str = "jam_starred";
+/// Settings: the presets liked in a maker's library (Arturia's) that were
+/// starred for it, so each is starred once and unstarring it sticks.
+const LIKED_SEEN: &str = "jam_liked_seen";
+
+/// Stars the presets liked in their maker's library that weren't yet.
+fn star_liked(s: &mut State) {
+    let liked: Vec<String> = s
+        .presets
+        .iter()
+        .filter(|p| p.liked)
+        .map(|p| format!("preset:{}", p.path.display()))
+        .collect();
+    if liked.is_empty() {
+        return;
+    }
+    let mut seen: HashSet<String> = crate::settings::load()[LIKED_SEEN]
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|k| k.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    let new: Vec<String> = liked.into_iter().filter(|k| !seen.contains(k)).collect();
+    if new.is_empty() {
+        return;
+    }
+    for k in new {
+        s.starred.insert(k.clone());
+        seen.insert(k);
+    }
+    let sorted = |set: &HashSet<String>| {
+        let mut keys: Vec<String> = set.iter().cloned().collect();
+        keys.sort();
+        serde_json::json!(keys)
+    };
+    crate::settings::set(STARRED, sorted(&s.starred));
+    crate::settings::set(LIKED_SEEN, sorted(&seen));
+}
 const COLORS: &str = "instrument_colors";
 
 /// How many colors the Mixer strips' palette has; the last is grey, which
@@ -433,6 +448,17 @@ pub fn show_plugins(app: &AppWindow, instruments: &[Found], names: &[String]) {
     refresh(app);
 }
 
+/// The paths of the presets starred in the Jam column.
+pub fn starred_presets() -> HashSet<std::path::PathBuf> {
+    STATE.with_borrow(|s| {
+        s.starred
+            .iter()
+            .filter_map(|k| k.strip_prefix("preset:"))
+            .map(std::path::PathBuf::from)
+            .collect()
+    })
+}
+
 /// Lists the presets again, after one was saved or renamed.
 pub fn presets_changed(app: &AppWindow) {
     refresh(app);
@@ -452,14 +478,6 @@ fn plugin_kind(features: &[String]) -> &'static str {
     }
 }
 
-/// The plugins' makers, in name order, "Other" for none.
-fn makers(plugins: &[Plugin]) -> Vec<String> {
-    let mut makers: Vec<String> = plugins.iter().map(|p| maker(p).to_string()).collect();
-    makers.sort_by_key(|m| m.to_lowercase());
-    makers.dedup_by_key(|m| m.to_lowercase());
-    makers
-}
-
 fn maker(p: &Plugin) -> &str {
     if p.maker.is_empty() {
         "Other"
@@ -473,333 +491,402 @@ fn live_inputs() -> impl Iterator<Item = &'static (i32, i32, usize, &'static str
     INPUTS.iter()
 }
 
-/// The tree: (key, node).
-fn nodes(s: &State) -> Vec<(String, InstrumentNode)> {
-    let node = |name: &str, depth, children, kind, count| InstrumentNode {
-        name: name.into(),
-        depth,
-        children,
-        kind,
-        count,
-    };
-    let open = |key: &str| if s.open.contains(key) { 2 } else { 1 };
-    let inputs = INPUTS.len() as i32;
-    let total = 3 + s.plugins.len() as i32 + inputs;
-    let mut out = vec![
-        (
-            "recent".to_string(),
-            node("Recently played", 0, 0, 8, recent_items(s).len() as i32),
-        ),
-        ("all".to_string(), node("All instruments", 0, 0, 6, total)),
-        (
-            "presets".to_string(),
-            node(
-                "My presets",
-                0,
-                0,
-                7,
-                s.presets.iter().filter(|p| !p.from_plugin).count() as i32,
-            ),
-        ),
-        ("groove".to_string(), node("Groove Box", 0, 0, 1, -1)),
-        ("looper".to_string(), node("Looper", 0, 0, 9, -1)),
-        ("remix".to_string(), node("Remix", 0, 0, 10, -1)),
-        (
-            "plugins".to_string(),
-            node(
-                "Plugins",
-                0,
-                if s.plugins.is_empty() {
-                    0
-                } else {
-                    open("plugins")
-                },
-                0,
-                s.plugins.len() as i32,
-            ),
-        ),
-    ];
-    if s.open.contains("plugins") {
-        for m in makers(&s.plugins) {
-            let key = format!("maker:{m}");
-            let mine: Vec<(usize, &Plugin)> = s
-                .plugins
-                .iter()
-                .enumerate()
-                .filter(|(_, p)| maker(p).eq_ignore_ascii_case(&m))
-                .collect();
-            out.push((key.clone(), node(&m, 1, open(&key), 5, mine.len() as i32)));
-            if s.open.contains(&key) {
-                for (i, p) in mine {
-                    out.push((format!("plugin:{i}"), node(&p.name, 2, 0, 2, -1)));
-                }
-            }
-        }
+/// The column's two sides: every preset, or one row per instrument.
+const PRESETS: i32 = 0;
+const INSTRUMENTS: i32 = 1;
+
+/// Each side's filter menus, in order. Genre and Style join Presets once
+/// presets carry them (`redesign-jam-browser` step 2).
+/// Genre and Style come from makers' libraries (Arturia's) and show only
+/// when some preset has one.
+const PRESET_FACETS: [&str; 6] = [
+    "Sound type",
+    "Genre",
+    "Style",
+    "Character",
+    "Instrument",
+    "Maker",
+];
+const INSTRUMENT_FACETS: [&str; 2] = ["Kind", "Maker"];
+
+fn facet_names(view: i32) -> &'static [&'static str] {
+    if view == INSTRUMENTS {
+        &INSTRUMENT_FACETS
+    } else {
+        &PRESET_FACETS
     }
-    out.push(("inputs".to_string(), node("Inputs", 0, 0, 4, inputs)));
-    out
 }
 
-/// The rows the selected node lists, narrowed by the search.
-fn rows(s: &State) -> Vec<LiveItem> {
-    let groove = || LiveItem {
-        kind: KIT,
-        index: 0,
-        name: "Groove Box".into(),
-        r#type: "Drum machine".into(),
-        maker: "openDJ".into(),
-        format: "Built in".into(),
-        problem: "".into(),
-    };
-    let looper = || LiveItem {
-        kind: LOOPER,
-        index: 0,
-        name: "Looper".into(),
-        r#type: "Looper".into(),
-        maker: "openDJ".into(),
-        format: "Built in".into(),
-        problem: "".into(),
-    };
-    let remix = || LiveItem {
-        kind: REMIX,
-        index: 0,
-        name: "Remix".into(),
-        r#type: "Remix effects".into(),
-        maker: "openDJ".into(),
-        format: "Built in".into(),
-        problem: "".into(),
-    };
-    let plugin = |i: usize, p: &Plugin| LiveItem {
-        kind: PLUGIN,
-        index: i as i32,
-        name: p.name.as_str().into(),
-        r#type: p.kind.into(),
-        maker: p.maker.as_str().into(),
-        format: p.format.into(),
-        problem: "".into(),
-    };
-    let input = |&(kind, index, input, name): &(i32, i32, usize, &str)| {
-        let route = s.routes.get(input).cloned().unwrap_or_default();
-        LiveItem {
+/// A row's colour square, as `LiveItem.tint`, and its Kind: what plays.
+const TINT_SYNTH: i32 = 0;
+const TINT_DRUMS: i32 = 1;
+const TINT_KEYS: i32 = 2;
+const TINT_TOOLS: i32 = 3;
+const TINT_PD: i32 = 4;
+const TINT_INPUTS: i32 = 5;
+const TINT_HARDWARE: i32 = 6;
+const KINDS: [&str; 7] = [
+    "Synths",
+    "Drums",
+    "Keys and samplers",
+    "Tools",
+    "Pd patches",
+    "Inputs",
+    "Hardware synths",
+];
+
+fn plugin_tint(p: &Plugin) -> i32 {
+    if p.format == "Pd" {
+        TINT_PD
+    } else {
+        match p.kind {
+            "Drums" => TINT_DRUMS,
+            "Sampler" => TINT_KEYS,
+            _ => TINT_SYNTH,
+        }
+    }
+}
+
+/// A row, and its values in each of its side's filter menus.
+struct Entry {
+    item: LiveItem,
+    facets: Vec<Vec<String>>,
+}
+
+/// Everything the side shown can list, before search and filters.
+fn entries(s: &State) -> Vec<Entry> {
+    let built_in = |kind: i32, name: &str, what: &str, tint: i32| Entry {
+        item: LiveItem {
             kind,
-            index,
+            index: 0,
             name: name.into(),
-            r#type: if kind == MIC { "Microphone" } else { "Mixer" }.into(),
-            problem: match (route.is_empty(), kind) {
-                (false, _) => "",
-                (true, MIC) => "No input picked",
-                (true, _) => "No inputs picked",
+            r#type: what.into(),
+            maker: "openDJ".into(),
+            format: "Built in".into(),
+            tint,
+            ..LiveItem::default()
+        },
+        facets: vec![vec![KINDS[tint as usize].into()], vec!["openDJ".into()]],
+    };
+    let plugin_by_key = |key: &str| s.plugins.iter().find(|p| p.key == key);
+    let mut out: Vec<Entry> = if s.view == INSTRUMENTS {
+        let mut out = vec![
+            built_in(KIT, "Groove Box", "Drum machine", TINT_DRUMS),
+            built_in(LOOPER, "Looper", "Looper", TINT_TOOLS),
+            built_in(REMIX, "Remix", "Remix effects", TINT_TOOLS),
+        ];
+        out.extend(s.plugins.iter().enumerate().map(|(i, p)| Entry {
+            item: LiveItem {
+                kind: PLUGIN,
+                index: i as i32,
+                name: p.name.as_str().into(),
+                r#type: p.kind.into(),
+                maker: p.maker.as_str().into(),
+                format: p.format.into(),
+                tint: plugin_tint(p),
+                ..LiveItem::default()
+            },
+            facets: vec![
+                vec![KINDS[plugin_tint(p) as usize].into()],
+                vec![maker(p).into()],
+            ],
+        }));
+        out.extend(s.synths.iter().enumerate().map(|(i, h)| Entry {
+            item: LiveItem {
+                kind: HARDWARE,
+                index: i as i32,
+                name: h.name.as_str().into(),
+                r#type: "Hardware synth".into(),
+                problem: if h.plugged_in { "" } else { "Not plugged in" }.into(),
+                maker: h.maker.as_str().into(),
+                format: "MIDI".into(),
+                tint: TINT_HARDWARE,
+                ..LiveItem::default()
+            },
+            facets: vec![
+                vec![KINDS[TINT_HARDWARE as usize].into()],
+                vec![h.maker.clone()],
+            ],
+        }));
+        out.extend(live_inputs().map(|&(kind, index, input, name)| {
+            let route = s.routes.get(input).cloned().unwrap_or_default();
+            Entry {
+                item: LiveItem {
+                    kind,
+                    index,
+                    name: name.into(),
+                    r#type: if kind == MIC { "Microphone" } else { "Mixer" }.into(),
+                    problem: match (route.is_empty(), kind) {
+                        (false, _) => "",
+                        (true, MIC) => "No input picked",
+                        (true, _) => "No inputs picked",
+                    }
+                    .into(),
+                    maker: route.into(),
+                    tint: TINT_INPUTS,
+                    ..LiveItem::default()
+                },
+                facets: vec![vec![KINDS[TINT_INPUTS as usize].into()], Vec::new()],
             }
-            .into(),
-            maker: route.into(),
-            format: "".into(),
-        }
-    };
-    let preset = |i: usize, p: &Preset| LiveItem {
-        kind: PRESET,
-        index: i as i32,
-        name: p.name.as_str().into(),
-        r#type: if p.from_plugin {
-            "Plugin preset"
-        } else {
-            "Preset"
-        }
-        .into(),
-        maker: p.instrument_name.as_str().into(),
-        format: "".into(),
-        problem: "".into(),
-    };
-    // An instrument's presets, after it (its default sound).
-    let presets_of = |key: &str| -> Vec<LiveItem> {
+        }));
+        out
+    } else {
         s.presets
             .iter()
             .enumerate()
-            .filter(|(_, p)| p.instrument == key)
-            .map(|(i, p)| preset(i, p))
-            .collect()
-    };
-    let plugins = |only: &dyn Fn(&Plugin) -> bool| -> Vec<LiveItem> {
-        s.plugins
-            .iter()
-            .enumerate()
-            .filter(|(_, p)| only(p))
-            .map(|(i, p)| plugin(i, p))
-            .collect()
-    };
-    let mut rows: Vec<LiveItem> = match s.current.as_str() {
-        "groove" => {
-            let mut rows = vec![groove()];
-            rows.extend(presets_of(GROOVE));
-            rows
-        }
-        "looper" => vec![looper()],
-        "remix" => vec![remix()],
-        "presets" => s
-            .presets
-            .iter()
-            .enumerate()
-            .filter(|(_, p)| !p.from_plugin)
-            .map(|(i, p)| preset(i, p))
-            .collect(),
-        "plugins" => plugins(&|_| true),
-        "inputs" => live_inputs().map(input).collect(),
-        "recent" => recent_items(s)
-            .into_iter()
-            .filter_map(|(kind, index)| {
-                let i = index as usize;
-                match kind {
-                    KIT => Some(groove()),
-                    LOOPER => Some(looper()),
-                    REMIX => Some(remix()),
-                    PLUGIN => s.plugins.get(i).map(|p| plugin(i, p)),
-                    PRESET => s.presets.get(i).map(|p| preset(i, p)),
-                    _ => INPUTS
+            .map(|(i, p)| {
+                let plugin = plugin_by_key(&p.instrument);
+                let (maker_name, tint) = if p.instrument == GROOVE {
+                    ("openDJ", TINT_DRUMS)
+                } else {
+                    plugin.map_or(("", TINT_SYNTH), |pl| (maker(pl), plugin_tint(pl)))
+                };
+                let tagged = |set: &[&str]| -> Vec<String> {
+                    p.tags
                         .iter()
-                        .find(|(k, x, _, _)| *k == kind && *x == index)
-                        .map(input),
+                        .filter(|t| set.contains(&t.as_str()))
+                        .cloned()
+                        .collect()
+                };
+                Entry {
+                    item: LiveItem {
+                        kind: PRESET,
+                        index: i as i32,
+                        name: p.name.as_str().into(),
+                        r#type: if p.from_plugin {
+                            "Plugin preset"
+                        } else {
+                            "Preset"
+                        }
+                        .into(),
+                        maker: p.instrument_name.as_str().into(),
+                        tint,
+                        ..LiveItem::default()
+                    },
+                    facets: vec![
+                        tagged(&presets::TYPES),
+                        p.genres.clone(),
+                        p.styles.clone(),
+                        tagged(&presets::CHARACTERS),
+                        vec![p.instrument_name.clone()],
+                        if maker_name.is_empty() {
+                            Vec::new()
+                        } else {
+                            vec![maker_name.to_string()]
+                        },
+                    ],
                 }
             })
-            .collect(),
-        key => {
-            if let Some(m) = key.strip_prefix("maker:") {
-                plugins(&|p| maker(p).eq_ignore_ascii_case(m))
-            } else if let Some(i) = key
-                .strip_prefix("plugin:")
-                .and_then(|i| i.parse::<usize>().ok())
-            {
-                let mut rows: Vec<LiveItem> =
-                    s.plugins.get(i).map(|p| plugin(i, p)).into_iter().collect();
-                if let Some(p) = s.plugins.get(i) {
-                    rows.extend(presets_of(&p.key));
-                }
-                rows
-            } else {
-                let mut all = vec![groove(), looper(), remix()];
-                all.extend(plugins(&|_| true));
-                all.extend(live_inputs().map(input));
-                all
-            }
-        }
+            .collect()
     };
-    // With tag chips on, only presets that have every one.
-    let wanted: Vec<&str> = presets::tags()
-        .zip(&s.chips)
-        .filter(|(_, on)| **on)
-        .map(|(t, _)| t)
-        .collect();
-    if !wanted.is_empty() {
-        // The presets of the instruments listed, and those listed.
-        let listed: HashSet<&str> = rows
-            .iter()
-            .filter_map(|r| match r.kind {
-                KIT => Some(GROOVE),
-                PLUGIN => s.plugins.get(r.index as usize).map(|p| p.key.as_str()),
-                PRESET => s
-                    .presets
-                    .get(r.index as usize)
-                    .map(|p| p.instrument.as_str()),
-                _ => None,
-            })
-            .collect();
-        rows = s
-            .presets
-            .iter()
-            .enumerate()
-            .filter(|(_, p)| listed.contains(p.instrument.as_str()))
-            .filter(|(_, p)| wanted.iter().all(|w| p.tags.iter().any(|t| t == w)))
-            .map(|(i, p)| preset(i, p))
-            .collect();
+    for e in &mut out {
+        e.item.starred =
+            recent_key(s, e.item.kind, e.item.index).is_some_and(|k| s.starred.contains(&k));
     }
-    let words: Vec<String> = s.search.split_whitespace().map(str::to_lowercase).collect();
-    if !words.is_empty() {
-        rows.retain(|r| {
-            let text = format!("{} {} {} {}", r.name, r.r#type, r.maker, r.format).to_lowercase();
-            words.iter().all(|w| text.contains(w.as_str()))
-        });
-    }
-    if let Some((column, descending)) = s.sort {
-        let text = |r: &LiveItem| {
-            match column {
-                0 => &r.name,
-                1 => &r.r#type,
-                2 if r.maker.is_empty() => &r.problem,
-                2 => &r.maker,
-                _ => &r.format,
-            }
-            .to_lowercase()
-        };
-        rows.sort_by_cached_key(|r| (text(r), r.name.to_lowercase()));
-        if descending {
-            rows.reverse();
-        }
-    }
-    rows
+    out
 }
 
-/// Recently played, newest first, as (kind, index): what is still there
-/// of it.
-fn recent_items(s: &State) -> Vec<(i32, i32)> {
-    let all: Vec<(i32, i32)> = [(KIT, 0), (LOOPER, 0), (REMIX, 0)]
-        .into_iter()
-        .chain((0..s.plugins.len()).map(|i| (PLUGIN, i as i32)))
-        .chain((0..s.presets.len()).map(|i| (PRESET, i as i32)))
-        .chain(INPUTS.iter().map(|(k, i, _, _)| (*k, *i)))
-        .collect();
-    s.recent
+/// The order a menu's values come in: the tag lists' own for tags and
+/// kinds, name order for the rest.
+fn value_order(view: i32, facet: usize) -> &'static [&'static str] {
+    match (view, facet) {
+        (PRESETS, 0) => &presets::TYPES,
+        (PRESETS, 3) => &presets::CHARACTERS,
+        (INSTRUMENTS, 0) => &KINDS,
+        _ => &[],
+    }
+}
+
+/// One menu: its values with how many rows have each, given the search,
+/// the star and every other menu's picks, and whether each is picked.
+struct Facet {
+    name: &'static str,
+    values: Vec<(String, usize, bool)>,
+}
+
+/// The rows to list and the menus over them. Picks in one menu are any-of;
+/// menus narrow each other.
+fn filtered(s: &State) -> (Vec<LiveItem>, Vec<Facet>) {
+    let all = entries(s);
+    let names = facet_names(s.view);
+    let pick = |f: usize| s.picks.get(f).filter(|p| !p.is_empty());
+    let words: Vec<String> = s.search.split_whitespace().map(str::to_lowercase).collect();
+    let base = |e: &Entry| {
+        if s.starred_only && !e.item.starred {
+            return false;
+        }
+        let text = format!(
+            "{} {} {} {}",
+            e.item.name, e.item.r#type, e.item.maker, e.item.format
+        )
+        .to_lowercase();
+        words.iter().all(|w| text.contains(w.as_str()))
+    };
+    let fits = |e: &Entry, skip: Option<usize>| {
+        (0..names.len()).all(|f| {
+            Some(f) == skip || pick(f).is_none_or(|p| e.facets[f].iter().any(|v| p.contains(v)))
+        })
+    };
+    let mut rows: Vec<LiveItem> = all
         .iter()
-        .filter_map(|key| {
-            all.iter()
-                .find(|(k, i)| recent_key(s, *k, *i).as_deref() == Some(key.as_str()))
-                .copied()
+        .filter(|e| base(e) && fits(e, None))
+        .map(|e| e.item.clone())
+        .collect();
+    if s.view == PRESETS {
+        rows.sort_by_cached_key(|r| (r.name.to_lowercase(), r.maker.to_lowercase()));
+    }
+    let facets = names
+        .iter()
+        .enumerate()
+        .map(|(f, &name)| {
+            let mut counts: Vec<(String, usize)> = Vec::new();
+            for e in all.iter().filter(|e| base(e) && fits(e, Some(f))) {
+                let mut seen: Vec<&String> = Vec::new();
+                for v in &e.facets[f] {
+                    if seen.contains(&v) {
+                        continue;
+                    }
+                    seen.push(v);
+                    match counts.iter_mut().find(|(x, _)| x == v) {
+                        Some((_, n)) => *n += 1,
+                        None => counts.push((v.clone(), 1)),
+                    }
+                }
+            }
+            // A pick that matches nothing now stays, to be unpicked.
+            for p in s.picks.get(f).into_iter().flatten() {
+                if !counts.iter().any(|(x, _)| x == p) {
+                    counts.push((p.clone(), 0));
+                }
+            }
+            let order = value_order(s.view, f);
+            counts.sort_by_cached_key(|(v, _)| {
+                (
+                    order.iter().position(|o| o == v).unwrap_or(order.len()),
+                    v.to_lowercase(),
+                )
+            });
+            let picked = |v: &String| s.picks.get(f).is_some_and(|p| p.contains(v));
+            Facet {
+                name,
+                values: counts
+                    .into_iter()
+                    .map(|(v, n)| {
+                        let on = picked(&v);
+                        (v, n, on)
+                    })
+                    .collect(),
+            }
+        })
+        .collect();
+    (rows, facets)
+}
+
+/// How wide the column's chips may run before the next line: the column
+/// less its padding.
+const CHIP_LINE: f32 = 232.0;
+
+/// A chip's width as the column draws it: 11 px text, 8 px each side, 4 px
+/// apart. An estimate, so a line breaks a little early rather than late.
+fn chip_width(text: &str) -> f32 {
+    text.chars().count() as f32 * 6.2 + 16.0 + 4.0
+}
+
+/// Breaks a menu's chips into lines that fit the column.
+fn chip_lines(values: &[(String, usize, bool)]) -> Vec<JamLine> {
+    let mut lines: Vec<Vec<JamChip>> = Vec::new();
+    let mut width = CHIP_LINE;
+    for (name, count, on) in values {
+        let w = chip_width(name);
+        if width + w > CHIP_LINE {
+            lines.push(Vec::new());
+            width = 0.0;
+        }
+        width += w;
+        if let Some(line) = lines.last_mut() {
+            line.push(JamChip {
+                name: name.as_str().into(),
+                count: *count as i32,
+                on: *on,
+            });
+        }
+    }
+    lines
+        .into_iter()
+        .map(|chips| JamLine {
+            chips: ModelRc::new(VecModel::from(chips)),
         })
         .collect()
 }
 
-/// Shows the tree and the list again from the state.
+/// Shows the column and the list again from the state.
 fn refresh(app: &AppWindow) {
     let ui = app.global::<InstrumentsUi>();
     let found = presets::all();
     STATE.with_borrow_mut(|s| {
         s.presets = found;
-        let nodes = nodes(s);
-        // A node gone (a plugin unticked, a maker folded away) selects its parent.
-        if !nodes.iter().any(|(k, _)| *k == s.current) {
-            s.current = if s.current.starts_with("plugin") || s.current.starts_with("maker") {
-                "plugins".to_string()
-            } else {
-                "all".to_string()
-            };
-        }
-        let current = nodes.iter().position(|(k, _)| *k == s.current).unwrap_or(0);
-        let rows = rows(s);
+        star_liked(s);
+        s.picks.resize(facet_names(s.view).len(), HashSet::new());
+        let (rows, facets) = filtered(s);
+        let picked = s.picks.iter().any(|p| !p.is_empty());
         let (empty, page, tab) = if !rows.is_empty() {
             ("", -1, 0)
-        } else if s.chips.iter().any(|on| *on) {
-            (
-                "No presets have all the tags picked. Tag a preset with SAVE › Tags on its deck.",
-                -1,
-                0,
-            )
+        } else if picked {
+            ("Nothing has every pick. Clear some filters.", -1, 0)
         } else if !s.search.is_empty() {
             ("Nothing matches the search.", -1, 0)
-        } else if s.current.starts_with("plugin") || s.current.starts_with("maker") {
-            ("Tick the instruments you play in Settings › Plugins…", 7, 1)
+        } else if s.starred_only {
+            ("Nothing starred yet. Click ☆ on a row.", -1, 0)
+        } else if s.view == PRESETS {
+            (
+                "No presets yet. Save one from an instrument deck, or tick instruments in Settings › Plugins…",
+                7,
+                1,
+            )
         } else {
             ("", -1, 0)
         };
-        s.keys = nodes.iter().map(|(k, _)| k.clone()).collect();
-        let nodes: Vec<InstrumentNode> = nodes.into_iter().map(|(_, n)| n).collect();
-        ui.set_nodes(ModelRc::new(VecModel::from(nodes)));
-        ui.set_current_node(current as i32);
+        let count = rows.len();
+        let facets: Vec<JamFacet> = facets
+            .into_iter()
+            .enumerate()
+            .map(|(f, facet)| JamFacet {
+                name: facet.name.into(),
+                shown: !facet.values.is_empty(),
+                open: s.open_facet == Some(f),
+                picked: facet.values.iter().filter(|(_, _, on)| *on).count() as i32,
+                picks: ModelRc::new(VecModel::from(
+                    facet
+                        .values
+                        .iter()
+                        .filter(|(_, _, on)| *on)
+                        .map(|(name, count, on)| JamChip {
+                            name: name.as_str().into(),
+                            count: *count as i32,
+                            on: *on,
+                        })
+                        .collect::<Vec<_>>(),
+                )),
+                lines: ModelRc::new(VecModel::from(chip_lines(&facet.values))),
+            })
+            .collect();
         ui.set_rows(ModelRc::new(VecModel::from(rows)));
+        ui.set_facets(ModelRc::new(VecModel::from(facets)));
+        ui.set_view(s.view);
+        ui.set_starred_only(s.starred_only);
+        ui.set_count_text(
+            match (s.view, count) {
+                (PRESETS, 1) => "1 preset".to_string(),
+                (PRESETS, n) => format!("{n} presets"),
+                (_, 1) => "1 instrument".to_string(),
+                (_, n) => format!("{n} instruments"),
+            }
+            .into(),
+        );
+        ui.set_filtered(picked);
         ui.set_empty_text(empty.into());
         ui.set_empty_page(page);
         ui.set_empty_tab(tab);
-        let mut chips = s.chips.clone();
-        chips.resize(presets::tags().count(), false);
-        ui.set_chips(ModelRc::new(VecModel::from(chips)));
-        ui.set_sort_column(s.sort.map_or(-1, |(c, _)| c));
-        ui.set_sort_descending(s.sort.is_some_and(|(_, down)| down));
     });
 }
 
@@ -937,6 +1024,7 @@ fn route(status: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use slint::Model;
 
     #[test]
     fn bend_and_mod_wheel_are_midi() {
@@ -962,24 +1050,35 @@ mod tests {
         assert_eq!(parse(&payload(2, 0)), Some(2000));
         assert_eq!(parse(&payload(MIXER, 0)), Some(7000));
         assert_eq!(parse(&payload(REMIX, 0)), Some(8000));
+        assert_eq!(parse(&payload(HARDWARE, 1)), Some(9001));
         assert_eq!(parse("opendj-row:3"), None);
-        assert_eq!(parse("opendj-live:9:0"), None);
+        assert_eq!(parse("opendj-live:10:0"), None);
         assert_eq!(parse("opendj-live:1:x"), None);
     }
 
-    fn state(current: &str) -> State {
-        let plugin = |name: &str, maker: &str| Plugin {
+    fn state(view: i32) -> State {
+        let plugin = |name: &str, maker: &str, kind: &'static str| Plugin {
             key: format!("clap:{name}"),
             name: name.into(),
             maker: maker.into(),
             format: "CLAP",
-            kind: "Synth",
+            kind,
+        };
+        let preset = |name: &str, instrument: &str, instrument_name: &str, tags: &[&str]| Preset {
+            name: name.into(),
+            instrument: instrument.into(),
+            instrument_name: instrument_name.into(),
+            path: format!("/p/{name}.json").into(),
+            tags: tags.iter().map(|t| t.to_string()).collect(),
+            from_plugin: false,
+            ..Preset::default()
         };
         State {
             plugins: vec![
-                plugin("Acid V", "Arturia"),
-                plugin("Vital", "Vital Audio"),
-                plugin("Jun-6 V", "arturia"),
+                plugin("Acid V", "Arturia", "Synth"),
+                plugin("Vital", "Vital Audio", "Synth"),
+                plugin("Jun-6 V", "arturia", "Synth"),
+                plugin("Drumlab", "", "Drums"),
             ],
             routes: vec![
                 "".into(),
@@ -988,53 +1087,198 @@ mod tests {
                 "M4 · In 4".into(),
                 "".into(),
             ],
-            open: HashSet::from(["plugins".to_string(), "maker:Arturia".to_string()]),
-            current: current.into(),
+            presets: vec![
+                preset("Four Floor", GROOVE, "Groove Box", &["Drums"]),
+                preset(
+                    "Ambient Ebow",
+                    "clap:Jun-6 V",
+                    "Jun-6 V",
+                    &["Pad", "Evolving"],
+                ),
+                preset("Warm Glass", "clap:Vital", "Vital", &["Pad", "Warm"]),
+                Preset {
+                    from_plugin: true,
+                    ..preset("Factory Brass", "clap:Jun-6 V", "Jun-6 V", &["Brass"])
+                },
+            ],
+            view,
             ..State::default()
         }
     }
 
+    fn names(s: &State) -> Vec<String> {
+        filtered(s).0.iter().map(|r| r.name.to_string()).collect()
+    }
+
+    fn facet<'a>(facets: &'a [Facet], name: &str) -> &'a Facet {
+        facets.iter().find(|f| f.name == name).unwrap()
+    }
+
+    fn pick(s: &mut State, facet: &str, value: &str) {
+        let f = facet_names(s.view)
+            .iter()
+            .position(|n| *n == facet)
+            .unwrap();
+        s.picks.resize(facet_names(s.view).len(), HashSet::new());
+        s.picks[f].insert(value.into());
+    }
+
     #[test]
-    fn plugins_group_by_maker_and_inputs_list_when_set_up() {
-        let keys: Vec<String> = nodes(&state("all")).into_iter().map(|(k, _)| k).collect();
+    fn instruments_list_built_in_plugins_and_inputs() {
+        let mut s = state(INSTRUMENTS);
         assert_eq!(
-            keys,
+            names(&s),
             [
-                "recent",
-                "all",
-                "presets",
-                "groove",
-                "looper",
-                "remix",
-                "plugins",
-                "maker:Arturia",
-                "plugin:0",
-                "plugin:2",
-                "maker:Vital Audio",
-                "inputs"
+                "Groove Box",
+                "Looper",
+                "Remix",
+                "Acid V",
+                "Vital",
+                "Jun-6 V",
+                "Drumlab",
+                "Microphone",
+                "Mixer"
             ]
         );
-        let names = |s: &State| {
-            rows(s)
-                .iter()
-                .map(|r| r.name.to_string())
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(names(&state("maker:Arturia")), ["Acid V", "Jun-6 V"]);
-        // The mic and the Mixer, which holds the aux inputs.
-        assert_eq!(names(&state("inputs")), ["Microphone", "Mixer"]);
-        assert_eq!(rows(&state("inputs"))[0].problem, "No input picked");
-        assert_eq!(rows(&state("inputs"))[1].problem, "No inputs picked");
-        let mut s = state("all");
+        let rows = filtered(&s).0;
+        assert_eq!(rows[7].problem, "No input picked");
+        assert_eq!(rows[8].problem, "No inputs picked");
+        assert_eq!(rows[6].tint, TINT_DRUMS);
+        // Makers match whatever their case; "Other" for none.
+        let (_, facets) = filtered(&s);
+        let makers: Vec<&str> = facet(&facets, "Maker")
+            .values
+            .iter()
+            .map(|(v, _, _)| v.as_str())
+            .collect();
+        assert_eq!(
+            makers,
+            ["Arturia", "arturia", "openDJ", "Other", "Vital Audio"]
+        );
+        pick(&mut s, "Kind", "Drums");
+        assert_eq!(names(&s), ["Groove Box", "Drumlab"]);
+        s.picks.clear();
         s.search = "vital".into();
         assert_eq!(names(&s), ["Vital"]);
-        // Sorted by maker, then the other way.
-        s.search.clear();
-        s.current = "plugins".into();
-        s.sort = Some((2, false));
-        assert_eq!(names(&s), ["Acid V", "Jun-6 V", "Vital"]);
-        s.sort = Some((0, true));
-        assert_eq!(names(&s), ["Vital", "Jun-6 V", "Acid V"]);
+    }
+
+    #[test]
+    fn hardware_synths_list_with_the_instruments_under_their_own_kind() {
+        let mut s = state(INSTRUMENTS);
+        s.synths = vec![
+            Synth {
+                id: "arturia-microfreak".into(),
+                name: "MicroFreak".into(),
+                maker: "Arturia".into(),
+                plugged_in: true,
+            },
+            Synth {
+                id: "moog-messenger".into(),
+                name: "Messenger".into(),
+                maker: "Moog".into(),
+                plugged_in: false,
+            },
+        ];
+        pick(&mut s, "Kind", "Hardware synths");
+        assert_eq!(names(&s), ["MicroFreak", "Messenger"]);
+        let rows = filtered(&s).0;
+        assert_eq!(rows[0].problem, "");
+        assert_eq!(rows[1].problem, "Not plugged in");
+        assert_eq!(rows[0].kind * 1000 + rows[0].index, 9000);
+        assert_eq!(
+            recent_key(&s, HARDWARE, 1).unwrap(),
+            "hardware:moog-messenger"
+        );
+        assert_eq!(parse(&payload(HARDWARE, 1)), Some(9001));
+    }
+
+    #[test]
+    fn presets_list_every_instruments_presets_by_name() {
+        let s = state(PRESETS);
+        assert_eq!(
+            names(&s),
+            ["Ambient Ebow", "Factory Brass", "Four Floor", "Warm Glass"]
+        );
+        let rows = filtered(&s).0;
+        assert_eq!(rows[0].maker, "Jun-6 V");
+        assert_eq!(rows[2].tint, TINT_DRUMS);
+        assert_eq!(parse(&payload(PRESET, 1)), Some(5001));
+    }
+
+    #[test]
+    fn filter_menus_narrow_each_other_and_keep_their_tag_order() {
+        let mut s = state(PRESETS);
+        let (_, facets) = filtered(&s);
+        let types: Vec<(&str, usize)> = facet(&facets, "Sound type")
+            .values
+            .iter()
+            .map(|(v, n, _)| (v.as_str(), *n))
+            .collect();
+        // TYPES' order, not name order.
+        assert_eq!(types, [("Pad", 2), ("Brass", 1), ("Drums", 1)]);
+        pick(&mut s, "Sound type", "Pad");
+        assert_eq!(names(&s), ["Ambient Ebow", "Warm Glass"]);
+        // Two picks in one menu: either.
+        pick(&mut s, "Sound type", "Drums");
+        assert_eq!(names(&s), ["Ambient Ebow", "Four Floor", "Warm Glass"]);
+        // Another menu narrows, and its own counts follow the first menu.
+        pick(&mut s, "Character", "Warm");
+        assert_eq!(names(&s), ["Warm Glass"]);
+        let (_, facets) = filtered(&s);
+        let instruments: Vec<(&str, usize)> = facet(&facets, "Instrument")
+            .values
+            .iter()
+            .map(|(v, n, _)| (v.as_str(), *n))
+            .collect();
+        assert_eq!(instruments, [("Vital", 1)]);
+        // The Sound type menu counts as if nothing were picked in it.
+        let pad = facet(&facets, "Sound type")
+            .values
+            .iter()
+            .find(|(v, _, _)| v == "Pad")
+            .unwrap();
+        assert_eq!((pad.1, pad.2), (1, true));
+        // A pick that matches nothing stays, to be taken off.
+        let drums = facet(&facets, "Sound type")
+            .values
+            .iter()
+            .find(|(v, _, _)| v == "Drums")
+            .unwrap();
+        assert_eq!((drums.1, drums.2), (0, true));
+    }
+
+    #[test]
+    fn stars_narrow_the_list() {
+        let mut s = state(PRESETS);
+        s.starred.insert(recent_key(&s, PRESET, 2).unwrap());
+        let rows = filtered(&s).0;
+        assert!(
+            rows.iter()
+                .find(|r| r.name == "Warm Glass")
+                .unwrap()
+                .starred
+        );
+        s.starred_only = true;
+        assert_eq!(names(&s), ["Warm Glass"]);
+    }
+
+    #[test]
+    fn chips_break_into_lines_that_fit() {
+        let values: Vec<(String, usize, bool)> = presets::TYPES
+            .iter()
+            .chain(presets::CHARACTERS.iter())
+            .map(|v| (v.to_string(), 1, false))
+            .collect();
+        let lines = chip_lines(&values);
+        assert!(lines.len() > 1);
+        for line in &lines {
+            let width: f32 = line.chips.iter().map(|c| chip_width(&c.name)).sum();
+            assert!(width <= CHIP_LINE);
+        }
+        assert_eq!(
+            lines.iter().map(|l| l.chips.row_count()).sum::<usize>(),
+            values.len()
+        );
     }
 
     #[test]
@@ -1050,13 +1294,14 @@ mod tests {
         routes[inputs::AUXILIARIES[7]] = "iPhone · In 1".into();
         assert_eq!(mixer_route(&routes), "M4, iPhone · 3 inputs");
         // Its line sits where a deck's `live_input` less one finds it.
-        let mut s = state("inputs");
+        let mut s = state(INSTRUMENTS);
         s.routes = routes;
         let mixer = mixer_route(&s.routes);
         s.routes.resize(MIXER_ROUTE, String::new());
         s.routes.push(mixer);
         assert_eq!(s.routes.len(), inputs::MIXER);
-        let row = &rows(&s)[1];
+        let rows = filtered(&s).0;
+        let row = rows.iter().find(|r| r.name == "Mixer").unwrap();
         assert_eq!(
             (row.maker.as_str(), row.problem.as_str()),
             ("M4, iPhone · 3 inputs", "")
@@ -1109,82 +1354,13 @@ mod tests {
     }
 
     #[test]
-    fn recently_played_lists_what_went_on_a_deck_newest_first() {
-        let mut s = state("recent");
+    fn recently_played_keeps_what_went_on_a_deck_newest_first() {
+        let mut s = state(INSTRUMENTS);
         for (kind, index) in [(PLUGIN, 1), (KIT, 0), (MIC, 0), (PLUGIN, 1)] {
             let key = recent_key(&s, kind, index).unwrap();
             remember(&mut s.recent, key);
         }
         assert_eq!(s.recent, ["plugin:clap:Vital", "input:0", "groove"]);
-        let names: Vec<String> = rows(&s).iter().map(|r| r.name.to_string()).collect();
-        assert_eq!(names, ["Vital", "Microphone", "Groove Box"]);
-        // A plugin unticked drops out of the list, not out of the memory.
-        s.plugins.remove(1);
-        assert_eq!(rows(&s).len(), 2);
-        assert_eq!(s.recent.len(), 3);
-    }
-
-    #[test]
-    fn presets_list_under_their_instrument_and_in_my_presets() {
-        let preset = |name: &str, instrument: &str, instrument_name: &str| Preset {
-            name: name.into(),
-            instrument: instrument.into(),
-            instrument_name: instrument_name.into(),
-            path: format!("/p/{name}.json").into(),
-            tags: if name == "Ambient Ebow" {
-                vec!["Pad".into(), "Evolving".into()]
-            } else {
-                vec!["Drums".into()]
-            },
-            from_plugin: false,
-            reference: String::new(),
-        };
-        let mut s = state("groove");
-        s.presets = vec![
-            preset("Four Floor", GROOVE, "Groove Box"),
-            preset("Ambient Ebow", "clap:Jun-6 V", "Jun-6 V"),
-            Preset {
-                tags: Vec::new(),
-                from_plugin: true,
-                ..preset("Factory Brass", "clap:Jun-6 V", "Jun-6 V")
-            },
-        ];
-        let names = |s: &State| {
-            rows(s)
-                .iter()
-                .map(|r| (r.kind, r.index, r.name.to_string()))
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(
-            names(&s),
-            [
-                (KIT, 0, "Groove Box".into()),
-                (PRESET, 0, "Four Floor".into())
-            ]
-        );
-        s.current = "plugin:2".into();
-        assert_eq!(
-            names(&s),
-            [
-                (PLUGIN, 2, "Jun-6 V".into()),
-                (PRESET, 1, "Ambient Ebow".into()),
-                (PRESET, 2, "Factory Brass".into())
-            ]
-        );
-        // My presets are the user's: the plugin's own list under it only.
-        s.current = "presets".into();
-        assert_eq!(names(&s).len(), 2);
-        let mine = nodes(&s).into_iter().find(|(k, _)| k == "presets").unwrap();
-        assert_eq!(mine.1.count, 2);
-        assert_eq!(parse(&payload(PRESET, 1)), Some(5001));
-        // The Pad chip leaves the presets tagged Pad; Pad and Drums, none.
-        let chip = |t: &str| presets::tags().position(|x| x == t).unwrap();
-        s.chips = vec![false; presets::tags().count()];
-        s.chips[chip("Pad")] = true;
-        s.current = "all".into();
-        assert_eq!(names(&s), [(PRESET, 1, "Ambient Ebow".into())]);
-        s.chips[chip("Drums")] = true;
-        assert!(names(&s).is_empty());
     }
 
     #[test]

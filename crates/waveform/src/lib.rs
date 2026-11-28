@@ -39,14 +39,86 @@ pub enum Style {
     /// One shape in blue, lighter where the highs are loud (rekordbox's
     /// Blue).
     Blue,
-    /// Each stem in its own colour, the loudest at the back, from the
-    /// stem levels a [`GpuTrack`] has (see [`Extras`]); [`Style::Rgb`] for a
-    /// track without them.
+    /// Each stem in its own colour, laid out as [`StemLayout`] says, from
+    /// the stem levels a [`GpuTrack`] has (see [`Extras`]); [`Style::Rgb`]
+    /// for a track without them.
     Stems,
 }
 
 /// Stems a waveform draws at most, as the engine plays them.
 pub const MAX_STEMS: usize = 5;
+
+/// How [`Style::Stems`] lays the stems out.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum StemLayout {
+    /// One waveform, the track's own shape, cut into a layer per stem that
+    /// sit one on the other from the line out (see [`StemRole`]), so no
+    /// stem hides another.
+    #[default]
+    Stacked,
+    /// A scrolling view split into three thin waveforms, from the top:
+    /// drums, music (bass and the rest) and vocals, each stacked as above.
+    /// Overviews stay [`StemLayout::Stacked`].
+    Lanes,
+}
+
+/// What a stem is, which places it: its lane in [`StemLayout::Lanes`] and
+/// its layer in [`StemLayout::Stacked`], in this order from the line out
+/// (kick and bass at the core, hats on the outside, as the highs are in the
+/// 3-Band look).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum StemRole {
+    /// The kick, or all the drums in one stem.
+    Kick,
+    Bass,
+    /// Anything else: chords, synths, guitars ("other", "instrumental").
+    Music,
+    Vocal,
+    /// Hi-hats, cymbals and the rest of the drums above the kick.
+    Hats,
+}
+
+impl StemRole {
+    /// The role a stem's name suggests (as NI STEM files, Demucs and the
+    /// engine name them); [`StemRole::Music`] for any other name.
+    pub fn from_name(name: &str) -> Self {
+        let n = name.to_ascii_lowercase();
+        let has = |words: &[&str]| words.iter().any(|w| n.contains(w));
+        if has(&["vocal", "voice", "vox", "acapella"]) {
+            Self::Vocal
+        } else if has(&["hat", "cymbal", "perc", "snare"]) {
+            Self::Hats
+        } else if has(&["kick", "drum", "beat"]) {
+            Self::Kick
+        } else if has(&["bass", "sub"]) {
+            Self::Bass
+        } else {
+            Self::Music
+        }
+    }
+
+    /// The lane it takes in [`StemLayout::Lanes`]: 0 drums, 1 music, 2 vocals.
+    pub fn lane(self) -> u32 {
+        match self {
+            Self::Kick | Self::Hats => 0,
+            Self::Bass | Self::Music => 1,
+            Self::Vocal => 2,
+        }
+    }
+}
+
+/// Each stem's lane and layer (from the line out) for the shader, from
+/// their roles: stems with the same role keep their order.
+fn stem_places(roles: &[StemRole]) -> [[f32; 4]; MAX_STEMS] {
+    let n = roles.len().min(MAX_STEMS);
+    let mut order: Vec<usize> = (0..n).collect();
+    order.sort_by_key(|&k| (roles[k], k));
+    let mut places = [[0.0; 4]; MAX_STEMS];
+    for (layer, &k) in order.iter().enumerate() {
+        places[k] = [roles[k].lane() as f32, layer as f32, 0.0, 0.0];
+    }
+    places
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -304,6 +376,22 @@ struct Params {
     tempo_at: [[f32; 4]; MAX_TEMPOS / 4],
     tempo_value: [[u32; 4]; MAX_TEMPOS / 4],
     tempo_count: [u32; 4],
+    /// Each stem's lane (0 drums, 1 music, 2 vocals) and its layer from
+    /// the line out (see [`StemRole`]).
+    stem_place: [[f32; 4]; MAX_STEMS],
+    /// How the stems are laid out: 0 stacked, 1 in lanes.
+    stem_layout: [f32; 4],
+    /// A live instrument deck's look: x the [`LiveLook`] (0 a track's
+    /// colours, 1 lilac, 2 layers in `look_color`), y the scope's
+    /// points (0 for none), z 1 for the Notes view, w the Notes view's
+    /// bottom note (fractional while the window slides).
+    look: [f32; 4],
+    look_color: [f32; 4],
+    /// The scope right of the play line: [`SCOPE_POINTS`] samples, oldest
+    /// first, from -1 to 1.
+    scope: [[f32; 4]; SCOPE_POINTS / 4],
+    /// x: the scope's backdrop (see [`ScopeBackdrop`]).
+    look_extra: [f32; 4],
 }
 
 /// The colours [`MarkKind::Level`]'s `color` 1 to 8 picks, as sRGB hex.
@@ -314,6 +402,34 @@ pub const LEVEL_COLORS: [u32; 8] = [
 
 /// Marks the shader draws at once (see [`Lanes`]).
 pub const MAX_MARKS: usize = 256;
+
+/// Points the scope right of a live instrument deck's play line is drawn
+/// through (see [`WaveformView::set_scope`]).
+pub const SCOPE_POINTS: usize = 256;
+
+/// How a live instrument deck's waveform is drawn.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum LiveLook {
+    /// In the deck's waveform style, as a track is.
+    #[default]
+    Track,
+    /// Lilac: a violet body, lilac mids and a near-white core.
+    Lilac,
+    /// The same three layers in this colour (RGBA): the body darker, the
+    /// mids in it, the core a pale tint of it.
+    Colored([f32; 4]),
+}
+
+/// What lies behind the scope right of a live instrument deck's play line,
+/// in the look's colour.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ScopeBackdrop {
+    /// Nothing: the scope is an open line.
+    #[default]
+    None,
+    /// Brighter at the top, fading down.
+    Fade,
+}
 
 /// What a mark on a live deck's lanes is, which sets how it is drawn.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -329,8 +445,7 @@ pub enum MarkKind {
     /// Part of a fill still to come: outlined in the lit colour.
     FillComing,
     /// A knob's value over the mark's span, from 0 at the row's foot to 1
-    /// at its top, going from `from` to `to`: a line with a faint fill
-    /// under it. `color` 0 draws it in the marks' colour; 1 to 8 in one of
+    /// at its top, going from `from` to `to`: a line. `color` 0 draws it in the marks' colour; 1 to 8 in one of
     /// eight colours each (see [`LEVEL_COLORS`]), for several knobs on one
     /// lane.
     Level { from: f32, to: f32, color: u8 },
@@ -379,6 +494,11 @@ pub struct Lanes {
     /// The marks' colour, and the colour of held notes and fills, as RGBA.
     pub color: [f32; 4],
     pub lit: [f32; 4],
+    /// The Notes view: each mark's `lane` is its MIDI note, drawn as a
+    /// capsule tinted by its octave over a band per octave, on
+    /// `count` rows from this note up (fractional while the window slides
+    /// an octave). Notes outside the rows sit faded on the row nearer them.
+    pub notes: Option<f32>,
 }
 
 /// Levels the shader can address; the coarsest is 2^15 slices per texel pair,
@@ -398,10 +518,10 @@ pub struct Palette {
 impl Default for Palette {
     fn default() -> Self {
         Self {
-            // Dark to light: deep red #C8372D, amber #F0A830, ice blue #B4E4FF.
-            low: [0.784, 0.216, 0.176, 1.0],
-            mid: [0.941, 0.659, 0.188, 1.0],
-            high: [0.706, 0.894, 1.0, 1.0],
+            // Dark to light: deep red, amber, ice blue (RGB's first palette).
+            low: RGB_PALETTES[0][0],
+            mid: RGB_PALETTES[0][1],
+            high: RGB_PALETTES[0][2],
             background: [0.05, 0.05, 0.055, 1.0],
         }
     }
@@ -425,7 +545,27 @@ pub const BAND_PALETTES: [[[f32; 4]; 3]; 2] = [
     [rgb(0xB69CFF), rgb(0x22C7E0), rgb(0xF4FBFF)],
 ];
 
+/// The palettes RGB ([`Style::Rgb`]) comes in, as low, mid and high: deep
+/// red, amber and ice blue (the default, dark to light); and red, green and
+/// blue, the classic additive look.
+pub const RGB_PALETTES: [[[f32; 4]; 3]; 2] = [
+    [rgb(0xC8372D), rgb(0xF0A830), rgb(0xB4E4FF)],
+    [rgb(0xE8322A), rgb(0x3CD25A), rgb(0x3C82FF)],
+];
+
 impl Palette {
+    /// The default background with one of [`RGB_PALETTES`] (the first if
+    /// out of range).
+    pub fn rgb(index: usize) -> Self {
+        let [low, mid, high] = RGB_PALETTES[if index < RGB_PALETTES.len() { index } else { 0 }];
+        Self {
+            low,
+            mid,
+            high,
+            ..Self::default()
+        }
+    }
+
     /// The default background with one of [`BAND_PALETTES`] (the first if
     /// out of range).
     pub fn bands(index: usize) -> Self {
@@ -563,6 +703,7 @@ pub struct GpuTrack {
     /// there are, finest-level slices per level, and how many stems.
     stems: [f32; 4],
     stem_colors: [[f32; 4]; MAX_STEMS],
+    stem_place: [[f32; 4]; MAX_STEMS],
 }
 
 /// What a [`GpuTrack`] can carry beside its waveform.
@@ -579,6 +720,9 @@ pub struct Extras<'a> {
     pub stem_rate: f64,
     /// Each stem's colour as `0xRRGGBB`; as many as there are stems.
     pub stem_colors: &'a [u32],
+    /// What each stem is, which places it (see [`StemRole`]); a stem
+    /// without one is [`StemRole::Music`].
+    pub stem_roles: &'a [StemRole],
 }
 
 impl GpuTrack {
@@ -675,6 +819,11 @@ impl GpuTrack {
             stem_colors: std::array::from_fn(|k| {
                 extras.stem_colors.get(k).map_or([0.0; 4], |&c| rgb(c))
             }),
+            stem_place: stem_places(
+                &(0..stem_count)
+                    .map(|k| extras.stem_roles.get(k).copied().unwrap_or(StemRole::Music))
+                    .collect::<Vec<_>>(),
+            ),
         }
     }
 
@@ -775,6 +924,8 @@ fn write_bins(queue: &wgpu::Queue, texture: &wgpu::Texture, data: &[[u8; 4]]) {
 pub struct WaveformView {
     mode: Mode,
     style: Style,
+    /// How [`Style::Stems`] lays the stems out.
+    stem_layout: StemLayout,
     palette: Palette,
     /// Drawn from the bottom up (see [`WaveformView::set_half`]).
     half: bool,
@@ -795,6 +946,11 @@ pub struct WaveformView {
     grid_edit: bool,
     /// Lanes of marks over the waveform (see [`WaveformView::set_lanes`]).
     lanes: Option<Lanes>,
+    /// A live instrument deck's look and scope (see
+    /// [`WaveformView::set_live_look`] and [`WaveformView::set_scope`]).
+    live_look: LiveLook,
+    scope: Option<[f32; SCOPE_POINTS]>,
+    backdrop: ScopeBackdrop,
     /// The real wave's columns (scrolling views), and the texture they go
     /// to: [`DETAIL_ROW`] columns a row, a row for 1×1 on overviews.
     detail: detail::Columns,
@@ -818,6 +974,7 @@ impl WaveformView {
         Self {
             mode,
             style: Style::default(),
+            stem_layout: StemLayout::default(),
             palette: Palette::default(),
             half: false,
             needle: 0.5,
@@ -831,6 +988,9 @@ impl WaveformView {
             live: false,
             grid_edit: false,
             lanes: None,
+            live_look: LiveLook::Track,
+            scope: None,
+            backdrop: ScopeBackdrop::None,
             detail: detail::Columns::default(),
             detail_texture,
             detail_upload: Vec::new(),
@@ -847,6 +1007,11 @@ impl WaveformView {
 
     pub fn set_style(&mut self, style: Style) {
         self.style = style;
+    }
+
+    /// How [`Style::Stems`] lays the stems out; overviews always stack them.
+    pub fn set_stem_layout(&mut self, layout: StemLayout) {
+        self.stem_layout = layout;
     }
 
     /// The band colours, keeping the background.
@@ -899,6 +1064,24 @@ impl WaveformView {
     /// hits), or none.
     pub fn set_lanes(&mut self, lanes: Option<Lanes>) {
         self.lanes = lanes;
+    }
+
+    /// How a live instrument deck's waveform is drawn (scrolling only).
+    pub fn set_live_look(&mut self, look: LiveLook) {
+        self.live_look = look;
+    }
+
+    /// The scope drawn right of a live deck's play line, where nothing has
+    /// played yet: [`SCOPE_POINTS`] samples from -1 to 1, oldest first,
+    /// tapering to the centre line at both ends, on the same loudness
+    /// curve as the waveform. None for none. Scrolling only.
+    pub fn set_scope(&mut self, scope: Option<[f32; SCOPE_POINTS]>) {
+        self.scope = scope;
+    }
+
+    /// What lies behind the scope (see [`WaveformView::set_scope`]).
+    pub fn set_scope_backdrop(&mut self, backdrop: ScopeBackdrop) {
+        self.backdrop = backdrop;
     }
 
     /// The colour behind the waveform, as RGBA from 0 to 1.
@@ -1034,10 +1217,39 @@ impl WaveformView {
             tempo_at: [[0.0; 4]; MAX_TEMPOS / 4],
             tempo_value: [[0; 4]; MAX_TEMPOS / 4],
             tempo_count: [0; 4],
+            stem_place: [[0.0; 4]; MAX_STEMS],
+            stem_layout: [0.0; 4],
+            look: [0.0; 4],
+            look_color: [0.0; 4],
+            scope: [[0.0; 4]; SCOPE_POINTS / 4],
+            look_extra: [0.0; 4],
         };
+        if self.mode == Mode::Scrolling && self.live {
+            match self.live_look {
+                LiveLook::Track => {}
+                LiveLook::Lilac => params.look[0] = 1.0,
+                LiveLook::Colored(c) => {
+                    params.look[0] = 2.0;
+                    params.look_color = c;
+                }
+            }
+            params.look_extra[0] = match self.backdrop {
+                ScopeBackdrop::None => 0.0,
+                ScopeBackdrop::Fade => 1.0,
+            };
+            if let Some(scope) = &self.scope {
+                params.look[1] = SCOPE_POINTS as f32;
+                for (i, v) in scope.iter().enumerate() {
+                    params.scope[i / 4][i % 4] = v.clamp(-1.0, 1.0);
+                }
+            }
+        }
         if let (Some(t), Style::Stems) = (track, self.style) {
             params.stems = t.stems;
             params.stem_colors = t.stem_colors;
+            params.stem_place = t.stem_place;
+            let lanes = self.stem_layout == StemLayout::Lanes && self.mode == Mode::Scrolling;
+            params.stem_layout[0] = lanes as u32 as f32;
         }
         if let (Some(t), true) = (track, self.show_vocals) {
             if t.vocal[1] > 0.0 && t.vocal[2] > 0.0 {
@@ -1050,6 +1262,10 @@ impl WaveformView {
             params.lane_tint = std::array::from_fn(|i| (l.tinted >> (32 * i)) as u32);
             params.mark_color = l.color;
             params.lit_color = l.lit;
+            if let Some(bottom) = l.notes {
+                params.look[2] = 1.0;
+                params.look[3] = bottom;
+            }
         }
         if let Some((a, b)) = self.mix.filter(|_| self.style == Style::Mono) {
             params.mix_start_bin = a * num_bins as f32;
@@ -1554,6 +1770,34 @@ fn text_field() -> TextField {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn stem_roles_from_names() {
+        let roles: Vec<_> = [
+            "Kick", "HiHat", "Bass", "Instru", "Vocal", "Drums", "other", "Vocals",
+        ]
+        .iter()
+        .map(|n| StemRole::from_name(n))
+        .collect();
+        use StemRole::*;
+        assert_eq!(roles, [Kick, Hats, Bass, Music, Vocal, Kick, Music, Vocal]);
+    }
+
+    #[test]
+    fn stems_stack_kick_first_hats_last_and_share_lanes() {
+        // The engine's order: kick, bass, other, vocals, then hats split
+        // from the drums.
+        use StemRole::*;
+        let p = stem_places(&[Kick, Bass, Music, Vocal, Hats]);
+        let layer: Vec<f32> = p.iter().map(|x| x[1]).collect();
+        let lane: Vec<f32> = p.iter().map(|x| x[0]).collect();
+        assert_eq!(layer, [0.0, 1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(lane, [0.0, 1.0, 1.0, 2.0, 0.0]);
+        // NI's order (drums, bass, other, vocals) and two of a role.
+        let p = stem_places(&[Vocal, Music, Kick, Music]);
+        let layer: Vec<f32> = p.iter().take(4).map(|x| x[1]).collect();
+        assert_eq!(layer, [3.0, 1.0, 0.0, 2.0]);
+    }
     use super::*;
 
     #[test]

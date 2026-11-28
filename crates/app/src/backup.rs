@@ -470,6 +470,7 @@ pub fn apply_pending(config: &Path, backups: Option<&Path>) -> Option<String> {
             let mut v = settings::load_from(&restored);
             keep_secrets(&mut v, &settings::load_from(&config.join(SETTINGS)));
             std::fs::write(config.join(SETTINGS), v.to_string())?;
+            settings::forget();
         }
         let library = pending.join(LIBRARY);
         if library.is_file() {

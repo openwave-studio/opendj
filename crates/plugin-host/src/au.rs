@@ -126,6 +126,15 @@ struct AudioUnitParameterInfo {
     flags: u32,
 }
 
+/// One parameter of a unit, as the parameter listener calls take it.
+#[repr(C)]
+struct AudioUnitParameter {
+    mAudioUnit: AudioUnit,
+    mParameterID: u32,
+    mScope: u32,
+    mElement: u32,
+}
+
 #[link(name = "AudioToolbox", kind = "framework")]
 extern "C" {
     fn AudioComponentFindNext(
@@ -189,6 +198,13 @@ extern "C" {
         inOutputBusNumber: u32,
         inNumberFrames: u32,
         ioData: *mut AudioBufferList2,
+    ) -> OSStatus;
+    fn AUParameterSet(
+        inSendingListener: *mut c_void,
+        inSendingObject: *mut c_void,
+        inParameter: *const AudioUnitParameter,
+        inValue: f32,
+        inBufferOffsetInFrames: u32,
     ) -> OSStatus;
     fn MusicDeviceMIDIEvent(
         inUnit: AudioUnit,
@@ -408,6 +424,32 @@ impl MainThread for AuMain {
             });
         }
         result
+    }
+
+    /// The audio thread already set the value; setting it again through
+    /// the parameter listener tells the unit's own window, which otherwise
+    /// keeps drawing the old value while the sound changes.
+    fn param_set(&mut self, index: usize, value: f64) {
+        let Some(id) = self.param_ids.get(index) else {
+            return;
+        };
+        let param = AudioUnitParameter {
+            mAudioUnit: self.unit,
+            mParameterID: *id,
+            mScope: kAudioUnitScope_Global,
+            mElement: 0,
+        };
+        // SAFETY: the unit lives as long as the helper, `param` names one of
+        // its own parameters, and this runs on the helper's main thread.
+        unsafe {
+            AUParameterSet(
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                &param,
+                value as f32,
+                0,
+            );
+        }
     }
 
     fn param_values(&mut self, out: &mut [f64]) -> bool {

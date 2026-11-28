@@ -44,7 +44,7 @@ Every deck playing an instrument or input SHALL have TRIM from −12 to +24 dB, 
 - **THEN** deck 3's TRIM rises so its peaks sit near −12 dBFS, and turning TRIM to +24 dB never takes the channel over −1 dBTP
 
 ### Requirement: Scale, chord and arpeggiator
-An instrument deck SHALL have a Scale mode: Off, Auto (the master deck's key) or a picked root and scale from Major, Minor, Major pentatonic and Minor pentatonic. With a scale on, each played note SHALL move to the nearest note of the scale and the keyboard SHALL light playable notes and dim the others. A chord mode SHALL play a chord built on the scale from one key, and an arpeggiator SHALL play held notes in time with the mix's beat.
+An instrument deck SHALL have a Scale mode: Off, Auto (the master deck's key) or a picked root and scale from Major, Minor, Major pentatonic, Minor pentatonic, Dorian, Phrygian, Mixolydian, Harmonic minor and Blues. With a scale on, each played note outside it SHALL move to the nearest note of the scale (Snap) or play nothing (Mute), and the keyboard SHALL light playable notes and dim the others. A chord mode SHALL play a chord built on the scale from one key, optionally strummed (time between notes, crescendo, from the low end, the high end or alternating), and an arpeggiator SHALL play held notes in time with the mix's beat, with optional swing.
 
 #### Scenario: Auto follows the playing track
 - **WHEN** Scale is Auto and the master deck plays a track in A minor, and the user plays G#

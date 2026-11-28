@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use opendj_waveform::{
-    steady_grid, wgpu, Extras, Frame, GpuTrack, Mode, Palette, PhraseKind, Style, TempoLabel,
-    WaveformRenderer, WaveformView,
+    steady_grid, wgpu, Extras, Frame, GpuTrack, Mode, Palette, PhraseKind, StemLayout, StemRole,
+    Style, TempoLabel, WaveformRenderer, WaveformView,
 };
 
 /// Builds the coarser levels the way the analyser does (peaks by maximum;
@@ -533,6 +533,7 @@ fn draws_live_lanes() {
         trace: 0.25,
         color: [1.0, 0.0, 0.0, 1.0],
         lit: [0.0, 0.0, 1.0, 1.0],
+        notes: None,
     }));
     let frame = Frame {
         play_seconds: 8.192,
@@ -617,6 +618,7 @@ fn draws_knob_levels() {
         trace: 0.25,
         color: [1.0, 0.0, 0.0, 1.0],
         lit: [0.0, 0.0, 1.0, 1.0],
+        notes: None,
     }));
     let frame = Frame {
         play_seconds: 8.192,
@@ -640,13 +642,13 @@ fn draws_knob_levels() {
         let i = ((y * w + x) * 4) as usize;
         data[i].saturating_sub(data[i + 1])
     };
-    // 2 s back (clear of the beat lines): the line half way up, a faint
-    // fill under it, nothing over it.
+    // 2 s back (clear of the beat lines): the line half way up, and no
+    // fill under it.
     let line = (0..h).max_by_key(|&y| red(176, y)).unwrap();
     assert!((18..=22).contains(&line), "line at y {line}");
     let (on, under, over) = (red(176, line), red(176, 32), red(176, 14));
     assert!(on > 150, "line: {on}");
-    assert!(under > over + 20 && under < on, "fill {under} over {over}");
+    assert!(under < 10 && over < 10, "under {under} over {over}");
     // Rising after 7.5 s: higher up near the play line, in green.
     let green = |x: u32, y: u32| {
         let i = ((y * w + x) * 4) as usize;
@@ -1039,6 +1041,89 @@ fn draws_each_stem_in_its_color() {
     assert!(px[i..i + 3].iter().any(|&c| c > 60), "drawn without stems");
 }
 
+/// Stems in three lanes: the drums in the top lane, the vocals in the
+/// bottom one, nothing in a lane whose stems are silent; stacked, the
+/// layers sit one on the other from the line out.
+#[test]
+fn lays_stems_out_in_lanes_or_stacked() {
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    let base: Vec<[u8; 8]> = (0..20_000)
+        .map(|_| [200, 120, 60, 220, 160, 100, 50, 180])
+        .collect();
+    // Kick, hats, bass, other, vocals: drums and vocals loud, the music
+    // lane silent.
+    let stems: Vec<[u8; 5]> = (0..200).map(|_| [230, 0, 0, 0, 230]).collect();
+    let colors = [0xD01010, 0x10D0D0, 0x101010, 0x101010, 0x10D010];
+    let roles = [
+        StemRole::Kick,
+        StemRole::Hats,
+        StemRole::Bass,
+        StemRole::Music,
+        StemRole::Vocal,
+    ];
+    let track = Arc::new(GpuTrack::with_extras(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(base),
+        1000.0,
+        Extras {
+            stems: &stems,
+            stem_rate: 10.0,
+            stem_colors: &colors,
+            stem_roles: &roles,
+            ..Extras::default()
+        },
+    ));
+    let (w, h) = (256u32, 90u32);
+    let frame = Frame {
+        play_seconds: 10.0,
+        visible_seconds: 8.0,
+        duration: 20.0,
+        first_bar_beat: 0.0,
+        grid: steady_grid(0.0, 0.0),
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        tempos: Vec::new(),
+        phrases: Vec::new(),
+    };
+    let draw = |layout: StemLayout| {
+        let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+        view.set_style(Style::Stems);
+        view.set_stem_layout(layout);
+        view.set_track(&device, &renderer, Some(&track));
+        view.render(&device, &queue, &renderer, Some(&frame), 1.0);
+        read_back(&device, &queue, &view)
+    };
+    let at = |px: &[u8], y: u32| {
+        let i = ((y * w + w / 3) * 4) as usize;
+        (px[i] as i32, px[i + 1] as i32, px[i + 2] as i32)
+    };
+    let px = draw(StemLayout::Lanes);
+    // Lanes 30 pixels tall (less the gaps): drums, music, vocals.
+    let (r, g, _) = at(&px, 14);
+    assert!(r > g + 60, "drums lane: r {r} g {g}");
+    let (r, g, b) = at(&px, 45);
+    assert!(r.max(g).max(b) < 60, "music lane empty: {r} {g} {b}");
+    let (r, g, _) = at(&px, 75);
+    assert!(g > r + 60, "vocal lane: r {r} g {g}");
+    let px = draw(StemLayout::Stacked);
+    // The kick at the line, the vocals out from it.
+    let (r, g, _) = at(&px, h / 2);
+    assert!(r > g + 60, "kick at the line: r {r} g {g}");
+    let (r, g, _) = at(&px, h / 2 - 25);
+    assert!(g > r + 60, "vocals further out: r {r} g {g}");
+}
+
 /// 3-Band layers as rekordbox does: equal bands draw the lows widest, the
 /// overlap of low and mids in a darker mid, and the highs as a small core
 /// on top rather than the whole shape.
@@ -1104,6 +1189,78 @@ fn three_band_keeps_the_highs_small() {
         highs * 3 < rows.len(),
         "highs a small core: {highs} of {}",
         rows.len()
+    );
+}
+
+/// The 3-Band overview stacks the bands at their real loudness, as
+/// rekordbox's does: a loud stretch leaves headroom instead of filling the
+/// height, and a quiet one sits well below it.
+#[test]
+fn three_band_overview_follows_loudness() {
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    // A quiet first half, a loud second half.
+    let base = (0..20_000)
+        .map(|i| {
+            if i < 10_000 {
+                [90, 90, 90, 100, 60, 60, 60, 70]
+            } else {
+                [200, 200, 200, 220, 130, 130, 130, 150]
+            }
+        })
+        .collect();
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(base),
+        1000.0,
+    ));
+    let (w, h) = (256u32, 100u32);
+    let mut view = WaveformView::new(&device, Mode::Overview, w, h);
+    view.set_style(Style::Bands);
+    view.set_palette(Palette::bands(0));
+    view.set_half(true);
+    view.set_track(&device, &renderer, Some(&track));
+    let frame = Frame {
+        play_seconds: 0.0,
+        visible_seconds: 8.0,
+        duration: 20.0,
+        first_bar_beat: 0.0,
+        grid: steady_grid(120.0, 0.0),
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        tempos: Vec::new(),
+        phrases: vec![],
+    };
+    view.render(&device, &queue, &renderer, Some(&frame), 1.0);
+    let px = read_back(&device, &queue, &view);
+    // How tall column `x` is drawn, in rows from the bottom.
+    let tall = |x: u32| -> u32 {
+        (0..h)
+            .find(|&y| {
+                let i = ((y * w + x) * 4) as usize;
+                px[i] as u32 + px[i + 1] as u32 + px[i + 2] as u32 > 120
+            })
+            .map_or(0, |y| h - y)
+    };
+    let (quiet, loud) = (tall(w / 4), tall(3 * w / 4));
+    assert!(loud < h * 9 / 10, "loud leaves headroom: {loud} of {h}");
+    assert!(quiet * 2 < loud, "quiet sits lower: {quiet} vs {loud}");
+    // The lows are the base: the bottom row is blue.
+    let i = (((h - 2) * w + 3 * w / 4) * 4) as usize;
+    assert!(
+        px[i + 2] > 150 && px[i] < 60,
+        "low at the base: {:?}",
+        &px[i..i + 3]
     );
 }
 
@@ -1426,4 +1583,170 @@ fn draws_the_real_wave_zoomed_right_in() {
             );
         }
     }
+}
+
+fn live_frame() -> Frame {
+    Frame {
+        play_seconds: 8.192,
+        visible_seconds: 12.8,
+        duration: 8.192,
+        first_bar_beat: 0.0,
+        grid: [None; opendj_waveform::GRID_SECTIONS],
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        tempos: Vec::new(),
+        phrases: Vec::new(),
+    }
+}
+
+/// A live instrument deck in the lilac look: the waveform's body violet
+/// left of the play line, and the scope right of it, an open pale lilac
+/// line that meets the centre line at both ends.
+#[test]
+fn draws_lilac_look_and_scope() {
+    use opendj_waveform::{LiveLook, ScopeBackdrop, SCOPE_POINTS};
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    // Loud, steady sound, mostly low.
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(vec![[200, 40, 20, 200, 160, 30, 10, 160]; 8192]),
+        1000.0,
+    ));
+    let (w, h) = (512u32, 80u32);
+    let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+    view.set_track(&device, &renderer, Some(&track));
+    view.set_live(true);
+    view.set_live_look(LiveLook::Lilac);
+    // A square wave at full scale: four cycles.
+    let scope: [f32; SCOPE_POINTS] =
+        std::array::from_fn(|i| if (i / 32) % 2 == 0 { 1.0 } else { -1.0 });
+    view.set_scope(Some(scope));
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    // Left of the play line, near the body's edge: violet (blue over red
+    // over green).
+    let p = px(150, 20);
+    assert!(
+        p[2] > p[0] && p[0] > p[1] && p[2] > 120,
+        "violet body: {p:?}"
+    );
+    // Right of the play line, half way to the edge (clear of the taper):
+    // the line near the top or bottom, and nothing filled between.
+    let column: Vec<u32> = (0..h)
+        .map(|y| px(400, y).iter().map(|&c| c as u32).sum())
+        .collect();
+    let brightest = (0..h).max_by_key(|&y| column[y as usize]).unwrap();
+    assert!(!(25..55).contains(&brightest), "line at y {brightest}");
+    assert!(
+        column[brightest as usize] > 500,
+        "line: {}",
+        column[brightest as usize]
+    );
+    assert!(column[40] < 120, "open, no fill: {}", column[40]);
+    // At the right edge it has tapered onto the centre line.
+    let edge = (0..h)
+        .max_by_key(|&y| px(510, y).iter().map(|&c| c as u32).sum::<u32>())
+        .unwrap();
+    assert!((37..=42).contains(&edge), "tapered to y {edge}");
+
+    // In the instrument's colour (pink) with the backdrop: the body pink,
+    // and behind the scope a pink fade, brighter at the top.
+    view.set_live_look(LiveLook::Colored([1.0, 0.561, 0.671, 1.0]));
+    view.set_scope_backdrop(ScopeBackdrop::Fade);
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    let p = px(150, 20);
+    assert!(p[0] > p[2] && p[2] > p[1] && p[0] > 100, "pink body: {p:?}");
+    let (top, bottom) = (px(470, 4), px(470, 76));
+    assert!(top[0] > top[1] + 8, "pink at the top: {top:?}");
+    assert!(top[0] > bottom[0] + 8, "fading down: {top:?} {bottom:?}");
+}
+
+/// The Notes view: no waveform, a band per octave, and notes as capsules
+/// on two octaves of rows; one below them sits faded on the bottom row.
+#[test]
+fn draws_notes_view() {
+    use opendj_waveform::{Lanes, Mark, MarkKind};
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(vec![[255; 8]; 8192]),
+        1000.0,
+    ));
+    let (w, h) = (512u32, 96u32);
+    let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+    view.set_track(&device, &renderer, Some(&track));
+    view.set_live(true);
+    // C3 to B4 (4 px rows): C4 played, E4 held, and G2 below the rows.
+    let note = |n: u32, start: f64, end: f64, kind| Mark {
+        start,
+        end,
+        lane: n,
+        kind,
+    };
+    view.set_lanes(Some(Lanes {
+        count: 24,
+        tinted: 0,
+        marks: vec![
+            note(60, 5.0, 7.0, MarkKind::Played),
+            note(64, 7.2, 8.192, MarkKind::Held),
+            note(43, 5.0, 7.0, MarkKind::Played),
+        ],
+        trace: 0.0,
+        color: [1.0, 0.0, 0.0, 1.0],
+        lit: [0.0, 0.0, 1.0, 1.0],
+        notes: Some(48.0),
+    }));
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    let row_y = |n: u32| h - (n - 48) * 4 - 2;
+    // No waveform: an empty stretch is only the faint band.
+    let p = px(60, row_y(55));
+    assert!(p.iter().all(|&c| c < 70), "no waveform: {p:?}");
+    // C4, 2 s back, tinted lilac (its octave's colour, lightened).
+    let p = px(176, row_y(60));
+    assert!(p[2] > 200 && p[0] > 150 && p[1] < p[2], "C4: {p:?}");
+    // E4, held, white.
+    let p = px(240, row_y(64));
+    assert!(p.iter().all(|&c| c > 230), "held E4: {p:?}");
+    // G2, below the rows: on the bottom row, in octave 2's mint, faded.
+    let p = px(176, row_y(48));
+    assert!(
+        p[1] > p[0] && p[1] > 70 && p[1] < 170,
+        "G2 on the bottom row: {p:?}"
+    );
+    // C3's band is brighter at its C than at its B.
+    let c3 = px(30, row_y(48)).iter().map(|&c| c as u32).sum::<u32>();
+    let b3 = px(30, row_y(59)).iter().map(|&c| c as u32).sum::<u32>();
+    assert!(c3 > b3 + 10, "band fades: C {c3}, B {b3}");
 }

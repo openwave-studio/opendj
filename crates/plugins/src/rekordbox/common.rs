@@ -3,7 +3,7 @@
 //! openDJ's search syntax.
 
 use opendj_engine::beats::{BeatGrid, GridMarker};
-use opendj_engine::{Marker, MarkerKind};
+use opendj_engine::{Marker, MarkerKind, Source, Track};
 
 /// The 16 colours of rekordbox's hot cue menu, by the code it keeps for
 /// each, as rekordbox shows them (the same table opendj-export writes).
@@ -57,16 +57,43 @@ pub fn hot_cue_number(kind: i64) -> Option<usize> {
     }
 }
 
+/// Moves a track's grid, cues and phrases from rekordbox's timeline to
+/// openDJ's, which for some MP3s runs earlier (see
+/// [`opendj_engine::decode::rekordbox_offset`]).
+pub fn to_opendj_timeline(t: &mut Track) {
+    let Source::File(path) = &t.source else {
+        return;
+    };
+    if t.grid.is_empty() && t.info.hotcues.is_empty() && t.info.markers.is_empty() {
+        return;
+    }
+    let lead = opendj_engine::decode::rekordbox_offset(path);
+    t.shift_times(-lead);
+}
+
 /// A grid from rekordbox's beats (seconds and tempo of each): a marker
-/// where it starts and wherever the tempo changes.
-pub fn grid_from_beats(beats: &[(f64, f64)]) -> BeatGrid {
+/// where it starts and wherever the tempo changes. `first_in_bar` is where
+/// the first beat falls in its bar (1 to 4), so bar 1 lands where
+/// rekordbox has it.
+pub fn grid_from_beats(beats: &[(f64, f64)], first_in_bar: u16) -> BeatGrid {
     let mut markers: Vec<GridMarker> = Vec::new();
     for &(seconds, bpm) in beats {
         if markers.last().is_none_or(|m| (m.bpm - bpm).abs() > 0.005) {
             markers.push(GridMarker { seconds, bpm });
         }
     }
-    BeatGrid::new(markers)
+    with_bar_from(BeatGrid::new(markers), first_in_bar)
+}
+
+/// `grid`, whose first beat is beat `first_in_bar` (1 to 4) of its bar
+/// in rekordbox, with openDJ's bars counted the same way. openDJ counts
+/// bars from the grid's first beat, so without this a grid starting on
+/// rekordbox's beat 2, 3 or 4 has every bar line off by that much.
+pub fn with_bar_from(grid: BeatGrid, first_in_bar: u16) -> BeatGrid {
+    match first_in_bar {
+        2..=4 => grid.with_bar_shifted(5 - i32::from(first_in_bar)),
+        _ => grid,
+    }
 }
 
 /// rekordbox's phrase moods, which name the phrase kinds differently.
@@ -268,10 +295,28 @@ mod tests {
             .map(|i| (0.025 + i as f64 * 0.5, 120.0))
             .chain((0..8).map(|i| (4.025 + i as f64 * 60.0 / 124.0, 124.0)))
             .collect();
-        let grid = grid_from_beats(&beats);
+        let grid = grid_from_beats(&beats, 1);
         assert_eq!(grid.markers().len(), 2);
         assert_eq!(grid.markers()[1].bpm, 124.0);
         assert!((grid.first_beat() - 0.025).abs() < 1e-9);
+    }
+
+    #[test]
+    fn bar_one_lands_where_rekordbox_has_it() {
+        // The first beat at 1 s is beat 3 of its bar, so the first bar
+        // line inside the track is two beats later, at 2 s.
+        let beats: Vec<(f64, f64)> = (0..32).map(|i| (1.0 + i as f64 * 0.5, 120.0)).collect();
+        let grid = grid_from_beats(&beats, 3);
+        for (seconds, beat_in_bar) in [(1.0, 2.0), (1.5, 3.0), (2.0, 0.0), (4.0, 0.0)] {
+            let at = grid.beat_at(seconds).round().rem_euclid(4.0);
+            assert_eq!(at, beat_in_bar, "{seconds} s");
+        }
+        // The beats themselves don't move.
+        assert!((grid.snap(1.01, false) - 1.0).abs() < 1e-9);
+        assert_eq!(grid.bpm_at(10.0), 120.0);
+        // On the downbeat already, or no bar position given: as it was.
+        assert_eq!(grid_from_beats(&beats, 1), grid_from_beats(&beats, 0));
+        assert_eq!(grid_from_beats(&beats, 1).markers()[0].seconds, 1.0);
     }
 
     #[test]

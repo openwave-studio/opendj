@@ -238,6 +238,24 @@ impl Script {
         });
     }
 
+    /// Calls `prefix.incomingMidi(status, control, value)`: a keyboard's
+    /// MIDI-port controllers, for the mapping that runs its HID side.
+    pub(crate) fn call_incoming_midi(&self, prefix: &str, msg: [u8; 3]) {
+        self.context.with(|ctx| {
+            let result = (|| {
+                let f: Function = ctx.eval_with_options(
+                    format!("{prefix}.incomingMidi.bind({prefix})"),
+                    options("<incomingMidi>"),
+                )?;
+                f.call::<_, ()>((msg[0], msg[1], msg[2]))
+            })()
+            .catch(&ctx);
+            if let Err(e) = result {
+                self.log(&format!("{prefix}.incomingMidi: {e}"));
+            }
+        });
+    }
+
     pub(crate) fn fire_connection(&self, id: u32, value: f64) {
         self.call_hook(&self.fire, id, value, "connection callback");
     }

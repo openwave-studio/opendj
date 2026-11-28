@@ -669,6 +669,10 @@ pub struct Browser {
     db: Option<Library>,
     /// Where each track id is in `library`.
     index_of: HashMap<usize, usize>,
+    /// The decks' tracks as [`Browser::learn_analysis`] last saw them: one
+    /// still here unchanged holds nothing new, even if the library's copy
+    /// has moved on since (an import, a sync), so it isn't saved back.
+    learned: Vec<Arc<Track>>,
     /// Where each file is in `library`, for Files.
     path_index: HashMap<PathBuf, usize>,
     files: FilesState,
@@ -1425,6 +1429,7 @@ impl Browser {
             picks: Default::default(),
             db,
             index_of: HashMap::new(),
+            learned: Vec::new(),
             path_index: HashMap::new(),
             files: FilesState {
                 reader: files::Reader::start(),
@@ -4017,6 +4022,15 @@ impl Browser {
         crate::settings::set_open_folders(&open);
     }
 
+    /// A command or the MCP server (`opendj tag …`, an assistant) changed
+    /// the library from outside: read tracks, tags and lists again, so
+    /// nothing saves over the change from the copy held here.
+    pub fn changed_outside(&mut self) {
+        self.reload_library();
+        self.reload_tree(None);
+        self.refresh_rows_keeping_current();
+    }
+
     /// Rebuilds the tree from the database, keeping the selection where it can.
     fn reload_tree(&mut self, select: Option<i64>) {
         if self.tree != COLLECTION {
@@ -4894,14 +4908,11 @@ impl Browser {
         }
     }
 
-    /// Whether the folder picked in the tree (or Jam's tree) is open.
+    /// Whether the folder picked in the tree is open.
     fn picked_folder_open(&self, app: &AppWindow) -> bool {
+        // Jam's column has no folders.
         if app.global::<StoreUi>().get_source() == INSTRUMENTS {
-            let ui = app.global::<crate::InstrumentsUi>();
-            return usize::try_from(ui.get_current_node())
-                .ok()
-                .and_then(|i| ui.get_nodes().row_data(i))
-                .is_some_and(|n| n.children == 2);
+            return false;
         }
         self.visible_nodes.contains(&self.current_node)
             && self.navigation_row(self.current_node).children == 2
@@ -4991,8 +5002,7 @@ impl Browser {
         let go = take(&self.lib.go_to_item) > 0.0;
         if take(&self.lib.toggle_folder) > 0.0 {
             if app.global::<StoreUi>().get_source() == INSTRUMENTS {
-                let ui = app.global::<crate::InstrumentsUi>();
-                ui.invoke_toggle_node(ui.get_current_node());
+                // Jam's column has no folders to open.
             } else if let Some(row) = self
                 .visible_nodes
                 .iter()
@@ -5088,6 +5098,21 @@ impl Browser {
         self.library.get(index).is_some_and(|t| !t.info.missing)
     }
 
+    /// Loads the collection track with id `id` onto `deck`, as the LOAD
+    /// buttons do (for the phone remote). False when it isn't there or its
+    /// file is missing.
+    pub fn load_id_onto(&mut self, deck: usize, id: usize) -> bool {
+        let Some(&index) = self.index_of.get(&id) else {
+            return false;
+        };
+        if deck >= NUM_DECKS || !self.playable(index) {
+            return false;
+        }
+        self.adopt(&[index]);
+        self.engine.load_track(deck, self.library[index].clone());
+        true
+    }
+
     fn load_to_free_deck(&self, id: usize) {
         if !self.playable(id) {
             return;
@@ -5165,6 +5190,8 @@ impl Browser {
     pub fn learn_analysis(&mut self, loaded: &[Option<Arc<Track>>]) {
         let mut changed = HashSet::new();
         let saved = self.saved();
+        // Forget tracks no deck holds any more.
+        self.learned.retain(|s| Arc::strong_count(s) > 1);
         for t in loaded.iter().flatten() {
             // Its mini waveform, filling in as the deck analyses it, in its
             // row and in Info.
@@ -5178,17 +5205,34 @@ impl Browser {
                     self.fill_info_wave(&app);
                 }
             }
-            if t.bpm <= 0.0 {
+            // A deck's track only changes when it loads, is analysed or the
+            // DJ edits it; the same one again is not an edit, though the
+            // library may have taken a newer grid from an import meanwhile.
+            if t.bpm <= 0.0 || self.learned.iter().any(|s| Arc::ptr_eq(s, t)) {
                 continue;
             }
             let Some(&i) = self.index_of.get(&t.id) else {
                 continue;
             };
+            self.learned.push(t.clone());
             let entry = &self.library[i];
             // An analysed grid arrives with the analysis; a fixed grid that
             // differs from the library's was edited on the deck.
-            let analysed = !t.info.fixed_grid && !t.grid.is_empty() && t.grid != entry.grid;
-            let edited = t.info.fixed_grid && t.grid != entry.grid && !t.grid.is_empty();
+            // Reset can give back the same grid the library keeps as the
+            // DJ's or an import's (an edit that ended where analysis had it):
+            // it still goes back to being the analysed grid.
+            let back_to_analysis = t.info.grid_analysed
+                && t.info.grid_from == "analysis"
+                && !matches!(entry.info.grid_from.as_str(), "" | "analysis");
+            let analysed = !t.info.fixed_grid
+                && !t.grid.is_empty()
+                && (t.grid != entry.grid || back_to_analysis);
+            // Only a deck edit marks the grid as the DJ's: an imported grid a
+            // deck still holds is not one.
+            let edited = t.info.fixed_grid
+                && t.info.grid_from == "user"
+                && t.grid != entry.grid
+                && !t.grid.is_empty();
             let key_changed = entry.key != t.key || entry.info.key_detected != t.info.key_detected;
             let lock_changed = entry.info.grid_locked != t.info.grid_locked;
             let mode_changed = entry.info.grid_mode != t.info.grid_mode;
@@ -6018,24 +6062,58 @@ impl Browser {
         same_length: bool,
     ) -> Vec<Option<usize>> {
         // Files only shown in Files don't count as in the collection.
-        let normalized: Vec<(String, String)> = self
-            .library
-            .iter()
-            .map(|t| match is_browsed(t) {
-                true => Default::default(),
-                false => (spotify::normalize(&t.title), spotify::normalize(&t.artist)),
-            })
-            .collect();
+        // Each track's names are made comparable once, and found by title,
+        // so matching a long list stays quick while the DJ types.
+        let mut artists = vec![String::new(); self.library.len()];
+        let mut by_title: HashMap<String, Vec<usize>> = HashMap::new();
         let mut by_isrc = HashMap::new();
         for (i, t) in self.library.iter().enumerate() {
+            if is_browsed(t) {
+                continue;
+            }
+            let title = spotify::normalize(&t.title);
+            if !title.is_empty() {
+                artists[i] = spotify::normalize(&t.artist);
+                by_title.entry(title).or_default().push(i);
+            }
             let isrc = spotify::normalize_isrc(&t.info.isrc);
-            if !isrc.is_empty() && !is_browsed(t) {
+            if !isrc.is_empty() {
                 by_isrc.entry(isrc).or_insert(i);
             }
         }
         let length_fits = |sp: &StreamTrack, i: usize| {
             let d = self.library[i].duration;
             !same_length || sp.duration <= 0.0 || d <= 0.0 || (sp.duration - d).abs() <= 2.0
+        };
+        // The first collection track (as `spotify::matches` would pick it):
+        // the same title by one of its artists, or, with no artist, the
+        // artist and title run together in the title.
+        let by_names = |sp: &StreamTrack| {
+            let want = spotify::normalize(&sp.title);
+            if want.is_empty() {
+                return None;
+            }
+            let names: Vec<String> = sp
+                .artists
+                .iter()
+                .map(|a| spotify::normalize(a))
+                .filter(|a| !a.is_empty())
+                .collect();
+            let same = by_title
+                .get(&want)
+                .into_iter()
+                .flatten()
+                .copied()
+                .filter(|&i| names.iter().any(|a| artists[i].contains(a.as_str())));
+            let joined = names.iter().flat_map(|a| {
+                by_title
+                    .get(&format!("{a}{want}"))
+                    .into_iter()
+                    .flatten()
+                    .copied()
+                    .filter(|&i| artists[i].is_empty())
+            });
+            same.chain(joined).filter(|&i| length_fits(sp, i)).min()
         };
         tracks
             .iter()
@@ -6047,14 +6125,7 @@ impl Browser {
                 by_isrc
                     .get(&spotify::normalize_isrc(&sp.isrc))
                     .copied()
-                    .or_else(|| {
-                        normalized
-                            .iter()
-                            .enumerate()
-                            .position(|(i, (title, artist))| {
-                                spotify::matches(sp, title, artist) && length_fits(sp, i)
-                            })
-                    })
+                    .or_else(|| by_names(sp))
             })
             .collect()
     }

@@ -29,7 +29,9 @@ use cpal::{BufferSize, ErrorKind, FromSample, SampleFormat, SizedSample, Support
 use opendj_control::{ControlHandle, ControlRegistry};
 
 use crate::engine::{Engine, MIX_CHANNELS, OUTPUT_CHANNELS};
-use crate::inputs::{InputFeed, AUXILIARIES, GROOVE_BOX, MICROPHONE, NUM_AUXILIARIES, NUM_INPUTS};
+use crate::inputs::{
+    InputFeed, AUXILIARIES, GROOVE_BOX, INSTRUMENT, MICROPHONE, NUM_AUXILIARIES, NUM_INPUTS,
+};
 
 /// What an output plays, each a stereo pair of the buffer the engine
 /// renders: the mixes, or one deck or the sampler on its own (for a DAW or
@@ -121,10 +123,14 @@ pub enum InputRole {
     Auxiliary6,
     Auxiliary7,
     Auxiliary8,
+    /// A hardware synth the instrument deck plays (see
+    /// [`crate::hardware_synth`]): its sound comes back here. Mono or a
+    /// pair, as the auxiliary inputs. Last, so the others keep their place.
+    Instrument,
 }
 
 impl InputRole {
-    pub const ALL: [InputRole; 9] = [
+    pub const ALL: [InputRole; 10] = [
         InputRole::Microphone,
         InputRole::Auxiliary,
         InputRole::Auxiliary2,
@@ -134,6 +140,7 @@ impl InputRole {
         InputRole::Auxiliary6,
         InputRole::Auxiliary7,
         InputRole::Auxiliary8,
+        InputRole::Instrument,
     ];
 
     /// The auxiliary inputs, in order.
@@ -159,6 +166,7 @@ impl InputRole {
             InputRole::Auxiliary6 => "auxiliary6",
             InputRole::Auxiliary7 => "auxiliary7",
             InputRole::Auxiliary8 => "auxiliary8",
+            InputRole::Instrument => "instrument",
         }
     }
 
@@ -170,6 +178,7 @@ impl InputRole {
     pub fn index(self) -> usize {
         match self.aux_number() {
             Some(n) => AUXILIARIES[n - 1],
+            None if self == InputRole::Instrument => INSTRUMENT,
             None => MICROPHONE,
         }
     }
@@ -681,6 +690,8 @@ pub(crate) struct Outputs {
     fell_back: Option<String>,
     /// When the outputs were last opened.
     opened_at: Instant,
+    /// Closed for quitting (see [`Outputs::close`]): nothing opens again.
+    closed: bool,
 }
 
 impl Outputs {
@@ -709,13 +720,43 @@ impl Outputs {
             lost_reported: false,
             fell_back: None,
             opened_at: Instant::now(),
+            closed: false,
         };
         o.configure(setup);
         o
     }
 
+    /// Closes every output and input stream and stops the stand-in timer,
+    /// for good: the app is quitting. Dropping a stream joins its audio
+    /// thread and unloads its driver, which only works while that thread
+    /// is still alive. Left to the end of the process, Windows has already
+    /// ended the thread: the join panics, or a driver waits on it and the
+    /// process never ends. Whether every thread it started has finished:
+    /// a look for a lost device (see [`Outputs::look_for`]) still loading
+    /// drivers after 2 s is left behind.
+    pub(crate) fn close(&mut self) -> bool {
+        self.closed = true;
+        self.streams.clear();
+        self.inputs.clear();
+        self.drop_watched();
+        self.timer = None;
+        self.levels.clear();
+        // After the sound has stopped: this can wait.
+        let looked = self.looking.take().is_none_or(|rx| {
+            !matches!(
+                rx.recv_timeout(Duration::from_secs(2)),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+            )
+        });
+        devices::set_asio_held(false);
+        looked
+    }
+
     /// Opens the devices `setup` names, closing the ones in use.
     pub(crate) fn configure(&mut self, setup: &AudioSetup) {
+        if self.closed {
+            return;
+        }
         self.configure_outputs(setup);
         self.configure_inputs(setup);
     }
@@ -723,6 +764,9 @@ impl Outputs {
     /// Opens the input devices `setup` names, closing the ones in use, and
     /// leaves the outputs as they are.
     pub(crate) fn configure_inputs(&mut self, setup: &AudioSetup) {
+        if self.closed {
+            return;
+        }
         let _asio = setup
             .inputs
             .iter()
@@ -827,6 +871,9 @@ impl Outputs {
     /// default) while the input picker shows it, opening it for that if no
     /// input uses it; `None` closes it again.
     pub(crate) fn watch_input(&mut self, device: Option<&str>) {
+        if self.closed {
+            return;
+        }
         let Some(device) = device else {
             self.drop_watched();
             self.publish_asio_held();
@@ -970,6 +1017,9 @@ impl Outputs {
     /// once the clock device is there again. Call it every so often; it says
     /// what happened, for the person at the decks.
     pub(crate) fn recover(&mut self) -> Option<String> {
+        if self.closed {
+            return None;
+        }
         if !self.health.lost.load(Ordering::Acquire) {
             return self.recover_inputs();
         }
@@ -1153,6 +1203,15 @@ impl Outputs {
     }
 
     /// Whether the system refused the audio thread real-time priority.
+    /// The Session plays from `source`, or nothing; the old one comes back,
+    /// to be dropped here rather than on the audio thread.
+    pub(crate) fn set_session(
+        &self,
+        source: Option<Box<dyn crate::inputs::SessionSource>>,
+    ) -> Option<Box<dyn crate::inputs::SessionSource>> {
+        self.engine.lock().ok()?.set_session(source)
+    }
+
     pub(crate) fn realtime_denied(&self) -> bool {
         self.health.realtime_denied.load(Ordering::Relaxed)
     }

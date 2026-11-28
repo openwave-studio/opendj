@@ -430,6 +430,12 @@ fn run_audio(shm: &Shm, mut fx: Box<dyn Effect>) {
         for (ch, buf) in output.iter().enumerate() {
             shm.write(true, ch, &buf[..frames]);
         }
+        let sent = fx.midi_out();
+        let n = sent.len().min(MAX_EVENTS);
+        for (slot, m) in h.out_events.iter().zip(&sent[..n]) {
+            slot.store(m.pack(), Ordering::Relaxed);
+        }
+        h.out_events_len.store(n as u32, Ordering::Relaxed);
         h.process_ns
             .store(start.elapsed().as_nanos() as u64, Ordering::Relaxed);
         h.seq_out.store(seq, Ordering::Release);

@@ -157,16 +157,16 @@ impl Browser {
                 steps
             };
             if let Some(row) = tree_navigation::step_row(
-                usize::try_from(ui.get_current_node()).ok(),
-                ui.get_nodes().row_count(),
+                usize::try_from(ui.get_current_item()).ok(),
+                ui.get_rows().row_count(),
                 delta,
             ) {
-                ui.invoke_select_node(row as i32);
+                ui.set_current_item(row as i32);
                 app.global::<BrowserFocus>()
                     .invoke_focus(BrowserPane::Folders);
             }
         } else {
-            crate::instruments::navigate_nodes(app, code);
+            crate::instruments::navigate_column(app, code);
         }
     }
 }

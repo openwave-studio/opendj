@@ -1,0 +1,637 @@
+// The Session: a Live set's clips, launched from a grid of tracks
+// (columns) and scenes (rows), playing on the Session channel in time with
+// the master deck. Shown in the Jam source while a set is open.
+//
+// It looks as openDJ Studio's session view does (crates/studio/ui): the
+// same columns, clip slots, stop row, strips and Main column, so a set
+// reads the same in both. Studio's sends and returns aren't here.
+
+import { Theme, CloseIcon } from "theme.slint";
+import { SwitchPill } from "pills.slint";
+
+export struct SessionTrack {
+    name: string,
+    color: color,
+    // "MIDI" or "AUDIO", as Studio's header shows it.
+    kind: string,
+    // How far through its clip it is (0..1), -1 when stopped.
+    progress: float,
+    // A stop waits for the next launch point.
+    stopping: bool,
+    // The meter, 0..1 over -60..+6 dB.
+    level: float,
+    // The fader (0..1, 0 dB at 60/66) and pan (0 left, 0.5 centre, 1 right).
+    volume: float,
+    pan: float,
+    // The pan as C, 25L, 50R.
+    pan-text: string,
+    mute: bool,
+    solo: bool,
+}
+
+// One clip slot. state: 0 empty, 1 a clip, 2 queued to start, 3 playing.
+export struct SessionSlot {
+    name: string,
+    state: int,
+}
+
+export global SessionUi {
+    in property <bool> open;
+    in property <bool> loading;
+    in property <bool> playing;
+    // On for the first half of each beat: queued clips blink with it.
+    in property <bool> blink;
+    in property <string> name;
+    // What didn't come in from the set.
+    in property <string> note;
+    in property <string> error;
+    in property <[SessionTrack]> tracks;
+    in property <int> scenes;
+    // Scene by scene, each scene's slots track by track.
+    in property <[SessionSlot]> slots;
+    // The set's own main fader (as Studio's Main) and meter, 0..1 over
+    // -60..+6 dB.
+    in property <float> main-volume: 60 / 66;
+    in property <float> main-level;
+    // Goes up to bring the Jam source up.
+    in-out property <int> show-request;
+    callback open-set();
+    callback close-set();
+    callback launch(track: int, scene: int);
+    callback stop(track: int);
+    callback scene(scene: int);
+    callback stop-all();
+    callback set-volume(track: int, position: float);
+    callback set-pan(track: int, pan: float);
+    callback toggle-mute(track: int);
+    callback toggle-solo(track: int);
+    callback set-main-volume(position: float);
+}
+
+// Studio's colours, from openDJ's theme where it has them.
+global Look {
+    out property <color> bg: Theme.browser;
+    out property <color> panel: Theme.row;
+    out property <color> slot: Theme.n-1e1f21;
+    out property <color> slot-hover: Theme.n-262629;
+    out property <color> line: Theme.separator;
+    out property <color> dim: Theme.text-dim;
+    out property <color> faint: Theme.n-48484c;
+    out property <color> select: Theme.n-4a4a4d;
+    out property <color> well: Theme.light ? #c8c8d4 : #0b0c0d;
+    out property <color> thumb: Theme.light ? #5d5b69 : #c9cacd;
+    out property <color> queued: #ffd166;
+    out property <color> solo: #5d8cc9;
+    // Text on a clip or header's full colour.
+    out property <color> ink: #101112;
+}
+
+// A knob, dragged up and down; double-click centres a bipolar one.
+component Knob inherits Rectangle {
+    in property <string> label;
+    in property <string> display;
+    in property <float> value: 0.5;
+    in property <bool> bipolar;
+    in property <length> size: 24px;
+    in property <color> tint: Theme.accent;
+    callback changed(float);
+    property <float> start-value;
+    property <angle> a0: 135deg;
+    property <angle> a1: 135deg + 270deg * clamp(value, 0, 1);
+    property <angle> centre: 270deg;
+    width: max(size, 48px);
+    height: (label != "" ? 14px : 0px) + size + (display != "" ? 14px : 0px);
+    if label != "": Text {
+        y: 0;
+        height: 14px;
+        width: parent.width;
+        text: label;
+        color: Look.dim;
+        font-size: 10px;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+    Path {
+        x: (parent.width - size) / 2;
+        y: label != "" ? 14px : 0px;
+        width: size;
+        height: size;
+        viewbox-width: 36;
+        viewbox-height: 36;
+        stroke: Look.line;
+        stroke-width: 3px;
+        commands: "M " + (18 + 14 * cos(135deg)) + " " + (18 + 14 * sin(135deg))
+            + " A 14 14 0 1 1 " + (18 + 14 * cos(45deg)) + " " + (18 + 14 * sin(45deg));
+    }
+    // The value arc, from the start (or the top for a bipolar knob).
+    property <angle> from: bipolar ? centre : a0;
+    property <angle> lo: a1 < from ? a1 : from;
+    property <angle> hi: a1 < from ? from : a1;
+    if hi - lo > 2deg: Path {
+        x: (parent.width - size) / 2;
+        y: label != "" ? 14px : 0px;
+        width: size;
+        height: size;
+        viewbox-width: 36;
+        viewbox-height: 36;
+        stroke: tint;
+        stroke-width: 3px;
+        commands: "M " + (18 + 14 * cos(lo)) + " " + (18 + 14 * sin(lo))
+            + " A 14 14 0 " + (hi - lo > 180deg ? 1 : 0) + " 1 "
+            + (18 + 14 * cos(hi)) + " " + (18 + 14 * sin(hi));
+    }
+    // Pointer.
+    Path {
+        x: (parent.width - size) / 2;
+        y: label != "" ? 14px : 0px;
+        width: size;
+        height: size;
+        viewbox-width: 36;
+        viewbox-height: 36;
+        stroke: Theme.text;
+        stroke-width: 2px;
+        commands: "M " + (18 + 5 * cos(a1)) + " " + (18 + 5 * sin(a1))
+            + " L " + (18 + 11 * cos(a1)) + " " + (18 + 11 * sin(a1));
+    }
+    if display != "": Text {
+        y: parent.height - 14px;
+        height: 14px;
+        width: parent.width;
+        text: display;
+        color: Theme.text;
+        font-size: 10px;
+        horizontal-alignment: center;
+    }
+    TouchArea {
+        mouse-cursor: ns-resize;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down {
+                root.start-value = root.value;
+            }
+        }
+        moved => {
+            root.changed(clamp(root.start-value + (self.pressed-y - self.mouse-y) / 160px, 0, 1));
+        }
+        double-clicked => {
+            if root.bipolar {
+                root.changed(0.5);
+            }
+        }
+    }
+}
+
+// A vertical fader. 0..1 maps to -inf..+6 dB; 0 dB sits at 60/66, where a
+// double-click puts it.
+component Fader inherits Rectangle {
+    in property <float> value: 60 / 66;
+    callback changed(float);
+    property <float> start-value;
+    property <length> thumb: 12px;
+    width: 18px;
+    Rectangle {
+        x: (parent.width - 4px) / 2;
+        width: 4px;
+        border-radius: 2px;
+        background: Look.well;
+    }
+    // 0 dB mark.
+    Rectangle {
+        x: 0;
+        y: (1 - 60 / 66) * (parent.height - thumb) + thumb / 2;
+        width: 3px;
+        height: 1px;
+        background: Look.faint;
+    }
+    Rectangle {
+        y: (1 - clamp(value, 0, 1)) * (parent.height - thumb);
+        height: thumb;
+        border-radius: 2px;
+        background: ta.pressed ? Theme.text : Look.thumb;
+        Rectangle { height: 1px; width: parent.width - 4px; background: Look.bg; }
+    }
+    ta := TouchArea {
+        mouse-cursor: ns-resize;
+        pointer-event(e) => {
+            if e.kind == PointerEventKind.down {
+                root.start-value = root.value;
+            }
+        }
+        moved => {
+            root.changed(clamp(root.start-value + (self.pressed-y - self.mouse-y) / (root.height - root.thumb), 0, 1));
+        }
+        double-clicked => { root.changed(60 / 66); }
+    }
+}
+
+component Meter inherits Rectangle {
+    in property <float> level;
+    width: 4px;
+    background: Look.well;
+    clip: true;
+    Rectangle {
+        background: @linear-gradient(0deg, #4fc36a 0%, #7ee08a 65%, #ffd166 88%, #ff6b6b 100%);
+    }
+    Rectangle {
+        y: 0;
+        height: parent.height * (1 - clamp(level, 0, 1));
+        background: Look.well;
+    }
+}
+
+component SmallButton inherits Rectangle {
+    in property <string> label;
+    in property <bool> on;
+    in property <color> on-color: Theme.accent;
+    callback clicked;
+    width: 22px;
+    height: 18px;
+    border-radius: 2px;
+    background: on ? on-color : (ta.has-hover ? Look.slot-hover : Look.slot);
+    Text {
+        text: label;
+        color: on ? Look.ink : Theme.text;
+        font-size: 10px;
+        font-weight: 600;
+    }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A mixer strip as Studio's, without its sends and arm: pan, the fader
+// with its meter, and the track activator (its number: off mutes) and solo.
+component Strip inherits Rectangle {
+    in property <color> tint;
+    in property <string> number;
+    in property <float> level;
+    in property <float> volume: 60 / 66;
+    in property <float> pan: 0.5;
+    in property <string> pan-text: "C";
+    in property <bool> has-pan: true;
+    in property <bool> active: true;
+    in property <bool> has-solo: true;
+    in property <bool> solo;
+    callback volume-changed(float);
+    callback pan-changed(float);
+    callback activator();
+    callback solo-toggled();
+    background: tint.with-alpha(0.10);
+    VerticalLayout {
+        padding: 4px;
+        spacing: 2px;
+        if has-pan: HorizontalLayout {
+            alignment: center;
+            Knob {
+                size: 22px;
+                bipolar: true;
+                value: root.pan;
+                display: root.pan-text;
+                label: "Pan";
+                changed(v) => { root.pan-changed(v); }
+            }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 6px;
+            vertical-stretch: 1;
+            Text {
+                width: 30px;
+                text: volume <= 0.001 ? "-inf" : (round((6 - (1 - volume) * 66) * 10) / 10);
+                color: Look.dim;
+                font-size: 10px;
+                horizontal-alignment: right;
+                vertical-alignment: top;
+            }
+            Fader {
+                value: root.volume;
+                changed(v) => { root.volume-changed(v); }
+            }
+            Meter { level: root.level; }
+            Meter { level: root.level; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 3px;
+            height: 20px;
+            Rectangle {
+                width: 26px;
+                height: 18px;
+                border-radius: 2px;
+                background: active ? Theme.accent : Look.slot;
+                Text { text: number; color: active ? Look.ink : Look.dim; font-size: 10px; font-weight: 700; }
+                TouchArea { clicked => { root.activator(); } }
+            }
+            if has-solo: SmallButton { label: "S"; on: solo; on-color: Look.solo; clicked => { root.solo-toggled(); } }
+        }
+    }
+}
+
+component ClipSlot inherits Rectangle {
+    in property <SessionSlot> slot;
+    in property <color> tint;
+    in property <float> progress: -1;
+    callback launch;
+    property <bool> playing: slot.state == 3;
+    background: slot.state == 0
+        ? (ta.has-hover ? Look.slot-hover : Look.slot)
+        : (playing ? tint : tint.with-alpha(ta.has-hover ? 0.5 : 0.34));
+    border-width: slot.state == 2 ? 1px : 0px;
+    border-color: SessionUi.blink ? Look.queued : Look.queued.with-alpha(0.25);
+    clip: true;
+    if playing && progress >= 0: Rectangle {
+        x: 0;
+        y: parent.height - 2px;
+        height: 2px;
+        width: parent.width * clamp(progress, 0, 1);
+        background: #101112aa;
+    }
+    if slot.state == 0: Rectangle {
+        x: 6px;
+        width: 6px;
+        height: 6px;
+        border-width: 1px;
+        border-color: Look.faint;
+    }
+    if slot.state != 0: HorizontalLayout {
+        padding-left: 6px;
+        padding-right: 6px;
+        spacing: 5px;
+        Text {
+            text: playing ? "▶" : "▷";
+            color: playing ? Look.ink : Theme.text;
+            font-size: 10px;
+            vertical-alignment: center;
+            width: 10px;
+        }
+        Text {
+            text: slot.name;
+            color: playing ? Look.ink : Theme.text;
+            font-size: 11px;
+            font-weight: playing ? 700 : 500;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    ta := TouchArea { clicked => { root.launch(); } }
+}
+
+// The set's tracks as Studio's session view lays them out: a column each,
+// with its header, clips, stop button and strip; Main on the right with the
+// scenes, Stop all and the set's main fader (the Session channel's own
+// fader is in openDJ's mixer). The clips scroll when
+// there are more scenes than fit.
+export component SessionGrid inherits Rectangle {
+    property <int> count: SessionUi.tracks.length;
+    property <length> col-w: 128px;
+    property <length> main: 104px;
+    property <length> gap: 2px;
+    property <length> head: 24px;
+    property <length> row-h: 22px;
+    property <length> title: 30px;
+    // At least about four scenes, the strips taking the rest.
+    property <length> mixer: clamp(self.height - title - head - 6 * (row-h + gap), 112px, 186px);
+    property <length> mixer-y: self.height - mixer;
+    property <length> stop-y: mixer-y - row-h - gap;
+    property <length> clips-y: title + head + gap;
+    property <length> clips-h: stop-y - gap - clips-y;
+    property <length> tracks-end: count * (col-w + gap);
+    property <length> main-x: self.width - main;
+    background: Look.bg;
+    // The set's name, what didn't come in, and opening and closing.
+    HorizontalLayout {
+        y: 0;
+        height: title;
+        padding-left: 8px;
+        padding-right: 6px;
+        padding-top: 3px;
+        padding-bottom: 3px;
+        spacing: 8px;
+        Text {
+            text: SessionUi.name;
+            color: Theme.text;
+            font-size: 13px;
+            font-weight: 600;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        Text {
+            text: SessionUi.note;
+            color: Look.dim;
+            font-size: 11px;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        SwitchPill {
+            text: "OPEN…";
+            font-size: 11px;
+            on: false;
+            clicked => { SessionUi.open-set(); }
+        }
+        Rectangle {
+            width: 24px;
+            border-radius: 6px;
+            background: cta.has-hover ? Theme.control : transparent;
+            CloseIcon { size: 11px; color: cta.has-hover ? Theme.text : Look.dim; }
+            cta := TouchArea { mouse-cursor: pointer; clicked => { SessionUi.close-set(); } }
+        }
+    }
+    // Tracks, scrolling sideways when there are more than fit.
+    tracks := Flickable {
+        x: 0;
+        y: title;
+        width: main-x - gap;
+        height: root.height - title;
+        content-width: max(self.width, tracks-end);
+        interactive: false;
+        for t[i] in SessionUi.tracks: Rectangle {
+            x: i * (col-w + gap);
+            width: col-w;
+            height: parent.height;
+            background: Look.panel.with-alpha(0.5);
+            // Header.
+            Rectangle {
+                y: 0;
+                height: head;
+                background: t.color.with-alpha(0.8);
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    spacing: 5px;
+                    Text {
+                        text: (i + 1) + " " + t.name;
+                        color: Look.ink;
+                        font-size: 12px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+                    Text { text: t.kind; color: #10111299; font-size: 9px; font-weight: 700; vertical-alignment: center; }
+                }
+            }
+            // Stop button.
+            Rectangle {
+                y: stop-y - title;
+                height: row-h;
+                background: stop.has-hover ? Look.slot-hover : Look.slot;
+                border-width: t.stopping ? 1px : 0px;
+                border-color: SessionUi.blink ? Look.queued : Look.queued.with-alpha(0.25);
+                Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    background: t.progress >= 0 ? Theme.text : Look.faint;
+                }
+                stop := TouchArea { clicked => { SessionUi.stop(i); } }
+            }
+            // Mixer strip.
+            Strip {
+                y: mixer-y - title;
+                height: mixer;
+                tint: t.color;
+                number: i + 1;
+                level: t.level;
+                volume: t.volume;
+                pan: t.pan;
+                pan-text: t.pan-text;
+                active: !t.mute;
+                solo: t.solo;
+                volume-changed(v) => { SessionUi.set-volume(i, v); }
+                pan-changed(v) => { SessionUi.set-pan(i, v); }
+                activator => { SessionUi.toggle-mute(i); }
+                solo-toggled => { SessionUi.toggle-solo(i); }
+            }
+            Rectangle {
+                y: mixer-y - title;
+                height: 1px;
+                background: t.color;
+            }
+        }
+    }
+    // The clips, over the columns: they scroll down as well as sideways.
+    clips := Flickable {
+        x: 0;
+        y: clips-y;
+        width: tracks.width;
+        height: clips-h;
+        content-width: tracks.content-width;
+        content-height: max(self.height, SessionUi.scenes * (row-h + gap));
+        content-x <=> tracks.content-x;
+        for t[i] in SessionUi.tracks: Rectangle {
+            x: i * (col-w + gap);
+            width: col-w;
+            height: parent.content-height;
+            for s in SessionUi.scenes: ClipSlot {
+                y: s * (row-h + gap);
+                height: row-h;
+                slot: SessionUi.slots[s * count + i];
+                tint: t.color;
+                progress: t.progress;
+                launch => { SessionUi.launch(i, s); }
+            }
+        }
+    }
+    // Main: scene launch buttons, Stop all and the set's main fader.
+    Rectangle {
+        x: main-x;
+        y: title;
+        width: main;
+        height: root.height - title;
+        background: Look.panel;
+        Rectangle {
+            y: 0;
+            height: head;
+            background: Look.select;
+            Text {
+                x: 6px;
+                text: "Main";
+                color: Theme.text;
+                font-size: 12px;
+                font-weight: 700;
+            }
+        }
+    }
+    scenes := Flickable {
+        x: main-x;
+        y: clips-y;
+        width: main;
+        height: clips-h;
+        interactive: false;
+        content-height: clips.content-height;
+        content-y <=> clips.content-y;
+        for s in SessionUi.scenes: Rectangle {
+            y: s * (row-h + gap);
+            height: row-h;
+            background: sa.has-hover ? Look.slot-hover : Look.slot;
+            HorizontalLayout {
+                padding-left: 6px;
+                padding-right: 6px;
+                spacing: 6px;
+                Text { text: "▶"; color: Look.dim; font-size: 10px; vertical-alignment: center; width: 10px; }
+                Text {
+                    text: s + 1;
+                    color: Theme.text;
+                    font-size: 11px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+            }
+            sa := TouchArea { clicked => { SessionUi.scene(s); } }
+        }
+    }
+    Rectangle {
+        x: main-x;
+        y: stop-y;
+        width: main;
+        height: row-h;
+        background: stop-all.has-hover ? Look.slot-hover : Look.slot;
+        HorizontalLayout {
+            padding-left: 6px;
+            spacing: 6px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle { width: 8px; height: 8px; background: Theme.text; }
+            }
+            Text { text: "Stop all"; color: Theme.text; font-size: 11px; vertical-alignment: center; }
+        }
+        stop-all := TouchArea { clicked => { SessionUi.stop-all(); } }
+    }
+    Strip {
+        x: main-x;
+        y: mixer-y;
+        width: main;
+        height: mixer;
+        tint: Theme.accent;
+        number: "M";
+        has-pan: false;
+        has-solo: false;
+        level: SessionUi.main-level;
+        volume: SessionUi.main-volume;
+        volume-changed(v) => { SessionUi.set-main-volume(v); }
+    }
+    Rectangle { x: main-x; y: mixer-y; width: main; height: 1px; background: Look.select; }
+}
+
+// The Jam source with no set open: how to open one.
+export component SessionHint inherits HorizontalLayout {
+    alignment: center;
+    padding-top: 6px;
+    spacing: 8px;
+    if SessionUi.loading: Text {
+        text: "Opening the Live set…";
+        color: Theme.text-dim;
+        font-size: 12px;
+        vertical-alignment: center;
+    }
+    if !SessionUi.loading: SwitchPill {
+        text: "OPEN LIVE SET…";
+        font-size: 11px;
+        on: false;
+        clicked => { SessionUi.open-set(); }
+    }
+    if SessionUi.error != "": Text {
+        text: SessionUi.error;
+        color: Theme.f-ff5500;
+        font-size: 11px;
+        vertical-alignment: center;
+    }
+}

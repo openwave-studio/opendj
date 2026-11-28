@@ -302,6 +302,7 @@ fn deck_function(key: &str, target: &str) -> Function {
         "jog" => ("Jog & scratch", "Jog nudge"),
         "jog_bend" => ("Jog & scratch", "Jog rim bend"),
         "jog_search" => ("Jog & scratch", "Jog search"),
+        "jog_scratch" => ("Jog & scratch", "Platter turn (degrees)"),
         "scratch2" => ("Jog & scratch", "Scratch"),
         "scratch2_enable" => ("Jog & scratch", "Scratch (platter touch)"),
         "wheel" => ("Jog & scratch", "Jog wheel"),

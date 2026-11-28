@@ -78,32 +78,55 @@ Settings > Controllers.
 
 ## Code signing
 
-Windows builds are unsigned for now, so Windows SmartScreen shows "Windows
-protected your PC" on first run (More info > Run anyway), and the release
-notes say so. SignPath Foundation's free signing for open source projects
-turned openDJ's application down (2026-10-29), so signing waits for a
-later release. When it comes back, either route below fits the release
-workflow.
+openDJ is accepted into SignPath Foundation's free code signing for open
+source projects (2026-11-24). The `windows` job in
+`.github/workflows/release.yml` signs tagged releases and nightlies once the
+`SIGNPATH_API_TOKEN` secret is set; without it, and on pull requests, the
+files stay unsigned and CI passes as before. Until the production
+certificate is in place, Windows SmartScreen shows "Windows protected your
+PC" on first run (More info > Run anyway).
 
-SignPath (if a new application is accepted later):
+Signing takes two requests per build: first `openDJ.exe` and
+`opendj-plugin-host.exe` (artifact configuration `binaries`), so the
+portable zip and the setup carry signed copies; then the setup itself
+(artifact configuration `setup`). Both configurations are in
+`.signpath/artifact-configurations/`.
 
-1. Apply at https://signpath.org (open source program) with the repository
-   URL. They check the project and its build; approval takes a few weeks.
-2. Once approved, install the SignPath GitHub App on the repository and add
-   the `SIGNPATH_API_TOKEN` repository secret, plus the organization and
-   project ids they give you.
-3. The `windows` job in `.github/workflows/release.yml` then uploads the
-   unsigned zip contents and setup as an artifact, submits it with
-   `signpath/github-action-submit-signing-request`, and publishes the signed
-   files it gets back.
+One-time setup:
 
-Azure Trusted Signing (about $10 a month, open to individuals in the US
-and Canada) also works: `scripts/bundle-windows.ps1` runs `SIGN_COMMAND`
-(for example a `signtool sign /dlib ...` line) on `openDJ.exe` and on the
-setup when that variable is set.
+1. Create a SignPath account, accept the invitation to the openDJ
+   organization, then confirm the CI user's email address (in that order).
+2. In SignPath, Trusted Build Systems > Add predefined > GitHub.com.
+3. Create a project with the slug `opendj` and link the GitHub.com trusted
+   build system to it (project > Trusted build systems > Link).
+4. In the project, add two artifact configurations with the slugs
+   `binaries` and `setup`, pasting in `binaries.xml` and `setup.xml`.
+5. Install the SignPath GitHub App (https://github.com/apps/signpath) on
+   the repository.
+6. Give the CI user submitter rights on the `test-signing` policy (and
+   later `release-signing`) and create an API token for it.
+7. In the repository's Settings > Secrets and variables > Actions, add the
+   secret `SIGNPATH_API_TOKEN` (the token) and the variable
+   `SIGNPATH_ORGANIZATION_ID` (the organization id from SignPath's URLs).
+   Optional variables: `SIGNPATH_PROJECT_SLUG` (default `opendj`) and
+   `SIGNPATH_SIGNING_POLICY` (default `test-signing`).
+8. Run Actions > Release > Run workflow on main to publish a nightly and
+   check that the job's last signing step lists both files as signed.
 
-Once openDJ is signed, the in-app updater also requires each new setup to
-carry a valid signature from the same publisher as the running copy.
+The first builds use SignPath's self-signed test certificate. Once SignPath
+has reviewed the setup and imported the production certificate, set
+`SIGNPATH_SIGNING_POLICY` to `release-signing`. Release signing may wait for
+an approval in SignPath; the job waits up to an hour per request.
+
+The in-app updater requires each new setup to carry a valid signature from
+the same publisher as the running copy, but only when the running
+`openDJ.exe` has a valid (trusted) signature. Test-signed builds don't, so
+they update like unsigned ones, and the first production-signed release
+installs over them normally.
+
+`scripts/bundle-windows.ps1` also still runs `SIGN_COMMAND` on `openDJ.exe`
+and the setup when that variable is set, for signing with another service
+such as Azure Trusted Signing.
 
 ## Testing
 

@@ -18,7 +18,8 @@ beat grid: a gate opens on the beat, and a roll starts on it.
 The **FX** button in the top bar, beside **WAVEFORMS**, shows or hides the
 FX bar. It runs the width of the window, under the decks and above the
 browser: each deck's three effects across that deck's width, and the Beat
-FX in the middle, under the mixer.
+FX in the middle, under the mixer. Each effect takes two rows, and its
+controls carry no labels: hover one for its name.
 
 Each effect has:
 
@@ -37,12 +38,13 @@ Each effect has:
   reverb's decay, the filter's resonance, the bitcrusher's bit depth, the
   noise's sweep, the drive's tone, the ladder's resonance, the hall's decay.
 - **D/W**, how much of the effect you hear over the dry track.
-- **Band**, under the effect: **All** for the whole sound, or **Low**,
-  **Mid** or **High** to put the effect on that band only. The other bands
+- **Band**, the three small bars under ON: click them for **Whole signal**
+  (the bars grey), or **Low**, **Mid** or **High** (that bar lit in its
+  color) to put the effect on that band only. The other bands
   play on untouched, so an echo on **High** echoes the hi-hats while the
   kick and bass stay dry. The bands are the mixer EQ's, in the waveform's
-  colors: low red, mid amber, high blue. In 4-Deck the band is the small
-  pill beside D/W. A plugin in the slot hears only its band too.
+  colors: low red, mid amber, high blue. In 4-Deck the bars sit beside D/W.
+  A plugin in the slot hears only its band too.
 
 A deck's effects start as **Reverb**, **Echo** and **Gate**. They play one
 after another, so you can stack them.
@@ -79,9 +81,8 @@ that deck.
 
 ## Release
 
-The Beat FX row ends with **Release**: pick how it lets go, then hold the
-round button beside it. Every effect on every deck and the Beat FX stops at
-once.
+The Beat FX has a red **Release** button beside D/W. Hold it, and every effect on every deck and the Beat FX stops at
+once. Right-click it to pick how:
 
 - **Echo**: the effects stop taking in the music, and their echoes and
   reverb ring out over the next beats.
@@ -102,7 +103,7 @@ taking in the track, and its echo or reverb rings out for a few beats.
 ## Beat FX
 
 The **BEAT FX** cell under the mixer is one effect on its own. Pick it by
-name, choose where it plays with **1**, **2**, **1&2** or **MST** (deck 1,
+name, choose where it plays with **1**, **2**, **1+2** or **MST** (deck 1,
 deck 2, both, or the main mix), then use **ON**, its beats and **D/W** as on
 a deck effect. In 4-Deck the row reads **1 · 2 · 3 · 4 · MST**.
 

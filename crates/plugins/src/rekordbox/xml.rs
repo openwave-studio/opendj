@@ -12,7 +12,7 @@ use opendj_engine::import::{ImportedEntry, ImportedList, ImportedListKind, Strea
 use opendj_engine::{Hotcue, LibraryInfo, Source, Track, MEMORY_CUE};
 use roxmltree::{Document, Node};
 
-use super::PLAYLISTS;
+use super::{common, PLAYLISTS};
 use crate::ImportedLibrary;
 
 fn parse(path: &Path) -> Result<String, String> {
@@ -52,7 +52,9 @@ pub fn read(
             ids.insert(id.to_string(), entry.clone());
         }
         if entry.streamed.is_none() && exists(&entry.path) {
-            tracks.push(track(n, entry.path));
+            let mut t = track(n, entry.path);
+            common::to_opendj_timeline(&mut t);
+            tracks.push(t);
         }
     }
     let lists = if groups.contains(&PLAYLISTS) {
@@ -223,9 +225,21 @@ fn track(n: Node, file: PathBuf) -> Track {
         },
     };
     if !markers.is_empty() {
-        t.set_grid(BeatGrid::new(markers));
+        t.set_grid(super::common::with_bar_from(
+            BeatGrid::new(markers),
+            first_in_bar(n),
+        ));
     }
     t
+}
+
+/// Where the track's first `TEMPO` falls in its bar (`Battito`, 1 to 4).
+fn first_in_bar(n: Node) -> u16 {
+    n.children()
+        .filter(|c| c.has_tag_name("TEMPO"))
+        .filter_map(|c| Some((number(c, "Inizio")?, number(c, "Battito")?)))
+        .min_by(|a, b| a.0.total_cmp(&b.0))
+        .map_or(1, |(_, beat)| beat as u16)
 }
 
 /// The playlist tree under `ROOT`: `Type="0"` is a folder, `1` a list whose
@@ -351,5 +365,18 @@ mod tests {
         assert_eq!(lib.lists[1].entries.len(), 1);
         assert!(preview(&path).unwrap().starts_with("2 tracks, 2 playlists"));
         std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn a_grid_starting_mid_bar_keeps_rekordboxs_bars() {
+        let xml = r#"<TRACK Name="A" AverageBpm="120.00">
+            <TEMPO Inizio="0.500" Bpm="120.00" Metro="4/4" Battito="4"/>
+        </TRACK>"#;
+        let doc = roxmltree::Document::parse(xml).unwrap();
+        let t = track(doc.root_element(), PathBuf::from("/a.mp3"));
+        // 0.5 s is beat 4, so bar 1 starts on the next beat, at 1 s.
+        assert_eq!(t.grid.beat_at(1.0).round().rem_euclid(4.0), 0.0);
+        assert_eq!(t.grid.beat_at(0.5).round().rem_euclid(4.0), 3.0);
+        assert!((t.grid.snap(0.51, false) - 0.5).abs() < 1e-9);
     }
 }

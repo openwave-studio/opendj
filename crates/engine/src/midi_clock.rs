@@ -95,7 +95,9 @@ pub struct BeatClock {
 }
 
 impl BeatClock {
-    pub(crate) fn publish(&self, heard_at: i64, beat: f64, tempo: f64) {
+    /// Writes a buffer's beat and tempo. The engine's audio thread does,
+    /// once a buffer; tests stand in for it.
+    pub fn publish(&self, heard_at: i64, beat: f64, tempo: f64) {
         let s = self.seq.load(Ordering::Relaxed);
         self.seq.store(s.wrapping_add(1), Ordering::Relaxed);
         fence(Ordering::Release);
@@ -425,6 +427,10 @@ struct Shared {
     input: Mutex<Option<String>>,
     input_generation: AtomicU64,
     input_open: AtomicBool,
+    /// Set to end the clock thread (see [`MidiClock::shut_down`]).
+    stop: AtomicBool,
+    /// The clock thread, until it is shut down.
+    thread: Mutex<Option<std::thread::JoinHandle<()>>>,
 }
 
 /// Picks the outputs the clock thread sends to.
@@ -444,6 +450,27 @@ impl MidiClock {
     pub fn set_input(&self, port: Option<String>) {
         *self.shared.input.lock().unwrap() = port;
         self.shared.input_generation.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Ends the clock thread and waits for it: gear still following gets
+    /// Stop, and the MIDI ports close while the thread is alive to close
+    /// them, not in the process's last moments. Waits at most `limit`;
+    /// whether the thread finished. One stuck opening a port on a MIDI
+    /// service that stopped answering is left behind.
+    pub fn shut_down_within(&self, limit: Duration) -> bool {
+        self.shared.stop.store(true, Ordering::Relaxed);
+        let Some(thread) = self.shared.thread.lock().unwrap().take() else {
+            return true;
+        };
+        let until = std::time::Instant::now() + limit;
+        while !thread.is_finished() && std::time::Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let finished = thread.is_finished();
+        if finished {
+            let _ = thread.join();
+        }
+        finished
     }
 
     /// Whether the clock input is open.
@@ -680,8 +707,9 @@ pub(crate) fn start(
     let spawned = std::thread::Builder::new()
         .name("midi-clock".into())
         .spawn(move || run(beat_clock, clock_in, link, weak, shared, c));
-    if let Err(e) = spawned {
-        eprintln!("could not start MIDI clock: {e}");
+    match spawned {
+        Ok(t) => *clock.shared.thread.lock().unwrap() = Some(t),
+        Err(e) => eprintln!("could not start MIDI clock: {e}"),
     }
     clock
 }
@@ -707,7 +735,7 @@ fn run(
     };
     let mut generation = u64::MAX;
     let mut last_try = f64::MIN;
-    while reg.strong_count() > 0 {
+    while reg.strong_count() > 0 && !shared.stop.load(Ordering::Relaxed) {
         let now = clock();
         let on = enabled.get_bool();
         // Outputs changed in Settings, or one is missing: open them.
@@ -799,6 +827,15 @@ fn run(
         let wait = sender.idle_for(snap, on, clock());
         if wait > 0.0 {
             std::thread::sleep(Duration::from_secs_f64(wait / 1e6));
+        }
+    }
+    // Quitting: gear following the clock stops with the app rather than
+    // running on at the last tempo. The ports close as this returns.
+    if sender.generator.running() {
+        for o in &mut sender.outputs {
+            if let Some(sink) = o.sink.as_mut() {
+                sink.send(&Message::Stop.bytes());
+            }
         }
     }
 }
