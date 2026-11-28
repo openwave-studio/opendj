@@ -66,9 +66,10 @@ struct Params {
     tempo_count: vec4<u32>,            // x: how many
     stem_place: array<vec4<f32>, 5>,   // each stem's lane (0 drums, 1 music, 2 vocals) and layer from the line out
     stem_layout: vec4<f32>,            // x: 0 stacked, 1 in three lanes
-    look: vec4<f32>,                   // live instrument deck: x look (0 track, 1 lilac, 2 outline), y scope points (0 = none), z 1 = Notes view, w its bottom note
-    look_color: vec4<f32>,             // the outline look's colour
+    look: vec4<f32>,                   // live instrument deck: x look (0 track, 1 lilac, 2 layers in look_color), y scope points (0 = none), z 1 = Notes view, w its bottom note
+    look_color: vec4<f32>,             // the instrument's colour, for look 2
     scope: array<vec4<f32>, 64>,       // the scope right of the play line, oldest first, -1 to 1
+    look_extra: vec4<f32>,             // x: 1 = a backdrop behind the scope, fading down
 };
 
 @group(0) @binding(0) var<uniform> p: Params;
@@ -777,24 +778,25 @@ fn shaded(ink: vec4<f32>, t: f32) -> vec3<f32> {
     return ink.rgb * (0.6 + 0.4 * sqrt(clamp(1.0 - t, 0.0, 1.0)));
 }
 
-// A live instrument deck's own looks: lilac layers (the body violet, the
-// mids and highs lilac, a near-white core), or an outline in the
-// instrument's colour over a faint fill.
+// A live instrument deck's own looks, in three layers: the body dark, the
+// mids and highs in the colour, a near-white core. Lilac, or the
+// instrument's own colour.
+fn look_layers() -> array<vec3<f32>, 3> {
+    if (p.look.x < 1.5) {
+        return array<vec3<f32>, 3>(LOOK_VIOLET, LOOK_LILAC, LOOK_CORE);
+    }
+    let c = p.look_color.rgb;
+    return array<vec3<f32>, 3>(c * 0.55, c, mix(c, vec3<f32>(1.0), 0.8));
+}
+
 fn live_look(base: vec3<f32>, s: Slice, d: f32, span: f32) -> vec3<f32> {
     let h = shape(s) * span;
-    if (p.look.x < 1.5) {
-        let bright = body(max(s.rms.y, s.rms.z), max(s.peak.y, s.peak.z)) * BAND_MID;
-        let mids = min(h, height(bright) * span);
-        var c = over(base, LOOK_VIOLET, fill(h, d) * 0.8);
-        c = over(c, LOOK_LILAC, fill(mids, d) * 0.8);
-        return over(c, LOOK_CORE, fill(mids * 0.35, d) * 0.8);
-    }
-    let k = max(p.scale, 1.0);
-    let ink = p.look_color.rgb;
-    let off = abs(d - h);
-    var c = over(base, ink, fill(h, d) * 0.10);
-    c = over(c, ink, exp(-off / (2.0 * k)) * 0.3);
-    return over(c, ink, clamp(0.75 * k + 0.5 - off, 0.0, 1.0) * 0.95);
+    let bright = body(max(s.rms.y, s.rms.z), max(s.peak.y, s.peak.z)) * BAND_MID;
+    let mids = min(h, height(bright) * span);
+    let layers = look_layers();
+    var c = over(base, layers[0], fill(h, d) * 0.8);
+    c = over(c, layers[1], fill(mids, d) * 0.8);
+    return over(c, layers[2], fill(mids * 0.35, d) * 0.8);
 }
 
 fn wave(base: vec3<f32>, s: Slice, bin: f32, d: f32, span: f32) -> vec3<f32> {
@@ -869,10 +871,17 @@ fn scope_point(j: i32, cx: f32, w: f32, n: f32, wave_h: f32, span: f32) -> vec2<
     return vec2<f32>(cx + u * w, wave_h * 0.5 - sign(v) * h);
 }
 
-fn scope_line(base: vec3<f32>, x: f32, y: f32, k: f32, wave_h: f32, span: f32) -> vec3<f32> {
+fn scope_line(base0: vec3<f32>, x: f32, y: f32, k: f32, wave_h: f32, span: f32) -> vec3<f32> {
     let cx = p.size.x * p.needle;
     let w = p.size.x - cx;
-    if (x < cx || w < 2.0) { return base; }
+    if (x < cx || w < 2.0) { return base0; }
+    var base = base0;
+    // A backdrop behind the scope in the look's colour, brighter at the
+    // top and fading down, as the Notes view's bands do.
+    if (p.look_extra.x > 0.5) {
+        let tint = select(LOOK_LILAC, p.look_color.rgb, p.look.x > 1.5);
+        base = over(base, tint, 0.14 * (1.0 - clamp(y / wave_h, 0.0, 1.0)));
+    }
     let n = p.look.y;
     let at = (x - cx) / w * (n - 1.0);
     let q = vec2<f32>(x, y);
@@ -884,7 +893,7 @@ fn scope_line(base: vec3<f32>, x: f32, y: f32, k: f32, wave_h: f32, span: f32) -
         let b = scope_point(j + 1, cx, w, n, wave_h, span);
         dist = min(dist, segment_dist(q, a, b));
     }
-    let ink = select(SCOPE_LILAC, p.look_color.rgb, p.look.x > 1.5);
+    let ink = select(SCOPE_LILAC, mix(p.look_color.rgb, vec3<f32>(1.0), 0.6), p.look.x > 1.5);
     var c = over(base, ink, exp(-dist / (2.0 * k)) * 0.3);
     // 1.5 pixels wide.
     return over(c, ink, clamp(0.75 * k + 0.5 - dist, 0.0, 1.0) * 0.95);
@@ -916,13 +925,12 @@ fn note_view(base: vec3<f32>, x: f32, y: f32, k: f32, wave_h: f32) -> vec3<f32> 
         if (x < x0 - 6.0 * k || x > x1 + 6.0 * k) { continue; }
         let note = m.z;
         let rel = note - bottom;
-        // Outside the rows: on the nearer edge, half showing, with a chevron.
+        // Outside the rows: on the nearer edge row, faded.
         let below = rel < -0.5;
         let above = rel > rows - 0.5;
-        var cy = wave_h - (rel + 0.5) * lh;
-        if (below) { cy = wave_h; }
-        if (above) { cy = 0.0; }
-        if (abs(y - cy) > hh + 10.0 * k) { continue; }
+        let cy = wave_h - (clamp(rel, 0.0, rows - 1.0) + 0.5) * lh;
+        let fade = select(1.0, 0.4, below || above);
+        if (abs(y - cy) > hh + 6.0 * k) { continue; }
         let held = u32(m.w) == 1u;
         let r = min(hh, 0.5 * (x1 - x0));
         let mid = vec2<f32>(0.5 * (x0 + x1), cy);
@@ -931,18 +939,10 @@ fn note_view(base: vec3<f32>, x: f32, y: f32, k: f32, wave_h: f32) -> vec3<f32> 
         let sd = length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - r;
         let hue = octave_hue(note);
         if (held) {
-            color = over(color, mix(hue, vec3<f32>(1.0), 0.5), exp(-max(sd, 0.0) / (2.0 * k)) * 0.45);
-            color = over(color, vec3<f32>(1.0), clamp(0.5 - sd, 0.0, 1.0));
+            color = over(color, mix(hue, vec3<f32>(1.0), 0.5), exp(-max(sd, 0.0) / (2.0 * k)) * 0.45 * fade);
+            color = over(color, vec3<f32>(1.0), clamp(0.5 - sd, 0.0, 1.0) * fade);
         } else {
-            color = over(color, mix(hue, vec3<f32>(1.0), 0.3), clamp(0.5 - sd, 0.0, 1.0) * 0.9);
-        }
-        if (below || above) {
-            // The chevron, pointing out past the edge, at the note's end.
-            let dir = select(-1.0, 1.0, below);
-            let tip = vec2<f32>(x1 - 4.0 * k, cy - dir * (hh + 6.0 * k));
-            let arm = vec2<f32>(3.0 * k, dir * 3.0 * k);
-            let c = min(segment_dist(vec2<f32>(x, y), tip, tip - arm), segment_dist(vec2<f32>(x, y), tip, tip + vec2<f32>(arm.x, -arm.y)));
-            color = over(color, mix(hue, vec3<f32>(1.0), 0.3), clamp(0.6 * k + 0.5 - c, 0.0, 1.0));
+            color = over(color, mix(hue, vec3<f32>(1.0), 0.3), clamp(0.5 - sd, 0.0, 1.0) * 0.9 * fade);
         }
     }
     return color;

@@ -28,7 +28,7 @@ use opendj_library::Library;
 use opendj_plugins::source::{QueryKind, SourceQuery};
 use opendj_waveform::{
     steady_grid, wgpu, Extras, Frame, GpuTrack, GridSection, LiveLook, Mode, Palette, PhraseKind,
-    TempoLabel, WaveformRenderer, WaveformView, GRID_SECTIONS, MAX_TEMPOS,
+    ScopeBackdrop, TempoLabel, WaveformRenderer, WaveformView, GRID_SECTIONS, MAX_TEMPOS,
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use smooth::{FrameStats, FrameTimer, SmoothClock};
@@ -1592,54 +1592,90 @@ fn run(graphics: Rc<graphics::Choice>) -> Result<(), Box<dyn std::error::Error>>
     let visual = engine.visual_positions();
 
     // An instrument deck's large waveform: its view (Wave, Knobs or Notes,
-    // the button at its top right steps through them) and its look (from
-    // its right-click menu), a deck each, kept in the settings.
+    // the button at its top right steps through them), and from its
+    // right-click menu its look, the Notes view's octaves and the scope's
+    // backdrop, a deck each, kept in the settings.
     {
-        const VIEW_KEY: &str = "instrument_wave_view";
-        const LOOK_KEY: &str = "instrument_wave_look";
-        let saved = |key: &str, choices: i32| -> Vec<i32> {
+        /// Each list: its settings key, its choices (from `first`), its
+        /// default.
+        #[derive(Clone, Copy, PartialEq)]
+        enum List {
+            View,
+            Look,
+            Octaves,
+            Backdrop,
+        }
+        impl List {
+            fn spec(self) -> (&'static str, i32, i32, i32) {
+                match self {
+                    List::View => ("instrument_wave_view", 0, 2, 0),
+                    List::Look => ("instrument_wave_look", 0, 1, 0),
+                    List::Octaves => (
+                        "instrument_wave_octaves",
+                        2,
+                        4,
+                        live_trace::DEFAULT_OCTAVES as i32,
+                    ),
+                    List::Backdrop => ("instrument_wave_backdrop", 0, 1, 0),
+                }
+            }
+            fn get(self, ui: &MacroLanes) -> ModelRc<i32> {
+                match self {
+                    List::View => ui.get_view(),
+                    List::Look => ui.get_look(),
+                    List::Octaves => ui.get_octaves(),
+                    List::Backdrop => ui.get_backdrop(),
+                }
+            }
+            fn set(self, ui: &MacroLanes, list: Vec<i32>) {
+                let list = ModelRc::new(VecModel::from(list));
+                match self {
+                    List::View => ui.set_view(list),
+                    List::Look => ui.set_look(list),
+                    List::Octaves => ui.set_octaves(list),
+                    List::Backdrop => ui.set_backdrop(list),
+                }
+            }
+        }
+        let ui = app.global::<MacroLanes>();
+        for list in [List::View, List::Look, List::Octaves, List::Backdrop] {
+            let (key, first, last, default) = list.spec();
             let v = settings::load()[key].clone();
-            (0..NUM_DECKS)
+            let saved = (0..NUM_DECKS)
                 .map(|d| {
                     v[d].as_i64()
-                        .map_or(0, |n| (n as i32).clamp(0, choices - 1))
+                        .map_or(default, |n| (n as i32).clamp(first, last))
                 })
-                .collect()
-        };
-        let ui = app.global::<MacroLanes>();
-        ui.set_view(ModelRc::new(VecModel::from(saved(VIEW_KEY, 3))));
-        ui.set_look(ModelRc::new(VecModel::from(saved(LOOK_KEY, 2))));
+                .collect();
+            list.set(&ui, saved);
+        }
         // Sets deck `deck`'s entry in one of the lists, and saves it.
-        let pick = |app: &AppWindow, key: &str, deck: i32, to: &dyn Fn(i32) -> i32| {
+        let pick = |app: &AppWindow, list: List, deck: i32, to: &dyn Fn(i32) -> i32| {
             let ui = app.global::<MacroLanes>();
-            let model = if key == VIEW_KEY {
-                ui.get_view()
-            } else {
-                ui.get_look()
-            };
-            let mut list: Vec<i32> = model.iter().collect();
-            if let Some(v) = list.get_mut(deck.max(0) as usize) {
-                *v = to(*v);
+            let (key, first, last, _) = list.spec();
+            let mut values: Vec<i32> = list.get(&ui).iter().collect();
+            if let Some(v) = values.get_mut(deck.max(0) as usize) {
+                *v = to(*v).clamp(first, last);
             }
-            settings::set(key, serde_json::json!(list));
-            let list = ModelRc::new(VecModel::from(list));
-            if key == VIEW_KEY {
-                ui.set_view(list);
-            } else {
-                ui.set_look(list);
-            }
+            settings::set(key, serde_json::json!(values));
+            list.set(&ui, values);
             app.window().request_redraw();
         };
         let app_weak = app.as_weak();
         ui.on_cycle(move |deck| {
             if let Some(app) = app_weak.upgrade() {
-                pick(&app, VIEW_KEY, deck, &|v| (v + 1) % 3);
+                pick(&app, List::View, deck, &|v| (v + 1) % 3);
             }
         });
         let app_weak = app.as_weak();
-        ui.on_choose_look(move |deck, look| {
+        ui.on_choose(move |what, deck, value| {
+            let list = match what.as_str() {
+                "look" => List::Look,
+                "octaves" => List::Octaves,
+                _ => List::Backdrop,
+            };
             if let Some(app) = app_weak.upgrade() {
-                pick(&app, LOOK_KEY, deck, &|_| look.clamp(0, 1));
+                pick(&app, list, deck, &|_| value);
             }
         });
     }
@@ -3307,6 +3343,8 @@ impl Gpu {
         let four = app.get_layout() == FOUR_DECK_LAYOUT;
         let views = app.global::<MacroLanes>().get_view();
         let looks = app.global::<MacroLanes>().get_look();
+        let octaves = app.global::<MacroLanes>().get_octaves();
+        let backdrops = app.global::<MacroLanes>().get_backdrop();
         // The instrument's own color, for the outline look.
         let own_color = strip_color(app.global::<InstrumentsUi>().invoke_color_index());
         // The large waveforms' shared zoom, gliding to a new step: the next
@@ -3517,9 +3555,10 @@ impl Gpu {
             let window = live[d]
                 .then(|| {
                     let color = DECK_COLORS[d];
-                    self.live
-                        .as_mut()
-                        .and_then(|t| t.window(d, now, held, color))
+                    self.live.as_mut().and_then(|t| {
+                        let octaves = octaves.row_data(d).unwrap_or(4).clamp(2, 4) as u8;
+                        t.window(d, now, held, octaves, color)
+                    })
                 })
                 .flatten();
             // A Groove Box deck's step lanes; an instrument deck's notes in
@@ -3567,8 +3606,13 @@ impl Gpu {
             let instrument = window.is_some() && held.is_some() && !groove[d];
             self.scrolling[d].set_live_look(match (instrument, looks.row_data(d)) {
                 (false, _) => LiveLook::Track,
-                (true, Some(1)) => LiveLook::Outline(own_color),
+                (true, Some(1)) => LiveLook::Colored(own_color),
                 (true, _) => LiveLook::Lilac,
+            });
+            self.scrolling[d].set_scope_backdrop(if backdrops.row_data(d) == Some(1) {
+                ScopeBackdrop::Fade
+            } else {
+                ScopeBackdrop::None
             });
             self.scrolling[d].set_scope(
                 instrument

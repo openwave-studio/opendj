@@ -1608,7 +1608,7 @@ fn live_frame() -> Frame {
 /// line that meets the centre line at both ends.
 #[test]
 fn draws_lilac_look_and_scope() {
-    use opendj_waveform::{LiveLook, SCOPE_POINTS};
+    use opendj_waveform::{LiveLook, ScopeBackdrop, SCOPE_POINTS};
     let Some((device, queue)) = gpu() else {
         eprintln!("no GPU adapter; skipping");
         return;
@@ -1663,13 +1663,29 @@ fn draws_lilac_look_and_scope() {
         .max_by_key(|&y| px(510, y).iter().map(|&c| c as u32).sum::<u32>())
         .unwrap();
     assert!((37..=42).contains(&edge), "tapered to y {edge}");
+
+    // In the instrument's colour (pink) with the backdrop: the body pink,
+    // and behind the scope a pink fade, brighter at the top.
+    view.set_live_look(LiveLook::Colored([1.0, 0.561, 0.671, 1.0]));
+    view.set_scope_backdrop(ScopeBackdrop::Fade);
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    let p = px(150, 20);
+    assert!(p[0] > p[2] && p[2] > p[1] && p[0] > 100, "pink body: {p:?}");
+    let (top, bottom) = (px(470, 4), px(470, 76));
+    assert!(top[0] > top[1] + 8, "pink at the top: {top:?}");
+    assert!(top[0] > bottom[0] + 8, "fading down: {top:?} {bottom:?}");
 }
 
 /// The Notes view: no waveform, a band per octave, and notes as capsules
-/// on two octaves of rows; one below them sits on the bottom edge.
+/// on two octaves of rows; one below them sits faded on the bottom row.
 #[test]
 fn draws_notes_view() {
-    use opendj_waveform::{Lanes, Mark, MarkKind, NOTE_ROWS};
+    use opendj_waveform::{Lanes, Mark, MarkKind};
     let Some((device, queue)) = gpu() else {
         eprintln!("no GPU adapter; skipping");
         return;
@@ -1695,7 +1711,7 @@ fn draws_notes_view() {
         kind,
     };
     view.set_lanes(Some(Lanes {
-        count: NOTE_ROWS,
+        count: 24,
         tinted: 0,
         marks: vec![
             note(60, 5.0, 7.0, MarkKind::Played),
@@ -1723,9 +1739,12 @@ fn draws_notes_view() {
     // E4, held, white.
     let p = px(240, row_y(64));
     assert!(p.iter().all(|&c| c > 230), "held E4: {p:?}");
-    // G2, below the rows: on the bottom edge, in octave 2's mint.
-    let p = px(176, h - 1);
-    assert!(p[1] > p[0] && p[1] > 150, "G2 on the edge: {p:?}");
+    // G2, below the rows: on the bottom row, in octave 2's mint, faded.
+    let p = px(176, row_y(48));
+    assert!(
+        p[1] > p[0] && p[1] > 70 && p[1] < 170,
+        "G2 on the bottom row: {p:?}"
+    );
     // C3's band is brighter at its C than at its B.
     let c3 = px(30, row_y(48)).iter().map(|&c| c as u32).sum::<u32>();
     let b3 = px(30, row_y(59)).iter().map(|&c| c as u32).sum::<u32>();

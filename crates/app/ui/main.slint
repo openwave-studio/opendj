@@ -78,16 +78,21 @@ export global MacroLanes {
     // 1 its knobs as macro lanes (Knobs), 2 its notes (Notes). Set by the
     // app; `cycle` steps one on.
     in property <[int]> view: [0, 0, 0, 0];
-    // `look[d]`: 0 lilac, 1 an outline in the instrument's color. Set by
-    // the app; `choose-look` picks one.
+    // `look[d]`: 0 lilac, 1 the same layers in the instrument's color.
+    // Set by the app; `choose("look", ..)` picks one.
     in property <[int]> look: [0, 0, 0, 0];
+    // `octaves[d]`: how many octaves (2 to 4) the Notes view shows.
+    in property <[int]> octaves: [4, 4, 4, 4];
+    // `backdrop[d]`: 1 for a fade in the look's color behind the scope.
+    in property <[int]> backdrop: [0, 0, 0, 0];
     // Which of the page's eight knobs moved in view and so draw a line.
     // Set by the app.
     in property <[bool]> moved: [false, false, false, false, false, false, false, false];
     // Each knob's line colour, as the waveform draws it (LEVEL_COLORS).
     out property <[color]> colors: [Theme.f-ff6b6b, Theme.f-ffb347, Theme.f-ffe066, Theme.f-7be495, Theme.f-4fd1c5, Theme.f-63b3ed, Theme.f-b69cff, Theme.f-f78fb3];
     callback cycle(deck: int);
-    callback choose-look(deck: int, look: int);
+    // Sets deck `deck`'s "look", "octaves" or "backdrop" to `value`.
+    callback choose(what: string, deck: int, value: int);
 }
 
 // One knob's colour, name and value, beside the play line; dimmed while
@@ -339,7 +344,7 @@ component Waveform inherits Rectangle {
     // Right-click: zoom every scrolling waveform.
     wave-menu := PopupWindow {
         x: min(menu-x, root.width - 130px);
-        y: min(menu-y, root.height - (live-knobs ? 208px : 134px));
+        y: min(menu-y, root.height - (live-knobs ? 260px : 134px));
         width: 130px;
         Rectangle {
             background: Theme.panel-raised;
@@ -422,7 +427,7 @@ component Waveform inherits Rectangle {
                     }
                 }
             }
-            // An instrument deck's look: lilac, or an outline in the
+            // An instrument deck's look: lilac, or the same layers in the
             // instrument's own color.
             if live-knobs: Rectangle {
                 height: 22px;
@@ -457,9 +462,68 @@ component Waveform inherits Rectangle {
                     }
                     lta := TouchArea {
                         clicked => {
-                            MacroLanes.choose-look(deck, i);
+                            MacroLanes.choose("look", deck, i);
                             wave-menu.close();
                         }
+                    }
+                }
+            }
+            // A fade in the look's color behind the scope, on or off.
+            if live-knobs: Rectangle {
+                height: 24px;
+                background: bta.has-hover ? Theme.panel-raised.brighter(0.3) : transparent;
+                border-radius: 4px;
+                Text {
+                    x: 10px;
+                    text: "Scope fade";
+                    color: Theme.text;
+                    font-size: 11px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                if MacroLanes.backdrop[deck] == 1: Text {
+                    x: parent.width - self.width - 10px;
+                    text: "✓";
+                    color: Theme.accent;
+                    font-size: 11px;
+                    vertical-alignment: center;
+                }
+                bta := TouchArea {
+                    clicked => {
+                        MacroLanes.choose("backdrop", deck, 1 - MacroLanes.backdrop[deck]);
+                        wave-menu.close();
+                    }
+                }
+            }
+            // How many octaves the Notes view shows.
+            if live-knobs: HorizontalLayout {
+                height: 26px;
+                spacing: 4px;
+                padding-left: 10px;
+                padding-right: 6px;
+                padding-bottom: 2px;
+                Text {
+                    text: "Octaves";
+                    color: Theme.text;
+                    font-size: 11px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                for n in [2, 3, 4]: Rectangle {
+                    property <bool> on: MacroLanes.octaves[deck] == n;
+                    width: 22px;
+                    border-radius: 4px;
+                    background: on ? Theme.accent : ota.has-hover ? Theme.panel-raised.brighter(0.3) : Theme.panel-raised.brighter(0.12);
+                    Text {
+                        text: n;
+                        color: on ? Theme.f-ffffff : Theme.text;
+                        font-family: "Inter Tabular";
+                        font-size: 11px;
+                        font-weight: 700;
+                    }
+                    ota := TouchArea {
+                        clicked => { MacroLanes.choose("octaves", deck, n); }
                     }
                 }
             }

@@ -382,7 +382,7 @@ struct Params {
     /// How the stems are laid out: 0 stacked, 1 in lanes.
     stem_layout: [f32; 4],
     /// A live instrument deck's look: x the [`LiveLook`] (0 a track's
-    /// colours, 1 lilac, 2 an outline in `look_color`), y the scope's
+    /// colours, 1 lilac, 2 layers in `look_color`), y the scope's
     /// points (0 for none), z 1 for the Notes view, w the Notes view's
     /// bottom note (fractional while the window slides).
     look: [f32; 4],
@@ -390,6 +390,8 @@ struct Params {
     /// The scope right of the play line: [`SCOPE_POINTS`] samples, oldest
     /// first, from -1 to 1.
     scope: [[f32; 4]; SCOPE_POINTS / 4],
+    /// x: the scope's backdrop (see [`ScopeBackdrop`]).
+    look_extra: [f32; 4],
 }
 
 /// The colours [`MarkKind::Level`]'s `color` 1 to 8 picks, as sRGB hex.
@@ -405,9 +407,6 @@ pub const MAX_MARKS: usize = 256;
 /// through (see [`WaveformView::set_scope`]).
 pub const SCOPE_POINTS: usize = 256;
 
-/// Rows of the Notes view: two octaves (see [`Lanes::notes`]).
-pub const NOTE_ROWS: u32 = 24;
-
 /// How a live instrument deck's waveform is drawn.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum LiveLook {
@@ -416,8 +415,20 @@ pub enum LiveLook {
     Track,
     /// Lilac: a violet body, lilac mids and a near-white core.
     Lilac,
-    /// An outline in this colour (RGBA) with a faint fill.
-    Outline([f32; 4]),
+    /// The same three layers in this colour (RGBA): the body darker, the
+    /// mids in it, the core a pale tint of it.
+    Colored([f32; 4]),
+}
+
+/// What lies behind the scope right of a live instrument deck's play line,
+/// in the look's colour.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ScopeBackdrop {
+    /// Nothing: the scope is an open line.
+    #[default]
+    None,
+    /// Brighter at the top, fading down.
+    Fade,
 }
 
 /// What a mark on a live deck's lanes is, which sets how it is drawn.
@@ -485,9 +496,8 @@ pub struct Lanes {
     pub lit: [f32; 4],
     /// The Notes view: each mark's `lane` is its MIDI note, drawn as a
     /// capsule tinted by its octave over a band per octave, on
-    /// [`NOTE_ROWS`] rows from this note up (fractional while the window
-    /// slides an octave). Notes outside the rows sit on the edge nearer
-    /// them, with a chevron. `count` is then [`NOTE_ROWS`].
+    /// `count` rows from this note up (fractional while the window slides
+    /// an octave). Notes outside the rows sit faded on the row nearer them.
     pub notes: Option<f32>,
 }
 
@@ -940,6 +950,7 @@ pub struct WaveformView {
     /// [`WaveformView::set_live_look`] and [`WaveformView::set_scope`]).
     live_look: LiveLook,
     scope: Option<[f32; SCOPE_POINTS]>,
+    backdrop: ScopeBackdrop,
     /// The real wave's columns (scrolling views), and the texture they go
     /// to: [`DETAIL_ROW`] columns a row, a row for 1×1 on overviews.
     detail: detail::Columns,
@@ -979,6 +990,7 @@ impl WaveformView {
             lanes: None,
             live_look: LiveLook::Track,
             scope: None,
+            backdrop: ScopeBackdrop::None,
             detail: detail::Columns::default(),
             detail_texture,
             detail_upload: Vec::new(),
@@ -1065,6 +1077,11 @@ impl WaveformView {
     /// curve as the waveform. None for none. Scrolling only.
     pub fn set_scope(&mut self, scope: Option<[f32; SCOPE_POINTS]>) {
         self.scope = scope;
+    }
+
+    /// What lies behind the scope (see [`WaveformView::set_scope`]).
+    pub fn set_scope_backdrop(&mut self, backdrop: ScopeBackdrop) {
+        self.backdrop = backdrop;
     }
 
     /// The colour behind the waveform, as RGBA from 0 to 1.
@@ -1205,16 +1222,21 @@ impl WaveformView {
             look: [0.0; 4],
             look_color: [0.0; 4],
             scope: [[0.0; 4]; SCOPE_POINTS / 4],
+            look_extra: [0.0; 4],
         };
         if self.mode == Mode::Scrolling && self.live {
             match self.live_look {
                 LiveLook::Track => {}
                 LiveLook::Lilac => params.look[0] = 1.0,
-                LiveLook::Outline(c) => {
+                LiveLook::Colored(c) => {
                     params.look[0] = 2.0;
                     params.look_color = c;
                 }
             }
+            params.look_extra[0] = match self.backdrop {
+                ScopeBackdrop::None => 0.0,
+                ScopeBackdrop::Fade => 1.0,
+            };
             if let Some(scope) = &self.scope {
                 params.look[1] = SCOPE_POINTS as f32;
                 for (i, v) in scope.iter().enumerate() {
