@@ -41,6 +41,11 @@ if (Test-Path $helper) {
 } else {
   Write-Warning "no $helper, so this build can't run audio plugins"
 }
+# DirectX's DXC shader compiler, which wgpu loads from next to openDJ.exe.
+# Without it wgpu falls back to the old FXC, which draws the waveforms wrong.
+$dxc = & (Join-Path $PSScriptRoot "find-dxc.ps1")
+Copy-Item "$dxc/dxcompiler.dll" "$stage/"
+if (Test-Path "$dxc/dxil.dll") { Copy-Item "$dxc/dxil.dll" "$stage/" }
 Copy-Item -Recurse res/controllers "$stage/controllers"
 # The guided tour's demo tracks, once they are in the repository.
 if (Test-Path res/demo) { Copy-Item -Recurse res/demo "$stage/demo" }

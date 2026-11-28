@@ -1,5 +1,8 @@
 //! Renders both waveform modes offscreen and checks the shader validates and draws.
-//! Needs a Vulkan driver (a software one such as lavapipe is fine); skips otherwise.
+//! Needs a GPU adapter (a software one such as lavapipe or Windows' WARP is
+//! fine); skips otherwise. `WGPU_BACKEND` picks the backend. On Windows,
+//! DirectX 12 needs the DXC shader compiler on PATH (scripts/find-dxc.ps1):
+//! FXC miscompiles the shader.
 
 use std::sync::Arc;
 
@@ -25,8 +28,10 @@ fn levels(base: Vec<[u8; 8]>) -> Vec<Vec<[u8; 8]>> {
 }
 
 fn gpu() -> Option<(wgpu::Device, wgpu::Queue)> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
+    let instance =
+        wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
     let adapter = pollster::block_on(instance.request_adapter(&Default::default())).ok()?;
+    eprintln!("adapter: {:?}", adapter.get_info());
     let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
         required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
         ..Default::default()
