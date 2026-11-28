@@ -359,7 +359,7 @@ mod tests {
                 beats: beats(&opendj_engine::BeatGrid::constant(120.0, 0.1), 2.0),
                 bpm: 120.0,
                 cues,
-                waveforms: wave::waveforms(&waveform, 2.0),
+                waveforms: wave::waveforms(&waveform, 2.0, 0.0),
                 mp3_frames: Some(38),
             },
         )

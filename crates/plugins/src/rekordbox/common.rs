@@ -3,7 +3,7 @@
 //! openDJ's search syntax.
 
 use opendj_engine::beats::{BeatGrid, GridMarker};
-use opendj_engine::{Marker, MarkerKind};
+use opendj_engine::{Marker, MarkerKind, Source, Track};
 
 /// The 16 colours of rekordbox's hot cue menu, by the code it keeps for
 /// each, as rekordbox shows them (the same table opendj-export writes).
@@ -55,6 +55,20 @@ pub fn hot_cue_number(kind: i64) -> Option<usize> {
         5..=9 => Some(kind as usize - 2),
         _ => None,
     }
+}
+
+/// Moves a track's grid, cues and phrases from rekordbox's timeline to
+/// openDJ's, which for some MP3s runs earlier (see
+/// [`opendj_engine::decode::rekordbox_offset`]).
+pub fn to_opendj_timeline(t: &mut Track) {
+    let Source::File(path) = &t.source else {
+        return;
+    };
+    if t.grid.is_empty() && t.info.hotcues.is_empty() && t.info.markers.is_empty() {
+        return;
+    }
+    let lead = opendj_engine::decode::rekordbox_offset(path);
+    t.shift_times(-lead);
 }
 
 /// A grid from rekordbox's beats (seconds and tempo of each): a marker

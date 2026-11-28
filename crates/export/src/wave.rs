@@ -56,15 +56,21 @@ fn level(b: u8) -> f64 {
     x * x
 }
 
-fn columns(waveform: &Waveform, duration: f64) -> Vec<Column> {
+/// `lead` seconds of silence come before the audio.
+fn columns(waveform: &Waveform, duration: f64, lead: f64) -> Vec<Column> {
     let bins: &[WaveformBin] = waveform.levels.first().map_or(&[], Vec::as_slice);
     let rate = waveform.bins_per_second.max(1.0);
-    let n = ((duration * COLUMNS_PER_SECOND).ceil() as usize).max(1);
+    let n = (((duration + lead) * COLUMNS_PER_SECOND).ceil() as usize).max(1);
+    // Where column `i` starts, in slices of the audio.
+    let at = |i: usize| (i as f64 - lead * COLUMNS_PER_SECOND) * rate / COLUMNS_PER_SECOND;
     (0..n)
         .map(|i| {
-            let a = (i as f64 * rate / COLUMNS_PER_SECOND).round() as usize;
-            let b = (((i + 1) as f64 * rate / COLUMNS_PER_SECOND).round() as usize).max(a + 1);
             let mut c = Column::default();
+            if at(i + 1) <= 0.0 {
+                return c;
+            }
+            let a = at(i).round().max(0.0) as usize;
+            let b = (at(i + 1).round() as usize).max(a + 1);
             for bin in bins
                 .get(a.min(bins.len())..b.min(bins.len()))
                 .unwrap_or(&[])
@@ -129,8 +135,11 @@ pub struct Waveforms {
     pub band_gains: Waveform3BandCalibration,
 }
 
-pub fn waveforms(waveform: &Waveform, duration: f64) -> Waveforms {
-    let columns = columns(waveform, duration);
+/// The waveforms of `duration` seconds of audio with `lead` seconds of
+/// silence before it, as rekordbox decodes some MP3s (see
+/// [`opendj_engine::decode::rekordbox_offset`]).
+pub fn waveforms(waveform: &Waveform, duration: f64, lead: f64) -> Waveforms {
+    let columns = columns(waveform, duration, lead);
     let n = columns.len();
     let track_peak = columns.iter().map(|c| c.peak).fold(0.0, f64::max);
 
@@ -313,7 +322,11 @@ mod tests {
 
     #[test]
     fn column_counts() {
-        let w = waveforms(&steady(2.0, [100, 100, 100, 200, 50, 50, 50, 120]), 2.0);
+        let w = waveforms(
+            &steady(2.0, [100, 100, 100, 200, 50, 50, 50, 120]),
+            2.0,
+            0.0,
+        );
         assert_eq!(w.detail.data.len(), 300);
         assert_eq!(w.colour_detail.data.len(), 300);
         assert_eq!(w.band_detail.data.len(), 300);
@@ -325,7 +338,7 @@ mod tests {
 
     #[test]
     fn loud_steady_signal_is_full_height() {
-        let w = waveforms(&steady(1.0, [255, 60, 60, 255, 200, 50, 50, 200]), 1.0);
+        let w = waveforms(&steady(1.0, [255, 60, 60, 255, 200, 50, 50, 200]), 1.0, 0.0);
         let byte = w.detail.data[10].into_bytes()[0];
         assert_eq!(byte & 0x1f, 31);
         // all bass: not white
@@ -333,15 +346,30 @@ mod tests {
     }
 
     #[test]
+    fn a_lead_is_silence_before_the_audio() {
+        // 2257 samples at 44.1 kHz: 7.7 columns.
+        let lead = 2257.0 / 44_100.0;
+        let w = waveforms(
+            &steady(1.0, [255, 60, 60, 255, 200, 50, 50, 200]),
+            1.0,
+            lead,
+        );
+        assert_eq!(w.detail.data.len(), 158);
+        let height = |i: usize| w.detail.data[i].into_bytes()[0] & 0x1f;
+        assert!((0..7).all(|i| height(i) == 0));
+        assert!((7..158).all(|i| height(i) == 31));
+    }
+
+    #[test]
     fn silence_is_flat() {
-        let w = waveforms(&steady(1.0, [0; 8]), 1.0);
+        let w = waveforms(&steady(1.0, [0; 8]), 1.0, 0.0);
         assert!(w.detail.data.iter().all(|c| c.into_bytes()[0] & 0x1f == 0));
         assert_eq!(w.band_gains.low_gain, GAIN_FLOOR[0]);
     }
 
     #[test]
     fn previews_never_drop_to_zero() {
-        let w = waveforms(&steady(1.0, [0; 8]), 1.0);
+        let w = waveforms(&steady(1.0, [0; 8]), 1.0, 0.0);
         let pwav: Vec<u8> = w.preview.data.iter().map(|c| c.into_bytes()[0]).collect();
         let pwv2: Vec<u8> = w.tiny.data.iter().map(|c| c.into_bytes()[0]).collect();
         assert!(pwav.iter().all(|&b| b == PWAV_FLOOR));

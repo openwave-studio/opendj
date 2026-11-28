@@ -17,7 +17,7 @@ use std::path::Path;
 
 use opendj_engine::import::StreamedTrack;
 use opendj_engine::key::Key;
-use opendj_engine::{Source, Track};
+use opendj_engine::{BeatGrid, Source, Track};
 
 /// A list or folder to write. Folders come before what they hold.
 #[derive(Debug, Clone, Default)]
@@ -124,6 +124,8 @@ fn node(x: &mut String, lists: &[XmlList], l: usize, ids: &[usize], depth: usize
 
 fn track(x: &mut String, id: usize, t: &Track, path: &Path) {
     let i = &t.info;
+    // Times on rekordbox's timeline, which for some MP3s runs later.
+    let lead = opendj_engine::decode::rekordbox_offset(path);
     let mut comment = i.comment.trim().to_string();
     let tags: Vec<&str> = i.tags.iter().map(|t| t.name.as_str()).collect();
     if !tags.is_empty() {
@@ -169,8 +171,8 @@ fn track(x: &mut String, id: usize, t: &Track, path: &Path) {
         let _ = write!(x, " Colour=\"0x{:06X}\"", track_colour(c));
     }
     x.push_str(">\n");
-    tempo(x, t);
-    for h in &i.hotcues {
+    tempo(x, &t.beat_grid().shifted(lead));
+    for h in i.hotcues.iter().map(|h| h.shifted(lead)) {
         let num = if h.number < HOT_CUES {
             h.number as i32
         } else {
@@ -207,8 +209,7 @@ fn track(x: &mut String, id: usize, t: &Track, path: &Path) {
 /// One `TEMPO` per grid marker, with its place in the bar (bars are four
 /// beats from the grid's beat 0). A grid starting before the track does
 /// starts at its first beat inside it, as rekordbox needs.
-fn tempo(x: &mut String, t: &Track) {
-    let grid = t.beat_grid();
+fn tempo(x: &mut String, grid: &BeatGrid) {
     for (k, m) in grid.markers().iter().enumerate() {
         let next = grid.markers().get(k + 1).map(|n| n.seconds);
         let mut seconds = m.seconds;
@@ -558,7 +559,7 @@ mod tests {
         let mut t = track("/a.mp3", "A");
         t.set_grid(BeatGrid::constant(120.0, -0.2));
         let mut x = String::new();
-        tempo(&mut x, &t);
+        tempo(&mut x, &t.beat_grid());
         // Beat 0 at -0.2 s; beat 1 at 0.3 s is the second of the bar.
         assert!(
             x.contains("Inizio=\"0.300\" Bpm=\"120.00\" Metro=\"4/4\" Battito=\"2\""),

@@ -214,6 +214,7 @@ pub fn read(
             c.content.analysis_data_path.as_deref(),
             &mut t,
         );
+        common::to_opendj_timeline(&mut t);
         tracks.push(t);
     }
     // Analysed tracks whose files aren't where master.db says, for the log.

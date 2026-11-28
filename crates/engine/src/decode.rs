@@ -26,6 +26,112 @@ pub fn decode(path: &Path) -> Result<Audio, String> {
     Ok(Arc::try_unwrap(audio).unwrap_or_else(|_| unreachable!("the writer is gone")))
 }
 
+/// How much later the same sound is in rekordbox than in openDJ, in
+/// seconds, for the file at `path`: what to add to a time going to
+/// rekordbox (a stick, its XML) and take off one coming from it. Only MP3s
+/// differ. openDJ decodes them gaplessly, cutting the encoder and decoder
+/// delay a LAME tag names (1105 samples for LAME's usual 576); rekordbox
+/// keeps it, and also plays an `Info` header frame with a table of contents
+/// (LAME's and ffmpeg's CBR) as a frame of silence, where it skips a `Xing`
+/// frame as openDJ does. Measured against rekordbox 7's own waveforms by
+/// Bake'n Deck (MIT licence, Copyright (c) Masanari Higashi). 0 for other
+/// files and for files that can't be read.
+pub fn rekordbox_offset(path: &Path) -> f64 {
+    rekordbox_lead(path).map_or(0.0, |(frames, rate)| frames as f64 / rate as f64)
+}
+
+/// [`rekordbox_offset`] in frames, with the sample rate.
+fn rekordbox_lead(path: &Path) -> Option<(u32, u32)> {
+    use std::io::{Seek, SeekFrom};
+    use symphonia::core::codecs::audio::well_known::CODEC_ID_MP3;
+    let ext = path.extension().and_then(|e| e.to_str())?;
+    if !ext.eq_ignore_ascii_case("mp3") {
+        return None;
+    }
+    let mut file = File::open(path).ok()?;
+    let info_frame = info_frame_samples(&mut file).unwrap_or(0);
+    file.seek(SeekFrom::Start(0)).ok()?;
+    let mss = MediaSourceStream::new(Box::new(file), MediaSourceStreamOptions::default());
+    let mut hint = Hint::new();
+    hint.with_extension(ext);
+    let format = symphonia::default::get_probe()
+        .probe(
+            &hint,
+            mss,
+            FormatOptions::default(),
+            MetadataOptions::default(),
+        )
+        .ok()?;
+    let track = format.default_track(TrackType::Audio)?;
+    let Some(CodecParameters::Audio(params)) = &track.codec_params else {
+        return None;
+    };
+    let rate = params.sample_rate.filter(|&r| r > 0)?;
+    (params.codec == CODEC_ID_MP3).then(|| (track.delay.unwrap_or(0) + info_frame, rate))
+}
+
+/// The samples of an MP3's first frame when it is an `Info` header with a
+/// table of contents: 1152 for MPEG-1, 576 for MPEG-2 and 2.5.
+fn info_frame_samples(file: &mut File) -> Option<u32> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut head = |at: u64| -> Option<Vec<u8>> {
+        file.seek(SeekFrom::Start(at)).ok()?;
+        let mut buf = Vec::new();
+        file.by_ref().take(64 * 1024).read_to_end(&mut buf).ok()?;
+        Some(buf)
+    };
+    let mut buf = head(0)?;
+    if buf.starts_with(b"ID3") && buf.len() >= 10 {
+        let size = buf[6..10]
+            .iter()
+            .fold(0u64, |n, &b| n << 7 | u64::from(b & 0x7f));
+        let footer = if buf[5] & 0x10 != 0 { 10 } else { 0 };
+        buf = head(10 + size + footer)?;
+    }
+    // The first frame that another follows, so a stray sync isn't taken for it.
+    let start = (0..buf.len()).find(|&i| {
+        mp3_frame(&buf[i..])
+            .is_some_and(|(len, _)| buf.get(i + len..).and_then(mp3_frame).is_some())
+    })?;
+    let (_, side_info) = mp3_frame(&buf[start..])?;
+    let tag = buf.get(start + 4 + side_info..start + 12 + side_info)?;
+    let toc = tag[7] & 4 != 0;
+    let mpeg1 = (buf[start + 1] >> 3) & 3 == 3;
+    (&tag[..4] == b"Info" && toc).then_some(if mpeg1 { 1152 } else { 576 })
+}
+
+/// The length and side information size of the MPEG Layer III frame that
+/// `b` starts with.
+fn mp3_frame(b: &[u8]) -> Option<(usize, usize)> {
+    const MPEG1: [usize; 15] = [
+        0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320,
+    ];
+    const MPEG2: [usize; 15] = [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
+    if b.len() < 4 || b[0] != 0xff || b[1] & 0xe0 != 0xe0 {
+        return None;
+    }
+    let version = (b[1] >> 3) & 3; // 3 MPEG-1, 2 MPEG-2, 0 MPEG-2.5
+    let layer3 = (b[1] >> 1) & 3 == 1;
+    let bitrate = (b[2] >> 4) as usize;
+    let rate = ((b[2] >> 2) & 3) as usize;
+    if version == 1 || !layer3 || bitrate == 0 || bitrate == 15 || rate == 3 {
+        return None;
+    }
+    let (kbps, rates, per_kbit) = match version {
+        3 => (MPEG1[bitrate], [44100, 48000, 32000], 144),
+        2 => (MPEG2[bitrate], [22050, 24000, 16000], 72),
+        _ => (MPEG2[bitrate], [11025, 12000, 8000], 72),
+    };
+    let len = per_kbit * kbps * 1000 / rates[rate] + ((b[2] >> 1) & 1) as usize;
+    let mono = b[3] >> 6 == 3;
+    let side_info = match (version == 3, mono) {
+        (true, false) => 32,
+        (true, true) | (false, false) => 17,
+        (false, true) => 9,
+    };
+    Some((len, side_info))
+}
+
 /// An opened file, ready to decode into an [`Audio`] that can play while the
 /// rest is still decoding.
 pub struct Decoder {
@@ -455,6 +561,56 @@ pub(crate) mod tests {
         assert!(Arc::ptr_eq(&done, &audio) && audio.is_complete());
         let last = audio.frame(440_999);
         assert_eq!(last[1], samples[2 * 440_999 + 1] as f32 / 32_768.0);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// An MP3 of 40 silent frames (MPEG-1 Layer III, 44.1 kHz, 128 kb/s)
+    /// after an ID3v2 tag, led by a `Xing` or `Info` frame (`tag`) with a
+    /// table of contents and a LAME tag naming LAME's usual encoder delay.
+    fn write_mp3(path: &Path, tag: Option<&[u8; 4]>) {
+        let frame = || {
+            let mut f = vec![0u8; 417];
+            f[..4].copy_from_slice(&[0xff, 0xfb, 0x90, 0x00]);
+            f
+        };
+        let mut data = b"ID3\x04\0\0\0\0\0\x20".to_vec();
+        data.resize(10 + 32, 0);
+        if let Some(tag) = tag {
+            let mut t = tag.to_vec();
+            t.extend(5u32.to_be_bytes()); // a frame count and a table of contents
+            t.extend(40u32.to_be_bytes());
+            t.extend([0; 100]);
+            t.extend(b"LAME3.100");
+            t.extend([0; 12]);
+            t.extend([0x24, 0x03, 0xe8]); // delay 576, padding 1000
+            let mut f = frame();
+            f[36..36 + t.len()].copy_from_slice(&t);
+            data.extend(f);
+        }
+        for _ in 0..40 {
+            data.extend(frame());
+        }
+        std::fs::write(path, data).unwrap();
+    }
+
+    #[test]
+    fn rekordbox_runs_later_for_lame_tagged_mp3s() {
+        let dir = std::env::temp_dir().join(format!("opendj-rb-offset-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let offset = |name: &str, tag: Option<&[u8; 4]>| {
+            let path = dir.join(name);
+            write_mp3(&path, tag);
+            (rekordbox_offset(&path) * 44_100.0).round()
+        };
+        // The 576 the LAME tag names and the decoder's 529, which openDJ cuts.
+        assert_eq!(offset("xing.mp3", Some(b"Xing")), 1105.0);
+        // And a frame of silence for the Info frame.
+        assert_eq!(offset("info.mp3", Some(b"Info")), 2257.0);
+        assert_eq!(offset("plain.mp3", None), 0.0);
+        let wav = dir.join("a.wav");
+        write_wav(&wav, 44_100, 2, &[0; 64]);
+        assert_eq!(rekordbox_offset(&wav), 0.0);
+        assert_eq!(rekordbox_offset(&dir.join("gone.mp3")), 0.0);
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }
