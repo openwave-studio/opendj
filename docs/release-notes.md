@@ -1,4 +1,4 @@
-openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command line and an MCP server, so you can search, tag and sort your library, analyse tracks, make stems and plan a set from a terminal or an AI assistant, and none of it runs while a deck plays. openDJ Studio gets a piano roll you can edit in, records MIDI into clips, has undo, and drives more of Ableton Push. Instrument decks can play a hardware synth.
+openDJ 0.9.6 is another test release on the way to 1.0. Instrument decks get a new large waveform, a smoother spectrum, knob names that fit, a preset picker and Arturia's own presets, and they can play a hardware synth such as a MicroFreak or Moog Messenger. On Apple Silicon Macs, instant and HQ stems run on the Neural Engine. A command line and an MCP server let you search, tag and sort your library, analyse tracks, make stems and plan a set from a terminal or an AI assistant, never while a deck plays. You can scratch with the on-screen jog, the phone remote gets a Deck tab, rekordbox grids import with bar 1 in place, and openDJ Studio gets an editable piano roll, MIDI recording, undo and more of Push 2.
 
 ## What's new
 
@@ -32,6 +32,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 - **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth. A synth keeps its own patch when it loads, comes back with its last preset and moved knobs, and a keyboard's preset buttons step its presets.
 - **Instrument deck large waveform**: a lilac wave with a live scope past the play line, in lilac or the instrument's own color, plus **Knobs** and **Notes** views (2 to 4 steady octaves). The small OSC scope is now a single clean line.
 - **Instrument deck scope**: a smoother, flicker-free spectrum with Smooth glow, Bars and Mirror styles (right-click to pick), optional Hz labels and grid lines, and an OSC wave that holds still and fills the box.
+- **Preset picker**: click an instrument's preset name, on the deck or in the plugin panel, to open a picker with search, All / Starred / Mine and sound-type groups. ‹ › step within the group you picked.
 - **Arturia presets**: Arturia instruments list their own factory and user presets in the Jam column, on the deck and on controller preset buttons, tagged by sound type, genre, style and character, with your Arturia likes starred.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
 
