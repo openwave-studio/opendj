@@ -37,6 +37,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 **Stems**
 
 - On Macs with Apple Silicon, **instant stems** run on the Neural Engine, about 6× faster (a 6-minute track separates in about 4 seconds), with the CPU as a fallback.
+- **HQ stems** also run on the Neural Engine on Macs, leaving the GPU free for the waveforms, with the GPU and then the CPU as fallbacks. The first run prepares the model once (about 20 seconds).
 
 **Phone remote**
 
