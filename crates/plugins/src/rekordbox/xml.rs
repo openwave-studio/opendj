@@ -12,7 +12,7 @@ use opendj_engine::import::{ImportedEntry, ImportedList, ImportedListKind, Strea
 use opendj_engine::{Hotcue, LibraryInfo, Source, Track, MEMORY_CUE};
 use roxmltree::{Document, Node};
 
-use super::PLAYLISTS;
+use super::{common, PLAYLISTS};
 use crate::ImportedLibrary;
 
 fn parse(path: &Path) -> Result<String, String> {
@@ -52,7 +52,9 @@ pub fn read(
             ids.insert(id.to_string(), entry.clone());
         }
         if entry.streamed.is_none() && exists(&entry.path) {
-            tracks.push(track(n, entry.path));
+            let mut t = track(n, entry.path);
+            common::to_opendj_timeline(&mut t);
+            tracks.push(t);
         }
     }
     let lists = if groups.contains(&PLAYLISTS) {

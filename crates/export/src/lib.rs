@@ -450,14 +450,17 @@ fn put_track(
         let mp3_frames = (file_type(source) == 1)
             .then(|| mp3::frames(source))
             .flatten();
+        // On rekordbox's timeline, which for some MP3s runs later.
+        let lead = opendj_engine::decode::rekordbox_offset(source);
+        let rekordbox_cues: Vec<Hotcue> = cues.iter().map(|c| c.shifted(lead)).collect();
         let files = anlz::build(
             &anlz_stem,
             anlz::TrackAnalysis {
                 stick_path: &stick_path,
-                beats: anlz::beats(&grid, duration),
+                beats: anlz::beats(&grid.shifted(lead), duration + lead),
                 bpm,
-                cues: &cues,
-                waveforms: wave::waveforms(&analysis.waveform, duration),
+                cues: &rekordbox_cues,
+                waveforms: wave::waveforms(&analysis.waveform, duration, lead),
                 mp3_frames,
             },
         )

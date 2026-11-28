@@ -551,6 +551,15 @@ impl Hotcue {
     pub fn is_memory(&self) -> bool {
         self.number >= MEMORY_CUE
     }
+
+    /// The same cue or loop `seconds` later.
+    pub fn shifted(&self, seconds: f64) -> Hotcue {
+        Hotcue {
+            seconds: self.seconds + seconds,
+            end: self.end.map(|e| e + seconds),
+            ..self.clone()
+        }
+    }
 }
 
 /// A point or stretch of a track that isn't a cue: a named section, a
@@ -617,6 +626,23 @@ impl Track {
             self.first_beat = grid.first_beat();
         }
         self.grid = grid;
+    }
+
+    /// Moves the grid, cues, loops and markers `seconds` later (earlier
+    /// when negative), as between openDJ's timeline and another app's.
+    pub fn shift_times(&mut self, seconds: f64) {
+        if seconds == 0.0 {
+            return;
+        }
+        self.first_beat += seconds;
+        self.grid = self.grid.shifted(seconds);
+        for c in &mut self.info.hotcues {
+            *c = c.shifted(seconds);
+        }
+        for m in &mut self.info.markers {
+            m.seconds += seconds;
+            m.end = m.end.map(|e| e + seconds);
+        }
     }
 
     /// The beat grid as a list of markers: the stored one, or the steady
