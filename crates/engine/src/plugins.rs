@@ -464,6 +464,9 @@ struct InstrumentState {
     /// `[Instrument1],parameterN` and `num_parameters`.
     params: Vec<ControlHandle>,
     num_parameters: ControlHandle,
+    /// `[Instrument1],hardware`: a hardware synth plays instead, so its
+    /// knob count stays.
+    hardware: ControlHandle,
     /// Following the plugin's own changes to its parameters.
     follow: ParamFollow,
     policies: HashMap<u16, Policy>,
@@ -708,6 +711,7 @@ impl Supervisor {
                     .map(|k| get(reg, INSTRUMENT_GROUP, &format!("parameter{k}")))
                     .collect(),
                 num_parameters: get(reg, INSTRUMENT_GROUP, "num_parameters"),
+                hardware: reg.indicator(INSTRUMENT_GROUP, "hardware", 1.0),
                 follow: ParamFollow::default(),
                 policies: HashMap::new(),
                 disabled: HashSet::new(),
@@ -1194,7 +1198,8 @@ impl Supervisor {
                 let n = ins.follow.seen.len();
                 ins.follow.step(&ins.params[..n], seq, &values);
             }
-            None if ins.num_parameters.get() != 0.0 => {
+            // A hardware synth's knobs are its own (see `hardware_synth`).
+            None if ins.num_parameters.get() != 0.0 && !ins.hardware.get_bool() => {
                 ins.num_parameters.set(0.0);
                 ins.follow = ParamFollow::default();
                 let mut list = self.list.lock().unwrap();
@@ -1833,11 +1838,18 @@ mod tests {
             rig.instrument_buffer_on(true);
         }
         assert!(!rig.rack.instrument_asleep());
-        // Off it, it sleeps after a second of silence.
-        for _ in 0..second {
+        // Off it, it sleeps after a second of silence: not within half a
+        // second, and soon after the second. A block the helper sends too
+        // late isn't counted as silence, so on a busy machine it takes a
+        // few buffers more.
+        for _ in 0..second / 2 {
             rig.instrument_buffer();
         }
-        assert!(rig.rack.instrument_asleep());
+        assert!(!rig.rack.instrument_asleep());
+        while !rig.rack.instrument_asleep() {
+            rig.instrument_buffer();
+            assert!(Instant::now() < end + Duration::from_secs(10), "it sleeps");
+        }
         // A note wakes it at once: it plays in the very next buffer.
         assert!(rig.notes.send([0x90, 127, 100]));
         assert!((rig.instrument_buffer() - 1.0).abs() < 1e-3);

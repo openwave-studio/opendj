@@ -1,0 +1,221 @@
+# openDJ Studio: design notes
+
+## Device chains
+
+A track's devices run left to right, and moving one changes the sound: a
+synth into Delay then Reverb smears the repeats; Reverb then Delay repeats
+the reverb's tail.
+
+- **Zones, as in Live.** A chain is MIDI effects, then the instrument, then
+  audio effects. A device dropped anywhere snaps into its zone: an effect
+  never lands before the instrument. A track plays one instrument; dropping
+  another replaces it. Audio tracks take no instrument.
+- **Places, not ids.** The audio thread keeps each device's place in the
+  chain (`PluginSlot::device`). `Insert`, `Remove`, `Move` and `Transfer`
+  (to another track) renumber the devices after the change. Devices not
+  playing yet (a plug-in still starting) still hold their place, so a
+  plug-in that comes up later is attached where its device is by then.
+- **One order everywhere.** `Controls` keeps the chains; every edit changes
+  the list and sends its command while the list is locked, so the audio
+  thread sees edits in the order they were made. `Plugins` keeps each
+  helper's place in step, under its own lock taken first.
+- **No clicks.** An edit waits for the end of the block: its tracks fade out
+  over the last 128 frames, the edit lands between blocks, and they fade
+  back in over the next 128. Removed devices go back to the UI thread to be
+  dropped (`Trash::Device`), so the audio thread never frees.
+- **Copies.** Option-drag copies a device with its settings now. A copied
+  plug-in starts a new helper from the sound the set saved it with (its
+  own state can't yet be read back from the helper).
+
+## Devices
+
+Where each device lives, and the bar it has to clear.
+
+- **Native, Pure Data or plug-in.** Devices on most tracks, MIDI effects,
+  racks, modulators, the sampler and our synths are native Rust. Pure Data
+  holds experimental and community devices. Large synths (Surge XT, Vital,
+  Dexed) stay plug-ins, out of process.
+- **Order.** The kit, then Limiter, Auto Filter and Saturator, then the MIDI
+  effects, then Simpler and Drum Rack. Bass, Pad and Lead become presets of
+  one analog-style synth.
+- **Modulation, as in Bitwig.** A modulator (LFO, envelope, follower) can
+  drive any knob of any device. A modulated knob moves its target; the
+  knob's glide (`kit::Smooth`) does the smoothing, so modulation never
+  clicks.
+- **FunDSP as a toolbox.** Devices use FunDSP's parts inside our own device
+  code (Auto Filter's state-variable and ladder filters), not its graph as
+  the engine. Dynamics, EQ and the sampler stay hand-written.
+- **The bar.** `quality.rs` runs every device in the catalog through the
+  same checks: no allocation while it plays or its knobs turn, no runaway
+  at its extremes, a tail that dies to true zero with denormals flushed, no
+  change at neutral settings, and no click when a gliding knob jumps. The
+  bench (`device_bench`) holds each device to a cost per frame.
+- **Oversampling.** Devices that bend the sound run their curve at 4x
+  through two linear-phase half-band stages (65 taps each, polyphase):
+  more than 70 dB less aliasing than without for the rounded curves, at
+  1 ms of latency. Lookahead and oversampling report their latency; delay
+  compensation across tracks is still to come.
+- **Instruments in the chain.** A built-in instrument (Simpler first) takes
+  the instrument's place, as a plug-in instrument does: the track's notes
+  reach it with their frame offsets and the built-in sound stays quiet.
+  Simpler reads its sample with 4-point Hermite interpolation; a stolen
+  voice fades out over 3 ms in a spare voice, and a trimmed end fades over
+  2 ms, so neither clicks. Instruments pass their own checks (no
+  allocation while chords play and steal, finite at the extremes, silent
+  after all-notes-off, no clicks on steal or end) and `instrument_bench`
+  (Simpler: about 160 ns per frame with eight notes and the filter on).
+- **Samples.** The browser's Samples list holds the audio files in the
+  set's folder, `~/Music/openDJ/Samples` and a Live User Library's
+  Samples. Dropping one on a MIDI track
+  plays it on a Simpler named after it; a track that has a Simpler keeps
+  its settings and swaps the sample.
+
+## Racks
+
+A rack is a device in the chain that holds several chains side by side
+(`rack.rs`).
+
+- **Built so far.** Audio Effect, Instrument and Drum Racks run built-in
+  devices in up to 128 chains, each with volume, pan, on, solo and (for
+  instruments) key and velocity zones; a note-off follows its note-on to
+  the chains that took it. Eight macros turn settings inside, each between
+  a low and a high value; a setting inside has an index of its own
+  (`rack::inner`), so `DeviceParam` reaches it. A Drum Rack's pad takes
+  one note and plays it as its own note (C3), and a pad in a choke group
+  stops the others with all-sound-off, which Simpler fades over 3 ms.
+  Chains render in 512-frame chunks into their own buffers.
+- **In the window.** The chains (on, solo) or a Drum Rack's 16 pads (they
+  play on click and take a sample dropped on them) sit beside the macros.
+  A click on a chain (or a pad) opens it:
+  its devices show beside the rack in a frame, with a place at the end to
+  drop more. Devices dragged in from the browser, from the track's chain or
+  from another chain land where they're let go; a device dropped on the
+  chain list makes a new chain; one dragged out goes onto the track. An
+  instrument takes its chain's first place; an Audio Effect Rack takes no
+  instrument. Map (on the rack's title) then a macro, then knobs inside:
+  each click maps that setting over its whole range or unmaps it; a
+  setting follows one macro, and its knob shows the macro's number. Each
+  edit swaps the rack for the edited one, with a short fade.
+- **MIDI effects in chains.** In an instrument or drum rack a chain can
+  hold MIDI effects; they always lead it, before its instrument, as on a
+  track. Each chain turns its notes into beats (the song's, from the
+  transport), runs them through its effects in order and back into frames,
+  so an Arpeggiator inside steps on the song's grid. Switching one off
+  ends the notes it held.
+- **Plug-ins in chains.** A plug-in inside a chain runs in its own
+  helper, as on a track. Its place waits in the rack (an effect passes
+  the sound, an instrument is quiet) until the helper is up and joins it;
+  the rack runs it chunk by chunk with the song's transport and what is
+  left of the block's time. Racks never load plug-ins in the studio's own
+  process. A rack edit rebuilds the rack, but its running plug-ins keep
+  going: each plug-in in the new rack takes over the first one of the same
+  plug-in in the old rack, wherever its chain or place moved to, and the
+  audio thread hands its slot across as the rack swaps (no allocation
+  there). Only plug-ins that were added start a helper, and only those
+  that were taken out stop.
+- **Plug-ins in the browser.** The browser's Plug-ins list is what
+  openDJ's scan found (Settings › Plugins keeps it in `audio-plugins.json`),
+  instruments then effects, each with its format and maker. The studio
+  never scans itself. A plug-in dragged onto a track or into a chain starts
+  in its own helper, from the file and id the scan recorded.
+- **Not yet.** Racks inside racks, Live's macro mappings, macros on Push, a range per mapping.
+- **Kinds.** An *Audio Effect Rack* sits with the audio effects: its input
+  goes to every branch and the branches are summed. An *Instrument Rack*
+  sits in the instrument place: each branch has its own MIDI effects,
+  instrument and audio effects, with a key range and a velocity range for
+  splits and layers. A *MIDI Effect Rack* comes later. A Live set's Drum
+  Rack plays on the rack engine (one Simpler per pad, sharing the kit's
+  decoded samples); `KitPlayer` still plays the built-in kits.
+- **Branches.** Each branch has volume, pan, on and solo. Branches render
+  into their own preallocated buffers (`MAX_BLOCK` frames each), so a rack
+  adds no allocation on the audio thread. Up to 16 branches.
+- **Macros.** Eight knobs on the rack, each turning any settings inside it
+  between a low and a high value. Push's encoders show the macros when the
+  rack is selected.
+- **Addressing.** Commands name a device by a path: its track, then
+  (rack place, branch) pairs, then its place. Racks nest up to three deep.
+  `Insert`, `Remove`, `Move` and `Transfer` take paths, so devices drag into
+  and out of branches the way they do along a chain.
+- **In the window.** A rack shows its macros, with a branch list on its
+  left. Selecting a branch opens its devices in the device bar, after the
+  rack. Dropping on the branch list makes a new branch; dropping into the
+  branch's devices puts the device there.
+- **Live sets.** `AudioEffectGroupDevice`, `InstrumentGroupDevice` and
+  `DrumGroupDevice` are read with their branches, zones and macros
+  (`MacroControls.N`, `MacroDisplayNames.N`).
+- **Order.** Audio Effect Rack with branches and macros first, then
+  Instrument Rack with zones, then reading Live's racks, then Drum Rack on
+  the rack engine.
+
+## Sets
+
+The studio saves its own set file, `.odset`: JSON, so a set can be read
+and compared as text. It holds the tracks with their clips (notes, stage
+clips, audio clips' files and warp markers), each track's devices as they
+are now (built-in settings, racks with their chains and macros, plug-ins
+with the sound they have when saved, as base64), I/O, mixer (volume, pan,
+sends), the built-in sound's knobs, and the tempo, key, Main fader and
+returns. Samples, recordings and reverb rooms stay where they are: the file
+names them and they load again on open. A `format` number guards against a
+file from a newer studio, which is refused rather than half read.
+
+File › Open… takes one of these or a Live set, and Save on a Live set (or
+the demo) asks for a name, so a Live set is never written over. Opening a
+set restarts the studio with it, so the sound card, Push and plug-ins start
+clean; with unsaved changes it asks first. Changes are told apart by
+comparing the set's text with the text last saved or opened.
+
+### Macro mappings and Push
+
+A Live set's macro mappings come in with it: Live marks a setting a macro
+turns with a `KeyMidi` on channel 16 whose controller is the macro, and
+keeps the range on it (`MidiControllerRange`, in the setting's units).
+Which of our settings it is shows by reading the device again with that
+setting moved, which also gives the range's ends in our units. In map mode
+the rack shows what the picked macro turns, each with Min and Max knobs;
+a range edit is a setting of the rack (`rack::range`), so it reaches the
+audio thread without rebuilding the rack.
+
+On Push, Device mode works as in Live: the buttons under the screen pick
+the track's sound or a device on it, the encoders turn eight settings at a
+time (pages over the screen, or Page left and right). A rack's first page
+is its macros, and the buttons over the screen go into its chains; the
+first button under the screen comes back out. Stop Clip held with a
+track's button stops that track, on its own the selected one, with Shift
+all of them; Mute and Solo work the same way, and while one is held the
+buttons under the screen show the tracks' state.
+
+The other buttons Live gives Push, as far as the studio has what they
+drive: Metronome (a click on each beat while the song plays, higher on the
+bar, mixed after the tracks), Tap Tempo (the last few taps, a two-second
+pause starts again), New (the next empty slot on the selected track),
+Duplicate (the selected clip to the next empty slot; held, clip then
+slots) and Double Loop (a note clip's loop and its notes twice over).
+Automate waits for clips to carry knob automation; Convert has nothing to
+convert to yet.
+
+### Recording and undo
+
+Record works on a slot as in Live's Session view. On an empty slot of a
+note track the clip starts at the next launch point (the song starts on
+bar 1 if it was stopped) and grows while it records; notes played on the
+track before then aren't kept. Pressing Record again stops it: the clip
+takes the bars recorded (at least one) and loops on, playing what was
+recorded. With Fixed Length on (1 to 128 bars) recording stops by itself
+at that length. On a note clip, Record overdubs: notes played land where
+the clip is as it loops. Recording happens on the UI side from the notes
+the track gets (from Push, the window or a MIDI input), timed by the beat
+the audio thread last reported, so a note lands within a block of where it
+was played. Stopping the clip or the song stops recording.
+
+The set keeps undo steps (64) of its clips, mute and solo: each step is
+the set as it was before an edit. Edits to the same clip, or to the mixer,
+less than 1.2 s apart are one step, so drawing notes or a recording undoes
+in one go. Device chain edits aren't in it yet. Ctrl/⌘+Z undoes (Shift
+redoes) when the piano roll isn't open (it keeps its own), as do Undo and
+Shift + Undo on Push.
+
+Tracks have an activator and a solo, saved in the set and read from a
+Live set's mixer. While any track is soloed only soloed ones sound; the
+audio thread gets the tracks that sound as one mask and fades each track
+over 128 frames when it changes.

@@ -220,6 +220,7 @@ impl Browser {
         if words.is_empty() {
             self.stream_search.clear();
         }
+        let was_artist = self.catalog.artist.is_some();
         self.leave_artist();
         if words.chars().count() < 2 {
             self.catalog.due = None;
@@ -229,7 +230,14 @@ impl Browser {
         }
         self.catalog.words = words.to_string();
         self.catalog.due = Some(std::time::Instant::now() + SEARCH_PAUSE);
-        self.show_catalog(true, "Searching…");
+        // What the last words found stays up while the DJ types on, until
+        // the new answer replaces it.
+        let note = if was_artist || self.catalog.picks.is_empty() {
+            "Searching…"
+        } else {
+            ""
+        };
+        self.show_catalog(true, note);
     }
 
     /// Asks for the search once typing has paused. Called every frame.

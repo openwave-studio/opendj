@@ -1,5 +1,6 @@
 //! The phone remote: openDJ serves a small web page on the local network,
-//! and a phone that opens it controls Automix and the main levels.
+//! and a phone that opens it controls Automix and the main levels, or a
+//! deck (see the app's `remote_deck.rs`).
 //!
 //! Nothing listens until the DJ switches the remote on. A phone pairs once,
 //! with the one-time code in the QR code the app shows (or the PIN beside
@@ -49,9 +50,11 @@ const PORT_TRIES: u16 = 10;
 const MAX_CLIENTS: usize = 16;
 /// Largest message a phone may send.
 const MAX_MESSAGE: usize = 64 * 1024;
-/// Messages a phone may send per second, on average, and in a burst.
-const RATE: f64 = 30.0;
-const BURST: f64 = 60.0;
+/// Messages a phone may send per second, on average, and in a burst: the
+/// Deck page sends a fader or knob move up to 20 times a second, and a
+/// DJ may move two at once while tapping pads.
+const RATE: f64 = 60.0;
+const BURST: f64 = 120.0;
 /// Wrong `hello`s before the connection is closed.
 const MAX_BAD_HELLOS: u32 = 3;
 /// How often a quiet connection is pinged, and when it counts as gone.
@@ -113,6 +116,9 @@ struct Shared {
     /// covers; new each time the remote starts.
     art_key: String,
     art_cache: HashMap<String, Arc<Vec<u8>>>,
+    /// The waveforms of the tracks on the decks, by the id the app published
+    /// with each (see [`Server::set_waves`]).
+    waves: HashMap<String, Arc<Vec<u8>>>,
     clients: HashMap<u64, Client>,
     /// The latest message for each topic, as sent.
     topics: BTreeMap<String, String>,
@@ -143,6 +149,7 @@ impl Server {
             art: None,
             art_key: pairing::random_hex(16),
             art_cache: HashMap::new(),
+            waves: HashMap::new(),
             clients: HashMap::new(),
             topics: BTreeMap::new(),
             events: Vec::new(),
@@ -187,6 +194,12 @@ impl Server {
         if let Some(c) = lock(&self.shared).clients.get(&client) {
             let _ = c.tx.send(Outgoing::Text(msg.to_string()));
         }
+    }
+
+    /// The waveforms phones may fetch from `/wave/<id>`, as the app encodes
+    /// them: those of the tracks on the decks. Replaces the ones before.
+    pub fn set_waves(&self, waves: Vec<(String, Arc<Vec<u8>>)>) {
+        lock(&self.shared).waves = waves.into_iter().collect();
     }
 
     /// Pushes the state of `topic` to every paired phone, if it changed.
@@ -403,6 +416,29 @@ fn serve(mut stream: TcpStream, shared: Arc<Mutex<Shared>>, stop: Arc<AtomicBool
                     "private, max-age=86400",
                 ),
                 None => http::respond(&mut stream, "404 Not Found", "text/plain", b"No art"),
+            };
+        }
+        ("GET", p) if p.starts_with("/wave/") => {
+            let _ = http::consume(&mut stream, head.len);
+            let id = &p["/wave/".len()..];
+            let key = http::query(&head.path, "k").unwrap_or("");
+            let wave = {
+                let s = lock(&shared);
+                if is_art_id(id) && pairing::same(key, &s.art_key) {
+                    s.waves.get(id).cloned()
+                } else {
+                    None
+                }
+            };
+            let _ = match wave {
+                Some(bytes) => http::respond_cached(
+                    &mut stream,
+                    "200 OK",
+                    "application/octet-stream",
+                    &bytes,
+                    "private, max-age=86400",
+                ),
+                None => http::respond(&mut stream, "404 Not Found", "text/plain", b"No waveform"),
             };
         }
         ("GET", "/" | "/index.html") => {

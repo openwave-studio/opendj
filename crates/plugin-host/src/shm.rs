@@ -22,7 +22,7 @@ use memmap2::MmapMut;
 /// "openDJ P" in ASCII, so a helper can tell it was handed the right file.
 pub const MAGIC: u64 = 0x6f70_656e_444a_2050;
 /// Bumped whenever the layout below changes.
-pub const VERSION: u32 = 5;
+pub const VERSION: u32 = 6;
 /// Two channels: decks and the main mix are stereo.
 pub const CHANNELS: usize = 2;
 /// Parameters a slot can set without a round trip.
@@ -76,6 +76,10 @@ pub struct Header {
     /// then and bumps `values_seq` after.
     pub values: [AtomicU32; MAX_PARAMS],
     pub values_seq: AtomicU32,
+    /// MIDI the plug-in sent during the block `seq_out` names, packed as
+    /// `events` are: the helper writes them before it sets `seq_out`.
+    pub out_events_len: AtomicU32,
+    pub out_events: [AtomicU64; MAX_EVENTS],
 }
 
 /// `Header::state_cmd`: write the plugin's state to the state file.

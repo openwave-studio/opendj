@@ -42,37 +42,39 @@ cover has **Unload deck** too, and <kbd>⇧</kbd> <kbd>⌥</kbd> <kbd>←</kbd> 
 
 ### Waveform look
 
-Click the arrow on the right of the waveforms button in the top bar. Under
-the height slider, these set how the waveforms look:
+Click the arrow on the right of the waveforms button in the top bar. At the
+top are two sliders: the waveforms' **Height** and their **Zoom** (how many
+seconds show across them); double-click one to go back to its default.
+Under them, each row's choices sit side by side, one click each:
 
-- **Type**: **Full** (the default) mirrors the waveforms about their middle;
+- **Size**: **Full** (the default) mirrors the waveforms about their middle;
   **Half** grows them from the bottom edge, as on rekordbox. It applies to
   the large waveforms and the overviews under the decks alike.
-- **Color**:
-  - **RGB** (the default): one shape, red where the bass is loudest, amber
-    for the mids and blue for the highs.
+- **Style**:
+  - **RGB** (the default): one shape, colored by where the sound is
+    loudest. A **Color** row under it picks **Red-Amber** (the default: deep
+    red bass, amber mids, ice-blue highs) or **Red-Green-Blue**.
   - **3-Band**: the bass, mids and highs stacked in their own colors, the
-    bass widest, as on rekordbox. A second row picks **Blue-Orange**
-    (rekordbox's colors) or **Lilac-Cyan**.
+    bass widest, as on rekordbox. A **Color** row under it picks
+    **Blue-Orange** (rekordbox's colors) or **Lilac-Cyan**.
   - **Stems**: each stem (kick, hi-hats, bass, instruments, vocals) in the
-    color of its stem pad, the loudest at the back, so you can see where
-    the vocals come in or the bass drops out. A track shows RGB until its
-    stems are ready.
+    color of its stem pad, so you can see where the vocals come in or the
+    bass drops out. A **Layout** row under it picks **Stacked** (the
+    default: the track's own waveform cut into a layer per stem, kick and
+    bass at the middle, vocals and hi-hats on the outside) or **3 Lanes**
+    (three small waveforms on the large ones: drums, music and vocals; the
+    overviews stay stacked). A track shows RGB until its stems are ready.
 - **Needle**: where the play line sits on the large waveforms. **Center**
   (the default) shows as much of what has played as what is coming;
   **Left** puts it a quarter of the way in, so three quarters of the
   waveform shows what is coming next.
-- **Vocals**: what runs along the bottom of the large waveforms, one at a
-  time. **Lyrics** (the default) shows a track's timed lyrics in cyan.
-  **Bar** draws a cyan bar wherever someone sings, leaving the waveform's
-  colors as they are. openDJ checks each track for vocals the first time
-  you load it (or when it's analyzed), in the background, so the bar shows
-  up a few seconds after the waveform; after that it's there straight
-  away. Tracks with HQ stems use their vocal stem instead. **Off** shows
-  neither.
-- **Phrases**: the colored phrase bar along the bottom of the overviews
-  (**Overview**), the phrase flags on the large waveforms (**Waveform**),
-  **Both** (the default) or neither (**Off**).
+- **Phrases**: a switch for the colored phrase bar along the bottom of the
+  overviews and the phrase flags on the large waveforms (on at first).
+- **Lyrics**: a switch for the track's timed lyrics in cyan along the
+  bottom of the large waveforms (on at first).
+
+On a grid whose tempo moves (Flexible, or with tempo sections), the large
+waveforms show the BPM where it changes.
 
 The changes show straight away and the menu stays open, so you can try them
 out.
@@ -149,6 +151,34 @@ downbeat (see [Beat grids](music.md)).
 Choose **Off**, **Beats** (squares only) or **Beats and phrases** under
 **Settings › Decks › Beat counter**. The 4-Deck strips show the squares
 only.
+
+In **2-Deck** the counter sits in a thin strip under each deck's overview,
+on the side next to the mixer: the bars left to the next phrase and what
+it is, in its color (for example ↓ 10 › DROP), then the beat as a big
+number with the phrase playing now (DROP, INTRO…) over four dots in its
+color. The dots turn lilac in the last bar before the next phrase. With
+the counter set to Beats, the name reads BEAT and the countdown is hidden.
+
+### Phase meter
+
+The same strip, on its outer side, shows how well the deck's beats line up
+with the master deck's (the deck with the **MASTER** badge, or else the
+other playing deck), like the phase meter on a club player:
+
+- The line runs from half a beat **EARLY** to half a beat **LATE**, with a
+  marker at this deck's beats: right of centre when they land late (nudge
+  the jog forward), left when early. Its color says how close: green
+  tight (within 10 ms), yellow close (within 35 ms), orange off.
+- **+1 BEAT** or **−1 BEAT** means the beats line up but on the wrong beat
+  of the bar: the deck's downbeat lands on the master's second beat, or its
+  fourth.
+- The two arrows are the tempo guide: the lit one points the way to move
+  the deck's tempo fader until its BPM matches the master's, and both go
+  dark once it does. They follow the tempo fader's direction setting.
+- A track at half or double the master's tempo counts as matched.
+- On the master deck itself the line is grey and reads **MASTER**.
+
+With **SYNC** on, the deck stays at 0 ms; the meter is for mixing by ear.
 
 **PLAY**, **CUE** and **SYNC** show an outline in the deck's color while
 they're on. **Shift-click** and hold PLAY while the deck plays for
@@ -340,7 +370,9 @@ The same switches live under **Settings › Decks**.
 on the beat, and play, CUE, hot cues and jumps land in step with the other
 playing deck. The same menu sets the step: **1/16**, **1/8**, **1/4**,
 **1/2** or **1** beat, or **4** to land on the same beat of the bar. Cues and
-loops snap to a beat at most. **Settings › Decks › Quantize** sets whether
+loops snap to a beat at most. A hot cue or saved-loop pad pressed closer to the
+upcoming step waits for it instead of jumping ahead of the master; the current
+audio keeps playing until then. **Settings › Decks › Quantize** sets whether
 quantize starts on for every deck.
 
 ## Keys
@@ -412,9 +444,10 @@ right-click it, or use **Settings › Mixer**.
 
 ## Master, phones and mic
 
-The large knob at the right of the top bar is the master level, with the
-left and right meters beside it and the clock. Right-click the knob, or
-click the clock, to open the output levels: **Master**, **Phones**,
+The knob at the right of the top bar is the master level, with the left and
+right meters beside it; the clock has its own pill after it. Click the ▾ at
+the end of the master pill, or right-click the knob, to open the output
+levels: **Master**, **Phones**,
 **Booth**, and **Cue / Mix**, which blends cue and main in the headphones.
 **Room EQ** shows its preset while one is on, and **Setup** opens it. The
 **Link** switch is described in [Ableton Link](link.md). **Audio Settings…** opens the

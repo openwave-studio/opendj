@@ -26,6 +26,7 @@ use crate::gridfit::GridMode;
 use crate::groove::{pick_source, GrooveBox};
 use crate::inputs::{
     Ducker, Input, InputFeed, Routing, AUXILIARIES, INSTRUMENT, MICROPHONE, MIXER, NUM_INPUTS,
+    SESSION,
 };
 use crate::key::{self, Key};
 use crate::keyshift::{transpose_factor, KeyShifter, MAX_RATE};
@@ -123,6 +124,12 @@ const JOG_SEARCH_SPEED: f64 = 8.0;
 /// How long a deck stays quiet after its last fast-search jog, in seconds,
 /// so it doesn't flutter between wheel steps.
 const JOG_SEARCH_HOLD: f64 = 0.15;
+/// Track seconds one degree of `jog_scratch` moves: a turn is 1.8 s, as a
+/// 33 rpm record under the hand.
+const SCRATCH_SECONDS_PER_DEGREE: f64 = 1.8 / 360.0;
+/// Seconds an on-screen scratch movement is spread over: short enough to
+/// follow the hand, long enough to smooth the pointer's frame-by-frame steps.
+const SCRATCH_GLIDE: f64 = 0.035;
 /// `jog_bend` comes in ticks of a jog's rim, 720 to a turn as on Pioneer
 /// controllers: each tick a second the rim turns adds 0.014% of normal speed
 /// (a quarter turn a second is about +2.5%, a turn a second +10%), gentle
@@ -158,6 +165,24 @@ const RATE_RESET_SPEED: f64 = 0.005;
 
 /// A live input's safety ceiling: -1 dBTP.
 const LIVE_CEILING: f32 = 0.891_250_9;
+
+#[derive(Clone, Copy)]
+struct HotcueLaunch {
+    pad: usize,
+    position: f64,
+    end: Option<f64>,
+    slip: bool,
+}
+
+#[derive(Clone, Copy)]
+struct PendingHotcue {
+    launch: HotcueLaunch,
+    at: f64,
+    /// `play` and `cue_default` versions when it was queued: a pause, play or
+    /// CUE press while it waits cancels it.
+    play: u32,
+    cue: u32,
+}
 
 /// Left and right gains for balance `pan` (-1 left, 1 right): the side
 /// moved away from fades, the other stays, so the middle is unchanged.
@@ -224,6 +249,9 @@ struct Deck {
     /// Fast-search movement (`jog_search`) still to be applied, in track
     /// seconds.
     jog_pending: f64,
+    /// On-screen scratch movement (`jog_scratch`) still to be applied, in
+    /// track seconds.
+    scratch_pending: f64,
     /// `jog` units that came in since the last buffer.
     jog_in: f64,
     /// `jog`, smoothed, in units a second.
@@ -241,6 +269,12 @@ struct Deck {
     /// The hot cue held in slip mode: it plays from its point while held and
     /// the track carries on from the silent playhead when it is let go.
     slip_cue: Option<usize>,
+    /// A hot cue pressed this buffer, resolved against the other deck after
+    /// every deck has read its controls.
+    hotcue_request: Option<HotcueLaunch>,
+    /// A hot cue whose nearest quantize point is still ahead. The old audio
+    /// keeps playing (or a stopped deck stays stopped) until that point.
+    pending_hotcue: Option<PendingHotcue>,
     rolling: bool,
     /// SLICER: the grid beat its 8-beat section starts on, while it is on.
     slicer: Option<f64>,
@@ -409,6 +443,31 @@ impl Deck {
             && (self.loop_end - end).abs() < 1e-3
     }
 
+    fn launch_hotcue(&mut self, launch: HotcueLaunch) {
+        if launch.slip {
+            if launch.end.is_none() {
+                self.slip_cue = Some(launch.pad);
+            }
+            if self.slip.is_none() {
+                self.slip = Some(self.pos);
+                self.slip_moving =
+                    self.was_playing || self.c.play.get_bool() || launch.end.is_some();
+            }
+        }
+        if let Some(end) = launch.end {
+            self.loop_in_pending = false;
+            self.loop_start = launch.position;
+            self.loop_end = end;
+            self.c.loop_enabled.set_bool(true);
+            self.set_seconds(launch.position);
+        } else {
+            self.seek(launch.position);
+        }
+        // A paused deck jumps there and plays, as on Pioneer gear and as the
+        // pads' guide says.
+        self.c.play.set_bool(true);
+    }
+
     /// Whether a hot cue pad holds the loop that is playing.
     fn loop_on_a_pad(&self) -> bool {
         self.c.hotcues.iter().any(|hc| {
@@ -572,6 +631,8 @@ impl Deck {
         self.slip = None;
         self.slip_moving = false;
         self.slip_cue = None;
+        self.hotcue_request = None;
+        self.pending_hotcue = None;
         self.c.slip_position.set(-1.0);
         self.rolling = false;
         self.stop_slicer();
@@ -652,6 +713,18 @@ impl Deck {
         // Where the track is before this buffer's jumps: a slip that starts
         // now runs on from here.
         let unslipped = self.pos;
+        if self.pending_hotcue.is_some_and(|pending| {
+            pending.play != self.c.play.version() || pending.cue != self.c.cue_default.version()
+        }) {
+            self.pending_hotcue = None;
+        }
+        if self
+            .pending_hotcue
+            .is_some_and(|pending| pending.at <= self.clock + 1e-9)
+        {
+            let pending = self.pending_hotcue.take().expect("pending hot cue");
+            self.launch_hotcue(pending.launch);
+        }
         // Beats played since the last buffer, at the speed reached then.
         let beats_dt = (self.clock - self.last_clock).max(0.0)
             * self.velocity.max(0.0)
@@ -737,25 +810,24 @@ impl Deck {
                         self.c.loop_enabled.set_bool(false)
                     }
                     Some(end) => {
-                        self.loop_in_pending = false;
-                        self.loop_start = position;
-                        self.loop_end = end;
-                        self.c.loop_enabled.set_bool(true);
-                        self.set_seconds(position);
-                        // A paused deck starts playing the loop, as on
-                        // Pioneer gear.
-                        self.c.play.set_bool(true);
+                        self.hotcue_request = Some(HotcueLaunch {
+                            pad: h,
+                            position,
+                            end: Some(end),
+                            // A loop is a slip trick whether the deck was
+                            // already playing or starts from the pad.
+                            slip: self.c.slip_enabled.get_bool(),
+                        });
                     }
                     None if set => {
-                        // In slip mode a playing deck plays the cue while
-                        // it is held, then carries on as if it hadn't.
-                        if playing && self.c.slip_enabled.get_bool() {
-                            self.slip_cue = Some(h);
-                        }
-                        self.seek(position);
-                        // A paused deck jumps there and plays, as on
-                        // Pioneer gear and as the pads' guide says.
-                        self.c.play.set_bool(true);
+                        self.hotcue_request = Some(HotcueLaunch {
+                            pad: h,
+                            position,
+                            end: None,
+                            // In slip mode a playing deck plays the cue while
+                            // it is held, then carries on as if it hadn't.
+                            slip: playing && self.c.slip_enabled.get_bool(),
+                        });
                     }
                     None => {
                         // An empty pad pressed while a loop plays saves the
@@ -876,7 +948,7 @@ impl Deck {
                 }
                 Action::BeatLoop(n) => {
                     if !enabled {
-                        self.loop_start = snap(now, true);
+                        self.loop_start = snap(now, false);
                     }
                     self.c.beatloop_size.set(n);
                     self.loop_end = self.loop_start + beats_from(self.loop_start, n);
@@ -884,7 +956,7 @@ impl Deck {
                 }
                 Action::BeatLoopToggle if enabled => self.c.loop_enabled.set_bool(false),
                 Action::BeatLoopToggle => {
-                    self.loop_start = snap(now, true);
+                    self.loop_start = snap(now, false);
                     self.loop_end = self.loop_start + beats_from(self.loop_start, size);
                     self.c.loop_enabled.set_bool(true);
                 }
@@ -1071,6 +1143,16 @@ impl Deck {
         if search != 0.0 {
             self.c.jog_search.set(0.0);
             self.jog_pending += search * JOG_SECONDS;
+        }
+        let turned = self.c.jog_scratch.get();
+        if turned != 0.0 {
+            self.c.jog_scratch.set(0.0);
+            if self.c.scratch2_enable.get_bool() {
+                self.scratch_pending += turned * SCRATCH_SECONDS_PER_DEGREE;
+            }
+        }
+        if !self.c.scratch2_enable.get_bool() {
+            self.scratch_pending = 0.0;
         }
 
         let enabled = self.c.loop_enabled.get_bool();
@@ -1278,7 +1360,10 @@ impl Deck {
             // Jog still counts while the wheel is touched, as in Mixxx;
             // mappings such as the DDJ-FLX4's send SHIFT + turn as fast
             // `jog_search` steps.
-            return self.c.scratch2.get() + self.jog_rate_step(dt, 1.0) + self.jog_step(dt);
+            return self.c.scratch2.get()
+                + self.jog_rate_step(dt, 1.0)
+                + self.jog_step(dt)
+                + self.scratch_step(dt);
         }
         let search = self.c.rate_search.get();
         if search != 0.0 {
@@ -1354,6 +1439,21 @@ impl Deck {
         turn / RIM_TICKS_PER_TURN
     }
 
+    /// The speed that moves on a share of the on-screen platter's pending
+    /// movement this buffer. Unlike a fast search it is never quiet: it is
+    /// a hand on the record.
+    fn scratch_step(&mut self, dt: f64) -> f64 {
+        if dt <= 0.0 {
+            return 0.0;
+        }
+        let moved = self.scratch_pending * (dt / SCRATCH_GLIDE).min(1.0);
+        self.scratch_pending -= moved;
+        if self.scratch_pending.abs() < 1e-7 {
+            self.scratch_pending = 0.0;
+        }
+        moved / dt
+    }
+
     /// The speed that moves on a share of the pending jog this buffer.
     fn jog_step(&mut self, dt: f64) -> f64 {
         let moved = self.jog_pending * (dt / JOG_SPREAD).min(1.0);
@@ -1370,7 +1470,8 @@ impl Deck {
 }
 
 /// What a deck plays from: a track's audio, or the mix of its stems.
-pub(crate) trait Frames {
+/// Stereo frames a player reads: decoded audio, or a mix of stems.
+pub trait Frames {
     /// Frame `i`, or silence where there is none.
     fn frame(&self, i: usize) -> [f32; 2];
     /// Frame `k`, which may be before the start.
@@ -2010,6 +2111,7 @@ impl Engine {
             click: None,
             velocity: 0.0,
             jog_pending: 0.0,
+            scratch_pending: 0.0,
             jog_in: 0.0,
             jog_rate: 0.0,
             search_quiet: 0.0,
@@ -2017,6 +2119,8 @@ impl Engine {
             slip: None,
             slip_moving: false,
             slip_cue: None,
+            hotcue_request: None,
+            pending_hotcue: None,
             rolling: false,
             slicer: None,
             slice_held: None,
@@ -2245,6 +2349,15 @@ impl Engine {
         self.inputs[input].set_feed(feed)
     }
 
+    /// The Session plays from `source`, or nothing. Returns the old one, to
+    /// be dropped off the audio thread.
+    pub(crate) fn set_session(
+        &mut self,
+        source: Option<Box<dyn crate::inputs::SessionSource>>,
+    ) -> Option<Box<dyn crate::inputs::SessionSource>> {
+        self.inputs[SESSION].set_source(source)
+    }
+
     /// Input `input` plays the Mixer deck's Groove Box, or not.
     pub(crate) fn set_input_groove(&mut self, input: usize, on: bool) {
         self.inputs[input].set_groove(on);
@@ -2292,6 +2405,8 @@ impl Engine {
                     d.c.cue_point.set(track.first_beat);
                     d.c.loop_enabled.set_bool(false);
                     d.loop_in_pending = false;
+                    d.hotcue_request = None;
+                    d.pending_hotcue = None;
                     d.c.loop_in_pending.set_bool(false);
                     for h in &d.c.hotcues {
                         h.enabled.set_bool(false);
@@ -2372,6 +2487,7 @@ impl Engine {
                     d.c.scrub_enable.set_bool(false);
                     d.velocity = 0.0;
                     d.jog_pending = 0.0;
+                    d.scratch_pending = 0.0;
                     d.jog_in = 0.0;
                     d.jog_rate = 0.0;
                     d.slip = None;
@@ -2941,6 +3057,67 @@ impl Engine {
             .or_else(|| (0..NUM_DECKS).find(|&k| k != deck && has_bpm(&self.decks[k])))
     }
 
+    /// Resolves hot-cue presses after every deck has read its controls. A
+    /// press in the first half of a quantize step jumps at once and catches
+    /// up to the current phase. In the second half, the upcoming point is
+    /// nearer, so keep the old audio playing and launch there instead of
+    /// pulling the cue backwards ahead of the beat.
+    fn resolve_hotcue_launches(&mut self) {
+        for i in 0..NUM_DECKS {
+            let Some(launch) = self.decks[i].hotcue_request.take() else {
+                continue;
+            };
+            let pending_at = (|| {
+                let other = self.sync_target(i)?;
+                let (d, l) = (&self.decks[i], &self.decks[other]);
+                if !(d.c.quantize.get_bool() || d.following) || !l.c.play.get_bool() || d.nudging()
+                {
+                    return None;
+                }
+                let (Some(mine), Some(theirs)) = (&d.track, &l.track) else {
+                    return None;
+                };
+                if mine.bpm <= 0.0 || theirs.bpm <= 0.0 {
+                    return None;
+                }
+                let (ratio, offset) = if d.following {
+                    (d.sync_ratio, d.phase_offset)
+                } else {
+                    (sync_ratio(l.effective_bpm(), d.effective_bpm()), 0.0)
+                };
+                let step = if d.following {
+                    d.quantize_beats().max(1.0)
+                } else {
+                    d.quantize_beats()
+                };
+                let cue_beat = mine.beat_at(launch.position);
+                let leader_beat = theirs.beat_at(l.seconds());
+                let leader_phase = leader_beat * ratio + offset;
+                let error = phase_error(leader_phase / step, cue_beat / step);
+                if error >= -1e-6 {
+                    return None;
+                }
+                let wait_beats = -error * step / ratio;
+                let until = theirs.beats_from(l.seconds(), wait_beats) - l.seconds();
+                let wait = until / l.forward_speed();
+                (wait.is_finite() && wait > 0.0).then_some(self.clock + wait)
+            })();
+
+            let d = &mut self.decks[i];
+            d.pending_hotcue = None;
+            if let Some(at) = pending_at {
+                d.pending_hotcue = Some(PendingHotcue {
+                    launch,
+                    at,
+                    play: d.c.play.version(),
+                    cue: d.c.cue_default.version(),
+                });
+            } else {
+                d.launch_hotcue(launch);
+            }
+        }
+    }
+
     /// With quantize on, or on a synced deck, a deck that jumps (hot cue,
     /// CUE, beat jump, a click on the overview) while the other deck plays
     /// lands on the same part of the beat, at most half a step from where
@@ -3108,6 +3285,12 @@ impl Engine {
     /// [`crate::plugins::PluginHost::start`]; there is one, taken once.
     pub fn take_plugin_link(&mut self) -> Option<crate::effects::PluginLink> {
         self.fx.take_plugin_link()
+    }
+
+    /// The hardware synth's MIDI thread's queues, for
+    /// [`crate::hardware_synth::start`]; there is one, taken once.
+    pub fn take_hardware_link(&mut self) -> Option<crate::hardware_synth::HardwareLink> {
+        self.fx.take_hardware_link()
     }
 
     /// What the Instrument input plays, for its deck to show.
@@ -3288,20 +3471,12 @@ impl Engine {
         }
         let link = self.link.begin(frames, self.sample_rate);
         self.sync(link);
-        let mut moved = [Move::None; NUM_DECKS];
+        let before = self.decks.each_ref().map(|d| d.pos);
         let clock = self.clock;
         for (deck, d) in self.decks.iter_mut().enumerate() {
-            let before = d.pos;
             d.clock = clock;
             d.reset_rate(dt);
             d.handle_controls();
-            moved[deck] = if d.pos != before {
-                Move::Jump
-            } else if !d.was_playing && d.c.play.get_bool() {
-                Move::Start
-            } else {
-                Move::None
-            };
             if let (Some((edit, seconds)), Some(track)) = (d.grid_edit.take(), &d.track) {
                 let _ = self.returned.push(Returned::GridEdit {
                     deck,
@@ -3311,6 +3486,17 @@ impl Engine {
                 });
             }
         }
+        self.resolve_hotcue_launches();
+        let moved = std::array::from_fn(|deck| {
+            let d = &self.decks[deck];
+            if d.pos != before[deck] {
+                Move::Jump
+            } else if !d.was_playing && d.c.play.get_bool() {
+                Move::Start
+            } else {
+                Move::None
+            }
+        });
         self.land_in_phase(moved);
         self.start_gapless(frames);
         // The audio each deck's own joins on to, for this buffer.
@@ -3416,6 +3602,7 @@ impl Engine {
             .and_then(|k| Key::from_mixxx_number(self.decks[k].c.key.get()));
         // The instrument plugin gets its block now and plays while the decks
         // are worked out below; the inputs render once that is done.
+        self.fx.set_heard_at(self.link.heard_at);
         for (i, input) in self.inputs.iter_mut().enumerate() {
             input.set_master_key(master_key);
             let on_deck = live_on.contains(&(i + 1)) || looper_in.contains(&(i + 1));
@@ -3943,8 +4130,9 @@ impl Engine {
                 Routing::Deck
             } else if strips[i] {
                 Routing::Mixer { any_solo }
-            } else if i == MICROPHONE {
-                // The mic talks over the music with MIC, Mixer or not.
+            } else if i == MICROPHONE || i == SESSION {
+                // The mic talks over the music with MIC, Mixer or not; the
+                // Session is a channel of its own.
                 Routing::Main
             } else {
                 Routing::Off
@@ -4205,6 +4393,10 @@ impl Engine {
             };
             self.fx.process_blocks(&mut blocks);
         }
+        // The instrument's scope can follow its deck after the effects.
+        if let Some(i) = (0..NUM_DECKS).find(|&i| live_on[i] == crate::inputs::INSTRUMENT + 1) {
+            self.fx.show_instrument_deck(&deck_buf[i][..frames]);
+        }
         let preview_main = self.preview.on_main();
         // The Mixer's dry strips join its deck after the deck's effects.
         if let Some(m) = mixer_deck {
@@ -4278,8 +4470,9 @@ impl Engine {
             } else {
                 self.ducker.next(duck, mic.live && gm > 0.0, m)
             };
-            // The auxiliary inputs and the instrument play with the music.
-            for input in std::iter::once(INSTRUMENT).chain(AUXILIARIES) {
+            // The auxiliary inputs, the instrument and the Session play
+            // with the music.
+            for input in [INSTRUMENT, SESSION].into_iter().chain(AUXILIARIES) {
                 let inp = &self.inputs[input];
                 let a = inp.buf[f];
                 // A Mixer strip is in its deck's sound instead.
@@ -4844,7 +5037,7 @@ mod tests {
         load(&mut input, 0, track.clone());
         run(&mut engine, 0.01);
         assert_eq!(reg.get("[Channel1]", "stem_count").unwrap().get(), 4.0);
-        assert_eq!(reg_stem(&reg, "color").get(), 0x2E4E75 as f64);
+        assert_eq!(reg_stem(&reg, "color").get(), 0xC9444A as f64);
         assert_eq!(reg.get("[Channel2]", "stem_count").unwrap().get(), 0.0);
     }
 
@@ -5981,6 +6174,26 @@ mod tests {
     }
 
     #[test]
+    fn beat_loop_uses_the_nearest_quantize_point() {
+        let (reg, mut engine, mut input) = setup();
+        let track = short_track(120.0, 20.0);
+        load(&mut input, 0, track.clone());
+        run(&mut engine, 0.02);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        ctl("playposition").set(track.seconds_at(3.8) / track.duration);
+        ctl("play").set_bool(true);
+        run(&mut engine, 0.01);
+
+        ctl("beatloop_1_activate").set_bool(true);
+        ctl("beatloop_1_activate").set_bool(false);
+        run(&mut engine, 0.01);
+
+        let start = track.beat_at(ctl("loop_start_position").get());
+        assert!((start - 4.0).abs() < 1e-6, "started on beat {start}");
+        assert!(ctl("loop_enabled").get_bool());
+    }
+
+    #[test]
     fn sync_matches_tempo_and_hotcues_catch_fast_presses() {
         let (reg, mut engine, mut input) = setup();
         load(&mut input, 0, short_track(124.0, 10.0));
@@ -6283,6 +6496,160 @@ mod tests {
         assert!((beat_at("hotcue_2_position") - 2.27).abs() < 0.02);
     }
 
+    #[test]
+    fn a_synced_hot_cue_waits_for_the_upcoming_quantize_point() {
+        let (reg, mut engine, mut input) = setup();
+        let leader = short_track(120.0, 30.0);
+        let follower = short_track(120.0, 30.0);
+        load(&mut input, 0, leader.clone());
+        load(&mut input, 1, follower.clone());
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+        // The leader is in the second half of its beat, so the upcoming beat
+        // is nearer than the one behind it.
+        c("[Channel1]", "playposition").set(leader.seconds_at(3.75) / leader.duration);
+        c("[Channel1]", "play").set_bool(true);
+        c("[Channel2]", "sync_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+        c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+        run(&mut engine, 0.01);
+        let parked = engine.decks[1].seconds();
+
+        press(&reg, "[Channel2]", "hotcue_1_activate");
+        run(&mut engine, 0.01);
+        let pending = engine.decks[1]
+            .pending_hotcue
+            .expect("hot cue should wait for the upcoming beat");
+        assert!(pending.at > engine.clock);
+        assert!(!c("[Channel2]", "play").get_bool());
+        assert!((engine.decks[1].seconds() - parked).abs() < 1e-9);
+
+        run(&mut engine, 0.3);
+        assert!(engine.decks[1].pending_hotcue.is_none());
+        assert!(c("[Channel2]", "play").get_bool());
+        assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn a_synced_saved_loop_waits_for_the_upcoming_quantize_point() {
+        let (reg, mut engine, mut input) = setup();
+        let leader = short_track(120.0, 30.0);
+        let follower = short_track(120.0, 30.0);
+        load(&mut input, 0, leader.clone());
+        load(&mut input, 1, follower.clone());
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+        let (start, end) = (follower.seconds_at(8.0), follower.seconds_at(12.0));
+
+        c("[Channel1]", "playposition").set(leader.seconds_at(3.75) / leader.duration);
+        c("[Channel1]", "play").set_bool(true);
+        c("[Channel2]", "sync_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_position").set(start);
+        c("[Channel2]", "hotcue_1_endposition").set(end);
+        c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_type").set(HOTCUE_LOOP);
+        run(&mut engine, 0.01);
+        let parked = engine.decks[1].seconds();
+
+        press(&reg, "[Channel2]", "hotcue_1_activate");
+        run(&mut engine, 0.01);
+        let pending = engine.decks[1]
+            .pending_hotcue
+            .expect("saved loop should wait for the upcoming beat");
+        assert_eq!(pending.launch.end, Some(end));
+        assert!(!c("[Channel2]", "loop_enabled").get_bool());
+        assert!(!c("[Channel2]", "play").get_bool());
+        assert!((engine.decks[1].seconds() - parked).abs() < 1e-9);
+
+        run(&mut engine, 0.3);
+        assert!(engine.decks[1].pending_hotcue.is_none());
+        assert!(c("[Channel2]", "loop_enabled").get_bool());
+        assert!(c("[Channel2]", "play").get_bool());
+        assert_eq!(
+            (engine.decks[1].loop_start, engine.decks[1].loop_end),
+            (start, end)
+        );
+        assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn a_playing_deck_runs_on_while_its_hot_cue_waits() {
+        let (reg, mut engine, mut input) = setup();
+        let leader = short_track(120.0, 30.0);
+        let follower = short_track(120.0, 30.0);
+        load(&mut input, 0, leader.clone());
+        load(&mut input, 1, follower.clone());
+        run(&mut engine, 0.02);
+        let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+        for d in ["[Channel1]", "[Channel2]"] {
+            c(d, "play").set_bool(true);
+        }
+        c("[Channel2]", "sync_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+        c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+        c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+        run(&mut engine, 0.37);
+        let before = engine.decks[1].seconds();
+
+        press(&reg, "[Channel2]", "hotcue_1_activate");
+        run(&mut engine, 0.01);
+        let after = engine.decks[1].seconds();
+        assert!(
+            engine.decks[1].pending_hotcue.is_some(),
+            "leader beat {}, follower beat {}, following {}",
+            leader.beat_at(engine.decks[0].seconds()),
+            follower.beat_at(after),
+            engine.decks[1].following
+        );
+        assert!((0.0..0.03).contains(&(after - before)), "{before}..{after}");
+        assert!((after - follower.seconds_at(8.0)).abs() > 0.5);
+
+        run(&mut engine, 0.3);
+        assert!(engine.decks[1].pending_hotcue.is_none());
+        assert!(phase_gap(&engine) < 0.03, "{}", phase_gap(&engine));
+    }
+
+    #[test]
+    fn pausing_or_cue_cancels_a_waiting_hot_cue() {
+        for control in ["play", "cue_default"] {
+            let (reg, mut engine, mut input) = setup();
+            let leader = short_track(120.0, 30.0);
+            let follower = short_track(120.0, 30.0);
+            load(&mut input, 0, leader.clone());
+            load(&mut input, 1, follower.clone());
+            run(&mut engine, 0.02);
+            let c = |d: &str, k: &str| reg.get(d, k).unwrap();
+
+            for d in ["[Channel1]", "[Channel2]"] {
+                c(d, "play").set_bool(true);
+            }
+            c("[Channel2]", "sync_enabled").set_bool(true);
+            c("[Channel2]", "hotcue_1_position").set(follower.seconds_at(8.0));
+            c("[Channel2]", "hotcue_1_enabled").set_bool(true);
+            c("[Channel2]", "hotcue_1_type").set(HOTCUE_CUE);
+            run(&mut engine, 0.37);
+
+            press(&reg, "[Channel2]", "hotcue_1_activate");
+            run(&mut engine, 0.01);
+            assert!(engine.decks[1].pending_hotcue.is_some(), "{control}");
+
+            // Pause, or CUE on a playing deck (which stops it at the cue).
+            if control == "play" {
+                c("[Channel2]", "play").set_bool(false);
+            } else {
+                press(&reg, "[Channel2]", "cue_default");
+            }
+            run(&mut engine, 0.3);
+            assert!(engine.decks[1].pending_hotcue.is_none(), "{control}");
+            assert!(!c("[Channel2]", "play").get_bool(), "{control}");
+            let beat = follower.beat_at(engine.decks[1].seconds());
+            assert!((beat - 8.0).abs() > 0.5, "{control} launched: beat {beat}");
+        }
+    }
+
     /// A controller's delete is pressed and let go between two blocks; it
     /// still deletes.
     #[test]
@@ -6381,7 +6748,7 @@ mod tests {
         press(&reg, "[Channel2]", "hotcue_3_activate");
         run(&mut engine, 1.33);
         press(&reg, "[Channel2]", "hotcue_3_activate");
-        run(&mut engine, 0.05);
+        run(&mut engine, 0.3);
         assert!(phase_gap(&engine) < 0.01, "{}", phase_gap(&engine));
     }
 
@@ -7119,6 +7486,39 @@ mod tests {
         ctl("play").set_bool(true);
         assert!(run(&mut engine, 0.1) > 0.01, "the new track plays");
         assert!(!ctl("seek_hold").get_bool());
+    }
+
+    #[test]
+    fn on_screen_platter_scratches_audibly_and_lets_go() {
+        let (reg, mut engine, mut input) = setup();
+        load(&mut input, 0, short_track(120.0, 10.0));
+        run(&mut engine, 0.01);
+        let ctl = |k: &str| reg.get("[Channel1]", k).unwrap();
+        let seconds = || ctl("playposition").get() * 10.0;
+        ctl("playposition").set(0.5);
+        ctl("play").set_bool(true);
+        run(&mut engine, 0.1);
+        // Holding the top stops the record under the hand.
+        ctl("scratch2_enable").set_bool(true);
+        run(&mut engine, 0.1);
+        let held = seconds();
+        run(&mut engine, 0.2);
+        assert!((seconds() - held).abs() < 1e-6, "still while held");
+        // A quick quarter turn back is 0.45 s of track, heard all the way
+        // (fast, but a hand on the record, not a quiet search).
+        ctl("jog_scratch").set(-90.0);
+        assert!(run(&mut engine, 0.05) > 0.01, "a fast scratch is heard");
+        run(&mut engine, 0.3);
+        assert_eq!(ctl("jog_scratch").get(), 0.0);
+        assert!((seconds() - (held - 0.45)).abs() < 0.01, "{}", seconds());
+        // Movement without the top held does nothing.
+        ctl("scratch2_enable").set_bool(false);
+        ctl("play").set_bool(false);
+        run(&mut engine, 0.05);
+        let free = seconds();
+        ctl("jog_scratch").set(90.0);
+        run(&mut engine, 0.3);
+        assert!((seconds() - free).abs() < 1e-6, "{}", seconds());
     }
 
     #[test]
@@ -8197,6 +8597,55 @@ mod tests {
     }
 
     #[test]
+    fn a_hardware_synth_plays_from_the_instrument_input() {
+        let (reg, mut engine, _input) = setup();
+        let ins = |k: &str| reg.get("[Instrument1]", k).unwrap();
+        let mut link = engine.take_hardware_link().expect("hardware link");
+        let mut notes = engine.take_note_input().expect("note input");
+        let (feed, mut tx) = mic_feed();
+        engine.set_input(INSTRUMENT, Some(feed));
+        // The instrument deck: deck 1 plays the Instrument input.
+        reg.get("[Channel1]", "live_input")
+            .unwrap()
+            .set((INSTRUMENT + 1) as f64);
+        // No synth: the input is read and let go, nothing is heard.
+        let none = talk(&mut engine, &mut tx, 0.2, sine(1000.0, 0.5));
+        assert!(peak(&none) < 1e-4, "{}", peak(&none));
+        assert!(!ins("input_configured").get_bool());
+        // With one, what comes in is the instrument's sound, and its notes
+        // and knobs go out on the synth's channel.
+        let config = crate::hardware_synth::HardwareConfig {
+            port: "Synth".into(),
+            channel: 2,
+            ccs: vec![Some(74)],
+            lsbs: Vec::new(),
+            ..Default::default()
+        };
+        let slot = crate::hardware_synth::Slot::for_test(&config);
+        link.slots.push(Some(slot)).unwrap();
+        ins("parameter1").set(1.0);
+        assert!(notes.send([0x90, 60, 100]));
+        let on = talk(&mut engine, &mut tx, 0.3, sine(1000.0, 0.5));
+        let level = level_at(&on[on.len() / 2..], 1000.0);
+        assert!((level - 0.5).abs() < 0.05, "{level}");
+        assert!(ins("input_configured").get_bool());
+        let mut sent = Vec::new();
+        while let Ok(m) = link.rx.pop() {
+            sent.push(m.data);
+        }
+        assert!(sent.contains(&[0xB2, 74, 127]), "{sent:?}");
+        assert!(sent.contains(&[0x92, 60, 100]), "{sent:?}");
+        // Its gain turned up past full scale: the limiter holds it at
+        // -1 dBFS, under the master's own ceiling.
+        ins("hardware_gain").set(4.0);
+        let loud = talk(&mut engine, &mut tx, 0.3, sine(1000.0, 0.5));
+        let peak = loud[loud.len() / 2..]
+            .iter()
+            .fold(0.0f32, |m, s| m.max(s.abs()));
+        assert!(peak > 0.8 && peak <= 0.9, "{peak}");
+    }
+
+    #[test]
     fn the_music_ducks_under_the_microphone() {
         let (reg, mut engine, mut input) = setup();
         let deck = |k: &str| reg.get("[Channel1]", k).unwrap();
@@ -8630,6 +9079,39 @@ mod tests {
         inst("mixer").set_bool(true);
         run(&mut engine, 0.05);
         assert!(engine.inputs[INSTRUMENT].in_mixer);
+    }
+
+    #[test]
+    fn the_session_plays_on_its_own_channel() {
+        use crate::inputs::{SessionSource, MIXER};
+        struct Steady;
+        impl SessionSource for Steady {
+            fn render(&mut self, out: &mut [[f32; 2]]) {
+                out.fill([0.25; 2]);
+            }
+        }
+        let (reg, mut engine, _input) = setup();
+        let ses = |k: &str| reg.get("[Session1]", k).unwrap();
+        assert!(!ses("input_configured").get_bool());
+        assert!(engine.set_session(Some(Box::new(Steady))).is_none());
+        assert!(ses("input_configured").get_bool());
+        // Off until the channel is turned on, as the aux inputs are.
+        assert!(run(&mut engine, 0.2) < 1e-4);
+        ses("main_mix").set_bool(true);
+        run(&mut engine, 0.05);
+        assert!(run(&mut engine, 0.2) > 0.1, "the Session is heard");
+        // A deck playing the Mixer doesn't take it: it has its own channel.
+        reg.get("[Channel1]", "live_input")
+            .unwrap()
+            .set(MIXER as f64);
+        run(&mut engine, 0.05);
+        assert!(run(&mut engine, 0.2) > 0.1);
+        // Its fader turns it down.
+        ses("volume").set(0.0);
+        run(&mut engine, 0.1);
+        assert!(run(&mut engine, 0.2) < 1e-4);
+        assert!(engine.set_session(None).is_some());
+        assert!(!ses("input_configured").get_bool());
     }
 
     #[test]

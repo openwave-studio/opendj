@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 use opendj_engine::background::{self, Task, WhilePlaying};
 use opendj_engine::{stems, Source, Track};
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
 use super::{columns, Browser};
 use crate::{settings, AppWindow, TaskRow, TaskWaiting, TasksUi};
@@ -71,6 +71,21 @@ fn label(t: &Track) -> String {
     } else {
         format!("{} · {}", t.title, t.artist)
     }
+}
+
+/// Whether two sets of rows show the same. A row's `next` is a model, and
+/// models compare by pointer, so `==` always differed while a task had
+/// tracks waiting: the panel's rows were replaced and the window redrawn
+/// four times a second.
+fn same_rows(a: &[TaskRow], b: &[TaskRow]) -> bool {
+    let bare = |r: &TaskRow| TaskRow {
+        next: Default::default(),
+        ..r.clone()
+    };
+    a.len() == b.len()
+        && a.iter()
+            .zip(b)
+            .all(|(x, y)| bare(x) == bare(y) && x.next.iter().eq(y.next.iter()))
 }
 
 fn next_model(next: Vec<TaskWaiting>) -> ModelRc<TaskWaiting> {
@@ -186,7 +201,7 @@ impl Browser {
         let all_paused = !rows.is_empty() && rows.iter().all(|r| r.paused);
         ui.set_overall(overall);
         ui.set_all_paused(all_paused);
-        if rows != shown.rows {
+        if !same_rows(&rows, &shown.rows) {
             ui.set_tasks(ModelRc::new(VecModel::from(rows.clone())));
             shown.rows = rows;
         }

@@ -1,5 +1,7 @@
 //! The microphone and auxiliary inputs, Mixxx's `[Microphone]` and
-//! `[Auxiliary1]` to `[Auxiliary8]`, and the instrument, `[Instrument1]`.
+//! `[Auxiliary1]` to `[Auxiliary8]`, the instrument, `[Instrument1]`, and
+//! the Session, `[Session1]`: openDJ Studio's clip launcher, which the app
+//! plugs in as a [`SessionSource`].
 //! The microphone and auxiliaries take
 //! audio from an input device (see [`crate::output`]), the instrument from an
 //! instrument plugin playing the notes it is sent (see
@@ -26,7 +28,7 @@ use crate::controls::alias;
 use crate::dsp::Isolator;
 use crate::effects::EffectRack;
 
-pub const NUM_INPUTS: usize = 10;
+pub const NUM_INPUTS: usize = 11;
 pub const MICROPHONE: usize = 0;
 pub const AUXILIARY: usize = 1;
 /// The instrument plugin, joining the music as the auxiliary inputs do.
@@ -42,6 +44,10 @@ pub const AUXILIARY_6: usize = 7;
 pub const AUXILIARY_7: usize = 8;
 pub const AUXILIARY_8: usize = 9;
 pub const NUM_AUXILIARIES: usize = 8;
+/// The Session (openDJ Studio's clips, see [`SessionSource`]): a channel of
+/// its own that joins the music, as a deck does. Last, so the others keep
+/// their numbers.
+pub const SESSION: usize = 10;
 /// The auxiliary inputs, in order.
 pub const AUXILIARIES: [usize; NUM_AUXILIARIES] = [
     AUXILIARY,
@@ -56,8 +62,20 @@ pub const AUXILIARIES: [usize; NUM_AUXILIARIES] = [
 
 /// `[ChannelN],live_input` for the Mixer: the deck plays the auxiliary
 /// channels, the Mixer's strips, summed (see [`Routing::Mixer`]). After the
-/// inputs' own values, 1 + each input.
-pub const MIXER: usize = NUM_INPUTS + 1;
+/// inputs' own values, 1 + each input, as it was before the Session came:
+/// saved decks and mappings keep it. No deck plays the Session yet.
+pub const MIXER: usize = 11;
+const _: () = assert!(MIXER == SESSION + 1);
+
+/// The Session's sound: openDJ Studio's engine, which the app runs on a
+/// real-time thread of its own (`opendj-studio-engine`), so a heavy set
+/// never makes the decks wait. Called on the audio thread once a buffer;
+/// it must not block, lock or allocate.
+pub trait SessionSource: Send {
+    /// Fills `out` with the buffer about to be heard: silence when the
+    /// Session has nothing ready.
+    fn render(&mut self, out: &mut [[f32; 2]]);
+}
 
 /// The device an auxiliary input's route names when the strip plays the
 /// Mixer deck's own Groove Box instead of an interface's channels.
@@ -98,6 +116,7 @@ pub const fn input_group(input: usize) -> &'static str {
         "[Auxiliary6]",
         "[Auxiliary7]",
         "[Auxiliary8]",
+        "[Session1]",
     ][input]
 }
 
@@ -316,6 +335,21 @@ impl InputControls {
                 Behavior::Free,
             );
             reg.create(g, "chord_learn", 0.0, 0.0, 1.0, Behavior::Free);
+            // How chords strum (ms between notes, 0 for none), and what a
+            // key outside the scale does: Snap (0) or Mute (1).
+            let strum = crate::scale::MAX_STRUM_MS;
+            reg.create(g, "chord_strum", 0.0, 0.0, strum, Behavior::Linear);
+            reg.create(
+                g,
+                "chord_crescendo",
+                0.0,
+                -1.0,
+                1.0,
+                Behavior::CenteredOnDefault,
+            );
+            let from = (crate::scale::STRUM_FROM.len() - 1) as f64;
+            reg.create(g, "chord_strum_from", 0.0, 0.0, from, Behavior::Free);
+            reg.create(g, "scale_off", 0.0, 0.0, 1.0, Behavior::Free);
             // The arpeggiator (see `crate::arp`): off, Up, 1/16, half gate.
             use crate::arp::{DEFAULT_RATE, MODES, RATES};
             reg.create(g, "arp", 0.0, 0.0, 1.0, Behavior::Free);
@@ -339,6 +373,9 @@ impl InputControls {
             reg.create(g, "arp_gate", 0.5, 0.05, 1.0, Behavior::Linear);
             reg.create(g, "arp_octaves", 1.0, 1.0, 4.0, Behavior::Free);
             reg.create(g, "arp_hold", 0.0, 0.0, 1.0, Behavior::Free);
+            // Swing: where every other step lands between its neighbours,
+            // 0.5 straight to 0.75.
+            reg.create(g, "arp_swing", 0.5, 0.5, 0.75, Behavior::Linear);
         }
         // The Mixer deck's strip controls, for the auxiliary inputs (fed by
         // an interface's channels), the microphone and the instrument
@@ -395,6 +432,41 @@ impl InputControls {
     }
 }
 
+/// The hardware synth limiter's ceiling: -1 dBFS, as a live input's.
+const HARDWARE_CEILING: f32 = 0.891_250_9;
+
+/// The most a hardware synth's input gain lifts it: +18 dB.
+pub const HARDWARE_GAIN_MAX: f64 = 7.943;
+
+/// A hardware synth's sound as it comes in on the Instrument input:
+/// `[Instrument1],hardware_gain` (linear, 1 = 0 dB) then a limiter at
+/// -1 dBFS while `[Instrument1],hardware_limit` is on.
+struct HardwareInput {
+    gain_control: ControlHandle,
+    gain: f32,
+    on: ControlHandle,
+    limiter: crate::dsp::Limiter,
+}
+
+impl HardwareInput {
+    fn new(reg: &ControlRegistry, sample_rate: f64) -> Self {
+        let g = input_group(INSTRUMENT);
+        Self {
+            gain_control: reg.create(
+                g,
+                "hardware_gain",
+                1.0,
+                0.0,
+                HARDWARE_GAIN_MAX,
+                Behavior::Linear,
+            ),
+            gain: 1.0,
+            on: reg.create(g, "hardware_limit", 1.0, 0.0, 1.0, Behavior::Toggle),
+            limiter: crate::dsp::Limiter::new(sample_rate, HARDWARE_CEILING),
+        }
+    }
+}
+
 /// One input channel.
 pub(crate) struct Input {
     c: InputControls,
@@ -408,13 +480,20 @@ pub(crate) struct Input {
     scale: Option<[ControlHandle; 5]>,
     /// Its chord mode, learned chord and learn switch.
     chord: Option<[ControlHandle; 3]>,
-    /// Its arpeggiator: on, mode, rate, gate, octaves and hold.
-    arp: Option<[ControlHandle; 6]>,
+    /// How its chords strum (time, crescendo, from which end) and whether
+    /// keys outside the scale are muted.
+    feel: Option<[ControlHandle; 4]>,
+    /// Its arpeggiator: on, mode, rate, gate, octaves, hold and swing.
+    arp: Option<[ControlHandle; 7]>,
     /// Its step sequencer (see [`crate::seq`]).
     seq: Option<crate::seq::Seq>,
+    /// The instrument's: a hardware synth's input gain and limiter.
+    limit: Option<HardwareInput>,
     /// The master deck's key, for Auto.
     master_key: Option<crate::key::Key>,
     feed: Option<InputFeed>,
+    /// The Session's sound (see [`SessionSource`]); only for [`SESSION`].
+    source: Option<Box<dyn SessionSource>>,
     /// It plays the Mixer deck's Groove Box (see [`GROOVE_BOX`]) instead of
     /// a device.
     groove: bool,
@@ -474,6 +553,18 @@ impl Input {
                         .expect("the instrument's chord controls exist")
                 })
             }),
+            feel: (input == INSTRUMENT).then(|| {
+                [
+                    "chord_strum",
+                    "chord_crescendo",
+                    "chord_strum_from",
+                    "scale_off",
+                ]
+                .map(|k| {
+                    reg.get(input_group(input), k)
+                        .expect("the instrument's strum controls exist")
+                })
+            }),
             arp: (input == INSTRUMENT).then(|| {
                 [
                     "arp",
@@ -482,6 +573,7 @@ impl Input {
                     "arp_gate",
                     "arp_octaves",
                     "arp_hold",
+                    "arp_swing",
                 ]
                 .map(|k| {
                     reg.get(input_group(input), k)
@@ -491,6 +583,7 @@ impl Input {
             seq: (input == INSTRUMENT).then(|| {
                 crate::seq::Seq::new(crate::seq::SeqControls::new(reg, input_group(input)))
             }),
+            limit: (input == INSTRUMENT).then(|| HardwareInput::new(reg, sample_rate)),
             master_key: None,
             params: if input == INSTRUMENT {
                 (1..=INSTRUMENT_PARAMETERS)
@@ -500,6 +593,7 @@ impl Input {
                 Vec::new()
             },
             feed: None,
+            source: None,
             groove: false,
             groove_block: vec![[0.0; 2]; 4096],
             groove_got: 0,
@@ -563,6 +657,16 @@ impl Input {
         self.master_key = key;
     }
 
+    /// Plays the Session from `source` from now on, or nothing. Returns the
+    /// old source, to be dropped off the audio thread.
+    pub(crate) fn set_source(
+        &mut self,
+        source: Option<Box<dyn SessionSource>>,
+    ) -> Option<Box<dyn SessionSource>> {
+        self.c.configured.set_bool(source.is_some());
+        std::mem::replace(&mut self.source, source)
+    }
+
     /// Plays from `feed` from now on, or from nothing. Returns the old feed,
     /// to be dropped off the audio thread.
     pub(crate) fn set_feed(&mut self, feed: Option<InputFeed>) -> Option<InputFeed> {
@@ -609,7 +713,16 @@ impl Input {
                 learn.get() > 0.5,
             );
         }
-        if let Some([on, mode, rate, gate, octaves, hold]) = &self.arp {
+        if let Some([strum, crescendo, from, off]) = &self.feel {
+            let ms = strum.get().clamp(0.0, crate::scale::MAX_STRUM_MS);
+            fx.set_feel(crate::scale::Feel {
+                strum: (ms / 1000.0 * f64::from(fx.sample_rate())).round() as u32,
+                from: from.get().round() as u8,
+                crescendo: crescendo.get() as f32,
+                mute: off.get() > 0.5,
+            });
+        }
+        if let Some([on, mode, rate, gate, octaves, hold, swing]) = &self.arp {
             fx.set_arp(crate::arp::ArpSettings {
                 on: on.get() > 0.5,
                 mode: mode.get().round() as u8,
@@ -617,6 +730,7 @@ impl Input {
                 gate: gate.get(),
                 octaves: octaves.get().round() as u8,
                 hold: hold.get() > 0.5,
+                swing: swing.get(),
             });
         }
         if let Some(pads) = &mut self.pads {
@@ -652,9 +766,41 @@ impl Input {
         }
         let buf = &mut self.buf[..frames];
         let source = if self.index == INSTRUMENT {
-            let playing = fx.finish_instrument(buf);
+            // A hardware synth's sound comes in on the Instrument input
+            // route; with a plugin that input is read and let go, so it
+            // never stands in the queue.
+            let got = match &mut self.feed {
+                Some(feed) => pull(feed, &mut self.queue, buf),
+                None => 0,
+            };
+            let playing = if fx.plays_hardware() {
+                buf[got..].fill([0.0; 2]);
+                // Its own gain (an interface's line input can come in
+                // low) and a limiter after it, before the deck or the strip
+                // hears it.
+                if let Some(h) = &mut self.limit {
+                    let gain = (h.gain, h.gain_control.get() as f32);
+                    h.gain = gain.1;
+                    let on = h.on.get_bool();
+                    for (f, s) in buf.iter_mut().enumerate() {
+                        let r = (f + 1) as f32 / frames as f32;
+                        let g = gain.0 + (gain.1 - gain.0) * r;
+                        *s = [s[0] * g, s[1] * g];
+                        if on {
+                            *s = h.limiter.process(*s);
+                        }
+                    }
+                }
+                fx.finish_hardware(buf);
+                true
+            } else {
+                fx.finish_instrument(buf)
+            };
             self.c.configured.set_bool(fx.has_instrument());
             playing
+        } else if let Some(source) = &mut self.source {
+            source.render(buf);
+            true
         } else if self.groove {
             // Silent while no deck plays the Mixer to render it.
             let got = std::mem::take(&mut self.groove_got).min(frames);

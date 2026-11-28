@@ -77,7 +77,8 @@ pub struct Controllers {
     shared: Arc<Shared>,
     mappings: Vec<(String, PathBuf)>,
     stop: Arc<AtomicBool>,
-    thread: Option<JoinHandle<()>>,
+    /// The device thread, until [`Controllers::shut_down`].
+    thread: Mutex<Option<JoinHandle<()>>>,
 }
 
 /// Where notes from MIDI keyboards go: the instrument plugin. Called on the
@@ -110,6 +111,15 @@ struct Shared {
     /// The HID controllers plugged in, by port name: the name of the
     /// mapping Automatic picks for each.
     hid_ports: Mutex<HashMap<String, String>>,
+    /// The MIDI ports of keyboards whose knobs and buttons run over HID
+    /// (`keys="midi"`), with their HID side's port: only their keys, strips
+    /// and pedals play the instrument. Their other controllers (the knobs,
+    /// in the keyboard's own MIDI mode) go to the HID mapping's script
+    /// instead, through `twin_midi`.
+    keys_only: Mutex<Vec<(String, String)>>,
+    /// Controllers from a keys-only MIDI port waiting for its HID mapping,
+    /// by HID port.
+    twin_midi: Arc<Mutex<HashMap<String, Vec<[u8; 3]>>>>,
     /// Why a device couldn't be opened, by port name.
     problems: Mutex<HashMap<String, String>>,
 }
@@ -151,7 +161,7 @@ impl Controllers {
             shared,
             mappings,
             stop,
-            thread: Some(thread),
+            thread: Mutex::new(Some(thread)),
         }
     }
 
@@ -323,12 +333,45 @@ fn monitor(port: &str, msg: &[u8]) {
     }
 }
 
-impl Drop for Controllers {
-    fn drop(&mut self) {
+impl Controllers {
+    /// Disconnects every device and waits for their threads: each mapping
+    /// runs its shutdown (lights off) and its MIDI ports close while the
+    /// threads are alive. For quitting, when the app may still hold the
+    /// controllers; dropping them does the same.
+    pub fn shut_down(&self) {
         self.stop.store(true, Ordering::Relaxed);
-        if let Some(t) = self.thread.take() {
+        let thread = self.thread.lock().unwrap().take();
+        if let Some(t) = thread {
             let _ = t.join();
         }
+    }
+
+    /// As [`Controllers::shut_down`], waiting at most `limit`; whether the
+    /// threads finished. The device thread asks the system for its MIDI
+    /// ports every second, and a MIDI service that stops answering (seen
+    /// with Windows MIDI Services) holds it inside that call for good: it
+    /// is then left behind rather than waited for.
+    pub fn shut_down_within(&self, limit: Duration) -> bool {
+        self.stop.store(true, Ordering::Relaxed);
+        let Some(thread) = self.thread.lock().unwrap().take() else {
+            return true;
+        };
+        let until = Instant::now() + limit;
+        while !thread.is_finished() && Instant::now() < until {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if thread.is_finished() {
+            let _ = thread.join();
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Drop for Controllers {
+    fn drop(&mut self) {
+        self.shut_down();
     }
 }
 
@@ -468,6 +511,36 @@ fn hid_ports<'a>(
         out.push((name, d, m));
     }
     out
+}
+
+/// The MIDI ports of `found` keyboards whose mapping says their keys play
+/// over MIDI (`keys="midi"`), each with its HID side's port.
+fn keys_only(
+    midi_ports: &[String],
+    found: &[(String, hid::DeviceInfo, &hid::HidMapping)],
+) -> Vec<(String, String)> {
+    midi_ports
+        .iter()
+        .filter_map(|p| {
+            found
+                .iter()
+                .find(|(_, d, m)| {
+                    m.2.iter().any(|product| product.keys)
+                        && !d.product.is_empty()
+                        && (*p == d.product || device_key(p) == device_key(&d.product))
+                })
+                .map(|(hid_port, _, _)| (p.clone(), hid_port.clone()))
+        })
+        .collect()
+}
+
+/// Controllers a keyboard's keys side still plays when its knobs run over
+/// HID: mod wheel, breath, expression, sustain, sostenuto and soft pedals.
+const KEYS_ONLY_CONTROLLERS: [u8; 6] = [1, 2, 11, 64, 66, 67];
+
+/// Whether `data` from a keys-only port (see [`Shared::keys_only`]) plays.
+fn keys_only_plays(data: [u8; 3]) -> bool {
+    data[0] & 0xF0 != 0xB0 || KEYS_ONLY_CONTROLLERS.contains(&data[1])
 }
 
 /// The HID mapping file `port` should run, given the choices: the one
@@ -634,6 +707,14 @@ fn watch_devices(
                         .map(|(p, _, m)| (p.clone(), pick_hid_mapping(p, &m.1, &dir, &choices))),
                 );
             }
+            // Only while the HID mapping runs (as of the last scan): if it
+            // can't open, the knobs' own controllers are all there is.
+            let running: Vec<_> = found
+                .iter()
+                .filter(|(p, _, _)| devices.get(p).is_some_and(|d| !d.thread.is_finished()))
+                .cloned()
+                .collect();
+            *shared.keys_only.lock().unwrap() = keys_only(&ports, &running);
             *shared.hid_ports.lock().unwrap() = found
                 .iter()
                 .map(|(p, _, m)| (p.clone(), m.0.clone()))
@@ -705,18 +786,29 @@ fn watch_devices(
                         }
                     };
                     let d_stop = Arc::new(AtomicBool::new(false));
+                    let agent = crate::ni_agent::needs_agent(info.vendor_id, info.product_id)
+                        .then(|| (info.product_id, info.serial.clone()));
                     let thread = {
-                        let (registry, path, port, d_stop, connected) = (
+                        let (registry, path, port, d_stop, connected, twin) = (
                             registry.clone(),
                             path.clone(),
                             port.clone(),
                             d_stop.clone(),
                             connected.clone(),
+                            shared.clone(),
                         );
                         std::thread::Builder::new()
                             .name(format!("hid {port}"))
                             .spawn(move || {
-                                run_hid(&port, &path, device, registry, &d_stop, &connected)
+                                // Held while the mapping runs.
+                                let _agent = agent.map(|(product, serial)| {
+                                    crate::ni_agent::Registration::start(
+                                        product,
+                                        serial,
+                                        port.clone(),
+                                    )
+                                });
+                                run_hid(&port, &path, device, registry, &d_stop, &connected, &twin)
                             })
                             .expect("spawn controller thread")
                     };
@@ -912,6 +1004,24 @@ fn run_keyboard(
             let Some(data) = channel_message(msg) else {
                 return;
             };
+            if data[0] & 0xF0 == 0xB0 && !keys_only_plays(data) {
+                let hid = shared_in
+                    .keys_only
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|(midi, _)| *midi == name)
+                    .map(|(_, hid)| hid.clone());
+                if let Some(hid) = hid {
+                    let mut waiting = shared_in.twin_midi.lock().unwrap();
+                    let queue = waiting.entry(hid).or_default();
+                    // Nobody reading: don't grow without end.
+                    if queue.len() < 1024 {
+                        queue.push(data);
+                    }
+                    return;
+                }
+            }
             let note_on = data[0] & 0xF0 == 0x90 && data[2] > 0;
             // Pinned to a deck without the instrument: nothing reaches it,
             // but note offs still do so no note is left hanging.
@@ -1019,28 +1129,31 @@ fn run_device(
             return;
         }
     };
-    // The output with the same name, or failing that the closest one: some
-    // systems name the two directions slightly differently.
-    let mut out_conn = MidiOutput::new(CLIENT).ok().and_then(|output| {
-        let ports = output.ports();
-        let want = tokens(port);
-        let p = ports
-            .iter()
-            .find(|p| output.port_name(p).as_deref() == Ok(port))
-            .or_else(|| {
-                ports
-                    .iter()
-                    .find(|p| output.port_name(p).is_ok_and(|n| tokens(&n) == want))
-            })?
-            .clone();
-        output.connect(&p, "openDJ out").ok()
-    });
+    let mut out_conn = open_midi_output(port);
     let send = move |m: &[u8]| {
         if let Some(out) = out_conn.as_mut() {
             let _ = out.send(m);
         }
     };
     run_controller(port, mapping_path, own, registry, stop, connected, rx, send);
+}
+
+/// The MIDI output with the same name as input `port`, or failing that the
+/// closest one: some systems name the two directions slightly differently.
+fn open_midi_output(port: &str) -> Option<midir::MidiOutputConnection> {
+    let output = MidiOutput::new(CLIENT).ok()?;
+    let ports = output.ports();
+    let want = tokens(port);
+    let p = ports
+        .iter()
+        .find(|p| output.port_name(p).as_deref() == Ok(port))
+        .or_else(|| {
+            ports
+                .iter()
+                .find(|p| output.port_name(p).is_ok_and(|n| tokens(&n) == want))
+        })?
+        .clone();
+    output.connect(&p, "openDJ out").ok()
 }
 
 /// Runs a mapping until `stop` is set or the input ends.
@@ -1140,6 +1253,7 @@ fn run_hid(
     registry: Arc<ControlRegistry>,
     stop: &AtomicBool,
     connected: &Mutex<Vec<ConnectedController>>,
+    shared: &Shared,
 ) {
     use hid::Io;
     let mapping = match Mapping::load(mapping_path) {
@@ -1178,6 +1292,7 @@ fn run_hid(
     };
     flush(&mut controller);
     let mut buf = [0u8; hid::BUFFER];
+    let mut midi_out = None;
     'run: while !stop.load(Ordering::Relaxed) {
         let now = Instant::now();
         let deadline = controller
@@ -1197,8 +1312,37 @@ fn run_hid(
             }
             wait = 0;
         }
+        // The knobs a keyboard sends over its MIDI port (`keys="midi"`).
+        let twin = shared
+            .twin_midi
+            .lock()
+            .unwrap()
+            .remove(port)
+            .unwrap_or_default();
+        for msg in twin {
+            controller.receive_twin(msg);
+        }
         controller.poll(Instant::now());
         flush(&mut controller);
+        // And what the mapping sends back to that MIDI port.
+        let out = controller.take_output();
+        if !out.is_empty() {
+            if midi_out.is_none() {
+                let midi_port = shared
+                    .keys_only
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|(_, hid)| hid == port)
+                    .map(|(midi, _)| midi.clone());
+                midi_out = midi_port.and_then(|p| open_midi_output(&p));
+            }
+            if let Some(conn) = midi_out.as_mut() {
+                for m in out {
+                    let _ = conn.send(&m);
+                }
+            }
+        }
     }
     controller.shutdown();
     controller.poll(Instant::now());
@@ -1459,6 +1603,21 @@ mod tests {
             None,
             false
         ));
+        // Its knobs also send controllers over MIDI: only the keys, strips
+        // and pedals play from there.
+        let ports = vec!["KOMPLETE KONTROL M32".to_string(), "Other Keys".to_string()];
+        assert_eq!(
+            keys_only(&ports, &found),
+            vec![(
+                "KOMPLETE KONTROL M32".to_string(),
+                "Native Instruments Komplete Kontrol M32".to_string()
+            )]
+        );
+        assert!(keys_only_plays([0x90, 60, 100]));
+        assert!(keys_only_plays([0xE0, 0, 64]));
+        assert!(keys_only_plays([0xB0, 1, 64]));
+        assert!(keys_only_plays([0xB0, 64, 127]));
+        assert!(!keys_only_plays([0xB0, 14, 64]));
     }
 
     #[test]

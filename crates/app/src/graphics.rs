@@ -74,16 +74,28 @@ impl Backend {
     }
 
     pub fn configuration(self) -> WGPUConfiguration {
-        let backends = match self {
-            Backend::Auto => return WGPUConfiguration::default(),
+        let mut settings = WGPUSettings::default();
+        settings.power_preference = power_preference(std::env::var_os("WGPU_POWER_PREF").is_some());
+        settings.backends = match self {
+            Backend::Auto => settings.backends,
             Backend::Dx12 => wgpu::Backends::DX12,
             Backend::Vulkan => wgpu::Backends::VULKAN,
             Backend::Metal => wgpu::Backends::METAL,
             Backend::Gl => wgpu::Backends::GL,
         };
-        let mut settings = WGPUSettings::default();
-        settings.backends = backends;
         WGPUConfiguration::Automatic(settings)
+    }
+}
+
+/// The fast GPU on a computer with two: wgpu otherwise takes the first one
+/// the system lists, which on Windows laptops with Intel or AMD graphics
+/// beside an NVIDIA one is usually the slower built-in GPU, so the
+/// waveforms drop frames. wgpu's own `WGPU_POWER_PREF` still wins.
+fn power_preference(set_by_hand: bool) -> wgpu::PowerPreference {
+    if set_by_hand {
+        wgpu::PowerPreference::from_env().unwrap_or_default()
+    } else {
+        wgpu::PowerPreference::HighPerformance
     }
 }
 
@@ -211,6 +223,14 @@ mod tests {
         }
         assert_eq!(Backend::parse("OpenGL\n"), Some(Backend::Gl));
         assert_eq!(Backend::parse("glide"), None);
+    }
+
+    #[test]
+    fn the_fast_gpu_is_asked_for_unless_set_by_hand() {
+        assert_eq!(
+            power_preference(false),
+            wgpu::PowerPreference::HighPerformance
+        );
     }
 
     #[test]

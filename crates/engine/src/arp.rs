@@ -6,7 +6,8 @@
 //! [`RATES`]; `arp_gate` how much of each step a note sounds, 0.1 to 1;
 //! `arp_octaves` 1 to 4; `arp_hold` keeps the notes playing after the keys
 //! are let go, until new keys are played (the instrument's HOLD, which
-//! [`crate::latch`] plays while the arpeggiator is off).
+//! [`crate::latch`] plays while the arpeggiator is off); `arp_swing` where
+//! every other step lands between its neighbours, 0.5 (straight) to 0.75.
 //!
 //! It takes the notes after scale and chord mode, so a chord held with one
 //! key is arpeggiated too. Steps fall on the master deck's beat grid while
@@ -46,6 +47,9 @@ pub struct ArpSettings {
     pub gate: f64,
     pub octaves: u8,
     pub hold: bool,
+    /// Where every other step lands between its neighbours: 0.5 straight,
+    /// up to 0.75.
+    pub swing: f64,
 }
 
 impl Default for ArpSettings {
@@ -57,6 +61,7 @@ impl Default for ArpSettings {
             gate: 0.5,
             octaves: 1,
             hold: false,
+            swing: 0.5,
         }
     }
 }
@@ -118,6 +123,7 @@ impl Arp {
             rate: s.rate.min(RATES.len() - 1),
             gate: s.gate.clamp(0.05, 1.0),
             octaves: s.octaves.clamp(1, 4),
+            swing: s.swing.clamp(0.5, 0.75),
             ..s
         };
         if s.on != self.settings.on {
@@ -248,13 +254,20 @@ impl Arp {
             (((beat - start) / beats_per_frame).max(0.0) as usize).min(frames.saturating_sub(1))
                 as u32
         };
-        // Steps and gates closing in this buffer, in order.
-        let mut k = (start * per_beat).ceil();
+        // Every odd step lands late by the swing, in steps.
+        let late = (self.settings.swing - 0.5) * 2.0;
+        let beat_of = |k: f64| (k + if k.rem_euclid(2.0) == 1.0 { late } else { 0.0 }) / per_beat;
+        // Steps and gates closing in this buffer, in order: from the first
+        // step that can land in it (a late one from before its start).
+        let mut k = (start * per_beat - late).ceil();
         if k <= self.last_k && self.last_k - k < 2.0 {
             k = self.last_k + 1.0;
         }
+        while beat_of(k) < start && k < (start * per_beat).ceil() {
+            k += 1.0;
+        }
         loop {
-            let step_beat = k / per_beat;
+            let step_beat = beat_of(k);
             let close = self.sounding.map(|_| self.gate_end);
             match close {
                 Some(g) if g < end && g <= step_beat => {
@@ -348,6 +361,18 @@ mod tests {
         let started = run(&mut a, &chord(&[67, 60, 64]), 0.0, 2.0);
         // 1/8 notes: every 12,000 frames, low to high.
         assert_eq!(started, [(60, 0), (64, 12_000), (67, 24_000), (60, 36_000)]);
+    }
+
+    #[test]
+    fn swing_moves_every_other_step_late() {
+        let mut a = arp(ArpSettings {
+            rate: 1,
+            swing: 0.75,
+            ..Default::default()
+        });
+        let started = run(&mut a, &chord(&[67, 60, 64]), 0.0, 2.0);
+        // 1/8 notes swung at 75%: the off-beat lands half a step late.
+        assert_eq!(started, [(60, 0), (64, 18_000), (67, 24_000), (60, 42_000)]);
     }
 
     #[test]

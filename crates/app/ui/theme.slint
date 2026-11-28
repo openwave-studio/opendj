@@ -7,6 +7,7 @@ import "fonts/InterTabular-Regular.otf";
 import "fonts/InterTabular-Medium.otf";
 import "fonts/InterTabular-SemiBold.otf";
 import "fonts/InterTabular-Bold.otf";
+import "fonts/InterTabular-BoldItalic.otf";
 import "fonts/ZenDots-Regular.ttf";
 import "fonts/RobotoCondensed-Medium.ttf";
 import "fonts/RobotoCondensed-Bold.ttf";
@@ -39,6 +40,8 @@ export global Theme {
     // A switch pill's border while on, and its text while off.
     out property <color> pill-on-border: root.light ? #c9bdf2 : #3a3346;
     out property <color> pill-off-text: root.light ? #8e8c96 : #6f6d78;
+    // The chosen part of a stacked switch (the mixer's knob mode).
+    out property <color> pill-on-fill: root.light ? #e6dfff : #4a4060;
     // Section titles.
     out property <color> section-title: root.light ? #4a4852 : #d9d6e4;
     // A fader's cap (top and bottom of its shading) and its edge: graphite,
@@ -160,6 +163,10 @@ export global Theme {
     out property <color> loop: root.lilac;
     out property <color> key: root.light ? #6a4bd4 : #8e7cff;
     out property <color> danger: root.light ? #d70015 : #ff453a;
+    // The phase meter: beats tight (within 10 ms), close (35 ms), off.
+    out property <color> phase-tight: root.c-30d158;
+    out property <color> phase-close: root.c-ffd60a;
+    out property <color> phase-off: root.c-ff9f0a;
     out property <color> well: root.light ? #eceaf1 : #0d0d0e;
     out property <length> radius: 6px;
     // Pads and their page tabs: crisp, only slightly rounded.
@@ -359,11 +366,22 @@ export global Theme {
     out property <color> f-00000099: #00000099;
     out property <color> f-000000d9: #000000d9;
     out property <color> f-0050e0: #0050e0;
+    out property <color> f-c8372d: #c8372d;
+    out property <color> f-f0a830: #f0a830;
+    out property <color> f-b4e4ff: #b4e4ff;
+    out property <color> f-e8322a: #e8322a;
+    out property <color> f-3cd25a: #3cd25a;
+    out property <color> f-3c82ff: #3c82ff;
     out property <color> f-007aff: #007aff;
     out property <color> f-08080a: #08080a;
     out property <color> f-08080a00: #08080a00;
-    out property <color> f-0960b1: #0960b1;
-    out property <color> f-09ad18: #09ad18;
+    // The stems' colors (opendj_engine::stems::default_info), for the stem
+    // pads of a track whose stems aren't loaded yet.
+    out property <color> stem-kick: #c9444a;
+    out property <color> stem-hihat: #f4a08c;
+    out property <color> stem-bass: #3e4a94;
+    out property <color> stem-instru: #a58ae8;
+    out property <color> stem-vocal: #f2cf6a;
     out property <color> f-0c0c0e: #0c0c0e;
     out property <color> f-101012: #101012;
     out property <color> f-101112: #101112;
@@ -395,7 +413,6 @@ export global Theme {
     out property <color> f-2c2c30: #2c2c30;
     out property <color> f-2d6a43: #2d6a43;
     out property <color> f-2e2e33: #2e2e33;
-    out property <color> f-2e4e75: #2e4e75;
     out property <color> f-303034: #303034;
     out property <color> f-30c158: #30c158;
     out property <color> f-30d158: #30d158;
@@ -433,8 +450,6 @@ export global Theme {
     out property <color> f-8e8e94: #8e8e94;
     out property <color> f-98989d: #98989d;
     out property <color> f-9d9da3: #9d9da3;
-    out property <color> f-a21418: #a21418;
-    out property <color> f-a26018: #a26018;
     out property <color> f-a78bfa: #a78bfa;
     out property <color> f-af52de: #af52de;
     out property <color> f-b4e05a: #b4e05a;

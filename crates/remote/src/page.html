@@ -29,7 +29,7 @@ svg { display: block; }
 
 /* Now playing */
 #nowView {
-  position: fixed; inset: 0; display: flex; flex-direction: column;
+  position: fixed; left: 0; right: 0; display: flex; flex-direction: column;
   padding: calc(env(safe-area-inset-top) + 10px) 24px calc(env(safe-area-inset-bottom) + 14px);
   background: linear-gradient(180deg, #3b2d66 0%, #241c3d 45%, var(--bg) 100%);
   transition: background 0.6s;
@@ -44,7 +44,7 @@ svg { display: block; }
 .iconbtn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 22px; }
 .iconbtn:active { background: #ffffff14; }
 .cover {
-  margin: 14px auto 0; width: auto; height: clamp(120px, calc(100dvh - 510px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), min(420px, 100vw - 48px)); aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+  margin: 14px auto 0; width: auto; height: clamp(120px, calc(100dvh - 510px - var(--tt) - var(--tb) - env(safe-area-inset-top) - env(safe-area-inset-bottom)), min(420px, 100vw - 48px)); aspect-ratio: 1; border-radius: 10px; overflow: hidden;
   background: linear-gradient(135deg, var(--lilac-deep), #4b3a87); box-shadow: 0 16px 40px rgba(0,0,0,.45); position: relative; flex-shrink: 0;
 }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; position: relative; z-index: 1; }
@@ -197,6 +197,149 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .pair .wide { width: 230px; }
 .err { color: var(--red); min-height: 20px; margin-top: 14px; font-size: 14px; }
 .tip { color: var(--dim); font-size: 13px; margin-top: 30px; }
+
+/* Tabs: along the bottom on phones, in the top bar on wide screens */
+:root { --tt: 0px; --tb: 0px; }
+body.tabbed:not(.wide) { --tb: calc(58px + env(safe-area-inset-bottom)); }
+body.tabbed.wide { --tt: calc(52px + env(safe-area-inset-top)); }
+#nowView { top: var(--tt); bottom: var(--tb); }
+body.tabbed.wide #nowView { padding-top: 10px; }
+body.tabbed:not(.wide) #nowView { padding-bottom: 14px; }
+.tabs { position: fixed; left: 0; right: 0; z-index: 4; display: flex; background: #161618; }
+body:not(.wide) .tabs { bottom: 0; height: var(--tb); padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--line); justify-content: space-around; }
+body:not(.wide) .tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--dim); font-size: 11px; font-weight: 600; }
+body:not(.wide) .tabs .ico { width: 24px; height: 24px; }
+body.wide .tabs { top: 0; height: var(--tt); padding: env(safe-area-inset-top) 16px 0; align-items: center; justify-content: flex-end; gap: 2px; border-bottom: 1px solid var(--line); }
+body.wide .tabs::before { content: "openDJ"; margin-right: auto; font-weight: 800; letter-spacing: -.2px; }
+body.wide .tabs button { padding: 7px 16px; border-radius: 8px; color: var(--dim); font-weight: 650; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+body.wide .tabs .ico { width: 18px; height: 18px; }
+.tabs button.on { color: var(--lilac); }
+body.wide .tabs button.on { background: #3a3150; }
+
+/* Deck page */
+#deckView { position: fixed; left: 0; right: 0; top: var(--tt); bottom: var(--tb); display: grid; gap: 10px; padding: 10px 14px 12px;
+  grid-template-columns: 172px minmax(0, 1fr) 196px 56px; grid-template-rows: auto auto minmax(90px, 1fr) clamp(290px, 50vh, 440px);
+  grid-template-areas: "head head head head" "ov ov ov ov" "wave wave wave wave" "trans pads chan pitch"; }
+body:not(.wide) #deckView { padding-top: calc(env(safe-area-inset-top) + 8px); }
+#deckView .dhead { grid-area: head; display: flex; align-items: center; gap: 10px; min-width: 0; }
+#deckView .decks { display: flex; gap: 4px; flex-shrink: 0; }
+#deckView .decks button { width: 36px; height: 36px; border-radius: 9px; background: var(--raised); color: var(--dim); font-weight: 700; }
+#deckView .decks button.on { background: var(--lilac); color: var(--ink); }
+#deckView .decks button.playing { box-shadow: inset 0 -3px 0 #59d98e; }
+#deckView .dt { flex: 1; min-width: 0; }
+#deckView .dt b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#deckView .dt span { display: block; color: var(--dim); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#deckView .stat { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--dim); line-height: 1.35; white-space: nowrap; }
+#deckView .stat b { color: var(--text); font-size: 18px; }
+#deckView .stat .left { color: var(--text); }
+#deckView .stat .left.end { color: var(--red); }
+#deckView canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#deckView .ov { grid-area: ov; height: 28px; border-radius: 6px; overflow: hidden; background: #19191c; }
+#deckView .wv { grid-area: wave; position: relative; border-radius: 8px; overflow: hidden; background: #0e0e10; min-height: 0; }
+#deckView .wv .tag { position: absolute; left: 8px; top: 8px; font: 700 12px/1 -apple-system, sans-serif; background: #000a; color: #fff; padding: 4px 7px; border-radius: 6px; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+#deckView .wv .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--dim); font-size: 15px; }
+#deckView .k { background: var(--raised); border-radius: 9px; height: 38px; padding: 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .4px; display: grid; place-items: center; color: var(--text); touch-action: none; }
+#deckView .k.out { background: none; box-shadow: inset 0 0 0 2px var(--line); }
+#deckView .k.on { background: #3a3150; color: var(--lilac); box-shadow: inset 0 0 0 2px var(--lilac); }
+#deckView .k.down, #deckView .pad.down { filter: brightness(1.5); }
+#deckView .trans { grid-area: trans; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+#deckView .row2, #deckView .row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#deckView .row3 { grid-template-columns: 1fr 1fr 1fr; }
+#deckView .nudge { height: 44px; border-radius: 12px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: repeating-linear-gradient(90deg, #26262a 0 10px, #1e1e21 10px 20px); color: var(--dim); font-size: 12px; font-weight: 700; }
+#deckView .nudge button { height: 100%; color: var(--text); touch-action: none; }
+#deckView .nudge button.down { background: #ffffff14; }
+#deckView .info { flex: 1; background: #17171a; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 6px; font-variant-numeric: tabular-nums; min-height: 0; overflow: hidden; }
+#deckView .info div { display: flex; justify-content: space-between; align-items: baseline; }
+#deckView .lbl { font-size: 10px; font-weight: 700; color: var(--dim); letter-spacing: 1px; }
+#deckView .tp { display: flex; gap: 8px; justify-content: space-between; }
+#deckView .tp button { width: 76px; height: 64px; border-radius: 14px; font-weight: 800; font-size: 14px; background: var(--raised); touch-action: none; }
+#deckView .cue { box-shadow: inset 0 0 0 3px #ffb347; color: #ffb347; }
+#deckView .play { box-shadow: inset 0 0 0 3px #59d98e; color: #59d98e; }
+#deckView .play.on { background: #59d98e; color: var(--ink); }
+#deckView .cue.down { background: #ffb347; color: var(--ink); }
+#deckView .padcol { grid-area: pads; display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }
+#deckView .seg { display: flex; background: #19191c; border-radius: 9px; padding: 3px; gap: 2px; align-self: flex-start; max-width: 100%; overflow-x: auto; }
+#deckView .seg button { padding: 6px 11px; border-radius: 7px; color: var(--dim); font-weight: 600; font-size: 12px; white-space: nowrap; }
+#deckView .seg button.on { background: #3a3150; color: var(--lilac); }
+#deckView .pads { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr 1fr; gap: 8px; }
+#deckView .pad { border-radius: 12px; background: #1e1e22; border: 2px solid #2c2c31; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 8px 10px; font-size: 12px; color: var(--dim); text-align: left; min-height: 0; overflow: hidden; touch-action: none; }
+#deckView .pad b { font-size: 17px; color: var(--text); }
+#deckView .pad.set { border-color: var(--c); background: color-mix(in srgb, var(--c) 18%, #1b1b1f); }
+#deckView .pad.set b { color: var(--c); }
+#deckView .pad.lit { background: color-mix(in srgb, var(--c) 45%, #1b1b1f); }
+#deckView .pad span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+#deckView .loops { display: grid; grid-template-columns: auto auto 1fr auto 1fr; gap: 8px; }
+#deckView .step { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; background: #19191c; border-radius: 9px; height: 38px; }
+#deckView .step button { height: 100%; color: var(--dim); font-size: 15px; touch-action: none; }
+#deckView .step .mid { color: var(--text); font-size: 12px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
+#deckView .step.on { box-shadow: inset 0 0 0 2px #59d98e; }
+#deckView .step.on .mid { color: #59d98e; }
+#deckView .chan { grid-area: chan; background: #17171a; border-radius: 14px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr 30px 8px; grid-template-rows: repeat(3, auto) 1fr; gap: 10px 8px; min-height: 0; }
+#deckView .chan .vf { grid-column: 3; grid-row: 1 / 5; }
+#deckView .chan .vu { grid-column: 4; grid-row: 1 / 5; }
+#deckView .chan .name { grid-column: 1 / 3; align-self: end; text-align: center; }
+#deckView .kn { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--dim); letter-spacing: .5px; touch-action: none; }
+#deckView .knob { width: 46px; height: 46px; border-radius: 50%; position: relative; }
+#deckView .knob::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: #232327; }
+#deckView .knob i { position: absolute; left: 50%; top: calc(50% - 15px); width: 2px; height: 15px; margin-left: -1px; background: #fff; transform-origin: 50% 100%; z-index: 1; border-radius: 1px; }
+#deckView .kn .k { width: 46px; height: 46px; border-radius: 12px; }
+#deckView .fader { position: relative; border-radius: 9px; background: #19191c; touch-action: none; }
+#deckView .fader::before { content: ""; position: absolute; left: 50%; top: 10px; bottom: 10px; width: 4px; margin-left: -2px; background: #2e2e33; border-radius: 2px; }
+#deckView .fader .cap { position: absolute; left: 3px; right: 3px; height: 26px; margin-top: -13px; border-radius: 7px; background: var(--lilac); box-shadow: 0 2px 8px #0009; }
+#deckView .fader.vol .cap { background: #e8e8ee; }
+#deckView .fader .zero { position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; background: #555; }
+#deckView .vu { border-radius: 3px; background: linear-gradient(to top, #59d98e 0 60%, #ffe066 60% 85%, #ff5c6c 85%); position: relative; overflow: hidden; }
+#deckView .vu i { position: absolute; left: 0; right: 0; top: 0; background: #19191c; height: 100%; }
+#deckView .pitch { grid-area: pitch; display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-height: 0; }
+#deckView .pitch .v { text-align: center; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+#deckView .pitch .fader { flex: 1; }
+#deckView .pitch .k { height: 30px; font-size: 10px; padding: 0; }
+#deckView .hpitch { display: none; }
+
+/* Narrow screens (phones): one column */
+body:not(.wide) #deckView { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(100px, 1fr) auto auto auto auto;
+  grid-template-areas: "head" "ov" "wave" "pads" "hpitch" "trans" "chan"; gap: 8px; padding-left: 12px; padding-right: 12px; }
+body:not(.wide) #deckView .padcol { height: clamp(170px, 34vh, 280px); }
+body:not(.wide) #deckView .loops { grid-template-columns: auto auto 1fr 1fr; }
+body:not(.wide) #deckView .loops .reloop { display: none; }
+body:not(.wide) #deckView .pitch { display: none; }
+body:not(.wide) #deckView .hpitch { grid-area: hpitch; display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center; }
+body:not(.wide) #deckView .hpitch .fader { height: 36px; }
+body:not(.wide) #deckView .hpitch .fader::before { left: 10px; right: 10px; top: 50%; bottom: auto; width: auto; height: 4px; margin: -2px 0 0; }
+body:not(.wide) #deckView .hpitch .fader .cap { top: 3px; bottom: 3px; height: auto; width: 26px; margin: 0 0 0 -13px; left: auto; right: auto; }
+body:not(.wide) #deckView .hpitch .fader .zero { left: 50%; right: auto; top: 6px; bottom: 6px; width: 2px; height: auto; }
+body:not(.wide) #deckView .trans { flex-direction: row; align-items: center; }
+body:not(.wide) #deckView .trans > :not(.tp) { display: none; }
+body:not(.wide) #deckView .tp { flex: 1; }
+body:not(.wide) #deckView .tp .k { flex: 1; height: 44px; align-self: center; }
+body:not(.wide) #deckView .tp .mini { display: grid; }
+body:not(.wide) #deckView .chan, body.port #deckView .chan { grid-template-columns: repeat(6, auto) minmax(80px, 1fr) 8px; grid-template-rows: auto; padding: 8px 10px; align-items: center; gap: 8px; }
+body:not(.wide) #deckView .chan .name, body:not(.wide) #deckView .chan .vu, body:not(.wide) #deckView .chan .trim { display: none; }
+body.port #deckView .chan .name { display: none; }
+body:not(.wide) #deckView .chan .vf, body.port #deckView .chan .vf { grid-column: 7; grid-row: 1; height: 36px; }
+body.port #deckView .chan .vu { grid-column: 8; grid-row: 1; height: 46px; }
+body:not(.wide) #deckView .chan .vf::before, body.port #deckView .chan .vf::before { left: 10px; right: 10px; top: 50%; bottom: auto; width: auto; height: 4px; margin: -2px 0 0; }
+body:not(.wide) #deckView .chan .vf .cap, body.port #deckView .chan .vf .cap { top: 3px; bottom: 3px; height: auto; width: 22px; margin: 0 0 0 -11px; left: auto; right: auto; }
+/* An iPad upright: the channel strip goes under the pads */
+body.port #deckView { grid-template-columns: 160px minmax(0, 1fr) 56px; grid-template-rows: auto auto minmax(90px, 1fr) clamp(300px, 40vh, 480px) auto;
+  grid-template-areas: "head head head" "ov ov ov" "wave wave wave" "trans pads pitch" "chan chan chan"; }
+body:not(.wide) #deckView .dhead { flex-wrap: wrap; row-gap: 6px; }
+body:not(.wide) #deckView .dt { order: 5; flex-basis: 100%; }
+body:not(.wide) #deckView .stat { margin-left: auto; }
+body:not(.wide) #deckView .knob { width: 38px; height: 38px; }
+body:not(.wide) #deckView .kn .k { width: 38px; height: 38px; }
+body:not(.wide) #deckView .knob i { top: calc(50% - 12px); height: 12px; }
+#deckView .tp .mini { display: none; }
+@media (max-height: 640px) { body:not(.wide) #deckView .chan { display: none; } }
+/* A phone on its side: the waveform, transport, pads and pitch only */
+body.short.tabbed.wide { --tt: calc(44px + env(safe-area-inset-top)); }
+body.short #deckView { grid-template-columns: 150px minmax(0, 1fr) 56px; grid-template-rows: auto minmax(56px, 1fr) 190px; grid-template-areas: "head head head" "wave wave wave" "trans pads pitch"; gap: 8px; padding: 8px max(12px, env(safe-area-inset-left)); }
+body.short #deckView .ov, body.short #deckView .chan, body.short #deckView .info, body.short #deckView .nudge, body.short #deckView .trans > .row2:nth-child(2) { display: none; }
+body.short #deckView .dhead .decks button { width: 32px; height: 32px; }
+body.short #deckView .tp button { width: 66px; height: 56px; }
+body.short #deckView .trans { justify-content: space-between; }
+body.short #deckView .pitch .k, body.short #deckView .pad span { display: none; }
+body.short #deckView .pad { justify-content: center; }
 </style>
 </head>
 <body>
@@ -219,6 +362,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
   <symbol id="i-level" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 5.5a9 9 0 0 1 0 13"/></symbol>
+  <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></symbol>
   <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></symbol>
 </svg>
 
@@ -304,6 +448,65 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
   <div class="list" id="results"></div>
 </section>
 
+<nav id="tabs" class="tabs hidden">
+  <button data-tab="automix"><svg class="ico"><use href="#i-queue"/></svg>Automix</button>
+  <button data-tab="deck"><svg class="ico"><use href="#i-disc"/></svg>Deck</button>
+</nav>
+
+<section id="deckView" class="hidden">
+  <div class="dhead">
+    <div class="decks" id="dkDecks"><button>1</button><button>2</button><button>3</button><button>4</button></div>
+    <button class="k out" id="dkLoad">LOAD</button>
+    <div class="dt"><b id="dkTitle">No track</b><span id="dkArtist"></span></div>
+    <div class="stat"><b id="dkBpm">–</b> BPM<br><span id="dkKey"></span> · <span class="left" id="dkLeft">-0:00</span></div>
+  </div>
+  <div class="ov"><canvas id="dkOv"></canvas></div>
+  <div class="wv"><canvas id="dkWave"></canvas><span class="tag hidden" id="dkBar"></span><div class="empty" id="dkEmpty">Tap LOAD to put a track on this deck.</div></div>
+  <div class="trans">
+    <div class="row2"><button class="k" data-t="sync_enabled">SYNC</button><button class="k out" data-t="quantize">Q</button></div>
+    <div class="row2"><button class="k out" data-t="slip_enabled">SLIP</button><button class="k out" data-h="reverse">REV</button></div>
+    <div class="nudge"><button data-h="rate_temp_down">◀</button><span>NUDGE</span><button data-h="rate_temp_up">▶</button></div>
+    <div class="info">
+      <div><span class="lbl">ELAPSED</span><b id="dkEl">0:00</b></div>
+      <div><span class="lbl">REMAIN</span><b id="dkRe">-0:00</b></div>
+      <div><span class="lbl">KEY</span><b id="dkKey2">–</b></div>
+    </div>
+    <div class="tp"><button class="cue" data-h="cue_default">CUE</button><button class="k mini" data-t="sync_enabled">SYNC</button><button class="play" data-t="play">▶ ❙❙</button></div>
+  </div>
+  <div class="padcol">
+    <div class="seg" id="dkModes"><button data-m="cue" class="on">Hot Cue</button><button data-m="loop">Loop</button><button data-m="jump">Beat Jump</button></div>
+    <div class="pads" id="dkPads"></div>
+    <div class="loops">
+      <button class="k" data-h="loop_in">IN</button><button class="k" data-h="loop_out">OUT</button>
+      <div class="step" id="dkLoop"><button data-h="loop_halve">‹</button><button class="mid" data-h="beatloop_activate">LOOP 4</button><button data-h="loop_double">›</button></div>
+      <button class="k out reloop" data-h="reloop_toggle">RELOOP</button>
+      <div class="step" id="dkJump"><button data-h="beatjump_backward">‹</button><button class="mid" id="dkJumpSize">JUMP 4</button><button data-h="beatjump_forward">›</button></div>
+    </div>
+  </div>
+  <div class="chan">
+    <div class="kn trim" data-knob="pregain"><div class="knob"><i></i></div>TRIM</div>
+    <div class="kn" data-knob="eq_high"><div class="knob"><i></i></div>HI</div>
+    <div class="fader vol vf" data-fader="volume"><div class="cap"></div></div>
+    <div class="vu"><i id="dkVu"></i></div>
+    <div class="kn" data-knob="eq_mid"><div class="knob"><i></i></div>MID</div>
+    <div class="kn" data-knob="eq_low"><div class="knob"><i></i></div>LOW</div>
+    <div class="kn" data-knob="filter"><div class="knob"><i></i></div>FILTER</div>
+    <div class="kn"><button class="k" data-t="pfl">🎧</button>CUE</div>
+    <div class="lbl name" id="dkChan">DECK 3</div>
+  </div>
+  <div class="pitch">
+    <div class="v" id="dkPitch">0.0%</div>
+    <div class="fader" data-fader="rate"><div class="zero"></div><div class="cap"></div></div>
+    <button class="k" data-t="keylock">KEY</button>
+    <button class="k" id="dkReset">RESET</button>
+  </div>
+  <div class="hpitch">
+    <span class="lbl" id="dkPitch2">0.0%</span>
+    <div class="fader" data-fader="rate"><div class="zero"></div><div class="cap"></div></div>
+    <button class="k" data-t="keylock" style="height:36px">KEY</button>
+  </div>
+</section>
+
 <div id="scrim" class="scrim hidden"><div class="sheet" id="sheet"></div></div>
 <div id="toast" class="toast"></div>
 <div id="offline" class="offline hidden">Reconnecting to openDJ…</div>
@@ -380,9 +583,10 @@ async function login() {
     authed = true;
     $("offline").classList.add("hidden");
     $("pairView").classList.add("hidden");
-    $("nowView").classList.remove("hidden");
+    showTab(tab);
     keepAwake();
     drawAll();
+    drawDeck();
   } catch (e) {
     if (e.unpaired) saveCreds(null);
     showPair(e.message);
@@ -391,6 +595,9 @@ async function login() {
 
 function showPair(msg) {
   $("nowView").classList.add("hidden");
+  $("deckView").classList.add("hidden");
+  $("tabs").classList.add("hidden");
+  document.body.classList.remove("tabbed");
   $("pairView").classList.remove("hidden");
   $("pairErr").textContent = msg || "";
 }
@@ -409,6 +616,7 @@ $("pin").addEventListener("keydown", e => { if (e.key === "Enter") $("pairBtn").
 
 function onEvent(name, data) {
   if (name === "revoked") { saveCreds(null); authed = false; showPair("This phone was removed in openDJ. Pair it again to carry on."); return; }
+  if (deckEvent(name, data)) return;
   state[name] = data;
   if (name === "automix") { drawNow(); drawQueue(); drawEdit(); refreshSheet(); }
   if (name === "now") { drawNow(); drawQueue(); }
@@ -500,6 +708,7 @@ $("editClose").onclick = () => { selected.clear(); closePanel("editView"); };
 $("addBtn").onclick = () => { openPanel("searchView"); runSearch(); setTimeout(() => $("search").focus(), 300); };
 $("searchDone").onclick = () => {
   $("search").blur(); closePanel("searchView");
+  setTimeout(() => { loadDeck = null; }, 300);
   searchSeq++;
   setTimeout(() => { $("search").value = ""; results = []; lastTotal = 0; drawResults(); }, 300);
 };
@@ -652,6 +861,8 @@ $("eRemove").onclick = () => editAction("automix.remove", n => n === 1 ? "Remove
 
 /* ---------- Search ---------- */
 let searchTimer = 0, searchSeq = 0, results = [], lastTotal = 0;
+// The deck LOAD on the Deck page loads onto; null when adding to Automix.
+let loadDeck = null;
 $("search").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 250); });
 $("search").addEventListener("keydown", e => { if (e.key === "Enter") { clearTimeout(searchTimer); runSearch(); e.target.blur(); } });
 // Empty text lists the whole collection; scrolling near the end of the
@@ -687,7 +898,7 @@ function resultRow(t, i) {
   return `<div class="row" data-i="${i}">
       ${art(t.art)}
       <div class="txt"><div class="t">${esc(t.title)}</div><div class="a">${esc(t.artist)}</div></div>
-      ${t.queued ? '<button class="add done" disabled>Added</button>' : '<button class="add" data-next="1">Next</button><button class="add plus" aria-label="Add to the end"><svg class="ico"><use href="#i-plus"/></svg></button>'}
+      ${loadDeck != null ? `${rowMeta(t)}<button class="add${t.loaded ? " done" : ""}" data-load="1"${t.loaded ? " disabled" : ""}>${t.loaded ? "Loaded" : t.force ? "Load anyway" : `Load ${loadDeck + 1}`}</button>` : t.queued ? '<button class="add done" disabled>Added</button>' : '<button class="add" data-next="1">Next</button><button class="add plus" aria-label="Add to the end"><svg class="ico"><use href="#i-plus"/></svg></button>'}
     </div>`;
 }
 function drawResults() {
@@ -703,6 +914,19 @@ function drawFound() {
 $("results").addEventListener("click", async e => {
   const b = e.target.closest("button.add"); if (!b || b.disabled) return;
   const t = results[+b.closest(".row").dataset.i]; if (!t) return;
+  if (b.dataset.load) {
+    // A playing deck asks once more before its track is swapped.
+    const row = b.closest(".row");
+    try {
+      await call("deck.load", { deck: loadDeck, id: t.id, force: !!t.force });
+      toast(`${t.title} on deck ${loadDeck + 1}`);
+      $("searchDone").click();
+    } catch (err) {
+      if (/playing/.test(err.message)) { t.force = true; row.outerHTML = resultRow(t, +row.dataset.i); toast(`Deck ${loadDeck + 1} is playing`); }
+      else toast(err.message);
+    }
+    return;
+  }
   const next = !!b.dataset.next;
   try {
     await act("automix.add", { id: t.id, next });
@@ -844,6 +1068,376 @@ document.addEventListener("visibilitychange", () => {
   if (!ws || ws.readyState > 1) { clearTimeout(retryTimer); retry = 0; connect(); }
 });
 setInterval(() => { if (authed) call("ping").catch(() => {}); }, 20000);
+
+/* ---------- Tabs ---------- */
+const TAB_KEY = "opendj-remote-tab", DECK_KEY = "opendj-remote-deck";
+function stored(key, fallback) { try { return localStorage.getItem(key) ?? fallback; } catch (e) { return fallback; } }
+function store(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+let tab = stored(TAB_KEY, null);
+// Wide screens (an iPad, a phone on its side) get the tabs in a top bar.
+function layout() {
+  const wide = innerWidth >= 700 || (innerWidth > innerHeight && innerHeight < 500);
+  document.body.classList.toggle("wide", wide);
+  document.body.classList.toggle("port", wide && innerHeight > innerWidth);
+  document.body.classList.toggle("short", wide && innerHeight < 500);
+  if (!tab) tab = innerWidth >= 700 ? "deck" : "automix";
+  sizeCanvases();
+}
+function showTab(name) {
+  tab = name; store(TAB_KEY, name);
+  document.body.classList.add("tabbed");
+  $("tabs").classList.remove("hidden");
+  for (const b of $("tabs").children) b.classList.toggle("on", b.dataset.tab === name);
+  $("nowView").classList.toggle("hidden", name !== "automix");
+  $("deckView").classList.toggle("hidden", name !== "deck");
+  if (name === "deck") { sizeCanvases(); drawDeck(); }
+}
+$("tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showTab(b.dataset.tab); });
+addEventListener("resize", layout);
+
+/* ---------- Deck page ---------- */
+// Which deck the page drives: deck 3 at first, an extra deck beside a
+// two-deck controller.
+let dk = Math.min(3, Math.max(0, +stored(DECK_KEY, 2) || 0));
+const decks = { state: null, pos: [], tracks: [null, null, null, null], waves: [null, null, null, null] };
+const PAD_COLORS = ["#ff5c6c", "#ffb347", "#ffe066", "#59d98e", "#5ed1ff", "#6c8cff", "#c38bff", "#ff7ad9"];
+const LOOP_SIZES = [0.25, 0.5, 1, 2, 4, 8, 16, 32];
+const JUMP_SIZES = [1, 2, 4, 8, 16, 32];
+let padMode = "cue";
+
+function beatsName(n) { return n >= 1 ? String(n) : "1/" + Math.round(1 / n); }
+function setDeck(i) { dk = i; store(DECK_KEY, i); view.pos = null; drawDeck(); drawOverview(); }
+$("dkDecks").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setDeck([...b.parentNode.children].indexOf(b)); });
+
+function deckEvent(name, data) {
+  if (name === "decks") { decks.state = data; drawDeck(); return true; }
+  if (name === "deck_pos") {
+    const at = performance.now();
+    decks.pos = data.map(p => p && { t: p[0], speed: p[1], playing: p[2], vu: p[3], at });
+    return true;
+  }
+  const m = name.match(/^track([1-4])$/);
+  if (m) {
+    const d = +m[1] - 1;
+    decks.tracks[d] = data;
+    if (!data || !data.wave) decks.waves[d] = null;
+    else if (!decks.waves[d] || decks.waves[d].id !== data.wave) fetchWave(d, data.wave);
+    if (d === dk) { view.pos = null; drawDeck(); }
+    return true;
+  }
+  return false;
+}
+
+// The waveform comes once per track: low, mid and high peaks, 1000 a second.
+async function fetchWave(d, id) {
+  decks.waves[d] = { id, bins: null };
+  try {
+    const r = await fetch(`/wave/${id}?k=${artKey}`);
+    if (!r.ok) throw new Error(r.status);
+    const buf = await r.arrayBuffer(), v = new DataView(buf);
+    if (decks.waves[d].id !== id) return;
+    const rate = v.getFloat32(4, true), n = v.getUint32(8, true);
+    decks.waves[d] = { id, rate, n, bins: new Uint8Array(buf, 16, n * 3) };
+    if (d === dk) drawOverview();
+  } catch (e) { if (decks.waves[d] && decks.waves[d].id === id) decks.waves[d] = null; }
+}
+
+// Sends a control change; continuous ones at most every 50 ms each.
+const sendTimers = {}, sendLast = {};
+function setCtl(key, value, now) {
+  const go = () => { sendLast[key] = Date.now(); call("deck.set", { deck: dk, key, value }).catch(e => toast(e.message)); };
+  clearTimeout(sendTimers[key]);
+  const wait = 50 - (Date.now() - (sendLast[key] || 0));
+  now || wait <= 0 ? go() : (sendTimers[key] = setTimeout(go, wait));
+}
+const ds = () => decks.state && decks.state[dk];
+const TOGGLES = { sync_enabled: "sync", keylock: "keylock", quantize: "quantize", slip_enabled: "slip", pfl: "pfl", play: "play" };
+
+// Buttons: data-t toggles, data-h is held (on while pressed).
+const dv = $("deckView");
+dv.addEventListener("pointerdown", e => {
+  const b = e.target.closest("[data-h],[data-t],.pad"); if (!b || !dv.contains(b)) return;
+  e.preventDefault();
+  if (b.classList.contains("pad")) { padDown(b, e); return; }
+  b.classList.add("down");
+  if (b.dataset.t) { const s = ds(); if (s) setCtl(b.dataset.t, s[TOGGLES[b.dataset.t]] ? 0 : 1, true); return; }
+  try { b.setPointerCapture(e.pointerId); } catch (_) {}
+  setCtl(b.dataset.h, 1, true);
+  b._held = true;
+});
+function release(e) {
+  for (const b of dv.querySelectorAll(".down")) {
+    b.classList.remove("down");
+    if (b._held) { b._held = false; setCtl(b.dataset.h, 0, true); }
+    if (b._pad) padUp(b);
+  }
+}
+dv.addEventListener("pointerup", release);
+dv.addEventListener("pointercancel", release);
+$("dkReset").onclick = () => setCtl("rate", 0, true);
+$("dkJumpSize").onclick = () => { const s = ds(); if (!s) return; const i = JUMP_SIZES.indexOf(s.jump); setCtl("beatjump_size", JUMP_SIZES[(i + 1) % JUMP_SIZES.length], true); };
+$("dkModes").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; padMode = b.dataset.m; for (const x of b.parentNode.children) x.classList.toggle("on", x === b); drawPads(); });
+$("dkLoad").onclick = () => { loadDeck = dk; openPanel("searchView"); runSearch(); setTimeout(() => $("search").focus(), 300); };
+
+// Pads: hot cues (hold a set one to clear it), loops and beat jumps.
+let padTimer = 0;
+function padDown(b, e) {
+  b.classList.add("down"); b._pad = true;
+  try { b.setPointerCapture(e.pointerId); } catch (_) {}
+  const i = +b.dataset.i, s = ds(); if (!s) return;
+  if (padMode === "cue") {
+    setCtl(`hotcue_${i + 1}_activate`, 1, true);
+    if (s.hotcues[i]) padTimer = setTimeout(() => { b._cleared = true; setCtl(`hotcue_${i + 1}_clear`, 1, true); setTimeout(() => setCtl(`hotcue_${i + 1}_clear`, 0, true), 60); toast(`Hot cue ${i + 1} cleared`); }, 900);
+  } else if (padMode === "loop") {
+    const size = LOOP_SIZES[i];
+    if (s.loop.on && s.loop.size === size) setCtl("reloop_toggle", 1, true);
+    else { setCtl("beatloop_size", size, true); setCtl("beatloop_activate", 1, true); }
+  } else {
+    const size = JUMP_SIZES[i % 4 + (i < 4 ? 0 : 0)] ;
+    setCtl("beatjump_size", [1, 2, 4, 8][i % 4] * (i < 4 ? 1 : 4), true);
+    setCtl(i < 4 ? "beatjump_backward" : "beatjump_forward", 1, true);
+  }
+}
+function padUp(b) {
+  b._pad = false; clearTimeout(padTimer);
+  const i = +b.dataset.i;
+  if (padMode === "cue") setCtl(`hotcue_${i + 1}_activate`, 0, true);
+  else if (padMode === "loop") { setCtl("beatloop_activate", 0, true); setCtl("reloop_toggle", 0, true); }
+  else { setCtl("beatjump_backward", 0, true); setCtl("beatjump_forward", 0, true); }
+  b._cleared = false;
+}
+function drawPads() {
+  const s = ds(), t = decks.tracks[dk];
+  let h = "";
+  for (let i = 0; i < 8; i++) {
+    if (padMode === "cue") {
+      const c = s && s.hotcues[i], info = t && t.cues.find(x => x.n === i);
+      const col = (info && info.color) || PAD_COLORS[i];
+      h += c ? `<button class="pad set${c.held ? " lit" : ""}" data-i="${i}" style="--c:${col}"><b>${i + 1}</b><span>${esc(info && info.name || (c.loop ? "Loop" : time(c.at)))}</span></button>`
+        : `<button class="pad" data-i="${i}"><b style="color:var(--dim)">${i + 1}</b><span>Tap to set</span></button>`;
+    } else if (padMode === "loop") {
+      const size = LOOP_SIZES[i], on = s && s.loop.on && s.loop.size === size;
+      h += `<button class="pad set${on ? " lit" : ""}" data-i="${i}" style="--c:#59d98e"><b>${beatsName(size)}</b><span>beat${size > 1 ? "s" : ""}</span></button>`;
+    } else {
+      const size = [1, 2, 4, 8][i % 4] * (i < 4 ? 1 : 4);
+      h += `<button class="pad set" data-i="${i}" style="--c:#6c8cff"><b>${i < 4 ? "◀" : "▶"} ${size}</b><span>${size === 1 ? "beat" : size % 4 ? "beats" : size / 4 + " bar" + (size > 4 ? "s" : "")}</span></button>`;
+    }
+  }
+  setHTML($("dkPads"), h);
+}
+
+// Knobs (drag up or down; double tap for the middle) and faders.
+const KNOB = { pregain: [0, 1, 4], eq_low: [0, 1, 4], eq_mid: [0, 1, 4], eq_high: [0, 1, 4], filter: [0, 0.5, 1] };
+// A knob's place (0 to 1) for a value, with the default in the middle.
+function knobPos(key, v) { const [lo, mid, hi] = KNOB[key]; return v <= mid ? 0.5 * (v - lo) / (mid - lo) : 0.5 + 0.5 * (v - mid) / (hi - mid); }
+function knobVal(key, p) { const [lo, mid, hi] = KNOB[key]; return p <= 0.5 ? lo + (mid - lo) * p * 2 : mid + (hi - mid) * (p - 0.5) * 2; }
+const dragging = {};
+let knobDrag = null, lastTap = { key: null, at: 0 };
+dv.addEventListener("pointerdown", e => {
+  const k = e.target.closest("[data-knob]");
+  if (k) {
+    const key = k.dataset.knob, s = ds(); if (!s) return;
+    if (lastTap.key === key && Date.now() - lastTap.at < 300) { setCtl(key, KNOB[key][1], true); dragging[key] = false; return; }
+    lastTap = { key, at: Date.now() };
+    knobDrag = { key, y: e.clientY, p: knobPos(key, knobValue(s, key)) };
+    dragging[key] = true;
+    k.setPointerCapture(e.pointerId);
+    return;
+  }
+  const f = e.target.closest("[data-fader]");
+  if (f) { f.setPointerCapture(e.pointerId); dragging[f.dataset.fader] = f; faderMove(f, e); }
+});
+dv.addEventListener("pointermove", e => {
+  if (knobDrag) {
+    const p = Math.max(0, Math.min(1, knobDrag.p + (knobDrag.y - e.clientY) / 160));
+    const v = knobVal(knobDrag.key, p);
+    local[knobDrag.key] = v; setCtl(knobDrag.key, v); drawChan();
+    return;
+  }
+  for (const key of ["volume", "rate"]) if (dragging[key] instanceof Element) faderMove(dragging[key], e);
+});
+const local = {};
+function endDrags() {
+  if (knobDrag) { dragging[knobDrag.key] = false; knobDrag = null; }
+  for (const key of ["volume", "rate"]) dragging[key] = false;
+  setTimeout(() => { for (const k in local) if (!dragging[k]) delete local[k]; }, 400);
+}
+dv.addEventListener("pointerup", endDrags);
+dv.addEventListener("pointercancel", endDrags);
+function knobValue(s, key) {
+  if (key in local) return local[key];
+  return key === "eq_low" ? s.eq[0] : key === "eq_mid" ? s.eq[1] : key === "eq_high" ? s.eq[2] : s[key];
+}
+// Faders: volume up is louder; the pitch fader is down for faster, as on
+// players, and sideways on a phone (right for faster).
+function faderMove(f, e) {
+  const r = f.getBoundingClientRect(), key = f.dataset.fader;
+  const across = r.width > r.height;
+  let p = across ? (e.clientX - r.left - 13) / (r.width - 26) : (e.clientY - r.top - 13) / (r.height - 26);
+  p = Math.max(0, Math.min(1, p));
+  const v = key === "volume" ? (across ? p : 1 - p) : p * 2 - 1;
+  local[key] = v; setCtl(key, Math.round(v * 10000) / 10000); drawChan();
+}
+
+function drawChan() {
+  const s = ds(); if (!s) return;
+  for (const k of dv.querySelectorAll("[data-knob]")) {
+    const key = k.dataset.knob, p = knobPos(key, knobValue(s, key)), deg = p * 270;
+    const fill = p >= 0.5 ? `#2e2e33 0 135deg, var(--lilac) 135deg ${deg}deg, #2e2e33 ${deg}deg 270deg, transparent 270deg`
+      : `#2e2e33 0 ${deg}deg, var(--lilac) ${deg}deg 135deg, #2e2e33 135deg 270deg, transparent 270deg`;
+    const knob = k.querySelector(".knob");
+    knob.style.background = `conic-gradient(from 225deg, ${fill})`;
+    knob.firstChild.style.transform = `rotate(${deg - 135}deg)`;
+  }
+  for (const f of dv.querySelectorAll("[data-fader]")) {
+    const key = f.dataset.fader, v = key in local ? local[key] : s[key];
+    const cap = f.querySelector(".cap"), across = f.offsetWidth > f.offsetHeight;
+    const p = key === "volume" ? (across ? v : 1 - v) : (v + 1) / 2;
+    if (across) { cap.style.left = `calc(13px + ${p} * (100% - 26px))`; cap.style.top = ""; }
+    else { cap.style.top = `calc(13px + ${p} * (100% - 26px))`; cap.style.left = ""; }
+  }
+  const rate = "rate" in local ? local.rate : s.rate;
+  const pct = rate * s.range * 100;
+  const txt = (pct > 0.005 ? "+" : pct < -0.005 ? "−" : "") + Math.abs(pct).toFixed(1) + "%";
+  $("dkPitch").textContent = txt; $("dkPitch2").textContent = txt;
+}
+
+function drawDeck() {
+  if (tab !== "deck" || !authed) return;
+  const s = ds(), t = decks.tracks[dk], all = decks.state || [];
+  [...$("dkDecks").children].forEach((b, i) => { b.classList.toggle("on", i === dk); b.classList.toggle("playing", !!(all[i] && all[i].play)); });
+  $("dkTitle").textContent = t ? t.title || "Untitled" : "No track";
+  $("dkArtist").textContent = t ? t.artist : `Deck ${dk + 1} is empty`;
+  $("dkKey").textContent = t ? t.key || "–" : "–"; $("dkKey2").textContent = t ? t.key || "–" : "–";
+  $("dkBpm").textContent = s && t ? s.bpm.toFixed(1) : "–";
+  $("dkEmpty").classList.toggle("hidden", !!t);
+  $("dkChan").textContent = `DECK ${dk + 1} CHANNEL`;
+  if (!s) return;
+  for (const b of dv.querySelectorAll("[data-t]")) b.classList.toggle("on", !!s[TOGGLES[b.dataset.t]]);
+  for (const b of dv.querySelectorAll('[data-h="reverse"]')) b.classList.toggle("on", s.reverse);
+  $("dkLoop").classList.toggle("on", s.loop.on);
+  $("dkLoop").querySelector(".mid").textContent = "LOOP " + beatsName(s.loop.size);
+  $("dkJumpSize").textContent = "JUMP " + (s.jump >= 4 && s.jump % 4 === 0 ? s.jump / 4 + " BAR" + (s.jump > 4 ? "S" : "") : beatsName(s.jump));
+  drawPads(); drawChan();
+}
+
+/* The waveforms, drawn every frame from where the deck was last heard of
+   and how fast it moves. */
+const view = { pos: null, last: 0 };
+const WINDOW = 8; // seconds across the big waveform on a wide screen
+function sizeCanvases() {
+  for (const c of [$("dkOv"), $("dkWave")]) {
+    const r = c.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    if (r.width && (c.width !== Math.round(r.width * dpr) || c.height !== Math.round(r.height * dpr))) { c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr); }
+  }
+  ovCache = null;
+}
+function nowPos(at) {
+  const p = decks.pos[dk];
+  if (!p) return null;
+  const target = p.t + (p.playing ? p.speed * (at - p.at) / 1000 : 0);
+  if (view.pos == null || !p.playing || Math.abs(target - view.pos) > 0.25) view.pos = target;
+  else view.pos += (p.speed * (at - view.last) / 1000) + (target - view.pos) * 0.15;
+  view.last = at;
+  return view.pos;
+}
+function band(bins, from, to, k) { let m = 0; for (let i = from; i < to; i++) { const v = bins[i * 3 + k]; if (v > m) m = v; } return m; }
+let ovCache = null;
+function drawOverview() { ovCache = null; }
+function renderOverview(w) {
+  const c = document.createElement("canvas"); c.width = $("dkOv").width; c.height = $("dkOv").height;
+  const g = c.getContext("2d"), H = c.height, mid = H / 2;
+  if (w && w.bins) {
+    const per = w.n / c.width;
+    for (let x = 0; x < c.width; x++) {
+      const a = Math.floor(x * per), b = Math.max(a + 1, Math.floor((x + 1) * per));
+      const lo = band(w.bins, a, b, 0) / 255, mi = band(w.bins, a, b, 1) / 255, hi = band(w.bins, a, b, 2) / 255;
+      g.fillStyle = "#ff3b4a"; g.fillRect(x, mid - lo * mid, 1, lo * H);
+      g.fillStyle = "#3cff7a"; g.fillRect(x, mid - mi * mid * 0.8, 1, mi * H * 0.8);
+      g.fillStyle = "#3d8bff"; g.fillRect(x, mid - hi * mid * 0.5, 1, hi * H * 0.5);
+    }
+  }
+  return c;
+}
+function cueColor(i) { const t = decks.tracks[dk], info = t && t.cues.find(x => x.n === i); return (info && info.color) || PAD_COLORS[i]; }
+function frame(at) {
+  requestAnimationFrame(frame);
+  if (tab !== "deck" || !authed) return;
+  const t = decks.tracks[dk], w = decks.waves[dk], s = ds(), p = decks.pos[dk];
+  const pos = nowPos(at);
+  // Overview: the whole track, the part played dimmed.
+  const oc = $("dkOv"), og = oc.getContext("2d");
+  if (!ovCache || ovCache.id !== (w && w.id) || !ovCache.bins !== !(w && w.bins)) ovCache = { id: w && w.id, bins: !!(w && w.bins), c: renderOverview(w) };
+  og.clearRect(0, 0, oc.width, oc.height);
+  og.drawImage(ovCache.c, 0, 0);
+  if (t && t.duration > 0 && pos != null) {
+    const x = pos / t.duration * oc.width;
+    og.fillStyle = "#000000a0"; og.fillRect(0, 0, x, oc.height);
+    if (s) s.hotcues.forEach((c, i) => { if (c) { og.fillStyle = cueColor(i); og.fillRect(c.at / t.duration * oc.width, 0, 2, oc.height); } });
+    og.fillStyle = "#fff"; og.fillRect(x - 1, 0, 2, oc.height);
+  }
+  // The big waveform, the play position in the middle.
+  const c = $("dkWave"), g = c.getContext("2d"), W = c.width, H = c.height, mid = H / 2;
+  g.clearRect(0, 0, W, H);
+  if (!t || pos == null) return;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const span = WINDOW * Math.max(0.5, Math.min(1.4, W / dpr / 1100)), secPerPx = span / W, start = pos - span / 2;
+  const toX = sec => (sec - start) / secPerPx;
+  if (s && s.loop.on && s.loop.end > s.loop.start) { g.fillStyle = "#59d98e26"; g.fillRect(toX(s.loop.start), 0, (s.loop.end - s.loop.start) / secPerPx, H); }
+  if (w && w.bins) {
+    const step = Math.max(1, Math.round(dpr * 1.5));
+    for (let x = 0; x < W; x += step) {
+      const a = Math.floor((start + x * secPerPx) * w.rate), b = Math.floor((start + (x + step) * secPerPx) * w.rate);
+      if (b <= 0 || a >= w.n) continue;
+      const lo = band(w.bins, Math.max(0, a), Math.min(w.n, Math.max(a + 1, b)), 0) / 255;
+      const mi = band(w.bins, Math.max(0, a), Math.min(w.n, Math.max(a + 1, b)), 1) / 255;
+      const hi = band(w.bins, Math.max(0, a), Math.min(w.n, Math.max(a + 1, b)), 2) / 255;
+      const past = x < W / 2 ? 0.55 : 1;
+      g.globalAlpha = past;
+      g.fillStyle = "#ff3b4a"; g.fillRect(x, mid - lo * mid * 0.96, step, lo * H * 0.96);
+      g.fillStyle = "#3cff7a"; g.fillRect(x, mid - mi * mid * 0.62, step, mi * H * 0.62);
+      g.fillStyle = "#3d8bff"; g.fillRect(x, mid - hi * mid * 0.3, step, hi * H * 0.3);
+    }
+    g.globalAlpha = 1;
+  }
+  // Beats, bars brighter.
+  const beats = t.beats || [];
+  let lo = 0, hi = beats.length;
+  while (lo < hi) { const m = (lo + hi) >> 1; beats[m] < start ? lo = m + 1 : hi = m; }
+  for (let i = lo; i < beats.length && beats[i] <= start + span; i++) {
+    const bar = (i - t.downbeat) % 4 === 0;
+    g.fillStyle = bar ? "#ffffffb0" : "#ffffff40";
+    g.fillRect(toX(beats[i]), 0, bar ? 2 * dpr / 1.5 : dpr / 1.5, H);
+  }
+  // Hot cues with their number.
+  if (s) s.hotcues.forEach((cue, i) => {
+    if (!cue) return;
+    const x = toX(cue.at); if (x < -20 || x > W) return;
+    g.fillStyle = cueColor(i); g.fillRect(x, 0, 2 * dpr, H);
+    g.fillRect(x, 0, 16 * dpr, 16 * dpr);
+    g.fillStyle = "#000"; g.font = `bold ${11 * dpr}px -apple-system, sans-serif`; g.fillText(String(i + 1), x + 4 * dpr, 12 * dpr);
+  });
+  g.fillStyle = "#fff"; g.fillRect(W / 2 - dpr, 0, 2 * dpr, H);
+  // Times, bar and beat.
+  if (at - (frame.last || 0) > 100) {
+    frame.last = at;
+    const left = Math.max(0, t.duration - pos);
+    $("dkLeft").textContent = "-" + time(left); $("dkLeft").classList.toggle("end", left < 30 && left > 0);
+    $("dkEl").textContent = time(pos); $("dkRe").textContent = "-" + time(left);
+    let bi = lo - 1;
+    while (bi + 1 < beats.length && beats[bi + 1] <= pos) bi++;
+    while (bi >= 0 && beats[bi] > pos) bi--;
+    const tag = $("dkBar");
+    if (bi >= 0 && beats.length) {
+      const n = bi - t.downbeat, bar = Math.floor(n / 4) + 1, beat = ((n % 4) + 4) % 4 + 1;
+      tag.textContent = `BAR ${bar}.${beat}` + (s && s.loop.on ? ` · ${beatsName(s.loop.size)} BEAT LOOP` : "");
+      tag.classList.remove("hidden");
+    } else tag.classList.add("hidden");
+    if (p) $("dkVu").style.height = (100 - Math.min(1, p.vu) * 100) + "%";
+  }
+}
+layout();
+requestAnimationFrame(frame);
 
 connect();
 </script>

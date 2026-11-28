@@ -13,7 +13,7 @@
 //! on or off.
 
 use std::f32::consts::{PI, TAU};
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use opendj_control::{Behavior, ControlHandle, ControlRegistry};
@@ -1344,6 +1344,13 @@ pub(crate) struct EffectRack {
     legacy: LegacyFlanger,
     /// The Instrument input's plugin, as the plugin host attached it.
     instrument: Option<Box<Attached>>,
+    /// A hardware synth playing as the instrument instead of the plugin
+    /// (see [`crate::hardware_synth`]).
+    hardware: crate::hardware_synth::Out,
+    /// The MIDI thread's half of `hardware`'s queues, until it is taken.
+    hardware_link: Option<crate::hardware_synth::HardwareLink>,
+    /// Host time (µs) the buffer being worked out is heard.
+    heard_at: i64,
     /// Notes for the instrument, from [`NoteInput`], and those waiting to
     /// reach it (kept while it is late, so no note-off is lost).
     notes: rtrb::Consumer<Midi>,
@@ -1368,7 +1375,7 @@ pub(crate) struct EffectRack {
     keys: Vec<Midi>,
     /// What the instrument plays, for its deck to show.
     view: Arc<InstrumentView>,
-    /// Its last [`SCOPE_SAMPLES`] samples (mono), and where the next goes.
+    /// Its last [`WAVE_SAMPLES`] samples (mono), and where the next goes.
     scope_ring: Vec<f32>,
     scope_pos: usize,
     /// The view shows nothing playing.
@@ -1391,7 +1398,13 @@ const SILENCE: f32 = 1e-5;
 /// Bins the instrument's scope shows, each its lowest and highest sample.
 pub const SCOPE_BINS: usize = 128;
 /// Samples the scope spans: about 43 ms at 48 kHz.
-const SCOPE_SAMPLES: usize = SCOPE_BINS * 16;
+pub const SCOPE_SAMPLES: usize = SCOPE_BINS * 16;
+/// Samples the spectrum looks at: about 170 ms at 48 kHz, so its lowest
+/// bands (6 Hz apart) still tell the bass notes apart.
+pub const WAVE_SAMPLES: usize = 8192;
+/// How far either side of its frequency each point of
+/// [`InstrumentView::spectrum`] reaches: a twelfth of an octave each way.
+const SPECTRUM_SPREAD: f32 = 1.059_463_1;
 
 /// What the instrument plays, written on the audio thread each buffer for
 /// the app to show: the notes held and a scope of its sound.
@@ -1399,6 +1412,14 @@ pub struct InstrumentView {
     held: [AtomicU64; 2],
     /// Each bin's lowest then highest sample, as `f32` bits.
     scope: [AtomicU32; 2 * SCOPE_BINS],
+    /// The last [`WAVE_SAMPLES`] samples themselves, oldest first, as
+    /// `f32` bits: for a spectrum.
+    wave: Box<[AtomicU32; WAVE_SAMPLES]>,
+    /// The scope shows the deck's sound after its effects (set by the
+    /// app), not the instrument's own.
+    post: AtomicBool,
+    /// The sample rate the samples come at, as `f32` bits.
+    rate: AtomicU32,
 }
 
 impl Default for InstrumentView {
@@ -1406,6 +1427,9 @@ impl Default for InstrumentView {
         Self {
             held: std::array::from_fn(|_| AtomicU64::new(0)),
             scope: std::array::from_fn(|_| AtomicU32::new(0)),
+            wave: Box::new(std::array::from_fn(|_| AtomicU32::new(0))),
+            post: AtomicBool::new(false),
+            rate: AtomicU32::new(48_000f32.to_bits()),
         }
     }
 }
@@ -1428,10 +1452,93 @@ impl InstrumentView {
             .collect()
     }
 
+    /// The last [`WAVE_SAMPLES`] samples, oldest first.
+    pub fn wave(&self) -> Vec<f32> {
+        self.wave
+            .iter()
+            .map(|v| f32::from_bits(v.load(Ordering::Relaxed)))
+            .collect()
+    }
+
+    /// The spectrum of [`InstrumentView::wave`] at `points` frequencies
+    /// spaced evenly in pitch from 30 Hz to 16 kHz, low first, in dB. Each
+    /// point is the power averaged over about a sixth of an octave around it (never under three FFT bins), so the
+    /// bass harmonics show as rounded hills and the top as one smooth
+    /// slope rather than a spike per bin. Tilted up 3 dB an octave about
+    /// 1 kHz, as analysers show it, so a mix reads level rather than
+    /// falling to the right.
+    pub fn spectrum(&self, points: usize) -> Vec<f32> {
+        let rate = f32::from_bits(self.rate.load(Ordering::Relaxed));
+        spectrum_of(&self.wave(), rate, points)
+    }
+
+    /// Whether the scope follows the deck after its effects (true) or the
+    /// instrument as it plays (false).
+    pub fn set_post(&self, post: bool) {
+        self.post.store(post, Ordering::Relaxed);
+    }
+
+    pub fn post(&self) -> bool {
+        self.post.load(Ordering::Relaxed)
+    }
+
     fn set_held(&self, held: u128) {
         self.held[0].store(held as u64, Ordering::Relaxed);
         self.held[1].store((held >> 64) as u64, Ordering::Relaxed);
     }
+}
+
+/// [`InstrumentView::spectrum`] of any `wave` at `rate`.
+pub fn spectrum_of(wave: &[f32], rate: f32, points: usize) -> Vec<f32> {
+    use rustfft::num_complex::Complex;
+    let n = wave.len();
+    let rate = rate.max(1.0);
+    let mut buf: Vec<Complex<f32>> = wave
+        .iter()
+        .enumerate()
+        .map(|(i, &x)| {
+            let w = 0.5 - 0.5 * (std::f32::consts::TAU * i as f32 / n as f32).cos();
+            Complex::new(x * w, 0.0)
+        })
+        .collect();
+    rustfft::FftPlanner::new()
+        .plan_fft_forward(n)
+        .process(&mut buf);
+    // A full-scale sine through the Hann window peaks at n / 4.
+    let norm = 4.0 / n as f32;
+    let power: Vec<f32> = buf[..n / 2]
+        .iter()
+        .map(|c| (c.norm() * norm).powi(2))
+        .collect();
+    let (lo, hi) = (30.0f32, 16_000.0f32.min(rate / 2.0));
+    let hz_per_bin = rate / n as f32;
+    let last = (n / 2 - 1) as f32;
+    let bin = |f: f32| (f / hz_per_bin).clamp(1.0, last);
+    let steps = points.saturating_sub(1).max(1) as f32;
+    (0..points)
+        .map(|p| {
+            let f = lo * (hi / lo).powf(p as f32 / steps);
+            let below = (f * SPECTRUM_SPREAD.recip()).min(f - 1.5 * hz_per_bin);
+            let above = (f * SPECTRUM_SPREAD).max(f + 1.5 * hz_per_bin);
+            // A Gaussian in pitch, falling to a third at the window's edges.
+            let sigma = (above / f).log2() / 1.2;
+            let (mut sum, mut weights) = (0.0f32, 0.0f32);
+            let (first, last) = (
+                bin(below.max(1.0)).floor() as usize,
+                bin(above).ceil() as usize,
+            );
+            for (k, &p) in power.iter().enumerate().take(last + 1).skip(first) {
+                let octaves = ((k as f32 * hz_per_bin).max(1.0) / f).log2() / sigma;
+                let w = (-0.5 * octaves * octaves).exp();
+                sum += w * p;
+                weights += w;
+            }
+            let tilt = 3.0 * (f / 1000.0).log2();
+            // A lone tone's power spreads over the window, so it reads a
+            // little under its level; 3 dB back makes up some of that.
+            10.0 * (2.0 * sum / weights.max(1e-9)).max(1e-12).log10() + tilt
+        })
+        .collect()
 }
 
 /// `held` after the note messages in `notes` (any channel); All Notes Off
@@ -1609,6 +1716,7 @@ impl EffectRack {
         let (to_engine, from_host) = rtrb::RingBuffer::new(2 * n);
         let (to_host, from_engine) = rtrb::RingBuffer::new(2 * n);
         let (notes_tx, notes) = rtrb::RingBuffer::new(opendj_plugin_host::shm::MAX_EVENTS);
+        let (hardware, hardware_link) = crate::hardware_synth::Out::new(reg);
         let units: [UnitControls; NUM_EFFECT_UNITS] =
             std::array::from_fn(|u| UnitControls::create(reg, u));
         reg.indicator("[Master]", "num_effectsavailable", KINDS.len() as f64)
@@ -1654,6 +1762,9 @@ impl EffectRack {
             }),
             legacy: LegacyFlanger::create(reg),
             instrument: None,
+            hardware,
+            hardware_link: Some(hardware_link),
+            heard_at: 0,
             notes,
             notes_waiting: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             note_input: Some(NoteInput { tx: notes_tx }),
@@ -1666,7 +1777,7 @@ impl EffectRack {
             seq_notes: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             keys: Vec::with_capacity(opendj_plugin_host::shm::MAX_EVENTS),
             view: Arc::default(),
-            scope_ring: vec![0.0; SCOPE_SAMPLES],
+            scope_ring: vec![0.0; WAVE_SAMPLES],
             scope_pos: 0,
             view_clear: true,
             instrument_sent: false,
@@ -1687,7 +1798,7 @@ impl EffectRack {
                 self.view_clear = true;
                 self.view.set_held(0);
                 self.scope_ring.fill(0.0);
-                for v in &self.view.scope {
+                for v in self.view.scope.iter().chain(self.view.wave.iter()) {
                     v.store(0, Ordering::Relaxed);
                 }
             }
@@ -1695,20 +1806,43 @@ impl EffectRack {
         };
         self.view_clear = false;
         self.view.set_held(held);
+        if !self.view.post() {
+            self.scope_from(buf);
+        }
+    }
+
+    /// Shows the deck playing the instrument after its effects in the
+    /// scope, while it follows that ([`InstrumentView::set_post`]).
+    pub(crate) fn show_instrument_deck(&mut self, buf: &[[f32; 2]]) {
+        if self.view.post() && !self.view_clear {
+            self.scope_from(buf);
+        }
+    }
+
+    /// Adds `buf` to the scope.
+    fn scope_from(&mut self, buf: &[[f32; 2]]) {
+        self.view
+            .rate
+            .store(self.sample_rate.to_bits(), Ordering::Relaxed);
         for s in buf {
             self.scope_ring[self.scope_pos] = 0.5 * (s[0] + s[1]);
-            self.scope_pos = (self.scope_pos + 1) % SCOPE_SAMPLES;
+            self.scope_pos = (self.scope_pos + 1) % WAVE_SAMPLES;
         }
         let per = SCOPE_SAMPLES / SCOPE_BINS;
         for b in 0..SCOPE_BINS {
             let (mut lo, mut hi) = (f32::MAX, f32::MIN);
             for k in 0..per {
-                let v = self.scope_ring[(self.scope_pos + b * per + k) % SCOPE_SAMPLES];
+                let at = self.scope_pos + WAVE_SAMPLES - SCOPE_SAMPLES + b * per + k;
+                let v = self.scope_ring[at % WAVE_SAMPLES];
                 lo = lo.min(v);
                 hi = hi.max(v);
             }
             self.view.scope[2 * b].store(lo.to_bits(), Ordering::Relaxed);
             self.view.scope[2 * b + 1].store(hi.to_bits(), Ordering::Relaxed);
+        }
+        for (i, v) in self.view.wave.iter().enumerate() {
+            let x = self.scope_ring[(self.scope_pos + i) % WAVE_SAMPLES];
+            v.store(x.to_bits(), Ordering::Relaxed);
         }
     }
 
@@ -1775,7 +1909,7 @@ impl EffectRack {
         seq.process(
             frames,
             self.sample_rate,
-            self.transport[target],
+            self.note_transport(target),
             self.scale_root,
             self.scale_mask,
             &self.keys,
@@ -1787,6 +1921,15 @@ impl EffectRack {
     /// and whether the next chord held is learned as `shape`.
     pub(crate) fn set_chord(&mut self, mode: u8, shape: u32, learn: bool) {
         self.scale.set_chord(mode, shape, learn);
+    }
+
+    pub(crate) fn sample_rate(&self) -> f32 {
+        self.sample_rate
+    }
+
+    /// How chords strum and what keys outside the scale do, from now on.
+    pub(crate) fn set_feel(&mut self, feel: crate::scale::Feel) {
+        self.scale.set_feel(feel);
     }
 
     /// The arpeggiator's settings from now on. Its `hold` is the
@@ -1809,7 +1952,36 @@ impl EffectRack {
     }
 
     pub(crate) fn has_instrument(&self) -> bool {
-        self.instrument.is_some()
+        self.instrument.is_some() || self.hardware.active()
+    }
+
+    /// A hardware synth plays as the instrument: its sound is the
+    /// Instrument input's audio input, not a plugin's.
+    pub(crate) fn plays_hardware(&self) -> bool {
+        self.hardware.active()
+    }
+
+    /// The MIDI thread's half of the hardware synth's queues, once.
+    pub(crate) fn take_hardware_link(&mut self) -> Option<crate::hardware_synth::HardwareLink> {
+        self.hardware_link.take()
+    }
+
+    /// Host time (µs) the buffer about to be worked out is heard, for the
+    /// hardware synth's notes.
+    pub(crate) fn set_heard_at(&mut self, heard_at: i64) {
+        self.heard_at = heard_at;
+    }
+
+    /// The transport the step sequencer and arpeggiator of the instrument
+    /// follow: `target`'s, but ahead by a hardware synth's latency, so its
+    /// notes go out early and are heard on the beat.
+    fn note_transport(&self, target: usize) -> Transport {
+        let mut t = self.transport[target];
+        let ahead = self.hardware.ahead();
+        if ahead > 0.0 && t.bpm.is_finite() && t.bpm > 0.0 {
+            t.beat += ahead * t.bpm / 60.0;
+        }
+        t
     }
 
     /// The first half of playing the instrument: takes the notes that came
@@ -1835,6 +2007,7 @@ impl EffectRack {
                 self.scale.map(n, self.scale_mask, &mut self.arp_in);
             }
         }
+        self.scale.flush(frames, &mut self.arp_in);
         self.keys.clear();
         self.seq_notes.clear();
         if self.arp.is_on() {
@@ -1842,7 +2015,7 @@ impl EffectRack {
                 &self.arp_in,
                 frames,
                 self.sample_rate,
-                self.transport[target],
+                self.note_transport(target),
                 &mut self.notes_waiting,
             );
         } else {
@@ -1852,6 +2025,18 @@ impl EffectRack {
         // Keys come at the buffer's start, the sequencer's and the
         // arpeggiator's notes on their steps: the plugin takes them in order.
         sort_by_frame(&mut self.notes_waiting);
+        if self.hardware.active() {
+            let t = self.transport[target];
+            let tempo = if t.playing && t.bpm.is_finite() {
+                t.bpm
+            } else {
+                0.0
+            };
+            self.hardware.publish(self.heard_at, t.beat, tempo);
+            self.hardware
+                .send(self.heard_at, self.sample_rate, params, &self.notes_waiting);
+            return;
+        }
         let Some(a) = self.instrument.as_deref_mut() else {
             self.notes_waiting.clear();
             return;
@@ -1883,6 +2068,14 @@ impl EffectRack {
         self.instrument.is_some()
             && !self.instrument_sent
             && self.instrument_quiet as f32 >= SLEEP_AFTER * self.sample_rate
+    }
+
+    /// The second half for a hardware synth: `buf` holds what came in on
+    /// its input; shows it and the notes it was sent.
+    pub(crate) fn finish_hardware(&mut self, buf: &[[f32; 2]]) {
+        let held = held_after(self.view.held(), &self.notes_waiting);
+        self.notes_waiting.clear();
+        self.show_instrument(Some(buf), held);
     }
 
     /// The second half: the instrument's sound for this buffer into `buf`,
@@ -1980,6 +2173,7 @@ impl EffectRack {
     pub(crate) fn prepare(&mut self, beat_seconds: [f64; TARGETS], now: f64) {
         self.block_start = std::time::Instant::now();
         self.take_plugin_messages();
+        self.hardware.take_changes();
         self.legacy.update(&self.units, &self.slots);
         // `fx_release` lets go of every unit at once, and starts the main
         // mix's brake, spin or cut.
@@ -4112,6 +4306,55 @@ mod bench;
 mod tests {
     use super::*;
 
+    fn sine_view(hz: f32, level: f32) -> InstrumentView {
+        let view = InstrumentView::default();
+        for (i, v) in view.wave.iter().enumerate() {
+            let x = level * (std::f32::consts::TAU * hz * i as f32 / 48_000.0).sin();
+            v.store(x.to_bits(), Ordering::Relaxed);
+        }
+        view
+    }
+
+    fn loudest(points: &[f32]) -> usize {
+        (0..points.len())
+            .max_by(|&a, &b| points[a].total_cmp(&points[b]))
+            .unwrap()
+    }
+
+    #[test]
+    fn the_spectrum_peaks_at_a_sine() {
+        let points = sine_view(1000.0, 0.5).spectrum(160);
+        let peak = loudest(&points);
+        // 30 Hz to 16 kHz over 160 points: 1 kHz is point 89.
+        assert!((88..=90).contains(&peak), "peak at point {peak}");
+        // A -6 dB tone, spread over a sixth of an octave (no tilt at 1 kHz).
+        assert!(
+            (-18.0..=-8.0).contains(&points[peak]),
+            "level {}",
+            points[peak]
+        );
+        assert!(points[10] < points[peak] - 40.0, "quiet far from it");
+    }
+
+    #[test]
+    fn the_spectrum_shows_the_bass() {
+        let points = sine_view(60.0, 0.5).spectrum(160);
+        let peak = loudest(&points);
+        // 60 Hz is one octave above 30 Hz: point 18 of 160.
+        assert!((16..=20).contains(&peak), "peak at point {peak}");
+        assert!(points[80] < points[peak] - 30.0, "quiet far above it");
+    }
+
+    #[test]
+    fn the_spectrum_rounds_each_harmonic() {
+        // Neighbours of a peak fall off smoothly rather than jumping
+        // between a bin and the gap beside it.
+        let points = sine_view(440.0, 0.5).spectrum(160);
+        let peak = loudest(&points);
+        assert!(points[peak - 1] > points[peak] - 12.0);
+        assert!(points[peak + 1] > points[peak] - 12.0);
+    }
+
     #[test]
     fn effects_step_in_list_order_and_wrap() {
         for plugins in [0, 3] {
@@ -4452,6 +4695,32 @@ mod tests {
     }
 
     #[test]
+    fn a_hardware_synths_sequencer_and_arp_run_its_latency_ahead() {
+        let reg = ControlRegistry::new();
+        let mut rack = EffectRack::new(&reg, SR as f64);
+        let mut link = rack.take_hardware_link().unwrap();
+        let mut t = [Transport::default(); TARGETS];
+        t[0] = Transport {
+            bpm: 120.0,
+            beat: 8.0,
+            playing: true,
+        };
+        rack.set_transport(t);
+        assert_eq!(rack.note_transport(0).beat, 8.0);
+        let config = crate::hardware_synth::HardwareConfig::default();
+        link.slots
+            .push(Some(crate::hardware_synth::Slot::for_test(&config)))
+            .unwrap();
+        reg.get("[Instrument1]", "hardware_latency")
+            .unwrap()
+            .set(25.0);
+        rack.prepare([0.5; TARGETS], 0.0);
+        // 25 ms at 120 BPM is a twentieth of a beat.
+        assert!((rack.note_transport(0).beat - 8.05).abs() < 1e-9);
+        assert!(rack.plays_hardware() && rack.has_instrument());
+    }
+
+    #[test]
     fn mixxx_1_flanger_plays_through_the_decks_pad_fx_unit() {
         let reg = ControlRegistry::new();
         let mut rack = EffectRack::new(&reg, SR as f64);
@@ -4504,7 +4773,10 @@ mod tests {
             unit("bpm_tap").set(0.0);
             rack.prepare(beats, i as f64 * 0.5 + 0.01);
         }
-        assert!((unit("bpm").get() - 120.0).abs() < 1e-6);
+        // A tap's time takes off how long ago the press came in, read on
+        // the wall clock, so a busy machine moves it by a little.
+        let bpm = unit("bpm").get();
+        assert!((bpm - 120.0).abs() < 0.5, "tapped {bpm}");
         unit("bpm_auto").set(1.0);
         rack.prepare(beats, 3.0);
         unit("bpm_auto").set(0.0);

@@ -7,6 +7,7 @@ import { Theme, EdgeLine, CloseIcon } from "theme.slint";
 import { HoverTip } from "controls.slint";
 import { SourceUi, SearchesPanel, SourceResults, SourceSetup } from "sources.slint";
 import { InstrumentsPanel } from "plugin_panel.slint";
+import { SessionUi } from "session.slint";
 import { InstrumentsUi } from "instruments.slint";
 import { InfoPanel, TrackInfo } from "info.slint";
 import { CueList } from "cues.slint";
@@ -7933,9 +7934,20 @@ export component Browser inherits HorizontalLayout {
     // place, while asked for and an instrument plays on a deck.
     property <bool> plugin-panel: instruments-source && !now-playing && InstrumentsUi.panel-open && InstrumentsUi.instrument-deck() >= 0;
     changed plugin-panel => { InstrumentsUi.panel-shown = plugin-panel; }
+    // A Live set's clips, likewise in the side panel's place.
+    property <bool> session-shown: instruments-source && !now-playing && !plugin-panel && SessionUi.open;
     // Asked for from a deck: the Jam source comes up.
     property <int> panel-request: InstrumentsUi.panel-request;
     changed panel-request => {
+        if source != 12 {
+            source = 12;
+            lists-for = 12;
+            select-source(12);
+        }
+    }
+    // A Live set opened: the Jam source comes up, with its clips.
+    property <int> session-request: SessionUi.show-request;
+    changed session-request => {
         if source != 12 {
             source = 12;
             lists-for = 12;
@@ -8109,7 +8121,7 @@ export component Browser inherits HorizontalLayout {
     // Shown and hidden from the footer's right-hand button.
     // On a narrow window the panel takes no width and lies over the
     // track list's right side instead (raised above it with z).
-    if side-visible && !plugin-panel: Rectangle {
+    if side-visible && !plugin-panel && !session-shown: Rectangle {
         width: narrow ? 0px : side.width;
         z: 2;
         if narrow: Rectangle { x: -side.width - 1px; width: 1px; background: Theme.n-000000; }

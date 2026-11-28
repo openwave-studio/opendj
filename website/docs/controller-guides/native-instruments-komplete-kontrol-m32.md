@@ -4,14 +4,32 @@ Plug the M32 into the computer with its USB cable; openDJ picks this
 mapping by itself. No Native Instruments software is needed. Put an
 instrument on a deck, or turn the 4-D encoder to pick one, and play.
 
+On a Mac with Native Instruments' software installed, openDJ registers with
+its background agent (NIHostIntegrationAgent) as the M32's host. The M32
+then sends its knobs straight to openDJ: they turn smoothly, have no end
+stop, and the "Template 1" readout stays away. If you switch the M32 to
+Komplete Kontrol with **SHIFT** and **TRACK** (INSTANCE), press it again to
+come back to openDJ. Without the agent the M32 works in its MIDI mode, below.
+Windows support for the agent comes later. Thanks to Encdr
+(github.com/RufusIbiza/Encdr), which documented how hosts talk to the agent.
+
 The keys, the OCTAVE buttons, the pitch and modulation strips and a sustain
 pedal play the instrument deck over the M32's own MIDI port, as any
-keyboard does. Everything else is openDJ's own mapping. Nobody has tried it
+keyboard does. When the M32's screen says "Template 1" (its own MIDI
+mode), the knobs send MIDI controllers on that port too (14-21, 22-29, 102-109
+or 110-117, one set for each of its pages): openDJ
+gives those to this mapping, so they still turn the instrument's knobs and
+not the plugin's parameters in their own way. In that mode a knob stops at
+each end of its travel, so turn it back a little if it stops. The M32 also
+flashes its own "Template 1" readout when a knob turns or ◀ ▶ is pressed;
+openDJ draws its screen back over it straight away. Everything else is openDJ's own mapping. Nobody has tried it
 on the hardware yet, so tell us how it goes.
 
 - The **8 knobs** turn the instrument's knobs on the page the deck shows.
   They're endless, so they pick up where the knob is. Hold **SHIFT** to
   turn them finely. **◀ (M)** and **▶ (S)** show the page before or after.
+  Turning one closes the browser on the screen, which then shows the
+  knob's name and value.
 - **PRESET ▲ / ▼** load the previous or next preset of the instrument.
 - **PLAY** starts the instrument deck's step sequencer, **STOP** stops it.
 - **REC** records the set. **SHIFT** and **REC** records what you play
@@ -26,8 +44,12 @@ on the hardware yet, so tell us how it goes.
   then turn and press again to load one of its presets. **SHIFT** and press
   (or push it left) goes back. **BROWSER** opens the list and **TRACK**
   closes it. **PLUG-IN** opens the instrument's own window.
-- The screen shows the instrument and its preset, and the knob you turn
-  with its value.
+- The screen puts one thing in big letters, with smaller lines around it:
+  while you play, the preset (the instrument above it, and SEQ, REC, ARP
+  and SCALE below when they're on); while you turn a knob, its value, with
+  its name and a bar; while you browse, the one picked, with the ones
+  before and after it and its place in the list. A name too long for the
+  screen scrolls once your hands are off the controls.
 
 ## When you try it
 

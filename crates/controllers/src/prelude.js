@@ -219,6 +219,11 @@
                 native.hidSendFeature(Number(reportID) & 0xFF, bytesOf(data)),
             getFeatureReport: reportID =>
                 new Uint8Array(native.hidGetFeature(Number(reportID) & 0xFF)).buffer,
+            // openDJ: to the MIDI port of a keyboard whose HID side this
+            // mapping runs (`keys="midi"`).
+            sendShortMsg(status, byte1, byte2) {
+                native.send([status & 0xFF, byte1 & 0xFF, byte2 & 0xFF]);
+            },
         };
     }
     // openDJ: makes note `from` on MIDI channel `channel` (0-15) act as note

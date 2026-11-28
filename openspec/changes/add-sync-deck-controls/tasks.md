@@ -4,6 +4,7 @@
 
 - [x] 1.1 Add resolution and pinned leader with engine tests
 - [x] 1.2 Regenerate website/book/supported-controls.txt
+- [x] 1.3 Launch a synced hot cue or saved-loop pad on the upcoming quantize point when it is nearer, and snap beat loops to the nearest point
 
 ## 2. UI
 

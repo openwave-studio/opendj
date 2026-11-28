@@ -29,7 +29,9 @@ use cpal::{BufferSize, ErrorKind, FromSample, SampleFormat, SizedSample, Support
 use opendj_control::{ControlHandle, ControlRegistry};
 
 use crate::engine::{Engine, MIX_CHANNELS, OUTPUT_CHANNELS};
-use crate::inputs::{InputFeed, AUXILIARIES, GROOVE_BOX, MICROPHONE, NUM_AUXILIARIES, NUM_INPUTS};
+use crate::inputs::{
+    InputFeed, AUXILIARIES, GROOVE_BOX, INSTRUMENT, MICROPHONE, NUM_AUXILIARIES, NUM_INPUTS,
+};
 
 /// What an output plays, each a stereo pair of the buffer the engine
 /// renders: the mixes, or one deck or the sampler on its own (for a DAW or
@@ -121,10 +123,14 @@ pub enum InputRole {
     Auxiliary6,
     Auxiliary7,
     Auxiliary8,
+    /// A hardware synth the instrument deck plays (see
+    /// [`crate::hardware_synth`]): its sound comes back here. Mono or a
+    /// pair, as the auxiliary inputs. Last, so the others keep their place.
+    Instrument,
 }
 
 impl InputRole {
-    pub const ALL: [InputRole; 9] = [
+    pub const ALL: [InputRole; 10] = [
         InputRole::Microphone,
         InputRole::Auxiliary,
         InputRole::Auxiliary2,
@@ -134,6 +140,7 @@ impl InputRole {
         InputRole::Auxiliary6,
         InputRole::Auxiliary7,
         InputRole::Auxiliary8,
+        InputRole::Instrument,
     ];
 
     /// The auxiliary inputs, in order.
@@ -159,6 +166,7 @@ impl InputRole {
             InputRole::Auxiliary6 => "auxiliary6",
             InputRole::Auxiliary7 => "auxiliary7",
             InputRole::Auxiliary8 => "auxiliary8",
+            InputRole::Instrument => "instrument",
         }
     }
 
@@ -170,6 +178,7 @@ impl InputRole {
     pub fn index(self) -> usize {
         match self.aux_number() {
             Some(n) => AUXILIARIES[n - 1],
+            None if self == InputRole::Instrument => INSTRUMENT,
             None => MICROPHONE,
         }
     }
@@ -290,6 +299,10 @@ const HEALTH_WARMUP: f64 = 1.0;
 const LATE_CALLBACK: f64 = 3.0;
 /// How often a lost device is looked for.
 const RETRY: Duration = Duration::from_secs(2);
+/// How soon after the outputs open the stand-in default device can stop
+/// and be reopened without a word: opening the outputs, or the device scan
+/// that follows start-up, can disturb its first stream.
+const SETTLE: Duration = Duration::from_secs(10);
 
 impl Health {
     pub(crate) fn new(reg: &ControlRegistry) -> Arc<Self> {
@@ -662,6 +675,9 @@ pub(crate) struct Outputs {
     setup: AudioSetup,
     /// When to look for a lost device next.
     retry_at: Option<Instant>,
+    /// The look for a lost device, while it runs on its own thread: says
+    /// whether the device is there.
+    looking: Option<std::sync::mpsc::Receiver<bool>>,
     /// An input stream stopped (its device reset or went away): set from
     /// its error callback, so the inputs are reopened.
     input_lost: Arc<AtomicBool>,
@@ -669,6 +685,13 @@ pub(crate) struct Outputs {
     input_retry_at: Option<Instant>,
     /// The person was told the device went away.
     lost_reported: bool,
+    /// The system default device's name while it plays the master because
+    /// the chosen device was missing when the outputs opened.
+    fell_back: Option<String>,
+    /// When the outputs were last opened.
+    opened_at: Instant,
+    /// Closed for quitting (see [`Outputs::close`]): nothing opens again.
+    closed: bool,
 }
 
 impl Outputs {
@@ -691,16 +714,49 @@ impl Outputs {
             health,
             setup: setup.clone(),
             retry_at: None,
+            looking: None,
             input_lost: Arc::new(AtomicBool::new(false)),
             input_retry_at: None,
             lost_reported: false,
+            fell_back: None,
+            opened_at: Instant::now(),
+            closed: false,
         };
         o.configure(setup);
         o
     }
 
+    /// Closes every output and input stream and stops the stand-in timer,
+    /// for good: the app is quitting. Dropping a stream joins its audio
+    /// thread and unloads its driver, which only works while that thread
+    /// is still alive. Left to the end of the process, Windows has already
+    /// ended the thread: the join panics, or a driver waits on it and the
+    /// process never ends. Whether every thread it started has finished:
+    /// a look for a lost device (see [`Outputs::look_for`]) still loading
+    /// drivers after 2 s is left behind.
+    pub(crate) fn close(&mut self) -> bool {
+        self.closed = true;
+        self.streams.clear();
+        self.inputs.clear();
+        self.drop_watched();
+        self.timer = None;
+        self.levels.clear();
+        // After the sound has stopped: this can wait.
+        let looked = self.looking.take().is_none_or(|rx| {
+            !matches!(
+                rx.recv_timeout(Duration::from_secs(2)),
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+            )
+        });
+        devices::set_asio_held(false);
+        looked
+    }
+
     /// Opens the devices `setup` names, closing the ones in use.
     pub(crate) fn configure(&mut self, setup: &AudioSetup) {
+        if self.closed {
+            return;
+        }
         self.configure_outputs(setup);
         self.configure_inputs(setup);
     }
@@ -708,6 +764,9 @@ impl Outputs {
     /// Opens the input devices `setup` names, closing the ones in use, and
     /// leaves the outputs as they are.
     pub(crate) fn configure_inputs(&mut self, setup: &AudioSetup) {
+        if self.closed {
+            return;
+        }
         let _asio = setup
             .inputs
             .iter()
@@ -812,6 +871,9 @@ impl Outputs {
     /// default) while the input picker shows it, opening it for that if no
     /// input uses it; `None` closes it again.
     pub(crate) fn watch_input(&mut self, device: Option<&str>) {
+        if self.closed {
+            return;
+        }
         let Some(device) = device else {
             self.drop_watched();
             self.publish_asio_held();
@@ -955,28 +1017,33 @@ impl Outputs {
     /// once the clock device is there again. Call it every so often; it says
     /// what happened, for the person at the decks.
     pub(crate) fn recover(&mut self) -> Option<String> {
+        if self.closed {
+            return None;
+        }
         if !self.health.lost.load(Ordering::Acquire) {
             return self.recover_inputs();
         }
-        let now = Instant::now();
-        if self.retry_at.is_some_and(|t| now < t) {
-            return None;
-        }
-        self.retry_at = Some(now + RETRY);
         let name = clock_device(&self.setup).to_string();
-        let label = if name.is_empty() {
-            "The system's audio output".to_string()
-        } else {
-            name.clone()
-        };
         // A driver that asked to be reset (after a change in its control
         // panel) is still held by the stopped streams; looking it up would
         // then stop at the first other driver listed and miss it.
         if is_asio(&name) {
             self.release_asio();
         }
-        // Looked up afresh: the device kept from before may be unplugged.
-        if look(&name).is_none() {
+        let present = self.look_for(&name)?;
+        // The default device stands in for a missing chosen one: while that
+        // is still missing, open the default again rather than stop. The
+        // system's default is quick to find: no ASIO driver is loaded.
+        let fallback = self
+            .fell_back
+            .clone()
+            .filter(|_| !present && find("").is_some());
+        let label = match &self.fell_back {
+            Some(default) if !present => default.clone(),
+            _ if name.is_empty() => "The system's audio output".to_string(),
+            _ => name.clone(),
+        };
+        if !present && fallback.is_none() {
             if std::mem::replace(&mut self.lost_reported, true) {
                 return None;
             }
@@ -998,17 +1065,78 @@ impl Outputs {
             ));
         }
         self.health.lost.store(false, Ordering::Release);
+        // Opening the outputs clears these.
+        let reported = self.lost_reported;
+        let was_fallback = self.fell_back.is_some();
+        let settling = self.opened_at.elapsed() < SETTLE;
         let setup = self.setup.clone();
         self.configure_outputs(&setup);
         // The device's inputs went with it (an interface that resets takes
         // both): open them again too, or nothing comes in until the input
         // is picked again.
         self.configure_inputs(&setup);
-        Some(if std::mem::take(&mut self.lost_reported) {
-            format!("{label} is back.")
+        if reported || (was_fallback && present) {
+            Some(format!("{label} is back."))
+        } else if fallback.is_some() && settling {
+            None
         } else {
-            format!("{label} stopped; openDJ reopened it.")
-        })
+            Some(format!("{label} stopped; openDJ reopened it."))
+        }
+    }
+
+    /// Whether the output device called `name` is there, or `None` while
+    /// the look is under way or not due yet. Every [`RETRY`] it looks on its
+    /// own thread, so the caller (the UI) never waits: finding an ASIO
+    /// device loads every installed ASIO driver in turn, which can take
+    /// seconds when their hardware is unplugged.
+    fn look_for(&mut self, name: &str) -> Option<bool> {
+        use std::sync::mpsc::TryRecvError;
+        if let Some(rx) = &self.looking {
+            let present = match rx.try_recv() {
+                Ok(present) => present,
+                Err(TryRecvError::Empty) => return None,
+                // The look panicked: count the device as missing.
+                Err(TryRecvError::Disconnected) => false,
+            };
+            self.looking = None;
+            self.retry_at = Some(Instant::now() + RETRY);
+            return Some(present);
+        }
+        let now = Instant::now();
+        if self.retry_at.is_some_and(|t| now < t) {
+            return None;
+        }
+        let (tx, rx) = std::sync::mpsc::channel();
+        let wanted = name.to_string();
+        // Logged the first time and when found, not every few seconds while
+        // the device stays away.
+        let first = !self.lost_reported;
+        let spawned = std::thread::Builder::new()
+            .name("opendj-output-look".into())
+            .spawn(move || {
+                let started = Instant::now();
+                // Looked up afresh, not taken from the device scan: the
+                // device kept from before may be unplugged, and one the scan
+                // missed may have been plugged in since.
+                let present = look(&wanted).is_some();
+                if first || present {
+                    eprintln!(
+                        "audio output: looked for {wanted:?} in {} ms: {}",
+                        started.elapsed().as_millis(),
+                        if present { "there" } else { "missing" }
+                    );
+                }
+                // Dropped by now if the outputs were opened again meanwhile.
+                let _ = tx.send(present);
+            });
+        match spawned {
+            Ok(_) => self.looking = Some(rx),
+            Err(e) => {
+                eprintln!("audio output: can't look for {name:?}: {e}");
+                self.retry_at = Some(now + RETRY);
+            }
+        }
+        None
     }
 
     /// Reopens the inputs after one of their streams stopped, every so often
@@ -1075,6 +1203,15 @@ impl Outputs {
     }
 
     /// Whether the system refused the audio thread real-time priority.
+    /// The Session plays from `source`, or nothing; the old one comes back,
+    /// to be dropped here rather than on the audio thread.
+    pub(crate) fn set_session(
+        &self,
+        source: Option<Box<dyn crate::inputs::SessionSource>>,
+    ) -> Option<Box<dyn crate::inputs::SessionSource>> {
+        self.engine.lock().ok()?.set_session(source)
+    }
+
     pub(crate) fn realtime_denied(&self) -> bool {
         self.health.realtime_denied.load(Ordering::Relaxed)
     }
@@ -1093,6 +1230,10 @@ impl Outputs {
         self.health.lost.store(false, Ordering::Release);
         self.lost_reported = false;
         self.retry_at = None;
+        // A look still running is for the old setup.
+        self.looking = None;
+        self.fell_back = None;
+        self.opened_at = Instant::now();
         self.route_status = vec![String::new(); setup.routes.len()];
         let opened = self.open(setup);
         self.publish_asio_held();
@@ -1124,7 +1265,11 @@ impl Outputs {
         // prefix that its own name lacks. Under two names the device would be
         // opened twice, and an ASIO driver plays only its latest stream.
         let wanted = clock_device(setup);
-        let (clock, clock_name) = match find(wanted).filter(|_| !wanted.is_empty()) {
+        let found = find(wanted).filter(|_| !wanted.is_empty());
+        // The chosen master device is missing (unplugged, say): the system's
+        // default plays instead.
+        let fell_back = !wanted.is_empty() && found.is_none();
+        let (clock, clock_name) = match found {
             Some(clock) => (clock, wanted.to_string()),
             None => {
                 let clock = find("").ok_or("no output device")?;
@@ -1132,6 +1277,7 @@ impl Outputs {
                 (clock, name)
             }
         };
+        let mut moved = Vec::new();
 
         // Group the routes by device, the clock device first. A route to
         // channels another route already uses is left out.
@@ -1150,6 +1296,8 @@ impl Outputs {
             } else {
                 r.device.clone()
             };
+            let mut pair = r.pair as usize;
+            let mut note = None;
             let at = match devices.iter().position(|d| d.name == name) {
                 Some(at) => at,
                 None => match find(&name) {
@@ -1161,19 +1309,28 @@ impl Outputs {
                         });
                         devices.len() - 1
                     }
+                    // The master plays on the default device's first pair
+                    // rather than nowhere. Headphones, booth and deck outputs
+                    // stay silent: the cue on the main speakers would be
+                    // worse than none.
+                    None if fell_back && r.role == Role::Master => {
+                        note = Some(format!("{name} unavailable · playing on {clock_name}"));
+                        pair = 0;
+                        0
+                    }
                     None => {
                         self.route_status[i] = format!("{name} unavailable");
                         continue;
                     }
                 },
             };
-            let pair = r.pair as usize;
             if let Some(&(_, _, other)) = devices[at].routes.iter().find(|x| x.1 == pair) {
                 self.route_status[i] =
                     format!("same channels as {}", setup.routes[other].role.name());
                 continue;
             }
             devices[at].routes.push((r.role.source(), pair, i));
+            moved.extend(note.map(|n| (i, n)));
         }
 
         // Open the other devices first, so the clock knows where to feed.
@@ -1311,6 +1468,13 @@ impl Outputs {
             ),
             BufferSize::Default => format!("{clock_name} · {khz} kHz"),
         };
+        for (i, note) in moved {
+            self.route_status[i] = note;
+        }
+        if fell_back {
+            eprintln!("audio output: {wanted} missing; playing the master on {clock_name}");
+            self.fell_back = Some(clock_name);
+        }
         Ok(())
     }
 

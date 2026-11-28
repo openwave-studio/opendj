@@ -17,6 +17,7 @@ pub mod analysis;
 pub mod arp;
 mod auto_trim;
 pub mod background;
+pub mod bandwidth;
 pub mod beats;
 pub mod beatthis;
 pub mod cache;
@@ -33,11 +34,14 @@ pub mod groove_dice;
 pub mod groove_fills;
 pub mod groove_pads;
 pub mod growing;
+pub mod hardware_synth;
 pub mod import;
 pub mod inputs;
 pub mod key;
 pub mod keynet;
-mod keyshift;
+/// Time-stretching a source to any speed and key (Signalsmith Stretch);
+/// openDJ Studio's audio clips play through it too.
+pub mod keyshift;
 pub mod kits;
 pub mod latch;
 pub mod link;
@@ -48,6 +52,7 @@ pub mod loudness;
 pub mod lyrics;
 pub mod meter;
 pub mod midi_clock;
+pub mod mix_order;
 mod output;
 pub mod paths;
 pub mod patterns;
@@ -92,9 +97,10 @@ pub use controls::{
     NUM_EFFECT_UNITS, NUM_HOTCUES, XFADER_CUT_IN,
 };
 pub use effects::{
-    color_fx_name, effect_name, parameter_names, plugin_index, step_effect, InstrumentView,
-    NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS, EFFECT_MENU_ORDER,
-    MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    color_fx_name, effect_name, parameter_names, plugin_index, spectrum_of, step_effect,
+    InstrumentView, NoteInput, PluginLink, AVAILABLE_EFFECTS, COLOR_FX, DEFAULT_EFFECTS,
+    EFFECT_MENU_ORDER, MAX_BUTTON_PARAMETERS, MAX_PARAMETERS, MAX_PLUGINS, PLUGIN_BASE, SCOPE_BINS,
+    SCOPE_SAMPLES,
 };
 /// The Remix deck's effect and scene names, as its controls number them.
 pub mod remix {
@@ -175,6 +181,9 @@ pub struct AudioEngine {
     spectrum_feed: Mutex<Option<recorder::Feed>>,
     /// Picks the outputs MIDI clock goes to.
     midi_clock: midi_clock::MidiClock,
+    beat_clock: Arc<midi_clock::BeatClock>,
+    /// A hardware synth the instrument deck plays instead of a plugin.
+    hardware_synth: hardware_synth::HardwareSynth,
 }
 
 /// The master output, for broadcasting: a copy of what the speakers get,
@@ -269,9 +278,15 @@ impl AudioEngine {
             NUM_DECKS,
             rate,
         );
+        let beat_clock = engine.beat_clock();
         let midi_clock = midi_clock::start(
-            engine.beat_clock(),
+            beat_clock.clone(),
             engine.clock_in(),
+            engine.link_handle(),
+            &registry,
+        );
+        let hardware_synth = hardware_synth::start(
+            engine.take_hardware_link().expect("hardware link"),
             engine.link_handle(),
             &registry,
         );
@@ -309,12 +324,35 @@ impl AudioEngine {
             broadcast_feed: Mutex::new(broadcast_feed),
             spectrum_feed: Mutex::new(spectrum_feed),
             midi_clock,
+            beat_clock,
+            hardware_synth,
         }
+    }
+
+    /// Loads or unloads a hardware synth on the instrument deck.
+    pub fn hardware_synth(&self) -> hardware_synth::HardwareSynth {
+        self.hardware_synth.clone()
     }
 
     /// MIDI clock out: which outputs it sends to.
     pub fn midi_clock(&self) -> midi_clock::MidiClock {
         self.midi_clock.clone()
+    }
+
+    /// The master deck's beat and tempo as each buffer is heard (tempo 0
+    /// while no deck plays), for the Session to follow.
+    pub fn beat_clock(&self) -> Arc<midi_clock::BeatClock> {
+        self.beat_clock.clone()
+    }
+
+    /// Plays the Session (openDJ Studio's clips) from `source` on its own
+    /// channel, `[Session1]`, or nothing. Returns the source it played
+    /// before.
+    pub fn set_session(
+        &self,
+        source: Option<Box<dyn inputs::SessionSource>>,
+    ) -> Option<Box<dyn inputs::SessionSource>> {
+        self.output.borrow().set_session(source)
     }
 
     /// The master output for broadcasting; there is only one, so later
@@ -391,6 +429,10 @@ impl AudioEngine {
     /// The playing instrument's parameter names, for its knobs
     /// (`[Instrument1],parameterN` is the N-th); empty while none plays.
     pub fn instrument_parameters(&self) -> Vec<String> {
+        let names = self.hardware_synth.names();
+        if !names.is_empty() {
+            return names;
+        }
         self.plugins
             .as_ref()
             .map_or_else(Vec::new, |p| p.instrument_parameters())
@@ -451,6 +493,21 @@ impl AudioEngine {
         if let Some(p) = &self.plugins {
             p.shut_down();
         }
+    }
+
+    /// Closes the audio devices and the MIDI clock's ports for quitting,
+    /// while every thread is still alive: the engine itself is often still
+    /// held by the window's handlers when the app returns, and dropping its
+    /// streams at the very end of the process panics or hangs. Afterwards
+    /// nothing plays and no device opens again. Whether every thread it
+    /// waited on finished: one stuck in a driver is left behind.
+    pub fn close_devices(&self) -> bool {
+        // The sound first, then the clock's MIDI ports.
+        let outputs = self.output.borrow_mut().close();
+        let clock = self
+            .midi_clock
+            .shut_down_within(std::time::Duration::from_secs(2));
+        outputs && clock
     }
 
     /// Where notes for the Instrument input go in, from any thread.

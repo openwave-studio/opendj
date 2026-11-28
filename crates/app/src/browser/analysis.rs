@@ -24,6 +24,13 @@ pub(super) struct Shown {
     waiting: Vec<Track>,
     /// When analysed tracks were last saved and shown.
     applied: Option<Instant>,
+    /// Tracks due to be saved and shown, a few each UI tick while a deck
+    /// plays (see [`Shown::slice`]).
+    pub(super) applying: std::collections::VecDeque<Track>,
+    /// The sidebar's counts wait while a deck plays; when they were last
+    /// worked out, and whether they're behind.
+    pub(super) tree_at: Option<Instant>,
+    pub(super) tree_stale: bool,
 }
 
 /// How often tracks analysed in the background are saved and shown, at
@@ -31,7 +38,45 @@ pub(super) struct Shown {
 /// sidebar's counts).
 pub(super) const APPLY_EVERY: Duration = Duration::from_secs(2);
 
+/// Tracks saved and shown per UI tick while a deck plays: each costs a
+/// database write and its rows, and a whole batch at once ran over a frame.
+const PER_TICK_PLAYING: usize = 1;
+
+/// How often the sidebar's counts are worked out again while a deck plays,
+/// at most: it goes through the whole library and lays the sidebar out
+/// again, which ran over a frame.
+pub(super) const TREE_EVERY_PLAYING: Duration = Duration::from_secs(30);
+
 impl Shown {
+    /// The tracks to save and show this tick: all that are due, or only a
+    /// few while `playing`, the rest waiting for the next ticks.
+    pub(super) fn slice(&mut self, due: Vec<Track>, playing: bool) -> Vec<Track> {
+        self.applying.extend(due);
+        let n = if playing {
+            PER_TICK_PLAYING.min(self.applying.len())
+        } else {
+            self.applying.len()
+        };
+        self.applying.drain(..n).collect()
+    }
+
+    /// Whether the sidebar's counts should be worked out now, after
+    /// analysed tracks changed them: at once while no deck plays, else at
+    /// most every [`TREE_EVERY_PLAYING`].
+    pub(super) fn tree_due(&mut self, changed: bool, playing: bool) -> bool {
+        self.tree_stale |= changed;
+        let due = self.tree_stale
+            && (!playing
+                || self
+                    .tree_at
+                    .is_none_or(|at| at.elapsed() >= TREE_EVERY_PLAYING));
+        if due {
+            self.tree_stale = false;
+            self.tree_at = Some(Instant::now());
+        }
+        due
+    }
+
     /// Takes in tracks just analysed, and gives back those to save and
     /// show now: all that are waiting, once [`APPLY_EVERY`] has passed
     /// since last time or the queue is `empty`.
@@ -333,5 +378,55 @@ mod tests {
         let ids: Vec<usize> = shown.due(Vec::new(), true).iter().map(|t| t.id).collect();
         assert_eq!(ids, [2, 3]);
         assert!(shown.due(Vec::new(), true).is_empty());
+    }
+
+    #[test]
+    fn analysed_tracks_trickle_in_while_a_deck_plays() {
+        let mut shown = Shown::default();
+        let track = |id| Track {
+            id,
+            artist: String::new(),
+            title: String::new(),
+            album: String::new(),
+            genre: String::new(),
+            rating: 0,
+            bpm: 0.0,
+            key: String::new(),
+            duration: 0.0,
+            first_beat: 0.0,
+            source: Source::Synth { seed: 1 },
+            waveform: Default::default(),
+            audio: None,
+            cover: None,
+            grid: Default::default(),
+            info: Default::default(),
+        };
+        // Playing: one per tick, the rest wait their turn.
+        let ids = |v: Vec<Track>| v.iter().map(|t| t.id).collect::<Vec<_>>();
+        assert_eq!(
+            ids(shown.slice(vec![track(1), track(2), track(3)], true)),
+            [1]
+        );
+        assert_eq!(ids(shown.slice(Vec::new(), true)), [2]);
+        // Stopped: all that are left at once.
+        assert_eq!(ids(shown.slice(vec![track(4)], false)), [3, 4]);
+        assert!(shown.slice(Vec::new(), true).is_empty());
+    }
+
+    #[test]
+    fn the_sidebar_counts_wait_while_a_deck_plays() {
+        let mut shown = Shown::default();
+        // Stopped: at once, and only after something changed.
+        assert!(!shown.tree_due(false, false));
+        assert!(shown.tree_due(true, false));
+        assert!(!shown.tree_due(false, false));
+        // Playing: not again within TREE_EVERY_PLAYING...
+        assert!(!shown.tree_due(true, true));
+        assert!(!shown.tree_due(false, true));
+        // ...but as soon as the decks stop.
+        assert!(shown.tree_due(false, false));
+        // Long enough since the last time: while playing too.
+        shown.tree_at = Some(Instant::now() - TREE_EVERY_PLAYING);
+        assert!(shown.tree_due(true, true));
     }
 }

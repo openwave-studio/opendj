@@ -430,7 +430,7 @@ fn key_mixing() -> key::Mixing {
 
 /// How far tracks are shifted to match keys on load: 0 (off), 1 or 2
 /// semitones.
-/// Shows the automatic deck helpers on the letters under each deck's key.
+/// Shows the automatic deck helpers in the deck options panel under each deck's key.
 fn show_deck_auto(app: &AppWindow) {
     let g = app.global::<crate::DeckAuto>();
     g.set_bpm(settings::flag("bpm_match_on_load", false));
@@ -773,7 +773,7 @@ impl Prefs {
                 show_deck_auto(&app);
             }
         });
-        // The B K S P letters under each deck's key: the same settings.
+        // The deck options panel under each deck's key: the same settings.
         show_deck_auto(app);
         let p = prefs.clone();
         app.global::<crate::DeckAuto>().on_toggle(move |id, on| {
