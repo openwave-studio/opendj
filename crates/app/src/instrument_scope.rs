@@ -2,8 +2,8 @@
 //! spectrum (FREQ), drawn as path commands for `InstrumentScope` in
 //! deck.slint.
 //!
-//! The wave starts each frame where it rises through zero, so a steady
-//! note holds still, and is scaled to its recent loudest so a quiet patch
+//! The wave is one line that starts each frame where it rises through
+//! zero, so a steady note holds still, and is scaled to its recent loudest so a quiet patch
 //! still fills the box. The spectrum rises at once and falls slowly, so it
 //! doesn't flicker, and is drawn in one of three styles picked from the
 //! scope's right-click menu: a smooth curve, segmented bars or a curve
@@ -207,8 +207,9 @@ impl Scope {
     }
 
     /// The wave, from [`InstrumentView::wave`]: [`SCOPE_SAMPLES`] samples
-    /// as bins of their lowest and highest, starting where the wave rises
-    /// through zero and scaled to its recent loudest.
+    /// as one line, starting where the wave rises through zero and scaled
+    /// to its recent loudest. Each point is the sample furthest from zero
+    /// in its bin, so peaks keep their height. No fill.
     pub fn wave(&mut self, wave: &[f32]) -> Frame {
         const BINS: usize = 128;
         let n = wave.len();
@@ -222,32 +223,28 @@ impl Scope {
             .find(|&i| wave[i - 1] < 0.0 && wave[i] >= 0.0)
             .unwrap_or(latest);
         let per = SCOPE_SAMPLES / BINS;
-        let bins: Vec<(f32, f32)> = (0..BINS)
+        let points: Vec<f32> = (0..BINS)
             .map(|b| {
-                let s = &wave[start + b * per..start + (b + 1) * per];
-                s.iter()
-                    .fold((f32::MAX, f32::MIN), |(lo, hi), &v| (lo.min(v), hi.max(v)))
+                wave[start + b * per..start + (b + 1) * per]
+                    .iter()
+                    .fold(0.0f32, |m, &v| if v.abs() > m.abs() { v } else { m })
             })
             .collect();
-        let loudest = bins.iter().fold(0.0f32, |m, &(lo, hi)| m.max(-lo).max(hi));
+        let loudest = points.iter().fold(0.0f32, |m, &v| m.max(v.abs()));
         self.peak = loudest.max(self.peak * GAIN_RELEASE).max(QUIETEST);
         let mid = VIEW_H / 2.0;
         let reach = (mid - HEADROOM) / self.peak;
-        let y = |v: f32| mid - (v * reach).clamp(-mid, mid);
         let xs: Vec<f32> = (0..BINS).map(|i| Self::x(i, BINS)).collect();
-        let hi: Vec<f32> = bins.iter().map(|&(_, h)| y(h)).collect();
-        let lo: Vec<f32> = bins.iter().map(|&(l, _)| y(l)).collect();
+        let ys: Vec<f32> = points
+            .iter()
+            .map(|&v| mid - (v * reach).clamp(-mid, mid))
+            .collect();
         let mut line = String::new();
-        curve(&mut line, &xs, &hi);
-        let mut fill = line.clone();
-        let (rx, rl): (Vec<f32>, Vec<f32>) = (
-            xs.iter().rev().copied().collect(),
-            lo.iter().rev().copied().collect(),
-        );
-        curve_on(&mut fill, &rx, &rl);
-        fill.push('Z');
-        curve(&mut line, &xs, &lo);
-        Frame { fill, line }
+        curve(&mut line, &xs, &ys);
+        Frame {
+            fill: String::new(),
+            line,
+        }
     }
 }
 
@@ -365,6 +362,14 @@ mod tests {
             .zip(&b)
             .fold(0.0f32, |m, (x, y)| m.max((x - y).abs()));
         assert!(worst < 0.1, "moved by {worst}");
+    }
+
+    #[test]
+    fn the_wave_is_one_line_without_a_fill() {
+        let mut scope = Scope::default();
+        let frame = scope.wave(&sine(220.0, 0.3, 8192));
+        assert!(frame.fill.is_empty());
+        assert_eq!(frame.line.matches('M').count(), 1);
     }
 
     #[test]
