@@ -533,6 +533,7 @@ fn draws_live_lanes() {
         trace: 0.25,
         color: [1.0, 0.0, 0.0, 1.0],
         lit: [0.0, 0.0, 1.0, 1.0],
+        notes: None,
     }));
     let frame = Frame {
         play_seconds: 8.192,
@@ -617,6 +618,7 @@ fn draws_knob_levels() {
         trace: 0.25,
         color: [1.0, 0.0, 0.0, 1.0],
         lit: [0.0, 0.0, 1.0, 1.0],
+        notes: None,
     }));
     let frame = Frame {
         play_seconds: 8.192,
@@ -640,13 +642,13 @@ fn draws_knob_levels() {
         let i = ((y * w + x) * 4) as usize;
         data[i].saturating_sub(data[i + 1])
     };
-    // 2 s back (clear of the beat lines): the line half way up, a faint
-    // fill under it, nothing over it.
+    // 2 s back (clear of the beat lines): the line half way up, and no
+    // fill under it.
     let line = (0..h).max_by_key(|&y| red(176, y)).unwrap();
     assert!((18..=22).contains(&line), "line at y {line}");
     let (on, under, over) = (red(176, line), red(176, 32), red(176, 14));
     assert!(on > 150, "line: {on}");
-    assert!(under > over + 20 && under < on, "fill {under} over {over}");
+    assert!(under < 10 && over < 10, "under {under} over {over}");
     // Rising after 7.5 s: higher up near the play line, in green.
     let green = |x: u32, y: u32| {
         let i = ((y * w + x) * 4) as usize;
@@ -1581,4 +1583,170 @@ fn draws_the_real_wave_zoomed_right_in() {
             );
         }
     }
+}
+
+fn live_frame() -> Frame {
+    Frame {
+        play_seconds: 8.192,
+        visible_seconds: 12.8,
+        duration: 8.192,
+        first_bar_beat: 0.0,
+        grid: [None; opendj_waveform::GRID_SECTIONS],
+        cue: None,
+        loop_range: None,
+        loop_marking: None,
+        hotcues: [None; 8],
+        slip: None,
+        gain: 1.0,
+        tempos: Vec::new(),
+        phrases: Vec::new(),
+    }
+}
+
+/// A live instrument deck in the lilac look: the waveform's body violet
+/// left of the play line, and the scope right of it, an open pale lilac
+/// line that meets the centre line at both ends.
+#[test]
+fn draws_lilac_look_and_scope() {
+    use opendj_waveform::{LiveLook, ScopeBackdrop, SCOPE_POINTS};
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    // Loud, steady sound, mostly low.
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(vec![[200, 40, 20, 200, 160, 30, 10, 160]; 8192]),
+        1000.0,
+    ));
+    let (w, h) = (512u32, 80u32);
+    let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+    view.set_track(&device, &renderer, Some(&track));
+    view.set_live(true);
+    view.set_live_look(LiveLook::Lilac);
+    // A square wave at full scale: four cycles.
+    let scope: [f32; SCOPE_POINTS] =
+        std::array::from_fn(|i| if (i / 32) % 2 == 0 { 1.0 } else { -1.0 });
+    view.set_scope(Some(scope));
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    // Left of the play line, near the body's edge: violet (blue over red
+    // over green).
+    let p = px(150, 20);
+    assert!(
+        p[2] > p[0] && p[0] > p[1] && p[2] > 120,
+        "violet body: {p:?}"
+    );
+    // Right of the play line, half way to the edge (clear of the taper):
+    // the line near the top or bottom, and nothing filled between.
+    let column: Vec<u32> = (0..h)
+        .map(|y| px(400, y).iter().map(|&c| c as u32).sum())
+        .collect();
+    let brightest = (0..h).max_by_key(|&y| column[y as usize]).unwrap();
+    assert!(!(25..55).contains(&brightest), "line at y {brightest}");
+    assert!(
+        column[brightest as usize] > 500,
+        "line: {}",
+        column[brightest as usize]
+    );
+    assert!(column[40] < 120, "open, no fill: {}", column[40]);
+    // At the right edge it has tapered onto the centre line.
+    let edge = (0..h)
+        .max_by_key(|&y| px(510, y).iter().map(|&c| c as u32).sum::<u32>())
+        .unwrap();
+    assert!((37..=42).contains(&edge), "tapered to y {edge}");
+
+    // In the instrument's colour (pink) with the backdrop: the body pink,
+    // and behind the scope a pink fade, brighter at the top.
+    view.set_live_look(LiveLook::Colored([1.0, 0.561, 0.671, 1.0]));
+    view.set_scope_backdrop(ScopeBackdrop::Fade);
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    let p = px(150, 20);
+    assert!(p[0] > p[2] && p[2] > p[1] && p[0] > 100, "pink body: {p:?}");
+    let (top, bottom) = (px(470, 4), px(470, 76));
+    assert!(top[0] > top[1] + 8, "pink at the top: {top:?}");
+    assert!(top[0] > bottom[0] + 8, "fading down: {top:?} {bottom:?}");
+}
+
+/// The Notes view: no waveform, a band per octave, and notes as capsules
+/// on two octaves of rows; one below them sits faded on the bottom row.
+#[test]
+fn draws_notes_view() {
+    use opendj_waveform::{Lanes, Mark, MarkKind};
+    let Some((device, queue)) = gpu() else {
+        eprintln!("no GPU adapter; skipping");
+        return;
+    };
+    let renderer = WaveformRenderer::new(&device, &queue);
+    let track = Arc::new(GpuTrack::new(
+        &device,
+        &queue,
+        &renderer,
+        1,
+        &levels(vec![[255; 8]; 8192]),
+        1000.0,
+    ));
+    let (w, h) = (512u32, 96u32);
+    let mut view = WaveformView::new(&device, Mode::Scrolling, w, h);
+    view.set_track(&device, &renderer, Some(&track));
+    view.set_live(true);
+    // C3 to B4 (4 px rows): C4 played, E4 held, and G2 below the rows.
+    let note = |n: u32, start: f64, end: f64, kind| Mark {
+        start,
+        end,
+        lane: n,
+        kind,
+    };
+    view.set_lanes(Some(Lanes {
+        count: 24,
+        tinted: 0,
+        marks: vec![
+            note(60, 5.0, 7.0, MarkKind::Played),
+            note(64, 7.2, 8.192, MarkKind::Held),
+            note(43, 5.0, 7.0, MarkKind::Played),
+        ],
+        trace: 0.0,
+        color: [1.0, 0.0, 0.0, 1.0],
+        lit: [0.0, 0.0, 1.0, 1.0],
+        notes: Some(48.0),
+    }));
+    view.render(&device, &queue, &renderer, Some(&live_frame()), 1.0);
+    let data = read_back(&device, &queue, &view);
+    let px = |x: u32, y: u32| {
+        let i = ((y * w + x) * 4) as usize;
+        [data[i], data[i + 1], data[i + 2]]
+    };
+    let row_y = |n: u32| h - (n - 48) * 4 - 2;
+    // No waveform: an empty stretch is only the faint band.
+    let p = px(60, row_y(55));
+    assert!(p.iter().all(|&c| c < 70), "no waveform: {p:?}");
+    // C4, 2 s back, tinted lilac (its octave's colour, lightened).
+    let p = px(176, row_y(60));
+    assert!(p[2] > 200 && p[0] > 150 && p[1] < p[2], "C4: {p:?}");
+    // E4, held, white.
+    let p = px(240, row_y(64));
+    assert!(p.iter().all(|&c| c > 230), "held E4: {p:?}");
+    // G2, below the rows: on the bottom row, in octave 2's mint, faded.
+    let p = px(176, row_y(48));
+    assert!(
+        p[1] > p[0] && p[1] > 70 && p[1] < 170,
+        "G2 on the bottom row: {p:?}"
+    );
+    // C3's band is brighter at its C than at its B.
+    let c3 = px(30, row_y(48)).iter().map(|&c| c as u32).sum::<u32>();
+    let b3 = px(30, row_y(59)).iter().map(|&c| c as u32).sum::<u32>();
+    assert!(c3 > b3 + 10, "band fades: C {c3}, B {b3}");
 }

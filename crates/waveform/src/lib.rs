@@ -381,6 +381,17 @@ struct Params {
     stem_place: [[f32; 4]; MAX_STEMS],
     /// How the stems are laid out: 0 stacked, 1 in lanes.
     stem_layout: [f32; 4],
+    /// A live instrument deck's look: x the [`LiveLook`] (0 a track's
+    /// colours, 1 lilac, 2 layers in `look_color`), y the scope's
+    /// points (0 for none), z 1 for the Notes view, w the Notes view's
+    /// bottom note (fractional while the window slides).
+    look: [f32; 4],
+    look_color: [f32; 4],
+    /// The scope right of the play line: [`SCOPE_POINTS`] samples, oldest
+    /// first, from -1 to 1.
+    scope: [[f32; 4]; SCOPE_POINTS / 4],
+    /// x: the scope's backdrop (see [`ScopeBackdrop`]).
+    look_extra: [f32; 4],
 }
 
 /// The colours [`MarkKind::Level`]'s `color` 1 to 8 picks, as sRGB hex.
@@ -391,6 +402,34 @@ pub const LEVEL_COLORS: [u32; 8] = [
 
 /// Marks the shader draws at once (see [`Lanes`]).
 pub const MAX_MARKS: usize = 256;
+
+/// Points the scope right of a live instrument deck's play line is drawn
+/// through (see [`WaveformView::set_scope`]).
+pub const SCOPE_POINTS: usize = 256;
+
+/// How a live instrument deck's waveform is drawn.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum LiveLook {
+    /// In the deck's waveform style, as a track is.
+    #[default]
+    Track,
+    /// Lilac: a violet body, lilac mids and a near-white core.
+    Lilac,
+    /// The same three layers in this colour (RGBA): the body darker, the
+    /// mids in it, the core a pale tint of it.
+    Colored([f32; 4]),
+}
+
+/// What lies behind the scope right of a live instrument deck's play line,
+/// in the look's colour.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ScopeBackdrop {
+    /// Nothing: the scope is an open line.
+    #[default]
+    None,
+    /// Brighter at the top, fading down.
+    Fade,
+}
 
 /// What a mark on a live deck's lanes is, which sets how it is drawn.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -406,8 +445,7 @@ pub enum MarkKind {
     /// Part of a fill still to come: outlined in the lit colour.
     FillComing,
     /// A knob's value over the mark's span, from 0 at the row's foot to 1
-    /// at its top, going from `from` to `to`: a line with a faint fill
-    /// under it. `color` 0 draws it in the marks' colour; 1 to 8 in one of
+    /// at its top, going from `from` to `to`: a line. `color` 0 draws it in the marks' colour; 1 to 8 in one of
     /// eight colours each (see [`LEVEL_COLORS`]), for several knobs on one
     /// lane.
     Level { from: f32, to: f32, color: u8 },
@@ -456,6 +494,11 @@ pub struct Lanes {
     /// The marks' colour, and the colour of held notes and fills, as RGBA.
     pub color: [f32; 4],
     pub lit: [f32; 4],
+    /// The Notes view: each mark's `lane` is its MIDI note, drawn as a
+    /// capsule tinted by its octave over a band per octave, on
+    /// `count` rows from this note up (fractional while the window slides
+    /// an octave). Notes outside the rows sit faded on the row nearer them.
+    pub notes: Option<f32>,
 }
 
 /// Levels the shader can address; the coarsest is 2^15 slices per texel pair,
@@ -903,6 +946,11 @@ pub struct WaveformView {
     grid_edit: bool,
     /// Lanes of marks over the waveform (see [`WaveformView::set_lanes`]).
     lanes: Option<Lanes>,
+    /// A live instrument deck's look and scope (see
+    /// [`WaveformView::set_live_look`] and [`WaveformView::set_scope`]).
+    live_look: LiveLook,
+    scope: Option<[f32; SCOPE_POINTS]>,
+    backdrop: ScopeBackdrop,
     /// The real wave's columns (scrolling views), and the texture they go
     /// to: [`DETAIL_ROW`] columns a row, a row for 1×1 on overviews.
     detail: detail::Columns,
@@ -940,6 +988,9 @@ impl WaveformView {
             live: false,
             grid_edit: false,
             lanes: None,
+            live_look: LiveLook::Track,
+            scope: None,
+            backdrop: ScopeBackdrop::None,
             detail: detail::Columns::default(),
             detail_texture,
             detail_upload: Vec::new(),
@@ -1013,6 +1064,24 @@ impl WaveformView {
     /// hits), or none.
     pub fn set_lanes(&mut self, lanes: Option<Lanes>) {
         self.lanes = lanes;
+    }
+
+    /// How a live instrument deck's waveform is drawn (scrolling only).
+    pub fn set_live_look(&mut self, look: LiveLook) {
+        self.live_look = look;
+    }
+
+    /// The scope drawn right of a live deck's play line, where nothing has
+    /// played yet: [`SCOPE_POINTS`] samples from -1 to 1, oldest first,
+    /// tapering to the centre line at both ends, on the same loudness
+    /// curve as the waveform. None for none. Scrolling only.
+    pub fn set_scope(&mut self, scope: Option<[f32; SCOPE_POINTS]>) {
+        self.scope = scope;
+    }
+
+    /// What lies behind the scope (see [`WaveformView::set_scope`]).
+    pub fn set_scope_backdrop(&mut self, backdrop: ScopeBackdrop) {
+        self.backdrop = backdrop;
     }
 
     /// The colour behind the waveform, as RGBA from 0 to 1.
@@ -1150,7 +1219,31 @@ impl WaveformView {
             tempo_count: [0; 4],
             stem_place: [[0.0; 4]; MAX_STEMS],
             stem_layout: [0.0; 4],
+            look: [0.0; 4],
+            look_color: [0.0; 4],
+            scope: [[0.0; 4]; SCOPE_POINTS / 4],
+            look_extra: [0.0; 4],
         };
+        if self.mode == Mode::Scrolling && self.live {
+            match self.live_look {
+                LiveLook::Track => {}
+                LiveLook::Lilac => params.look[0] = 1.0,
+                LiveLook::Colored(c) => {
+                    params.look[0] = 2.0;
+                    params.look_color = c;
+                }
+            }
+            params.look_extra[0] = match self.backdrop {
+                ScopeBackdrop::None => 0.0,
+                ScopeBackdrop::Fade => 1.0,
+            };
+            if let Some(scope) = &self.scope {
+                params.look[1] = SCOPE_POINTS as f32;
+                for (i, v) in scope.iter().enumerate() {
+                    params.scope[i / 4][i % 4] = v.clamp(-1.0, 1.0);
+                }
+            }
+        }
         if let (Some(t), Style::Stems) = (track, self.style) {
             params.stems = t.stems;
             params.stem_colors = t.stem_colors;
@@ -1169,6 +1262,10 @@ impl WaveformView {
             params.lane_tint = std::array::from_fn(|i| (l.tinted >> (32 * i)) as u32);
             params.mark_color = l.color;
             params.lit_color = l.lit;
+            if let Some(bottom) = l.notes {
+                params.look[2] = 1.0;
+                params.look[3] = bottom;
+            }
         }
         if let Some((a, b)) = self.mix.filter(|_| self.style == Style::Mono) {
             params.mix_start_bin = a * num_bins as f32;
