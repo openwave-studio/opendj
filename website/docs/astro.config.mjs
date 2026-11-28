@@ -91,7 +91,7 @@ export default defineConfig({
             'guide/feedback',
           ],
         },
-        { label: 'Developer guide', items: ['dev/build', 'dev/mapping-format'] },
+        { label: 'Developer guide', items: ['dev/build', 'dev/mapping-format', 'dev/controller-mappings'] },
       ],
     }),
   ],
