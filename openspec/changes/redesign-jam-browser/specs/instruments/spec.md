@@ -8,7 +8,11 @@ The Jam source SHALL list instruments and presets in one narrow column with, fro
 - **THEN** the list shows only presets tagged Pad and Warm, from every instrument, with the count above it
 
 ### Requirement: Filter menus
-The filter menus SHALL be, in order, Sound type, Genre, Style, Character, Instrument and Maker, each folding open as a group of chips. A closed menu SHALL show the chips picked in it on its header and nothing else. Each menu SHALL offer only values that still match the other picks and the search.
+The filter menus SHALL be, in order, Sound type, Genre, Style, Character, Instrument and Maker, each folding open as a group of chips. A closed menu SHALL show the chips picked in it on its header and nothing else. Each menu SHALL offer only values that still match the other picks and the search. Sound type, Genre, Style and Character SHALL use Arturia's lists, so its presets and openDJ's share one set of tags; picking a sound type SHALL show its sub-types as an indented row of chips inside the Sound type menu.
+
+#### Scenario: Sub-types under a picked type
+- **WHEN** Keys is picked under Sound type
+- **THEN** Keys' sub-types (Bells, Mallets, ...) that some preset has show as chips under the types, and picking Bells narrows the list to Keys presets of that sub-type
 
 #### Scenario: Closed menu with picks
 - **WHEN** House and Ambient are picked under Genre and the menu is closed

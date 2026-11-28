@@ -87,11 +87,25 @@ export struct JamChip {
     name: string,
     count: int,
     on: bool,
+    // The menu it belongs to (a sub-type's chips show in Sound type's).
+    facet: int,
+}
+
+// The tagger's tags (indexes in `PresetUi.tag-names`) by group, broken
+// into lines that fit it.
+export struct TagLine {
+    tags: [int],
+}
+export struct TagGroup {
+    name: string,
+    lines: [TagLine],
 }
 
 // A line of chips, as the app breaks them to fit the column.
 export struct JamLine {
     chips: [JamChip],
+    // Sub-types of the picked sound types, set in a little.
+    sub: bool,
 }
 
 // One filter menu: open (one at a time), its picks for its header when
@@ -126,10 +140,11 @@ export global PresetUi {
     callback rename(deck: int, name: string);
     // Plays preset `index` (a browser row's) on deck `deck`.
     callback load(deck: int, index: int);
-    // The tags a preset can have, types then characters, and how many are
-    // types. Set by the app.
+    // The tags a preset can have, group after group (types, genres,
+    // styles, characters), and the groups as the tagger lays them out.
+    // Set by the app.
     in property <[string]> tag-names;
-    in property <int> type-count;
+    in property <[TagGroup]> tag-groups;
     // Whether each deck's preset has each tag: deck after deck, a flag per
     // tag in `tag-names`. Set by the app.
     in property <[bool]> deck-tags;
@@ -1031,7 +1046,7 @@ export component JamColumn inherits Rectangle {
                                     alignment: center;
                                     JamChipButton {
                                         chip: chip;
-                                        clicked => { InstrumentsUi.toggle-value(f, chip.name); }
+                                        clicked => { InstrumentsUi.toggle-value(chip.facet, chip.name); }
                                     }
                                 }
                             }
@@ -1058,7 +1073,7 @@ export component JamColumn inherits Rectangle {
                         }
                     }
                     if facet.open: ScrollView {
-                        height: min(facet.lines.length * 25px + 6px, 132px);
+                        height: min(facet.lines.length * 25px + 6px, 160px);
                         VerticalLayout {
                             padding-left: 4px;
                             padding-bottom: 6px;
@@ -1067,9 +1082,10 @@ export component JamColumn inherits Rectangle {
                             for line in facet.lines: HorizontalLayout {
                                 spacing: 4px;
                                 alignment: start;
+                                padding-left: line.sub ? 12px : 0px;
                                 for chip in line.chips: JamChipButton {
                                     chip: chip;
-                                    clicked => { InstrumentsUi.toggle-value(f, chip.name); }
+                                    clicked => { InstrumentsUi.toggle-value(chip.facet, chip.name); }
                                 }
                             }
                             if facet.lines.length == 0: Text {

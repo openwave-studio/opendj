@@ -241,6 +241,9 @@ pub fn install(app: &AppWindow) {
                     p.insert(value.to_string());
                 }
             }
+            if s.view == PRESETS && facet == 0 {
+                keep_subtypes(s);
+            }
         })
     });
     let weak = app.as_weak();
@@ -499,14 +502,18 @@ const INSTRUMENTS: i32 = 1;
 /// presets carry them (`redesign-jam-browser` step 2).
 /// Genre and Style come from makers' libraries (Arturia's) and show only
 /// when some preset has one.
-const PRESET_FACETS: [&str; 6] = [
+const PRESET_FACETS: [&str; 7] = [
     "Sound type",
+    "Subtype",
     "Genre",
     "Style",
     "Character",
     "Instrument",
     "Maker",
 ];
+/// The Subtype menu: its chips show inside Sound type's, under the
+/// types picked, rather than as a menu of its own.
+const SUBTYPE: usize = 1;
 const INSTRUMENT_FACETS: [&str; 2] = ["Kind", "Maker"];
 
 fn facet_names(view: i32) -> &'static [&'static str] {
@@ -648,6 +655,12 @@ fn entries(s: &State) -> Vec<Entry> {
                         .cloned()
                         .collect()
                 };
+                // The library's tags, then the user's not among them.
+                let with = |from: &[String], more: Vec<String>| -> Vec<String> {
+                    let mut out = from.to_vec();
+                    out.extend(more.into_iter().filter(|t| !from.contains(t)));
+                    out
+                };
                 Entry {
                     item: LiveItem {
                         kind: PRESET,
@@ -665,9 +678,23 @@ fn entries(s: &State) -> Vec<Entry> {
                     },
                     facets: vec![
                         tagged(&presets::TYPES),
-                        p.genres.clone(),
-                        p.styles.clone(),
-                        tagged(&presets::CHARACTERS),
+                        if p.arturia_subtype.is_empty() {
+                            Vec::new()
+                        } else {
+                            vec![p.arturia_subtype.clone()]
+                        },
+                        with(&p.genres, tagged(&presets::GENRES)),
+                        with(&p.styles, tagged(&presets::STYLES)),
+                        // Characters, and any tag no group names.
+                        p.tags
+                            .iter()
+                            .filter(|t| {
+                                ![&presets::TYPES[..], &presets::GENRES, &presets::STYLES]
+                                    .iter()
+                                    .any(|g| g.contains(&t.as_str()))
+                            })
+                            .cloned()
+                            .collect(),
                         vec![p.instrument_name.clone()],
                         if maker_name.is_empty() {
                             Vec::new()
@@ -688,12 +715,15 @@ fn entries(s: &State) -> Vec<Entry> {
 
 /// The order a menu's values come in: the tag lists' own for tags and
 /// kinds, name order for the rest.
-fn value_order(view: i32, facet: usize) -> &'static [&'static str] {
+fn value_order(view: i32, facet: usize) -> Vec<&'static str> {
     match (view, facet) {
-        (PRESETS, 0) => &presets::TYPES,
-        (PRESETS, 3) => &presets::CHARACTERS,
-        (INSTRUMENTS, 0) => &KINDS,
-        _ => &[],
+        (PRESETS, 0) => presets::TYPES.to_vec(),
+        (PRESETS, SUBTYPE) => presets::subtypes().collect(),
+        (PRESETS, 2) => presets::GENRES.to_vec(),
+        (PRESETS, 3) => presets::STYLES.to_vec(),
+        (PRESETS, 4) => presets::CHARACTERS.to_vec(),
+        (INSTRUMENTS, 0) => KINDS.to_vec(),
+        _ => Vec::new(),
     }
 }
 
@@ -792,13 +822,19 @@ fn chip_width(text: &str) -> f32 {
     text.chars().count() as f32 * 6.2 + 16.0 + 4.0
 }
 
-/// Breaks a menu's chips into lines that fit the column.
-fn chip_lines(values: &[(String, usize, bool)]) -> Vec<JamLine> {
+/// Breaks menu `facet`'s chips into lines that fit the column; `sub`
+/// lines (sub-types) sit indented.
+fn chip_lines(values: &[(String, usize, bool)], facet: usize, sub: bool) -> Vec<JamLine> {
+    let room = if sub {
+        CHIP_LINE - SUB_INDENT
+    } else {
+        CHIP_LINE
+    };
     let mut lines: Vec<Vec<JamChip>> = Vec::new();
-    let mut width = CHIP_LINE;
+    let mut width = room;
     for (name, count, on) in values {
         let w = chip_width(name);
-        if width + w > CHIP_LINE {
+        if width + w > room {
             lines.push(Vec::new());
             width = 0.0;
         }
@@ -808,6 +844,7 @@ fn chip_lines(values: &[(String, usize, bool)]) -> Vec<JamLine> {
                 name: name.as_str().into(),
                 count: *count as i32,
                 on: *on,
+                facet: facet as i32,
             });
         }
     }
@@ -815,8 +852,27 @@ fn chip_lines(values: &[(String, usize, bool)]) -> Vec<JamLine> {
         .into_iter()
         .map(|chips| JamLine {
             chips: ModelRc::new(VecModel::from(chips)),
+            sub,
         })
         .collect()
+}
+
+/// How far sub-type lines sit in (`JamLine.sub`).
+const SUB_INDENT: f32 = 12.0;
+
+/// Takes off picked sub-types whose type is no longer picked (one no type
+/// lists, a user's own, stays while any type is picked).
+fn keep_subtypes(s: &mut State) {
+    let types = s.picks.first().cloned().unwrap_or_default();
+    if let Some(subs) = s.picks.get_mut(SUBTYPE) {
+        subs.retain(|sub| {
+            !types.is_empty()
+                && presets::SUBTYPES
+                    .iter()
+                    .find(|(_, list)| list.contains(&sub.as_str()))
+                    .is_none_or(|(t, _)| types.contains(*t))
+        });
+    }
 }
 
 /// Shows the column and the list again from the state.
@@ -847,27 +903,44 @@ fn refresh(app: &AppWindow) {
             ("", -1, 0)
         };
         let count = rows.len();
+        let chip = |f: usize, (name, count, on): &(String, usize, bool)| JamChip {
+            name: name.as_str().into(),
+            count: *count as i32,
+            on: *on,
+            facet: f as i32,
+        };
+        let subs: Vec<(String, usize, bool)> = if s.view == PRESETS {
+            facets.get(SUBTYPE).map(|f| f.values.clone()).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let types_picked = s.picks.first().is_some_and(|p| !p.is_empty());
         let facets: Vec<JamFacet> = facets
-            .into_iter()
+            .iter()
             .enumerate()
-            .map(|(f, facet)| JamFacet {
-                name: facet.name.into(),
-                shown: !facet.values.is_empty(),
-                open: s.open_facet == Some(f),
-                picked: facet.values.iter().filter(|(_, _, on)| *on).count() as i32,
-                picks: ModelRc::new(VecModel::from(
-                    facet
-                        .values
-                        .iter()
-                        .filter(|(_, _, on)| *on)
-                        .map(|(name, count, on)| JamChip {
-                            name: name.as_str().into(),
-                            count: *count as i32,
-                            on: *on,
-                        })
-                        .collect::<Vec<_>>(),
-                )),
-                lines: ModelRc::new(VecModel::from(chip_lines(&facet.values))),
+            .map(|(f, facet)| {
+                let mut picks: Vec<JamChip> = facet
+                    .values
+                    .iter()
+                    .filter(|v| v.2)
+                    .map(|v| chip(f, v))
+                    .collect();
+                let mut lines = chip_lines(&facet.values, f, false);
+                let nested = s.view == PRESETS && f == 0;
+                if nested {
+                    picks.extend(subs.iter().filter(|v| v.2).map(|v| chip(SUBTYPE, v)));
+                    if types_picked {
+                        lines.extend(chip_lines(&subs, SUBTYPE, true));
+                    }
+                }
+                JamFacet {
+                    name: facet.name.into(),
+                    shown: !facet.values.is_empty() && !(s.view == PRESETS && f == SUBTYPE),
+                    open: s.open_facet == Some(f),
+                    picked: picks.len() as i32,
+                    picks: ModelRc::new(VecModel::from(picks)),
+                    lines: ModelRc::new(VecModel::from(lines)),
+                }
             })
             .collect();
         ui.set_rows(ModelRc::new(VecModel::from(rows)));
@@ -1095,10 +1168,19 @@ mod tests {
                     "Jun-6 V",
                     &["Pad", "Evolving"],
                 ),
-                preset("Warm Glass", "clap:Vital", "Vital", &["Pad", "Warm"]),
+                Preset {
+                    arturia_subtype: "Bright Pad".into(),
+                    ..preset("Warm Glass", "clap:Vital", "Vital", &["Pad", "Warm"])
+                },
                 Preset {
                     from_plugin: true,
-                    ..preset("Factory Brass", "clap:Jun-6 V", "Jun-6 V", &["Brass"])
+                    // An older tag, as presets.rs reads it now.
+                    ..preset(
+                        "Factory Brass",
+                        "clap:Jun-6 V",
+                        "Jun-6 V",
+                        &["Brass & Winds"],
+                    )
                 },
             ],
             view,
@@ -1215,14 +1297,14 @@ mod tests {
             .map(|(v, n, _)| (v.as_str(), *n))
             .collect();
         // TYPES' order, not name order.
-        assert_eq!(types, [("Pad", 2), ("Brass", 1), ("Drums", 1)]);
+        assert_eq!(types, [("Pad", 2), ("Brass & Winds", 1), ("Drums", 1)]);
         pick(&mut s, "Sound type", "Pad");
         assert_eq!(names(&s), ["Ambient Ebow", "Warm Glass"]);
         // Two picks in one menu: either.
         pick(&mut s, "Sound type", "Drums");
         assert_eq!(names(&s), ["Ambient Ebow", "Four Floor", "Warm Glass"]);
         // Another menu narrows, and its own counts follow the first menu.
-        pick(&mut s, "Character", "Warm");
+        pick(&mut s, "Style", "Warm");
         assert_eq!(names(&s), ["Warm Glass"]);
         let (_, facets) = filtered(&s);
         let instruments: Vec<(&str, usize)> = facet(&facets, "Instrument")
@@ -1248,6 +1330,29 @@ mod tests {
     }
 
     #[test]
+    fn subtypes_show_under_the_picked_types_and_go_with_them() {
+        let mut s = state(PRESETS);
+        let (_, facets) = filtered(&s);
+        let evolving: Vec<&str> = facet(&facets, "Character")
+            .values
+            .iter()
+            .map(|(v, _, _)| v.as_str())
+            .collect();
+        assert_eq!(evolving, ["Evolving"], "Warm is a style now");
+        pick(&mut s, "Sound type", "Pad");
+        pick(&mut s, "Subtype", "Bright Pad");
+        assert_eq!(names(&s), ["Warm Glass"]);
+        // Another type picked keeps it; Pad taken off takes it off too.
+        pick(&mut s, "Sound type", "Drums");
+        keep_subtypes(&mut s);
+        assert!(s.picks[SUBTYPE].contains("Bright Pad"));
+        s.picks[0].remove("Pad");
+        keep_subtypes(&mut s);
+        assert!(s.picks[SUBTYPE].is_empty());
+        assert_eq!(names(&s), ["Four Floor"]);
+    }
+
+    #[test]
     fn stars_narrow_the_list() {
         let mut s = state(PRESETS);
         s.starred.insert(recent_key(&s, PRESET, 2).unwrap());
@@ -1269,7 +1374,7 @@ mod tests {
             .chain(presets::CHARACTERS.iter())
             .map(|v| (v.to_string(), 1, false))
             .collect();
-        let lines = chip_lines(&values);
+        let lines = chip_lines(&values, 0, false);
         assert!(lines.len() > 1);
         for line in &lines {
             let width: f32 = line.chips.iter().map(|c| chip_width(&c.name)).sum();

@@ -30,7 +30,7 @@ use opendj_engine::AudioEngine;
 use serde_json::{json, Map, Value};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
-use crate::{groove_box, settings, AppWindow, PresetItem, PresetUi};
+use crate::{groove_box, settings, AppWindow, PresetItem, PresetUi, TagGroup, TagLine};
 
 /// The instrument key of the Groove Box's presets.
 pub const GROOVE: &str = "groove";
@@ -46,18 +46,318 @@ const GROOVE_SKIPPED: [&str; 6] = [
     "duck_amount",
 ];
 
-/// Tags a preset can have: what kind of sound it is, then what it sounds
-/// like. The browser's chips narrow the list to presets with them.
-pub const TYPES: [&str; 10] = [
-    "Bass", "Lead", "Pad", "Keys", "Pluck", "Brass", "Strings", "Arp", "Drums", "FX",
+/// Tags a preset can have, as Arturia's library names them: what kind of
+/// sound it is (with a sub-type under each), its genres, its style and its
+/// character. The browser's menus narrow the list to presets with them.
+pub const TYPES: [&str; 15] = [
+    "Bass",
+    "Keys",
+    "Lead",
+    "Pad",
+    "Piano",
+    "Electric Piano",
+    "Organ",
+    "Strings",
+    "Brass & Winds",
+    "Drums",
+    "Sequence",
+    "Vocal",
+    "Sound Effects",
+    "Custom",
+    "Template",
 ];
-pub const CHARACTERS: [&str; 10] = [
-    "Warm", "Bright", "Dark", "Soft", "Hard", "Clean", "Dirty", "Evolving", "Vintage", "Wide",
+
+/// Each type's sub-types, in the types' order ("Custom" has the user's).
+pub const SUBTYPES: [(&str, &[&str]); 13] = [
+    (
+        "Bass",
+        &[
+            "Bass Line",
+            "Hard Bass",
+            "Plucked Bass",
+            "Soft Bass",
+            "Sub Bass",
+        ],
+    ),
+    (
+        "Keys",
+        &[
+            "Bells",
+            "Classic Synth Keys",
+            "Evolving Keys",
+            "Lofi Keys",
+            "Mallets",
+            "Percussive Keys",
+            "Plucked Keys",
+        ],
+    ),
+    (
+        "Lead",
+        &[
+            "Big Lead",
+            "Dirty Lead",
+            "Hard Lead",
+            "Percussive Lead",
+            "Plucked Lead",
+            "Poly Lead",
+            "Soft Lead",
+            "Solo Lead",
+            "Synced Lead",
+        ],
+    ),
+    (
+        "Pad",
+        &[
+            "Atmosphere",
+            "Bright Pad",
+            "Choir",
+            "Classic Synth Pad",
+            "Evolving Pad",
+            "Strings Pad",
+        ],
+    ),
+    (
+        "Piano",
+        &[
+            "Acoustic Grand",
+            "Acoustic Upright",
+            "Grand Piano",
+            "Hybrid",
+            "Percussive",
+        ],
+    ),
+    (
+        "Electric Piano",
+        &["Classic EP", "Clavinet", "Creative EP", "Digital Piano"],
+    ),
+    (
+        "Organ",
+        &[
+            "Combo Organ",
+            "Pipe Organ",
+            "Synth Organ",
+            "Tonewheel Organ",
+        ],
+    ),
+    (
+        "Strings",
+        &[
+            "Bowed Strings",
+            "Guitar",
+            "Plucked Strings",
+            "String Ensemble",
+        ],
+    ),
+    (
+        "Brass & Winds",
+        &[
+            "Brass Acoustic",
+            "Brass Hybrid",
+            "Brass Synth",
+            "Winds Acoustic",
+            "Winds Hybrid",
+            "Winds Synth",
+            "Woodwind",
+        ],
+    ),
+    (
+        "Drums",
+        &[
+            "Clap",
+            "Cowbell",
+            "Creative Drums",
+            "Cymbal",
+            "Drum Kit",
+            "Drum Loop",
+            "High Hat",
+            "Kick",
+            "Percussion",
+            "Snare",
+            "Tom",
+        ],
+    ),
+    (
+        "Sequence",
+        &[
+            "Arpeggio",
+            "Melodic Sequence",
+            "Noise Sequence",
+            "Rhythmic Sequence",
+        ],
+    ),
+    ("Vocal", &["Real Choir", "Synth Choir", "Vocoder"]),
+    (
+        "Sound Effects",
+        &[
+            "Ambient SFX",
+            "Creative SFX",
+            "Drone",
+            "Hit",
+            "Machines",
+            "Nature Sounds",
+            "Noise",
+            "Soundtrack",
+            "Sweeps",
+        ],
+    ),
+];
+
+/// Every sub-type, in [`SUBTYPES`]' order.
+pub fn subtypes() -> impl Iterator<Item = &'static str> {
+    SUBTYPES.iter().flat_map(|(_, s)| s.iter().copied())
+}
+
+pub const GENRES: [&str; 51] = [
+    "60s",
+    "70s",
+    "80s",
+    "90s",
+    "Ambient",
+    "Bass Music",
+    "Berlin",
+    "Breakbeat",
+    "Chiptune",
+    "Cinematic",
+    "Classical",
+    "Detroit",
+    "Disco",
+    "Downtempo",
+    "Drum & Bass",
+    "Dub / Reggae",
+    "Dubstep",
+    "Electro",
+    "Experimental",
+    "Footwork",
+    "Funk",
+    "Fusion",
+    "Future Bass",
+    "Game Audio",
+    "Grime",
+    "Hard Techno",
+    "Heavy Metal",
+    "Hip Hop / Trap",
+    "House",
+    "IDM",
+    "Indie Dance",
+    "Industrial",
+    "Jazz / Blues",
+    "Jungle",
+    "Latin",
+    "Lofi",
+    "Minimal",
+    "Modern",
+    "Pop",
+    "Psytrance",
+    "Reggaeton",
+    "Rock",
+    "Soul / R&B",
+    "Soundtrack",
+    "Synthwave",
+    "Techno",
+    "Trance",
+    "Trip Hop",
+    "Tropical House",
+    "UK Garage",
+    "World",
+];
+
+pub const STYLES: [&str; 25] = [
+    "Acid",
+    "Airy",
+    "Atmospheric",
+    "Bizarre",
+    "Bright",
+    "Classic",
+    "Clean",
+    "Complex",
+    "Dark",
+    "Deep",
+    "Dirty",
+    "Funky",
+    "Hard",
+    "Harsh",
+    "Huge",
+    "Mellow",
+    "Melodic",
+    "Punchy",
+    "Sad",
+    "Sharp",
+    "Simple",
+    "Soft",
+    "Soundscape",
+    "Thin",
+    "Warm",
+];
+
+/// Arturia's characteristics; ones it adds later are kept as it writes
+/// them, after these.
+pub const CHARACTERS: [&str; 40] = [
+    "Ad Libs",
+    "Acoustic",
+    "Additive",
+    "Amp",
+    "Analog",
+    "Arpeggiated",
+    "Chord",
+    "Delay",
+    "Digital",
+    "Distorted",
+    "Dry",
+    "Ensemble",
+    "Evolving",
+    "Filtered",
+    "FM",
+    "Gated",
+    "Glide",
+    "Glitch",
+    "Granular",
+    "Hoover",
+    "Hybrid",
+    "Layered",
+    "Leslie",
+    "Long",
+    "Multi / Split",
+    "Natural",
+    "Noise",
+    "Phrases",
+    "Processed",
+    "Random",
+    "Reese",
+    "Reverb",
+    "Reversed",
+    "Rise",
+    "Sample-based",
+    "Sequence / Loop",
+    "Short",
+    "Slow Attack",
+    "Solo",
+    "Stab",
+];
+
+/// The tag groups a preset can be tagged with by hand, as the tagger
+/// shows them.
+pub const TAG_GROUPS: [(&str, &[&str]); 4] = [
+    ("TYPE", &TYPES),
+    ("GENRE", &GENRES),
+    ("STYLE", &STYLES),
+    ("CHARACTER", &CHARACTERS),
 ];
 
 /// Every tag, types first, as the screens number them.
 pub fn tags() -> impl Iterator<Item = &'static str> {
-    TYPES.into_iter().chain(CHARACTERS)
+    TAG_GROUPS.iter().flat_map(|(_, t)| t.iter().copied())
+}
+
+/// An older tag (before the tags followed Arturia's) as it is named now;
+/// none for one that went.
+pub fn current_tag(tag: &str) -> Option<&str> {
+    match tag {
+        "Arp" => Some("Sequence"),
+        "FX" => Some("Sound Effects"),
+        "Brass" => Some("Brass & Winds"),
+        "Pluck" => None,
+        t => Some(t),
+    }
 }
 
 /// A preset as listed: what the browser and ‹ › need, without its sound.
@@ -69,7 +369,7 @@ pub struct Preset {
     /// The instrument's name when saved ("Jun-6 V", "Groove Box").
     pub instrument_name: String,
     pub path: PathBuf,
-    /// Its tags, from [`TYPES`] and [`CHARACTERS`] (others kept as written).
+    /// Its tags, from [`TAG_GROUPS`] (others kept as written).
     pub tags: Vec<String>,
     /// One of the plugin's own, not one of the user's: a `.vstpreset` or
     /// `.aupreset` file at `path`, or one a CLAP plugin listed.
@@ -157,9 +457,13 @@ fn list_in(root: &Path) -> Vec<Preset> {
                 tags: v["tags"]
                     .as_array()
                     .map(|a| {
-                        a.iter()
-                            .filter_map(|t| t.as_str().map(String::from))
-                            .collect()
+                        let mut tags: Vec<String> = Vec::new();
+                        for t in a.iter().filter_map(|t| t.as_str()).filter_map(current_tag) {
+                            if !tags.iter().any(|x| x == t) {
+                                tags.push(t.to_string());
+                            }
+                        }
+                        tags
                     })
                     .unwrap_or_default(),
                 from_plugin: false,
@@ -461,11 +765,12 @@ fn toggle_tag(path: &Path, tag: &str) -> Result<(), String> {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    match tags.iter().position(|t| t.as_str() == Some(tag)) {
-        Some(i) => {
-            tags.remove(i);
-        }
-        None => tags.push(json!(tag)),
+    // An older name for it counts as it (see [`current_tag`]).
+    let is = |t: &Value| t.as_str().and_then(current_tag) == Some(tag);
+    if tags.iter().any(is) {
+        tags.retain(|t| !is(t));
+    } else {
+        tags.push(json!(tag));
     }
     body.insert("tags".into(), Value::Array(tags));
     write(path, &body)
@@ -965,6 +1270,46 @@ fn show_picker(app: &AppWindow) {
     STATE.with_borrow_mut(|s| s.picker_groups = groups.into_iter().map(|(g, _)| g).collect());
 }
 
+/// How wide a line of the tagger's chips may run: its width less padding
+/// and scroll bar.
+const TAGGER_LINE: f32 = 276.0;
+
+/// The tagger's groups, each broken into lines of chips that fit it (11 px
+/// text, 8 px each side, 4 px apart; an estimate that breaks early).
+fn tag_groups() -> Vec<TagGroup> {
+    let mut index = 0;
+    TAG_GROUPS
+        .iter()
+        .map(|(name, tags)| {
+            let mut lines: Vec<Vec<i32>> = Vec::new();
+            let mut width = TAGGER_LINE;
+            for tag in tags.iter() {
+                let w = tag.chars().count() as f32 * 6.2 + 20.0;
+                if width + w > TAGGER_LINE {
+                    lines.push(Vec::new());
+                    width = 0.0;
+                }
+                width += w;
+                if let Some(line) = lines.last_mut() {
+                    line.push(index);
+                }
+                index += 1;
+            }
+            TagGroup {
+                name: (*name).into(),
+                lines: ModelRc::new(VecModel::from(
+                    lines
+                        .into_iter()
+                        .map(|tags| TagLine {
+                            tags: ModelRc::new(VecModel::from(tags)),
+                        })
+                        .collect::<Vec<_>>(),
+                )),
+            }
+        })
+        .collect()
+}
+
 thread_local! {
     static CTX: RefCell<Option<Rc<Ctx>>> = const { RefCell::new(None) };
 }
@@ -984,7 +1329,7 @@ pub fn install(
     let ui = app.global::<PresetUi>();
     let names: Vec<SharedString> = tags().map(SharedString::from).collect();
     ui.set_tag_names(ModelRc::new(VecModel::from(names)));
-    ui.set_type_count(TYPES.len() as i32);
+    ui.set_tag_groups(ModelRc::new(VecModel::from(tag_groups())));
     let weak = app.as_weak();
     let act = move |what: &dyn Fn(&Ctx) -> Result<(), String>| {
         let Some(ctx) = ctx() else {
@@ -1465,7 +1810,7 @@ mod tests {
             types: vec!["Bass".into()],
             genres: vec!["Techno".into()],
             styles: vec!["Warm".into()],
-            characters: vec!["Warm".into()],
+            characters: vec!["Analog".into()],
             liked: true,
             arturia_type: "Bass".into(),
             arturia_subtype: "Bass Line".into(),
@@ -1494,7 +1839,7 @@ mod tests {
         let kick = &listed[0];
         assert!(kick.from_plugin && kick.liked);
         assert_eq!(kick.arturia_subtype, "Bass Line");
-        assert_eq!(kick.tags, ["Bass", "Warm"]);
+        assert_eq!(kick.tags, ["Bass", "Analog"]);
         assert_eq!(
             (kick.genres.as_slice(), kick.styles.as_slice()),
             (&["Techno".to_string()][..], &["Warm".to_string()][..])
@@ -1566,7 +1911,17 @@ mod tests {
         assert_eq!(list_in(&root)[0].tags, ["Drums", "Dirty"]);
         toggle_tag(&path, "Drums").unwrap();
         assert_eq!(list_in(&root)[0].tags, ["Dirty"]);
-        assert_eq!(tags().count(), TYPES.len() + CHARACTERS.len());
+        // Older tags read as they are named now, and go as those.
+        let mut body = read(&path).unwrap();
+        body.insert("tags".into(), json!(["Arp", "Pluck", "Dirty"]));
+        write(&path, &body).unwrap();
+        assert_eq!(list_in(&root)[0].tags, ["Sequence", "Dirty"]);
+        toggle_tag(&path, "Sequence").unwrap();
+        assert_eq!(list_in(&root)[0].tags, ["Dirty"]);
+        assert_eq!(
+            tags().count(),
+            TYPES.len() + GENRES.len() + STYLES.len() + CHARACTERS.len()
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 

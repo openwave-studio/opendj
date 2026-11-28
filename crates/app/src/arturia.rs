@@ -25,7 +25,7 @@ pub struct Found {
     pub folder: String,
     /// Made for Analog Lab too, which plays the other instruments' sounds.
     pub analog_lab: bool,
-    /// Sound types, as `crate::presets::TYPES` names them.
+    /// Its sound type, as `crate::presets::TYPES` names it.
     pub types: Vec<String>,
     /// The library's own type and sub-type, as it writes them ("Keys",
     /// "Bells"); empty for none.
@@ -33,8 +33,7 @@ pub struct Found {
     pub arturia_subtype: String,
     pub genres: Vec<String>,
     pub styles: Vec<String>,
-    /// Its characteristics and styles that `crate::presets::CHARACTERS`
-    /// names.
+    /// Its characteristics (see `crate::presets::CHARACTERS`).
     pub characters: Vec<String>,
     pub liked: bool,
 }
@@ -105,7 +104,7 @@ pub fn read(dir: &Path) -> Result<Vec<Found>, String> {
                 path,
                 folder,
                 analog_lab: analog_lab != 0,
-                types: sound_types(&kind, &subtype),
+                types: sound_types(&kind),
                 arturia_type: kind,
                 arturia_subtype: subtype,
                 liked: liked != 0,
@@ -156,32 +155,20 @@ fn locate(dir: &Path, file: &str) -> Option<(String, PathBuf)> {
 }
 
 /// A tag the library gives (`group` is Characteristics, Genres or
-/// Styles), kept on `found` in openDJ's terms.
+/// Styles), kept on `found` as written once (see [`tidy`]).
 fn tag(found: &mut Found, group: &str, value: &str) {
     let value = tidy(value);
     if value.is_empty() {
         return;
     }
     let list = match group {
-        "Genres" => Some(&mut found.genres),
-        "Styles" => Some(&mut found.styles),
-        _ => None,
+        "Genres" => &mut found.genres,
+        "Styles" => &mut found.styles,
+        "Characteristics" => &mut found.characters,
+        _ => return,
     };
-    if let Some(list) = list {
-        if !list.contains(&value) {
-            list.push(value.clone());
-        }
-    }
-    // openDJ's own character tags, as the library spells them.
-    if group != "Genres" {
-        if let Some(c) = crate::presets::CHARACTERS
-            .iter()
-            .find(|c| c.eq_ignore_ascii_case(&value))
-        {
-            if !found.characters.iter().any(|x| x == c) {
-                found.characters.push((*c).to_string());
-            }
-        }
+    if !list.contains(&value) {
+        list.push(value);
     }
 }
 
@@ -195,24 +182,17 @@ fn tidy(value: &str) -> String {
         .join(" / ")
 }
 
-/// openDJ's sound types for the library's type and sub-type.
-fn sound_types(kind: &str, subtype: &str) -> Vec<String> {
-    let mut out: Vec<&str> = match kind {
-        "Bass" => vec!["Bass"],
-        "Lead" => vec!["Lead"],
-        "Pad" => vec!["Pad"],
-        "Keys" | "Electric Piano" | "Piano" | "Organ" => vec!["Keys"],
-        "Brass & Winds" => vec!["Brass"],
-        "Strings" => vec!["Strings"],
-        "Sequence" => vec!["Arp"],
-        "Drums" => vec!["Drums"],
-        "Sound Effects" => vec!["FX"],
-        _ => Vec::new(),
-    };
-    if subtype.to_lowercase().contains("pluck") {
-        out.push("Pluck");
+/// The sound type for the library's type: openDJ's types are the
+/// library's, so it is the same, as `crate::presets::TYPES` spells it.
+fn sound_types(kind: &str) -> Vec<String> {
+    let kind = kind.trim();
+    if kind.is_empty() {
+        return Vec::new();
     }
-    out.into_iter().map(String::from).collect()
+    let known = crate::presets::TYPES
+        .iter()
+        .find(|t| t.eq_ignore_ascii_case(kind));
+    vec![known.map_or_else(|| kind.to_string(), |t| t.to_string())]
 }
 
 /// Whether `bytes` are an Arturia preset file.
@@ -319,17 +299,17 @@ mod tests {
         assert_eq!(kick.name, "Kick Bass");
         assert_eq!(kick.folder, "Mini V4");
         assert_eq!(kick.path, dir.join("Mini V4/Factory/Factory/Kick Bass"));
-        assert_eq!(kick.types, ["Bass", "Pluck"]);
+        assert_eq!(kick.types, ["Bass"]);
         assert_eq!(
             (kick.arturia_type.as_str(), kick.arturia_subtype.as_str()),
             ("Bass", "Plucked Bass")
         );
         assert_eq!(kick.genres, ["Dub / Reggae"]);
         assert_eq!(kick.styles, ["Warm"]);
-        assert_eq!(kick.characters, ["Warm"]);
+        assert_eq!(kick.characters, ["Analog"]);
         assert!(kick.liked);
         let tines = &found[1];
-        assert_eq!(tines.types, ["Keys"]);
+        assert_eq!(tines.types, ["Electric Piano"]);
         assert_eq!(tines.styles, ["Punchy"]);
         assert!(tines.analog_lab && !tines.liked);
         let _ = std::fs::remove_dir_all(dir);

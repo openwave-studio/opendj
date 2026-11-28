@@ -11,7 +11,7 @@
 
 ## 2. More tags
 
-- [ ] 2.1 Sound types with sub-types, Genre, Style and a longer Character list; Save › Tags… offers them
+- [x] 2.1 Sound types with sub-types, Genre, Style and a longer Character list (Arturia's lists; older tags renamed); Save › Tags… offers them
 
 ## 3. Tags plugins ship
 
