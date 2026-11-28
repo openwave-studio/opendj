@@ -2,10 +2,11 @@ import { Theme } from "theme.slint";
 import { Button } from "preferences.slint";
 
 // Asking before quitting (see quit_prompt.rs): closing the window or
-// picking Quit while something would stop. `body` names what stops; Cancel
-// is the default, so Return or Esc keeps openDJ open.
+// picking Quit while something would stop. `title` and `body` come from
+// quit_prompt.rs; Cancel is the default, so Return or Esc keeps openDJ open.
 export global QuitPrompt {
     in-out property <bool> open;
+    in property <string> title: "Quit openDJ?";
     in property <string> body;
     // Quit was picked from the menu or its key: asks if it should.
     callback request();
@@ -41,7 +42,7 @@ export component QuitDialog inherits Rectangle {
             padding: 20px;
             spacing: 12px;
             Text {
-                text: "Quit openDJ?";
+                text: QuitPrompt.title;
                 color: Theme.text;
                 font-size: 16px;
                 font-weight: 700;

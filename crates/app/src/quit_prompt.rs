@@ -1,7 +1,8 @@
 //! Asking before quitting. Closing the main window, or picking Quit from
 //! the menu or its key, asks first while something would stop: a deck
-//! playing, a recording, a broadcast on air. The question names what stops,
-//! and Cancel is the default, so a stray Return doesn't end a set.
+//! playing, a recording, a broadcast on air: "openDJ is playing / Do you
+//! really want to quit?", with Quit and Cancel. Cancel is the default,
+//! so a stray Return doesn't end a set.
 //!
 //! Settings › Decks picks when to ask: only while something would stop
 //! (the default), always, or never.
@@ -70,46 +71,21 @@ pub struct Busy {
     pub on_air: bool,
 }
 
-/// What the question says under "Quit openDJ?", or None when quitting
-/// shouldn't ask. Empty when it asks with nothing running (Always).
-pub fn question(mode: Mode, busy: &Busy) -> Option<String> {
-    let mut parts = Vec::new();
-    match busy.decks.as_slice() {
-        [] => {}
-        [d] => parts.push(format!("Deck {d} is playing")),
-        decks => {
-            let numbers: Vec<String> = decks.iter().map(|d| d.to_string()).collect();
-            parts.push(format!("Decks {} are playing", and_list(&numbers)));
-        }
-    }
-    if busy.recording {
-        parts.push("the mix is recording".into());
-    }
-    if busy.on_air {
-        parts.push("the broadcast is on air".into());
-    }
+/// The question's title, or None when quitting shouldn't ask. "openDJ is
+/// playing" while something would stop (a deck, a recording, a broadcast),
+/// with "Do you really want to quit?" under it; "Quit openDJ?" alone when
+/// it asks with nothing running (Always).
+pub fn question(mode: Mode, busy: &Busy) -> Option<&'static str> {
+    let running = !busy.decks.is_empty() || busy.recording || busy.on_air;
     match mode {
         Mode::Never => None,
-        Mode::Busy if parts.is_empty() => None,
-        _ if parts.is_empty() => Some(String::new()),
-        _ => {
-            let mut text = and_list(&parts);
-            if let Some(first) = text.get(..1) {
-                text = first.to_uppercase() + &text[1..];
-            }
-            Some(format!("{text}."))
-        }
+        Mode::Busy if !running => None,
+        _ if running => Some(PLAYING),
+        _ => Some("Quit openDJ?"),
     }
 }
 
-/// "a", "a and b", "a, b and c".
-fn and_list(items: &[String]) -> String {
-    match items {
-        [] => String::new(),
-        [one] => one.clone(),
-        [rest @ .., last] => format!("{} and {last}", rest.join(", ")),
-    }
-}
+const PLAYING: &str = "openDJ is playing";
 
 /// Asks before the window closes and before Quit from the menu or its key.
 /// `busy` says what quitting would stop, each time it's asked.
@@ -149,10 +125,16 @@ pub fn install(app: &AppWindow, busy: impl Fn() -> Busy + 'static) {
 
 /// Shows the question if quitting should ask now; whether it did.
 fn ask(app: &AppWindow, busy: &Busy) -> bool {
-    let Some(body) = question(mode(), busy) else {
+    let Some(title) = question(mode(), busy) else {
         return false;
     };
     let prompt = app.global::<QuitPrompt>();
+    prompt.set_title(title.into());
+    let body = if title == PLAYING {
+        "Do you really want to quit?"
+    } else {
+        ""
+    };
     prompt.set_body(body.into());
     prompt.set_open(true);
     true
@@ -184,31 +166,21 @@ mod tests {
     fn always_asks_even_with_nothing_running() {
         assert_eq!(
             question(Mode::Always, &Busy::default()),
-            Some(String::new())
+            Some("Quit openDJ?")
         );
     }
 
     #[test]
-    fn names_what_would_stop() {
-        assert_eq!(
-            question(Mode::Busy, &busy(&[2], false, false)).as_deref(),
-            Some("Deck 2 is playing.")
-        );
-        assert_eq!(
-            question(Mode::Busy, &busy(&[1, 2], true, false)).as_deref(),
-            Some("Decks 1 and 2 are playing and the mix is recording.")
-        );
-        assert_eq!(
-            question(Mode::Always, &busy(&[1, 3, 4], true, true)).as_deref(),
-            Some(
-                "Decks 1, 3 and 4 are playing, the mix is recording and the broadcast is \
-                 on air."
-            )
-        );
-        assert_eq!(
-            question(Mode::Busy, &busy(&[], false, true)).as_deref(),
-            Some("The broadcast is on air.")
-        );
+    fn says_opendj_is_playing_while_anything_would_stop() {
+        for b in [
+            busy(&[2], false, false),
+            busy(&[1, 2], true, false),
+            busy(&[], true, false),
+            busy(&[], false, true),
+        ] {
+            assert_eq!(question(Mode::Busy, &b), Some(PLAYING));
+            assert_eq!(question(Mode::Always, &b), Some(PLAYING));
+        }
     }
 
     #[test]
