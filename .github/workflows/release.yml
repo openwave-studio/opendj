@@ -230,10 +230,21 @@ jobs:
 
   windows:
     # A setup .exe (per-user, no admin) and a portable zip, for x64 PCs.
-    # Unsigned until a code signing certificate is set up (docs/windows.md).
+    # Releases and nightlies are signed through SignPath Foundation once the
+    # SIGNPATH_API_TOKEN secret is set (docs/windows.md); without it, and on
+    # pull requests, the files stay unsigned. Signing takes two requests:
+    # openDJ.exe and the plugin helper first, so the zip and the setup carry
+    # signed copies, then the setup itself.
     needs: version
     if: needs.version.outputs.skip != 'true'
     runs-on: windows-latest
+    env:
+      SIGN: ${{ github.event_name != 'pull_request' && secrets.SIGNPATH_API_TOKEN != '' }}
+      # The project's ids in SignPath. test-signing uses SignPath's
+      # self-signed test certificate; set the variable to release-signing
+      # once the real certificate is in the organization.
+      SIGNPATH_PROJECT: ${{ vars.SIGNPATH_PROJECT_SLUG || 'opendj' }}
+      SIGNPATH_POLICY: ${{ vars.SIGNPATH_SIGNING_POLICY || 'test-signing' }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -265,8 +276,66 @@ jobs:
           # target/ (whisper.cpp) would still point at the old compiler.
           key: ${{ env.IMAGE_VERSION }}
       - run: cargo build --release -p opendj -p opendj-plugin-host --features opendj/pd,opendj-plugin-host/pd
+      - name: Collect the binaries to sign
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force sign/binaries | Out-Null
+          Copy-Item target/release/opendj.exe, target/release/opendj-plugin-host.exe sign/binaries/
+      - id: unsigned-binaries
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-windows-binaries
+          path: sign/binaries/*
+          retention-days: 1
+      - name: Sign the binaries
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: binaries
+          github-artifact-id: ${{ steps.unsigned-binaries.outputs.artifact-id }}
+          wait-for-completion: true
+          # Release signing may wait for an approval in SignPath.
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: sign/binaries-signed
+      - name: Use the signed binaries
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: Copy-Item -Force sign/binaries-signed/*.exe target/release/
       - run: scripts/bundle-windows.ps1 target/release/opendj.exe "${{ needs.version.outputs.version }}"
         shell: pwsh
+      - id: unsigned-setup
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-windows-setup
+          path: dist/*-setup.exe
+          retention-days: 1
+      - name: Sign the setup
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY }}
+          artifact-configuration-slug: setup
+          github-artifact-id: ${{ steps.unsigned-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: sign/setup-signed
+      - name: Use the signed setup
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          Copy-Item -Force sign/setup-signed/*-setup.exe dist/
+          Get-AuthenticodeSignature dist/*.exe, target/release/opendj.exe |
+            Format-Table Status, Path, @{n='Signer'; e={$_.SignerCertificate.Subject}} -AutoSize
       - uses: actions/upload-artifact@v7
         with:
           name: release-windows
@@ -285,6 +354,8 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
+          # Only the downloads, not the unsigned files sent for signing.
+          pattern: release-*
           merge-multiple: true
       - uses: softprops/action-gh-release@v3
         with:
@@ -317,6 +388,8 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
+          # Only the downloads, not the unsigned files sent for signing.
+          pattern: release-*
           merge-multiple: true
       - name: Publish
         run: |
