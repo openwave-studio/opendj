@@ -158,6 +158,19 @@ export global PresetUi {
     public pure function is-own(deck: int) -> bool {
         deck < own.length && own[deck]
     }
+    // The preset picker (see `PresetPicker`), set by the app for the
+    // instrument of the deck it was opened for: its groups with counts
+    // ("All  412", "Pad  214"), the row picked, the presets in it (or
+    // matching the search), the search, and the deck's own preset's index
+    // in the app's list (-1 for none).
+    in property <[string]> picker-groups;
+    in property <int> picker-group;
+    in property <[PresetItem]> picker-list;
+    in property <string> picker-search;
+    in property <int> picker-current: -1;
+    callback picker-open(deck: int);
+    callback picker-set-group(row: int);
+    callback picker-set-search(text: string);
 }
 
 // A parameter of the playing instrument, to put on a knob.

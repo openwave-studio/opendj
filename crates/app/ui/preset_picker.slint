@@ -1,0 +1,139 @@
+// The presets of the instrument a deck plays, to pick from: a search over
+// them all, the groups on the left (All, Starred, Mine, then sound types
+// such as Bass, Lead and Pad, each with its count), the presets of the
+// group picked on the right. ‹ › beside the name step within that group.
+// The app fills it (see presets.rs `show_picker`).
+
+import { LineEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { ListView } from "scroll.slint";
+import { PresetUi } from "instruments.slint";
+
+// A line in the picker.
+component PickerLine inherits Rectangle {
+    in property <string> text;
+    in property <bool> checked;
+    callback clicked();
+    height: 24px;
+    border-radius: 6px;
+    background: ta.has-hover ? Theme.n-38373d : checked ? Theme.n-313036 : transparent;
+    Text {
+        x: 22px;
+        width: parent.width - 28px;
+        text: root.text;
+        color: ta.has-hover ? Theme.menu-hover-text : Theme.menu-current-text;
+        font-size: 12px;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+    if checked: Text { x: 7px; text: "✓"; color: Theme.menu-current-text; font-size: 12px; vertical-alignment: center; }
+    ta := TouchArea { clicked => { root.clicked(); } }
+}
+
+export component PresetPicker inherits PopupWindow {
+    in property <int> deck;
+    width: 420px;
+    height: 380px;
+    close-policy: close-on-click-outside;
+    Rectangle {
+        background: Theme.pill-list;
+        border-radius: 9px;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 14px;
+        drop-shadow-color: Theme.s-000000a0;
+    }
+    VerticalLayout {
+        padding: 6px;
+        spacing: 4px;
+        LineEdit {
+            text: PresetUi.picker-search;
+            placeholder-text: "Search presets";
+            edited(t) => { PresetUi.picker-set-search(t); }
+        }
+        HorizontalLayout {
+            spacing: 4px;
+            VerticalLayout {
+                width: 140px;
+                ListView {
+                    for g[i] in PresetUi.picker-groups: PickerLine {
+                        text: g;
+                        checked: i == PresetUi.picker-group && PresetUi.picker-search == "";
+                        clicked => { PresetUi.picker-set-group(i); }
+                    }
+                }
+            }
+            Rectangle { width: 1px; background: Theme.border; }
+            VerticalLayout {
+                if PresetUi.picker-list.length == 0: Text {
+                    text: PresetUi.picker-search != "" ? "Nothing matches the search." : "No presets yet: SAVE makes one.";
+                    color: Theme.text-dim;
+                    font-size: 11px;
+                    x: 8px;
+                    height: 24px;
+                    vertical-alignment: center;
+                }
+                ListView {
+                    for p in PresetUi.picker-list: PickerLine {
+                        text: p.name;
+                        checked: p.index == PresetUi.picker-current;
+                        clicked => {
+                            PresetUi.load(root.deck, p.index);
+                            root.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ‹ or › beside the name.
+component Step inherits Rectangle {
+    in property <string> text;
+    callback clicked();
+    width: 24px;
+    border-radius: 4px;
+    background: sta.pressed ? Theme.control-pressed : sta.has-hover ? Theme.n-2a2b2e : Theme.control;
+    Text { text: root.text; color: Theme.text; font-size: 16px; }
+    sta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// The deck's preset name between ‹ and ›; clicking the name opens the
+// picker below it.
+export component PresetBox inherits Rectangle {
+    in property <int> deck;
+    in property <length> picker-x: (root.width - 420px) / 2;
+    property <string> name: PresetUi.name(deck);
+    property <bool> changed: PresetUi.is-changed(deck);
+    height: 22px;
+    border-radius: 4px;
+    background: Theme.control;
+    HorizontalLayout {
+        Step { text: "‹"; clicked => { PresetUi.step(root.deck, -1); } }
+        Rectangle {
+            horizontal-stretch: 1;
+            border-radius: 4px;
+            background: nta.has-hover ? Theme.n-38373d : transparent;
+            Text {
+                width: parent.width - 4px;
+                text: root.name == "" ? "No preset" : root.changed ? root.name + "*" : root.name;
+                color: root.name != "" ? Theme.text : Theme.text-dim;
+                font-size: 12px;
+                font-weight: 500;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            nta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    PresetUi.picker-open(root.deck);
+                    picker.show();
+                }
+            }
+        }
+        Step { text: "›"; clicked => { PresetUi.step(root.deck, 1); } }
+    }
+    picker := PresetPicker { x: root.picker-x; y: root.height + 2px; deck: root.deck; }
+}

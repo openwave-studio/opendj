@@ -6,14 +6,10 @@
 - [x] 1.2 Sound type, Genre, Style and Character from the library's tags; Genre and Style menus in the Jam column shown only when used; liked presets starred once
 - [x] 1.3 Load a preset file as the plugin's state: VST3 both parts, AU `Controller State`
 
-## 2. Keep MIDI assignments
+## 2. Preset picker
 
-- [ ] 2.1 Carry the plugin's MIDI CC assignments from its current sound into a loaded preset
+- [x] 2.1 Preset picker from the plugin panel header and the deck's preset name, for every instrument: a search, groups (All, Starred, Mine, then sound types with counts) and the group's presets; ‹ › step within the group picked
 
-## 3. Plugin panel
+## 3. Effects
 
-- [ ] 3.1 Preset picker in the plugin panel header: ‹ name ›, a searchable list with the user's presets and the plugin's own, for every plugin
-
-## 4. Effects
-
-- [ ] 4.1 Arturia effects' presets, once FX-slot plugins can load presets
+- [ ] 3.1 Arturia effects' presets, once FX-slot plugins can load presets
