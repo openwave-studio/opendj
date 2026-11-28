@@ -29,7 +29,8 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 **Instruments and controllers**
 
 - **Knob names**: instrument deck knobs show long names in full on up to two lines, and a knob's value pops up beside it while you hover or turn it.
-- **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth.
+- **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth. A synth keeps its own patch when it loads, comes back with its last preset and moved knobs, and a keyboard's preset buttons step its presets.
+- **Instrument deck large waveform**: a lilac wave with a live scope past the play line, plus **Knobs** and **Notes** views (two steady octaves that glide when you play out of range).
 - **Instrument deck scope**: a smoother, flicker-free spectrum with Smooth glow, Bars and Mirror styles (right-click to pick), optional Hz labels and grid lines, and an OSC wave that holds still and fills the box.
 - **Arturia presets**: Arturia instruments list their own factory and user presets in the Jam column, on the deck and on controller preset buttons, tagged by sound type, genre, style and character, with your Arturia likes starred.
 - **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
@@ -45,6 +46,7 @@ openDJ 0.9.6 is another test release on the way to 1.0. openDJ now has a command
 
 **Fixes and checks**
 
+- **rekordbox import**: bar 1 lands where rekordbox has it when a grid starts mid-bar, a track left on a deck no longer saves its old grid over an import, and Reset back to analysis clears the edited mark.
 - The 10-second frame log line also counts page faults and audio dropouts, to find what causes a dropout.
 - The website and README link the openDJ Discord.
 
