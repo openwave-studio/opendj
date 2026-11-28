@@ -13,7 +13,7 @@ use std::rc::Rc;
 
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
-use crate::{AppMenu, AppWindow, LibraryEdit, MenuEntry, Preferences};
+use crate::{AppMenu, AppWindow, LibraryEdit, MenuEntry, Preferences, QuitPrompt};
 
 /// What a menu item does.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -593,9 +593,8 @@ pub fn run(app: &AppWindow, action: Action) {
                 prefs.invoke_show(prefs.get_page());
             }
         }
-        Action::Quit => {
-            let _ = slint::quit_event_loop();
-        }
+        // Asks first mid-set, as closing the window does (see quit_prompt).
+        Action::Quit => app.global::<QuitPrompt>().invoke_request(),
         Action::Undo => {
             let edit = app.global::<LibraryEdit>();
             if !edit.get_undo_text().is_empty() {

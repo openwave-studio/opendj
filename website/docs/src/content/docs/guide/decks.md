@@ -413,6 +413,16 @@ of these can be switched off (all are on to start):
 - **Tempo**: the tempo fader goes back to 0%, so the track starts at its own
   BPM. A synced deck still takes the tempo it follows.
 
+## Asking before quitting
+
+Closing openDJ's window, or picking **Quit** from the menu or with its key,
+asks first while quitting would stop something. The question names the decks
+playing, and a recording or broadcast that's running. **Cancel** is the
+default, so pressing Return or Esc by mistake keeps the set going.
+
+Choose when it asks in **Settings › Decks**, under **Ask before quitting**:
+**While playing or on air** (to start), **Always** or **Never**.
+
 ## Mixer
 
 Between the decks, each channel has four knobs down its outer side, its
