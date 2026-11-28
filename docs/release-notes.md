@@ -1,94 +1,58 @@
-openDJ 0.9.5 is a test release on the way to 1.0. The top bar and mixer are tidier, with one pill style, a compact WAVE panel and a Deck options pill, and a phase meter under each 2-Deck overview helps beatmatch by ear. The instrument deck is simpler, a plugin panel in the browser shows the instrument playing, and the Jam source is one column with search, stars and filters. A first Session preview opens an Ableton Live set and launches its clips in time with the decks. Pure Data patches run as effects and instruments (experimental), HQ stems start at the playhead and export as NI STEM files, waveforms scroll more smoothly, and Windows gets a round of audio fixes. Reloop, the DDJ-1000 and the Komplete Kontrol M32 join the controllers.
+openDJ 0.9.6 is another test release on the way to 1.0. Instrument decks get a new large waveform, a smoother spectrum, knob names that fit, a preset picker and Arturia's own presets, and they can play a hardware synth such as a MicroFreak or Moog Messenger. On Apple Silicon Macs, instant and HQ stems run on the Neural Engine. A command line and an MCP server let you search, tag and sort your library, analyse tracks, make stems and plan a set from a terminal or an AI assistant, never while a deck plays. You can scratch with the on-screen jog, the phone remote gets a Deck tab, rekordbox grids import with bar 1 in place, and openDJ Studio gets an editable piano roll, MIDI recording, undo and more of Push 2.
 
 ## What's new
 
+**Command line and MCP server**
+
+- **`opendj <command>`** works on your library from a terminal: `search`, `track`, `lists`, `list create`, `list add`, `rate` and `tag add` / `tag remove`, with `--where <search>` in place of track ids, `--dry-run` and `--json`. The open app shows the changes within a second.
+- **Prep from the command line**: `opendj analyze`, `opendj stems` (HQ stems) and `opendj health` (missing files, unanalysed tracks, no genre or rating, duplicates).
+- **Set planning**: `opendj plan <list>` orders a list by flow, key or tempo and can save it as a new list, and `opendj next <track>` suggests what to play next by key and tempo.
+- **`opendj mcp`** runs the same tools as an MCP server over stdio for AI assistants. It has no deck controls and no deletes, and no network port is opened.
+- **Never while you play**: analysis and stems from the command line or an assistant wait while any deck plays, and only one stem separation runs at a time across the app and the command line.
+- The user guide has a new **Command line** page with setup steps.
+
 **Decks**
 
-- **Pads**: the pad pages are four tabs again, one over each column of pads. Shift-click a tab for its partner page, and right-click it to pick what it shows. The page's setting (Quantize, Bank, Match, Roll) sits under the pads.
-- **2-Deck**: the loop controls sit under the pads (IN, OUT, then the length), and Play and CUE stay under the jog.
-- **Grid editor bar** under both decks in 2-Deck: grid type, BPM with Tap, ½ and ×2, downbeat, anchors and grid nudges, plus a new **Clear** for the grid. Prep uses the same bar. The Cues and Checklist tabs are gone.
-- Under each deck's key, a **Master** pill and a ⚡ pill replace the B, K, S and P letters. The ⚡ pill opens **Deck options**: Match BPM, Match Key, Sync on Play and Key Lock on load.
-- **Phase meter** (2-Deck): a strip under each overview shows a big beat number, the countdown to the next phrase and the current phrase's name, an EARLY / LATE meter against the master deck (the marker's colour shows how close; +1 BEAT when a beat off) and tempo arrows that point the way to move the fader.
-- **2-Deck mixer**: the level meters sit beside each fader and span its travel, with a peak hold. EQ / STEMS / SCULPT is a drop-down pill, and knob names are condensed capitals that show the value for a moment while you turn.
-- **FX bar** in two rows (72 px): labels move to tooltips, Band is three bars under the power button, and Beat FX sits in a lilac box with a BEAT FX tab, 1+2 routing and one **Release** button (hold to release, right-click for the mode).
-- **Play** starts and pauses on the press of the button, not when you let go, so a track starts right on the beat.
-- **Pitch Color FX**: pick **Pitch** from the filter knob's menu, and the COLOR knob shifts the deck up to an octave down or up while keeping the tempo. PITCH buttons on the DDJ-FLX10, DDJ-1000, XDJ-R1, XDJ-RR, DDJ-RX/RZ/RZX/SZ and DDJ-800 pick it.
-- A hot cue or cue jump out of a playing loop now ends the loop.
-- The top bar shows the new 1.0 logo.
+- **Scratch with the on-screen jog**: drag its top, or move two fingers anywhere over it on a trackpad (up or left forward, down or right back, circles follow your fingers). The rim still bends the speed.
+- **Ableton Link**: the Link session's bar stays with the master deck after a beat jump or a hot cue a beat away, so OSC and the beat counter stay in step.
+- **Mixer**: the EQ / STEMS / SCULPT knob mode button opens a working drop-down again, now with an icon per mode and a check on the current one.
 
-**Top bar and WAVE menu**
+**openDJ Studio (preview)**
 
-- Every top bar button is the same 32 px pill. The clock has its own pill, and **Master** is one pill with the knob, two wider meters and a ▾ that opens the Master panel.
-- **Remote** moves to **File › Remote…**. Its pill shows only while the phone remote is on, and turns green when a phone connects.
-- A compact **WAVE** panel behind the waveform icon: height and zoom sliders (zoom with ten ticks), one row each for size, style, color and needle, and Phrases and Lyrics switches. BPM labels always show.
-- **RGB** waveforms come in Red-Amber or Red-Green-Blue.
-- On macOS, dragging the master knob no longer moves the window.
+- **Piano roll editing**: draw, select, move and resize notes, Velocity and Chance lanes, hear notes as you edit, a right-click menu with Quantize, Chop, Join and Fold to Scale, Live's shortcuts, and a drum mode with pad names. Edits while a clip plays swap in without a click.
+- **Record MIDI into slots**: Record on an empty slot starts a clip on the next launch, Record on a note clip overdubs, and Fixed Length (1 to 128 bars) stops by itself.
+- **Undo**: 64 steps of clip, mute and solo edits (Ctrl/⌘+Z, Shift for redo).
+- **Mute, solo and a metronome** on every track.
+- **Racks**: Live's macro mappings and ranges come in with a Live set, and plug-ins in a rack keep running when you edit it.
+- **Push 2**: Device mode as in Live, plus Mute, Solo, Metronome, Tap Tempo, New, Duplicate, Double Loop, Record, Fixed Length and Undo.
+- Studio still isn't in the downloads. Build it with `cargo run --profile fast --bin opendj-studio`.
 
-**Instruments and Jam**
+**Instruments and controllers**
 
-- **Instrument deck**: a thin colored frame, the preset on the centre line, and a **PLAY | SEQ** switch between eight bigger knobs and the step sequencer, with a ‹ page › turner under it. A scope sits over the knobs: **OSC | FREQ** switches wave and spectrum, **PRE | POST** the instrument alone or after its effects. Dice, clear and undo have drawn icons, the scope runs full width, and the deck fits a 1280 × 720 window.
-- **Note FX tiles** for Scale, Chord and Arp, with a round HOLD latch. New scales (Dorian, Phrygian, Mixolydian, Harmonic minor, Blues), chord **Strum** and arpeggiator **Swing**.
-- **Plugin panel**: **OPEN** on the instrument deck shows the instrument in the browser area, at its own shape for plugins that draw a display, or as sliders for the others. The panel's header opens the plugin's own window.
-- **Jam** is one column: a **Presets | Instruments** switch, search, a ☆ for starred items, and filter chips for sound type, character, instrument and maker.
-- **Pure Data** (experimental): Pd patches run as effects and instruments in the plugin helper, with the cyclone, ELSE and pd-lua libraries built in. A patch's knobs, sliders and radios become openDJ knobs, Lua displays show on the instrument deck or in a VIEW panel on an FX slot, and a slot keeps its knobs and Lua state with its sound.
-- **Komplete Kontrol M32** (Beta) drives the instrument deck: knobs, transport, presets, ARP and SCALE, and its screen. In the keyboard's MIDI mode its knobs still turn the instrument's knobs, and its screen shows one line in big letters.
-- An instrument's notes are no longer sent twice after a late block, which could leave a note hanging.
-
-**openDJ Studio and Session (preview)**
-
-- First steps of openDJ Studio, a clip-launching music app built on openDJ's engine: a Session grid of looping MIDI clips launched on the bar, in time over Ableton Link. It isn't in the downloads yet. Build it with `cargo run --profile fast --bin opendj-studio`.
-- In Studio, drag devices from the browser onto a track, reorder a track's chain in the device bar, or move a device to another track (Option/Alt copies it).
-- Studio gains Limiter, Auto Filter and Saturator devices, MIDI effects, Simpler, racks (with a Drum Rack, macros, and MIDI effects and plug-ins inside rack chains), plug-ins in the browser, saving and opening sets, and note edits and a clip loop start in the piano roll.
-- **Session** (preview), in openDJ itself: **File › Open Live Set…** opens an Ableton Live set, and its clips and scenes launch from the Jam source in time with your decks, with a mixer strip per track (pan, fader, mute, solo) and a Session channel of their own in the mixer. Plug-in tracks stay silent for now.
+- **Knob names**: instrument deck knobs show long names in full on up to two lines, and a knob's value pops up beside it while you hover or turn it.
+- **Hardware synths**: play an Arturia MicroFreak or Moog Messenger from an instrument deck, with named knobs, Note FX, the sequencer and clock sync. **SETUP** sets the MIDI port, audio input, gain with a limiter, and latency. Pick presets by bank or by the synth's own categories; the MicroFreak's preset names are read from the synth. A synth keeps its own patch when it loads, comes back with its last preset and moved knobs, and a keyboard's preset buttons step its presets.
+- **Instrument deck large waveform**: a lilac wave with a live scope past the play line, in lilac or the instrument's own color, plus **Knobs** and **Notes** views (2 to 4 steady octaves). The small OSC scope is now a single clean line.
+- **Instrument deck scope**: a smoother, flicker-free spectrum with Smooth glow, Bars and Mirror styles (right-click to pick), optional Hz labels and grid lines, and an OSC wave that holds still and fills the box.
+- **Preset picker**: click an instrument's preset name, on the deck or in the plugin panel, to open a picker with search, All / Starred / Mine and sound-type groups. ‹ › step within the group you picked.
+- **Arturia presets**: Arturia instruments list their own factory and user presets in the Jam column, on the deck and on controller preset buttons, tagged by sound type, genre, style and character, with your Arturia likes starred.
+- **Komplete Kontrol M32**: with the keyboard's knobs over HID, they glide between steps instead of jumping, and the screen updates faster.
 
 **Stems**
 
-- **HQ stems from the play position**: on a loaded track the stems around the playhead are ready first, then the rest.
-- **Prepare HQ Stems for All** in the sidebar menu of a crate, playlist, set or folder. The STEMS pad shows `HQ…` while waiting and `HQ 42%` while preparing.
-- The HQ cache keeps three files per track instead of four, so the default 10 GB holds about a third more tracks, and the HQ model stays loaded between tracks.
-- **File › Export › Stem Files…** writes NI STEM files (`.stem.mp4`) for tracks with HQ stems.
-- Fixed: HQ and instant stems on tracks not at 44.1 kHz drifted out of line with the track. Older stems that drifted are made again.
+- On Macs with Apple Silicon, **instant stems** run on the Neural Engine, about 6× faster (a 6-minute track separates in about 4 seconds), with the CPU as a fallback.
+- **HQ stems** also run on the Neural Engine on Macs, leaving the GPU free for the waveforms, with the GPU and then the CPU as fallbacks. The first run prepares the model once (about 20 seconds).
 
-**Library and analysis**
+**Phone remote**
 
-- **Background panel**: a ring at the bottom right fills while analysis, HQ stems, lyrics, sound checks or covers run. Click it to pause, stop or pick what goes next, and choose what happens while a deck plays: slow down, pause or keep going.
-- Analysis runs several tracks side by side while no deck plays, and while a deck plays it saves finished tracks a few at a time, so the waveforms don't stutter.
-- **Lyrics** are looked up when tracks are analysed, for files that have none.
-- **BROWSE knob**: Shift+press goes straight to the rail, and turning through the rail no longer stalls.
-- On narrow windows, only one of the lists panel and side panel opens over the track list at a time.
-- **rekordbox import** finds beat grids for a master.db kept outside rekordbox's folder or moved from Windows, says how many tracks get grids, and no longer crashes on unanalysed tracks.
-- **USB export** (experimental): players show the right DATE ADDED, quiet preview columns no longer drop to nothing, and a fresh HFS+ stick gets its library where players look. The guide covers FAT32, exFAT and GPT limits.
+- A new **Deck** tab turns an iPad or phone into any deck (deck 3 at first) with a scrolling waveform, hot cue, loop and beat jump pads, pitch and the channel strip, over Wi-Fi with nothing to map.
 
-**Waveforms**
+**Fixes and checks**
 
-- The scrolling waveforms and the jog marker follow the display's refresh, so they no longer shake sideways when frames are missed.
-- The overview waveform is drawn at true loudness: quiet parts sit low and 3-Band no longer fills the height.
-- On computers with two graphics cards, openDJ asks for the faster one.
-- The **Stems** waveform look no longer draws the stems over each other: **Stacked** cuts the track's waveform into a layer per stem, and **3 Lanes** splits drums, music and vocals. New Ember and Lilac stem colors.
-
-**Controllers**
-
-- **Reloop** (Beta): Mixtour, Mixtour Pro, Ready, Buddy, Mixon 4, Mixon 8 Pro, Beatpad 2, Beatmix, Elite, RP-8000 and RP-8000 MK2, with pictures and guides, and pictures for the other Reloop mappings.
-- **Pioneer DJ DDJ-1000** (Beta), with its jog displays.
-- **Native Instruments Traktor Kontrol S2 MK1** (Beta), with a picture.
-- **DDJ-FLX10**: BROWSE press loads, loop halve and double, DECK 3/4, long-press beat jump search, and the jog screens no longer flicker and show cover art. CUE on a paused deck is quantized.
-- The controller pages in the user guide have a numbered picture of each controller.
-
-**Windows and audio**
-
-- An ASIO driver plays as the master output (it was silent).
-- Audio devices are scanned once at start-up, so Settings and device menus no longer lag or cut the sound. **Refresh devices** in Settings › Audio scans again.
-- A missing master device falls back to the system default, and openDJ moves back when it returns. Looking for a lost device no longer freezes the window.
-- Quitting lets go of the audio interface, MIDI clock and controllers in order, so the sound stops at once, controller lights go off, clocked gear gets Stop, and a stuck driver can no longer leave openDJ running without a window.
-- Key-locked decks play on without a skip through loop controls and Key Lock toggles.
-- Starting openDJ while it already runs brings the open window forward instead of opening a second copy that fights it for the audio interface and controllers.
-
-**Fixes**
-
-- Collection Health no longer hangs on a large imported library.
-- The plugin helper no longer crashes on exit on macOS, CLAP plugins with extra ports (Cardinal, Vital) play, and synths play before their window is opened.
-- Settings are kept in memory instead of being read from disk many times a second.
-- A track list scrolled sideways no longer stays stuck with its first columns cut off when the window or panels resize.
+- **rekordbox and MP3s**: beat grids, cues and loops on MP3s no longer land 25 or 51 ms off on USB and XML export and on rekordbox imports. openDJ now shifts them by each file's gapless trim, and by one more frame when the file starts with an Info header (thanks @M-Igashi).
+- **rekordbox import**: bar 1 lands where rekordbox has it when a grid starts mid-bar, a track left on a deck no longer saves its old grid over an import, and Reset back to analysis clears the edited mark.
+- The developer docs have a new page on writing a controller mapping.
+- The 10-second frame log line also counts page faults and audio dropouts, to find what causes a dropout.
+- The website and README link the openDJ Discord.
 
 ## Install
 
@@ -116,7 +80,7 @@ Add your music folders in Settings › Collection, or let the guided tour do it 
 - Windows is a preview: unsigned, and less tested than macOS and Linux.
 - Streaming services are browse only, except rows a playing add-on loads. Buying from stores opens the store's page; openDJ doesn't check out for you.
 - Automix uses decks 1 and 2 only.
-- Controllers marked Beta, including the new Reloop, DDJ-1000 and Komplete Kontrol M32 mappings, haven't all been tried on the hardware yet. The S5 and S8 mappings are partial, and the FLX10 jog screens need a tester.
+- Controllers marked Beta, including the Reloop, DDJ-1000 and Komplete Kontrol M32 mappings, haven't all been tried on the hardware yet. The S5 and S8 mappings are partial, and the FLX10 jog screens need a tester.
 - Plugins: their latency isn't compensated, and one instrument plugin plays at a time. On Linux, plugin windows need X11 (XWayland on Wayland).
 - Pure Data patches are experimental.
 - The phone remote works on your local network only.

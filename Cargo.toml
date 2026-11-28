@@ -4,7 +4,7 @@ members = ["crates/control", "crates/mcp", "crates/engine", "crates/controllers"
 exclude = ["third_party"]
 
 [workspace.package]
-version = "0.9.6-dev"
+version = "0.9.6"
 edition = "2021"
 license = "GPL-2.0-or-later"
 
