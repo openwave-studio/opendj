@@ -459,16 +459,18 @@ fn analysis(share: Option<&Path>, data: Option<&str>, t: &mut Track) {
             return;
         }
     };
-    let beats: Vec<(f64, f64)> = match files.dat.get_beat_grid() {
-        Ok(Some(g)) => g
-            .beats
-            .iter()
-            .map(|b| (b.time as f64 / 1000.0, b.tempo as f64 / 100.0))
-            .collect(),
-        _ => Vec::new(),
+    let (beats, first_in_bar): (Vec<(f64, f64)>, u16) = match files.dat.get_beat_grid() {
+        Ok(Some(g)) => (
+            g.beats
+                .iter()
+                .map(|b| (b.time as f64 / 1000.0, b.tempo as f64 / 100.0))
+                .collect(),
+            g.beats.first().map_or(1, |b| b.beat_number),
+        ),
+        _ => (Vec::new(), 1),
     };
     if !beats.is_empty() {
-        t.set_grid(common::grid_from_beats(&beats));
+        t.set_grid(common::grid_from_beats(&beats, first_in_bar));
         t.info.fixed_grid = true;
     }
     let Some(ext) = files.ext.as_mut() else {

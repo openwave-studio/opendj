@@ -225,6 +225,7 @@ fn lanes(marks: Vec<Mark>, color: [f32; 4]) -> Lanes {
         trace: UNDER_STEPS,
         color,
         lit: LILAC,
+        notes: None,
     }
 }
 

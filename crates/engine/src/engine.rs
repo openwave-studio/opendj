@@ -8623,6 +8623,9 @@ mod tests {
         };
         let slot = crate::hardware_synth::Slot::for_test(&config);
         link.slots.push(Some(slot)).unwrap();
+        // Loading it sends no knobs (its patch stays); a knob moved after
+        // does.
+        talk(&mut engine, &mut tx, 0.05, sine(1000.0, 0.5));
         ins("parameter1").set(1.0);
         assert!(notes.send([0x90, 60, 100]));
         let on = talk(&mut engine, &mut tx, 0.3, sine(1000.0, 0.5));
