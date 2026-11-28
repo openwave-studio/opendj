@@ -55,6 +55,10 @@ struct Setup {
     limit: Option<bool>,
     /// The preset picked last, -1 none.
     preset: i32,
+    /// The knobs moved since that preset was picked (0 to 1, by knob),
+    /// `None` for one left as the preset had it: sent again after the
+    /// preset when the synth loads, so it sounds as it was left.
+    knobs: Vec<Option<f64>>,
 }
 
 impl Setup {
@@ -72,6 +76,10 @@ impl Setup {
             gain: v["gain"].as_f64(),
             limit: v["limit"].as_bool(),
             preset: v["preset"].as_i64().map_or(-1, |p| p as i32),
+            knobs: v["knobs"]
+                .as_array()
+                .map(|a| a.iter().map(Value::as_f64).collect())
+                .unwrap_or_default(),
         })
     }
 
@@ -86,6 +94,7 @@ impl Setup {
             "gain": self.gain,
             "limit": self.limit,
             "preset": self.preset,
+            "knobs": self.knobs,
         })
     }
 }
@@ -223,6 +232,11 @@ struct State {
     search: String,
     shown: Vec<usize>,
     reading: Arc<Reading>,
+    reg: Arc<ControlRegistry>,
+    /// The knobs as the preset left them (as last picked or loaded), to
+    /// tell which were moved since; and whether those moves are unsaved.
+    snapshot: Vec<f64>,
+    knobs_dirty: bool,
 }
 
 pub struct Watcher {
@@ -242,6 +256,9 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
         search: String::new(),
         shown: Vec::new(),
         reading: Arc::new(Reading::default()),
+        reg: reg.clone(),
+        snapshot: Vec::new(),
+        knobs_dirty: false,
     }));
     let ui = app.global::<HardwareUi>();
 
@@ -415,6 +432,7 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
     reader.start(slint::TimerMode::Repeated, READ_TICK, move || {
         let Some(app) = weak.upgrade() else { return };
         let mut s = st.borrow_mut();
+        track_knobs(&mut s);
         let r = s.reading.clone();
         let ui = app.global::<HardwareUi>();
         let running = r.running.load(Ordering::Relaxed);
@@ -449,6 +467,67 @@ pub fn install(app: &AppWindow, engine: Rc<AudioEngine>, reg: Arc<ControlRegistr
     Watcher {
         _timer: timer,
         _reader: reader,
+    }
+}
+
+/// The loaded synth's knobs now (0 to 1), as many as its profile has.
+fn knob_values(s: &State) -> Vec<f64> {
+    let Some(profile) = s.loaded.and_then(|i| s.profiles.get(i)) else {
+        return Vec::new();
+    };
+    let n = profile
+        .macros
+        .len()
+        .min(opendj_engine::inputs::INSTRUMENT_PARAMETERS);
+    (1..=n)
+        .map(|k| {
+            s.reg
+                .get(
+                    opendj_engine::hardware_synth::GROUP,
+                    &format!("parameter{k}"),
+                )
+                .map_or(0.0, |c| c.get())
+        })
+        .collect()
+}
+
+/// The knobs that differ from `snapshot` join `kept` (those already moved
+/// keep following); true when `kept` changed.
+fn moved_knobs(snapshot: &[f64], now: &[f64], kept: &mut Vec<Option<f64>>) -> bool {
+    let mut changed = false;
+    if kept.len() < now.len() {
+        kept.resize(now.len(), None);
+    }
+    for (k, &v) in now.iter().enumerate() {
+        let was = snapshot.get(k).copied().unwrap_or(v);
+        let moved = kept[k].is_some() || (v - was).abs() > 1e-6;
+        if moved && kept[k] != Some(v) {
+            kept[k] = Some(v);
+            changed = true;
+        }
+    }
+    changed
+}
+
+/// Notes knobs moved on the deck while a synth plays it, and keeps them
+/// in its setup every few seconds.
+fn track_knobs(s: &mut State) {
+    // Only while the instrument deck plays the synth.
+    let playing = s
+        .reg
+        .get(opendj_engine::hardware_synth::GROUP, "hardware")
+        .is_some_and(|c| c.get() > 0.5);
+    if s.loaded.is_none() || !playing || s.snapshot.is_empty() {
+        return;
+    }
+    let now = knob_values(s);
+    let snapshot = s.snapshot.clone();
+    if moved_knobs(&snapshot, &now, &mut s.setup.knobs) {
+        s.knobs_dirty = true;
+    }
+    if s.knobs_dirty {
+        s.knobs_dirty = false;
+        save(s);
     }
 }
 
@@ -580,10 +659,55 @@ fn load(app: &AppWindow, engine: &AudioEngine, reg: &ControlRegistry, s: &mut St
         save(s);
         ui.set_setup_open(true);
     }
+    restore_sound(engine, s);
     // Names from the synth itself, the first time.
     if kept.is_none() {
         read_names(app, engine, s);
     }
+}
+
+/// Puts the synth back as it was left: its last preset, then the knobs
+/// moved after it, on the deck and sent to the synth a moment later (so
+/// the preset has loaded first).
+fn restore_sound(engine: &AudioEngine, s: &mut State) {
+    let n = knob_values(s).len();
+    s.setup.knobs.truncate(n);
+    for (k, v) in s.setup.knobs.iter().enumerate() {
+        if let (Some(v), Some(c)) = (
+            v,
+            s.reg.get(
+                opendj_engine::hardware_synth::GROUP,
+                &format!("parameter{}", k + 1),
+            ),
+        ) {
+            c.set(*v);
+        }
+    }
+    s.snapshot = knob_values(s);
+    let Some(p) = s
+        .presets
+        .get(s.setup.preset.max(0) as usize)
+        .filter(|_| s.setup.preset >= 0)
+    else {
+        return;
+    };
+    let synth = engine.hardware_synth().clone();
+    synth.program(p.bank_msb, p.program);
+    let knobs: Vec<(usize, f64)> = s
+        .setup
+        .knobs
+        .iter()
+        .enumerate()
+        .filter_map(|(k, v)| v.map(|v| (k, v)))
+        .collect();
+    if knobs.is_empty() {
+        return;
+    }
+    slint::Timer::single_shot(Duration::from_millis(150), move || {
+        for (k, v) in knobs {
+            synth.send_knob(k, v);
+        }
+    });
 }
 
 /// Fills the picker's right column: the group's presets, or every one
@@ -658,6 +782,9 @@ fn pick(app: &AppWindow, engine: &AudioEngine, s: &mut State, at: i32) {
     };
     engine.hardware_synth().program(p.bank_msb, p.program);
     s.setup.preset = at;
+    // A new sound: no knob moved on it yet.
+    s.setup.knobs.clear();
+    s.snapshot = knob_values(s);
     save(s);
     show_preset(app, s);
 }
@@ -796,10 +923,23 @@ mod tests {
             gain: Some(2.0),
             limit: Some(true),
             preset: 40,
+            knobs: vec![None, Some(0.25)],
         };
         let v = json!({ "arturia-microfreak": s.write() });
         assert_eq!(Setup::read(&v, &p), Some(s));
         assert_eq!(Setup::read(&json!({}), &p), None);
+    }
+
+    #[test]
+    fn knobs_moved_since_the_preset_are_kept() {
+        let snapshot = [0.5, 0.5, 0.5];
+        let mut kept = Vec::new();
+        assert!(!moved_knobs(&snapshot, &[0.5, 0.5, 0.5], &mut kept));
+        assert!(moved_knobs(&snapshot, &[0.5, 0.8, 0.5], &mut kept));
+        assert_eq!(kept, [None, Some(0.8), None]);
+        // Moved back where it was, it still holds its value.
+        assert!(moved_knobs(&snapshot, &[0.5, 0.5, 0.5], &mut kept));
+        assert_eq!(kept, [None, Some(0.5), None]);
     }
 
     #[test]

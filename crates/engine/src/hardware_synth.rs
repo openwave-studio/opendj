@@ -152,6 +152,10 @@ pub(crate) struct Out {
     /// Each knob's last value sent, 0 to 16383 (14 bits); [`UNSENT`]
     /// before the first.
     sent: [u16; INSTRUMENT_PARAMETERS],
+    /// A synth loaded since the last buffer: the knobs as they are now are
+    /// taken as sent, so loading one doesn't overwrite its patch with the
+    /// deck's knobs; only a knob moved after goes out.
+    adopt: bool,
     tx: rtrb::Producer<Timed>,
     slots: rtrb::Consumer<Option<Slot>>,
     latency: ControlHandle,
@@ -185,6 +189,7 @@ impl Out {
             Self {
                 slot: None,
                 sent: [UNSENT; INSTRUMENT_PARAMETERS],
+                adopt: false,
                 tx,
                 slots,
                 latency: latency.clone(),
@@ -205,6 +210,7 @@ impl Out {
             if slot.map(|s| s.channel) != self.slot.map(|s| s.channel) || slot.is_none() {
                 self.sent = [UNSENT; INSTRUMENT_PARAMETERS];
             }
+            self.adopt = slot.is_some();
             self.slot = slot;
         }
     }
@@ -237,6 +243,7 @@ impl Out {
         let Some(slot) = self.slot else { return };
         let base = heard_at as f64;
         let ch = slot.channel & 15;
+        let adopt = std::mem::take(&mut self.adopt);
         for (k, &cc) in slot.ccs.iter().enumerate() {
             if cc == NO_CC {
                 continue;
@@ -251,6 +258,9 @@ impl Out {
             } else {
                 (p * 16383.0).round() as u16
             };
+            if adopt {
+                self.sent[k] = v;
+            }
             if self.sent[k] == v {
                 continue;
             }
@@ -341,6 +351,28 @@ impl HardwareSynth {
             now.push(vec![0xB0 | ch, 32, 0]);
         }
         now.push(vec![0xC0 | ch, program & 127]);
+    }
+
+    /// Sends knob `k` (from 0) at `value` (0 to 1) to the synth now, on
+    /// its CC (and the low 7 bits on its LSB CC for a fine one): to put
+    /// back a sound's knobs after its program change. Nothing without a
+    /// synth or for a knob that sends nothing.
+    pub fn send_knob(&self, k: usize, value: f64) {
+        let Some(c) = self.config() else { return };
+        let Some(cc) = c.ccs.get(k).copied().flatten().filter(|&n| n < 128) else {
+            return;
+        };
+        let ch = c.channel & 15;
+        let p = value.clamp(0.0, 1.0);
+        let mut now = self.shared.now.lock().unwrap();
+        match c.lsbs.get(k).copied().flatten().filter(|&n| n < 128) {
+            Some(lsb) => {
+                let v = (p * 16383.0).round() as u16;
+                now.push(vec![0xB0 | ch, cc, (v >> 7) as u8]);
+                now.push(vec![0xB0 | ch, lsb, (v & 127) as u8]);
+            }
+            None => now.push(vec![0xB0 | ch, cc, (p * 127.0).round() as u8]),
+        }
     }
 
     /// The loaded synth's knob names, empty without one.
@@ -738,6 +770,7 @@ mod tests {
         };
         link.slots.push(Some(Slot::from_config(&config))).unwrap();
         o.take_changes();
+        o.send(0, 48_000.0, &[0.0], &[]);
         o.send(0, 48_000.0, &[0.5], &[]);
         let sent = drain(&mut link);
         // 0.5 of 16383 is 8192: high 64, low 0.
@@ -773,6 +806,9 @@ mod tests {
             .push(slot(0, &[Some(74), None, Some(71)]))
             .unwrap();
         o.take_changes();
+        // Loading the synth leaves its patch as it is.
+        o.send(0, 48_000.0, &[0.1, 0.1, 0.1], &[]);
+        assert!(drain(&mut link).is_empty());
         o.send(0, 48_000.0, &[0.5, 1.0, 0.0], &[]);
         let sent = drain(&mut link);
         assert_eq!(sent.len(), 2);

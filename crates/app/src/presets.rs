@@ -987,7 +987,15 @@ pub fn follow_controllers(app: &AppWindow) -> slint::Timer {
             let (next, prev) = (take("preset_next"), take("preset_prev"));
             let (load, instrument) = (take("preset_load"), take("instrument_load"));
             let mut acted = false;
-            let result = if next > 0 || prev > 0 {
+            // A hardware synth steps its own presets.
+            let hardware = ctx.value(INSTRUMENT, "hardware") > 0.5;
+            let result = if hardware && (next > 0 || prev > 0) {
+                if let Some(app) = weak.upgrade() {
+                    app.global::<crate::HardwareUi>()
+                        .invoke_step_preset(if next > 0 { 1 } else { -1 });
+                }
+                Ok(())
+            } else if next > 0 || prev > 0 {
                 acted = true;
                 instrument_deck(&ctx)
                     .ok_or_else(|| "no deck plays an instrument".to_string())
@@ -1029,14 +1037,24 @@ pub fn follow_controllers(app: &AppWindow) -> slint::Timer {
                 return;
             }
             let deck = instrument_deck(&ctx);
-            let name = deck
-                .and_then(|d| ctx.instrument(d))
-                .map(|(_, n)| n)
-                .unwrap_or_default();
-            let preset = deck
-                .and_then(|d| ctx.current(d))
-                .map(|p| p.name)
-                .unwrap_or_default();
+            let hw = weak.upgrade().filter(|_| hardware).map(|app| {
+                let ui = app.global::<crate::HardwareUi>();
+                (ui.get_name().to_string(), ui.get_preset_name().to_string())
+            });
+            let name = match &hw {
+                Some((n, _)) => n.clone(),
+                None => deck
+                    .and_then(|d| ctx.instrument(d))
+                    .map(|(_, n)| n)
+                    .unwrap_or_default(),
+            };
+            let preset = match &hw {
+                Some((_, p)) => p.clone(),
+                None => deck
+                    .and_then(|d| ctx.current(d))
+                    .map(|p| p.name)
+                    .unwrap_or_default(),
+            };
             let mut texts = vec![
                 ("name".to_string(), name),
                 ("preset".to_string(), preset),
