@@ -48,6 +48,12 @@ To pick one by hand, set the environment variable `OPENDJ_GRAPHICS` to
 Updating the graphics driver from Intel's or the laptop maker's site
 often fixes the crash itself.
 
+The download ships Microsoft's DXC shader compiler (`dxcompiler.dll`) next
+to `openDJ.exe`; DirectX 12 compiles openDJ's shaders with it. Without it
+(running a build from source, say) wgpu falls back to the old FXC compiler,
+which draws the waveforms wrong. Put the Windows SDK's copy on `PATH` for
+that: `scripts/find-dxc.ps1` prints its folder.
+
 ## Audio
 
 The Settings > Audio device lists show Windows Audio (WASAPI, shared mode)

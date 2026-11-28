@@ -171,6 +171,12 @@ jobs:
       # large generated module): its binary and tests one at a time, so the
       # runner doesn't run out of memory.
       - run: cargo clippy -p opendj --all-targets -j1 -- -D warnings
+      # wgpu finds DirectX 12 on the runner (its software renderer), so the
+      # waveform render tests run there; with the DXC shader compiler, as
+      # the Windows download ships it (see scripts/find-dxc.ps1).
+      - name: DirectX shader compiler
+        shell: pwsh
+        run: (& scripts/find-dxc.ps1) >> $env:GITHUB_PATH
       # The app's tests on their own, as on Linux, so nothing else compiles
       # next to them.
       - run: cargo test --workspace --exclude opendj

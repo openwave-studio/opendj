@@ -35,6 +35,10 @@ software of Steinberg Media Technologies GmbH), used under the GNU General
 Public License, version 3. The full text of version 3 ships with the
 Windows build as LICENSE-GPL3.txt (res/windows/LICENSE-GPL3.txt).
 
+The Windows build also ships Microsoft's DirectX Shader Compiler
+(dxcompiler.dll and dxil.dll) from the redistributable files of the Windows
+SDK, as separate libraries the graphics library loads at run time.
+
 Ableton Link is Copyright Ableton AG and is used under the GNU General
 Public License, version 2 or later.
 
